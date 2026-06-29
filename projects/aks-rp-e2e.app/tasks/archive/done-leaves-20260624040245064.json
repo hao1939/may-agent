@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T04:02:45.064Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 regular-learning owner pass accepted the frontier-254 repair slice as already complete and archived that safe done child because its durable meaning lives in archive evidence and the live branch no longer needs it. The branch is now truthfully reduced to one active repo-local post-frontier-254 maintained-view/validator capture leaf plus the unchanged single family-level external-human wait; keep this branch repo-local/no-cloud only, and let the active capture leaf determine the next exact residual or validator-clean state before creating any further same-conflict work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the single immediate shared-model-validator frontier residual at inputDags[254].nodes[3][0].value by tracing the exact source-backed operation=create-cluster assignment, landing the smallest truthful repo-local normalization or equivalent evidence-backed fix, and proving on rerun that the 254 residual is gone while naming only the next immediate frontier if any.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Use mounted/checked-in source plus the accepted post-frontier-252 capture note to identify the exact scenario/DAG/node behind inputDags[254].nodes[3][0].value and justify the bounded fix or non-fix claim with file/line evidence.",
+        "Land only the smallest repo-local model/spec/replay change needed for this one residual, then rerun the exact validator and show that inputDags[254].nodes[3][0].value no longer appears; if another residual becomes first, record only that immediate next frontier in the archive note.",
+        "Keep the work repo-local and same-conflict only: no cloud execution, no reopening archived older repair families beyond what is required to explain this node, and no batching of multiple validator residuals into one task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:58:56.055Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624_20260624035856",
+        "assigned_at": "2026-06-24T03:58:56.102Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624_20260624035856",
+        "worker_started_at": "2026-06-24T03:59:07.006Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the single frontier residual at model inputDags[254].nodes[3][0] by normalizing the VM-prerelease Azure NPM create-time node from operation=create-cluster to cluster.operation=create, and archived source-backed rerun evidence showing the 254 residual is gone and the next immediate frontier is now 258.",
+        "last_worker_completed_at": "2026-06-24T04:00:52.535Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:01:07.561Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: evidence/archive/shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624.md traces inputDags[254].nodes[3][0] to the VM-prerelease Azure NPM create-time branch with mounted-source/spec/replay support, lands the bounded normalization from operation=create-cluster to cluster.operation=create in model/knowledge-map/model.json, and rerun proof shows the exact 254 residual is gone while naming only the next immediate frontier at inputDags[258].nodes[3][0].value."
+      },
+      "session_id": "s_task_shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624"
+      ],
+      "result": "Repaired the single frontier residual at model inputDags[254].nodes[3][0] by normalizing the VM-prerelease Azure NPM create-time node from operation=create-cluster to cluster.operation=create, and archived source-backed rerun evidence showing the 254 residual is gone and the next immediate frontier is now 258.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:01:07.561Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: evidence/archive/shared-model-validator-operation-create-cluster-frontier-254-domain-repair-slice-20260624.md traces inputDags[254].nodes[3][0] to the VM-prerelease Azure NPM create-time branch with mounted-source/spec/replay support, lands the bounded normalization from operation=create-cluster to cluster.operation=create in model/knowledge-map/model.json, and rerun proof shows the exact 254 residual is gone while naming only the next immediate frontier at inputDags[258].nodes[3][0].value."
+      },
+      "status": "done"
+    }
+  ]
+}

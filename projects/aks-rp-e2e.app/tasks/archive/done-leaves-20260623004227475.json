@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T00:42:27.475Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner hygiene follow-up: the stale watchdog review request is fully reconciled and the final remaining safe done predecessor leaf is archived so the root only shows the real live frontier. spec-path-record-batch8-post-batch7-authoring-20260623 remains the single bounded active repo-local work slice, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the only truthful blocked family-level external wait pending later out-of-runtime proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-path-record-batch7-post-batch6-authoring-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: finalize acceptance of the already-authored batch7 spec-path bridges for the exact next 10 residual rows named by the accepted batch6 frontier. Reuse ../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md as the canonical bounded authoring evidence, use the dirty-workspace checkpoint audit outcome to settle the shared unrelated runner/plan-executor.ts formatting drift, then rerun bun run check and update only directly affected model/view/evidence surfaces before re-submitting review; do not reopen source discovery, author a new batch, or perform cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "The existing archive artifact ../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md remains the canonical bounded batch7 note, lists the exact 10 residual missing spec-path records selected from the accepted batch6 frontier, cites the mounted or repo-local source/spec surfaces used for each, and records which direct model/view/evidence files changed for the landing.",
+        "After the dirty-workspace checkpoint audit clarifies ownership of the unrelated runner/plan-executor.ts formatting drift, any directly affected repo-local model/view/evidence surfaces are updated consistently, bun run check passes, and the task is re-submitted for owner acceptance without reopening unrelated residual gaps."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-path-records.batch7"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:06:18.613Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-path-record-batch7-post-batch6-authoring-20260623_20260623000618",
+        "assigned_at": "2026-06-23T00:06:18.664Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-path-record-batch7-post-batch6-authoring-20260623",
+        "worker_started_attempt_id": "a_spec-path-record-batch7-post-batch6-authoring-20260623_20260623000618",
+        "worker_started_at": "2026-06-23T00:06:46.471Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Landed the 10 requested normalized spec-path bridges in model/knowledge-map/model.json, regenerated maintained views, and wrote the batch7 archive note. The targeted frontier dropped from 91 to 81 missingSpecPathRecords, but full acceptance is blocked because bun run check fails on an unrelated pre-existing formatting issue in runner/plan-executor.ts.",
+        "last_worker_completed_at": "2026-06-23T00:13:40.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:37:02.327Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded batch7 authoring as predecessor work: the 10 requested spec-path bridges, regenerated views, and archive note remain current, while the shared repo-check blocker was resolved by repo-root-check-ppg-formatting-unblock-20260623. The only remaining work is the already-created narrow acceptance successor spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623, so this review leaf no longer needs to stay open."
+      },
+      "session_id": "s_task_spec-path-record-batch7-post-batch6-authoring-20260623",
+      "session_history": [
+        "s_task_spec-path-record-batch7-post-batch6-authoring-20260623"
+      ],
+      "result": "Landed the 10 requested normalized spec-path bridges in model/knowledge-map/model.json, regenerated maintained views, and wrote the batch7 archive note. The targeted frontier dropped from 91 to 81 missingSpecPathRecords, but full acceptance is blocked because bun run check fails on an unrelated pre-existing formatting issue in runner/plan-executor.ts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:37:02.327Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded batch7 authoring as predecessor work: the 10 requested spec-path bridges, regenerated views, and archive note remain current, while the shared repo-check blocker was resolved by repo-root-check-ppg-formatting-unblock-20260623. The only remaining work is the already-created narrow acceptance successor spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623, so this review leaf no longer needs to stay open."
+      },
+      "status": "done"
+    }
+  ]
+}

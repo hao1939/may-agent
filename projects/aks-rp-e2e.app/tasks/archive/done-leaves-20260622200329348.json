@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T20:03:29.348Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update: ignored a stale watchdog review request because vm-prerelease-mounted-source-row-map-20260622 was already accepted and its durable meaning is now preserved at the project root. The VM prerelease mounted-source row map now records exact mounted-source anchors for rows 25, 33, 40-43, 50, and 76 while preserving the single shared external-human transport wait. The only live repo-local execution branch remains private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622, which should reconcile repo-local carrier evidence into one best-known-equivalent spec/status artifact and decide whether any smaller truthful follow-up remains before the shared external wait. Keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external blocker; do not duplicate waits or recreate already-accepted review work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-row-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP VirtualMachine prerelease handwritten source into repo-local row/path coverage for the externally waiting prerelease family so rows 25+50, 40-43, 33, and 76 have exact source-backed scenario/expectation anchors and any remaining gap is explicitly separated into repo-local reconciliation vs later external execution proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-row-map-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted VirtualMachine prerelease/checkin Go files plus referenced scenario definitions, and maps the covered prerelease rows/path ids to exact source-backed input/expectation anchors.",
+        "The artifact distinguishes what is already knowable repo-locally from what still depends on the existing external-human transport wait, and it proposes the smallest truthful follow-up leaves without cloud mutation or duplicate blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:59:25.422Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-row-map-20260622_20260622195925",
+        "assigned_at": "2026-06-22T19:59:25.473Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-row-map-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-row-map-20260622_20260622195925",
+        "worker_started_at": "2026-06-22T19:59:39.721Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the archive artifact evidence/archive/vm-prerelease-mounted-source-row-map-20260622.md mapping VM prerelease rows 25, 33, 40-43, 50, and 76 from mounted AKS RP source to exact maintained path/input/expectation anchors, and explicitly separated repo-local closure from the existing family-level external-human execution wait.",
+        "last_worker_completed_at": "2026-06-22T20:02:04.181Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T20:02:51.570Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence maps VM prerelease rows 25, 33, 40-43, 50, and 76 to exact mounted-source scenario/input/expectation anchors, confirms there is no remaining repo-local source reconciliation gap for this row set, and preserves the single shared external-human wait for later live proof."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-row-map-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-row-map-20260622"
+      ],
+      "result": "Created the archive artifact evidence/archive/vm-prerelease-mounted-source-row-map-20260622.md mapping VM prerelease rows 25, 33, 40-43, 50, and 76 from mounted AKS RP source to exact maintained path/input/expectation anchors, and explicitly separated repo-local closure from the existing family-level external-human execution wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T20:02:51.570Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence maps VM prerelease rows 25, 33, 40-43, 50, and 76 to exact mounted-source scenario/input/expectation anchors, confirms there is no remaining repo-local source reconciliation gap for this row set, and preserves the single shared external-human wait for later live proof."
+      },
+      "status": "done"
+    }
+  ]
+}

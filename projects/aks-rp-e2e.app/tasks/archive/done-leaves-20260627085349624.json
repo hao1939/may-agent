@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T08:53:49.624Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner review accepted the NATGW V2->block execute-lane authoring audit: repo-local carrier/gating proof is complete and remains non-mutating, so the old review leaf is done. With the prior row-37 focus cleanup already archived, the only live blocked family remains focus-mounted-source-coverage-closure-and-external-wait-20260623. To avoid leaving the project with blocked-only waits, add one new bounded repo-local leaf to reconcile the durable model/replay state for path.net-integration.natgw-v2-migration-v2-to-block now that an exact gated execute lane exists, without interpreting that as cloud validation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the missing repo-local live-control carrier for path.net-integration.natgw-v2-migration-v2-to-block so the project no longer depends on a not-yet-implemented execute lane: identify the exact replay/spec/harness files that currently keep this branch check-only, add or repair the bounded --execute path plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block gate without running cloud mutation, and record file/line proof plus local verification commands in a durable archive note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627.md"
+      ],
+      "acceptance": [
+        "The task identifies the current repo-local carrier for path.net-integration.natgw-v2-migration-v2-to-block and records, with file/line evidence, where the execute path is missing or incomplete today.",
+        "The task adds or repairs the exact bounded execute-lane wiring for this one path so default and --check remain non-mutating while --execute requires AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block before any cloud mutation path can run.",
+        "The task stays repo-local: no cloud execution, no operator ask, and the archive note includes the local verification command/output needed for owner review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T08:48:49.737Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627_20260627084849",
+        "assigned_at": "2026-06-27T08:48:49.786Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627_20260627084849",
+        "worker_started_at": "2026-06-27T08:49:09.785Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented the NATGW V2→block execute-lane state in evidence/archive/natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627.md, proving the old HEAD carrier was check-only and the current repo-local carrier implements a fail-closed --execute path guarded by AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block. Re-ran only local non-mutating verification: the dedicated Vitest guardrail passed, check mode passed, and ungated/wrong-gate execute requests stayed gated without starting cloud work.",
+        "last_worker_completed_at": "2026-06-27T08:51:27.630Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T08:53:49.476Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627.md provides file/line proof that the old HEAD carrier was check-only, the current spec/catalog now target features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.ts, and the bounded --execute lane is implemented fail-closed behind AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block. Local verification stayed non-mutating (check-mode pass plus gated execute without/with wrong env), so this leaf is complete as repo-local authoring/gating evidence, not cloud validation."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627"
+      ],
+      "result": "Documented the NATGW V2→block execute-lane state in evidence/archive/natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627.md, proving the old HEAD carrier was check-only and the current repo-local carrier implements a fail-closed --execute path guarded by AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block. Re-ran only local non-mutating verification: the dedicated Vitest guardrail passed, check mode passed, and ungated/wrong-gate execute requests stayed gated without starting cloud work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T08:53:49.476Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/natgw-v2-migration-v2-to-block-execute-lane-authoring-20260627.md provides file/line proof that the old HEAD carrier was check-only, the current spec/catalog now target features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.ts, and the bounded --execute lane is implemented fail-closed behind AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block. Local verification stayed non-mutating (check-mode pass plus gated execute without/with wrong env), so this leaf is complete as repo-local authoring/gating evidence, not cloud validation."
+      },
+      "status": "done"
+    }
+  ]
+}

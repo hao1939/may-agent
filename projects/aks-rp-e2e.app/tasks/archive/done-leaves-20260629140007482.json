@@ -1,0 +1,685 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T14:00:07.482Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning review corrected the meaning of verify-spec-net-integration.multinic-dualstack without reopening broad execution. Run 28377189134 is now treated as tooling-only evidence of the shared single-spec verifier artifact-download/pseudo-zip failure family (missing loop_key/specId plus unzip failure), not a trustworthy spec verdict. The active repair leaf explicitly cites both 28375683429 and 28377189134 as acceptance fixtures, and one exact blocked followup will carry post-repair revalidation for spec.net-integration.multinic-dualstack before any product classification.",
+  "archived": 10,
+  "tasks": [
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28375781674 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. KMS v2→v2+ PMK with private KV + VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375781674 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/artifacts/kms-v2plus-enable-pmk-from-v2-private-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:31:20.462Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_20260629133120",
+        "assigned_at": "2026-06-29T13:31:20.487Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_20260629133120",
+        "worker_started_at": "2026-06-29T13:31:31.436Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28375781674 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. KMS v2→v2+ PMK with private KV + VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375781674 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/artifacts/kms-v2plus-enable-pmk-from-v2-private-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/result.json",
+        "last_worker_completed_at": "2026-06-29T13:58:36.146Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:58:48.303Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28375781674 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. KMS v2→v2+ PMK with private KV + VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375781674 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/artifacts/kms-v2plus-enable-pmk-from-v2-private-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28375781674 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. KMS v2→v2+ PMK with private KV + VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375781674 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/artifacts/kms-v2plus-enable-pmk-from-v2-private-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375781674/aks-rp-e2e-28375781674-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_200167/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:58:48.303Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28375897884 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. KMS v2→v2+ PMK with VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375897884 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/artifacts/kms-v2plus-enable-pmk-from-v2-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:33:18.814Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration_20260629133318",
+        "assigned_at": "2026-06-29T13:33:18.834Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration_20260629133318",
+        "worker_started_at": "2026-06-29T13:33:22.866Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28375897884 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. KMS v2→v2+ PMK with VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375897884 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/artifacts/kms-v2plus-enable-pmk-from-v2-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/result.json",
+        "last_worker_completed_at": "2026-06-29T13:53:34.473Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:53:48.074Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28375897884 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. KMS v2→v2+ PMK with VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375897884 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/artifacts/kms-v2plus-enable-pmk-from-v2-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28375897884 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. KMS v2→v2+ PMK with VNet integration passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375897884 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/artifacts/kms-v2plus-enable-pmk-from-v2-vnet-integration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375897884/aks-rp-e2e-28375897884-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_353293/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:53:48.074Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-ipmasq-azure-cni-cidrs",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.ipmasq-azure-cni-cidrs through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.ipmasq-azure-cni-cidrs",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.ipmasq-azure-cni-cidrs"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.ipmasq-azure-cni-cidrs",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.ipmasq-azure-cni-cidrs workflow run 28376711962 classified as pass. Loop key: verify-spec-net-integration-ipmasq-azure-cni-cidrs-a_verify-spec-net-integration-ipmasq-az. IP Masq Azure CNI CIDRs passed: 2/2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376711962 Result: runs/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/artifacts/net-integration-ipmasq-azure-cni-cidrs/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:46:04.844Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-ipmasq-azure-cni-cidrs_20260629134604",
+        "assigned_at": "2026-06-29T13:46:04.864Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-ipmasq-azure-cni-cidrs",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-ipmasq-azure-cni-cidrs_20260629134604",
+        "worker_started_at": "2026-06-29T13:46:11.139Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.ipmasq-azure-cni-cidrs workflow run 28376711962 classified as pass. Loop key: verify-spec-net-integration-ipmasq-azure-cni-cidrs-a_verify-spec-net-integration-ipmasq-az. IP Masq Azure CNI CIDRs passed: 2/2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376711962 Result: runs/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/artifacts/net-integration-ipmasq-azure-cni-cidrs/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/result.json",
+        "last_worker_completed_at": "2026-06-29T13:52:20.028Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:52:27.371Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.ipmasq-azure-cni-cidrs workflow run 28376711962 classified as pass. Loop key: verify-spec-net-integration-ipmasq-azure-cni-cidrs-a_verify-spec-net-integration-ipmasq-az. IP Masq Azure CNI CIDRs passed: 2/2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376711962 Result: runs/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/artifacts/net-integration-ipmasq-azure-cni-cidrs/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-ipmasq-azure-cni-cidrs",
+      "session_history": [
+        "s_task_verify-spec-net-integration-ipmasq-azure-cni-cidrs"
+      ],
+      "result": "Spec spec.net-integration.ipmasq-azure-cni-cidrs workflow run 28376711962 classified as pass. Loop key: verify-spec-net-integration-ipmasq-azure-cni-cidrs-a_verify-spec-net-integration-ipmasq-az. IP Masq Azure CNI CIDRs passed: 2/2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376711962 Result: runs/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/artifacts/net-integration-ipmasq-azure-cni-cidrs/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376711962/aks-rp-e2e-28376711962-spec-test-results/test-results/single-net-integration-ipmasq-azure-cni-cidrs_646804/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:52:27.371Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-ipmasq-dualstack",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.ipmasq-dualstack through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.ipmasq-dualstack",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.ipmasq-dualstack"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.ipmasq-dualstack",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.ipmasq-dualstack workflow run 28376819893 classified as pass. Loop key: verify-spec-net-integration-ipmasq-dualstack-a_verify-spec-net-integration-ipmasq-dualstac. Dual-stack cluster for IP masq created successfully. IP masq agent pod presence is diagnostic-only. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376819893 Result: runs/test-results/single-net-integration-ipmasq-dualstack_818483/artifacts/net-integration-ipmasq-dualstack/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/test-results/single-net-integration-ipmasq-dualstack_818483/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:47:46.414Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-ipmasq-dualstack_20260629134746",
+        "assigned_at": "2026-06-29T13:47:46.440Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-ipmasq-dualstack",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-ipmasq-dualstack_20260629134746",
+        "worker_started_at": "2026-06-29T13:47:52.909Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.ipmasq-dualstack workflow run 28376819893 classified as pass. Loop key: verify-spec-net-integration-ipmasq-dualstack-a_verify-spec-net-integration-ipmasq-dualstac. Dual-stack cluster for IP masq created successfully. IP masq agent pod presence is diagnostic-only. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376819893 Result: runs/test-results/single-net-integration-ipmasq-dualstack_818483/artifacts/net-integration-ipmasq-dualstack/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/test-results/single-net-integration-ipmasq-dualstack_818483/result.json",
+        "last_worker_completed_at": "2026-06-29T13:53:11.873Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:53:19.148Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.ipmasq-dualstack workflow run 28376819893 classified as pass. Loop key: verify-spec-net-integration-ipmasq-dualstack-a_verify-spec-net-integration-ipmasq-dualstac. Dual-stack cluster for IP masq created successfully. IP masq agent pod presence is diagnostic-only. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376819893 Result: runs/test-results/single-net-integration-ipmasq-dualstack_818483/artifacts/net-integration-ipmasq-dualstack/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/test-results/single-net-integration-ipmasq-dualstack_818483/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-ipmasq-dualstack",
+      "session_history": [
+        "s_task_verify-spec-net-integration-ipmasq-dualstack"
+      ],
+      "result": "Spec spec.net-integration.ipmasq-dualstack workflow run 28376819893 classified as pass. Loop key: verify-spec-net-integration-ipmasq-dualstack-a_verify-spec-net-integration-ipmasq-dualstac. Dual-stack cluster for IP masq created successfully. IP masq agent pod presence is diagnostic-only. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376819893 Result: runs/test-results/single-net-integration-ipmasq-dualstack_818483/artifacts/net-integration-ipmasq-dualstack/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376819893/aks-rp-e2e-28376819893-spec-test-results/test-results/single-net-integration-ipmasq-dualstack_818483/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:53:19.148Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28375683429 for spec.kms.v2plus-enable-pmk-from-v2-private as an artifact-routing/result-contract failure, not a feature verdict, and produce the bounded repo-local diagnosis needed to choose the next truthful action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-review-20260629.md"
+      ],
+      "acceptance": [
+        "Run 28375683429 evidence is reviewed deeply enough to classify the failure surface as local artifact ingestion, workflow/result-contract mismatch, remote artifact corruption/publication failure, or another exact repo-local cause without claiming product behavior for spec.kms.v2plus-enable-pmk-from-v2-private.",
+        "The review records the exact observed contract breaks already reported by the worker (missing loop_key, missing specResults[0].specId, corrupt or non-zip artifact bundle, workflow conclusion failure) and states whether they appear spec-scoped or likely shared.",
+        "The task result recommends one concrete next step only: a repo-local repair leaf, a shared problem-family promotion, or a same-spec rerun condition after the diagnosed contract issue is fixed.",
+        "The artifact note explicitly preserves spec.kms.v2plus-enable-pmk-from-v2-private as outcome-unknown until trustworthy result artifacts exist."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:49:24.323Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629_20260629135010",
+        "assigned_at": "2026-06-29T13:50:10.030Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629_20260629135010",
+        "worker_started_at": "2026-06-29T13:50:11.001Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested artifact-contract review for run 28375683429, classifying it as a likely shared repo-local artifact-download authentication failure (saved 401 JSON as .zip) rather than a spec verdict, and preserved spec.kms.v2plus-enable-pmk-from-v2-private as outcome-unknown.",
+        "last_worker_completed_at": "2026-06-29T13:51:51.453Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:53:02.482Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the artifact-contract review: run 28375683429 saved a GitHub 401 Bad credentials JSON body as the expected artifact .zip, so the unzip failure plus missing loop_key/specId were downstream empty-bundle symptoms of a likely shared single-spec artifact-download auth failure, not a feature verdict; spec.kms.v2plus-enable-pmk-from-v2-private remains outcome-unknown until trustworthy artifacts exist."
+      },
+      "session_id": "s_task_reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-20260629"
+      ],
+      "result": "Produced the requested artifact-contract review for run 28375683429, classifying it as a likely shared repo-local artifact-download authentication failure (saved 401 JSON as .zip) rather than a spec verdict, and preserved spec.kms.v2plus-enable-pmk-from-v2-private as outcome-unknown.",
+      "evidence": [
+        "evidence/archive/spec-kms-v2plus-enable-pmk-from-v2-private-run-28375683429-artifact-contract-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:53:02.482Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the artifact-contract review: run 28375683429 saved a GitHub 401 Bad credentials JSON body as the expected artifact .zip, so the unzip failure plus missing loop_key/specId were downstream empty-bundle symptoms of a likely shared single-spec artifact-download auth failure, not a feature verdict; spec.kms.v2plus-enable-pmk-from-v2-private remains outcome-unknown until trustworthy artifacts exist."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-multi-subnet-pools",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.multi-subnet-pools through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.multi-subnet-pools",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.multi-subnet-pools"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.multi-subnet-pools",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multi-subnet-pools workflow run 28377114204 classified as pass. Loop key: verify-spec-net-integration-multi-subnet-pools-a_verify-spec-net-integration-multi-subnet. Multi-subnet pools validation passed: 3/3 claims OK. System pool in subneta (10.224.0.0/16), user pool in subnetb (10.225.0.0/16). Cross-pool connectivity infrastructure validated via same-VNet routing. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377114204 Result: runs/test-results/single-net-integration-multi-subnet-pools_304545/artifacts/net-integration-multi-subnet-pools/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/test-results/single-net-integration-multi-subnet-pools_304545/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:52:29.521Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-multi-subnet-pools_20260629135229",
+        "assigned_at": "2026-06-29T13:52:29.547Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-multi-subnet-pools",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-multi-subnet-pools_20260629135229",
+        "worker_started_at": "2026-06-29T13:52:31.410Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.multi-subnet-pools workflow run 28377114204 classified as pass. Loop key: verify-spec-net-integration-multi-subnet-pools-a_verify-spec-net-integration-multi-subnet. Multi-subnet pools validation passed: 3/3 claims OK. System pool in subneta (10.224.0.0/16), user pool in subnetb (10.225.0.0/16). Cross-pool connectivity infrastructure validated via same-VNet routing. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377114204 Result: runs/test-results/single-net-integration-multi-subnet-pools_304545/artifacts/net-integration-multi-subnet-pools/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/test-results/single-net-integration-multi-subnet-pools_304545/result.json",
+        "last_worker_completed_at": "2026-06-29T13:59:42.494Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:59:45.180Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multi-subnet-pools workflow run 28377114204 classified as pass. Loop key: verify-spec-net-integration-multi-subnet-pools-a_verify-spec-net-integration-multi-subnet. Multi-subnet pools validation passed: 3/3 claims OK. System pool in subneta (10.224.0.0/16), user pool in subnetb (10.225.0.0/16). Cross-pool connectivity infrastructure validated via same-VNet routing. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377114204 Result: runs/test-results/single-net-integration-multi-subnet-pools_304545/artifacts/net-integration-multi-subnet-pools/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/test-results/single-net-integration-multi-subnet-pools_304545/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-multi-subnet-pools",
+      "session_history": [
+        "s_task_verify-spec-net-integration-multi-subnet-pools"
+      ],
+      "result": "Spec spec.net-integration.multi-subnet-pools workflow run 28377114204 classified as pass. Loop key: verify-spec-net-integration-multi-subnet-pools-a_verify-spec-net-integration-multi-subnet. Multi-subnet pools validation passed: 3/3 claims OK. System pool in subneta (10.224.0.0/16), user pool in subnetb (10.225.0.0/16). Cross-pool connectivity infrastructure validated via same-VNet routing. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377114204 Result: runs/test-results/single-net-integration-multi-subnet-pools_304545/artifacts/net-integration-multi-subnet-pools/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377114204/aks-rp-e2e-28377114204-spec-test-results/test-results/single-net-integration-multi-subnet-pools_304545/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:59:45.180Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-multinic-dualstack",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.multinic-dualstack through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.multinic-dualstack",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.multinic-dualstack"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.multinic-dualstack",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Do not treat verify-spec-net-integration-multinic-dualstack as a trusted terminal classification from run 28377189134. The durable next action is repair-single-spec-verifier-artifact-download-auth-failclosed-20260629, followed by a post-repair revalidation leaf before any product verdict."
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:53:21.342Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-multinic-dualstack_20260629135321",
+        "assigned_at": "2026-06-29T13:53:21.371Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-multinic-dualstack",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-multinic-dualstack_20260629135321",
+        "worker_started_at": "2026-06-29T13:53:38.926Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.net-integration.multinic-dualstack workflow run 28377189134 classified as error. Loop key: verify-spec-net-integration-multinic-dualstack-a_verify-spec-net-integration-multinic-dual. artifact-routing-mismatch for spec.net-integration.multinic-dualstack; run=28377189134; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results; workflow-metadata.json missing loop_key; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377189134 artifact download issue: [/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip]\n  End-of-central-directory signature not found.  Either this file is not\n  a zipfile, or it constitutes one disk of a multi-part archive.  In the\n  latter case the central directory and zipfile comment will be found on\n  the last disk(s) of this archive.\nunzip:  cannot find zipfile directory in one of /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip or\n        /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip.zip, and cannot find /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip.ZIP, period.\n",
+        "last_worker_completed_at": "2026-06-29T13:54:13.895Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:54:18.571Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review superseded the auto-accepted terminal note: run 28377189134 is tooling-only evidence of the shared single-spec verifier artifact-download/pseudo-zip failure family (missing loop_key/specId plus unzip failure), not a trustworthy spec.net-integration.multinic-dualstack product verdict."
+      },
+      "session_id": "s_task_verify-spec-net-integration-multinic-dualstack",
+      "session_history": [
+        "s_task_verify-spec-net-integration-multinic-dualstack"
+      ],
+      "result": "Spec spec.net-integration.multinic-dualstack workflow run 28377189134 classified as error. Loop key: verify-spec-net-integration-multinic-dualstack-a_verify-spec-net-integration-multinic-dual. artifact-routing-mismatch for spec.net-integration.multinic-dualstack; run=28377189134; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results; workflow-metadata.json missing loop_key; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377189134 artifact download issue: [/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip]\n  End-of-central-directory signature not found.  Either this file is not\n  a zipfile, or it constitutes one disk of a multi-part archive.  In the\n  latter case the central directory and zipfile comment will be found on\n  the last disk(s) of this archive.\nunzip:  cannot find zipfile directory in one of /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip or\n        /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip.zip, and cannot find /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377189134/aks-rp-e2e-28377189134-spec-test-results.zip.ZIP, period.\n",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T13:54:18.571Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-multinic-mixed",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.multinic-mixed through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.multinic-mixed",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.multinic-mixed"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.multinic-mixed",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multinic-mixed workflow run 28377212581 classified as done. Loop key: verify-spec-net-integration-multinic-mixed-a_verify-spec-net-integration-multinic-mixed_20. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377212581 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:53:49.542Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-multinic-mixed_20260629135349",
+        "assigned_at": "2026-06-29T13:53:49.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-multinic-mixed",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-multinic-mixed_20260629135349",
+        "worker_started_at": "2026-06-29T13:54:00.229Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.multinic-mixed workflow run 28377212581 classified as done. Loop key: verify-spec-net-integration-multinic-mixed-a_verify-spec-net-integration-multinic-mixed_20. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377212581 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json",
+        "last_worker_completed_at": "2026-06-29T13:54:34.402Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:54:55.486Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multinic-mixed workflow run 28377212581 classified as done. Loop key: verify-spec-net-integration-multinic-mixed-a_verify-spec-net-integration-multinic-mixed_20. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377212581 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-multinic-mixed",
+      "session_history": [
+        "s_task_verify-spec-net-integration-multinic-mixed"
+      ],
+      "result": "Spec spec.net-integration.multinic-mixed workflow run 28377212581 classified as done. Loop key: verify-spec-net-integration-multinic-mixed-a_verify-spec-net-integration-multinic-mixed_20. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377212581 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377212581/aks-rp-e2e-28377212581-spec-test-results/test-results/single-net-integration-multinic-mixed_425002/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:54:55.486Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-multinic-standard",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.multinic-standard through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.multinic-standard",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.multinic-standard"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.multinic-standard",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multinic-standard workflow run 28377242600 classified as pass. Loop key: verify-spec-net-integration-multinic-standard-a_verify-spec-net-integration-multinic-stand. Multi-NIC standard validation passed: 2/2 claim assertions OK. Cluster created with multi-NIC/advanced networking config (networkPlugin=azure, advancedNetworking.enabled=true). GET confirmed settings persisted correctly. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377242600 Result: runs/test-results/single-net-integration-multinic-standard_452902/artifacts/net-integration-multinic-standard/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/test-results/single-net-integration-multinic-standard_452902/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:54:20.042Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-multinic-standard_20260629135420",
+        "assigned_at": "2026-06-29T13:54:20.073Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-multinic-standard",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-multinic-standard_20260629135420",
+        "worker_started_at": "2026-06-29T13:54:25.584Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.multinic-standard workflow run 28377242600 classified as pass. Loop key: verify-spec-net-integration-multinic-standard-a_verify-spec-net-integration-multinic-stand. Multi-NIC standard validation passed: 2/2 claim assertions OK. Cluster created with multi-NIC/advanced networking config (networkPlugin=azure, advancedNetworking.enabled=true). GET confirmed settings persisted correctly. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377242600 Result: runs/test-results/single-net-integration-multinic-standard_452902/artifacts/net-integration-multinic-standard/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/test-results/single-net-integration-multinic-standard_452902/result.json",
+        "last_worker_completed_at": "2026-06-29T13:59:50.730Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:59:57.272Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.multinic-standard workflow run 28377242600 classified as pass. Loop key: verify-spec-net-integration-multinic-standard-a_verify-spec-net-integration-multinic-stand. Multi-NIC standard validation passed: 2/2 claim assertions OK. Cluster created with multi-NIC/advanced networking config (networkPlugin=azure, advancedNetworking.enabled=true). GET confirmed settings persisted correctly. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377242600 Result: runs/test-results/single-net-integration-multinic-standard_452902/artifacts/net-integration-multinic-standard/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/test-results/single-net-integration-multinic-standard_452902/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-multinic-standard",
+      "session_history": [
+        "s_task_verify-spec-net-integration-multinic-standard"
+      ],
+      "result": "Spec spec.net-integration.multinic-standard workflow run 28377242600 classified as pass. Loop key: verify-spec-net-integration-multinic-standard-a_verify-spec-net-integration-multinic-stand. Multi-NIC standard validation passed: 2/2 claim assertions OK. Cluster created with multi-NIC/advanced networking config (networkPlugin=azure, advancedNetworking.enabled=true). GET confirmed settings persisted correctly. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377242600 Result: runs/test-results/single-net-integration-multinic-standard_452902/artifacts/net-integration-multinic-standard/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377242600/aks-rp-e2e-28377242600-spec-test-results/test-results/single-net-integration-multinic-standard_452902/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:59:57.272Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "revalidate-spec-net-integration-multinic-dualstack-after-artifact-download-repair-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After repair-single-spec-verifier-artifact-download-auth-failclosed-20260629 lands, re-run or re-review spec.net-integration.multinic-dualstack with trustworthy artifact retrieval so run 28377189134 no longer drives classification from pseudo-zip/missing-metadata evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-net-integration-multinic-dualstack-post-artifact-repair-followup-20260629.md"
+      ],
+      "acceptance": [
+        "Repair task is complete or equivalent verifier fix is available and cited.",
+        "A trustworthy artifact bundle or bounded rerun for spec.net-integration.multinic-dualstack was reviewed without the pseudo-zip/missing loop_key/specId failure signature seen in run 28377189134.",
+        "The spec is classified from product evidence or a new exact blocker, and the evidence note records why run 28377189134 remained tooling-only evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:59:27.935Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T13:59:42.634Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T13:59:54.760Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced immediately with a blocked exact wait because this followup must not be runnable before repair-single-spec-verifier-artifact-download-auth-failclosed-20260629 completes or an equivalent verifier fix is cited."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T13:59:54.760Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced immediately with a blocked exact wait because this followup must not be runnable before repair-single-spec-verifier-artifact-download-auth-failclosed-20260629 completes or an equivalent verifier fix is cited."
+      },
+      "status": "done"
+    }
+  ]
+}

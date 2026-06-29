@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T03:56:19.604Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review accepted the bounded VM prerelease row-37 mounted-source carrier audit: path.aad-rbac.managed-v2-lifecycle is already source-aligned across feature/spec/replay/model carriers, so no repo-local repair remains and the only truthful residue is the existing runtime/environment create-ceiling blocker. Archive that completed review leaf into the project rollup, keep the single family-level external-human wait unchanged, and refill local capacity with one runnable network-cni mounted-source scenario gap-map leaf to extend repo-local coverage without cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from mounted AKS RP e2ev3 VirtualMachine prerelease/checkin sources, trace the exact source-aligned scenario behind path.aad-rbac.managed-v2-lifecycle (VM prerelease row 37 managed AAD lifecycle), compare it with the current repo-local feature/spec/replay/model carriers, and record whether one exact repo-local alignment change is needed or whether the path is already source-aligned and remains blocked only by runtime/environment execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the mounted source entry points and any referenced scenario definitions, records the exact row-37 input and expectation boundary, and maps that boundary to the current repo-local feature/spec/replay/model carriers for path.aad-rbac.managed-v2-lifecycle.",
+        "The artifact identifies either the single exact repo-local gap/change still needed or states that the carriers are already source-aligned and the remaining blocker is only runtime/environment execution, with enough evidence to avoid reopening vague source-holder or response-await work.",
+        "No cloud mutation, duplicate external-human wait, or broad model rewrite is introduced; this stays a bounded repo-local source/carrier audit."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.virtualmachine",
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T03:53:40.588Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623_20260623035340",
+        "assigned_at": "2026-06-23T03:53:40.638Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623_20260623035340",
+        "worker_started_at": "2026-06-23T03:54:01.095Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded mounted-source carrier audit for VM prerelease row 37 and wrote a new evidence artifact concluding that path.aad-rbac.managed-v2-lifecycle is already source-aligned; the only remaining blocker is runtime/environment execution after the historical create-ceiling failure.",
+        "last_worker_completed_at": "2026-06-23T03:55:28.606Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T03:56:08.121Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623.md: mounted AKS RP e2ev3 sources directly confirm row 37 is Scenario_AAD on the VirtualMachines prerelease substrate with create-time adminUsers, login-VM-backed auth, update/remove/limit branches, and raw ManagedClusterAADProfile reset rejection. Current feature/spec/replay/model carriers are already source-aligned, so no repo-local repair remains and the only truthful residue is the existing runtime/environment create-ceiling blocker for path.aad-rbac.managed-v2-lifecycle."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623"
+      ],
+      "result": "Completed the bounded mounted-source carrier audit for VM prerelease row 37 and wrote a new evidence artifact concluding that path.aad-rbac.managed-v2-lifecycle is already source-aligned; the only remaining blocker is runtime/environment execution after the historical create-ceiling failure.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T03:56:08.121Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-audit-20260623.md: mounted AKS RP e2ev3 sources directly confirm row 37 is Scenario_AAD on the VirtualMachines prerelease substrate with create-time adminUsers, login-VM-backed auth, update/remove/limit branches, and raw ManagedClusterAADProfile reset rejection. Current feature/spec/replay/model carriers are already source-aligned, so no repo-local repair remains and the only truthful residue is the existing runtime/environment create-ceiling blocker for path.aad-rbac.managed-v2-lifecycle."
+      },
+      "status": "done"
+    }
+  ]
+}

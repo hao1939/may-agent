@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T08:47:10.105Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner confirmed the stale-active metric recovery and compacted safe done leaves that already have their durable meaning preserved on the root branch. The project frontier now remains intentionally focused on three active leaves: (1) addonv2 row-63 live runtime verdict rerun retry after the earlier no-output stale attempt, (2) Windows2025 overlay dual-stack datapath assertion implementation so the replay can reach first live datapath verdicts, and (3) row-150 kube-proxy verdict consumption so path.network-datapath.kube-proxy-custom-config.vm-prerelease can move off unknown using the accepted post-parser-repair pass bundle. Two blocked leaves remain legitimate and non-duplicative: the shared external send-proof family wait and the row-76 shared-identity environment wait for AKS_RP_E2E_ASSIGN_IDENTITY. Archived done children summarize already-accepted implementation or live-boundary work whose meaning is preserved here and in linked artifacts.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement a real --execute path for replays/private-cluster-vnet-integration-shared-apiserver-subnet.ts so path.private-cluster-vnet-integration-shared-apiserver-subnet can move from check-only/source-spec status to a bounded execution-capable live replay while preserving the exact two-cluster shared-API-server-subnet topology, separate node subnet, and ordered cluster0-then-cluster1 cleanup contract from Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact names the exact replay file and any helper files changed, cites the mounted-source/spec/path linkage preserved, and proves the replay still passes its bounded local validation/check flow after the execute implementation changes.",
+        "Artifact shows that --execute no longer terminates in the source-spec-check-only stub path and instead reaches the truthful two-cluster lifecycle surface: shared VNet creation with separate node and API-server subnets, cluster0 create/validate, cluster1 create/validate, and ordered cluster0-then-cluster1 cleanup under the existing mutation gate.",
+        "Artifact ends with the exact next evidence target for the first live verdict run, or the smallest remaining local implementation blocker if truthful cloud execution still cannot be attempted after this change."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:34:25.048Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621_20260621083426",
+        "assigned_at": "2026-06-21T08:34:26.701Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621",
+        "worker_started_attempt_id": "a_private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621_20260621083426",
+        "worker_started_at": "2026-06-21T08:34:36.200Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a real execute-capable path in replays/private-cluster-vnet-integration-shared-apiserver-subnet.ts, added the missing spec index entry, updated spec/feature gate metadata, and wrote evidence showing check-mode still passes while execute now reaches live preflight and blocks only on ARM auth.",
+        "last_worker_completed_at": "2026-06-21T08:41:58.321Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:42:43.818Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621.md proves the replay now owns a real --execute path, preserves the exact two-cluster shared-API-server-subnet contract, still passes bounded check-mode validation, and truthfully narrows the remaining boundary to live ARM credentials for the first runtime verdict."
+      },
+      "session_id": "s_task_private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621",
+      "session_history": [
+        "s_task_private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621"
+      ],
+      "result": "Implemented a real execute-capable path in replays/private-cluster-vnet-integration-shared-apiserver-subnet.ts, added the missing spec index entry, updated spec/feature gate metadata, and wrote evidence showing check-mode still passes while execute now reaches live preflight and blocks only on ARM auth.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:42:43.818Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-shared-apiserver-subnet-execute-path-implementation-20260621.md proves the replay now owns a real --execute path, preserves the exact two-cluster shared-API-server-subnet contract, still passes bounded check-mode validation, and truthfully narrows the remaining boundary to live ARM credentials for the first runtime verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

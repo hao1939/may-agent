@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:59:48.837Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed reconciliation confirms the serverless VirtualNodes subnet-validation gap note is already absorbed into parent provenance: evidence/archive/serverless-virtualnodes-subnet-validation-gap-note-20260620.md remains the durable explanation for why path.serverless-virtual-nodes.subnet-validation stays runtime-blocked pending a material witness-readiness signal, without reopening cloud execution. The completed scheduler-controller enable-on-existing authoring slice is now archived under the parent, while the live regular-learning frontier stays intentionally narrow: keep serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620 as the sole active repo-local authoring leaf, and keep external-send-proof-dispatch-family-20260620 as the single family-level external-human transport wait until durable send/escalation proof or an authoritative reply is recorded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the next repo-local scheduler-controller runnable contract for the mounted enable-on-existing scenario by creating the exact spec and replay files grounded in /app/sources/aks-rp/test/e2ev3/sigs/serverless/plans/schedulerctrl/plans/scenarioenableonexisting.go, preserving only the post-create transition into ManagedByCRD plus the overlay/managed-underlay/SchedulerConfiguration validation checkpoints, without adding disable siblings or launching cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/serverless-schedulerctrl-enable-on-existing.json",
+        "../aks-rp-e2e/replays/serverless-schedulerctrl-enable-on-existing.ts"
+      ],
+      "acceptance": [
+        "Spec file defines the exact repo-local contract for feature path path.serverless-schedulerctrl.enable-on-existing, cites the mounted enable-on-existing authority and existing scheduler-controller evidence packet, and keeps the scenario bounded to the after-create enable transition instead of collapsing sibling lifecycle leaves.",
+        "Replay file mirrors only the enable-on-existing checkpoints needed to validate overlay resources, managed underlay resources, and SchedulerConfiguration reconciliation after the transition to ManagedByCRD, reusing shared scheduler-controller helpers where appropriate, and does not add disable-after-create, disable-after-enable, or cloud execution in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:54:21.839Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620_20260620195421",
+        "assigned_at": "2026-06-20T19:54:21.885Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620_20260620195421",
+        "worker_started_at": "2026-06-20T19:54:42.224Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the exact repo-local enable-on-existing scheduler-controller contract by adding specs/serverless-schedulerctrl-enable-on-existing.json and replays/serverless-schedulerctrl-enable-on-existing.ts, then registered the spec in specs/index.json and verified the check-mode replay passes source/spec wiring validation.",
+        "last_worker_completed_at": "2026-06-20T19:57:47.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:58:47.317Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: specs/serverless-schedulerctrl-enable-on-existing.json, replays/serverless-schedulerctrl-enable-on-existing.ts, specs/index.json registration, and evidence/archive/local-schedulerctrl-enable-on-existing-check-serverless-schedulerctrl-enable-on-existing.{md,json} together show the mounted Scenario_SchedulerCtrl_EnableOnExisting contract was captured exactly as a bounded repo-local authoring/check slice, preserving the post-create Default->ManagedByCRD transition and the separate default-underlay, overlay, managed-underlay, and SchedulerConfiguration reconciliation checkpoints without adding disable siblings or cloud execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-enable-on-existing-spec-replay-authoring-20260620"
+      ],
+      "result": "Authored the exact repo-local enable-on-existing scheduler-controller contract by adding specs/serverless-schedulerctrl-enable-on-existing.json and replays/serverless-schedulerctrl-enable-on-existing.ts, then registered the spec in specs/index.json and verified the check-mode replay passes source/spec wiring validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:58:47.317Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: specs/serverless-schedulerctrl-enable-on-existing.json, replays/serverless-schedulerctrl-enable-on-existing.ts, specs/index.json registration, and evidence/archive/local-schedulerctrl-enable-on-existing-check-serverless-schedulerctrl-enable-on-existing.{md,json} together show the mounted Scenario_SchedulerCtrl_EnableOnExisting contract was captured exactly as a bounded repo-local authoring/check slice, preserving the post-create Default->ManagedByCRD transition and the separate default-underlay, overlay, managed-underlay, and SchedulerConfiguration reconciliation checkpoints without adding disable siblings or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

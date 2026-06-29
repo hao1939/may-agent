@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:02:23.318Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog planning update final reconciliation: accepted the completed network-cni cilium-enterprise addon lifecycle normalized-linkage repair after direct archive and maintained-view review, confirming path.network-cni-cilium-enterprise-addon-lifecycle now has exact source-grounded DAG/input/behavior linkage without cloud claims. The live frontier is now the active storage-csi mounted-source coverage gap map in regular learning plus the unchanged single external-human approval/send-proof family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the existing repo-local carrier for path.network-cni-cilium-enterprise-addon-lifecycle and repair the missing normalized feature/scenario/DAG/path linkage so this branch is no longer a draft linkage gap.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact repo-local canonical carrier files inspected for path.network-cni-cilium-enterprise-addon-lifecycle and explains the pre-repair linkage gap.",
+        "Repo-local model/view linkage is repaired truthfully for path.network-cni-cilium-enterprise-addon-lifecycle without claiming new cloud execution or borrowing runtime observations from adjacent network-cni paths.",
+        "Scope stays in the regular-learning lane only: repo-local source/spec/replay/model linkage repair and validation allowed, but no cloud execution, no external-human waits, and no widening beyond the exact cilium-enterprise-addon lifecycle branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T05:56:54.010Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T05:56:54.076Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623_20260623055703",
+        "assigned_at": "2026-06-23T05:57:03.110Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623_20260623055703",
+        "worker_started_at": "2026-06-23T05:57:45.770Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the normalized linkage for path.network-cni-cilium-enterprise-addon-lifecycle in model/knowledge-map/model.json, added a durable archive note, and regenerated maintained views so the path now carries exact scenario/input/behavior linkage without claiming cloud execution.",
+        "last_worker_completed_at": "2026-06-23T06:01:44.644Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:02:18.704Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct artifact review: evidence/archive/network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623.md cites the exact repo-local carriers plus mounted enterprise.go source, explains the prior draft linkage gap, and the maintained model/path-summary surfaces now carry concrete DAG inputs, behavior assertions, and evidence ids for path.network-cni-cilium-enterprise-addon-lifecycle without claiming cloud execution or borrowing adjacent network-cni runtime observations."
+      },
+      "session_id": "s_task_network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623"
+      ],
+      "result": "Repaired the normalized linkage for path.network-cni-cilium-enterprise-addon-lifecycle in model/knowledge-map/model.json, added a durable archive note, and regenerated maintained views so the path now carries exact scenario/input/behavior linkage without claiming cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:02:18.704Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct artifact review: evidence/archive/network-cni-cilium-enterprise-addon-lifecycle-normalized-linkage-repair-20260623.md cites the exact repo-local carriers plus mounted enterprise.go source, explains the prior draft linkage gap, and the maintained model/path-summary surfaces now carry concrete DAG inputs, behavior assertions, and evidence ids for path.network-cni-cilium-enterprise-addon-lifecycle without claiming cloud execution or borrowing adjacent network-cni runtime observations."
+      },
+      "status": "done"
+    }
+  ]
+}

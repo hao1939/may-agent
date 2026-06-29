@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T02:15:46.767Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 network-cni overlay mutation family intake is now accepted and compacted: the archived done slice established the bounded uncovered family from mounted handwritten source, repaired the maintained carrier mapping, and produced the accepted gap map proving the next durable no-cloud work is replay-contract hardening for the two overlay mutation paths. Live local work now continues through the active dual-stack migration replay-contract audit, with the pod-CIDR-expansion replay-contract audit preserved as the next runnable bounded successor; the separate focus-mounted-source-coverage-closure-and-external-wait-20260623 branch remains the single truthful holder for the five external returned-proof waits and needs no local reopening before the stated review windows.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-first-uncovered-family-boundary-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md lands, take the first exact uncovered network-cni family explicitly named there and turn it into a source-backed boundary packet that records handwritten scenario intent, accepted/rejected inputs, expected behaviors, maintained feature/spec/replay/model carriers, and the minimum durable next artifact updates needed without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-first-uncovered-family-boundary-packet-20260625.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact family/path scope selected from evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md, lists the mounted source files/scenarios reviewed, and records accepted/rejected inputs plus expected behavior boundaries from handwritten cases.",
+        "The artifact maps that family to current maintained feature/spec/replay/model carriers or exact missing carrier paths, names the next durable file targets for closure, and introduces no cloud execution, approval wait, or environment placeholder."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sig.network-cni.boundary-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T02:14:12.938Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-25T02:14:13.162Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-25T02:14:42.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during owner review by concrete replay-contract audit leaves derived from the accepted coverage map artifact: network-cni-overlay-migration-replay-contract-audit-20260625 and network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625 preserve the exact mounted family splits and durable output targets more truthfully than the earlier generic boundary placeholder."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-25T02:14:42.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during owner review by concrete replay-contract audit leaves derived from the accepted coverage map artifact: network-cni-overlay-migration-replay-contract-audit-20260625 and network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625 preserve the exact mounted family splits and durable output targets more truthfully than the earlier generic boundary placeholder."
+      },
+      "status": "done"
+    }
+  ]
+}

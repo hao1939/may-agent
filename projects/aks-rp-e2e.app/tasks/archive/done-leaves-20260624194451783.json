@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:44:51.783Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner accepted the bounded VirtualMachine prerelease coverage-ledger checkpoint commit as landed: evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md records fresh green bun run check, bounded candidate checkpoint proof for the exact four-file slice, and commit 2d5d53a20790ae1b262a927e07abb8dfed4d3148 containing only those intended files. The visible frontier now consists only of the compressed blocked focus branch with four exact external-response waits; keep them unchanged until returned proof arrives or the first bounded follow-up/escalation review on or after 2026-06-26, and do not reopen local source/spec/setup work or invent cloud mutation from owner review alone.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the owner-only bounded checkpoint commit for the already-validated VirtualMachine prerelease coverage-ledger four-file slice, record the resulting commit hash, and keep scope limited to evidence/pipelines/virtualmachine-prerelease-coverage.{json,md} plus evidence/archive/virtualmachine-prerelease-checkin-network-isolated-ledger-reconcile-20260624.md and evidence/archive/virtualmachine-prerelease-coverage-metadata-refresh-20260624.md.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md"
+      ],
+      "acceptance": [
+        "The task records one owner-created git commit hash for exactly the validated four-file VirtualMachine prerelease coverage-ledger slice and cites the accepted landing artifact evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-landing-20260624.md plus a green repo-wide bun run check.",
+        "If the owner cannot create the bounded commit, the output artifact records the exact git/checkpoint blocker with command evidence and keeps scope limited to this checkpoint act; it does not reopen completed ledger content work or unrelated repo cleanup."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ledger.virtualmachine-prerelease.coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T19:41:30.919Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624_20260624194130",
+        "assigned_at": "2026-06-24T19:41:30.974Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624_20260624194130",
+        "worker_started_at": "2026-06-24T19:41:57.612Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded owner checkpoint commit for the VirtualMachine prerelease coverage-ledger four-file slice as commit 2d5d53a20790ae1b262a927e07abb8dfed4d3148, and wrote evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md recording the green bun check, candidate checkpoint proof, and exact committed files.",
+        "last_worker_completed_at": "2026-06-24T19:43:45.776Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T19:44:42.782Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner checkpoint artifact evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md: fresh bun run check passed, bounded domain:checkpoint stayed candidate for the exact four-file slice, and commit 2d5d53a20790ae1b262a927e07abb8dfed4d3148 contains only the intended coverage-ledger files."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624"
+      ],
+      "result": "Created the bounded owner checkpoint commit for the VirtualMachine prerelease coverage-ledger four-file slice as commit 2d5d53a20790ae1b262a927e07abb8dfed4d3148, and wrote evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md recording the green bun check, candidate checkpoint proof, and exact committed files.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T19:44:42.782Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner checkpoint artifact evidence/archive/virtualmachine-prerelease-coverage-ledger-owner-checkpoint-commit-20260624.md: fresh bun run check passed, bounded domain:checkpoint stayed candidate for the exact four-file slice, and commit 2d5d53a20790ae1b262a927e07abb8dfed4d3148 contains only the intended coverage-ledger files."
+      },
+      "status": "done"
+    }
+  ]
+}

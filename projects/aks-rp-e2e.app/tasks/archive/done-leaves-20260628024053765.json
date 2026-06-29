@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:40:53.765Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 watchdog blocked-frontier owner pass fully compresses the settled none→loadBalancer repair work out of the visible branch. The none→loadBalancer carrier/model reconciliation is already accepted and preserved on this parent, so the completed repair leaf can be archived. Leave repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628 as the sole live child for this branch and the only truthful place where path.net-integration.outbound-migration-natgw-to-none may still change while the active project-level reconciliation leaf resolves the current model contradiction.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.net-integration.outbound-migration-natgw-to-none against the same mounted-source compliant network-isolated carrier contract now used for none→loadBalancer: repair or fork the maintained replay so managedNATGateway→none truthfully models the source-grounded network-isolated target shape before any verdict/model update is accepted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/net-integration/tests/net-integration-outbound-migration-natgw-to-none.ts"
+      ],
+      "acceptance": [
+        "The maintained replay header/purpose cites mounted source lineage and explicitly states this is carrier/model reconciliation for the managedNATGateway→none boundary, not a scheduled live rerun.",
+        "The create/update carrier models the mounted/public compliant shape for the none target branch: bootstrap Cache, API server VNet integration or exact source-backed equivalent, and the Standard/Azure/Azure baseline fields, with ungrounded drift removed unless new source evidence is cited.",
+        "The resulting replay/commentary leaves path.net-integration.outbound-migration-natgw-to-none either ready for a truthful future execution carrier or identifies one exact contradiction/gap that should spawn a successor model-evidence task instead of preserving the current unknown verdict by inertia."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay:path.net-integration.outbound-migration-natgw-to-none:compliant-carrier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:34:01.946Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628_20260628023401",
+        "assigned_at": "2026-06-28T02:34:01.994Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628",
+        "worker_started_attempt_id": "a_repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628_20260628023401",
+        "worker_started_at": "2026-06-28T02:34:09.382Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the maintained replay carrier for managedNATGateway→none in features/net-integration/tests/net-integration-outbound-migration-natgw-to-none.ts so it now cites mounted-source lineage, preserves the compliant network-isolated none-target shape, and replaces the stale public-shape drift with managed-VNet apiserver-subnet discovery/update logic.",
+        "last_worker_completed_at": "2026-06-28T02:36:46.158Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:37:45.881Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the maintained replay now truthfully declares mounted-source carrier/model reconciliation for managedNATGateway→none, keeps the Standard/Azure/Azure + bootstrap Cache baseline, and discovers/appends the managed-VNet apiserver subnet before updating outboundType=none, so the stale public-shape drift is removed and the path is ready for explicit model-verdict reconciliation rather than unknown-by-inertia."
+      },
+      "session_id": "s_task_repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628",
+      "session_history": [
+        "s_task_repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628"
+      ],
+      "result": "Repaired the maintained replay carrier for managedNATGateway→none in features/net-integration/tests/net-integration-outbound-migration-natgw-to-none.ts so it now cites mounted-source lineage, preserves the compliant network-isolated none-target shape, and replaces the stale public-shape drift with managed-VNet apiserver-subnet discovery/update logic.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:37:45.881Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the maintained replay now truthfully declares mounted-source carrier/model reconciliation for managedNATGateway→none, keeps the Standard/Azure/Azure + bootstrap Cache baseline, and discovers/appends the managed-VNet apiserver subnet before updating outboundType=none, so the stale public-shape drift is removed and the path is ready for explicit model-verdict reconciliation rather than unknown-by-inertia."
+      },
+      "status": "done"
+    }
+  ]
+}

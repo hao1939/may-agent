@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T23:06:05.544Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-27 metric-breach owner pass revalidates the only active spec frontier as healthy in-flight work rather than true staleness: patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627 was just assigned and the worker session started at 2026-06-27T23:05:30Z, so no requeue, split, or blocker family is warranted from this breach sample. Archive the completed implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627 and rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-restart-20260627 leaves because their durable meaning is now superseded by the single active repo-local patch leaf plus the two unchanged exact waits: await-run-28298043331-spec-app-routing-default-domain-tls-lifecycle-terminal-review-20260627 for run completion/artifacts and await-operator-response-spec-app-routing-existing-cluster-family-20260627 for returned target identifiers or an exact operator reply. Keep this lane truthful and do not invent refill from blocked work while the active worker is still making progress.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Patch spec.app-routing.default-domain-http-reachability so its cluster creation step uses direct ARM managedClusters PUT instead of host az aks create/aks-preview, keeping the existing REST-first App Routing/default-domain flow intact, then rerun the same spec once behind the existing mutation gate and archive whether execution now reaches the real HTTP reachability claim path or exposes a new bounded blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-app-routing-default-domain-http-reachability-arm-create-swap-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The spec file records a bounded create-surface swap from az aks create to direct ARM managedClusters PUT using an existing maintained REST-first App Routing pattern without widening the product claim. One gated rerun of spec.app-routing.default-domain-http-reachability is executed and the archive captures the exact command, result files, and whether cluster creation clears the prior aks-preview tuple-arity crash. If the rerun still does not reach the HTTP reachability claim path, the archive names the next truthful blocker with exact evidence instead of guessing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T22:46:52.074Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-27T23:03:37.523Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627",
+        "worker_started_attempt_id": "a_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627_20260627230337",
+        "worker_started_at": "2026-06-27T23:03:50.329Z",
+        "stale_active_requeued_at": "2026-06-27T23:03:30.469Z",
+        "stale_active_requeue_reason": "watchdog stale-active review found no fresh worker evidence or archive output; restart with a fresh session instead of leaving a silent active leaf",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627_20260627224652",
+        "current_attempt_id": "a_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627_20260627230337",
+        "reviewed_at": "2026-06-27T23:04:53.953Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace the stale composite patch+rerun leaf because watchdog already requeued it for no fresh worker evidence and the expected rerun archive is still missing. The next truthful project action is a narrower repo-local patch leaf that restores an executable frontier before any gated rerun is attempted."
+      },
+      "session_id": "s_task_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627",
+      "session_history": [
+        "s_task_implement-rerun-spec-app-routing-default-domain-http-reachability-arm-create-swap-20260627"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T23:04:53.953Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replace the stale composite patch+rerun leaf because watchdog already requeued it for no fresh worker evidence and the expected rerun archive is still missing. The next truthful project action is a narrower repo-local patch leaf that restores an executable frontier before any gated rerun is attempted."
+      },
+      "status": "done"
+    }
+  ]
+}

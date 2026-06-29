@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:11:11.016Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 checkpoint review cleanup: archived the accepted 2152502634 archive-family checkpoint review because its exclude-as-duplicate/superseded decision is already preserved in the task result and project rollup history. Live work remains the bounded VM prerelease rows 25/26/29/30/31/32/34 blocked-vs-unknown audit plus the single family-level external-human proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-2152502634-archive-family-checkpoint-slice-review-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "User review workspace lane: perform one bounded follow-up on the closed standalone run-id archive spill family 2152502634-* to decide whether the whole family can be treated as one later evidence-only checkpoint slice or must stay excluded as duplicate/superseded residue, using only repo-local run metadata and archive contents.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-2152502634-archive-family-checkpoint-slice-review-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/user-review-2152502634-archive-family-checkpoint-slice-review-20260622.md cites the exact 2152502634-prefixed archive files plus the associated plan/run metadata, explains whether the family is a distinct closed historical packet or overlapping residue, and names the checkpoint-safe versus exclude decision with reasons.",
+        "Any recommended tree/checkpoint action stays limited to this one family, no commit or cloud mutation is introduced, and no duplicate external-human wait is reopened."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review.archive-spill.2152502634"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T23:00:11.287Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-2152502634-archive-family-checkpoint-slice-review-20260622_20260622230036",
+        "assigned_at": "2026-06-22T23:00:36.665Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-2152502634-archive-family-checkpoint-slice-review-20260622",
+        "worker_started_attempt_id": "a_user-review-2152502634-archive-family-checkpoint-slice-review-20260622_20260622230036",
+        "worker_started_at": "2026-06-22T23:00:40.075Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded repo-local review for the 2152502634 archive spill family and wrote evidence/archive/user-review-2152502634-archive-family-checkpoint-slice-review-20260622.md concluding the whole family should stay excluded as duplicate/superseded residue rather than be treated as one checkpoint-safe slice.",
+        "last_worker_completed_at": "2026-06-22T23:02:26.338Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T23:03:01.162Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact proves the 2152502634 spill family is a closed historical run but not a checkpoint-safe family slice because it comes from the same 156-spec suite later rerun, overlaps later spill residue on 23 stems, and is only a prefix tranche of the broader nonpassing execution. Keep the family excluded as duplicate/superseded residue rather than promoting it into a checkpoint slice."
+      },
+      "session_id": "s_task_user-review-2152502634-archive-family-checkpoint-slice-review-20260622",
+      "session_history": [
+        "s_task_user-review-2152502634-archive-family-checkpoint-slice-review-20260622"
+      ],
+      "result": "Completed the bounded repo-local review for the 2152502634 archive spill family and wrote evidence/archive/user-review-2152502634-archive-family-checkpoint-slice-review-20260622.md concluding the whole family should stay excluded as duplicate/superseded residue rather than be treated as one checkpoint-safe slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T23:03:01.162Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact proves the 2152502634 spill family is a closed historical run but not a checkpoint-safe family slice because it comes from the same 156-spec suite later rerun, overlaps later spill residue on 23 stems, and is only a prefix tranche of the broader nonpassing execution. Keep the family excluded as duplicate/superseded residue rather than promoting it into a checkpoint slice."
+      },
+      "status": "done"
+    }
+  ]
+}

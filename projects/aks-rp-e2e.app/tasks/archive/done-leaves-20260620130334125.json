@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:03:34.125Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review accepted the row-44 execute-capable replay-contract note: mounted source, selector/coverage promotion, and planner selection now establish that VM prerelease row 44 is no longer externally blocked. This lane's remaining repo-local work is the reviewed durable suite contract for path.cloud-provider.ipbased-lb-backend-pool, while the actual replay implementation now lives in the runner-and-replays lane. The MachinesPreview owner-send leaf remains the single truthful external wait in this lane.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row44-selector-and-coverage-promotion-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VM prerelease row 44 from authored repo-local packet/spec/replay/index surfaces into the reviewed replacement-accounting surfaces by reconciling the selector and coverage ledger, then capture whether the branch becomes eligible for a live-capable follow-up leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row44-selector-and-coverage-promotion-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row44 authoring/review-repair evidence plus the accepted rerun proof, updates or precisely diagnoses evidence/pipelines/virtualmachine-prerelease.features.txt and evidence/pipelines/virtualmachine-prerelease-coverage.md/json for row 44, and records the exact repo-local diff or exact blocker preventing truthful promotion.",
+        "Artifact states whether row 44 is now part of the reviewed replacement accounting surface, names any newly required execute-capable replay/run-plan follow-up, and does not reopen unrelated VM prerelease rows or model/knowledge-map/model.json.",
+        "Work stays bounded to selector/coverage accounting for row 44 and any required local validation/proof of those surfaces; it does not perform live cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:plan-proof"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:53:30.638Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row44-selector-and-coverage-promotion-20260620_20260620125330",
+        "assigned_at": "2026-06-20T12:53:30.683Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row44-selector-and-coverage-promotion-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row44-selector-and-coverage-promotion-20260620_20260620125330",
+        "worker_started_at": "2026-06-20T12:53:52.431Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted VM prerelease row 44 into the reviewed selector and coverage-accounting surfaces, added a bounded evidence packet at evidence/archive/vm-prerelease-row44-selector-and-coverage-promotion-20260620.md, reran the row-44 check replay, and confirmed the planner now selects spec.cloud-provider.ipbased-lb-backend-pool.",
+        "last_worker_completed_at": "2026-06-20T12:58:45.716Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:59:27.370Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vm-prerelease-row44-selector-and-coverage-promotion-20260620.md: the artifact cites the accepted authoring and review-repair evidence, updates the selector plus coverage ledgers for row 44, confirms planner inclusion, and truthfully limits validation to repo-local check-mode evidence."
+      },
+      "session_id": "s_task_vm-prerelease-row44-selector-and-coverage-promotion-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row44-selector-and-coverage-promotion-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:59:27.370Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vm-prerelease-row44-selector-and-coverage-promotion-20260620.md: the artifact cites the accepted authoring and review-repair evidence, updates the selector plus coverage ledgers for row 44, confirms planner inclusion, and truthfully limits validation to repo-local check-mode evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows3-4-authoring-from-mounted-source-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec rows 3 and 4 by reconciling the accepted authoring plan against mounted source and landing the exact feature/spec/replay updates or a bounded repo-local diagnosis for those two rows only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows3-4-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted missing-spec authoring plan plus exact mounted-source scenarios/spec gaps for rows 3 and 4, and records the exact feature/spec/replay files updated or the exact bounded local diagnosis that still prevents landing those rows.",
+        "Work stays scoped to rows 3 and 4, updates or precisely diagnoses only their local VM prerelease authoring surfaces, and does not touch checkpoint-held model files or reopen unrelated VM prerelease rows.",
+        "No live cloud execution occurs; any validation is repo-local only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-rows3-4"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:57:07.236Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows3-4-authoring-from-mounted-source-20260620_20260620125707",
+        "assigned_at": "2026-06-20T12:57:07.412Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows3-4-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows3-4-authoring-from-mounted-source-20260620_20260620125707",
+        "worker_started_at": "2026-06-20T12:57:25.837Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded the bounded rows-3/4 mounted-source authoring outcome in evidence/archive/vm-prerelease-rows3-4-authoring-from-mounted-source-20260620.md, citing the accepted plan, exact mounted-source semantics, and the exact repo-local feature/spec/replay/linkage surfaces already landed for those two rows only.",
+        "last_worker_completed_at": "2026-06-20T12:58:39.938Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:00:19.866Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vm-prerelease-rows3-4-authoring-from-mounted-source-20260620.md: it cites the accepted batch plan plus exact mounted-source scenarios/spec gaps for rows 3 and 4, names the landed feature/spec/replay surfaces, records repo-local --check and wiring-check results, and stays scoped to those two rows with no cloud execution or checkpoint-held model edits."
+      },
+      "session_id": "s_task_vm-prerelease-rows3-4-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows3-4-authoring-from-mounted-source-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:00:19.866Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vm-prerelease-rows3-4-authoring-from-mounted-source-20260620.md: it cites the accepted batch plan plus exact mounted-source scenarios/spec gaps for rows 3 and 4, names the landed feature/spec/replay surfaces, records repo-local --check and wiring-check results, and stays scoped to those two rows with no cloud execution or checkpoint-held model edits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row35-authoring-from-mounted-source-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec row 35 by reconciling the accepted authoring plan against mounted source and landing the exact feature/spec/replay update or a bounded repo-local diagnosis for row 35 only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row35-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted missing-spec authoring plan plus the exact mounted-source scenario/spec gap for row 35, and records the exact feature/spec/replay files updated or the exact bounded local diagnosis that still prevents landing that row.",
+        "Work stays scoped to row 35, updates or precisely diagnoses only its local VM prerelease authoring surfaces, and does not touch checkpoint-held model files or reopen unrelated VM prerelease rows.",
+        "No live cloud execution occurs; any validation is repo-local only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-row35"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:57:07.279Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row35-authoring-from-mounted-source-20260620_20260620125707",
+        "assigned_at": "2026-06-20T12:57:07.460Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row35-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row35-authoring-from-mounted-source-20260620_20260620125707",
+        "worker_started_at": "2026-06-20T12:57:25.975Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented row 35’s mounted-source authoring disposition in evidence/archive/vm-prerelease-row35-authoring-from-mounted-source-20260620.md, showing the accepted refresh-in-place plan is already landed on the existing secops identity feature/spec/replay surfaces and verified locally with replay check mode.",
+        "last_worker_completed_at": "2026-06-20T12:58:31.042Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:00:19.912Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vm-prerelease-row35-authoring-from-mounted-source-20260620.md: it reconciles row 35 against mounted source, records the exact refresh-in-place feature/spec/replay lineage already carrying the contract, includes repo-local --check validation, and stays bounded to row-35 authoring without cloud execution or model-holder changes."
+      },
+      "session_id": "s_task_vm-prerelease-row35-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row35-authoring-from-mounted-source-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:00:19.912Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vm-prerelease-row35-authoring-from-mounted-source-20260620.md: it reconciles row 35 against mounted source, records the exact refresh-in-place feature/spec/replay lineage already carrying the contract, includes repo-local --check validation, and stays bounded to row-35 authoring without cloud execution or model-holder changes."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row36-authoring-from-mounted-source-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec row 36 by reconciling the accepted authoring plan against mounted source and landing the exact feature/spec/replay update or a bounded repo-local diagnosis for row 36 only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted missing-spec authoring plan plus the exact mounted-source scenario/spec gap for row 36, and records the exact feature/spec/replay files updated or the exact bounded local diagnosis that still prevents landing that row.",
+        "Work stays scoped to row 36, updates or precisely diagnoses only its local VM prerelease authoring surfaces, and does not touch checkpoint-held model files or reopen unrelated VM prerelease rows.",
+        "No live cloud execution occurs; any validation is repo-local only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-row36"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:57:07.326Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-authoring-from-mounted-source-20260620_20260620125707",
+        "assigned_at": "2026-06-20T12:57:07.503Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-authoring-from-mounted-source-20260620_20260620125707",
+        "worker_started_at": "2026-06-20T12:57:25.933Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a bounded row-36 mounted-source reconciliation artifact at evidence/archive/vm-prerelease-row36-authoring-from-mounted-source-20260620.md confirming the accepted row-36 app-monitoring feature/spec/replay landing already matches mounted AKS RP source and passes repo-local check-mode validation.",
+        "last_worker_completed_at": "2026-06-20T12:58:21.467Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:00:19.957Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vm-prerelease-row36-authoring-from-mounted-source-20260620.md: it cites the accepted plan plus mounted source for Scenario_MSI_AzureMonitorAADAuth, confirms the exact app-monitoring feature/spec/replay surfaces already land row 36, records repo-local --check validation, and keeps scope to row 36 only with no cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-row36-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row36-authoring-from-mounted-source-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:00:19.957Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vm-prerelease-row36-authoring-from-mounted-source-20260620.md: it cites the accepted plan plus mounted source for Scenario_MSI_AzureMonitorAADAuth, confirms the exact app-monitoring feature/spec/replay surfaces already land row 36, records repo-local --check validation, and keeps scope to row 36 only with no cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows39-40-authoring-from-mounted-source-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec rows 39 and 40 by reconciling the accepted authoring plan against mounted source and landing the exact feature/spec/replay updates or a bounded repo-local diagnosis for those two rows only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows39-40-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted missing-spec authoring plan plus exact mounted-source scenarios/spec gaps for rows 39 and 40, and records the exact feature/spec/replay files updated or the exact bounded local diagnosis that still prevents landing those rows.",
+        "Work stays scoped to rows 39 and 40, updates or precisely diagnoses only their local VM prerelease authoring surfaces, and does not touch checkpoint-held model files or reopen unrelated VM prerelease rows.",
+        "No live cloud execution occurs; any validation is repo-local only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-rows39-40"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:57:07.369Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows39-40-authoring-from-mounted-source-20260620_20260620125707",
+        "assigned_at": "2026-06-20T12:57:07.546Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows39-40-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows39-40-authoring-from-mounted-source-20260620_20260620125707",
+        "worker_started_at": "2026-06-20T12:57:25.954Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the owner-facing artifact `evidence/archive/vm-prerelease-rows39-40-authoring-from-mounted-source-20260620.md`, confirming mounted-source reconciliation and exact repo-local landings for VM prerelease rows 39 and 40, plus local validation evidence.",
+        "last_worker_completed_at": "2026-06-20T12:58:28.720Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:59:27.312Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vm-prerelease-rows39-40-authoring-from-mounted-source-20260620.md: the artifact cites the accepted missing-spec authoring plan, reconciles exact mounted-source scenarios for rows 39 and 40, records the landed feature/spec/replay/index/coverage surfaces, and shows only repo-local check-mode validation with no cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-rows39-40-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows39-40-authoring-from-mounted-source-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:59:27.312Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vm-prerelease-rows39-40-authoring-from-mounted-source-20260620.md: the artifact cites the accepted missing-spec authoring plan, reconciles exact mounted-source scenarios for rows 39 and 40, records the landed feature/spec/replay/index/coverage surfaces, and shows only repo-local check-mode validation with no cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row44-execute-capable-replay-contract-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert VM prerelease row 44 from selector-covered check-mode only into an execute-capable replay contract by reconciling mounted source and current repo carriers, then record the exact spec/replay/run-plan changes or bounded local blocker needed before any cloud-mutating probe is proposed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row44-execute-capable-replay-contract-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row-44 authoring, review-repair, and selector/coverage-promotion evidence plus mounted source, and names the exact repo surfaces that already exist versus the exact execute-capable replay/run-plan surfaces still missing for row 44.",
+        "Artifact states whether row 44 can be made execute-capable with repo-local authoring only, and if so records the exact files/contract to implement next; otherwise it records the exact bounded local blocker without claiming any external wait or performing cloud execution.",
+        "Work stays scoped to row 44 execute-capable replay contract definition for the existing NodeIP ↔ NodeIPConfiguration scenario and does not reopen unrelated VM prerelease rows or checkpoint-held model files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:59:27.417Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row44-execute-capable-replay-contract-20260620_20260620125927",
+        "assigned_at": "2026-06-20T12:59:27.459Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row44-execute-capable-replay-contract-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row44-execute-capable-replay-contract-20260620_20260620125927",
+        "worker_started_at": "2026-06-20T12:59:36.503Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-44 execute-capable replay contract artifact at evidence/archive/vm-prerelease-row44-execute-capable-replay-contract-20260620.md, reconciling mounted source, accepted authoring/review/promotion evidence, current planner selection, and the exact repo-local replay/suite work still missing before any cloud-mutating probe.",
+        "last_worker_completed_at": "2026-06-20T13:02:21.637Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:03:05.051Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/vm-prerelease-row44-execute-capable-replay-contract-20260620.md: mounted AKS RP source, selector/coverage promotion, and planner selection already prove row 44 is source-backed and locally unblocked; only repo-local work remains to replace the replay stub and add a reviewed durable suite/run-plan surface before any cloud-mutating probe."
+      },
+      "session_id": "s_task_vm-prerelease-row44-execute-capable-replay-contract-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row44-execute-capable-replay-contract-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:03:05.051Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/vm-prerelease-row44-execute-capable-replay-contract-20260620.md: mounted AKS RP source, selector/coverage promotion, and planner selection already prove row 44 is source-backed and locally unblocked; only repo-local work remains to replace the replay stub and add a reviewed durable suite/run-plan surface before any cloud-mutating probe."
+      },
+      "status": "done"
+    }
+  ]
+}

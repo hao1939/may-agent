@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:25:06.607Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the bounded VM prerelease row-35 mounted-source boundary as durable repo-local history: it established the mounted-source truth slice behind the current carrier-drift repair, including the refreshed source-grounded breadth versus the older 2026-06-15 four-claim live subset distinction. Keep row35-carrier-drift-repair-20260621 as the single active repo-local repair leaf to reconcile model/knowledge-map/model.json, views/path-summary.json, specs/index.json, and row-35 evidence/status linkage without cloud execution, and preserve external-send-proof-dispatch-family-20260620 as the only live external-human transport ceiling until durable send/escalation proof or authoritative reply is recorded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "source-vm-prerelease-row35-mounted-source-boundary-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map VM prerelease row 35 from mounted source into one exact repo-local boundary note: trace prerelease.go/checkin.go lineage to the directly referenced row-35 scenario definition(s), identify the exact feature/spec/path carriers already present or missing, and record the next safe repo-local action without editing replay bodies or running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row35-mounted-source-boundary-20260621.md"
+      ],
+      "acceptance": [
+        "Boundary note cites prerelease.go, checkin.go, and the directly referenced row-35 scenario definition(s) for the exact mounted row-35 carrier.",
+        "Boundary note records the accepted input path, expectation path, adjacent surfaces, unknown/rejected edges, and the exact existing-or-missing feature/spec/path carriers for row 35.",
+        "Outcome stays repo-local only: no cloud execution, no outbound-send wait duplication, and no replay-body edits beyond linkage/context if a minimal carrier update is explicitly justified."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row35-mounted-source-boundary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:21:16.623Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_source-vm-prerelease-row35-mounted-source-boundary-20260621_20260621012116",
+        "assigned_at": "2026-06-21T01:21:16.671Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-vm-prerelease-row35-mounted-source-boundary-20260621",
+        "worker_started_attempt_id": "a_source-vm-prerelease-row35-mounted-source-boundary-20260621_20260621012116",
+        "worker_started_at": "2026-06-21T01:21:28.334Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-35 mounted-source boundary note at evidence/archive/vm-prerelease-row35-mounted-source-boundary-20260621.md, tracing prerelease/checkin lineage to Scenario_MSI_SystemAssigned_Identity and documenting the repo-local carrier drift that remains after the source-grounded refresh.",
+        "last_worker_completed_at": "2026-06-21T01:23:29.520Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:24:15.513Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row35-mounted-source-boundary-20260621.md cites prerelease.go/checkin.go and Scenario_MSI_SystemAssigned_Identity lineage, maps the accepted input and expectation paths, rejects the missing-source theory, and narrows the real gap to repo-local row-35 carrier drift across model/index/evidence surfaces with no cloud work or duplicate waits."
+      },
+      "session_id": "s_task_source-vm-prerelease-row35-mounted-source-boundary-20260621",
+      "session_history": [
+        "s_task_source-vm-prerelease-row35-mounted-source-boundary-20260621"
+      ],
+      "result": "Produced the row-35 mounted-source boundary note at evidence/archive/vm-prerelease-row35-mounted-source-boundary-20260621.md, tracing prerelease/checkin lineage to Scenario_MSI_SystemAssigned_Identity and documenting the repo-local carrier drift that remains after the source-grounded refresh.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:24:15.513Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row35-mounted-source-boundary-20260621.md cites prerelease.go/checkin.go and Scenario_MSI_SystemAssigned_Identity lineage, maps the accepted input and expectation paths, rejects the missing-source theory, and narrows the real gap to repo-local row-35 carrier drift across model/index/evidence surfaces with no cloud work or duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

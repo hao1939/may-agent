@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:16:08.756Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier review kept the single truthful external-human transport ceiling unchanged: external-send-proof-dispatch-family-20260620 remains the only live blocker until durable repo-local send/escalation proof or an authoritative reply is captured for the send-ready MachinesPreview or VM prerelease packets. Repo-local execution capacity is not idle because two owner-assigned active leaves remain in progress: network-cni-cilium-stop-start-model-replay-linkage-20260620 continues wiring the mounted Scenario_Cilium_Stop_Start contract into maintained replay/model surfaces, and private-cluster-dns-zone-none-canonicalization-cleanup-20260620 continues collapsing duplicate none-private-dns-zone ownership back to the canonical V3 branch. The completed private-cluster BYO DNS server topology exactness slice is now absorbed into parent provenance so the frontier stays readable and no duplicate blocked/send tasks are recreated.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-byo-dns-server-topology-exactness-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide and implement the bounded repo-local landing for the mounted private-cluster BYO DNS Server handwritten scenario so the current broad pass surface no longer hides the exact two-cluster shared-VNet, DHCP mutation, DNS-server deployment, and private-cluster follow-on topology contract from source, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/private-cluster-byo-dns-server.json"
+      ],
+      "acceptance": [
+        "Result either rewrites the canonical BYO DNS server spec to the exact mounted two-cluster topology or creates an explicit split between the broad pass surface and a new exact source-grounded sibling, with the chosen shape documented in repo-local artifacts.",
+        "Repo-local artifact(s) cite the mounted byo_dns_server.go authority and preserve the key topology checkpoints: shared VNet/two subnets, VNet Contributor grants, DNS-server cluster deployment, DHCP update, second private cluster creation, and private access validation.",
+        "Outcome is bounded to source-contract truthfulness/model clarity only; no cloud run is launched and no passive blocker is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-byo-dns-source-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:07:24.498Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T20:07:24.690Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-byo-dns-server-topology-exactness-20260620_20260620200736",
+        "assigned_at": "2026-06-20T20:07:36.177Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-byo-dns-server-topology-exactness-20260620",
+        "worker_started_attempt_id": "a_private-cluster-byo-dns-server-topology-exactness-20260620_20260620200736",
+        "worker_started_at": "2026-06-20T20:07:37.709Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a bounded repo-local split for BYO DNS exactness: kept the existing broad single-cluster pass surface, added a new exact mounted-source topology sibling spec/feature/replay, indexed it, and documented the decision in evidence without launching any cloud run.",
+        "last_worker_completed_at": "2026-06-20T20:14:40.618Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:15:24.445Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result: repo-local artifacts now preserve the mounted byo_dns_server.go truth via an explicit split, keeping specs/private-cluster-byo-dns-server.json as the broad observed sibling while adding the exact two-cluster shared-VNet/DHCP/DNS-server topology sibling and documenting the decision in evidence/archive/private-cluster-byo-dns-server-topology-exactness-20260620.md without cloud execution."
+      },
+      "session_id": "s_task_private-cluster-byo-dns-server-topology-exactness-20260620",
+      "session_history": [
+        "s_task_private-cluster-byo-dns-server-topology-exactness-20260620"
+      ],
+      "result": "Implemented a bounded repo-local split for BYO DNS exactness: kept the existing broad single-cluster pass surface, added a new exact mounted-source topology sibling spec/feature/replay, indexed it, and documented the decision in evidence without launching any cloud run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:15:24.445Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result: repo-local artifacts now preserve the mounted byo_dns_server.go truth via an explicit split, keeping specs/private-cluster-byo-dns-server.json as the broad observed sibling while adding the exact two-cluster shared-VNet/DHCP/DNS-server topology sibling and documenting the decision in evidence/archive/private-cluster-byo-dns-server-topology-exactness-20260620.md without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

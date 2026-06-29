@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T09:36:43.443Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the private-cluster none-dns-zone-v3 repo-local reconciliation. The archived note confirms mounted source, feature, spec, replay, and maintained model/view carriers already align on the exact system->none lifecycle boundary, so no repo-local file changes are warranted and path.private-cluster-none-dns-zone-v3 must remain unknown pending the same exact gated live lifecycle proof. Preserve the current four blocked waits unchanged, including the existing family-level external dispatch wait that already carries the none-dns-zone-v3 external approval path; do not create duplicate waits or reopen local authoring before returned proof or the first follow-up window on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the mounted-source boundary packet for path.private-cluster-none-dns-zone-v3 is accepted, use its cited scenario/spec/replay carriers to perform the next exact repo-local reconciliation: update the path's feature/spec/model/view files when the evidence supports a truthful status/boundary change, or author one bounded evidence-ceiling note when the model must remain unknown pending gated live proof. Keep the work no-cloud and scoped only to the none-dns-zone-v3 slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624.md"
+      ],
+      "acceptance": [
+        "The task cites the accepted boundary packet plus mounted source/local carriers, and either patches the exact repo-local files for path.private-cluster-none-dns-zone-v3 (feature/spec/model/views as warranted) or records a durable evidence-ceiling note explaining why no truthful model status change is possible yet.",
+        "Any repo-local file changes or no-change decision preserve the narrow path scope, regenerate or verify affected maintained views/indexes when needed, and name one exact successor if gated live evidence is still required.",
+        "No cloud execution, no mutation gate use, and no widening into unrelated private-cluster siblings occur from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T09:33:14.685Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624_20260624093422",
+        "assigned_at": "2026-06-24T09:34:22.626Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624_20260624093422",
+        "worker_started_at": "2026-06-24T09:34:38.120Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded no-cloud reconciliation note for path.private-cluster-none-dns-zone-v3, confirming mounted-source/feature/spec/replay/model alignment and documenting that the path truthfully remains unknown due only to the exact live lifecycle evidence ceiling.",
+        "last_worker_completed_at": "2026-06-24T09:35:55.453Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T09:36:43.395Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: the archive note cites the accepted mounted-source boundary packet plus feature/spec/replay/model carriers, truthfully records a no-change evidence ceiling for path.private-cluster-none-dns-zone-v3, preserves status=unknown, and points any future advancement to the exact already-gated live successor rather than widening scope."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-feature-spec-model-reconciliation-20260624"
+      ],
+      "result": "Authored the bounded no-cloud reconciliation note for path.private-cluster-none-dns-zone-v3, confirming mounted-source/feature/spec/replay/model alignment and documenting that the path truthfully remains unknown due only to the exact live lifecycle evidence ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T09:36:43.395Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: the archive note cites the accepted mounted-source boundary packet plus feature/spec/replay/model carriers, truthfully records a no-change evidence ceiling for path.private-cluster-none-dns-zone-v3, preserves status=unknown, and points any future advancement to the exact already-gated live successor rather than widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

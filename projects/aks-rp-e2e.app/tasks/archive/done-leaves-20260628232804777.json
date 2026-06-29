@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T23:28:04.777Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner review rechecked the only remaining warning family and confirmed this lane still truthfully carries one live blocker only: await-staging-westus2-cluster-count-preflight-family-recovery-20260628. The accepted westus2 diagnosis, next-action review, and runner/operator dispatch evidence already cover setup, reroute, and escalation possibilities, so no duplicate environment setup/retry leaf is warranted until same-surface recovery proof, a durably proven alternate environment/endpoint, or an authoritative reroute/decline lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "recheck-net-integration-multinic-mixed-model-status-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review path.net-integration.multinic-mixed against the current knowledge-map outputs, mounted AKS RP source, and maintained spec/replay surfaces so the blocked state is either accepted with an exact repo-local reason/resume condition or repaired locally if the current model/spec/evidence linkage is stale.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-multinic-mixed-model-status-recheck-20260628.md"
+      ],
+      "acceptance": [
+        "The review cites the current model entry for path.net-integration.multinic-mixed together with the governing mounted source and maintained spec/replay artifacts for the same-pool Dynamic + Standard secondary NIC contract.",
+        "It explains whether the current blocked status already has a truthful repo-local reason/resume condition or applies the bounded local model/spec/evidence repair needed to make that status exact without cloud mutation.",
+        "It ends with one concrete next-safe action only: no-change accepted with exact reason, a repo-local repair applied and evidenced, or one bounded successor task if additional local reconciliation is still required; no cloud mutation is performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.net-integration.multinic-mixed"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:25:32.617Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_recheck-net-integration-multinic-mixed-model-status-20260628_20260628232532",
+        "assigned_at": "2026-06-28T23:25:32.666Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_recheck-net-integration-multinic-mixed-model-status-20260628",
+        "worker_started_attempt_id": "a_recheck-net-integration-multinic-mixed-model-status-20260628_20260628232532",
+        "worker_started_at": "2026-06-28T23:25:46.003Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed path.net-integration.multinic-mixed against the current model, maintained spec/packet/replay surfaces, mounted AKS RP source, and existing execution evidence; wrote a recheck artifact confirming the current blocked/source-grounded status is already exact and needs no repo-local repair.",
+        "last_worker_completed_at": "2026-06-28T23:26:42.272Z",
+        "last_worker_evidence": [
+          "evidence/archive/net-integration-multinic-mixed-model-status-recheck-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T23:27:03.732Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-28 review artifact: path.net-integration.multinic-mixed remains exactly blocked/source-grounded across the current model, maintained spec/packet/replay carriers, mounted handwritten Scenario_MultiNIC_Mixed source, and existing dry-run/auth-blocked evidence ceiling, so no repo-local repair or successor task is required."
+      },
+      "session_id": "s_task_recheck-net-integration-multinic-mixed-model-status-20260628",
+      "session_history": [
+        "s_task_recheck-net-integration-multinic-mixed-model-status-20260628"
+      ],
+      "result": "Reviewed path.net-integration.multinic-mixed against the current model, maintained spec/packet/replay surfaces, mounted AKS RP source, and existing execution evidence; wrote a recheck artifact confirming the current blocked/source-grounded status is already exact and needs no repo-local repair.",
+      "evidence": [
+        "evidence/archive/net-integration-multinic-mixed-model-status-recheck-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T23:27:03.732Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-28 review artifact: path.net-integration.multinic-mixed remains exactly blocked/source-grounded across the current model, maintained spec/packet/replay carriers, mounted handwritten Scenario_MultiNIC_Mixed source, and existing dry-run/auth-blocked evidence ceiling, so no repo-local repair or successor task is required."
+      },
+      "status": "done"
+    }
+  ]
+}

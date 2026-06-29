@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -24,14 +25,43 @@ function loadRunnableSpecsFromIndex(indexPath: string): FeaturePathTestSpec[] {
     .map((file) => loadJsonFile<FeaturePathTestSpec>(resolve(baseDir, file)));
 }
 
+function listFeatureOwnedSpecFiles(dir: string): string[] {
+  const found: string[] = [];
+  if (!existsSync(dir)) return found;
+  for (const entry of readdirSync(dir).sort((a, b) => a.localeCompare(b))) {
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) {
+      if (entry === "specs") {
+        for (const name of readdirSync(path)
+          .filter((candidate) => candidate.endsWith(".json"))
+          .sort((a, b) => a.localeCompare(b))) {
+          found.push(join(path, name));
+        }
+      } else {
+        found.push(...listFeatureOwnedSpecFiles(path));
+      }
+    }
+  }
+  return found;
+}
+
+function loadRunnableSpecs(projectRoot: string): FeaturePathTestSpec[] {
+  const legacyIndexPath = join(projectRoot, "specs/index.json");
+  if (existsSync(legacyIndexPath)) {
+    return loadRunnableSpecsFromIndex(legacyIndexPath);
+  }
+  return listFeatureOwnedSpecFiles(join(projectRoot, "features")).map((path) =>
+    loadJsonFile<FeaturePathTestSpec>(path),
+  );
+}
+
 describe("replanning flow e2e", () => {
   test("learned ManagedSystem paths regenerate into one dry-run TypeScript probe", async () => {
     const pathSummary = loadJsonFile<PathSummary>(
       join(projectRoot, "model/knowledge-map/views/path-summary.json"),
     );
-    const specs = loadRunnableSpecsFromIndex(
-      join(projectRoot, "specs/index.json"),
-    );
+    const specs = loadRunnableSpecs(projectRoot);
     const selectedPathIds = [
       "path.managedsystem.rest-add-existing.minimal-rest",
       "path.managedsystem.mode-immutability",

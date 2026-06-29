@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T05:50:15.185Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier refill and review acceptance: accepted and archived the bounded Network CNI VM prerelease adjacent matrix gap map, which confirms this NetworkPolicy-family slice now has safe repo-local carriers everywhere, with dedicated coverage for Azure NPM rows 156/157/158/229/230, Azure-CNI Calico rows 159/231, kubenet Calico row 160, and only aggregate-only granularity remaining for rows 191-201 and 228. The single external-human wait remains unchanged because no newer out-of-runtime proof exists. Live forward work is now the active aggregate-carrier truthfulness audit, the active Cluster FIPS mounted-source coverage map, and a runnable Serverless Virtual Nodes source-equivalent carrier audit so spare capacity stays in repo-local regular-learning lanes rather than reopening the external wait or cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the bounded adjacent repo-local Network CNI VM prerelease matrix rows around the Azure NPM branch to current mounted/checked-in source, spec, model, and view carriers so the project knows which nearby rows are already truthfully covered, which still rely only on aggregate carriers, and what exact next row-local extraction candidate should follow after the active Azure NPM linkage repair, without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted or checked-in Network CNI VM prerelease sources, normalized specs, model/view carriers, and the bounded adjacent row set inspected around the Azure NPM branch.",
+        "The note truthfully classifies each inspected adjacent row as already having a dedicated carrier, relying only on an aggregate carrier, or lacking a safe repo-local carrier, and names one exact next extraction candidate or a justified current evidence ceiling.",
+        "Scope stays in the regular-learning lane only: repo-local mapping and model/view follow-up planning allowed, but no cloud mutation, no external-human waits, and no widening beyond the bounded adjacent Network CNI VM prerelease matrix slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T05:45:34.379Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T05:46:24.468Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623_20260623054639",
+        "assigned_at": "2026-06-23T05:46:39.431Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623",
+        "worker_started_attempt_id": "a_network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623_20260623054639",
+        "worker_started_at": "2026-06-23T05:46:55.291Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the bounded Network CNI VM prerelease rows adjacent to the Azure NPM branch and wrote a durable archive note classifying each inspected row set as dedicated-carrier vs aggregate-carrier, with row 228 recommended as the next exact row-local extraction candidate.",
+        "last_worker_completed_at": "2026-06-23T05:49:23.440Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T05:50:15.115Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites exact mounted NetworkPolicy-family VM prerelease sources plus current spec/replay/model/view carriers for rows 156/157/158/159/160/191-201/228/229/230/231, truthfully classifies dedicated vs aggregate coverage, and names row 228 as the smallest exact next row-local extraction candidate while preserving the no-cloud bounded-learning scope."
+      },
+      "session_id": "s_task_network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623",
+      "session_history": [
+        "s_task_network-cni-vm-prerelease-adjacent-matrix-gap-map-20260623"
+      ],
+      "result": "Mapped the bounded Network CNI VM prerelease rows adjacent to the Azure NPM branch and wrote a durable archive note classifying each inspected row set as dedicated-carrier vs aggregate-carrier, with row 228 recommended as the next exact row-local extraction candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T05:50:15.115Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites exact mounted NetworkPolicy-family VM prerelease sources plus current spec/replay/model/view carriers for rows 156/157/158/159/160/191-201/228/229/230/231, truthfully classifies dedicated vs aggregate coverage, and names row 228 as the smallest exact next row-local extraction candidate while preserving the no-cloud bounded-learning scope."
+      },
+      "status": "done"
+    }
+  ]
+}

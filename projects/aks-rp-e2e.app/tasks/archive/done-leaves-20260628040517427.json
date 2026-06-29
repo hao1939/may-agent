@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T04:05:17.427Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 blocked-frontier owner review keeps the feature-reference lane intentionally narrow. The only live artifact-contract work should now be the three active repair leaves for core-public, maintenance-boundary, and private-cluster-privatelink, plus one backlog successor for private-cluster-machines-private-cluster-dns-variants. Two earlier review-family leaves were closed as superseded because their worker claims mixed scopes and carried no recorded evidence; their durable meaning is now preserved by these narrower successors. Do not refill new collector work until the active repairs finish and the remaining review queue can be re-accepted or retried from repaired evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-review-batch-artifact-contract-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the current 20260628 private-cluster feature-reference review family into clean evidence-backed summaries by removing placeholder/template sections, replacing collector errors with actual sourced findings or explicit bounded no-reference conclusions, and normalizing the private-cluster-privatelink contradiction plus the private-cluster/byo-dns-server-topology-exact/dns-zone-modes/machines-private-cluster-dns-variants/private-endpoint-connections/privatelink/vnet-integration/vnet-integration-auth-service-tags artifacts into promotion-ready notes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "Create repaired evidence notes for the current affected 20260628 private-cluster feature-reference review family so each note has one coherent structure, no Draft collector output/template leftovers, no contradictory 'no references found' headers when references are cited later, and no bare 'error' collector note.",
+        "Record in the repaired private-cluster-family notes the exact official API/Learn references found or an explicit bounded statement that no official public reference was found after the bounded search, with the privatelink contradiction resolved into one evidence-backed conclusion.",
+        "Leave the corresponding private-cluster-family review leaves ready for owner acceptance or replacement by refreshed worker output without requiring cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:review-batch-artifact-contract:20260628"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T03:56:40.839Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-review-batch-artifact-contract-20260628_20260628035640",
+        "assigned_at": "2026-06-28T03:56:40.899Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-review-batch-artifact-contract-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-review-batch-artifact-contract-20260628_20260628035640",
+        "worker_started_at": "2026-06-28T03:57:02.995Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the sampled 2026-06-28 feature-reference batch artifacts into coherent evidence-backed notes under evidence/archive, replacing placeholder/template/error residue for private-cluster-privatelink, node-image, node-pool-config, open-service-mesh-addon, and ossku-migration, and added a repair summary note documenting scope and owner-facing outcomes.",
+        "last_worker_completed_at": "2026-06-28T04:01:42.967Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T04:05:17.269Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejects the umbrella private-cluster repair claim as non-acceptable because it mixed scopes and recorded no evidence; replace it with the three narrower repair leaves now carrying the real work: repair-feature-reference-core-public-doc-review-batch-20260628, repair-feature-reference-maintenance-boundary-review-batch-20260628, and repair-feature-reference-private-cluster-privatelink-review-note-20260628."
+      },
+      "session_id": "s_task_repair-feature-reference-review-batch-artifact-contract-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-review-batch-artifact-contract-20260628"
+      ],
+      "result": "Repaired the sampled 2026-06-28 feature-reference batch artifacts into coherent evidence-backed notes under evidence/archive, replacing placeholder/template/error residue for private-cluster-privatelink, node-image, node-pool-config, open-service-mesh-addon, and ossku-migration, and added a repair summary note documenting scope and owner-facing outcomes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T04:05:17.269Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejects the umbrella private-cluster repair claim as non-acceptable because it mixed scopes and recorded no evidence; replace it with the three narrower repair leaves now carrying the real work: repair-feature-reference-core-public-doc-review-batch-20260628, repair-feature-reference-maintenance-boundary-review-batch-20260628, and repair-feature-reference-private-cluster-privatelink-review-note-20260628."
+      },
+      "status": "done"
+    }
+  ]
+}

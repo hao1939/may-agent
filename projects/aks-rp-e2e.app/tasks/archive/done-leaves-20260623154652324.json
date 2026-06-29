@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T15:46:52.325Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Owner review 2026-06-23T15:47Z: accepted evidence/archive/natgw-automatic-sku-exec-variant-linkage-20260623.md as a completed bounded mounted-source linkage audit. The maintained feature/spec/model carriers already preserve the managed NAT Gateway Automatic SKU row as attached execution metadata on the canonical outbound NAT Gateway path/spec, so only stale historical archive-note drift remains and no new product branch or live execution is warranted. The frontier in this focus branch now truthfully consists of one active repo-local successor leaf—static-egress-azlinux-env-attachment-20260623—to close the remaining AzureLinux ENV-attachment mapping on the canonical static-egress lane, plus the same single family-level blocked external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 with its unchanged returned-proof-or-post-2026-06-26 follow-up resume condition. No duplicate waits, reopened source/spec/model rediscovery, or new cloud work were introduced in this blocked-frontier review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-automatic-sku-exec-variant-linkage-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the bounded Speculor outbound-control execution-variant gap for managed NAT Gateway Automatic SKU by mapping the exact mounted Scenario_Managed_NATGateway_Automatic_SKU / Scenario_Managed_NATgateway_Automatic_SKU lineage to the maintained canonical outbound-NAT-Gateway path/spec surfaces, recording whether current repo-local metadata already preserves the execution variant or drifts, and naming the smallest repo-local repair needed without creating a new product branch or running cloud paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-automatic-sku-exec-variant-linkage-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted and repo-local carriers for Scenario_Managed_NATGateway_Automatic_SKU / Scenario_Managed_NATgateway_Automatic_SKU, maps the variant to the canonical outbound-NAT-Gateway path/spec surfaces, and states whether current repo-local metadata preserves or loses that execution-variant linkage.",
+        "The artifact identifies the smallest truthful repo-local repair surface, avoids inventing a new runnable product branch or generic source-holder blocker, and does not run live execution or reopen the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-spec-hardening"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T15:42:31.677Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-automatic-sku-exec-variant-linkage-20260623_20260623154413",
+        "assigned_at": "2026-06-23T15:44:13.453Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-automatic-sku-exec-variant-linkage-20260623",
+        "worker_started_attempt_id": "a_natgw-automatic-sku-exec-variant-linkage-20260623_20260623154413",
+        "worker_started_at": "2026-06-23T15:44:16.895Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded NAT Gateway Automatic SKU execution-variant linkage audit and wrote a durable archive artifact confirming the current canonical repo-local carriers already preserve the mounted Automatic SKU lineage on the canonical outbound NAT Gateway path/spec, with only stale historical archive-note drift remaining.",
+        "last_worker_completed_at": "2026-06-23T15:45:53.132Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T15:46:36.847Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from archive evidence/archive/natgw-automatic-sku-exec-variant-linkage-20260623.md: mounted source lineage and maintained feature/spec/model carriers already preserve the Automatic SKU execution variant on the canonical outbound NAT Gateway path/spec; only stale historical archive-note drift remains."
+      },
+      "session_id": "s_task_natgw-automatic-sku-exec-variant-linkage-20260623",
+      "session_history": [
+        "s_task_natgw-automatic-sku-exec-variant-linkage-20260623"
+      ],
+      "result": "Completed the bounded NAT Gateway Automatic SKU execution-variant linkage audit and wrote a durable archive artifact confirming the current canonical repo-local carriers already preserve the mounted Automatic SKU lineage on the canonical outbound NAT Gateway path/spec, with only stale historical archive-note drift remaining.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T15:46:36.847Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from archive evidence/archive/natgw-automatic-sku-exec-variant-linkage-20260623.md: mounted source lineage and maintained feature/spec/model carriers already preserve the Automatic SKU execution variant on the canonical outbound NAT Gateway path/spec; only stale historical archive-note drift remains."
+      },
+      "status": "done"
+    }
+  ]
+}

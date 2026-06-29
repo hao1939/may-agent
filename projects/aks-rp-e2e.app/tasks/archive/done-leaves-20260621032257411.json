@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:22:57.411Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner blocked-frontier review kept external-send-proof-dispatch-family-20260620 as the single truthful external-human transport wait because no durable send/escalation/reply proof exists and creating duplicate passive waits would be untruthful. The accepted vmpr-maintained-slice-checkpoint-isolation-20260621 evidence is now represented at parent level: it proved the VM maintained-surface checkpoint candidate is still mixed across shared model/spec carriers, row-local done files, the still-active row-25/26 dependency slice, and broad non-VM residue, so vmpr-maintained-slice-checkpoint-preflight-20260621 remains the active repo-local preflight leaf for deciding whether a truthful bounded checkpoint can be carved now. To avoid leaving reopened all-scenarios coverage underfilled behind a single active VM leaf, private-cluster-source-gap-map-20260621 is now added as the next bounded non-VM source/spec expansion slice for the reopened frontier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-maintained-slice-checkpoint-isolation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Isolate a truthful commit-ready VM prerelease maintained-surface done slice from the current dirty workspace after the accepted rows-25/26/27/29/30/32/34 work, by mapping which dirty feature/spec/replay/evidence files belong to that maintained-surface bundle versus unrelated broader frontier residue, and record the exact bounded checkpoint candidate plus exclusions without performing a commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-maintained-slice-checkpoint-isolation-20260621.md"
+      ],
+      "acceptance": [
+        "The task cites git status plus checkpoint-helper evidence, groups the dirty files into (a) the bounded VM prerelease maintained-surface done slice unlocked by the now-accepted rows-25/26/27/29/30/32/34 maintained updates, and (b) unrelated residue that must stay out of the checkpoint.",
+        "The archive note names the exact files or file families that would form the next coherent checkpoint-worthy VM prerelease maintained-surface slice now that the rows-25/26 reconciliation is accepted, and states why no broader commit is currently truthful.",
+        "Only repo-local planning/check evidence is gathered; no commit is created and no active/review work outside the bounded slice is marked done."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-maintained-slice-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:18:49.401Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-maintained-slice-checkpoint-isolation-20260621_20260621031852",
+        "assigned_at": "2026-06-21T03:18:52.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-maintained-slice-checkpoint-isolation-20260621",
+        "worker_started_attempt_id": "a_vmpr-maintained-slice-checkpoint-isolation-20260621_20260621031852",
+        "worker_started_at": "2026-06-21T03:19:11.161Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote `evidence/archive/vmpr-maintained-slice-checkpoint-isolation-20260621.md`, mapping current dirty files into the bounded VM maintained done slice, active row-25/26 dependency slice, and unrelated residue, with git status and checkpoint-helper evidence and an exact post-row25/26 checkpoint candidate.",
+        "last_worker_completed_at": "2026-06-21T03:21:41.936Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:22:05.876Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note uses git status plus checkpoint-helper evidence to separate the bounded VM prerelease maintained-surface done slice from row-25/26 dependency residue, and now that the rows-25/26 reconciliation is accepted it truthfully names the exact post-acceptance checkpoint candidate and exclusions without claiming a broader commit."
+      },
+      "session_id": "s_task_vmpr-maintained-slice-checkpoint-isolation-20260621",
+      "session_history": [
+        "s_task_vmpr-maintained-slice-checkpoint-isolation-20260621"
+      ],
+      "result": "Wrote `evidence/archive/vmpr-maintained-slice-checkpoint-isolation-20260621.md`, mapping current dirty files into the bounded VM maintained done slice, active row-25/26 dependency slice, and unrelated residue, with git status and checkpoint-helper evidence and an exact post-row25/26 checkpoint candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:22:05.876Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note uses git status plus checkpoint-helper evidence to separate the bounded VM prerelease maintained-surface done slice from row-25/26 dependency residue, and now that the rows-25/26 reconciliation is accepted it truthfully names the exact post-acceptance checkpoint candidate and exclusions without claiming a broader commit."
+      },
+      "status": "done"
+    }
+  ]
+}

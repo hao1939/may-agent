@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:59:15.364Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update accepted and archived the overlay PodCIDR expansion execute-readiness slice because its durable meaning is now preserved at the project level. The repo-local branch for path.network-cni-azure-overlay-podcidr-expansion now carries three completed layers in evidence: mounted-source authoring, accepted model landing, and a mutation-safe execute-readiness packet at evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md that pins the exact /24 -> /16 update, azure-cns restart, nodepool2 add, NodeNetworkConfig /16 reflection, connectivity checks, preflight, cleanup, and probe gate without claiming live product validation. The live frontier stays intentionally narrow: knowledge-map-validator-debt-baseline-20260620 remains the sole active runnable repo-local task to baseline validator debt and choose the first bounded repair family, while external-send-proof-dispatch-family-20260620 remains the single truthful family-level external-human transport wait for the already send-ready MachinesPreview and VM-prerelease packets. No new execution lane or duplicate blocked leaves are warranted in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the execute-readiness packet for Scenario_CNI_Overlay_PodCIDRExpansion so the next cloud mutation run has an exact input path, expectation path, preflight contract, and evidence plan without re-discovering the mounted-source lifecycle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted-source lifecycle, spec, replay, and accepted model path for path.network-cni-azure-overlay-podcidr-expansion, and restate the bounded live product questions the probe must answer.",
+        "Define a mutation-safe run contract covering prerequisites, region/subscription assumptions, cleanup expectations, evidence capture, and exact success/failure observations for the /24 -> /16 PodCidr update, azure-cns restart, nodepool2 add, NodeNetworkConfig /16 reflection, and cross-node connectivity checks.",
+        "Run only local proof commands needed to show the execute-ready carrier stays wired repo-locally; do not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-replays"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:55:18.752Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620_20260620215518",
+        "assigned_at": "2026-06-20T21:55:18.799Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620",
+        "worker_started_attempt_id": "a_network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620_20260620215518",
+        "worker_started_at": "2026-06-20T21:55:36.950Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the execute-readiness packet for the Azure CNI overlay pod-CIDR expansion branch at evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md, grounding it in mounted source, accepted model/spec/replay ids, mutation-safe run contract, and repo-local proof commands without cloud execution.",
+        "last_worker_completed_at": "2026-06-20T21:57:47.616Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:58:15.060Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the execute-readiness packet because evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md preserves the exact mounted source lifecycle, spec/replay/model path ids, bounded live product questions, mutation-safe gate tuple, preflight/cleanup contract, and repo-local proof commands without claiming cloud execution."
+      },
+      "session_id": "s_task_network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620",
+      "session_history": [
+        "s_task_network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620"
+      ],
+      "result": "Authored the execute-readiness packet for the Azure CNI overlay pod-CIDR expansion branch at evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md, grounding it in mounted source, accepted model/spec/replay ids, mutation-safe run contract, and repo-local proof commands without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:58:15.060Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the execute-readiness packet because evidence/archive/network-cni-overlay-podcidr-expansion-execute-readiness-packet-20260620.md preserves the exact mounted source lifecycle, spec/replay/model path ids, bounded live product questions, mutation-safe gate tuple, preflight/cleanup contract, and repo-local proof commands without claiming cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

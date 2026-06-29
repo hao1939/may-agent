@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:03:05.920Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 blocked-frontier owner reconciliation simplified this focus branch to one truthful live wait. The two path-level blocked carriers for MachinesPreview and the combined VM prerelease rows-25-and-50 operator bundle were redundant with the shared external-send family and are now archived under their lanes as replaced provenance only. external-send-proof-dispatch-family-20260620 is the single live owner-visible blocker carrying the exact resume condition for both asks: runtime cannot truthfully send either packet, and no passive response-await state is truthful until durable repo-local send or escalation proof with timestamp/channel/recipient linkage is recorded for one packet or an authoritative reply arrives and is linked to its proof-capture artifact. No new local packet-drafting, replay, source-spec, or duplicate send work is truthful for this slice until that external-human transport condition changes.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "feature-knowledge-and-specs",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "durable_lane",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable test specs.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "model/knowledge-map/"
+      ],
+      "acceptance": [
+        "Feature and spec gaps are represented as concrete child work.",
+        "Source discovery, feature extraction, and spec hygiene roll up here."
+      ],
+      "forbidden": [],
+      "trace": {
+        "created_at": "2026-06-15T10:16:26.414Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T17:03:03.202Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "rollup_summary": "2026-06-20 blocked-frontier reconciliation removed the redundant MachinesPreview path-level wait from this lane. Durable feature/spec meaning remains in evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md and the send-ready packet, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local authoring backlog for the current slice; reopen feature/spec work only if a human records send or escalation proof for the MachinesPreview packet, an authoritative MachinesPreview reply arrives, or new steering changes the ask.",
+        "archived_done_leaf_count": 963,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620170303201.json",
+            "archived": 1,
+            "at": "2026-06-20T17:03:03.202Z",
+            "summary": "2026-06-20 blocked-frontier reconciliation removed the redundant MachinesPreview path-level wait from this lane. Durable feature/spec meaning remains in evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md and the send-ready packet, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local authoring backlog for the current slice; reopen feature/spec work only if a human records send or escalation proof for the MachinesPreview packet, an authoritative MachinesPreview reply arrives, or new steering changes the ask.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "machinespreview-human-send-proof-or-authoritative-reply-wait-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620164125063.json",
+            "archived": 1,
+            "at": "2026-06-20T16:41:25.063Z",
+            "summary": "2026-06-20 owner review closed the ManagedSystem create-time maintenance slice. The boundary-map authority plus evidence/archive/managedsystem-create-time-model-reconcile-20260620.md and evidence/archive/managedsystem-create-time-review-proof-and-slice-validate-20260620.md now preserve that path.managedsystem.create-time-initial-pool stays distinct from the passing add-existing control path, keeps the minimal caller-owned name+mode contract, and remains a final RP ARM64/x64 provisioning product-gap whose retest trigger is unchanged. The local replay check passed, view regeneration reran, and whole-model validation failure was recorded as broad unrelated repo debt rather than a ManagedSystem regression. Remaining live work in this lane is the single MachinesPreview external handoff wait; no new ManagedSystem rerun or adjacent-surface follow-up is needed from this branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "managedsystem-create-time-review-proof-and-slice-validate-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620164115970.json",
+            "archived": 1,
+            "at": "2026-06-20T16:41:15.971Z",
+            "summary": "2026-06-20 owner review closed the ManagedSystem create-time maintenance slice. The boundary-map authority plus evidence/archive/managedsystem-create-time-model-reconcile-20260620.md and evidence/archive/managedsystem-create-time-review-proof-and-slice-validate-20260620.md now preserve that path.managedsystem.create-time-initial-pool stays distinct from the passing add-existing control path, keeps the minimal caller-owned name+mode contract, and remains a final RP ARM64/x64 provisioning product-gap whose retest trigger is unchanged. The local replay check passed, view regeneration reran, and whole-model validation failure was recorded as broad unrelated repo debt rather than a ManagedSystem regression. Remaining live work in this lane is the single MachinesPreview external handoff wait; no new ManagedSystem rerun or adjacent-surface follow-up is needed from this branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "managedsystem-create-time-model-reconcile-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620163439449.json",
+            "archived": 1,
+            "at": "2026-06-20T16:34:39.449Z",
+            "summary": "2026-06-20 owner review accepted the ManagedSystem create-time boundary-map artifact as the durable feature/spec authority for path.managedsystem.create-time-initial-pool: create-time remains distinct from add-existing, the accepted caller-controlled ManagedSystem-specific contract stays at minimal name+mode, and the current final verdict remains a narrow RP provisioning product-gap caused by the repeated ARM64/x64 defaulting mismatch rather than a request-shape error. The next live child on this branch is managedsystem-create-time-model-reconcile-20260620 to update model/linkage and retest wording without reopening mutation work; the only other live feature/spec child remains the single truthful MachinesPreview external-human send/reply wait.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "managedsystem-create-time-boundary-map-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620162856355.json",
+            "archived": 1,
+            "at": "2026-06-20T16:28:56.356Z",
+            "summary": "2026-06-20 blocked-frontier owner review reaffirmed that the feature/spec lane has no remaining repo-local MachinesPreview drafting or VM prerelease source-authoring work for this slice. The completed row-50 dedicated-carrier authoring leaf already established the exact source-backed path/spec/replay references and its durable meaning is preserved at lane level, so the only live child here remains machinespreview-human-send-proof-or-authoritative-reply-wait-20260620 as one exact external-human wait. Resume that family only when durable repo-local evidence proves a real send/handoff/escalation of the existing packet or an authoritative MachinesPreview reply arrives; otherwise all local motion stays in runner-and-replays through row-50 live replay implementation.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-row50-dedicated-carrier-authoring-20260620"
+            ]
+          }
+        ]
+      },
+      "blocker": "The feature/spec lane has no remaining repo-local authoring backlog for this slice. Its single live child is machinespreview-human-send-proof-or-authoritative-reply-wait-20260620, which truthfully stays blocked until a human owner/operator records durable repo-local send or escalation proof for evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md, or an authoritative MachinesPreview registration-state reply arrives for the unchanged westus2/local replay contract.",
+      "updated_at": "2026-06-20T13:24:50.901Z",
+      "result": "Child review pending: vm-prerelease-row164-nsg-route-table-in-use-authoring-20260620, vm-prerelease-row203-embargo-cve-authoring-20260620.",
+      "status": "done"
+    },
+    {
+      "id": "runner-and-replays",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Maintain the repo-local replay and run-contract work needed to turn reviewed VM prerelease feature/spec packets into execute-gated probes without running cloud mutation from planning.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/"
+      ],
+      "acceptance": [
+        "Replay/run-contract gaps are represented as concrete child work tied to reviewed feature/spec surfaces.",
+        "Cloud-mutating execution remains gated behind explicit execute leaves with cleanup and evidence expectations.",
+        "This branch stays scoped to repo-local runner/replay authoring for the current VM prerelease replacement focus."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:replays"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:03:33.933Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T17:03:03.253Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "rollup_summary": "2026-06-20 blocked-frontier reconciliation removed the redundant VM prerelease path-level wait from this lane. Durable runner meaning remains in evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md and the combined rows-25-and-50 send-ready bundle, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local replay backlog for the current slice; reopen runner work only if a human records send or escalation proof for the operator bundle, an authoritative operator reply arrives, or new steering changes the replay contract.",
+        "archived_done_leaf_count": 26,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620170303252.json",
+            "archived": 1,
+            "at": "2026-06-20T17:03:03.253Z",
+            "summary": "2026-06-20 blocked-frontier reconciliation removed the redundant VM prerelease path-level wait from this lane. Durable runner meaning remains in evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md and the combined rows-25-and-50 send-ready bundle, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local replay backlog for the current slice; reopen runner work only if a human records send or escalation proof for the operator bundle, an authoritative operator reply arrives, or new steering changes the replay contract.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620165355149.json",
+            "archived": 1,
+            "at": "2026-06-20T16:53:55.149Z",
+            "summary": "2026-06-20 owner review accepted vm-prerelease-plan-proof-after-row26-metadata-20260620 as the bounded post-row26 consistency checkpoint: the repo-local planner reran cleanly against evidence/pipelines/virtualmachine-prerelease.features.txt, row 26 remained selected and grouped with the capacity-surge slice, and the validated selector/spec/coverage-JSON/replay surfaces now truthfully describe execute-gated row-26 coverage without claiming cloud mutation or product pass/fail. Durable meaning for this branch is now simple: repo-local VM prerelease runner/planning alignment for the current row-26 replacement slice is complete, while the only remaining live runner child is the exact external wait vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620 for human send-proof or authoritative operator reply on the separate combined rows-25-and-50 bundle.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-plan-proof-after-row26-metadata-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620165249717.json",
+            "archived": 1,
+            "at": "2026-06-20T16:52:49.717Z",
+            "summary": "2026-06-20 owner hygiene rollup accepted vm-prerelease-row26-metadata-alignment-20260620 as completed repo-local runner implementation provenance: the mounted-source-backed row-26 metadata alignment landed with local validation, and its durable meaning is now that the replacement slice has execute-capable row-26 logic gated only by the normal cloud-mutation switch. The live runner frontier is now one active repo-local successor, vm-prerelease-plan-proof-after-row26-metadata-20260620, which must regenerate bounded planning proof after that alignment without claiming cloud execution; the separate VM prerelease human-send-proof-or-authoritative-reply wait remains an exact external carrier only.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-row26-metadata-alignment-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620164904873.json",
+            "archived": 1,
+            "at": "2026-06-20T16:49:04.873Z",
+            "summary": "2026-06-20 owner review accepted the row-26 VM prerelease capacity-based-surge-maxunavailable live replay implementation as complete repo-local runner work: evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620.md shows the mounted-source contract is implemented in the replay, local check/build validation passed, and execute now truthfully stops at the explicit AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate rather than missing execute logic. The current local mover in this lane is vm-prerelease-row26-metadata-alignment-20260620, which must update the stale spec/index/coverage descriptors so row 26 no longer claims check-only coverage while still clearly stating that cloud mutation/pass-fail coverage has not yet been run. The only other live child remains the exact external wait carrier vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620 for the separate rows-25-and-50 operator bundle; do not create new row-26 external waits unless later evidence proves a distinct external contract is needed.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620164527515.json",
+            "archived": 1,
+            "at": "2026-06-20T16:45:27.515Z",
+            "summary": "VM prerelease runner work now has one accepted done proof-capture artifact and one exact external-wait carrier: evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md truthfully records that the combined rows-25-and-50 operator bundle is accepted but no real send/handoff or operator reply exists yet, so the family is preserved as a single blocked wait task while source-grounded live replay implementation continues on vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620. No duplicate row-specific passive waits should be created unless returned evidence proves the family split.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-live-operator-handoff-proof-capture-20260620"
+            ]
+          }
+        ]
+      },
+      "updated_at": "2026-06-20T13:24:50.901Z",
+      "summary": "2026-06-20 owner review accepted the post-row35 VM prerelease selector-repair branch: evidence/archive/vm-prerelease-plan-rerun-post-row35-proof-20260620.md proved row 35 was coverage-repaired but absent only because the reviewed selector file lacked path.secops-identity-binding-system-assigned, and evidence/archive/vm-prerelease-row35-selector-promotion-proof-20260620.md then accepted the exact selector promotion plus clean plan/dry-run rerun showing row 35 selected while rows 36/44 stayed selected and rows 46/47 stayed truthfully excluded. This lane now has no live local replay/selector mismatch work; any next action moves to evidence/checkpoint reassessment rather than more runner/replay reconciliation.",
+      "result": "Child review pending: vm-prerelease-row25-live-replay-implementation-20260620.",
+      "blocker": "The runner/replay lane has no remaining repo-local implementation backlog for this replacement slice. Its single live child is vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620, which truthfully stays blocked until a human owner/operator records durable repo-local send or escalation proof for evidence/archive/vm-prerelease-live-operator-request-bundle-20260620.md, or an authoritative operator reply arrives for the unchanged combined rows-25-and-50 bundle.",
+      "status": "done"
+    }
+  ]
+}

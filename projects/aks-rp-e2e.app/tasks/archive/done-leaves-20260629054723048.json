@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T05:47:23.048Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 blocked-frontier owner review accepts both recovered-run artifact classifications now that authenticated GitHub Actions evidence is available: run 28349661035 supports the narrower pass/product_pass carrier for path.workload-health-konnectivity-readiness, and run 28349266093 supports run-level/spec-review pass/product_pass for spec.workload-identity.upgrade-survival while preserving the already-modeled narrower carrier because kubectl-dependent webhook/Linux/Windows and post-upgrade JWKS branches remain deferred/unevidenced. Remaining live work in this lane is intentionally limited to one active reconciliation leaf for konnectivity-readiness durable surfaces plus the single shared westus2 cluster-count preflight returned-proof wait; do not invent duplicate local environment work until same-surface recovery proof, a durably reviewed replacement surface, or an authoritative reroute/decline arrives.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the extracted authenticated artifact bundle for recovered run 28349661035 and write a durable classification note for spec.workload-health.konnectivity-readiness, including whether the terminal success plus result.json/diagnosis supports a pass/product_pass verdict or a narrower artifact-backed disposition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629.md"
+      ],
+      "acceptance": [
+        "Use the extracted workspace evidence from ../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-* plus the family unblock note to record terminal workflow/job/artifact state, exact result.json/summary/diagnosis findings, and any diagnostic/deferred assertion nuance that affects classification.",
+        "Write one durable artifact-backed note that states the truthful classification inputs for spec.workload-health.konnectivity-readiness and what model/spec verdict update should follow next, without reintroducing an evidence-access blocker or relying on unauthenticated polling."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.workload-health.konnectivity-readiness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:43:59.117Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629_20260629054359",
+        "assigned_at": "2026-06-29T05:43:59.385Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-2",
+        "worker_started_attempt_id": "a_classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629_20260629054359",
+        "worker_started_at": "2026-06-29T05:44:09.545Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable classification note for recovered run 28349661035 at evidence/archive/classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629.md, concluding the artifact supports pass/product_pass for the current replay contract but only at the narrower ARM-level-with-diagnostic-kubectl scope.",
+        "last_worker_completed_at": "2026-06-29T05:45:53.239Z",
+        "last_worker_evidence": [
+          "evidence/archive/classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T05:46:19.219Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the recovered-run classification note: extracted authenticated artifacts show run 28349661035 completed success with result.json passed and diagnosis.json product_pass, while the note correctly narrows the durable claim to an ARM-level/cluster-provisioning-backed pass because kubectl tunnel/readiness assertions remained diagnostic-only. This satisfies the review leaf acceptance and gives the next truthful repo-local action: reconcile the model/spec wording to that narrower observed pass scope."
+      },
+      "session_id": "s_task_classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-2",
+      "session_history": [
+        "s_task_classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-2"
+      ],
+      "result": "Wrote a durable classification note for recovered run 28349661035 at evidence/archive/classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629.md, concluding the artifact supports pass/product_pass for the current replay contract but only at the narrower ARM-level-with-diagnostic-kubectl scope.",
+      "evidence": [
+        "evidence/archive/classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T05:46:19.219Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the recovered-run classification note: extracted authenticated artifacts show run 28349661035 completed success with result.json passed and diagnosis.json product_pass, while the note correctly narrows the durable claim to an ARM-level/cluster-provisioning-backed pass because kubectl tunnel/readiness assertions remained diagnostic-only. This satisfies the review leaf acceptance and gives the next truthful repo-local action: reconcile the model/spec wording to that narrower observed pass scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the extracted authenticated artifact bundle for recovered run 28349266093 and write a durable classification note for spec.workload-identity.upgrade-survival, including whether the terminal success plus result.json/diagnosis supports a pass/product_pass verdict or a narrower artifact-backed disposition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md"
+      ],
+      "acceptance": [
+        "Use the extracted workspace evidence from ../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-* plus the family unblock note to record terminal workflow/job/artifact state, exact result.json/summary/diagnosis findings, and any diagnostic/deferred assertion nuance that affects classification.",
+        "Write one durable artifact-backed note that states the truthful classification inputs for spec.workload-identity.upgrade-survival and what model/spec verdict update should follow next, without reintroducing an evidence-access blocker or relying on unauthenticated polling."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.workload-identity.upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:43:59.169Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629_20260629054359",
+        "assigned_at": "2026-06-29T05:43:59.434Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260",
+        "worker_started_attempt_id": "a_classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629_20260629054359",
+        "worker_started_at": "2026-06-29T05:44:09.589Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable artifact review note at evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md classifying recovered run 28349266093 as run-level pass/product_pass while preserving the narrower modeled boundary for deferred kubectl/JWKS branches.",
+        "last_worker_completed_at": "2026-06-29T05:46:31.368Z",
+        "last_worker_evidence": [
+          "evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T05:47:12.031Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md: recovered run 28349266093 is terminal and artifact-backed, supporting run-level/spec-review pass/product_pass for spec.workload-identity.upgrade-survival while preserving the already-modeled narrower carrier because kubectl-dependent webhook/Linux/Windows assertions and post-upgrade JWKS closure remain unevidenced/deferred."
+      },
+      "session_id": "s_task_classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260",
+      "session_history": [
+        "s_task_classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260"
+      ],
+      "result": "Wrote a durable artifact review note at evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md classifying recovered run 28349266093 as run-level pass/product_pass while preserving the narrower modeled boundary for deferred kubectl/JWKS branches.",
+      "evidence": [
+        "evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T05:47:12.031Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629.md: recovered run 28349266093 is terminal and artifact-backed, supporting run-level/spec-review pass/product_pass for spec.workload-identity.upgrade-survival while preserving the already-modeled narrower carrier because kubectl-dependent webhook/Linux/Windows assertions and post-upgrade JWKS closure remain unevidenced/deferred."
+      },
+      "status": "done"
+    }
+  ]
+}

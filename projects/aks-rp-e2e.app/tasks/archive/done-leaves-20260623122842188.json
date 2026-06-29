@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:28:42.188Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 OIDC repair branch accepted and compacted: the execute-gate repair leaf is now durable in evidence/archive/oidc-default-by-version-execute-gate-repair-20260623.md with mounted-source/replay verification accepted, and the next live frontier remains the single active no-cloud readiness packet for path.oidc.default-by-version.k8s-gte-1.34 so any future explicit --execute run has exact gates, expected assertions, cleanup, and evidence targets before cloud mutation is considered. The separate external-human wait family remains the only truthful blocked branch and should not reopen completed repo-local VM/private-cluster source closure.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-default-by-version-execute-gate-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/runner lane: repair the repo-local execution gate contract for replays/oidc-issuer-default-by-version.ts so the carrier matches its documented safety semantics. Make default invocation and --check non-mutating, require an explicit --execute flag before any live path is reachable, and ensure cloud-mutation allowance is derived from the configured gate instead of being forced true. Preserve the accepted top-level identity and >=1.34 preflight repair while adding a no-cloud archive note that explains the gate fix and any remaining live-execution unknowns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-execute-gate-repair-20260623.md"
+      ],
+      "acceptance": [
+        "The replay code and CLI semantics now truthfully implement the documented safety contract: default invocation and --check stay non-mutating, execute mode is entered only with an explicit --execute flag, and cloud-mutation allowance is computed from the required env gate instead of an unconditional true value.",
+        "A durable no-cloud archive artifact cites the exact replay changes plus repo-local verification showing the repaired carrier still aligns with spec.oidc-issuer.default-by-version and path.oidc.default-by-version.k8s-gte-1.34 without claiming a new runtime verdict or reopening unrelated OIDC/JWKS/external-human branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc.default-by-version.k8s-gte-1.34"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:22:26.721Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-by-version-execute-gate-repair-20260623_20260623122229",
+        "assigned_at": "2026-06-23T12:22:29.018Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-by-version-execute-gate-repair-20260623",
+        "worker_started_attempt_id": "a_oidc-default-by-version-execute-gate-repair-20260623_20260623122229",
+        "worker_started_at": "2026-06-23T12:22:46.899Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the OIDC default-by-version replay gate semantics in replays/oidc-issuer-default-by-version.ts and added a durable no-cloud archive note documenting the fix plus verification evidence.",
+        "last_worker_completed_at": "2026-06-23T12:26:01.938Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:27:29.692Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/oidc-default-by-version-execute-gate-repair-20260623.md plus replay lines 82-107, 142-155, 425-438, and 519-533 verify the default carrier is now non-mutating unless --execute is explicit, the cloud-mutation allowance follows the env gate, the >=1.34 preflight remains intact, and the top-level managed identity shape stays preserved without claiming a new live product verdict."
+      },
+      "session_id": "s_task_oidc-default-by-version-execute-gate-repair-20260623",
+      "session_history": [
+        "s_task_oidc-default-by-version-execute-gate-repair-20260623"
+      ],
+      "result": "Repaired the OIDC default-by-version replay gate semantics in replays/oidc-issuer-default-by-version.ts and added a durable no-cloud archive note documenting the fix plus verification evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T12:27:29.692Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/oidc-default-by-version-execute-gate-repair-20260623.md plus replay lines 82-107, 142-155, 425-438, and 519-533 verify the default carrier is now non-mutating unless --execute is explicit, the cloud-mutation allowance follows the env gate, the >=1.34 preflight remains intact, and the top-level managed identity shape stays preserved without claiming a new live product verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

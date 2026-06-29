@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:16:13.123Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update: the stale watchdog review wake pointed at private-cluster-mounted-source-scenario-gap-scan-20260622, but that review leaf was already accepted and is now archived here. The durable result is that mounted handwritten private-cluster source no longer has a repo-local source/spec/model landing gap. The single live repo-local frontier item is private-cluster-mounted-source-evidence-ceiling-ledger-20260622, which must document only the three remaining evidence-ceiling paths — path.private-cluster-vnet-integration-shared-apiserver-subnet, path.private-cluster-none-dns-zone-v3, and path.private-cluster-byo-dns-server-topology-exact — and must not imply retry or reopening of the separate final pass path.private-cluster-byo-dns-server. The only other open branch stays the compressed external human/out-of-runtime proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-scenario-gap-scan-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP handwritten e2ev3 private-cluster source to enumerate remaining private-cluster scenarios and map which ones already have repo-local spec/replay/model coverage versus which still need bounded source/spec/model follow-up after the none-dns-zone-v3 packet closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-scenario-gap-scan-20260622.md"
+      ],
+      "acceptance": [
+        "The artifact cites the mounted private-cluster handwritten source files/scenarios inspected, lists the scenario ids or names found, and classifies each as already covered, blocked by existing evidence ceiling, or missing repo-local source/spec/model coverage.",
+        "The artifact recommends the single next concrete private-cluster repo-local leaf to open, if any, without opening cloud mutation or external-send work and without reintroducing the already-accepted none-dns-zone-v3 review branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:12:14.556Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-scenario-gap-scan-20260622_20260622141214",
+        "assigned_at": "2026-06-22T14:12:14.603Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-scenario-gap-scan-20260622",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-scenario-gap-scan-20260622_20260622141214",
+        "worker_started_at": "2026-06-22T14:12:32.910Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the private-cluster mounted-source scenario gap scan artifact at evidence/archive/private-cluster-mounted-source-scenario-gap-scan-20260622.md. The scan confirms all 17 mounted handwritten private-cluster scenarios now have repo-local source/spec/model landing, with only three exact branches remaining at the accepted evidence ceiling.",
+        "last_worker_completed_at": "2026-06-22T14:14:44.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:15:30.475Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/private-cluster-mounted-source-scenario-gap-scan-20260622.md: it cites the mounted handwritten private-cluster source files inspected, enumerates all 17 scenarios, classifies each as already covered or parked at the existing evidence ceiling, confirms there is no remaining repo-local source/spec/model coverage gap, and recommends one bounded repo-local follow-up rather than reopening none-dns-zone-v3 or cloud mutation work."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-scenario-gap-scan-20260622",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-scenario-gap-scan-20260622"
+      ],
+      "result": "Produced the private-cluster mounted-source scenario gap scan artifact at evidence/archive/private-cluster-mounted-source-scenario-gap-scan-20260622.md. The scan confirms all 17 mounted handwritten private-cluster scenarios now have repo-local source/spec/model landing, with only three exact branches remaining at the accepted evidence ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:15:30.475Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/private-cluster-mounted-source-scenario-gap-scan-20260622.md: it cites the mounted handwritten private-cluster source files inspected, enumerates all 17 scenarios, classifies each as already covered or parked at the existing evidence ceiling, confirms there is no remaining repo-local source/spec/model coverage gap, and recommends one bounded repo-local follow-up rather than reopening none-dns-zone-v3 or cloud mutation work."
+      },
+      "status": "done"
+    }
+  ]
+}

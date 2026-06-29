@@ -50,7 +50,11 @@ function focusRunKind(triggerType: string | undefined): "proposal" | "review" {
 }
 
 function focusSessionId(kind: "proposal" | "review"): string {
-  return kind === "proposal" ? "s_focus_plan_strategy" : "s_focus_plan_review";
+  const stem =
+    kind === "proposal" ? "s_focus_plan_strategy" : "s_focus_plan_review";
+  const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${stem}_${stamp}_${suffix}`;
 }
 
 function extractMarker(text: string, name: string): string {
@@ -352,6 +356,7 @@ function dispatchOwnerRequested(
 ): void {
   try {
     ctx.dispatchEvent("project.owner.requested", {
+      target: { project: "aks-rp-e2e" },
       project: "aks-rp-e2e",
       reason: `focus-plan-${input.kind}`,
       focusResult: input.result,
@@ -426,6 +431,7 @@ function dispatchHumanApproval(
 
   try {
     ctx.dispatchEvent("message.created", {
+      target: { project: "aks-rp-e2e", human: true },
       from: "aks-explorer",
       to: "human",
       content: text,

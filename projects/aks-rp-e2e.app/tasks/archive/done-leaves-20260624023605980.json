@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:36:05.980Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the completed storage-csi-file-clone mounted-source boundary map as durable repo-local knowledge: the archive now pins the Azure File hello-world write + wait + PVC dataSource clone + cloned readback contract against exact mounted handwritten source and maintained carriers without claiming cloud execution. The truthful next executable repo-local storage CSI work is now three active replay-focused leaves — storage-csi-disk-resize replay carrier skeleton, storage-csi-disk-xfs future live execution gate packet, and the newly-seeded storage-csi-file-clone replay carrier skeleton — while the three external approval/devbox waits remain intentionally unchanged until returned proof arrives or the first same-branch owner follow-up on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-clone-boundary-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Derive the accepted mounted-source boundary map for path.storage-csi-file-clone from the handwritten AKS source and canonical feature/spec/replay carriers so future verification stays bounded to the original hello-world write, wait, PVC dataSource clone, and cloned readback contract without widening into disk clone or snapshot semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-clone-boundary-map-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted-source slice and maintained feature/spec/replay references for path.storage-csi-file-clone, and records the accepted inputs, expected behavior, adjacent surfaces, current repo-local coverage, and unknown edges for the file-clone path only.",
+        "Record the next safe verification gate for this path, explicitly noting that no cloud execution occurred and that the branch stays bounded to original write + wait + dataSource clone + cloned readback semantics rather than disk clone, resize, raw-block, or snapshot behavior.",
+        "If the work requires a small bounded model/view or carrier-alignment update, validate it with the repo-local check path and cite that proof in the archive note; otherwise state why no maintained edit was needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:32:20.558Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-boundary-map-20260624_20260624023220",
+        "assigned_at": "2026-06-24T02:32:20.658Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-boundary-map-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-boundary-map-20260624_20260624023220",
+        "worker_started_at": "2026-06-24T02:32:44.710Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived the bounded Azure File clone boundary map at evidence/archive/storage-csi-file-clone-boundary-map-20260624.md, grounded it in mounted handwritten source and maintained carriers, and verified the repo-local replay check still passes without cloud execution.",
+        "last_worker_completed_at": "2026-06-24T02:34:01.894Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:34:50.571Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note grounds path.storage-csi-file-clone in the exact mounted azurefilecsi.go clone slice, records the bounded input and expectation surface plus adjacent-surface separation and unknown edges, cites maintained feature/spec/replay/model/view carriers, and includes repo-local check proof while truthfully recording that no cloud execution occurred."
+      },
+      "session_id": "s_task_storage-csi-file-clone-boundary-map-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-clone-boundary-map-20260624"
+      ],
+      "result": "Archived the bounded Azure File clone boundary map at evidence/archive/storage-csi-file-clone-boundary-map-20260624.md, grounded it in mounted handwritten source and maintained carriers, and verified the repo-local replay check still passes without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:34:50.571Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note grounds path.storage-csi-file-clone in the exact mounted azurefilecsi.go clone slice, records the bounded input and expectation surface plus adjacent-surface separation and unknown edges, cites maintained feature/spec/replay/model/view carriers, and includes repo-local check proof while truthfully recording that no cloud execution occurred."
+      },
+      "status": "done"
+    }
+  ]
+}

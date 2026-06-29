@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:11:59.357Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+  "summary": "VM prerelease replacement rollup: accepted bounded source-equivalent slice work now proves former exact-source overblocks can split into narrower repo-local outcomes without pretending full semantic closure. Archived ASM lifecycle and PolicyAddon slice notes preserve their durable meaning: ASM lifecycle remains narrowed to exact handwritten semantics, while PolicyAddon row 167 now advances through its dedicated model/view linkage promotion. New active/backlog bounded slices for ASM functionality/BYOCA/Windows-negative and ASM Azure CNI rows 69-72 continue the same repair pattern; remaining blocked children stay reserved for exact unresolved handwritten/source-holder proof or separately gated execution/typecheck waits.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Probe one bounded VirtualMachine prerelease ASM lifecycle slice to test whether exact-source blocking is overstated. Starting from the existing blocked rows 64/65/68/73/74 branch and adjacent ASM lifecycle authorities already in repo, determine whether one truthful bounded authoring/spec successor can proceed now without exact handwritten source, or prove the exact evidence ceiling that keeps the lifecycle family externally blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites blocked leaf vm-prerelease-addonv2-asm-lifecycle-exact-source-unblock-20260617 plus the nearest already-linked ASM lifecycle authority packet(s), then tests one bounded row family slice for truthful repo-local progress without inventing assertions.",
+        "The note ends with exactly one planner-usable result: one bounded successor to create now, or an explicit evidence ceiling that justifies keeping the lifecycle family externally blocked.",
+        "No cloud execution and no broad VM prerelease rediscovery beyond the sampled ASM lifecycle slice occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:asm-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:06:00.591Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620_20260620080600",
+        "assigned_at": "2026-06-20T08:06:00.649Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620_20260620080600",
+        "worker_started_at": "2026-06-20T08:06:44.364Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded ASM lifecycle slice archive note at evidence/archive/vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620.md, testing row 64 against the nearest existing ASM lifecycle authority and concluding the family should remain externally blocked on exact source evidence.",
+        "last_worker_completed_at": "2026-06-20T08:07:47.958Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:09:31.893Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620.md: the sampled row-64 audit truthfully proves the lifecycle family can stay externally blocked because repo-local evidence still cannot choose a concrete CRUD mutation/assertion contract or safe source-equivalence attachment."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:09:31.893Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vm-prerelease-addonv2-asm-lifecycle-bounded-source-equivalent-slice-20260620.md: the sampled row-64 audit truthfully proves the lifecycle family can stay externally blocked because repo-local evidence still cannot choose a concrete CRUD mutation/assertion contract or safe source-equivalence attachment."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Probe one bounded VM prerelease PolicyAddon slice to test whether the handwritten-source blocker still hides truthful repo-local progress. Starting from the blocked PolicyAddon source branch and the nearest policy/public/native authorities already in repo, determine whether one concrete bounded spec/authoring successor can proceed now or prove the exact evidence ceiling that leaves the family externally blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites blocked leaf vm-prerelease-policy-addon-handwritten-source-unblock-20260617 plus the current PolicyAddon source-packet lineage already linked from that branch, then tests one bounded slice for truthful repo-local progress without exact handwritten source.",
+        "The note ends with exactly one planner-usable result: one bounded successor to create now, or an explicit evidence ceiling that justifies keeping the PolicyAddon family externally blocked.",
+        "No cloud execution and no broad VM prerelease rediscovery beyond the sampled PolicyAddon slice occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:policy-addon"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:06:00.707Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620_20260620080600",
+        "assigned_at": "2026-06-20T08:06:00.772Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620_20260620080600",
+        "worker_started_at": "2026-06-20T08:06:44.480Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded PolicyAddon slice audit and wrote a durable archive note showing row 167 already has repo-local spec/replay/index progress, so the truthful next successor is a narrow model/view linkage promotion rather than keeping the whole family fully blocked.",
+        "last_worker_completed_at": "2026-06-20T08:08:14.917Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:09:31.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620.md: it keeps final PolicyAddon semantics blocked on handwritten source while proving row 167 already has check-clean spec/replay/index progress and therefore warrants one bounded model/view linkage successor now."
+      },
+      "session_id": "s_task_vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:09:31.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vm-prerelease-policy-addon-bounded-source-equivalent-slice-20260620.md: it keeps final PolicyAddon semantics blocked on handwritten source while proving row 167 already has check-clean spec/replay/index progress and therefore warrants one bounded model/view linkage successor now."
+      },
+      "status": "done"
+    }
+  ]
+}

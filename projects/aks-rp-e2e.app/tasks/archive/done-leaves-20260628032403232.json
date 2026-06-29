@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T03:24:03.232Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review closes the remaining node-confidential-vm repair branch as durable. The packet/spec set now anchors confidential-node coverage on mounted Scenario_CVM_SNP in cvmsnp.go, accepts only the exact SNP-first mixed topology provision -> dcpool -> validation -> nondc (2-node confidential system pool -> 1-node confidential user pool -> 1-node non-confidential user pool), keeps KataVmIsolation only as adjacent handed-off runtime-container lineage, and leaves the EC-family/TDX contradiction plus broader mixed-topology variants as explicit non-accepted gaps. Archive the two safe done node-confidential-vm leaves because their durable meaning is now preserved on this parent and in the accepted packet/spec/evidence artifacts; do not invent another node-confidential-vm refill until new mounted source or product evidence changes those remaining gaps.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "normalize-node-confidential-vm-kata-adjacent-followup-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the remaining Kata adjacency under node-confidential-vm so the packet no longer implies covered confidential-node kata-snp scope: use mounted kata.go plus mounted swagger/constants to keep only KataVmIsolation/kata-vm-isolation adjacency, make any runtime-container handoff explicit, and preserve a durable evidence note for the narrowed follow-up.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/node-confidential-vm.yaml"
+      ],
+      "acceptance": [
+        "features/node-confidential-vm.yaml keeps SNP pool behavior as accepted core and rewrites the Kata adjacency so it is clearly a deferred adjacent follow-up rather than covered confidential-node scope.",
+        "features/node-confidential-vm/specs/node-confidential-vm-kata-snp-runtime.json is rewritten or split so its title/status/notes are grounded only in mounted kata.go plus mounted swagger/constants and do not imply mounted handwritten proof for kata-mshv-vm-snp confidential-node behavior.",
+        "A durable repo-local note under evidence/archive captures the exact mounted KataVmIsolation and naming-drift findings plus the resulting handoff decision (stay adjacent here or point to runtime-container)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-confidential-vm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T03:17:18.900Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_normalize-node-confidential-vm-kata-adjacent-followup-20260628_20260628031718",
+        "assigned_at": "2026-06-28T03:17:18.950Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_normalize-node-confidential-vm-kata-adjacent-followup-20260628",
+        "worker_started_attempt_id": "a_normalize-node-confidential-vm-kata-adjacent-followup-20260628_20260628031718",
+        "worker_started_at": "2026-06-28T03:17:30.506Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Narrowed the node-confidential-vm Kata adjacency in the packet/spec and added a durable evidence note that grounds the follow-up on mounted Scenario_Kata_VM_Isolation plus swagger/constants naming drift, with explicit runtime-container handoff for any future exact Kata work.",
+        "last_worker_completed_at": "2026-06-28T03:20:05.617Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T03:20:56.615Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/node-confidential-vm.yaml now keeps SNP pool behavior as accepted core, narrows Kata to adjacent KataVmIsolation/kata-vm-isolation follow-up with explicit runtime-container handoff, and features/node-confidential-vm/specs/node-confidential-vm-kata-snp-runtime.json plus evidence/archive/node-confidential-vm-kata-adjacent-followup-20260628.md preserve the bounded mounted-source naming-drift evidence without overclaiming kata-mshv-vm-snp confidential-node coverage."
+      },
+      "session_id": "s_task_normalize-node-confidential-vm-kata-adjacent-followup-20260628",
+      "session_history": [
+        "s_task_normalize-node-confidential-vm-kata-adjacent-followup-20260628"
+      ],
+      "result": "Narrowed the node-confidential-vm Kata adjacency in the packet/spec and added a durable evidence note that grounds the follow-up on mounted Scenario_Kata_VM_Isolation plus swagger/constants naming drift, with explicit runtime-container handoff for any future exact Kata work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T03:20:56.615Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/node-confidential-vm.yaml now keeps SNP pool behavior as accepted core, narrows Kata to adjacent KataVmIsolation/kata-vm-isolation follow-up with explicit runtime-container handoff, and features/node-confidential-vm/specs/node-confidential-vm-kata-snp-runtime.json plus evidence/archive/node-confidential-vm-kata-adjacent-followup-20260628.md preserve the bounded mounted-source naming-drift evidence without overclaiming kata-mshv-vm-snp confidential-node coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the mounted Scenario_CVM_SNP additional-pool topology into the node-confidential-vm packet/specs so the remaining mixed-topology gap is source-backed instead of hand-waved.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/node-confidential-vm.yaml",
+        "../aks-rp-e2e/features/node-confidential-vm/specs/node-confidential-vm-snp-pool.json",
+        "../aks-rp-e2e/evidence/archive/node-confidential-vm-mixed-topology-extraction-20260628.md"
+      ],
+      "acceptance": [
+        "features/node-confidential-vm.yaml records the mounted confidential + non-confidential follow-on pool topology from cvmsnp.go with clear accepted-vs-unknown boundaries.",
+        "features/node-confidential-vm/specs/node-confidential-vm-snp-pool.json captures the mounted create-cluster/add-confidential-pool/add-nonconfidential-pool flow and does not imply unsupported topology beyond the mounted scenario.",
+        "A durable evidence note under evidence/archive quotes the exact mounted cvmsnp.go topology findings and any residual unknown edges."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-confidential-vm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T03:20:56.668Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628_20260628032056",
+        "assigned_at": "2026-06-28T03:20:56.720Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628",
+        "worker_started_attempt_id": "a_extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628_20260628032056",
+        "worker_started_at": "2026-06-28T03:21:07.192Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Extracted the mounted Scenario_CVM_SNP mixed-topology sequence into the node-confidential-vm packet/spec and added a durable evidence note documenting the exact dcpool/validation/nondc ordering and residual unknown edges.",
+        "last_worker_completed_at": "2026-06-28T03:22:27.671Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T03:24:03.178Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the evidence note, node-confidential-vm packet, and SNP-pool spec all now encode the exact mounted cvmsnp.go sequence provision -> dcpool -> validation -> nondc with the bounded 2->1->1 topology and keep reverse ordering, repeated alternation, Windows/autoscale variants, TDX support, and other broader claims explicitly outside accepted scope."
+      },
+      "session_id": "s_task_extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628",
+      "session_history": [
+        "s_task_extract-node-confidential-vm-mixed-topology-from-cvmsnp-20260628"
+      ],
+      "result": "Extracted the mounted Scenario_CVM_SNP mixed-topology sequence into the node-confidential-vm packet/spec and added a durable evidence note documenting the exact dcpool/validation/nondc ordering and residual unknown edges.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T03:24:03.178Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the evidence note, node-confidential-vm packet, and SNP-pool spec all now encode the exact mounted cvmsnp.go sequence provision -> dcpool -> validation -> nondc with the bounded 2->1->1 topology and keep reverse ordering, repeated alternation, Windows/autoscale variants, TDX support, and other broader claims explicitly outside accepted scope."
+      },
+      "status": "done"
+    }
+  ]
+}

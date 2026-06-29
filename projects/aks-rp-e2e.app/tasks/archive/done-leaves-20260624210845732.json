@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T21:08:45.732Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner reconciled the LocalDNS problem-unknown wake without widening scope. Durable repo-local history remains the accepted mounted-source inventory: VirtualMachine prerelease/checkin rows 52-53 already have exact VM-prerelease LocalDNS carriers in specs/index.json and the coverage ledger, while maintained model/view foreground surfaces still point only to broader generic LocalDNS carriers. The original repair-decision leaf is now superseded replaced history because its worker attempt ended blocked/error with no evidence artifact; keep virtualmachine-prerelease-localdns-maintained-surface-repair-retry-20260624 as the sole active bounded recovery branch to inspect mounted source plus maintained-surface generation ownership and either produce the missing archive decision artifact or make the minimal repo-local repair for rows 52-53. Preserve the four blocked external waits unchanged until returned proof or their next owner-review window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide and, if justified, perform the bounded repo-local maintained-surface exactness repair for VirtualMachine prerelease LocalDNS rows 52-53 by reconciling whether the maintained model/view foreground surfaces should explicitly carry the exact VM-prerelease spec ids already present in specs/index.json, or else record an evidence-backed reason the generic LocalDNS carriers must remain the accepted maintained surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the accepted inventory evidence and the exact repo-local source(s) inspected for maintained-surface generation/ownership, then ends with one explicit decision for rows 52-53: foreground the exact VM-prerelease spec ids on maintained surfaces, or keep the generic LocalDNS carriers with a bounded accepted rationale.",
+        "If the decision is to repair maintained surfaces, the task updates the minimal repo-local source-of-truth and regenerated maintained outputs needed for that decision (including model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, plus any generator-owned surface that must change) and the artifact names the exact entries changed; if no repair is justified, the artifact proves why no repo-local surface change should be made.",
+        "No cloud mutation, no external-wait reopening, and no widening beyond the LocalDNS row-52/53 exactness question."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease.localdns-exactness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T20:59:27.275Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624_20260624205931",
+        "assigned_at": "2026-06-24T20:59:31.715Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624_20260624205931",
+        "worker_started_at": "2026-06-24T20:59:53.888Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-24T21:07:25.960Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T21:08:08.490Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after owner review found the task was not actually reviewable: the worker attempt ended blocked/error with no evidence and did not create evidence/archive/virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624.md. Successor leaf virtualmachine-prerelease-localdns-maintained-surface-repair-retry-20260624 now carries the bounded repo-local recovery and exact decision work for rows 52-53."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-24T21:08:08.490Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after owner review found the task was not actually reviewable: the worker attempt ended blocked/error with no evidence and did not create evidence/archive/virtualmachine-prerelease-localdns-maintained-surface-repair-decision-20260624.md. Successor leaf virtualmachine-prerelease-localdns-maintained-surface-repair-retry-20260624 now carries the bounded repo-local recovery and exact decision work for rows 52-53."
+      },
+      "status": "done"
+    }
+  ]
+}

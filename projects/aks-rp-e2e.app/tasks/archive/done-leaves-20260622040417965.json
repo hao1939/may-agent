@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:04:17.966Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update after the rows54-76 audit review: accept the completed row53 completion-reconcile and rows54-76 audit artifacts as durable evidence. The row53 reconcile proved the canonical LocalDNS path needs a separate maintained exposure decision leaf, which remains active as localdns-row53-maintained-exposure-decision-20260622. The rows54-76 audit proved the next highest-value bounded repo-local VM prerelease slice is row 63 maintained model/view repair for path.app-monitoring-addonv2-azure-monitor-metrics, so vmpr-row63-maintained-model-view-repair-20260622 remains the truthful active successor. Preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single blocked family-level external-human wait; no new row76 or broad family audit leaf is needed until real send/reply proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-row53-completion-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the missing VM prerelease row 53 LocalDNS completion claim by locating or recreating the durable repo-local artifact/model evidence so the project has a verified row-53 boundary verdict instead of an unverified closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row53-completion-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact states whether the claimed vmpr-row53 design-followup output and linked maintained model/view changes actually exist in the repo, citing exact file paths and current evidence.",
+        "If the prior claim cannot be verified as-is, artifact replaces it with a bounded repo-local row-53 boundary verdict using exact mounted source/scenario anchors plus maintained feature/spec/replay/view anchors, and names any required follow-up precisely.",
+        "Work stays repo-local only and ends with a truthful next action: accept the maintained carrier, create one bounded sibling/fix task, or record the exact reason the prior closure was unsupported."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "localdns"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:00:35.857Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-row53-completion-reconcile-20260622_20260622040035",
+        "assigned_at": "2026-06-22T04:00:35.906Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-row53-completion-reconcile-20260622",
+        "worker_started_attempt_id": "a_localdns-row53-completion-reconcile-20260622_20260622040035",
+        "worker_started_at": "2026-06-22T04:00:54.237Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a repo-local reconciliation artifact at evidence/archive/vmpr-row53-completion-reconcile-20260622.md showing the claimed row-53 design-followup file exists, but the current maintained model/view surfaces do not actually expose the row-53 variant landing; also revalidated the exact row-53 spec/replay carrier with a passing --check run.",
+        "last_worker_completed_at": "2026-06-22T04:02:23.535Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:03:30.381Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row53-completion-reconcile-20260622.md proves the prior closure was only partially supported. The exact row-53 spec/replay/check carrier exists repo-locally, but current maintained model/view surfaces still expose only the generic LocalDNS lifecycle mapping, so the truthful outcome is to close this reconcile and spawn one bounded maintained-exposure follow-up."
+      },
+      "session_id": "s_task_localdns-row53-completion-reconcile-20260622",
+      "session_history": [
+        "s_task_localdns-row53-completion-reconcile-20260622"
+      ],
+      "result": "Wrote a repo-local reconciliation artifact at evidence/archive/vmpr-row53-completion-reconcile-20260622.md showing the claimed row-53 design-followup file exists, but the current maintained model/view surfaces do not actually expose the row-53 variant landing; also revalidated the exact row-53 spec/replay carrier with a passing --check run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:03:30.381Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row53-completion-reconcile-20260622.md proves the prior closure was only partially supported. The exact row-53 spec/replay/check carrier exists repo-locally, but current maintained model/view surfaces still expose only the generic LocalDNS lifecycle mapping, so the truthful outcome is to close this reconcile and spawn one bounded maintained-exposure follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

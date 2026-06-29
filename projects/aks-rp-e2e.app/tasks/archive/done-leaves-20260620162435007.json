@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:24:35.007Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 watchdog planning pass: this runner lane now has one active repo-local repair and one exact external wait. The previous row-50 execute-readiness leaf was rejected in owner review because it returned no artifact/evidence; its durable meaning is preserved as a failed/replaced attempt and the active successor vm-prerelease-row50-execute-readiness-preflight-repair-20260620 is now the only truthful repo-local next step for reopening row 50. Row 25 remains a single accepted operator-gate wait with no further truthful local setup work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row50-execute-readiness-preflight-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the exact non-cloud execute-readiness contract for VM prerelease row 50 so the dedicated row-50 replay can be reopened later as one operator-gated live probe instead of remaining only source-grounded coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row50-execute-readiness-preflight-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact row-50 path/spec/replay trio and records the bounded execute contract: intended command entrypoint, required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value if any, required subscription/auth/kubectl preconditions, and the expected row-50 observation points to verify in a live run.",
+        "Evidence distinguishes repo-local readiness from actual cloud execution, names any remaining external operator gate precisely, and leaves a truthful reopen condition for a future live run without performing mutation in this task.",
+        "Task stays repo-local: it may inspect mounted source, replay/spec files, and existing automation conventions, but does not execute cloud mutation or create planner-control output."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:17:05.775Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row50-execute-readiness-preflight-20260620_20260620161705",
+        "assigned_at": "2026-06-20T16:17:05.822Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row50-execute-readiness-preflight-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row50-execute-readiness-preflight-20260620_20260620161705",
+        "worker_started_at": "2026-06-20T16:17:25.017Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-20T16:18:30.565Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:23:45.384Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected the review claim because task-tree show recorded last_worker_result=blocked with last_worker_summary=error and last_worker_evidence=[] while the declared markdown artifact was missing. This leaf is replaced by vm-prerelease-row50-execute-readiness-preflight-repair-20260620, which must regenerate the row-50 preflight artifact from source/spec/replay evidence before any operator-gate wait is accepted."
+      },
+      "session_id": "s_task_vm-prerelease-row50-execute-readiness-preflight-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row50-execute-readiness-preflight-20260620"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T16:23:45.384Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejected the review claim because task-tree show recorded last_worker_result=blocked with last_worker_summary=error and last_worker_evidence=[] while the declared markdown artifact was missing. This leaf is replaced by vm-prerelease-row50-execute-readiness-preflight-repair-20260620, which must regenerate the row-50 preflight artifact from source/spec/replay evidence before any operator-gate wait is accepted."
+      },
+      "status": "done"
+    }
+  ]
+}

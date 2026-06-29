@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T18:19:54.652Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Spec verification branch now has an accepted single-spec tooling-family split for the recent noisy app-routing/app-monitoring runs: run 28296445590 is a long-haul timeout-driven missing-result termination, run 28295984739 is goal-version env propagation plus wrapper classification loss, and run 28297127082 is a deterministic nginx-to-istio ENOENT artifact-path bug. Treat the current app-routing single-spec review queue as signal-degraded, not product-verdict-bearing, until the active repair leaves land proof. Immediate owner priority stays on the active successors already assigned: repair-single-spec-timeout-policy-for-longhaul-app-routing-specs-20260627, repair-app-routing-nginx-to-istio-migration-artifact-archive-path-20260627, and the app-monitoring rerun after goal-env repair. Do not queue new bounded reruns for default-domain-tls-lifecycle or nginx-to-istio migration until those repair leaves complete.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "finish-single-spec-run-watch-race-family-classification-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Complete the single-spec runner/watch race family investigation by reviewing the missing third run 28297127082 for spec.app-routing.nginx-to-istio-migration.zero-downtime, amending the durable investigation note so all three target runs are classified, and reconciling whether the existing successor leaves fully cover the truthful next action for each original spec or whether one exact additional follow-up must be created.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/investigate-single-spec-run-watch-race-family-20260627.md"
+      ],
+      "acceptance": [
+        "All three target runs named on investigate-single-spec-run-watch-race-family-20260627 are explicitly reviewed in the durable note with evidence-backed classification.",
+        "The note states, for each original affected spec leaf, whether it should be retried, superseded by an existing active leaf, or requires one newly created exact successor task.",
+        "If any original spec from the family is not covered by current active follow-up work, the task creates or names the missing exact follow-up instead of leaving the family review ambiguous."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-infra:single-spec-watch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T18:15:32.683Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T18:15:40.771Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_finish-single-spec-run-watch-race-family-classification-20260627_20260627181609",
+        "assigned_at": "2026-06-27T18:16:09.413Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_finish-single-spec-run-watch-race-family-classification-20260627",
+        "worker_started_attempt_id": "a_finish-single-spec-run-watch-race-family-classification-20260627_20260627181609",
+        "worker_started_at": "2026-06-27T18:16:10.317Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the single-spec failure-family review by classifying the missing run 28297127082, updating evidence/archive/investigate-single-spec-run-watch-race-family-20260627.md to cover all three runs, and reconciling exact successor coverage including two missing owner follow-up leaves for the app-routing specs.",
+        "last_worker_completed_at": "2026-06-27T18:18:00.621Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:19:47.214Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable investigation note: all three cited runs are explicitly classified with evidence, the family is correctly split into timeout, goal-env propagation/classification loss, and deterministic ENOENT artifact-path failure, and the exact successor coverage is now represented by the active repair/rerun leaves already in the tree."
+      },
+      "session_id": "s_task_finish-single-spec-run-watch-race-family-classification-20260627",
+      "session_history": [
+        "s_task_finish-single-spec-run-watch-race-family-classification-20260627"
+      ],
+      "result": "Completed the single-spec failure-family review by classifying the missing run 28297127082, updating evidence/archive/investigate-single-spec-run-watch-race-family-20260627.md to cover all three runs, and reconciling exact successor coverage including two missing owner follow-up leaves for the app-routing specs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:19:47.214Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable investigation note: all three cited runs are explicitly classified with evidence, the family is correctly split into timeout, goal-env propagation/classification loss, and deterministic ENOENT artifact-path failure, and the exact successor coverage is now represented by the active repair/rerun leaves already in the tree."
+      },
+      "status": "done"
+    }
+  ]
+}

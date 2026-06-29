@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:28:28.674Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier hygiene update: row-150 source-exactness is now a fully evidenced ceiling, not an open search warning. The accepted search artifact evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md is folded into blocker task vm-prerelease-row150-kubeproxy-vm-substrate-blocker-20260620, which now stands as the single truthful row-150 wait until a VirtualMachines + shared-identity source-equivalent carrier appears or the row requirement changes. MachinesPreview remains the single unsent external-send carrier, while the active repo-local movers remain vm-prerelease-gap-batch-identity-vnet-runner-20260620 and vm-prerelease-execution-gated-source-map-20260620.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Test whether VM prerelease row 150 can advance beyond the current source-exactness blocker by finding a truthful repo-local source-equivalent carrier for the explicit kubeProxyConfig create-IPTABLES/update-IPVS lifecycle on VirtualMachines + shared identity, or by proving the blocker ceiling more concretely.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md"
+      ],
+      "acceptance": [
+        "Mounted/local artifacts and mounted Go source are checked specifically for agent_pool_type=VirtualMachines and use_shared_identity=true coverage of the row-150 kubeProxyConfig lifecycle, and the artifact cites exact files/lines or exact absence evidence.",
+        "If a truthful source-equivalent carrier exists, the artifact names the candidate feature/spec/replay/path surfaces needed for a follow-on authoring task; otherwise it tightens the blocker ceiling with exact searched surfaces so future owner review can keep only one justified blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row150-kubeproxy"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:24:33.572Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620_20260620142433",
+        "assigned_at": "2026-06-20T14:24:33.622Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620_20260620142433",
+        "worker_started_at": "2026-06-20T14:24:50.719Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-150 VM-substrate source-equivalent search artifact at evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md, concluding no truthful repo-local carrier exists and tightening the blocker to the exact missing VirtualMachines + shared-identity source authority.",
+        "last_worker_completed_at": "2026-06-20T14:26:46.854Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:27:23.182Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review using evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md: mounted source and repo-local carriers were checked with exact file/line citations, no truthful VirtualMachines + shared-identity carrier for the explicit kubeProxy create-IPTABLES/update-IPVS lifecycle was found, and the blocker ceiling is now narrowed to one exact missing substrate authority."
+      },
+      "session_id": "s_task_vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620"
+      ],
+      "result": "Created the requested row-150 VM-substrate source-equivalent search artifact at evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md, concluding no truthful repo-local carrier exists and tightening the blocker to the exact missing VirtualMachines + shared-identity source authority.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:27:23.182Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review using evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md: mounted source and repo-local carriers were checked with exact file/line citations, no truthful VirtualMachines + shared-identity carrier for the explicit kubeProxy create-IPTABLES/update-IPVS lifecycle was found, and the blocker ceiling is now narrowed to one exact missing substrate authority."
+      },
+      "status": "done"
+    }
+  ]
+}

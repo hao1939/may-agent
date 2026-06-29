@@ -1,0 +1,667 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:13:27.378Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepts three fresh done slices in this lane and keeps focus narrow on the existing active verification/reconciliation drain. Spec.kms.v2plus-enable-pmk-from-non-kms is a clean staging pass (run 28371803957) with no extra model follow-up needed. The trusted-service private-KV branch now has an accepted repo-local model/status repair: path.kms.v2-trust-service-public-cluster-private-kv no longer claims a terminal KMSUseTrustedService create-gate block and instead carries the mixed post-create boundary backed by run 28372383806 plus mounted-source drift review. The rp-cluster-lifecycle new-vnet prerelease replay carrier repair is also accepted: the repo replay now uses a bounded source-equivalent nginx helper/image contract with richer rollout diagnostics, leaving any future rerun trustworthy instead of blind. Remaining open work stays on the already-active single-spec verification leaves, the active KMS/source-alignment and CCP surrogate-RBAC repairs, the HTTP500 classification leaf, and the single AAD-RBAC publication wait.",
+  "archived": 10,
+  "tasks": [
+    {
+      "id": "verify-spec-ccp-metricsserver-upgrade-survival",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-metricsserver.upgrade-survival through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-metricsserver.upgrade-survival",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.upgrade-survival"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-metricsserver.upgrade-survival",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-metricsserver.upgrade-survival workflow run 28370522786 classified as error. Loop key: verify-spec-ccp-metricsserver-upgrade-survival-a_verify-spec-ccp-metricsserver-upgrade-sur. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28370522786 Result: runs/test-results/single-ccp-metricsserver-upgrade-survival_222948/artifacts/ccp-metricsserver-upgrade-survival/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/test-results/single-ccp-metricsserver-upgrade-survival_222948/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:00:29.310Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T12:01:18.825Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-metricsserver-upgrade-survival_20260629120144",
+        "assigned_at": "2026-06-29T12:01:44.174Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-metricsserver-upgrade-survival",
+        "worker_started_attempt_id": "a_verify-spec-ccp-metricsserver-upgrade-survival_20260629120144",
+        "worker_started_at": "2026-06-29T12:01:56.157Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ccp-metricsserver.upgrade-survival workflow run 28370522786 classified as error. Loop key: verify-spec-ccp-metricsserver-upgrade-survival-a_verify-spec-ccp-metricsserver-upgrade-sur. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28370522786 Result: runs/test-results/single-ccp-metricsserver-upgrade-survival_222948/artifacts/ccp-metricsserver-upgrade-survival/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/test-results/single-ccp-metricsserver-upgrade-survival_222948/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T13:02:34.183Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:02:35.646Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-metricsserver.upgrade-survival workflow run 28370522786 classified as error. Loop key: verify-spec-ccp-metricsserver-upgrade-survival-a_verify-spec-ccp-metricsserver-upgrade-sur. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28370522786 Result: runs/test-results/single-ccp-metricsserver-upgrade-survival_222948/artifacts/ccp-metricsserver-upgrade-survival/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/test-results/single-ccp-metricsserver-upgrade-survival_222948/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-ccp-metricsserver-upgrade-survival",
+      "session_history": [
+        "s_task_verify-spec-ccp-metricsserver-upgrade-survival"
+      ],
+      "result": "Spec spec.ccp-metricsserver.upgrade-survival workflow run 28370522786 classified as error. Loop key: verify-spec-ccp-metricsserver-upgrade-survival-a_verify-spec-ccp-metricsserver-upgrade-sur. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28370522786 Result: runs/test-results/single-ccp-metricsserver-upgrade-survival_222948/artifacts/ccp-metricsserver-upgrade-survival/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28370522786/aks-rp-e2e-28370522786-spec-test-results/test-results/single-ccp-metricsserver-upgrade-survival_222948/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T13:02:35.646Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-custom-vnet",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-custom-vnet through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-custom-vnet",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-custom-vnet"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-custom-vnet",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28373584706 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. KMS v2+ create-new CMK with public KV + custom VNet lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373584706 Result: runs/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/artifacts/kms-v2plus-create-cmk-custom-vnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:55:50.068Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-custom-vnet_20260629125550",
+        "assigned_at": "2026-06-29T12:55:50.086Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-custom-vnet_20260629125550",
+        "worker_started_at": "2026-06-29T12:55:51.330Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28373584706 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. KMS v2+ create-new CMK with public KV + custom VNet lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373584706 Result: runs/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/artifacts/kms-v2plus-create-cmk-custom-vnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/result.json",
+        "last_worker_completed_at": "2026-06-29T13:03:27.743Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:03:29.227Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28373584706 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. KMS v2+ create-new CMK with public KV + custom VNet lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373584706 Result: runs/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/artifacts/kms-v2plus-create-cmk-custom-vnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28373584706 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. KMS v2+ create-new CMK with public KV + custom VNet lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373584706 Result: runs/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/artifacts/kms-v2plus-create-cmk-custom-vnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373584706/aks-rp-e2e-28373584706-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_619409/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:03:29.227Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28373688938 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ CMK with private KV lifecycle passed: create → validate CMK via PE → CMK service → encrypted → replace-all → all encrypted → cleanup. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373688938 Result: runs/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/artifacts/kms-v2plus-create-cmk-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:57:35.089Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle_20260629125735",
+        "assigned_at": "2026-06-29T12:57:35.111Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle_20260629125735",
+        "worker_started_at": "2026-06-29T12:57:39.791Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28373688938 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ CMK with private KV lifecycle passed: create → validate CMK via PE → CMK service → encrypted → replace-all → all encrypted → cleanup. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373688938 Result: runs/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/artifacts/kms-v2plus-create-cmk-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/result.json",
+        "last_worker_completed_at": "2026-06-29T13:04:47.508Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:04:53.983Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28373688938 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ CMK with private KV lifecycle passed: create → validate CMK via PE → CMK service → encrypted → replace-all → all encrypted → cleanup. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373688938 Result: runs/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/artifacts/kms-v2plus-create-cmk-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28373688938 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ CMK with private KV lifecycle passed: create → validate CMK via PE → CMK service → encrypted → replace-all → all encrypted → cleanup. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373688938 Result: runs/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/artifacts/kms-v2plus-create-cmk-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373688938/aks-rp-e2e-28373688938-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_809487/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:04:53.983Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28373712081 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ create-new CMK with public KV lifecycle passed: create (InfrastructureEncryption=Enabled, versionless keyId) → validate v2+ CMK → CMK service deployment → secret encryption → replace all → validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373712081 Result: runs/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/artifacts/kms-v2plus-create-cmk-public-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:57:59.421Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle_20260629125759",
+        "assigned_at": "2026-06-29T12:57:59.443Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle_20260629125759",
+        "worker_started_at": "2026-06-29T12:58:02.939Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28373712081 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ create-new CMK with public KV lifecycle passed: create (InfrastructureEncryption=Enabled, versionless keyId) → validate v2+ CMK → CMK service deployment → secret encryption → replace all → validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373712081 Result: runs/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/artifacts/kms-v2plus-create-cmk-public-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/result.json",
+        "last_worker_completed_at": "2026-06-29T13:05:09.706Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:05:17.564Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28373712081 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ create-new CMK with public KV lifecycle passed: create (InfrastructureEncryption=Enabled, versionless keyId) → validate v2+ CMK → CMK service deployment → secret encryption → replace all → validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373712081 Result: runs/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/artifacts/kms-v2plus-create-cmk-public-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28373712081 classified as pass. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. KMS v2+ create-new CMK with public KV lifecycle passed: create (InfrastructureEncryption=Enabled, versionless keyId) → validate v2+ CMK → CMK service deployment → secret encryption → replace all → validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373712081 Result: runs/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/artifacts/kms-v2plus-create-cmk-public-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373712081/aks-rp-e2e-28373712081-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_827143/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:05:17.564Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-non-kms through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-non-kms",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-non-kms"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-non-kms",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28371803957 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. KMS v2+ PMK enable from non-KMS lifecycle passed: plain cluster → pre-migration secret → enable PMK → validate mixed state → replace all → all encrypted. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371803957 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/artifacts/kms-v2plus-enable-pmk-from-non-kms/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:24:46.958Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-non-kms_20260629122446",
+        "assigned_at": "2026-06-29T12:24:46.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-non-kms_20260629122446",
+        "worker_started_at": "2026-06-29T12:24:48.224Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28371803957 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. KMS v2+ PMK enable from non-KMS lifecycle passed: plain cluster → pre-migration secret → enable PMK → validate mixed state → replace all → all encrypted. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371803957 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/artifacts/kms-v2plus-enable-pmk-from-non-kms/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/result.json",
+        "last_worker_completed_at": "2026-06-29T13:11:01.822Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:11:11.981Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28371803957 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. KMS v2+ PMK enable from non-KMS lifecycle passed: plain cluster → pre-migration secret → enable PMK → validate mixed state → replace all → all encrypted. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371803957 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/artifacts/kms-v2plus-enable-pmk-from-non-kms/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28371803957 classified as pass. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. KMS v2+ PMK enable from non-KMS lifecycle passed: plain cluster → pre-migration secret → enable PMK → validate mixed state → replace all → all encrypted. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371803957 Result: runs/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/artifacts/kms-v2plus-enable-pmk-from-non-kms/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371803957/aks-rp-e2e-28371803957-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_518007/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:11:11.981Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "await-aad-rbac-known-run-28371054186-terminal-artifacts",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the bounded external/runtime wait for spec.aad-rbac.nonaad-to-aadv2-migration known run 28371054186 until the existing workflow run either reaches a terminal downloadable-result state, publishes its first artifact, or hits the stale in-progress review checkpoint at 2026-06-29T18:15:00Z; then resume the accepted known-run verifier ingestion path without redispatch and classify the recovered evidence or replace the passive wait with exact diagnosis/escalation work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md"
+      ],
+      "acceptance": [
+        "GitHub run 28371054186 reaches a terminal status or publishes downloadable artifacts that let the known-run verifier complete without redispatch.",
+        "Owner or worker reruns the accepted known-run verifier backfill path against run 28371054186 and records whether workflow-metadata/result/spec-runner artifacts can now be ingested.",
+        "The follow-up remains bounded to artifact/result ingestion for run 28371054186 and does not claim new product evidence beyond the recovered terminal artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:54:04.088Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T13:02:18.472Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by review-aad-rbac-known-run-28371054186-checkpoint-20260629, which already carries the sole live owner action and exact resume condition for known run 28371054186; leaving both open created duplicate wait/review representation for the same stalled-artifact family."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T13:02:18.472Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by review-aad-rbac-known-run-28371054186-checkpoint-20260629, which already carries the sole live owner action and exact resume condition for known run 28371054186; leaving both open created duplicate wait/review representation for the same stalled-artifact family."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28372383806 artifacts for spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle and classify whether the failure is still the known staging feature-flag gate or a new product assertion.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2-trust-service-private-kv-run-28372383806-review-20260629.md"
+      ],
+      "acceptance": [
+        "Workflow metadata and result artifacts for run 28372383806 are inspected and the failing claims plus any HTTP/flag evidence are named.",
+        "The review compares the run with existing path.kms.v2-trust-service-public-cluster-private-kv blocked verdict and says whether the KMSUseTrustedService subscription gate still explains the failure.",
+        "If the run only reconfirms the flag gate, the task records the exact evidence ceiling; otherwise it names the concrete repo-local or model follow-up needed.",
+        "No blind rerun is proposed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:00:28.375Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T13:00:28.678Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629_20260629130051",
+        "assigned_at": "2026-06-29T13:00:51.178Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629_20260629130051",
+        "worker_started_at": "2026-06-29T13:00:53.891Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28372383806 artifacts and wrote a durable evidence note concluding the failure is not the old KMSUseTrustedService staging gate; the run passed cluster create and failed later on vault-delete/rotation assertions instead.",
+        "last_worker_completed_at": "2026-06-29T13:02:59.176Z",
+        "last_worker_evidence": [
+          "evidence/archive/kms-v2-trust-service-private-kv-run-28372383806-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:04:23.191Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the run-28372383806 review: the archived evidence names the passed create/upgrade path and the later vault-delete plus rotation failures, disproving the old KMSUseTrustedService-only gate and justifying a new repo-local follow-up leaf for the post-create failure boundary."
+      },
+      "session_id": "s_task_reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-kms-v2-trust-service-private-kv-run-28372383806-20260629"
+      ],
+      "result": "Reviewed run 28372383806 artifacts and wrote a durable evidence note concluding the failure is not the old KMSUseTrustedService staging gate; the run passed cluster create and failed later on vault-delete/rotation assertions instead.",
+      "evidence": [
+        "evidence/archive/kms-v2-trust-service-private-kv-run-28372383806-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:04:23.191Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the run-28372383806 review: the archived evidence names the passed create/upgrade path and the later vault-delete plus rotation failures, disproving the old KMSUseTrustedService-only gate and justifying a new repo-local follow-up leaf for the post-create failure boundary."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use run 28372383806 plus mounted AKS RP source, repo spec, and test assertions to replace the stale KMSUseTrustedService-only ceiling for spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle with an exact post-create failure boundary and the concrete model/evidence updates it requires.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source, repo spec, and replay assertions for the trusted-service private-KV lifecycle are compared against run 28372383806 so the expected contract for vault delete and the two rotation steps is named with citations.",
+        "The review states whether the observed later-lifecycle failures are assertion drift, product-failure evidence, or a mixed ceiling, and it names the exact model/view/evidence carriers that must change because the old KMSUseTrustedService create-gate ceiling is stale.",
+        "The follow-up remains repo-local: no blind rerun is proposed, and the next action is either a bounded model/status update or a narrower product-diagnosis leaf justified by the reviewed evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:04:23.079Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629_20260629130423",
+        "assigned_at": "2026-06-29T13:04:23.133Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629",
+        "worker_started_attempt_id": "a_reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629_20260629130423",
+        "worker_started_at": "2026-06-29T13:04:54.816Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable evidence review at evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md replacing the stale KMSUseTrustedService create-gate ceiling with a mixed post-create failure boundary grounded in run 28372383806, mounted source, repo spec, and replay assertions.",
+        "last_worker_completed_at": "2026-06-29T13:07:10.508Z",
+        "last_worker_evidence": [
+          "evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:10:02.143Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md: run 28372383806 disproves the stale KMSUseTrustedService create-gate ceiling, names source-vs-replay drift around private-KV recovery/rotation, and preserves later-lifecycle 500/decrypt-timeout evidence as a mixed post-create boundary. The existing active model-status update leaf is the right next repo-local action; no blind rerun is justified."
+      },
+      "session_id": "s_task_reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629",
+      "session_history": [
+        "s_task_reopen-kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629"
+      ],
+      "result": "Wrote a durable evidence review at evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md replacing the stale KMSUseTrustedService create-gate ceiling with a mixed post-create failure boundary grounded in run 28372383806, mounted source, repo spec, and replay assertions.",
+      "evidence": [
+        "evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:10:02.143Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/kms-v2-trust-service-private-kv-postcreate-failure-boundary-20260629.md: run 28372383806 disproves the stale KMSUseTrustedService create-gate ceiling, names source-vs-replay drift around private-KV recovery/rotation, and preserves later-lifecycle 500/decrypt-timeout evidence as a mixed post-create boundary. The existing active model-status update leaf is the right next repo-local action; no blind rerun is justified."
+      },
+      "status": "done"
+    },
+    {
+      "id": "update-kms-v2-trust-service-private-kv-model-status-boundary-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update path.kms.v2-trust-service-public-cluster-private-kv and generated knowledge-map views so they stop claiming a terminal KMSUseTrustedService create-gate block and instead record the mixed post-create boundary supported by run 28372383806, mounted source, and the accepted 2026-06-29 evidence notes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "The path/model entry and generated view artifacts no longer state that this path fails at create because KMSUseTrustedService is missing on staging.",
+        "The updated status/reason/evidence text cites the accepted review artifacts for run 28372383806 and the post-create boundary note, and truthfully captures both replay/spec drift and surviving later-lifecycle failure evidence.",
+        "No new cloud rerun is launched as part of the update; the task leaves any further replay/spec repair as explicit follow-up work if still needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:08:29.310Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_update-kms-v2-trust-service-private-kv-model-status-boundary-20260629_20260629130829",
+        "assigned_at": "2026-06-29T13:08:29.364Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_update-kms-v2-trust-service-private-kv-model-status-boundary-20260629",
+        "worker_started_attempt_id": "a_update-kms-v2-trust-service-private-kv-model-status-boundary-20260629_20260629130829",
+        "worker_started_at": "2026-06-29T13:09:03.058Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the trusted-service private-KV knowledge-map path in model/knowledge-map/model.json to remove the stale KMSUseTrustedService create-gate ceiling and regenerated derived views so they now reflect the mixed post-create boundary backed by run 28372383806 and accepted 2026-06-29 evidence notes.",
+        "last_worker_completed_at": "2026-06-29T13:12:18.391Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/evidence-matrix.json",
+          "model/knowledge-map/views/evidence-index.md",
+          "model/knowledge-map/views/graph-view.json",
+          "model/knowledge-map/views/model.generated.md",
+          "model/knowledge-map/views/status-summary.json"
+        ],
+        "reviewed_at": "2026-06-29T13:13:15.254Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: model/knowledge-map/model.json and regenerated views now replace the stale KMSUseTrustedService create-gate ceiling for path.kms.v2-trust-service-public-cluster-private-kv with the mixed post-create boundary backed by run 28372383806 and accepted 2026-06-29 evidence, with no new cloud rerun."
+      },
+      "session_id": "s_task_update-kms-v2-trust-service-private-kv-model-status-boundary-20260629",
+      "session_history": [
+        "s_task_update-kms-v2-trust-service-private-kv-model-status-boundary-20260629"
+      ],
+      "result": "Updated the trusted-service private-KV knowledge-map path in model/knowledge-map/model.json to remove the stale KMSUseTrustedService create-gate ceiling and regenerated derived views so they now reflect the mixed post-create boundary backed by run 28372383806 and accepted 2026-06-29 evidence notes.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/evidence-matrix.json",
+        "model/knowledge-map/views/evidence-index.md",
+        "model/knowledge-map/views/graph-view.json",
+        "model/knowledge-map/views/model.generated.md",
+        "model/knowledge-map/views/status-summary.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:13:15.254Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: model/knowledge-map/model.json and regenerated views now replace the stale KMSUseTrustedService create-gate ceiling for path.kms.v2-trust-service-public-cluster-private-kv with the mixed post-create boundary backed by run 28372383806 and accepted 2026-06-29 evidence, with no new cloud rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the repo replay for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease with the mounted e2ev3 post-create nginx carrier by replacing the current handwritten manifest/image/wait path with source-equivalent behavior as closely as repo tools allow and by capturing pod/service diagnostics on rollout failure before any new cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.ts"
+      ],
+      "acceptance": [
+        "The replay cites the mounted row-161/new_vnet source contract and removes the specific carrier drift accepted in evidence/archive/reconcile-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28372809767-20260629.md (image/helper/wait behavior) or records the exact bounded equivalent when helper parity is not directly available in repo code.",
+        "Rollout failure handling captures enough pod/service/events diagnostics to distinguish image/deployment readiness issues from later product-path failures without a blind rerun.",
+        "No live cloud run is launched; the task leaves the spec ready for a later trustworthy rerun only after carrier alignment is in place."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:08:29.144Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629_20260629130829",
+        "assigned_at": "2026-06-29T13:08:29.197Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-202606",
+        "worker_started_attempt_id": "a_repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629_20260629130829",
+        "worker_started_at": "2026-06-29T13:09:03.022Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned the row-161 new-vnet replay carrier in features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.ts to the mounted e2ev3 nginx helper/image contract as a bounded repo-equivalent, added rollout diagnostics capture, and recorded the repair evidence in evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T13:12:38.095Z",
+        "last_worker_evidence": [
+          "features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.ts",
+          "evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:13:15.313Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md and the replay diff show the new-vnet prerelease carrier now matches the mounted nginx helper/image contract as a bounded repo-equivalent and adds rollout diagnostics without launching a cloud rerun."
+      },
+      "session_id": "s_task_repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-202606",
+      "session_history": [
+        "s_task_repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-202606"
+      ],
+      "result": "Aligned the row-161 new-vnet replay carrier in features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.ts to the mounted e2ev3 nginx helper/image contract as a bounded repo-equivalent, added rollout diagnostics capture, and recorded the repair evidence in evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md.",
+      "evidence": [
+        "features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.ts",
+        "evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:13:15.313Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md and the replay diff show the new-vnet prerelease carrier now matches the mounted nginx helper/image contract as a bounded repo-equivalent and adds rollout diagnostics without launching a cloud rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

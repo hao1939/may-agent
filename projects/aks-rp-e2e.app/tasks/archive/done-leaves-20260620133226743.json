@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:32:26.743Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "2026-06-20 regular-learning-tick hygiene: archive the accepted vm-prerelease-post-row35-checkpoint-helper-rerun-20260620 leaf because its durable meaning is already captured here. Current lane truth remains unchanged and explicit: the helper rerun artifact proves domain:checkpoint must run from /app/projects/aks-rp-e2e.app and still holds both the shared seven-file model slice and a broader mixed evidence slice, so no coherent VM-only checkpoint candidate exists yet. The single live blocker for this lane stays vm-prerelease-post-row35-checkpoint-hold-carrier-20260620, which should reopen only after a later app-side domain:checkpoint rerun surfaces a coherent VM-only slice or accepted repo-local changes materially narrow the held file set.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-post-row35-checkpoint-helper-rerun-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the domain:checkpoint helper after the accepted VM prerelease row-35 selector promotion to determine whether the shared seven-file model slice and broader evidence hold still block a coherent VM-prerelease checkpoint, then write a bounded archive artifact with the exact helper outcome and next checkpoint action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact runs cd /app/projects/aks-rp-e2e && bun run domain:checkpoint -- --json after the accepted row-35 selector promotion and records the exact held/ready slices and file lists affecting model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, and the VM prerelease evidence cohort.",
+        "If the helper still holds the shared seven-file model slice or the broader evidence slice, the artifact states the exact hold reason and whether a more precise local follow-up exists; if the helper surfaces a checkpointable VM-only slice, the artifact states the exact files and bounded next checkpoint action without committing from this worker task.",
+        "Artifact ends with a truthful owner-ready verdict on whether the prior checkpoint hold is cleared, replaced by a new local follow-up, or remains blocked for a concrete non-local reason, and confirms no cloud mutation occurred."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:28:09.939Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-post-row35-checkpoint-helper-rerun-20260620_20260620132809",
+        "assigned_at": "2026-06-20T13:28:09.983Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-post-row35-checkpoint-helper-rerun-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-post-row35-checkpoint-helper-rerun-20260620_20260620132809",
+        "worker_started_at": "2026-06-20T13:28:31.237Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive artifact at evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md after rerunning the real checkpoint helper from aks-rp-e2e.app; the result shows row-35 selector promotion is present but the shared seven-file model slice and broad held evidence slice still block a coherent VM-prerelease checkpoint.",
+        "last_worker_completed_at": "2026-06-20T13:29:57.922Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:31:43.351Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md: the task truthfully reran the real checkpoint helper from /app/projects/aks-rp-e2e.app after confirming row 35 selector promotion, and the helper still holds both the shared seven-file model slice and the broader mixed evidence slice, so row 35 did not clear checkpointability."
+      },
+      "session_id": "s_task_vm-prerelease-post-row35-checkpoint-helper-rerun-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-post-row35-checkpoint-helper-rerun-20260620"
+      ],
+      "result": "Wrote the requested archive artifact at evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md after rerunning the real checkpoint helper from aks-rp-e2e.app; the result shows row-35 selector promotion is present but the shared seven-file model slice and broad held evidence slice still block a coherent VM-prerelease checkpoint.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:31:43.351Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md: the task truthfully reran the real checkpoint helper from /app/projects/aks-rp-e2e.app after confirming row 35 selector promotion, and the helper still holds both the shared seven-file model slice and the broader mixed evidence slice, so row 35 did not clear checkpointability."
+      },
+      "status": "done"
+    }
+  ]
+}

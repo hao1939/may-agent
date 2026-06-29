@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:16:40.383Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the stale managed-acr-lifecycle reconciliation: archived workflow run 28368168658 reached execute preflight but failed before any product assertion because /opt/az/bin/az could not execute on the execution host. That result is now preserved as a shared runner-infra blocker with no model verdict change and no honest retry for spec.bootstrap-profile.managed-acr-lifecycle until the Azure CLI host-preflight family is repaired. The active frontier remains focused on currently assigned single-spec verification/retry work plus one repo-level runner diagnosis track.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-bootstrap-profile-managed-acr-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.managed-acr-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.managed-acr-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Cleared stale active state: the worker session already ended done, so this execution leaf is superseded by reconcile-bootstrap-profile-managed-acr-lifecycle-stale-active-20260629 to review the completed attempt and classify it truthfully instead of leaving an orphaned active run."
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:25:05.386Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-managed-acr-lifecycle_20260629112538",
+        "assigned_at": "2026-06-29T11:25:38.326Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-managed-acr-lifecycle_20260629112538",
+        "worker_started_at": "2026-06-29T11:26:00.606Z",
+        "reviewed_at": "2026-06-29T12:12:11.815Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Cleared stale active state: the worker session already ended done, so this execution leaf is superseded by reconcile-bootstrap-profile-managed-acr-lifecycle-stale-active-20260629 to review the completed attempt and classify it truthfully instead of leaving an orphaned active run."
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:12:11.815Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:33:59.860Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed reconciliation accepts the ManagedSystem Pool canonical boundary-map slice as parent-level provenance: evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md now records the worked-example boundary with accepted and rejected input paths, expected and observed behavior, adjacent surfaces, unknown edges, and the linked create-time plus VirtualMachines-combined product constraints/gaps, with no repo-local model or packet-owner mutation needed because canonical owners already matched. Remaining live work is unchanged: checkpoint-helper-entrypoint-reconcile-20260620 stays the sole active runnable fixer so planners can use a truthful repo-local checkpoint command, and external-send-proof-dispatch-family-20260620 remains the single family-level blocked transport ceiling until durable human send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-pool-boundary-map-canonicalize-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the canonical ManagedSystem Pool boundary map as the next durable worked example, using existing 20260620 repo-local source/evidence work to capture accepted inputs, rejected inputs, expectations, observed behavior, adjacent surfaces, and unknown edges for ManagedSystem Pool plus its create-time and VirtualMachines-adjacent constraints.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted/public/source-equivalent inputs already gathered on 2026-06-20 and states the canonical ManagedSystem Pool boundary with explicit accepted and rejected input paths, expected behavior paths, observed behavior paths, adjacent surfaces, and unknown edges.",
+        "Artifact truthfully links the create-time initial/default pool product-gap and the VirtualMachines+ManagedSystem unsupported-combination constraint, distinguishing product constraints/gaps from untested edges and avoiding duplicate maintained branches.",
+        "If the canonical boundary differs from current repo-local model/feature/spec surfaces, the task updates only the necessary repo-local surfaces and names the exact canonical owners; otherwise the artifact records why no model mutation was needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-pool-boundary-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:30:17.329Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-boundary-map-canonicalize-20260620_20260620193017",
+        "assigned_at": "2026-06-20T19:30:17.373Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-boundary-map-canonicalize-20260620",
+        "worker_started_attempt_id": "a_managedsystem-pool-boundary-map-canonicalize-20260620_20260620193017",
+        "worker_started_at": "2026-06-20T19:30:48.829Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the canonical ManagedSystem Pool boundary map at evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md, consolidating accepted/rejected inputs, expected/observed behavior, adjacent surfaces, create-time product-gap linkage, and the VirtualMachines+ManagedSystem unsupported-combination constraint without changing model/packet owners.",
+        "last_worker_completed_at": "2026-06-20T19:32:33.272Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:33:00.136Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md: it cites the 2026-06-20 mounted AKS RP source anchors plus maintained repo-local path/feature/deep-dive owners, explicitly names accepted and rejected ManagedSystem caller paths, expected and observed behavior, adjacent surfaces, unknown edges, and truthfully records that no model or packet owner mutation was needed because the canonical owners already match the consolidated boundary."
+      },
+      "session_id": "s_task_managedsystem-pool-boundary-map-canonicalize-20260620",
+      "session_history": [
+        "s_task_managedsystem-pool-boundary-map-canonicalize-20260620"
+      ],
+      "result": "Created the canonical ManagedSystem Pool boundary map at evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md, consolidating accepted/rejected inputs, expected/observed behavior, adjacent surfaces, create-time product-gap linkage, and the VirtualMachines+ManagedSystem unsupported-combination constraint without changing model/packet owners.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:33:00.136Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/managedsystem-pool-boundary-map-canonicalize-20260620.md: it cites the 2026-06-20 mounted AKS RP source anchors plus maintained repo-local path/feature/deep-dive owners, explicitly names accepted and rejected ManagedSystem caller paths, expected and observed behavior, adjacent surfaces, unknown edges, and truthfully records that no model or packet owner mutation was needed because the canonical owners already match the consolidated boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

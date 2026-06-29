@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T23:35:09.053Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-27 owner refill pass keeps the repaired feature-reference lane moving without reopening duplicate archived collectors. The repaired queue already yielded one accepted new collector (net-integration.basiclb-migration-natgw), one active collector remains in flight for net-integration.cross-subscription-vnet, and a concrete next collector is now staged for net-integration.custom-route-table-user-assigned-msi from the same repaired reseed slice. Archive the accepted BasicLB migration child because its durable meaning lives in the archived evidence note plus this parent summary; the lane remains open for the active cross-subscription-vnet collection and the newly staged next packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-net-integration-basiclb-migration-natgw-20260627",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect the bounded official-reference/evidence packet for path.net-integration.basiclb-migration-natgw using repo-local feature packets, public AKS/API references, and mounted source where needed, then archive a truthful capability note that explains the current deprecated verdict and exact evidence basis without reopening any archived duplicate collector work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-net-integration-basiclb-migration-natgw-20260627.md"
+      ],
+      "acceptance": [
+        "Archive bounded evidence that maps the feature path to current official/public/source-equivalent references and explains whether Basic LB migration to NAT Gateway remains a live capability, deprecated path, or product-removed surface.",
+        "Cite the specific repo-local feature/model location that this collector updates or validates, and distinguish any historical archived collector evidence from the new repaired-queue collector so the lane stays truthful after the state repair.",
+        "If the path is already terminal by deprecation/product removal, record the exact source/reference basis and any retest condition instead of inventing new live-run follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-basiclb-migration-natgw"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T23:28:20.966Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-basiclb-migration-natgw-20260627_20260627232844",
+        "assigned_at": "2026-06-27T23:28:44.591Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw-20260627",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-basiclb-migration-natgw-20260627_20260627232844",
+        "worker_started_at": "2026-06-27T23:28:45.272Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived the bounded reference/evidence note for net-integration BasicLB migration to NAT Gateway, grounding the deprecated terminal verdict in the mounted AKS RP source, existing packet/spec/model state, and RP-side InvalidLoadBalancerSku validation evidence.",
+        "last_worker_completed_at": "2026-06-27T23:30:07.353Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T23:30:45.936Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archived feature-reference packet: the evidence file exists, cites the repo-local packet/spec/model plus mounted RP source and validator/message paths, and truthfully keeps path.net-integration.basiclb-migration-natgw terminal as a deprecated Basic-LB precondition path with explicit retest conditions instead of inventing new live-run follow-up."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw-20260627",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw-20260627"
+      ],
+      "result": "Archived the bounded reference/evidence note for net-integration BasicLB migration to NAT Gateway, grounding the deprecated terminal verdict in the mounted AKS RP source, existing packet/spec/model state, and RP-side InvalidLoadBalancerSku validation evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T23:30:45.936Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archived feature-reference packet: the evidence file exists, cites the repo-local packet/spec/model plus mounted RP source and validator/message paths, and truthfully keeps path.net-integration.basiclb-migration-natgw terminal as a deprecated Basic-LB precondition path with explicit retest conditions instead of inventing new live-run follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

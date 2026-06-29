@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T22:42:48.011Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner rollup archived the completed ManagedSystem worked-example pair because their durable meaning now lives in evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md and evidence/archive/managedsystem-boundary-map-canonical-carrier-linkage-20260623.md plus the tightened ManagedSystem carriers: the repo-local model now preserves the minimal add-existing mode-only caller contract, the create-time name+mode contract with later sku.DefaultClaim architecture product-gap, GET-returned type=VirtualMachines as server-managed backing state, and the separate caller-side VirtualMachines+ManagedSystem same-pool rejection. The live frontier remains three active repo-local mounted-source/model-linkage branches (secops FIPS Windows, serverless schedulerctrl validating-webhook family, and Windows node-pool create VirtualMachines Gen2) plus the existing exact external waits for aad-rbac row 37 approval, private-cluster auth service-tags devbox endpoint return, and the shared out-of-runtime dispatch family; no ManagedSystem cloud rerun or new blocker branch is opened from this rollup.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-boundary-map-first-worked-example-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the first worked-example boundary map for ManagedSystem Pool by reconciling handwritten e2ev3 intent, mounted AKS RP source, existing specs/model carriers, and accepted evidence into one repo-local artifact that records accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the next bounded gap worth testing without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the specific handwritten e2ev3 cases and mounted-source entrypoints used, then maps the ManagedSystem boundary across at least create-time initial/default pool behavior, VirtualMachines combination constraints, and adjacent non-ManagedSystem surfaces with exact path/spec/evidence references rather than guesses.",
+        "Artifact classifies each covered edge as accepted, rejected/product-constraint-or-gap, observed, or still-unknown; names the supporting canonical carriers already in repo; and ends with one concrete next bounded probe or closure decision for ManagedSystem work, with no cloud execution or unrelated feature widening."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.managedsystem-boundary-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T22:34:19.830Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-map-first-worked-example-20260623_20260623223419",
+        "assigned_at": "2026-06-23T22:34:19.883Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-map-first-worked-example-20260623",
+        "worker_started_attempt_id": "a_managedsystem-boundary-map-first-worked-example-20260623_20260623223419",
+        "worker_started_at": "2026-06-23T22:34:42.513Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the repo-local ManagedSystem worked-example boundary map at evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md, reconciling handwritten e2ev3 intent, mounted AKS RP source, maintained feature/model carriers, and accepted evidence across create-time, VirtualMachines-combination, and adjacent surfaces.",
+        "last_worker_completed_at": "2026-06-23T22:38:10.418Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T22:38:33.990Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after bounded owner review of evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md: the archive note cites exact handwritten and mounted-source entrypoints, reconciles create-time initial/default pool behavior, explicit VirtualMachines-combination rejection, and adjacent runtime/single-pool/reconcile surfaces against maintained carriers and accepted evidence, and ends with one bounded reopen condition limited to the create-time runtime-closure lane once the sku.DefaultClaim architecture mismatch clears."
+      },
+      "session_id": "s_task_managedsystem-boundary-map-first-worked-example-20260623",
+      "session_history": [
+        "s_task_managedsystem-boundary-map-first-worked-example-20260623"
+      ],
+      "result": "Created the repo-local ManagedSystem worked-example boundary map at evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md, reconciling handwritten e2ev3 intent, mounted AKS RP source, maintained feature/model carriers, and accepted evidence across create-time, VirtualMachines-combination, and adjacent surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T22:38:33.990Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after bounded owner review of evidence/archive/managedsystem-boundary-map-first-worked-example-20260623.md: the archive note cites exact handwritten and mounted-source entrypoints, reconciles create-time initial/default pool behavior, explicit VirtualMachines-combination rejection, and adjacent runtime/single-pool/reconcile surfaces against maintained carriers and accepted evidence, and ends with one bounded reopen condition limited to the create-time runtime-closure lane once the sku.DefaultClaim architecture mismatch clears."
+      },
+      "status": "done"
+    }
+  ]
+}

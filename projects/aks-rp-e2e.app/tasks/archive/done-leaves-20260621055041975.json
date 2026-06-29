@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:50:41.975Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after the row-29 archived-output-repair completion: row29 mixed-SKU lifecycle ownership-linkage and archived-output repair are accepted, with the repair review confirming the exact set-archived-outputs command was idempotent because the accepted archived owner already carried the replay/spec pair and bounded domain:checkpoint now resolves both exact maintained files to that owner. Row30 mixed-sku-deallocate ownership-linkage plus archived-output repair remain accepted, and the rows31-32 auto-zone family review remains the accepted basis for the next ownership audit. The current live app-workspace lane stays vmpr-row33-archive-duplication-provenance-review-20260621, with vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621 queued behind it due to the shared app-workspace conflict; the single external-send-proof family remains the only truthful blocked transport ceiling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the exact supported archived-output metadata repair for row-29 by attaching replays/virtualmachines-mixed-sku-lifecycle.ts and specs/virtualmachines-mixed-sku-lifecycle.json to accepted archived task virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621031837870.json with task-tree set-archived-outputs, then rerun bounded domain:checkpoint on the exact pair and record the post-repair result without editing replay/spec/model contents, committing, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-row29-mixed-sku-lifecycle-ownership-linkage-audit-20260621.md and records the exact supported task-tree set-archived-outputs command applied to virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621031837870.json.",
+        "Archive note records bounded post-repair domain:checkpoint output for replays/virtualmachines-mixed-sku-lifecycle.ts and specs/virtualmachines-mixed-sku-lifecycle.json, including whether the exact pair now resolves to the accepted archived owner instead of accepted_tasks: [].",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:46:27.871Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621_20260621054731",
+        "assigned_at": "2026-06-21T05:47:31.890Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621_20260621054731",
+        "worker_started_at": "2026-06-21T05:47:44.261Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the exact archived-output repair command for row-29’s accepted archived task, confirmed it was idempotent because the outputs were already present, and recorded the post-repair bounded domain:checkpoint result in a new archive note showing both files resolve to the accepted owner.",
+        "last_worker_completed_at": "2026-06-21T05:48:11.937Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:48:25.160Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621.md: it cites the prior ownership audit, records the exact set-archived-outputs command against archived task virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621031837870.json, shows the command was idempotent because outputs were already present, and captures bounded domain:checkpoint output confirming both maintained files resolve to the accepted archived owner with no replay/spec/model edits, commit, cleanup, staging, or cloud execution."
+      },
+      "session_id": "s_task_vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621"
+      ],
+      "result": "Applied the exact archived-output repair command for row-29’s accepted archived task, confirmed it was idempotent because the outputs were already present, and recorded the post-repair bounded domain:checkpoint result in a new archive note showing both files resolve to the accepted owner.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:48:25.160Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vmpr-row29-mixed-sku-lifecycle-archived-output-repair-20260621.md: it cites the prior ownership audit, records the exact set-archived-outputs command against archived task virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621031837870.json, shows the command was idempotent because outputs were already present, and captures bounded domain:checkpoint output confirming both maintained files resolve to the accepted archived owner with no replay/spec/model edits, commit, cleanup, staging, or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

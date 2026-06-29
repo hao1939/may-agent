@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T18:44:30.282Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the row-31 adjacent-source discovery carrier and archived its completed leaf: evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md already pins the mounted-source contract, carrier audit, and exact bounded residue as a row-31 repo-local reconciliation task. The live frontier is now intentionally simple and truthful: vmpr-row31-carrier-reconciliation-20260621 remains the sole active repo-local learning/model leaf to land the missing auto-zone-single-SKU feature packet plus knowledge-map/model/view posture updates, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single compressed external-human-transport wait until durable real send/handoff/escalation proof or authoritative replies exist after the existing 2026-06-22T10:08:46Z re-review threshold.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-next-adjacent-source-carrier-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: inspect the next adjacent VirtualMachine prerelease handwritten scenario beyond the accepted row-27/29/30 slice, map its mounted-source contract to existing repo-local feature/spec/replay/model carriers, and record the exact local gap or execute-gated posture without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md"
+      ],
+      "acceptance": [
+        "Identify the exact next adjacent VM prerelease source holder(s) in /app/sources/aks-rp and summarize the scenario intent, key inputs, and expected behavior with source citations rather than guessed row semantics.",
+        "Audit existing repo-local carriers for that scenario across features/, specs/, replays/, and model/knowledge-map at a discovery level only, then state whether the path is already covered, needs a bounded feature/spec/model follow-through leaf, or is execute-gated with no local packet gap.",
+        "Produce durable evidence naming the inspected source file(s), the carrier status found, and one concrete next task recommendation limited to repo-local learning/model work; no cloud mutation, no blocked-family churn, and no sibling-row refactors."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T18:39:54.151Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-next-adjacent-source-carrier-map-20260621_20260621184110",
+        "assigned_at": "2026-06-21T18:41:10.525Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-next-adjacent-source-carrier-map-20260621",
+        "worker_started_attempt_id": "a_vmpr-next-adjacent-source-carrier-map-20260621_20260621184110",
+        "worker_started_at": "2026-06-21T18:41:29.827Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable row-31 adjacent-source carrier map at evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md, identifying the mounted source contract, auditing local carriers, and concluding the next action is bounded repo-local carrier reconciliation rather than cloud execution.",
+        "last_worker_completed_at": "2026-06-21T18:43:26.754Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T18:43:37.863Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md cites mounted source holders for VM prerelease row 31, audits repo-local carriers, and shows the exact next action is bounded repo-local carrier reconciliation (missing features/virtualmachines-auto-zone-single-sku.yaml plus stale knowledge-map/model/view posture), not cloud execution or blocked-family churn."
+      },
+      "session_id": "s_task_vmpr-next-adjacent-source-carrier-map-20260621",
+      "session_history": [
+        "s_task_vmpr-next-adjacent-source-carrier-map-20260621"
+      ],
+      "result": "Produced a durable row-31 adjacent-source carrier map at evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md, identifying the mounted source contract, auditing local carriers, and concluding the next action is bounded repo-local carrier reconciliation rather than cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T18:43:37.863Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-next-adjacent-source-carrier-map-20260621.md cites mounted source holders for VM prerelease row 31, audits repo-local carriers, and shows the exact next action is bounded repo-local carrier reconciliation (missing features/virtualmachines-auto-zone-single-sku.yaml plus stale knowledge-map/model/view posture), not cloud execution or blocked-family churn."
+      },
+      "status": "done"
+    }
+  ]
+}

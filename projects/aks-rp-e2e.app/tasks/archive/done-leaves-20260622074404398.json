@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:44:04.398Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update archived the five accepted repo-local completion leaves whose durable meaning is already preserved in accepted evidence and prior review artifacts: private-endpoint-connections lifecycle path landing remains maintained; VM prerelease rows40-43 source contract stays execution-ready but externally transport-gated; cluster-autoscaler VM prerelease row-51 model landing remains accepted; the earlier BYO-DNS topology-exact reconcile leaf concluded that Scenario_PrivateLink_BYO_DNS_Server needs its own maintained exact child beside the preserved broad final path.private-cluster-byo-dns-server pass surface; and the earlier custom-DNS-zone exact reconcile leaf remains represented by its accepted evidence. The live frontier is now intentionally small and truthful: keep private-cluster-byo-dns-server-topology-exact-canonical-model-landing-20260622 active as the direct stale-terminal-retry reconciliation by landing path.private-cluster-byo-dns-server-topology-exact into canonical maintained carriers without reopening the broad final sibling, keep private-cluster-custom-dns-zone-exact-contract-reconcile-evidence-20260622 active to decide whether the current private-dns-zone plus fqdn-subdomain split already covers Scenario_PrivateLink_Custom_DNS_Zone or needs a new maintained exact child, and preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single shared external-human-transport wait until durable human send/reply evidence arrives.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the dedicated VM prerelease row-51 long-unregistered-nodes branch onto the maintained knowledge map as path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes using the existing source-grounded spec/replay carriers, preserving its truthful unknown live status and not collapsing it into adjacent autoscaler coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json gains or repairs a maintained entry for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes anchored to the existing dedicated spec/replay carriers and a source-grounded unknown verdict.",
+        "Regenerated maintained views expose the row-51 path distinctly in model/knowledge-map/views/path-summary.json and related derived views without changing unrelated autoscaler or VM prerelease verdicts.",
+        "Task records concise repo-local evidence tying the landing to the existing carrier/check state noted in the current gap review, with no cloud execution and no unrelated path edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:39:54.013Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T07:39:58.546Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622_20260622074021",
+        "assigned_at": "2026-06-22T07:40:21.522Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622_20260622074021",
+        "worker_started_at": "2026-06-22T07:40:57.336Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that the dedicated VM prerelease row-51 long-unregistered-nodes branch is already present in the maintained knowledge map/view surfaces and wrote a repo-local evidence note documenting the mounted-source grounding, maintained unknown verdict, and check-mode replay proof.",
+        "last_worker_completed_at": "2026-06-22T07:42:18.086Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:42:45.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622.md cites the mounted row-51 source contract, confirms path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes already exists in model.json and path-summary.json, and records successful check-mode replay wiring without cloud execution or unrelated autoscaler churn."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622"
+      ],
+      "result": "Verified that the dedicated VM prerelease row-51 long-unregistered-nodes branch is already present in the maintained knowledge map/view surfaces and wrote a repo-local evidence note documenting the mounted-source grounding, maintained unknown verdict, and check-mode replay proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:42:45.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622.md cites the mounted row-51 source contract, confirms path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes already exists in model.json and path-summary.json, and records successful check-mode replay wiring without cloud execution or unrelated autoscaler churn."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-byo-dns-topology-exact-contract-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted Scenario_PrivateLink_BYO_DNS_Server source plus the maintained path carriers to decide whether the final broad path.private-cluster-byo-dns-server verdict already truthfully covers the two-cluster topology or whether a distinct maintained child path.private-cluster-byo-dns-server-topology-exact is required, without touching cloud execution or broad private-cluster verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-byo-dns-topology-exact-contract-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted Scenario_PrivateLink_BYO_DNS_Server contract and compares it concretely against the maintained carriers for the final broad path.private-cluster-byo-dns-server verdict.",
+        "Task resolves the stale-terminal-retry warning with one bounded repo-local conclusion: either the broad final path is accepted as sufficient with exact rationale recorded, or a separate maintained child path id plus the exact follow-on landing task/output is named.",
+        "No cloud execution, no external-send wait edits, and no unrelated private-cluster path changes occur in this reconciliation leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:39:53.797Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-byo-dns-topology-exact-contract-reconcile-20260622_20260622073954",
+        "assigned_at": "2026-06-22T07:39:54.064Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-byo-dns-topology-exact-contract-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-byo-dns-topology-exact-contract-reconcile-20260622_20260622073954",
+        "worker_started_at": "2026-06-22T07:40:57.063Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation artifact at evidence/archive/private-cluster-byo-dns-topology-exact-contract-reconcile-20260622.md, concluding that the broad final BYO DNS path is not exact enough for the mounted two-cluster scenario and that a distinct maintained child path.private-cluster-byo-dns-server-topology-exact is required.",
+        "last_worker_completed_at": "2026-06-22T07:42:43.536Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:43:01.251Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-byo-dns-topology-exact-contract-reconcile-20260622.md cites mounted Scenario_PrivateLink_BYO_DNS_Server source, proves the current broad path.private-cluster-byo-dns-server is only a preserved single-cluster observed sibling, and names the bounded follow-on maintained child path.private-cluster-byo-dns-server-topology-exact for canonical model/view landing without cloud execution or unrelated private-cluster churn."
+      },
+      "session_id": "s_task_private-cluster-byo-dns-topology-exact-contract-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-byo-dns-topology-exact-contract-reconcile-20260622"
+      ],
+      "result": "Wrote the requested reconciliation artifact at evidence/archive/private-cluster-byo-dns-topology-exact-contract-reconcile-20260622.md, concluding that the broad final BYO DNS path is not exact enough for the mounted two-cluster scenario and that a distinct maintained child path.private-cluster-byo-dns-server-topology-exact is required.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:43:01.251Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-byo-dns-topology-exact-contract-reconcile-20260622.md cites mounted Scenario_PrivateLink_BYO_DNS_Server source, proves the current broad path.private-cluster-byo-dns-server is only a preserved single-cluster observed sibling, and names the bounded follow-on maintained child path.private-cluster-byo-dns-server-topology-exact for canonical model/view landing without cloud execution or unrelated private-cluster churn."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-custom-dns-zone-exact-contract-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted Scenario_PrivateLink_Custom_DNS_Zone source plus existing maintained carriers to decide whether the exact custom-DNS-zone contract is already truthfully covered by the current path.private-cluster-private-dns-zone + path.private-cluster-fqdn-subdomain split or needs its own maintained child, without cloud execution or broad private-cluster verdict churn.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-custom-dns-zone-exact-contract-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted custom_dns_zone.go scenario contract and compares it concretely against the existing maintained feature/spec/replay/model carriers for path.private-cluster-private-dns-zone and path.private-cluster-fqdn-subdomain.",
+        "Task concludes one bounded repo-local next action with proof: either the current split is accepted as sufficient with exact rationale recorded, or a concrete follow-on maintained-path landing task/path id is named for the missing exact child contract.",
+        "No cloud execution, no external-send wait edits, and no unrelated private-cluster path changes occur in this reconciliation leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:38:00.985Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T07:39:53.966Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the coarse private-cluster contract-reconcile leaf with an evidence-only equivalent that carries no model.json/file-level contention, so repo-local source reconciliation can run in parallel with the active shared-apiserver-subnet model landing."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-22T07:39:53.966Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the coarse private-cluster contract-reconcile leaf with an evidence-only equivalent that carries no model.json/file-level contention, so repo-local source reconciliation can run in parallel with the active shared-apiserver-subnet model landing."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact handwritten private-endpoint-connections lifecycle subpath into the maintained knowledge map as path.private-cluster-private-endpoint-connections-lifecycle, treating it as a model-granularity repair beneath the already-final broad sibling path.private-cluster-private-endpoint-connections rather than a retry of that broader verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json gains or repairs a source-backed feature-path entry for path.private-cluster-private-endpoint-connections-lifecycle that matches the handwritten private_endpoint_connections.go lifecycle contract captured by the accepted 2026-06-22 inventory artifact, without altering the already-final broad sibling verdict for path.private-cluster-private-endpoint-connections.",
+        "Regenerated maintained views show the lifecycle subpath distinctly in model/knowledge-map/views/path-summary.json (and any other touched derived views) while preserving the existing broad sibling path as a separate final row instead of replacing or reopening it.",
+        "Task records concise repo-local evidence of the model/view regeneration and cites the accepted inventory artifact as the bounded source authority; no cloud execution, no external-transport wait changes, and no unrelated private-cluster path edits occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:29:10.652Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622_20260622072910",
+        "assigned_at": "2026-06-22T07:29:10.701Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622_20260622072910",
+        "worker_started_at": "2026-06-22T07:29:23.796Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the exact private-endpoint-connections lifecycle branch into model/knowledge-map/model.json with new feature/scenario/inputDag/featurePath entries, regenerated knowledge-map views, and wrote a bounded evidence note preserving the existing list-only sibling path.",
+        "last_worker_completed_at": "2026-06-22T07:33:04.997Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:33:58.732Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622.md plus regenerated model/knowledge-map/views/path-summary.json show the exact lifecycle subpath landed as path.private-cluster-private-endpoint-connections-lifecycle while preserving the already-final broad sibling path.private-cluster-private-endpoint-connections."
+      },
+      "session_id": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622"
+      ],
+      "result": "Landed the exact private-endpoint-connections lifecycle branch into model/knowledge-map/model.json with new feature/scenario/inputDag/featurePath entries, regenerated knowledge-map views, and wrote a bounded evidence note preserving the existing list-only sibling path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:33:58.732Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622.md plus regenerated model/knowledge-map/views/path-summary.json show the exact lifecycle subpath landed as path.private-cluster-private-endpoint-connections-lifecycle while preserving the already-final broad sibling path.private-cluster-private-endpoint-connections."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-rows40-43-source-contract-model-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP e2ev3 source to map the exact VirtualMachine prerelease rows 40-43 singleton-cluster contract into the maintained knowledge map or bounded source artifact, so the repo-local scenario/expectation understanding is explicit even while live execution remains gated by the shared external-human-transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "Mounted source starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go (plus any directly referenced scenario definitions) is reviewed and the exact rows 40-43 scenario intent, selected inputs, and expected singleton-cluster behavior are captured in a durable repo-local artifact or maintained model update.",
+        "If model/knowledge-map/model.json changes, regenerated maintained views reflect the bounded rows 40-43 source-backed path/expectation details distinctly from the shared external-human-transport execution blocker; no cloud mutation or speculative live-result claims are introduced.",
+        "Task records which execution gaps still depend on external send/reply proof and links that dependency back to external-send-proof-dispatch-family-human-transport-proof-wait-20260621 rather than reopening duplicate wait leaves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:30:18.845Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-rows40-43-source-contract-model-20260622_20260622073018",
+        "assigned_at": "2026-06-22T07:30:18.898Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-rows40-43-source-contract-model-20260622",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-rows40-43-source-contract-model-20260622_20260622073018",
+        "worker_started_at": "2026-06-22T07:30:48.600Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable mounted-source contract packet at evidence/archive/vm-prerelease-rows40-43-source-contract-model-packet-20260622.md that maps VM prerelease rows 40-43 into five exact singleton-cluster members, captures their source-backed inputs/expectations, and links remaining live-execution dependency back to the existing external human-transport proof wait.",
+        "last_worker_completed_at": "2026-06-22T07:32:56.945Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:33:58.681Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-rows40-43-source-contract-model-packet-20260622.md durably maps the mounted-source rows 40-43 bundle into five exact singleton-cluster members, records row-local inputs/expectations, and explicitly reuses external-send-proof-dispatch-family-human-transport-proof-wait-20260621 for the remaining live execution dependency instead of opening a duplicate wait."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-rows40-43-source-contract-model-20260622",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-rows40-43-source-contract-model-20260622"
+      ],
+      "result": "Created a durable mounted-source contract packet at evidence/archive/vm-prerelease-rows40-43-source-contract-model-packet-20260622.md that maps VM prerelease rows 40-43 into five exact singleton-cluster members, captures their source-backed inputs/expectations, and links remaining live-execution dependency back to the existing external human-transport proof wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:33:58.681Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-rows40-43-source-contract-model-packet-20260622.md durably maps the mounted-source rows 40-43 bundle into five exact singleton-cluster members, records row-local inputs/expectations, and explicitly reuses external-send-proof-dispatch-family-human-transport-proof-wait-20260621 for the remaining live execution dependency instead of opening a duplicate wait."
+      },
+      "status": "done"
+    }
+  ]
+}

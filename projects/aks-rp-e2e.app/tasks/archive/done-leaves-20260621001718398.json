@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T00:17:18.398Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Project root now preserves two completed durable outputs without keeping their leaves open: (1) the network-cni Go e2ev3 coverage map evidence established repo-local handwritten-source coverage inventory for the network-cni family, and (2) the private-cluster private-endpoint-connections lifecycle feedback slice produced check-mode replay evidence and preserved the broad accepted carrier path without claiming live cloud execution. Remaining live work stays unchanged: continue the active network-cni Windows overlay dual-stack model-lineage update, and keep the VM prerelease/MachinesPreview dispatch family as the single exact external-human send-proof wait until durable send, escalation, or authoritative-reply evidence is recorded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-go-e2ev3-coverage-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a source-backed network-cni handwritten e2ev3 coverage map from mounted AKS RP Go source and current repo artifacts, identifying which scenarios already have feature/spec/replay coverage, which exact input/expectation edges remain unmapped, and the next bounded non-cloud authoring slice to add.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-go-e2ev3-coverage-map-20260621.md"
+      ],
+      "acceptance": [
+        "Durable evidence note cites the exact mounted Go source network-cni scenario files inspected plus the matching repo specs/replays/model paths (or the absence of them) for each scenario group reviewed.",
+        "Coverage map distinguishes already-covered versus unmapped network-cni scenario groups and names the exact feature/path/input or expectation gaps still missing, without claiming cloud execution or product verdict changes.",
+        "Note ends with one bounded recommended next authoring slice under the network-cni family that can be turned directly into a worker task if the family remains uncovered after the source/spec comparison."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T00:12:47.349Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-go-e2ev3-coverage-map-20260621_20260621001247",
+        "assigned_at": "2026-06-21T00:12:47.401Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-go-e2ev3-coverage-map-20260621",
+        "worker_started_attempt_id": "a_network-cni-go-e2ev3-coverage-map-20260621_20260621001247",
+        "worker_started_at": "2026-06-21T00:13:08.725Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable mounted-source coverage map at evidence/archive/network-cni-go-e2ev3-coverage-map-20260621.md comparing exact AKS RP network-cni handwritten Go scenarios against current repo-local features/specs/replays/model paths, and identified the next bounded non-cloud authoring slice.",
+        "last_worker_completed_at": "2026-06-21T00:15:53.881Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T00:16:27.378Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-cni-go-e2ev3-coverage-map-20260621.md: the artifact cites the exact mounted AKS RP Go network-cni scenario files inspected, maps each group to current repo-local features/specs/replays/model carriers or absences, distinguishes covered vs partial/unmapped families without claiming cloud execution, and ends with one bounded next authoring slice for the two create-time Windows overlay dual-stack siblings."
+      },
+      "session_id": "s_task_network-cni-go-e2ev3-coverage-map-20260621",
+      "session_history": [
+        "s_task_network-cni-go-e2ev3-coverage-map-20260621"
+      ],
+      "result": "Created a durable mounted-source coverage map at evidence/archive/network-cni-go-e2ev3-coverage-map-20260621.md comparing exact AKS RP network-cni handwritten Go scenarios against current repo-local features/specs/replays/model paths, and identified the next bounded non-cloud authoring slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T00:16:27.378Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-cni-go-e2ev3-coverage-map-20260621.md: the artifact cites the exact mounted AKS RP Go network-cni scenario files inspected, maps each group to current repo-local features/specs/replays/model carriers or absences, distinguishes covered vs partial/unmapped families without claiming cloud execution, and ends with one bounded next authoring slice for the two create-time Windows overlay dual-stack siblings."
+      },
+      "status": "done"
+    }
+  ]
+}

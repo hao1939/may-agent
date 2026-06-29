@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:47:53.890Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review accepted the row-31/32 auto-zone maintained-surface sync and keeps the frontier intentionally narrow. Rolled-up knowledge now preserves the accepted VM prerelease rows-25+50 source boundary map, row-50 maintained-surface/model reconciliation, row-75 maintained-surface repairs, the accepted rows31-32 auto-zone source boundary map, and the accepted rows31-32 auto-zone maintained-surface sync: both auto-zone paths now remain distinct blocked/execute-gated VirtualMachines contracts with row-local selected inputs, nextAction, and resumeCondition, while the row-31 dedicated feature packet remains only an optional bounded follow-up rather than a blocker. Open work is now exactly two leaves: (1) vmpr-row34-vmas-to-vms-source-boundary-map-20260621 as the current mounted-source-only VM prerelease boundary map, and (2) external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the sole truthful family-level external wait until real human transport proof or authoritative replies arrive.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows31-32-autozone-maintained-surface-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model-update lane: using the accepted row-31/32 auto-zone source-boundary artifact, repair the maintained repo surfaces for path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku so each row keeps its exact VirtualMachines request contract, expected VM node status assertions, execute-gated posture, and distinct single-SKU vs mixed-SKU boundary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows31-32-autozone-maintained-surface-sync-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row-31/32 boundary map and names every maintained carrier touched for both auto-zone paths, including the model/view/spec/replay references that remain authoritative for each row; if a dedicated row-31 feature packet is still absent, the artifact must call that out as a bounded follow-up rather than silently claiming it exists.",
+        "Maintained surfaces are updated so row 31 and row 32 no longer rely on stale draft wording: both paths say source-grounded execute-capable replay exists locally but execution remains gated, row 31 and row 32 remain distinct single-manual-profile vs two-manual-profile VirtualMachines contracts, row 32's selected-input/view explicitly includes agentPool.type=VirtualMachines, and neither row claims resolved per-node zone labels.",
+        "Artifact records domain validation/check output and ends with the next safe step after maintained-surface sync, without creating a new external blocker family or any cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:41:44.541Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows31-32-autozone-maintained-surface-sync-20260621_20260621124201",
+        "assigned_at": "2026-06-21T12:42:01.491Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows31-32-autozone-maintained-surface-sync-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows31-32-autozone-maintained-surface-sync-20260621_20260621124201",
+        "worker_started_at": "2026-06-21T12:42:04.491Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced maintained row-31/32 auto-zone surfaces by updating model/knowledge-map/model.json and regenerated views so both paths now stay distinct, blocked/execute-gated, and source-grounded with exact request/expectation contracts; also wrote the requested evidence artifact documenting touched carriers, validation output, and next safe step.",
+        "last_worker_completed_at": "2026-06-21T12:46:36.821Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:47:38.759Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the evidence artifact cites the accepted row-31/32 source-boundary inputs, records the maintained carriers touched, and the repo now shows both auto-zone paths as distinct blocked/execute-gated VirtualMachines contracts with row-local selected inputs, nextAction, and resumeCondition in model.json, path-summary, specs, and specs/index. The artifact truthfully notes that no dedicated row-31 feature packet was added and treats that as optional bounded follow-up rather than a hidden gap, so the worker result satisfies the corrected acceptance without creating any new blocker family or cloud work."
+      },
+      "session_id": "s_task_vmpr-rows31-32-autozone-maintained-surface-sync-20260621",
+      "session_history": [
+        "s_task_vmpr-rows31-32-autozone-maintained-surface-sync-20260621"
+      ],
+      "result": "Synced maintained row-31/32 auto-zone surfaces by updating model/knowledge-map/model.json and regenerated views so both paths now stay distinct, blocked/execute-gated, and source-grounded with exact request/expectation contracts; also wrote the requested evidence artifact documenting touched carriers, validation output, and next safe step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:47:38.759Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the evidence artifact cites the accepted row-31/32 source-boundary inputs, records the maintained carriers touched, and the repo now shows both auto-zone paths as distinct blocked/execute-gated VirtualMachines contracts with row-local selected inputs, nextAction, and resumeCondition in model.json, path-summary, specs, and specs/index. The artifact truthfully notes that no dedicated row-31 feature packet was added and treats that as optional bounded follow-up rather than a hidden gap, so the worker result satisfies the corrected acceptance without creating any new blocker family or cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:13:24.857Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: the frontier is now truthful and intentionally narrow. The superseded AAD execution-gate wait has been replaced by the single active repo-local audit leaf aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623, which must decide exactly one successor for path.aad-rbac.managed-v2-lifecycle: either a concrete local preflight/setup/retry leaf or a restored exact external wait. The private-cluster auth-service-tags family audit is accepted and compressed to the single external wait private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623, while the row-37 mounted-source carrier map is accepted and preserved in durable evidence/model state. The other family external-human proof wait remains unchanged until returned proof arrives or the first owner follow-up after 2026-06-26; do not reopen duplicate waits or speculative diagnosis before new proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the exact environment/runtime wait for path.aad-rbac.managed-v2-lifecycle only until a future run can satisfy the existing row-37 execution gate: clean ARM auth, AKS_RP_E2E_AAD_ADMIN_GROUP_OID, AKS_RP_E2E_AAD_TENANT_ID, quota for one login VM plus one VM-prerelease cluster, and explicit cloud-mutation approval to rerun the same source-aligned carrier from baseline cluster create.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A future archive artifact or authoritative execution-preflight proof records that the row-37 prerequisites are available: clean ARM auth, required AAD variables, quota for one login VM plus one VM-prerelease cluster, and explicit mutation gate for aad-rbac-managed-v2-lifecycle before rerunning from baseline cluster create.",
+        "This branch remains represented as one environment/runtime wait only; no more source rediscovery, reset-framing rework, or cloud mutation is introduced until those execution prerequisites are proven."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:11:00.959Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T21:12:26.019Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive environment wait with an active execution-gate audit because the new row-37 mounted-source closure proves the remaining ambiguity is no longer repo-local, and the blocked-action warning requires owner review of whether local preflight/setup evidence can move the path before leaving it as a pure external wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T21:12:26.019Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive environment wait with an active execution-gate audit because the new row-37 mounted-source closure proves the remaining ambiguity is no longer repo-local, and the blocked-action warning requires owner review of whether local preflight/setup evidence can move the path before leaving it as a pure external wait."
+      },
+      "status": "done"
+    }
+  ]
+}

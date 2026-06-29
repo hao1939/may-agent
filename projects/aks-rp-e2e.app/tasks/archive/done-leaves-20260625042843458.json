@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T04:28:43.458Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-25 storage mounted-source review accepted both packet leaves: xfs and raw-block now have durable handwritten-source/spec/replay/model-view linkage captured in archive evidence, with raw-block explicitly closed at the non-cloud --check/--dry-run ceiling and no same-path model/view repair remaining. The only repo-local execution slot stays on storage-csi-disk-xfs-replay-check-shape-repair-20260625; all other open children remain the same five exact external returned-proof waits and should not be reopened until a returned artifact or the dated blocked-frontier follow-up trigger arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-raw-block-mounted-source-packet-20260625",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded non-cloud knowledge packet for path.storage-csi-disk-raw-block that confirms the exact mounted handwritten source boundary, current spec/replay/model/view linkage, selected raw-block input and behavior boundaries, and the next safe action without claiming a live verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-mounted-source-packet-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the exact mounted source files or scenario/helper names for the raw-block branch, identifies the current spec/replay/model/view linkage for path.storage-csi-disk-raw-block, and states the selected input and expected-behavior boundary with adjacent surfaces kept separate.",
+        "The packet states whether repo-local model/view or replay-carrier repair is still needed; if so it names one concrete follow-up leaf, and if not it records the exact next safe verification gate without reopening blocked external waits or running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T04:25:58.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-mounted-source-packet-20260625_20260625042558",
+        "assigned_at": "2026-06-25T04:25:58.582Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-mounted-source-packet-20260625",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-mounted-source-packet-20260625_20260625042558",
+        "worker_started_at": "2026-06-25T04:26:21.947Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded mounted-source knowledge packet for path.storage-csi-disk-raw-block at evidence/archive/storage-csi-disk-raw-block-mounted-source-packet-20260625.md, confirming exact mounted source/spec/replay/model linkage, expected behavior boundary, and the current non-cloud-only verification gate.",
+        "last_worker_completed_at": "2026-06-25T04:26:21.965Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T04:27:00.021Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/storage-csi-disk-raw-block-mounted-source-packet-20260625.md: it cites the exact mounted raw-block source branch and helper surfaces, confirms feature/spec/replay/model/view linkage for path.storage-csi-disk-raw-block, truthfully keeps the path at the non-cloud check/dry-run ceiling, and records that no same-path model/view repair remains before any separate live-carrier task."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-mounted-source-packet-20260625",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-mounted-source-packet-20260625"
+      ],
+      "result": "Produced the bounded mounted-source knowledge packet for path.storage-csi-disk-raw-block at evidence/archive/storage-csi-disk-raw-block-mounted-source-packet-20260625.md, confirming exact mounted source/spec/replay/model linkage, expected behavior boundary, and the current non-cloud-only verification gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T04:27:00.021Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/storage-csi-disk-raw-block-mounted-source-packet-20260625.md: it cites the exact mounted raw-block source branch and helper surfaces, confirms feature/spec/replay/model/view linkage for path.storage-csi-disk-raw-block, truthfully keeps the path at the non-cloud check/dry-run ceiling, and records that no same-path model/view repair remains before any separate live-carrier task."
+      },
+      "status": "done"
+    }
+  ]
+}

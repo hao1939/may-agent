@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:29:07.825Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Owner planning review 2026-06-23T16:32Z accepted traffic-managed-gateway-draft-evidence-ceiling-audit-20260623 as durable repo-local closure: evidence/archive/traffic-managed-gateway-draft-evidence-ceiling-audit-20260623.md cites the mounted managedgatewayapi source surfaces checked, proves there is no dedicated handwritten header-routing or weighted-routing scenario, and preserves the truthful aggregate-derived vs weak-link draft ceilings without inventing runtime authority. Archived the current safe done children probe-artifact-burst-canonicalization-followup-20260623, static-egress-azurelinux-env-attachment-refresh-20260623, storage-csi-file-adjacent-draft-linkage-batch-20260623, and traffic-managed-gateway-draft-evidence-ceiling-audit-20260623 because their durable meaning is now carried by their archive notes plus this parent rollup. This focus branch now truthfully carries one active repo-local successor only—cloud-provider-credential-provider-normalized-model-residue-followup-20260623—for the remaining baseline credential-provider normalized-model residue, plus the same single family-level external wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 with unchanged returned-proof-or-post-2026-06-26 resume condition. No live execution, duplicate waits, or reopened source/spec rediscovery were introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "probe-artifact-burst-canonicalization-followup-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the existing probe-artifact burst triage into one durable canonicalization backlog note that groups the recent duplicate/noisy archive families, names the single keeper artifact per family, and records the exact repo-local cleanup or preservation action for each family without reopening cloud execution or model verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/probe-artifact-burst-canonicalization-followup-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note groups the recent duplicate or harness-noisy artifact families already identified by the burst triage, cites the exact archive artifacts inspected for each family, and names the canonical keeper artifact plus the reason the siblings are duplicate/noisy/secondary rather than independent evidence.",
+        "The note records the exact repo-local next action for each family (keep as-is, supersede in references, or queue bounded cleanup), explicitly states that no cloud rerun or new product verdict is introduced, and leaves the model untouched unless a later reviewed task chooses to relink references."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:19:40.703Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T16:19:40.793Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_probe-artifact-burst-canonicalization-followup-20260623_20260623162225",
+        "assigned_at": "2026-06-23T16:22:25.573Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_probe-artifact-burst-canonicalization-followup-20260623",
+        "worker_started_attempt_id": "a_probe-artifact-burst-canonicalization-followup-20260623_20260623162225",
+        "worker_started_at": "2026-06-23T16:22:29.081Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable archive canonicalization backlog note at evidence/archive/probe-artifact-burst-canonicalization-followup-20260623.md that consolidates the 2026-06-23 burst triage into keeper-per-family guidance, exact sibling rationale, and repo-local next actions without changing cloud or model verdicts.",
+        "last_worker_completed_at": "2026-06-23T16:24:27.404Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:25:27.391Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/probe-artifact-burst-canonicalization-followup-20260623.md consolidates the duplicate/noisy 2026-06-23 archive families into one keeper-per-family ledger with exact inspected artifacts and repo-local next actions, while explicitly avoiding reruns and model verdict changes."
+      },
+      "session_id": "s_task_probe-artifact-burst-canonicalization-followup-20260623",
+      "session_history": [
+        "s_task_probe-artifact-burst-canonicalization-followup-20260623"
+      ],
+      "result": "Wrote a durable archive canonicalization backlog note at evidence/archive/probe-artifact-burst-canonicalization-followup-20260623.md that consolidates the 2026-06-23 burst triage into keeper-per-family guidance, exact sibling rationale, and repo-local next actions without changing cloud or model verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:25:27.391Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/probe-artifact-burst-canonicalization-followup-20260623.md consolidates the duplicate/noisy 2026-06-23 archive families into one keeper-per-family ledger with exact inspected artifacts and repo-local next actions, while explicitly avoiding reruns and model verdict changes."
+      },
+      "status": "done"
+    }
+  ]
+}

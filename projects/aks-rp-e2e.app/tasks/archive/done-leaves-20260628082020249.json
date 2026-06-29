@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T08:20:20.249Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier review keeps this spec lane honest: App Routing existing-cluster remains the only true passive operator-response wait here until its 2026-06-28T21:24:48Z checkpoint, while the prior LocalDNS family passive environment wait was intentionally replaced by active leaf diagnose-localdns-vm-prerelease-family-host-proof-unblock-decision-20260628. The repo-local LocalDNS carriers are already closed; the only remaining owner decision is whether any real alternate-host/setup/escalation move remains before collapsing back to one exact external host-proof wait.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn ready path.localdns.vm-prerelease.enable-disable into one exact next execution slice by validating the dedicated row-55 spec/replay carrier, documenting the input path and expectation path, and producing a bounded execute-gate packet that names the truthful next live-run command or exact missing precondition without broadening to generic LocalDNS coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact row-55 mounted source/spec/replay carrier, the LocalDNS enable then disable expectation path, and the repo-local check evidence already accepted for this carrier.",
+        "Archive note records the exact future execute command, AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, and any environment/preflight prerequisites needed for a truthful live run; if a prerequisite is missing, it is named as the only blocker instead of rerunning generic checks.",
+        "Task tree is updated with the next truthful child disposition for row 55: execute-ready follow-up, exact external blocker, or durable no-cloud ceiling."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.localdns.vm-prerelease.enable-disable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:33:53.583Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628_20260628073356",
+        "assigned_at": "2026-06-28T07:33:56.575Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628",
+        "worker_started_attempt_id": "a_prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628_20260628073356",
+        "worker_started_at": "2026-06-28T07:34:08.865Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-55 LocalDNS VM-prerelease execute-gate packet at evidence/archive/localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628.md, grounding the exact mounted source/spec/probe carrier, accepted dry-run evidence, and the next truthful live-run command plus preflight gate.",
+        "last_worker_completed_at": "2026-06-28T07:36:10.741Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T07:37:39.983Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628.md confirms the mounted-source row-55 carrier, repaired dedicated spec/probe metadata, and passing repo-local dry-run lane, so the truthful next disposition is the exact live-run successor execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628."
+      },
+      "session_id": "s_task_prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628",
+      "session_history": [
+        "s_task_prepare-spec-localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628"
+      ],
+      "result": "Produced the row-55 LocalDNS VM-prerelease execute-gate packet at evidence/archive/localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628.md, grounding the exact mounted source/spec/probe carrier, accepted dry-run evidence, and the next truthful live-run command plus preflight gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T07:37:39.983Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/localdns-vm-prerelease-enable-disable-row55-execution-gate-20260628.md confirms the mounted-source row-55 carrier, repaired dedicated spec/probe metadata, and passing repo-local dry-run lane, so the truthful next disposition is the exact live-run successor execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628."
+      },
+      "status": "done"
+    },
+    {
+      "id": "execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact row-55 VM-prerelease LocalDNS enable/disable carrier via features/localdns/tests/localdns-enable-disable-vm-prerelease.ts --execute using the exact mutation gate, and archive the observed create→disable→CoreDNS-fallback result for path.localdns.vm-prerelease.enable-disable without broadening to generic LocalDNS coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628.md"
+      ],
+      "acceptance": [
+        "Archive records the exact live command, selected subscription/location/api-version, and probe-specific mutation gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=localdns-enable-disable-vm-prerelease.",
+        "Archive captures one bounded terminal outcome for the dedicated row-55 carrier: observed live pass/fail behavior for enabled labels, DNS resolution, disable transition, and CoreDNS fallback, or an exact preflight/ARM blocker from the selected execution host with command/output evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.localdns.vm-prerelease.enable-disable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:37:39.930Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628_20260628073740",
+        "assigned_at": "2026-06-28T07:37:40.033Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628",
+        "worker_started_attempt_id": "a_execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628_20260628073740",
+        "worker_started_at": "2026-06-28T07:37:51.068Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the exact row-55 LocalDNS VM-prerelease carrier with the required mutation gate, captured the host-preflight blocker (missing subscription id, with az/kubectl absent), and archived the bounded run evidence in a new markdown artifact plus the probe-emitted JSON result.",
+        "last_worker_completed_at": "2026-06-28T07:39:11.501Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T07:39:48.220Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected the worker claim as non-terminal: the archived execution evidence shows the exact row-55 carrier stopped at execution-host preflight (missing AKS_RP_E2E_SUBSCRIPTION_ID, with az and kubectl absent) before any create/disable/CoreDNS assertions ran. This review leaf is replaced by the shared active preflight family task establish-live-host-preflight-localdns-vm-prerelease-family-20260628, which now owns the truthful bounded next step for the row-55 and adjacent VM-prerelease live runs."
+      },
+      "session_id": "s_task_execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628",
+      "session_history": [
+        "s_task_execute-spec-localdns-vm-prerelease-enable-disable-row55-live-run-20260628"
+      ],
+      "result": "Executed the exact row-55 LocalDNS VM-prerelease carrier with the required mutation gate, captured the host-preflight blocker (missing subscription id, with az/kubectl absent), and archived the bounded run evidence in a new markdown artifact plus the probe-emitted JSON result.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T07:39:48.220Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejected the worker claim as non-terminal: the archived execution evidence shows the exact row-55 carrier stopped at execution-host preflight (missing AKS_RP_E2E_SUBSCRIPTION_ID, with az and kubectl absent) before any create/disable/CoreDNS assertions ran. This review leaf is replaced by the shared active preflight family task establish-live-host-preflight-localdns-vm-prerelease-family-20260628, which now owns the truthful bounded next step for the row-55 and adjacent VM-prerelease live runs."
+      },
+      "status": "done"
+    },
+    {
+      "id": "await-azure-ready-host-proof-localdns-vm-prerelease-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep exactly one truthful LocalDNS VM-prerelease family wait for returned Azure-ready host proof or authoritative reply from either the current launcher host after setup or another selected execution host proved through the ordered preflight contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/establish-live-host-preflight-localdns-vm-prerelease-family-20260628.md"
+      ],
+      "acceptance": [
+        "Leaf remains blocked only while no durable proof exists for one selected host showing subscription env resolution, az account show success, ARM access-token success, kubectl client availability, and bun availability for the unchanged LocalDNS VM-prerelease row-54/row-55 launch shapes.",
+        "When durable Azure-ready host proof is returned, replace this wait with the unchanged exact row-54 and/or row-55 execute leaves rather than redesigning the carrier or broadening LocalDNS scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-host:localdns-vm-prerelease-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:40:50.689Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T08:20:09.178Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier review converted the LocalDNS passive environment wait into one active family-level diagnosis/unblock leaf: diagnose-localdns-vm-prerelease-family-host-proof-unblock-decision-20260628. The repo-local carrier shape is already closed; owner now needs one explicit decision on whether any alternate-host/setup/escalation move remains before keeping a single external wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T08:20:09.178Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Blocked-frontier review converted the LocalDNS passive environment wait into one active family-level diagnosis/unblock leaf: diagnose-localdns-vm-prerelease-family-host-proof-unblock-decision-20260628. The repo-local carrier shape is already closed; owner now needs one explicit decision on whether any alternate-host/setup/escalation move remains before keeping a single external wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Check whether the LocalDNS VM-prerelease family wait is truly the minimal truthful environment blocker by reviewing the sent ask/handoff proof, current host-proof requirements, and any repo-local alternate escalation/setup path; if not, create the exact unblock path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-vm-prerelease-family-host-proof-unblock-check-20260628.md"
+      ],
+      "acceptance": [
+        "Archive note either (a) identifies a concrete repo-local next step such as setup, alternate-host retry, or escalation and leaves the tree with that active follow-up, or (b) cites the exact sent-proof and remaining returned-host requirements showing the existing family-level wait is already the minimal truthful external blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "blocker-audit:localdns-vm-prerelease-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T08:06:28.742Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628_20260628080628",
+        "assigned_at": "2026-06-28T08:06:28.798Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628",
+        "worker_started_attempt_id": "a_diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628_20260628080628",
+        "worker_started_at": "2026-06-28T08:06:41.739Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the LocalDNS VM-prerelease family blocker state and wrote `evidence/archive/localdns-vm-prerelease-family-host-proof-unblock-check-20260628.md`, concluding the already-sent Azure-ready host-proof wait is the minimal truthful external blocker with no stronger repo-local alternate unblock path.",
+        "last_worker_completed_at": "2026-06-28T08:08:00.814Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T08:11:31.614Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence proves the already-sent Azure-ready host ask/handoff remains the minimal truthful LocalDNS family blocker, with no stronger repo-local setup, alternate-host, or escalation path left to create."
+      },
+      "session_id": "s_task_diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628",
+      "session_history": [
+        "s_task_diagnose-localdns-vm-prerelease-family-host-proof-unblock-20260628"
+      ],
+      "result": "Reviewed the LocalDNS VM-prerelease family blocker state and wrote `evidence/archive/localdns-vm-prerelease-family-host-proof-unblock-check-20260628.md`, concluding the already-sent Azure-ready host-proof wait is the minimal truthful external blocker with no stronger repo-local alternate unblock path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T08:11:31.614Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence proves the already-sent Azure-ready host ask/handoff remains the minimal truthful LocalDNS family blocker, with no stronger repo-local setup, alternate-host, or escalation path left to create."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Pressure-test the LocalDNS VM-prerelease family environment blocker using existing blocker/send-proof evidence and currently known launcher-host options. Either identify one concrete alternate-host retry/escalation action that should replace passive waiting, or write exact evidence that no further repo-local move remains before external host proof returns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628.md"
+      ],
+      "acceptance": [
+        "The task reviews the current LocalDNS family blocker/send-proof evidence and records whether any concrete alternate host, setup retry, or escalation action is still locally available.",
+        "If a concrete local move exists, the note names the exact next task or escalation target and why it changes the blocker state.",
+        "If no concrete local move exists, the note records exact evidence for why the family should remain a pure external-proof wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:localdns-vm-prerelease-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T08:12:44.907Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T08:12:52.511Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628_20260628081308",
+        "assigned_at": "2026-06-28T08:13:08.017Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628",
+        "worker_started_attempt_id": "a_diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628_20260628081308",
+        "worker_started_at": "2026-06-28T08:13:35.800Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the LocalDNS VM-prerelease family blocker, dispatch, and host-option evidence, then wrote a durable diagnosis note concluding no stronger repo-local alternate-host/setup/escalation move remains before external host proof returns.",
+        "last_worker_completed_at": "2026-06-28T08:14:27.741Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T08:15:05.130Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis note because it reviewed the existing preflight, execution-gate, and dispatch/send-proof artifacts and showed no stronger repo-local alternate-host, setup, or escalation move remains; the LocalDNS family now truthfully reduces to one pure external-proof wait."
+      },
+      "session_id": "s_task_diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628",
+      "session_history": [
+        "s_task_diagnose-localdns-vm-prerelease-family-alternate-host-or-escalation-next-step-20260628"
+      ],
+      "result": "Reviewed the LocalDNS VM-prerelease family blocker, dispatch, and host-option evidence, then wrote a durable diagnosis note concluding no stronger repo-local alternate-host/setup/escalation move remains before external host proof returns.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T08:15:05.130Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis note because it reviewed the existing preflight, execution-gate, and dispatch/send-proof artifacts and showed no stronger repo-local alternate-host, setup, or escalation move remains; the LocalDNS family now truthfully reduces to one pure external-proof wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "--parent",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the LocalDNS VM-prerelease environment-overblock into one concrete family-level unblock decision: verify whether any repo-local setup/diagnosis/alternate-host/escalation move remains beyond the existing launcher-host failure and already-sent handoff, then record the exact next move or exact external-only resume condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-vm-prerelease-family-host-proof-unblock-decision-20260628.md"
+      ],
+      "acceptance": [
+        "Archive note cites the existing launcher-host preflight failure and the selected-host ordered proof contract, and states whether any repo-local setup/diagnosis/alternate-host/escalation action still remains for the LocalDNS VM-prerelease family.",
+        "If the truthful state is still an external-only wait, the artifact names the exact minimal returned proof required from one selected host and the precise resume trigger without reopening speculative carrier work.",
+        "If another concrete move exists, the artifact names the exact next worker leaf or command needed to pursue it instead of restating a passive wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-host:localdns-vm-prerelease-family-unblock"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T08:19:55.477Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T08:20:09.120Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Planner misfired the add command and created this malformed placeholder id; replaced immediately by diagnose-localdns-vm-prerelease-family-host-proof-unblock-decision-20260628 so the tree keeps only the intended LocalDNS environment-unblock leaf."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T08:20:09.120Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Planner misfired the add command and created this malformed placeholder id; replaced immediately by diagnose-localdns-vm-prerelease-family-host-proof-unblock-decision-20260628 so the tree keeps only the intended LocalDNS environment-unblock leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T14:19:14.605Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update accepted the latest verifier drain without reopening product-constraint paths: outbound-migration loadBalancer→managedNATGateway is now represented as a reviewed done verifier pass (run 28378020777, 2/2 assertions), while the earlier NATGW V2 migration, none→LB migration, NSG route-table VM prerelease, and artifact-download repair follow-up leaves remain already captured in lane context rather than needing separate live children. The lane stays focused on draining the remaining active single-spec verifier wave plus the bounded checkpoint-slice isolation follow-up, while preserving only two exact waits: the known AAD RBAC remote-artifact checkpoint and the westus2 MultiNIC dualstack cluster-count preflight gate.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-natgw-v2-migration-v1-to-v2",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.natgw-v2-migration-v1-to-v2 through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.natgw-v2-migration-v1-to-v2",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.natgw-v2-migration-v1-to-v2"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.natgw-v2-migration-v1-to-v2",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.natgw-v2-migration-v1-to-v2 workflow run 28377603680 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v1-to-v2-a_verify-spec-net-integration-natg. NAT Gateway V1→V2 migration passed: cluster created with managedNATGateway, migrated to managedNATGatewayV2, GET verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377603680 Result: runs/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/artifacts/net-integration-natgw-v2-migration-v1-to-v2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:59:47.345Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-natgw-v2-migration-v1-to-v2_20260629135947",
+        "assigned_at": "2026-06-29T13:59:47.374Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-natgw-v2-migration-v1-to-v2",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-natgw-v2-migration-v1-to-v2_20260629135947",
+        "worker_started_at": "2026-06-29T14:00:01.098Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.natgw-v2-migration-v1-to-v2 workflow run 28377603680 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v1-to-v2-a_verify-spec-net-integration-natg. NAT Gateway V1→V2 migration passed: cluster created with managedNATGateway, migrated to managedNATGatewayV2, GET verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377603680 Result: runs/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/artifacts/net-integration-natgw-v2-migration-v1-to-v2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/result.json",
+        "last_worker_completed_at": "2026-06-29T14:08:01.837Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T14:08:04.773Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.natgw-v2-migration-v1-to-v2 workflow run 28377603680 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v1-to-v2-a_verify-spec-net-integration-natg. NAT Gateway V1→V2 migration passed: cluster created with managedNATGateway, migrated to managedNATGatewayV2, GET verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377603680 Result: runs/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/artifacts/net-integration-natgw-v2-migration-v1-to-v2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-natgw-v2-migration-v1-to-v2",
+      "session_history": [
+        "s_task_verify-spec-net-integration-natgw-v2-migration-v1-to-v2"
+      ],
+      "result": "Spec spec.net-integration.natgw-v2-migration-v1-to-v2 workflow run 28377603680 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v1-to-v2-a_verify-spec-net-integration-natg. NAT Gateway V1→V2 migration passed: cluster created with managedNATGateway, migrated to managedNATGatewayV2, GET verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377603680 Result: runs/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/artifacts/net-integration-natgw-v2-migration-v1-to-v2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377603680/aks-rp-e2e-28377603680-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v1-to-v2_026018/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:08:04.773Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

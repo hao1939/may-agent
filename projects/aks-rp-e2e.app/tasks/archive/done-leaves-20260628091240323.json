@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:12:40.323Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner blocked-frontier hygiene rollup: preserve only the single live App Routing existing-cluster operator-response wait in this lane. The LocalDNS external-wait contract closure and the MultiNIC mixed same-pool boundary/evidence ceiling note are already captured in accepted artifacts and parent context, so archive those done children to keep the spec lane readable while the exact external wait remains blocked until a real operator reply or truthful checkpoint follow-up.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the dedicated VM-prerelease LocalDNS enable-disable carrier so row-55 identity is truthful end-to-end: normalize stale row-53 wording/metadata in the maintained spec, replay/test surface, and any tightly coupled repo-local evidence references needed for reviewer-visible exactness, then rerun the existing non-cloud dry-run check and archive the corrected boundary/evidence note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628.md"
+      ],
+      "acceptance": [
+        "Updates the maintained row-55 LocalDNS VM-prerelease carrier surfaces that still advertise stale row-53 identity, with exact files changed cited in the archive note.",
+        "Reruns the bounded no-cloud verification lane for spec.localdns.vm-prerelease.enable-disable (or the exact maintained equivalent) and records the command plus outcome in the archive note.",
+        "Explains any remaining dependency on the existing LocalDNS selected-host proof family wait without reopening duplicate operator-ask/setup work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "localdns-vm-prerelease-row55-identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:08:33.325Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628_20260628090843",
+        "assigned_at": "2026-06-28T09:08:43.624Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628",
+        "worker_started_attempt_id": "a_repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628_20260628090843",
+        "worker_started_at": "2026-06-28T09:09:05.293Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the LocalDNS VM-prerelease row-55 identity repair already present in the maintained spec/test surfaces, reran the bounded dry-run lane successfully, and archived a reviewer-facing evidence note at evidence/archive/repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:10:40.171Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:11:16.818Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites mounted-source checkin/localdns plan anchors, confirms maintained row-55 carriers now point at path.localdns.vm-prerelease.enable-disable, records bounded dry-run success (bun run spec spec.localdns.vm-prerelease.enable-disable --dry-run => 1 passed), and preserves the older row53 archive filename only as historical evidence rather than a live maintained identity leak."
+      },
+      "session_id": "s_task_repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628",
+      "session_history": [
+        "s_task_repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628"
+      ],
+      "result": "Verified the LocalDNS VM-prerelease row-55 identity repair already present in the maintained spec/test surfaces, reran the bounded dry-run lane successfully, and archived a reviewer-facing evidence note at evidence/archive/repair-localdns-vm-prerelease-enable-disable-row55-identity-drift-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:11:16.818Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites mounted-source checkin/localdns plan anchors, confirms maintained row-55 carriers now point at path.localdns.vm-prerelease.enable-disable, records bounded dry-run success (bun run spec spec.localdns.vm-prerelease.enable-disable --dry-run => 1 passed), and preserves the older row53 archive filename only as historical evidence rather than a live maintained identity leak."
+      },
+      "status": "done"
+    }
+  ]
+}

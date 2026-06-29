@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:57:28.193Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the project frontier compressed to four exact external waits only until the first follow-up window on/after 2026-06-26 unless returned proof arrives sooner. Repo-local closure for the VM prerelease/KEDA slice is already accepted: the DAG completion audit and replay empty-DAG diagnostic normalization confirm rows 145/146/147 stay anchored to the maintained executable carrier spec.workload-autoscaler.keda-vm-prerelease-matrix plus the accepted crosswalk evidence, so those low-value done leaves can be archived while the parent continues to carry the durable knowledge and remaining live waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "keda-vm-prerelease-dag-node-completion-audit-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit whether the shared KEDA VM prerelease carrier has complete row-local DAG node coverage for rows 146/147 so future readers stop inheriting stale 'missing handwritten source' assumptions: use mounted source, accepted model, and replay/spec DAG references to confirm or precisely bound any missing mariner-variant and multiple-external-metric-servers DAG nodes without changing verdicts or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the exact DAG/model/spec/replay references for path.workload-autoscaler.keda-vm-prerelease.mariner-variant and .multiple-external-metric-servers, states whether each row-local DAG node is already complete or names the exact missing node/file reference, and grounds every claim in mounted source or repo-local artifacts.",
+        "Artifact keeps verdicts unchanged, explains any stale wording it supersedes, and names at most one bounded normalization follow-up if a concrete DAG gap remains; no cloud mutation or broad family rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.workload-autoscaler.keda-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:49:07.241Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_keda-vm-prerelease-dag-node-completion-audit-20260624_20260624074913",
+        "assigned_at": "2026-06-24T07:49:13.112Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_keda-vm-prerelease-dag-node-completion-audit-20260624",
+        "worker_started_attempt_id": "a_keda-vm-prerelease-dag-node-completion-audit-20260624_20260624074913",
+        "worker_started_at": "2026-06-24T07:49:42.771Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive audit at evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md, confirming rows 146/147 already have populated accepted DAG nodes/edges and that only a stale replay diagnostic still implies emptiness.",
+        "last_worker_completed_at": "2026-06-24T07:51:55.050Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:52:39.772Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md: mounted source, accepted model, and path-summary already show populated row-local DAGs for rows 146/147, so the stale missing-source framing is superseded and verdicts stay execution-pending only. The only bounded successor is replay normalization for the outdated empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts."
+      },
+      "session_id": "s_task_keda-vm-prerelease-dag-node-completion-audit-20260624",
+      "session_history": [
+        "s_task_keda-vm-prerelease-dag-node-completion-audit-20260624"
+      ],
+      "result": "Wrote the requested archive audit at evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md, confirming rows 146/147 already have populated accepted DAG nodes/edges and that only a stale replay diagnostic still implies emptiness.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:52:39.772Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md: mounted source, accepted model, and path-summary already show populated row-local DAGs for rows 146/147, so the stale missing-source framing is superseded and verdicts stay execution-pending only. The only bounded successor is replay normalization for the outdated empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts."
+      },
+      "status": "done"
+    }
+  ]
+}

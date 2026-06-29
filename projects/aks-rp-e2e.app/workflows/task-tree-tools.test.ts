@@ -8,10 +8,13 @@ import {
   createTask,
   markTaskDone,
   planningPacket,
+  pruneMissingChildren,
   repairTaskTreeRollups,
+  rollupParent,
   seedModelGapBacklog,
   taskTreeConfig,
   updateAcceptedReviewMetadata,
+  updateArchivedTaskOutputs,
   updateTaskOutputs,
   updateTaskText,
 } from "./lib/task-tree-tools.ts";
@@ -373,6 +376,171 @@ describe("task tree tools", () => {
     expect(packet.project_hygiene_warnings).toBeUndefined();
   });
 
+  test("planning packet suppresses warning for explicit sibling subpath refinement work", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.private-cluster-private-endpoint-connections",
+              status: "pass",
+              verdictFinal: true,
+            },
+            {
+              id: "path.private-cluster-private-endpoint-connections-lifecycle",
+              status: "blocked",
+              verdictFinal: false,
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "lifecycle-execute",
+          active_task_ids: ["lifecycle-execute"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["lifecycle-execute"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "lifecycle-execute": {
+              id: "lifecycle-execute",
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Run one bounded live execute attempt for the distinct subpath path.private-cluster-private-endpoint-connections-lifecycle only, explicitly preserving the accepted final-pass verdict for sibling path.private-cluster-private-endpoint-connections.",
+              outputs: ["evidence/archive/lifecycle.md"],
+              acceptance: [
+                "The distinct subpath path.private-cluster-private-endpoint-connections-lifecycle stays separate from sibling path.private-cluster-private-endpoint-connections.",
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.project_hygiene_warnings).toBeUndefined();
+  });
+
+  test("planning packet model_status_summary prefers featurePaths over stale mirror paths", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.serverless-virtual-nodes.multi-pod-burst",
+              status: "blocked",
+              rootCauseClass: "runtime",
+            },
+            {
+              id: "path.private-cluster-none-dns-zone-v3",
+              status: "unknown",
+              rootCauseClass: "none",
+            },
+          ],
+          paths: [
+            {
+              id: "path.serverless-virtual-nodes.multi-pod-burst",
+              status: "unknown",
+              rootCauseClass: "source-grounded-check-replay-execute-capable",
+            },
+            {
+              id: "path.private-cluster-none-dns-zone-v3",
+              status: "unknown",
+              rootCauseClass: "none",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.model_status_summary).toBeDefined();
+    expect(packet.model_status_summary!.total).toBe(2);
+    expect(packet.model_status_summary!.non_passing).toBe(2);
+
+    const burstPath = packet.model_status_summary!.non_passing_paths.find(
+      (path) => path.id === "path.serverless-virtual-nodes.multi-pod-burst",
+    );
+    expect(burstPath).toEqual(
+      expect.objectContaining({
+        id: "path.serverless-virtual-nodes.multi-pod-burst",
+        status: "blocked",
+        rootCauseClass: "runtime",
+      }),
+    );
+
+    const privateClusterPath =
+      packet.model_status_summary!.non_passing_paths.find(
+        (path) => path.id === "path.private-cluster-none-dns-zone-v3",
+      );
+    expect(privateClusterPath).toEqual(
+      expect.objectContaining({
+        id: "path.private-cluster-none-dns-zone-v3",
+        status: "unknown",
+        rootCauseClass: "none",
+      }),
+    );
+  });
+
   test("planning packet flags passive response waits and source-exactness overblocks", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -532,6 +700,62 @@ describe("task tree tools", () => {
       await readFile(join(projectDir, "tasks", "kanban.json"), "utf8"),
     );
     expect(kanban.kanban.column_counts["in-progress"]).toBe(1);
+  });
+
+  test("prunes missing child references from a named parent", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "review",
+              children: ["live-child", "missing-child"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "live-child": {
+              id: "live-child",
+              parent_id: "project",
+              state: "done",
+              children: [],
+              goal: "remaining child",
+              outputs: ["evidence/archive/live-child.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = pruneMissingChildren(config(projectDir), {
+      parentId: "project",
+    });
+
+    expect(result).toMatchObject({
+      changed: true,
+      parentId: "project",
+      removedChildIds: ["missing-child"],
+      remainingChildIds: ["live-child"],
+      active_task_ids: [],
+    });
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks.project.children).toEqual(["live-child"]);
   });
 
   test("task saves automatically repair parent rollups and snapshot", async () => {
@@ -872,6 +1096,365 @@ describe("task tree tools", () => {
     expect(journal).toContain('"task_id":"promotion-task"');
   });
 
+  test("replaces outputs on an archived done-leaf task and preserves other metadata", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-test.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          generated_at: "2026-06-20T00:00:00.000Z",
+          reason: "owner rolled up completed child tasks",
+          parent_id: "project",
+          summary: "test archive",
+          archived: 1,
+          tasks: [
+            {
+              id: "archived-promotion-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "repair archived outputs metadata",
+              outputs: ["evidence/archive/old-archived.md"],
+              acceptance: ["outputs repaired"],
+              conflict_scope: ["feature:managedsystem"],
+              trace: {
+                created_at: "2026-06-17T00:00:00.000Z",
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const updated = updateArchivedTaskOutputs(config(projectDir), {
+      taskId: "archived-promotion-task",
+      outputs: [
+        "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+        "features/managedsystem-pool/create-time-initial-pool.yaml",
+      ],
+    });
+
+    expect(updated.beforeOutputs).toEqual(["evidence/archive/old-archived.md"]);
+    expect(updated.afterOutputs).toEqual([
+      "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+      "features/managedsystem-pool/create-time-initial-pool.yaml",
+    ]);
+    expect(updated.archiveFile).toContain("done-leaves-test.json");
+    expect(updated.changed).toBe(true);
+    expect(updated.task.outputs).toEqual([
+      "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+      "features/managedsystem-pool/create-time-initial-pool.yaml",
+    ]);
+    expect(updated.task.goal).toBe("repair archived outputs metadata");
+    expect(updated.task.acceptance).toEqual(["outputs repaired"]);
+    expect(updated.task.conflict_scope).toEqual(["feature:managedsystem"]);
+
+    const archive = JSON.parse(
+      await readFile(
+        join(projectDir, "tasks", "archive", "done-leaves-test.json"),
+        "utf8",
+      ),
+    );
+    expect(archive.tasks[0].outputs).toEqual([
+      "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+      "features/managedsystem-pool/create-time-initial-pool.yaml",
+    ]);
+    expect(archive.tasks[0].goal).toBe("repair archived outputs metadata");
+    expect(archive.tasks[0].acceptance).toEqual(["outputs repaired"]);
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"archived_task_outputs_updated"');
+    expect(journal).toContain('"task_id":"archived-promotion-task"');
+  });
+
+  test("rejects archived output updates when the same task id appears in multiple archive bundles", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    const duplicateTask = {
+      id: "duplicate-archived-task",
+      parent_id: "project",
+      state: "done",
+      status: "done",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "duplicate archived task",
+      outputs: ["evidence/archive/old.md"],
+      acceptance: ["outputs repaired"],
+    };
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-a.json"),
+      `${JSON.stringify({ tasks: [duplicateTask] }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-b.json"),
+      `${JSON.stringify({ tasks: [duplicateTask] }, null, 2)}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      updateArchivedTaskOutputs(config(projectDir), {
+        taskId: "duplicate-archived-task",
+        outputs: ["evidence/archive/new.md"],
+      }),
+    ).toThrow(/appears in more than one archive bundle/);
+  });
+
+  test("updates archived outputs when duplicate ids exist but a specific archive bundle is requested", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    const duplicateTask = {
+      id: "duplicate-archived-task",
+      parent_id: "project",
+      state: "done",
+      status: "done",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "duplicate archived task",
+      outputs: ["evidence/archive/old.md"],
+      acceptance: ["outputs repaired"],
+    };
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-a.json"),
+      `${JSON.stringify({ tasks: [duplicateTask] }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-b.json"),
+      `${JSON.stringify({ tasks: [duplicateTask] }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const updated = updateArchivedTaskOutputs(config(projectDir), {
+      taskId: "duplicate-archived-task",
+      archiveFile: "tasks/archive/done-leaves-b.json",
+      outputs: ["evidence/archive/new.md", "replays/example.ts"],
+    });
+
+    expect(updated.archiveFile).toContain("done-leaves-b.json");
+    expect(updated.afterOutputs).toEqual([
+      "evidence/archive/new.md",
+      "replays/example.ts",
+    ]);
+
+    const archiveA = JSON.parse(
+      await readFile(
+        join(projectDir, "tasks", "archive", "done-leaves-a.json"),
+        "utf8",
+      ),
+    );
+    const archiveB = JSON.parse(
+      await readFile(
+        join(projectDir, "tasks", "archive", "done-leaves-b.json"),
+        "utf8",
+      ),
+    );
+    expect(archiveA.tasks[0].outputs).toEqual(["evidence/archive/old.md"]);
+    expect(archiveB.tasks[0].outputs).toEqual([
+      "evidence/archive/new.md",
+      "replays/example.ts",
+    ]);
+  });
+
+  test("rejects archived output updates when the archived task id is missing", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-test.json"),
+      `${JSON.stringify({ tasks: [] }, null, 2)}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      updateArchivedTaskOutputs(config(projectDir), {
+        taskId: "missing-archived-task",
+        outputs: ["evidence/archive/new.md"],
+      }),
+    ).toThrow(/Archived task not found/);
+  });
+
+  test("rejects archived output updates when the archived task is not done", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-test.json"),
+      `${JSON.stringify(
+        {
+          tasks: [
+            {
+              id: "archived-not-done-task",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "should not update",
+              outputs: ["evidence/archive/old.md"],
+              acceptance: ["outputs repaired"],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      updateArchivedTaskOutputs(config(projectDir), {
+        taskId: "archived-not-done-task",
+        outputs: ["evidence/archive/new.md"],
+      }),
+    ).toThrow(/Archived task is not done/);
+  });
+
   test("updates existing task text fields and preserves outputs/conflict scope", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -1044,5 +1627,260 @@ describe("task tree tools", () => {
     );
     expect(journal).toContain('"kind":"task_accepted_review_metadata_updated"');
     expect(journal).toContain('"task_id":"accepted-task"');
+  });
+
+  test("refuses normal done review when workflow progress says acceptance is incomplete", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["workflow-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "workflow-task": {
+              id: "workflow-task",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              workflow: "example-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep workflow work moving.",
+              outputs: [".state/example/state.json"],
+              acceptance: ["All queued work has a reviewed disposition."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason: "example workflow still has queued work",
+                  pending: 12,
+                  running: 1,
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      markTaskDone(config(projectDir), {
+        taskId: "workflow-task",
+        summary: "incorrectly accepting the controller",
+      }),
+    ).toThrow(/cannot be marked done/);
+
+    const replaced = markTaskDone(config(projectDir), {
+      taskId: "workflow-task",
+      summary: "intentionally replaced by a newer workflow task",
+      resolution: "replaced",
+    });
+    expect(replaced.state).toBe("done");
+    expect(replaced.resolution).toBe("replaced");
+  });
+
+  test("refuses parent rollup for an incomplete workflow controller", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["workflow-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "workflow-task": {
+              id: "workflow-task",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              workflow: "example-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep workflow work moving.",
+              outputs: [".state/example/state.json"],
+              acceptance: ["All queued work has a reviewed disposition."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason: "example workflow still has queued work",
+                  pending: 12,
+                  running: 1,
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      rollupParent(config(projectDir), {
+        parentId: "project",
+        summary: "incorrectly archive the controller",
+        taskIds: ["workflow-task"],
+      }),
+    ).toThrow(/cannot be archived by parent rollup/);
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["workflow-task"]).toBeDefined();
+    expect(tree.tasks.project.children).toEqual(["workflow-task"]);
+  });
+
+  test("allows parent rollup for a completed workflow controller", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["workflow-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "workflow-task": {
+              id: "workflow-task",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              workflow: "example-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep workflow work moving.",
+              outputs: [".state/example/state.json"],
+              acceptance: ["All queued work has a reviewed disposition."],
+              context: {
+                workflowProgress: {
+                  completionReady: true,
+                  reason: "example workflow has no queued work",
+                  pending: 0,
+                  running: 0,
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = rollupParent(config(projectDir), {
+      parentId: "project",
+      summary: "archive the completed controller",
+      taskIds: ["workflow-task"],
+    });
+
+    expect(result.archivedTaskIds).toEqual(["workflow-task"]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["workflow-task"]).toBeUndefined();
+    expect(tree.tasks.project.children).toEqual([]);
+  });
+
+  test("refuses parent rollup for durable loop roots even when completion-ready", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-reference-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "done",
+              workflow: "feature-reference-loop-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep official feature references current.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["Loop remains present until explicitly retired."],
+              context: {
+                workflowProgress: {
+                  completionReady: true,
+                  reason: "feature-reference loop has no active refill work",
+                  pending: 0,
+                  running: 0,
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      rollupParent(config(projectDir), {
+        parentId: "project",
+        summary: "incorrectly archive durable loop",
+        taskIds: ["aks-feature-reference-loop"],
+      }),
+    ).toThrow(/durable loop root/);
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["aks-feature-reference-loop"]).toBeDefined();
+    expect(tree.tasks.project.children).toEqual(["aks-feature-reference-loop"]);
   });
 });

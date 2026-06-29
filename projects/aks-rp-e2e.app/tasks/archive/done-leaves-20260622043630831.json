@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:36:30.831Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 review accepted the non-cloud mounted-source packet for Scenario_Retina_Enterprise_Update_ACNS_Cilium, proving the exact pre-update Retina Enterprise start state, in-place update mutator (networkDataplane=cilium plus networkPolicy=cilium), and post-update Cilium/Hubble/TLS expectation shift. Archived the four accepted handwritten/model-landing leaves whose durable meaning is already preserved in linked evidence and parent context. The live frontier now intentionally stays compact: two active repo-local follow-ups remain — VM prerelease row 54 exact model/view landing repair, and network-acns Retina Enterprise -> ACNS Cilium feature/spec authoring based on the accepted source packet — while the shared external-human-transport blocker remains compressed to one family-level wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-handwritten-coverage-matrix-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the remaining handwritten network-cni e2ev3 scenarios into a durable repo-local coverage matrix that shows, for each mounted source scenario slice, the existing feature/spec/replay/model carriers (or exact missing carrier), so the next network-cni leaf is chosen from evidence instead of guesswork.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-handwritten-coverage-matrix-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted network-cni handwritten source set it reviewed and lists each bounded scenario slice with its current feature/spec/replay/model-path coverage state or exact missing carrier.",
+        "Artifact distinguishes already-modeled broad siblings from source-exact or topology-exact branches so future tasks do not reopen final observed verdicts when only structure/coverage gaps remain.",
+        "Artifact ends with one concrete recommended follow-up leaf for the highest-value uncovered or weakly carried network-cni slice, with no cloud mutation and no task-tree edits performed by the worker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:28:12.367Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-handwritten-coverage-matrix-20260622_20260622042812",
+        "assigned_at": "2026-06-22T04:28:12.413Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-handwritten-coverage-matrix-20260622",
+        "worker_started_attempt_id": "a_network-cni-handwritten-coverage-matrix-20260622_20260622042812",
+        "worker_started_at": "2026-06-22T04:28:25.503Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable coverage matrix at evidence/archive/network-cni-handwritten-coverage-matrix-20260622.md, mapping mounted network-cni handwritten scenario slices to current feature/spec/replay/model carriers and ending with one concrete recommended follow-up leaf.",
+        "last_worker_completed_at": "2026-06-22T04:32:00.235Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:32:29.331Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review on artifact evidence alone: evidence/archive/network-cni-handwritten-coverage-matrix-20260622.md cites the mounted network source set, maps bounded handwritten slices to exact/broad/missing carrier states, preserves broad-sibling boundaries, and ends with the concrete recommended follow-up leaf network-acns-retina-enterprise-update-acns-cilium-mounted-source-packet-20260622."
+      },
+      "session_id": "s_task_network-cni-handwritten-coverage-matrix-20260622",
+      "session_history": [
+        "s_task_network-cni-handwritten-coverage-matrix-20260622"
+      ],
+      "result": "Produced the requested durable coverage matrix at evidence/archive/network-cni-handwritten-coverage-matrix-20260622.md, mapping mounted network-cni handwritten scenario slices to current feature/spec/replay/model carriers and ending with one concrete recommended follow-up leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:32:29.331Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review on artifact evidence alone: evidence/archive/network-cni-handwritten-coverage-matrix-20260622.md cites the mounted network source set, maps bounded handwritten slices to exact/broad/missing carrier states, preserves broad-sibling boundaries, and ends with the concrete recommended follow-up leaf network-acns-retina-enterprise-update-acns-cilium-mounted-source-packet-20260622."
+      },
+      "status": "done"
+    }
+  ]
+}

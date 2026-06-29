@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:21:38.357Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-archived-owner-output-repair-20260620",
+  "summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should build on the repaired packet/evidence set rather than reopen archived-owner-output linkage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620",
+      "parent_id": "vm-prerelease-archived-owner-output-repair-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement or land the smallest supported archive-aware task-tree output-mutation primitive for archived done-leaf tasks, then prove it can target the 3 bounded VM prerelease archived owner tasks without touching tasks/tree.json or project.json.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620.md"
+      ],
+      "acceptance": [
+        "Adds one supported repo-local task-tree/app primitive equivalent to archive-set-outputs for archived done-leaf task records, with exact behavior bounded to one archive bundle rewrite, duplicate/not-found guards, and structured before/after output evidence.",
+        "Artifact cites the exact commands/code path used, proves the primitive can address vm-prerelease-autozone-surge-promotion-20260620, vm-prerelease-mixed-sku-promotion-retry-20260620, and vm-prerelease-network-migration-promotion-20260620, and shows no manual edits to tasks/tree.json or project.json were required.",
+        "Artifact leaves MachinesPreview and the 7-file shared-model/view slices untouched and names the exact follow-up command shape needed to attach the bounded 19 VM draft-promotion files plus shared batch note before rerunning the 20-file domain:checkpoint manifest."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-archived-owner-output-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:18:20.604Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620_20260620181824",
+        "assigned_at": "2026-06-20T18:18:24.880Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620_20260620181824",
+        "worker_started_at": "2026-06-20T18:18:36.270Z",
+        "reviewed_at": "2026-06-20T18:19:33.918Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via parent repair artifact: added supported task-tree set-archived-outputs primitive for archived done leaves, used it on the 3 bounded VM prerelease archived owner tasks, and validated with task-tree tooling tests plus the bounded 20-file domain:checkpoint rerun clearing unattached-owner files."
+      },
+      "session_id": "s_task_vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:19:33.918Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via parent repair artifact: added supported task-tree set-archived-outputs primitive for archived done leaves, used it on the 3 bounded VM prerelease archived owner tasks, and validated with task-tree tooling tests plus the bounded 20-file domain:checkpoint rerun clearing unattached-owner files."
+      },
+      "status": "done"
+    }
+  ]
+}

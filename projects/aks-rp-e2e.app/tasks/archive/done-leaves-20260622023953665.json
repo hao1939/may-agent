@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:39:53.665Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed review accepted the row-29 mixed-SKU lifecycle truth packet as durable evidence: mounted source plus maintained feature/spec/replay/model surfaces now establish row 29 as a repo-local execute-capable carrier that remains live-gated only by external execution access. The only truthful follow-on is the already-active bounded prose-sync leaf to update model/status/path wording without reopening execution or widening beyond row 29; row-41 upgrade+CSR carrier authoring and the single family-level external human-transport wait remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the mounted VM prerelease row-29 mixed-SKU lifecycle scenario against the maintained feature/spec/replay/model surfaces so the current draft path becomes a truthful repo-local carrier with an exact next slice, without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted row-29 source/scenario plus the maintained row-29 feature/spec/replay/model surfaces, enumerates the exact lifecycle assertions covered today (create, stop/start, VM deletion, per-SKU count changes), and names any contract drift or missing maintained-surface pieces.",
+        "Artifact states whether row-29 can be promoted repo-locally to an execute-gated maintained carrier on existing helpers or whether one exact bounded authoring/model slice remains, naming the smallest truthful next follow-up.",
+        "Work stays repo-local and cloud-free: mounted-source inspection, maintained-surface review, local validation references, and evidence write-up only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row29-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:36:56.353Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622_20260622023658",
+        "assigned_at": "2026-06-22T02:36:58.497Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622_20260622023658",
+        "worker_started_at": "2026-06-22T02:37:15.561Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-29 truth packet at evidence/archive/vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622.md after reconciling mounted source, maintained feature/spec/replay/model surfaces, and fresh local check evidence. Confirmed row 29 is already a repo-local execute-gated carrier on existing helpers, with only a bounded knowledge-map/path-summary prose sync remaining.",
+        "last_worker_completed_at": "2026-06-22T02:38:46.963Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:39:10.541Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622.md credibly reconciles mounted row-29 source against the maintained feature/spec/replay/model surfaces, shows row 29 already has a truthful execute-gated repo-local carrier on existing helpers, and narrows the remaining drift to one bounded knowledge-map/path-summary prose sync rather than a replay or source gap."
+      },
+      "session_id": "s_task_vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622"
+      ],
+      "result": "Wrote the requested row-29 truth packet at evidence/archive/vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622.md after reconciling mounted source, maintained feature/spec/replay/model surfaces, and fresh local check evidence. Confirmed row 29 is already a repo-local execute-gated carrier on existing helpers, with only a bounded knowledge-map/path-summary prose sync remaining.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:39:10.541Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row29-mixed-sku-lifecycle-truth-packet-20260622.md credibly reconciles mounted row-29 source against the maintained feature/spec/replay/model surfaces, shows row 29 already has a truthful execute-gated repo-local carrier on existing helpers, and narrows the remaining drift to one bounded knowledge-map/path-summary prose sync rather than a replay or source gap."
+      },
+      "status": "done"
+    }
+  ]
+}

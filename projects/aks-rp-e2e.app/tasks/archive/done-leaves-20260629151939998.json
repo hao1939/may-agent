@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:19:39.998Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two review leaves and converted them into the next truthful backlog work. First, the VM prerelease Azure overlay multi-subnet mounted carrier implementation is now durable repo-local progress: the spec has its own repaired replay identity, truthful multi-subnet+Machines parity steps, and local live-admission proof, so the next useful action is one bounded verifier rerun that captures the first real create-time HTTP 400 body instead of more carrier authoring. Second, live rerun 147709 for spec.network-acns.basic-retina-update-retina-enterprise is accepted only as runner-observability ceiling evidence: the repaired carrier spawned live execution, but artifacts stayed stale-running/empty after the child pid disappeared, so a shared runner/spec-runner terminalization repair now precedes any verdict rerun. Earlier completed nonpass reviews for outbound UDR SIGTERM and service-connectivity remain summarized as bounded classification work already preserved on this parent; the active verifier wave and the exact blocked waits remain otherwise unchanged.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the auto-accepted nonterminal verifier result for spec.net-integration.outbound-udr run 28378145930 so the lane carries a truthful next action instead of a misleading terminal closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-outbound-udr-sigterm-reconciliation-20260629.md"
+      ],
+      "acceptance": [
+        "result.json, workflow metadata, and spec-runner status for run 28378145930 are reviewed and the SIGTERM outcome is classified as runner/test-error, rerun-needed, or shared infra symptom rather than a product verdict.",
+        "The task records whether the next truthful action is a bounded rerun, a runner-diagnosis/problem task, or a final terminal classification, with evidence refs.",
+        "The spec-verification lane is updated so spec.net-integration.outbound-udr remains unresolved until that evidence-backed action is taken; do not accept the prior auto-closed done leaf as final product coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.outbound-udr"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:12:59.963Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930_20260629151309",
+        "assigned_at": "2026-06-29T15:13:09.316Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930",
+        "worker_started_attempt_id": "a_reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930_20260629151309",
+        "worker_started_at": "2026-06-29T15:13:36.278Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28378145930 artifacts for spec.net-integration.outbound-udr and wrote durable reconciliation evidence showing the SIGTERM outcome is nonterminal runner/test-error evidence, not a product verdict; recommended keeping the lane unresolved and adding a diagnosis/problem follow-up rather than preserving the auto-closed leaf or doing a blind rerun.",
+        "last_worker_completed_at": "2026-06-29T15:16:43.169Z",
+        "last_worker_evidence": [
+          "evidence/archive/net-integration-outbound-udr-sigterm-reconciliation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:18:09.313Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived evidence proves run 28378145930 ended as a nonterminal SIGTERM/test-error while the child runner stayed stuck on AKS cluster creation for ~60m without terminal spec-runner artifacts, so the prior terminal interpretation is superseded and a diagnosis successor is required."
+      },
+      "session_id": "s_task_reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930",
+      "session_history": [
+        "s_task_reconcile-spec-net-integration-outbound-udr-sigterm-run-28378145930"
+      ],
+      "result": "Reviewed run 28378145930 artifacts for spec.net-integration.outbound-udr and wrote durable reconciliation evidence showing the SIGTERM outcome is nonterminal runner/test-error evidence, not a product verdict; recommended keeping the lane unresolved and adding a diagnosis/problem follow-up rather than preserving the auto-closed leaf or doing a blind rerun.",
+      "evidence": [
+        "evidence/archive/net-integration-outbound-udr-sigterm-reconciliation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:18:09.313Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived evidence proves run 28378145930 ended as a nonterminal SIGTERM/test-error while the child runner stayed stuck on AKS cluster creation for ~60m without terminal spec-runner artifacts, so the prior terminal interpretation is superseded and a diagnosis successor is required."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review archived run 28381940027 for spec.network-datapath.service-connectivity against the single-spec result summary and mounted/source-equivalent expectations, then record whether the nonpass is a bounded runtime failure, product signal, or rerun candidate without treating the auto-closed verifier leaf as terminal coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-datapath-service-connectivity-run-28381940027-review-20260629.md"
+      ],
+      "acceptance": [
+        "Archived run 28381940027 evidence is reviewed and summarized with the exact failing assertions and what they do or do not prove about service connectivity coverage.",
+        "The task records one concrete next disposition: durable model/evidence update, bounded retry precondition, or shared blocker linkage; it does not leave the auto-closed verifier leaf standing as unreviewed terminal truth.",
+        "Any follow-on rerun recommendation is bounded to the exact input/expectation gap revealed by run 28381940027 rather than a generic rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-datapath.service-connectivity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:14:39.077Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629_20260629151439",
+        "assigned_at": "2026-06-29T15:14:39.128Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629_20260629151439",
+        "worker_started_at": "2026-06-29T15:15:08.632Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed service-connectivity run 28381940027 against the archived artifacts, current spec/replay contract, and accepted model state, then wrote a bounded owner-review artifact concluding this was a probe-capture failure with a gated rerun recommendation rather than a product regression.",
+        "last_worker_completed_at": "2026-06-29T15:16:47.689Z",
+        "last_worker_evidence": [
+          "evidence/archive/network-datapath-service-connectivity-run-28381940027-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:18:09.374Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived evidence shows run 28381940027 reached cluster/workload/service readiness but all three traffic probes lost stdout in the same RunCommand wrapper shape with exitCode=0, so this is a bounded probe-capture failure and not enough to downgrade the accepted product pass."
+      },
+      "session_id": "s_task_reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-network-datapath-service-connectivity-run-28381940027-20260629"
+      ],
+      "result": "Reviewed service-connectivity run 28381940027 against the archived artifacts, current spec/replay contract, and accepted model state, then wrote a bounded owner-review artifact concluding this was a probe-capture failure with a gated rerun recommendation rather than a product regression.",
+      "evidence": [
+        "evidence/archive/network-datapath-service-connectivity-run-28381940027-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:18:09.374Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived evidence shows run 28381940027 reached cluster/workload/service readiness but all three traffic probes lost stdout in the same RunCommand wrapper shape with exitCode=0, so this is a bounded probe-capture failure and not enough to downgrade the accepted product pass."
+      },
+      "status": "done"
+    },
+    {
+      "id": "implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement a truthful repo-local live carrier for spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix by repairing/splitting the current replay into the correct spec identity, encoding the mounted multi-subnet lifecycle (two-subnet VNet, distinct subnet placement across pools, Machines row support, and cross-subnet connectivity checks), and making the replay explicitly live-admitted before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-implementation-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact maps /app/sources/aks-rp/test/e2e/suites/networkoverlay/multisubnet.go plus the mounted matrix rows to the repo-local replay file(s), naming the repaired spec identity and each added parity step.",
+        "Repo-local validation shows the repaired carrier stays no-cloud/check-safe while becoming single-spec live-admitted (for example via check mode plus replaySupportsLiveExecution or equivalent local manifest generation evidence); no cloud mutation is run in this task.",
+        "Artifact states the exact next verifier action after implementation, including whether one bounded live rerun or any remaining runtime preflight is still required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:08:20.105Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629_20260629150825",
+        "assigned_at": "2026-06-29T15:08:25.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629",
+        "worker_started_attempt_id": "a_implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629_20260629150825",
+        "worker_started_at": "2026-06-29T15:08:51.113Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a dedicated live-admitted carrier for spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix, repaired the spec’s probeRef/mutationGate linkage, and wrote the requested evidence artifact documenting mounted-source parity, local live-admission proof, and the exact next verifier action.",
+        "last_worker_completed_at": "2026-06-29T15:18:35.691Z",
+        "last_worker_evidence": [
+          "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts",
+          "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.test.ts",
+          "features/network-cni/specs/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.json",
+          "evidence/archive/vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-implementation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:19:39.788Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker completion after owner review of the implementation artifact and linked repo-local files: the spec now has a dedicated truthful replay identity, repaired probeRef/mutationGate linkage, mounted multi-subnet parity steps, passing no-cloud/live-admission validation, and an evidence-backed next action of one bounded verifier rerun rather than further carrier-authoring or blocker work."
+      },
+      "session_id": "s_task_implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629",
+      "session_history": [
+        "s_task_implement-vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-20260629"
+      ],
+      "result": "Implemented a dedicated live-admitted carrier for spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix, repaired the spec’s probeRef/mutationGate linkage, and wrote the requested evidence artifact documenting mounted-source parity, local live-admission proof, and the exact next verifier action.",
+      "evidence": [
+        "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts",
+        "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.test.ts",
+        "features/network-cni/specs/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.json",
+        "evidence/archive/vm-prerelease-azure-overlay-multi-subnet-mounted-live-carrier-implementation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:19:39.788Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker completion after owner review of the implementation artifact and linked repo-local files: the spec now has a dedicated truthful replay identity, repaired probeRef/mutationGate linkage, mounted multi-subnet parity steps, passing no-cloud/live-admission validation, and an evidence-backed next action of one bounded verifier rerun rather than further carrier-authoring or blocker work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the fresh live rerun single-network-acns-basic-retina-update-retina-enterprise_147709 for spec.network-acns.basic-retina-update-retina-enterprise and classify whether the repaired carrier now reaches a terminal pass/fail/error result or only exposes a runner-observability ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629.md"
+      ],
+      "acceptance": [
+        "The rerun log/status/steps/result artifacts for single-network-acns-basic-retina-update-retina-enterprise_147709 are reviewed and the exact terminal or still-running state is recorded with run/request identifiers.",
+        "If the rerun completed, the note classifies the repaired live carrier outcome as pass/fail/error with the concrete failing or passing assertions; if it did not complete cleanly, the note records the exact observability ceiling and the next bounded follow-up.",
+        "The branch preserves the accepted 2026-06-29 mounted live-carrier repair and does not regress to the old non-live/skeleton classification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:16:08.822Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629_20260629151608",
+        "assigned_at": "2026-06-29T15:16:08.875Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629_20260629151608",
+        "worker_started_at": "2026-06-29T15:16:36.340Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed live rerun single-network-acns-basic-retina-update-retina-enterprise_147709 and wrote a reconciliation note concluding it did not reach terminal pass/fail/error; it preserved the repaired live carrier but exposed a stale-running runner-observability ceiling.",
+        "last_worker_completed_at": "2026-06-29T15:17:49.708Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:19:39.890Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of live rerun 147709: the repaired carrier stayed live-runnable and reached scenario spawn, but the durable artifacts remained stale-running/empty after the child pid disappeared, so this run is truthful runner-observability ceiling evidence rather than a product pass/fail/error verdict."
+      },
+      "session_id": "s_task_reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629"
+      ],
+      "result": "Reviewed live rerun single-network-acns-basic-retina-update-retina-enterprise_147709 and wrote a reconciliation note concluding it did not reach terminal pass/fail/error; it preserved the repaired live carrier but exposed a stale-running runner-observability ceiling.",
+      "evidence": [
+        "evidence/archive/reconcile-spec-network-acns-basic-retina-update-retina-enterprise-live-rerun-147709-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:19:39.890Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of live rerun 147709: the repaired carrier stayed live-runnable and reached scenario spawn, but the durable artifacts remained stale-running/empty after the child pid disappeared, so this run is truthful runner-observability ceiling evidence rather than a product pass/fail/error verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

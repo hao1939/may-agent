@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T00:21:35.862Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 planning update: accept and archive the row-37 managed AAD post-window follow-up proof-capture because evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626.md now proves the unchanged approval-dispatch human/operator follow-up was sent and no authoritative reply had arrived first. Keep this branch as one family-level external wait plus the four remaining exact per-path followup-or-escalation proof-capture leaves (active NATGW V2→none, runnable private-cluster auth service tags endpoint, runnable serverless validating-webhook public, runnable serverless validating-webhook private). Do not reopen repo-local source/spec/setup/model closure, do not widen sibling families, and do not introduce cloud mutation from this branch while the active NATGW proof-capture leaf runs next.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture one bounded post-window follow-up or escalation artifact for the already-routed row-37 managed AAD lifecycle approval packet using the same unchanged carrier and approval gate, or record an authoritative reply that arrived before the follow-up was sent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md plus the already-routed approval packet/send proof, and captures either the bounded follow-up/escalation or an authoritative reply/redirect/deny that arrived instead.",
+        "The exact row-37 scope remains unchanged: no cloud mutation, no reopened source/setup/model work, and no widened AAD RBAC sibling investigation is introduced from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T00:17:45.373Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T00:17:50.090Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626_20260626001755",
+        "assigned_at": "2026-06-26T00:17:55.799Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626_20260626001755",
+        "worker_started_at": "2026-06-26T00:18:14.601Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded post-window follow-up proof artifact for the row-37 managed AAD lifecycle approval wait at evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626.md, showing no authoritative reply had arrived and capturing the already-routed 2026-06-26 family-level follow-up that covered this exact unchanged carrier.",
+        "last_worker_completed_at": "2026-06-26T00:20:13.893Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T00:21:16.957Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-26 archive artifact as satisfying the bounded post-window proof-capture acceptance: it links the prior row-37 narrowing/send-proof authorities, records the unchanged approval-dispatch human/operator follow-up path, and truthfully documents that no authoritative reply had arrived before the family-level follow-up was sent."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626"
+      ],
+      "result": "Authored the bounded post-window follow-up proof artifact for the row-37 managed AAD lifecycle approval wait at evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626.md, showing no authoritative reply had arrived and capturing the already-routed 2026-06-26 family-level follow-up that covered this exact unchanged carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T00:21:16.957Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-26 archive artifact as satisfying the bounded post-window proof-capture acceptance: it links the prior row-37 narrowing/send-proof authorities, records the unchanged approval-dispatch human/operator follow-up path, and truthfully documents that no authoritative reply had arrived before the family-level follow-up was sent."
+      },
+      "status": "done"
+    }
+  ]
+}

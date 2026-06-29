@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:09:00.389Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner blocked-frontier review follow-up: finish the project-root hygiene pass by archiving the remaining completed SGX replay/source-repair leaves now that the blocked family is confirmed unchanged and the spec-loop active leaf remains the only runnable work. The visible root frontier should now show just the spec verification lane plus the single family-level external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair replays/sgx-addon-vm-prerelease-matrix.ts so row 59 becomes a first-class no-cloud replay check for path.sgx-addon.vm-prerelease.inproc-quote-helper-disabled, using current repo paths and recording quote-helper-disabled as config-backed rather than a direct runtime-absence proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/sgx-addon-vm-prerelease-matrix.ts"
+      ],
+      "acceptance": [
+        "The replay reads the current SGX addon spec/model/view paths from the repo and no longer depends on the missing stale coverage-ledger path for row 59 validation.",
+        "Row 59 assertions explicitly preserve the exact prerelease/matrix carrier and describe quote-helper-disabled as a source-backed config contract, not a direct runtime quote-helper absence proof.",
+        "The repaired replay remains a no-cloud structural check and is accompanied by a bounded note or evidence update explaining the row-59 precision change if needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sgx-addon-replay-row59"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:11:36.302Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626_20260626181239",
+        "assigned_at": "2026-06-26T18:12:39.434Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626",
+        "worker_started_attempt_id": "a_repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626_20260626181239",
+        "worker_started_at": "2026-06-26T18:12:40.763Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the SGX VM prerelease matrix replay at features/sgx-addon-vm-prerelease-matrix/tests/sgx-addon-vm-prerelease-matrix.ts so row 59 is the first-class no-cloud structural check, uses current repo/spec/model paths, replaces stale ledger dependence with the maintained row-59 note, and preserves quote-helper-disabled as a config-backed contract rather than a direct runtime-absence proof.",
+        "last_worker_completed_at": "2026-06-26T18:15:08.357Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:16:59.289Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the row-59 SGX replay repair: features/sgx-addon-vm-prerelease-matrix/tests/sgx-addon-vm-prerelease-matrix.ts now carries explicit row59 path/spec/model assertions, links evidence/archive/sgx-addon-row59-mounted-source-map-20260626.md instead of the stale coverage-ledger dependency, and preserves quote-helper-disabled as a config-backed contract rather than a runtime-absence proof."
+      },
+      "session_id": "s_task_repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626",
+      "session_history": [
+        "s_task_repair-sgx-addon-vm-prerelease-matrix-row59-inproc-replay-20260626"
+      ],
+      "result": "Repaired the SGX VM prerelease matrix replay at features/sgx-addon-vm-prerelease-matrix/tests/sgx-addon-vm-prerelease-matrix.ts so row 59 is the first-class no-cloud structural check, uses current repo/spec/model paths, replaces stale ledger dependence with the maintained row-59 note, and preserves quote-helper-disabled as a config-backed contract rather than a direct runtime-absence proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:16:59.289Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the row-59 SGX replay repair: features/sgx-addon-vm-prerelease-matrix/tests/sgx-addon-vm-prerelease-matrix.ts now carries explicit row59 path/spec/model assertions, links evidence/archive/sgx-addon-row59-mounted-source-map-20260626.md instead of the stale coverage-ledger dependency, and preserves quote-helper-disabled as a config-backed contract rather than a runtime-absence proof."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:31:52.176Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier refill accepted the OIDC default-by-version readiness packet and archived that done leaf, preserving the single exact family-level external-human wait unchanged. To avoid an empty runnable frontier while that truthful wait remains blocked, the next repo-local work is one bounded ManagedSystem replay-lineage hygiene leaf: refresh stale devbox source refs in replays/managedsystem-create-time-initial-pool.ts to mounted /app/sources/aks-rp anchors and record that the create-time boundary/product-gap verdict itself is unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-default-by-version-live-execution-readiness-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular verification lane: prepare the bounded live-execution readiness packet for replays/oidc-issuer-default-by-version.ts so a future explicit --execute run has an exact input path, expectation path, gating contract, cleanup plan, and evidence targets before any cloud mutation is considered.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-live-execution-readiness-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable no-cloud archive note identifies the exact execute-mode carrier for spec.oidc-issuer.default-by-version and path.oidc.default-by-version.k8s-gte-1.34, including required env vars, expected create/discovery/JWKS assertions, the >=1.34 version boundary, and the precise safety gates that must both be open before live work is legal.",
+        "The packet states what new observed coverage a live run would add, what cleanup/diagnostic evidence must be captured, and any remaining repo-local unknowns or blockers without performing cloud mutation or restating already-accepted gate-repair work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc.default-by-version.k8s-gte-1.34"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:27:29.746Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-by-version-live-execution-readiness-packet-20260623_20260623122729",
+        "assigned_at": "2026-06-23T12:27:29.795Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-by-version-live-execution-readiness-packet-20260623",
+        "worker_started_attempt_id": "a_oidc-default-by-version-live-execution-readiness-packet-20260623_20260623122729",
+        "worker_started_at": "2026-06-23T12:27:58.516Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded live-execution readiness packet for the OIDC default-by-version path at evidence/archive/oidc-default-by-version-live-execution-readiness-packet-20260623.md, including exact carrier/gates, expected create/discovery scope, cleanup/evidence requirements, and the current repo-local blocker that the replay still force-executes by default.",
+        "last_worker_completed_at": "2026-06-23T12:30:17.066Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:30:39.491Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet names the exact execute-mode carrier for spec.oidc-issuer.default-by-version/path.oidc.default-by-version.k8s-gte-1.34, captures required env vars and >=1.34 branch assertions, states the intended two-gate mutation contract, and records the current repo-local force-execute drift plus required cleanup/diagnostic evidence without performing cloud mutation."
+      },
+      "session_id": "s_task_oidc-default-by-version-live-execution-readiness-packet-20260623",
+      "session_history": [
+        "s_task_oidc-default-by-version-live-execution-readiness-packet-20260623"
+      ],
+      "result": "Wrote the bounded live-execution readiness packet for the OIDC default-by-version path at evidence/archive/oidc-default-by-version-live-execution-readiness-packet-20260623.md, including exact carrier/gates, expected create/discovery scope, cleanup/evidence requirements, and the current repo-local blocker that the replay still force-executes by default.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T12:30:39.491Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet names the exact execute-mode carrier for spec.oidc-issuer.default-by-version/path.oidc.default-by-version.k8s-gte-1.34, captures required env vars and >=1.34 branch assertions, states the intended two-gate mutation contract, and records the current repo-local force-execute drift plus required cleanup/diagnostic evidence without performing cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

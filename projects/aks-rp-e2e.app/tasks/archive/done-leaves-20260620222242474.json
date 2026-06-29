@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:22:42.474Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner review accepted the bounded VM prerelease row-25 capacity-based-surge maintained-model slice as durable root-level provenance: mounted source row-25 assertions, repo-local source→spec→replay→model→coverage lineage, execute-gated blocked status, and the first live-execute candidate now live in evidence/archive/vm-prerelease-capacity-based-surge-model-reconcile-20260620.md. Remaining open work stays focused on the separate row-26 maxUnavailable reconcile, the private-cluster source boundary map batch, and the single family-level external send-proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-capacity-based-surge-model-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease row-25 authorities plus the existing repo-local replay/spec wiring to reconcile the exact capacity-based-surge lifecycle branch into one maintained-model slice without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-capacity-based-surge-model-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, any referenced VM prerelease helper/checkin authorities, and the existing repo-local feature/spec/replay files for path.virtualmachines.capacity-based-surge, then cite the exact row-25 lifecycle assertions and local artifact lineage in the durable note.",
+        "Apply only the bounded model/view/status edits needed to keep path.virtualmachines.capacity-based-surge truthful and distinct from adjacent VM prerelease siblings such as capacity-based-surge-maxunavailable, then rerun the relevant non-cloud validation/status commands and record the outcomes.",
+        "Name the first future live-execute candidate plus the remaining non-cloud evidence ceiling for this exact row-25 branch without running cloud execution or broadening into unrelated VM prerelease rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:15:05.871Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-capacity-based-surge-model-reconcile-20260620_20260620221655",
+        "assigned_at": "2026-06-20T22:16:55.856Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-capacity-based-surge-model-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-capacity-based-surge-model-reconcile-20260620_20260620221655",
+        "worker_started_at": "2026-06-20T22:16:56.184Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the exact row-25 VM capacity-based-surge model slice: updated model evidence/feature/path truthfulness in model/knowledge-map/model.json, regenerated path-summary, and wrote the durable note evidence/archive/vm-prerelease-capacity-based-surge-model-reconcile-20260620.md with mounted-source assertions, local lineage, validation outcomes, and the first live-execute candidate.",
+        "last_worker_completed_at": "2026-06-20T22:21:09.716Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:21:51.639Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the durable note cites the exact mounted row-25 authorities, repo-local spec/replay/model lineage, bounded model/path updates, rerun non-cloud checks, and the first live-execute candidate plus remaining evidence ceiling for path.virtualmachines.capacity-based-surge."
+      },
+      "session_id": "s_task_vm-prerelease-capacity-based-surge-model-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-capacity-based-surge-model-reconcile-20260620"
+      ],
+      "result": "Reconciled the exact row-25 VM capacity-based-surge model slice: updated model evidence/feature/path truthfulness in model/knowledge-map/model.json, regenerated path-summary, and wrote the durable note evidence/archive/vm-prerelease-capacity-based-surge-model-reconcile-20260620.md with mounted-source assertions, local lineage, validation outcomes, and the first live-execute candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:21:51.639Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the durable note cites the exact mounted row-25 authorities, repo-local spec/replay/model lineage, bounded model/path updates, rerun non-cloud checks, and the first live-execute candidate plus remaining evidence ceiling for path.virtualmachines.capacity-based-surge."
+      },
+      "status": "done"
+    }
+  ]
+}

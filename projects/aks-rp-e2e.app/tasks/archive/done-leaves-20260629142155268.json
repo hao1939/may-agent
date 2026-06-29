@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T14:21:55.268Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner rollup accepted the latest verifier drain with two new facts. First, spec.net-integration.pod-subnet-delegation is now a reviewed live pass from run 28378405872: the staging cluster created with node subnet 10.224.0.0/16 and delegated pod subnet 10.225.0.0/16, and the Swift v2 delegation assertions passed 3/3. Second, spec.network-acns.basic-retina-update-retina-enterprise reached a terminal non-live-executable single-spec result in run 28378934644, so the lane now carries one repo-local follow-up to classify its truthful source/check/shared-carrier execution path instead of reopening blind cloud work. The active frontier otherwise stays focused on the current single-spec verification wave, the bounded missing-result checkpoint slice, and the westus2 cluster-count diagnosis while existing exact waits remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.natgw-v2-migration-v2-to-lb-blocked through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.natgw-v2-migration-v2-to-lb-blocked",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.natgw-v2-migration-v2-to-lb-blocked"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.natgw-v2-migration-v2-to-lb-blocked",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.natgw-v2-migration-v2-to-lb-blocked workflow run 28377649277 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked-a_verify-spec-net-integrat. V2→LB downgrade correctly blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377649277 Result: runs/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/artifacts/net-integration-natgw-v2-migration-v2-to-lb-blocked/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T14:00:30.373Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked_20260629140030",
+        "assigned_at": "2026-06-29T14:00:30.392Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked_20260629140030",
+        "worker_started_at": "2026-06-29T14:00:39.742Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.natgw-v2-migration-v2-to-lb-blocked workflow run 28377649277 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked-a_verify-spec-net-integrat. V2→LB downgrade correctly blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377649277 Result: runs/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/artifacts/net-integration-natgw-v2-migration-v2-to-lb-blocked/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/result.json",
+        "last_worker_completed_at": "2026-06-29T14:06:57.885Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T14:07:11.867Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.natgw-v2-migration-v2-to-lb-blocked workflow run 28377649277 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked-a_verify-spec-net-integrat. V2→LB downgrade correctly blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377649277 Result: runs/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/artifacts/net-integration-natgw-v2-migration-v2-to-lb-blocked/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked",
+      "session_history": [
+        "s_task_verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked"
+      ],
+      "result": "Spec spec.net-integration.natgw-v2-migration-v2-to-lb-blocked workflow run 28377649277 classified as pass. Loop key: verify-spec-net-integration-natgw-v2-migration-v2-to-lb-blocked-a_verify-spec-net-integrat. V2→LB downgrade correctly blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28377649277 Result: runs/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/artifacts/net-integration-natgw-v2-migration-v2-to-lb-blocked/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28377649277/aks-rp-e2e-28377649277-spec-test-results/test-results/single-net-integration-natgw-v2-migration-v2-to-lb-blocked_103555/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:07:11.867Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

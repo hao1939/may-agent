@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T01:59:12.454Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+  "summary": "2026-06-22 watchdog backlog reconciliation confirms the runnable-backlog wake was stale: row-41 metadata follow-up was already claimed, so no refill was needed. This branch is now updated to match reality: the row-41 secure-TLS live-base authoring and check-repair groundwork is accepted and archived, row-42 is intentionally active as the next execute-carrier extension because the gating live-base work already landed, and the only parallel row-41 work left is the non-conflicting specs/index metadata drift repair. Open work remains repo-local only: finish truthful row-42 VNet-integration authoring and resolve the row-41 index metadata drift without reopening the accepted live-base implementation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row41-create-csr-live-base-authoring-20260622",
+      "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the smallest truthful execute-capable row-41 live base in replays/secure-tls-bootstrap-basic-lifecycle.ts: keep check-mode source/spec assertions, add execute-gated create flow for the secure-TLS VM-prerelease shape, acquire admin kubeconfig, port the mounted CSR validation/runtime checks for the initial post-create checkpoint, and wire cleanup without claiming upgrade/rotate/stop-start support yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/secure-tls-bootstrap-basic-lifecycle.ts",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row41-create-csr-live-base-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Replay replaces the wrapper-only row-41 file with an execute-gated live implementation that preserves check-mode source/spec assertions, builds the row-41 secure-TLS VirtualMachines cluster shape, fetches admin kubeconfig, validates kubelet client CSRs after create, and performs RG cleanup without launching any later lifecycle phases.",
+        "Authoring artifact cites the exact mounted source anchors and donor replay/helper surfaces used, explains how the TypeScript CSR validation covers signer, Ready-node filtering, Approved/certificate checks, node-name extraction, and minimum-count logic for the row-41 pool shape, and states any bounded remaining local unknowns.",
+        "bun run check passes, and the artifact clearly states that upgrade, rotate-cert, and stop/start remain follow-on slices rather than implied coverage by this first implementation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-execute-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T01:44:49.392Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row41-create-csr-live-base-authoring-20260622_20260622014449",
+        "assigned_at": "2026-06-22T01:44:49.500Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row41-create-csr-live-base-authoring-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row41-create-csr-live-base-authoring-20260622_20260622014449",
+        "worker_started_at": "2026-06-22T01:45:07.015Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Replaced the row-41 secure-TLS wrapper replay with a bounded execute-gated live implementation in replays/secure-tls-bootstrap-basic-lifecycle.ts and added an authoring artifact documenting mounted source anchors, CSR-validation port details, verification, and remaining bounded unknowns.",
+        "last_worker_completed_at": "2026-06-22T01:50:59.719Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T01:57:06.088Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted on bounded non-local exception: the authoring artifact plus evidence/archive/vm-prerelease-row41-live-base-check-integration-repair-20260622.md prove replays/secure-tls-bootstrap-basic-lifecycle.ts is locally integration-ready (compile, wiring, readonly-check-mode clean, replay --check pass, local Prettier clean) while bun run check currently fails first at unrelated repo-wide format debt, not a row-41-local defect."
+      },
+      "session_id": "s_task_vm-prerelease-row41-create-csr-live-base-authoring-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row41-create-csr-live-base-authoring-20260622"
+      ],
+      "result": "Replaced the row-41 secure-TLS wrapper replay with a bounded execute-gated live implementation in replays/secure-tls-bootstrap-basic-lifecycle.ts and added an authoring artifact documenting mounted source anchors, CSR-validation port details, verification, and remaining bounded unknowns.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T01:57:06.088Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted on bounded non-local exception: the authoring artifact plus evidence/archive/vm-prerelease-row41-live-base-check-integration-repair-20260622.md prove replays/secure-tls-bootstrap-basic-lifecycle.ts is locally integration-ready (compile, wiring, readonly-check-mode clean, replay --check pass, local Prettier clean) while bun run check currently fails first at unrelated repo-wide format debt, not a row-41-local defect."
+      },
+      "status": "done"
+    }
+  ]
+}

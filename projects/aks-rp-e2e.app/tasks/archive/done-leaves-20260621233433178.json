@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:34:33.178Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner rollup: repo-local completions now establish four durable facts under the root. ManagedSystem create-time initial/default pool remains a final product-gap boundary, VM prerelease row 29 mixed-SKU lifecycle and row 46 cluster-autoscaler wording are both landed in the maintained knowledge map with regenerated views, and the just-reviewed AAD RBAC managed-v2 rerun-contract sync confirms path.aad-rbac.managed-v2-lifecycle stays blocked with exact replay-backed execute prerequisites rather than becoming runnable. The live frontier is intentionally narrow: one active repo-local source/model task for VM prerelease row 30 mixed-SKU deallocate, plus one shared family-level external-human-transport wait for asks that truly require proof or reply outside runtime.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-initial-pool-boundary-model-refresh-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the final-verdict ManagedSystem create-time initial/default pool path in the maintained knowledge map using mounted AKS RP source plus existing repo-local evidence/spec lineage, sharpening the accepted vs rejected boundary without any cloud rerun or verdict relitigation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-initial-pool-boundary-model-refresh-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP source and existing repo-local evidence/spec/model authorities to update model/knowledge-map/model.json and regenerate affected views for the exact ManagedSystem create-time initial/default pool boundary as a final-verdict reconciliation, not a replay retry.",
+        "Make the boundary explicit in durable evidence: accepted inputs, rejected or failing edges, expected behavior, observed/product-gap behavior, adjacent surfaces, and the exact retest condition that already governs path.managedsystem.create-time-initial-pool.",
+        "Keep the task repo-local and source/model grounded only: no cloud execution, no new external-human wait handling, and no attempt to relitigate or reopen the already-final product-gap judgment beyond sharpening the capability map."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:26:12.388Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-initial-pool-boundary-model-refresh-20260621_20260621232612",
+        "assigned_at": "2026-06-21T23:26:12.434Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-initial-pool-boundary-model-refresh-20260621",
+        "worker_started_attempt_id": "a_managedsystem-create-time-initial-pool-boundary-model-refresh-20260621_20260621232612",
+        "worker_started_at": "2026-06-21T23:27:32.137Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Refreshed the ManagedSystem create-time initial/default pool boundary in model/knowledge-map/model.json and wrote durable evidence at evidence/archive/managedsystem-create-time-initial-pool-boundary-model-refresh-20260621.md, making the minimal name+mode contract, mounted-source validator chain, rejected generic fields, and unchanged sku.DefaultClaim retest gate explicit. Regenerated maintained views, but full model validation still fails on many pre-existing unrelated knowledge-map issues outside the ManagedSystem scope.",
+        "last_worker_completed_at": "2026-06-21T23:29:48.152Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:30:35.836Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local ManagedSystem boundary refresh: durable evidence now makes the minimal name+mode create contract, rejected generic pool fields, unchanged product-gap verdict, and exact sku.DefaultClaim retest gate explicit; unrelated global model validation failures stay out of scope."
+      },
+      "session_id": "s_task_managedsystem-create-time-initial-pool-boundary-model-refresh-20260621",
+      "session_history": [
+        "s_task_managedsystem-create-time-initial-pool-boundary-model-refresh-20260621"
+      ],
+      "result": "Refreshed the ManagedSystem create-time initial/default pool boundary in model/knowledge-map/model.json and wrote durable evidence at evidence/archive/managedsystem-create-time-initial-pool-boundary-model-refresh-20260621.md, making the minimal name+mode contract, mounted-source validator chain, rejected generic fields, and unchanged sku.DefaultClaim retest gate explicit. Regenerated maintained views, but full model validation still fails on many pre-existing unrelated knowledge-map issues outside the ManagedSystem scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:30:35.836Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local ManagedSystem boundary refresh: durable evidence now makes the minimal name+mode create contract, rejected generic pool fields, unchanged product-gap verdict, and exact sku.DefaultClaim retest gate explicit; unrelated global model validation failures stay out of scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row29-mixed-sku-lifecycle-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land VM prerelease row 29 mixed-SKU lifecycle into the maintained knowledge map as a dedicated VirtualMachines path using mounted source plus existing spec/replay lineage, while keeping the branch separate from row 27 mixed-SKU upgrade, row 30 mixed-SKU deallocate, and generic lifecycle coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row29-mixed-sku-lifecycle-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP VM prerelease source plus existing repo-local spec/replay/index authorities to add a truthful dedicated maintained landing for the exact row-29 mixed-SKU lifecycle contract in model/knowledge-map/model.json and regenerate affected views.",
+        "Keep the landing narrowly row-scoped: preserve the exact mixed-profile create/stop/start/delete semantics and document why it stays separate from row 27 mixed-SKU upgrade, row 30 mixed-SKU deallocate, and generic VirtualMachines lifecycle coverage.",
+        "Write one durable repo-local evidence packet summarizing the maintained landing and reused authorities only; no cloud execution, no new external-human wait handling, and no product pass/fail claim beyond source/spec/model grounding."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:25:13.481Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T23:26:12.482Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T23:27:32.391Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621",
+        "stale_active_requeued_at": "2026-06-21T23:26:53.519Z",
+        "stale_active_requeue_reason": "Keep maintained-model edits serialized: row29 remains ready backlog work, but should not run concurrently with the newly active ManagedSystem boundary refresh because both leaves regenerate shared knowledge-map artifacts.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621_20260621232643",
+        "current_attempt_id": "a_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621_20260621232732",
+        "worker_started_attempt_id": "a_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621_20260621232732",
+        "worker_started_at": "2026-06-21T23:27:34.543Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the maintained row-29 mixed-SKU lifecycle model/view/evidence carrier in model/knowledge-map/model.json, regenerated maintained views, and wrote a durable evidence packet at evidence/archive/vmpr-row29-mixed-sku-lifecycle-model-landing-20260621.md. Verified the row remains source-grounded, separate from row 27 upgrade and row 30 deallocate, with local replay check passing and no cloud execution performed.",
+        "last_worker_completed_at": "2026-06-21T23:31:52.943Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:32:07.560Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the row-29 mixed-SKU lifecycle landing: the evidence packet is source-grounded, keeps the branch narrowly separated from row 27 upgrade and row 30 deallocate, records regenerated maintained views plus local replay check, and does not overclaim beyond repo-local source/spec/model grounding."
+      },
+      "session_id": "s_task_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621",
+      "session_history": [
+        "s_task_vmpr-row29-mixed-sku-lifecycle-model-landing-20260621"
+      ],
+      "result": "Landed the maintained row-29 mixed-SKU lifecycle model/view/evidence carrier in model/knowledge-map/model.json, regenerated maintained views, and wrote a durable evidence packet at evidence/archive/vmpr-row29-mixed-sku-lifecycle-model-landing-20260621.md. Verified the row remains source-grounded, separate from row 27 upgrade and row 30 deallocate, with local replay check passing and no cloud execution performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:32:07.560Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the row-29 mixed-SKU lifecycle landing: the evidence packet is source-grounded, keeps the branch narrowly separated from row 27 upgrade and row 30 deallocate, records regenerated maintained views plus local replay check, and does not overclaim beyond repo-local source/spec/model grounding."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync the maintained feature/model wording for VM prerelease row 46 cluster-autoscaler minCount recovery so the exact VirtualMachines prerelease contract stays source-grounded, row-scoped, and distinct from generic autoscaler coverage without claiming fresh live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP source plus existing repo-local feature/spec/replay/model authorities to update features/cluster-autoscaler.yaml and any affected maintained views so row 46's exact 3/5/3 minCount-recovery contract is represented truthfully as source-grounded unknown.",
+        "Document in durable evidence why row 46 remains a dedicated VirtualMachines prerelease child path separate from rows 47, 48, and 51 and from generic cluster-autoscaler lifecycle coverage.",
+        "Keep the task repo-local only: no cloud execution, no new external-human wait handling, and no product pass/fail claim beyond wording/model synchronization grounded in existing authorities."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:28:31.172Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621_20260621232831",
+        "assigned_at": "2026-06-21T23:28:31.222Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621",
+        "worker_started_attempt_id": "a_vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621_20260621232831",
+        "worker_started_at": "2026-06-21T23:28:52.672Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated `features/cluster-autoscaler.yaml` to make row-46 CAS minCount wording explicitly source-grounded, row-scoped, and distinct from the generic autoscaler carrier, and wrote durable evidence explaining the row-46/47/48/51 boundary and maintained-view alignment.",
+        "last_worker_completed_at": "2026-06-21T23:31:09.529Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:31:21.538Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence packet and repo diff show features/cluster-autoscaler.yaml now preserves the mounted row-46 3/5/3 VirtualMachines prerelease minCount contract, distinguishes rows 47/48/51 and generic CAS coverage, and correctly records that no further model/view edit was needed for this repo-local wording sync."
+      },
+      "session_id": "s_task_vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621",
+      "session_history": [
+        "s_task_vmpr-row46-cluster-autoscaler-mincount-wording-sync-20260621"
+      ],
+      "result": "Updated `features/cluster-autoscaler.yaml` to make row-46 CAS minCount wording explicitly source-grounded, row-scoped, and distinct from the generic autoscaler carrier, and wrote durable evidence explaining the row-46/47/48/51 boundary and maintained-view alignment.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:31:21.538Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence packet and repo diff show features/cluster-autoscaler.yaml now preserves the mounted row-46 3/5/3 VirtualMachines prerelease minCount contract, distinguishes rows 47/48/51 and generic CAS coverage, and correctly records that no further model/view edit was needed for this repo-local wording sync."
+      },
+      "status": "done"
+    }
+  ]
+}

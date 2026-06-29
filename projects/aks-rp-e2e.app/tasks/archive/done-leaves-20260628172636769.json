@@ -1,0 +1,875 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T17:26:36.769Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review compression: accepted the latest virtualmachines/workload-* feature-reference collector outputs plus the mixed-SKU heading repair and the storage-csi batch header normalization. This branch now carries durable archive notes for virtualmachines-autoscaled-vms-crud, virtualmachines-managedsystem-combined, virtualmachines-mixed-sku-lifecycle, virtualmachines-vmas-to-vms-migration-slb, windows, workload-autoscaler-keda-vm-prerelease-matrix, workload-autoscaler-vpa-profile-state, workload-health-kube-proxy-readiness, and workload-identity-automatic-sku. Remaining open work in this lane is the smaller review/repair tail (for example workload-identity packet cleanup) rather than basic collector acceptance.",
+  "archived": 11,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-virtualmachines-autoscaled-vms-crud",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for virtualmachines-autoscaled-vms-crud.",
+      "inputs": [
+        "feature:virtualmachines-autoscaled-vms-crud",
+        "packet:features/virtualmachines-agentpool/packets/virtualmachines-autoscaled-vms-crud.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:virtualmachines-autoscaled-vms-crud"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "virtualmachines-autoscaled-vms-crud",
+        "packetPath": "features/virtualmachines-agentpool/packets/virtualmachines-autoscaled-vms-crud.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "virtualmachines-agentpool",
+        "coveredFeatureIds": [
+          "virtualmachines-autoscaled-vms-crud"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.265Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:03:38.733Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-virtualmachines-autoscaled-vms-crud",
+        "worker_started_attempt_id": "a_collect-feature-reference-virtualmachines-autoscaled-vms-crud_20260628170338",
+        "worker_started_at": "2026-06-28T17:03:40.208Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:47.892Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-virtualmachines-autoscaled-vms-crud_20260628163035",
+        "current_attempt_id": "a_collect-feature-reference-virtualmachines-autoscaled-vms-crud_20260628170338",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for virtualmachines-autoscaled-vms-crud: evidence/archive/feature-reference-virtualmachines-autoscaled-vms-crud-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:05:11.867Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.205Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-virtualmachines-autoscaled-vms-crud",
+      "session_history": [
+        "s_task_collect-feature-reference-virtualmachines-autoscaled-vms-crud"
+      ],
+      "result": "Collected official feature references for virtualmachines-autoscaled-vms-crud: evidence/archive/feature-reference-virtualmachines-autoscaled-vms-crud-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.205Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-virtualmachines-managedsystem-combined",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for virtualmachines-managedsystem-combined.",
+      "inputs": [
+        "feature:virtualmachines-managedsystem-combined",
+        "packet:features/virtualmachines-agentpool/packets/virtualmachines-managedsystem-combined.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:virtualmachines-managedsystem-combined"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "virtualmachines-managedsystem-combined",
+        "packetPath": "features/virtualmachines-agentpool/packets/virtualmachines-managedsystem-combined.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "virtualmachines-agentpool",
+        "coveredFeatureIds": [
+          "virtualmachines-managedsystem-combined"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact evidence/archive/feature-reference-virtualmachines-managedsystem-combined-20260628.md for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.358Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:05:00.625Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-virtualmachines-managedsystem-combined",
+        "worker_started_attempt_id": "a_collect-feature-reference-virtualmachines-managedsystem-combined_20260628170500",
+        "worker_started_at": "2026-06-28T17:05:02.448Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.020Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-virtualmachines-managedsystem-combined_20260628163035",
+        "promoted_at": "2026-06-28T17:04:10.299Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-virtualmachines-managedsystem-combined_20260628170500",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for virtualmachines-managedsystem-combined: evidence/archive/feature-reference-virtualmachines-managedsystem-combined-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:06:22.945Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.616Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact evidence/archive/feature-reference-virtualmachines-managedsystem-combined-20260628.md for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-virtualmachines-managedsystem-combined",
+      "session_history": [
+        "s_task_collect-feature-reference-virtualmachines-managedsystem-combined"
+      ],
+      "result": "Collected official feature references for virtualmachines-managedsystem-combined: evidence/archive/feature-reference-virtualmachines-managedsystem-combined-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:02.616Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-virtualmachines-mixed-sku-lifecycle",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for virtualmachines-mixed-sku-lifecycle.",
+      "inputs": [
+        "feature:virtualmachines-mixed-sku-lifecycle",
+        "packet:features/virtualmachines-agentpool/packets/virtualmachines-mixed-sku-lifecycle.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:virtualmachines-mixed-sku-lifecycle"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "virtualmachines-mixed-sku-lifecycle",
+        "packetPath": "features/virtualmachines-agentpool/packets/virtualmachines-mixed-sku-lifecycle.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "virtualmachines-agentpool",
+        "coveredFeatureIds": [
+          "virtualmachines-mixed-sku-lifecycle"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.403Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:05:00.625Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-virtualmachines-mixed-sku-lifecycle",
+        "worker_started_attempt_id": "a_collect-feature-reference-virtualmachines-mixed-sku-lifecycle_20260628170500",
+        "worker_started_at": "2026-06-28T17:05:02.728Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.082Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-virtualmachines-mixed-sku-lifecycle_20260628163035",
+        "promoted_at": "2026-06-28T17:04:10.299Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-virtualmachines-mixed-sku-lifecycle_20260628170500",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for virtualmachines-mixed-sku-lifecycle: evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:06:48.544Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.285Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-virtualmachines-mixed-sku-lifecycle",
+      "session_history": [
+        "s_task_collect-feature-reference-virtualmachines-mixed-sku-lifecycle"
+      ],
+      "result": "Collected official feature references for virtualmachines-mixed-sku-lifecycle: evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.285Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for virtualmachines-vmas-to-vms-migration-slb.",
+      "inputs": [
+        "feature:virtualmachines-vmas-to-vms-migration-slb",
+        "packet:features/virtualmachines-agentpool/packets/virtualmachines-vmas-to-vms-migration-slb.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:virtualmachines-vmas-to-vms-migration-slb"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "virtualmachines-vmas-to-vms-migration-slb",
+        "packetPath": "features/virtualmachines-agentpool/packets/virtualmachines-vmas-to-vms-migration-slb.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "virtualmachines-agentpool",
+        "coveredFeatureIds": [
+          "virtualmachines-vmas-to-vms-migration-slb"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.451Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:05:00.626Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb",
+        "worker_started_attempt_id": "a_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb_20260628170500",
+        "worker_started_at": "2026-06-28T17:05:02.616Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.144Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb_20260628163035",
+        "promoted_at": "2026-06-28T17:04:10.299Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb_20260628170500",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for virtualmachines-vmas-to-vms-migration-slb: evidence/archive/feature-reference-virtualmachines-vmas-to-vms-migration-slb-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:07:13.866Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.361Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb",
+      "session_history": [
+        "s_task_collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb"
+      ],
+      "result": "Collected official feature references for virtualmachines-vmas-to-vms-migration-slb: evidence/archive/feature-reference-virtualmachines-vmas-to-vms-migration-slb-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.361Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-windows",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for windows.",
+      "inputs": [
+        "feature:windows",
+        "packet:features/windows.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:windows"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "windows",
+        "packetPath": "features/windows.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "windows-node-pool-create",
+          "windows-node-pool-create-virtualmachines",
+          "windows-node-pool-create-virtualmachines-gen2",
+          "windows-password-reset-containerd-virtualmachines",
+          "windows-mixed-os-combination-virtualmachines",
+          "windows-workload-scheduling",
+          "windows-calico-vm-prerelease-containerd",
+          "windows-gpu-vm-prerelease-matrix",
+          "windows-runner-pipeline-harness-virtualmachines",
+          "windows-vm-prerelease-custom-kubelet-config"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.473Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:08:47.735Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-windows",
+        "worker_started_attempt_id": "a_collect-feature-reference-windows_20260628170847",
+        "worker_started_at": "2026-06-28T17:08:50.737Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.206Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-windows_20260628163035",
+        "promoted_at": "2026-06-28T17:08:06.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-windows_20260628170847",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for windows: evidence/archive/feature-reference-windows-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:11:20.681Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.439Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-windows",
+      "session_history": [
+        "s_task_collect-feature-reference-windows"
+      ],
+      "result": "Collected official feature references for windows: evidence/archive/feature-reference-windows-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.439Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for workload-autoscaler-keda-vm-prerelease-matrix.",
+      "inputs": [
+        "feature:workload-autoscaler-keda-vm-prerelease-matrix",
+        "packet:features/workload-autoscaler/packets/keda-vm-prerelease-matrix.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:workload-autoscaler-keda-vm-prerelease-matrix"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "workload-autoscaler-keda-vm-prerelease-matrix",
+        "packetPath": "features/workload-autoscaler/packets/keda-vm-prerelease-matrix.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "workload-autoscaler",
+        "coveredFeatureIds": [
+          "workload-autoscaler-keda-vm-prerelease-runtime-base",
+          "workload-autoscaler-keda-vm-prerelease-mariner-variant",
+          "workload-autoscaler-keda-vm-prerelease-multiple-external-metric-servers"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.562Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:08:47.735Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix",
+        "worker_started_attempt_id": "a_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix_20260628170847",
+        "worker_started_at": "2026-06-28T17:08:50.609Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.334Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix_20260628163035",
+        "promoted_at": "2026-06-28T17:08:06.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix_20260628170847",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for workload-autoscaler-keda-vm-prerelease-matrix: evidence/archive/feature-reference-workload-autoscaler-keda-vm-prerelease-matrix-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:10:04.182Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.523Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix",
+      "session_history": [
+        "s_task_collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix"
+      ],
+      "result": "Collected official feature references for workload-autoscaler-keda-vm-prerelease-matrix: evidence/archive/feature-reference-workload-autoscaler-keda-vm-prerelease-matrix-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.523Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-workload-autoscaler-vpa-profile-state",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for workload-autoscaler-vpa-profile-state.",
+      "inputs": [
+        "feature:workload-autoscaler-vpa-profile-state",
+        "packet:features/workload-autoscaler/packets/vpa-profile-state.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:workload-autoscaler-vpa-profile-state"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "workload-autoscaler-vpa-profile-state",
+        "packetPath": "features/workload-autoscaler/packets/vpa-profile-state.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "workload-autoscaler",
+        "coveredFeatureIds": [
+          "workload-autoscaler-vpa-profile-state"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.608Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:10:33.781Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-workload-autoscaler-vpa-profile-state",
+        "worker_started_attempt_id": "a_collect-feature-reference-workload-autoscaler-vpa-profile-state_20260628171033",
+        "worker_started_at": "2026-06-28T17:10:36.863Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.399Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-workload-autoscaler-vpa-profile-state_20260628163035",
+        "promoted_at": "2026-06-28T17:08:06.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-workload-autoscaler-vpa-profile-state_20260628171033",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for workload-autoscaler-vpa-profile-state: evidence/archive/feature-reference-workload-autoscaler-vpa-profile-state-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:12:17.617Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.601Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-workload-autoscaler-vpa-profile-state",
+      "session_history": [
+        "s_task_collect-feature-reference-workload-autoscaler-vpa-profile-state"
+      ],
+      "result": "Collected official feature references for workload-autoscaler-vpa-profile-state: evidence/archive/feature-reference-workload-autoscaler-vpa-profile-state-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.601Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-workload-health-kube-proxy-readiness",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for workload-health-kube-proxy-readiness.",
+      "inputs": [
+        "feature:workload-health-kube-proxy-readiness",
+        "packet:features/workload-health/packets/kube-proxy-readiness.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:workload-health-kube-proxy-readiness"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "workload-health-kube-proxy-readiness",
+        "packetPath": "features/workload-health/packets/kube-proxy-readiness.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "workload-health",
+        "coveredFeatureIds": [
+          "workload-health-kube-proxy-readiness"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.742Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:10:33.782Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-workload-health-kube-proxy-readiness",
+        "worker_started_attempt_id": "a_collect-feature-reference-workload-health-kube-proxy-readiness_20260628171033",
+        "worker_started_at": "2026-06-28T17:10:36.788Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.467Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-workload-health-kube-proxy-readiness_20260628163035",
+        "promoted_at": "2026-06-28T17:08:06.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-workload-health-kube-proxy-readiness_20260628171033",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for workload-health-kube-proxy-readiness: evidence/archive/feature-reference-workload-health-kube-proxy-readiness-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:11:49.409Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.681Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact named in the worker summary for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-workload-health-kube-proxy-readiness",
+      "session_history": [
+        "s_task_collect-feature-reference-workload-health-kube-proxy-readiness"
+      ],
+      "result": "Collected official feature references for workload-health-kube-proxy-readiness: evidence/archive/feature-reference-workload-health-kube-proxy-readiness-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:36.681Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-workload-identity-automatic-sku",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for workload-identity-automatic-sku.",
+      "inputs": [
+        "feature:workload-identity-automatic-sku",
+        "packet:features/workload-identity/packets/automatic-sku.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:workload-identity-automatic-sku"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "workload-identity-automatic-sku",
+        "packetPath": "features/workload-identity/packets/automatic-sku.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "workload-identity",
+        "coveredFeatureIds": [
+          "workload-identity-automatic-sku"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact evidence/archive/feature-reference-workload-identity-automatic-sku-20260628.md for this feature packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:30:34.828Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:11:49.639Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-workload-identity-automatic-sku",
+        "worker_started_attempt_id": "a_collect-feature-reference-workload-identity-automatic-sku_20260628171149",
+        "worker_started_at": "2026-06-28T17:11:50.901Z",
+        "stale_active_requeued_at": "2026-06-28T16:39:48.597Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-workload-identity-automatic-sku_20260628163035",
+        "promoted_at": "2026-06-28T17:08:06.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-workload-identity-automatic-sku_20260628171149",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for workload-identity-automatic-sku: evidence/archive/feature-reference-workload-identity-automatic-sku-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:14:24.044Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.701Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the collector review: the worker completed the standard feature-reference collection flow and recorded the durable archive artifact evidence/archive/feature-reference-workload-identity-automatic-sku-20260628.md for this feature packet."
+      },
+      "session_id": "s_task_collect-feature-reference-workload-identity-automatic-sku",
+      "session_history": [
+        "s_task_collect-feature-reference-workload-identity-automatic-sku"
+      ],
+      "result": "Collected official feature references for workload-identity-automatic-sku: evidence/archive/feature-reference-workload-identity-automatic-sku-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:02.701Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md so its top Official API References and Official Documentation References sections truthfully summarize the source-backed references already captured in the collector notes, while preserving the public-vs-local contradiction around cluster stop/start and any limits on mixed-SKU lifecycle claims.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md"
+      ],
+      "acceptance": [
+        "The artifact replaces the placeholder 'No matching reference found yet' text in Official API References and Official Documentation References with concise source-backed entries already supported by the collector notes.",
+        "The repaired summary preserves the important owner-review truth: public sources support VirtualMachines mixed-SKU manual profiles, node-pool stop/start, and deleteMachines, but do not publicly support cluster stop/start for non-VMSS-backed clusters or prove that node-pool stop deletes backing VMs.",
+        "After repair, the existing review leaf collect-feature-reference-virtualmachines-mixed-sku-lifecycle can be accepted without requiring a fresh source-collection rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:virtualmachines-mixed-sku-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:10:22.262Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628_20260628171024",
+        "assigned_at": "2026-06-28T17:10:24.848Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628_20260628171024",
+        "worker_started_at": "2026-06-28T17:10:34.352Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the top API and documentation reference sections in evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md using the existing collector notes, preserving the public-vs-local limits around cluster stop/start and stop-does-not-prove-VM-deletion.",
+        "last_worker_completed_at": "2026-06-28T17:11:12.436Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:26:02.525Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the heading-repair review: the worker updated evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md to replace placeholder top reference sections while preserving the bounded public-vs-local limits, so the paired mixed-SKU collector can now be reviewed without another source pass."
+      },
+      "session_id": "s_task_repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628"
+      ],
+      "result": "Repaired the top API and documentation reference sections in evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md using the existing collector notes, preserving the public-vs-local limits around cluster stop/start and stop-does-not-prove-VM-deletion.",
+      "evidence": [
+        "evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:02.525Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the heading-repair review: the worker updated evidence/archive/feature-reference-virtualmachines-mixed-sku-lifecycle-20260628.md to replace placeholder top reference sections while preserving the bounded public-vs-local limits, so the paired mixed-SKU collector can now be reviewed without another source pass."
+      },
+      "status": "done"
+    },
+    {
+      "id": "normalize-feature-reference-storage-csi-review-batch-headings-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the fresh storage-csi feature-reference review batch so each accepted archive packet's top-level Official API References / Official Documentation References sections agree with the cited source-backed notes, explicitly including storage-csi-full-cache-os-disk-negative and storage-csi-mcr-mirror-monitor, or explicitly preserve a bounded no-official-source conclusion when that is the truthful result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-storage-csi-review-batch-normalization-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect the fresh storage-csi review artifacts that landed on 2026-06-28, including disk-resize, disk-xfs, file-clone, file-nfs-unmount-boundary, file-private-endpoint, storage-csi-full-cache-os-disk-negative, and storage-csi-mcr-mirror-monitor, and record which ones still have contradictory top-level sections.",
+        "For each contradictory artifact, either patch the archive file so the top-level API/doc reference sections truthfully summarize the cited refs or record exact evidence showing why the header must remain as a bounded no-official-source result.",
+        "Summarize the repeated collector-template issue and list the affected task ids/artifact paths so later packet promotion/review can trust which accepted reference notes are fully normalized versus still pending header repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:storage-csi-review-batch-normalization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T16:14:29.478Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:26:36.578Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_normalize-feature-reference-storage-csi-review-batch-headings-20260628_20260628171238",
+        "assigned_at": "2026-06-28T17:12:38.349Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_normalize-feature-reference-storage-csi-review-batch-headings-20260628",
+        "worker_started_attempt_id": "a_normalize-feature-reference-storage-csi-review-batch-headings-20260628_20260628171238",
+        "worker_started_at": "2026-06-28T17:12:52.766Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the top-level official-reference headers for seven 2026-06-28 storage-csi feature-reference archive packets and wrote a durable batch-normalization report at evidence/archive/feature-reference-storage-csi-review-batch-normalization-20260628.md documenting the repeated collector-template issue and remaining backlog.",
+        "last_worker_completed_at": "2026-06-28T17:15:36.521Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-storage-csi-disk-resize-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-disk-xfs-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-file-clone-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-file-nfs-unmount-boundary-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-file-private-endpoint-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-full-cache-os-disk-negative-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-mcr-mirror-monitor-20260628.md",
+          "evidence/archive/feature-reference-storage-csi-review-batch-normalization-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:26:02.434Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the batch normalization review: the worker evidence list names the seven repaired storage-csi archive packets plus the batch report, and this leaf's goal was exactly to normalize those top-level official-reference sections and record the repeated collector-template issue."
+      },
+      "session_id": "s_task_normalize-feature-reference-storage-csi-review-batch-headings-20260628",
+      "session_history": [
+        "s_task_normalize-feature-reference-storage-csi-review-batch-headings-20260628"
+      ],
+      "result": "Normalized the top-level official-reference headers for seven 2026-06-28 storage-csi feature-reference archive packets and wrote a durable batch-normalization report at evidence/archive/feature-reference-storage-csi-review-batch-normalization-20260628.md documenting the repeated collector-template issue and remaining backlog.",
+      "evidence": [
+        "evidence/archive/feature-reference-storage-csi-disk-resize-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-disk-xfs-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-file-clone-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-file-nfs-unmount-boundary-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-file-private-endpoint-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-full-cache-os-disk-negative-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-mcr-mirror-monitor-20260628.md",
+        "evidence/archive/feature-reference-storage-csi-review-batch-normalization-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:26:02.434Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the batch normalization review: the worker evidence list names the seven repaired storage-csi archive packets plus the batch report, and this leaf's goal was exactly to normalize those top-level official-reference sections and record the repeated collector-template issue."
+      },
+      "status": "done"
+    }
+  ]
+}

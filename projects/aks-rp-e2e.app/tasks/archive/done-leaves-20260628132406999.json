@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:24:06.999Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner review accepted ready compact packages for cost-analysis, custom-node-config, dataplane, and defender-profile, and accepted the bootstrap-profile result-path repair. app-monitoring review was not accepted because the maintained summary still says ready/check-path output while the latest worker trace records a failing generated run for spec.app-monitoring.addonv2-azure-monitor-metrics; that contradiction is now carried by repair-compact-app-monitoring-check-failure. Keep the loop focused on repo-local compact generation/reconciliation while current active feature compacts finish and the new app-monitoring repair leaf clarifies whether the package should stay ready or record a nonpassing state.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "compact-feature-cost-analysis",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate and verify the cost-analysis feature compact package.",
+      "inputs": [
+        "feature:cost-analysis",
+        "specs:features/cost-analysis/specs",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/feature-compact-loop/state.json",
+        "features/cost-analysis/compact/staging.plan.json",
+        "features/cost-analysis/compact/staging.summary.md",
+        "features/cost-analysis/compact/staging.diagnostics.json"
+      ],
+      "acceptance": [
+        "Feature compact package was generated or a concrete blocker was recorded.",
+        "Generated check-mode Vitest tests were run.",
+        "Feature compact loop state was updated as ready, partial, blocked, or error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:cost-analysis"
+      ],
+      "workflow": "feature-compact-planner",
+      "context": {
+        "featureKey": "cost-analysis",
+        "capabilityId": "cost-analysis",
+        "packetPath": "features/cost-analysis.yaml",
+        "specsDir": "features/cost-analysis/specs",
+        "specCount": 1,
+        "target": "staging",
+        "checkParallel": 50,
+        "stateRef": ".state/feature-compact-loop/state.json",
+        "loopTaskId": "aks-feature-compact-loop",
+        "acceptance_note": "Accepted review: worker produced the cost-analysis compact plan, summary, diagnostics, and a successful check-mode test result at runs/test-results/feature-compact-cost-analysis-staging_243742 for its single spec/cluster package."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:41.584Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T13:22:30.865Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_compact-feature-cost-analysis",
+        "stale_active_requeued_at": "2026-06-28T13:00:53.857Z",
+        "stale_active_requeue_reason": "feature-compact loop found active planner child with no queued assignment and no worker start",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_compact-feature-cost-analysis_20260628123842",
+        "promoted_at": "2026-06-28T13:16:10.580Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_compact-feature-cost-analysis_20260628132230",
+        "worker_started_attempt_id": "a_compact-feature-cost-analysis_20260628132230",
+        "worker_started_at": "2026-06-28T13:22:43.400Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Feature compact package ready for cost-analysis. Plan: features/cost-analysis/compact/staging.plan.json. Summary: features/cost-analysis/compact/staging.summary.md. Diagnostics: features/cost-analysis/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-cost-analysis-staging_243742. Specs=1, clusters=1, saved=0.",
+        "last_worker_completed_at": "2026-06-28T13:22:45.683Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T13:24:06.623Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: worker produced the cost-analysis compact plan, summary, diagnostics, and a successful check-mode test result at runs/test-results/feature-compact-cost-analysis-staging_243742 for its single spec/cluster package."
+      },
+      "session_id": "s_task_compact-feature-cost-analysis",
+      "session_history": [
+        "s_task_compact-feature-cost-analysis"
+      ],
+      "result": "Feature compact package ready for cost-analysis. Plan: features/cost-analysis/compact/staging.plan.json. Summary: features/cost-analysis/compact/staging.summary.md. Diagnostics: features/cost-analysis/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-cost-analysis-staging_243742. Specs=1, clusters=1, saved=0.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T13:24:06.623Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

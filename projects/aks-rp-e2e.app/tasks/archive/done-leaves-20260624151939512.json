@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T15:19:39.512Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the private-cluster none-DNS-zone-v3 citation refresh as durable repo-local knowledge: maintained feature/spec/index surfaces now cite the 2026-06-24 mounted-source-or-equivalent ceiling note while path.private-cluster-none-dns-zone-v3 stays truthfully unknown because accepted evidence still tops out at the terminal none-mode subset rather than the full one-cluster System->None lifecycle. Archive that completed leaf under project history. Remaining open work is unchanged: four already-compressed exact external waits only, with no truthful repo-local runnable work before the next blocked-frontier follow-up window on or after 2026-06-26 unless a new authoritative reply arrives earlier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the canonical private-cluster none-DNS-zone-v3 maintained surfaces so the exact mounted carrier and the new 2026-06-24 evidence-ceiling note are cited wherever useful, while preserving path.private-cluster-none-dns-zone-v3 as an explicit unknown/evidence-ceiling branch rather than a pass-backed lifecycle. Treat evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-or-equivalent-ceiling-20260624.md as the accepted input and the live successor to the stale/superseded mounted-source-or-equivalent-ceiling review signal.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence records which maintained canonical surfaces were updated or confirmed unchanged, links the exact mounted carrier and evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-or-equivalent-ceiling-20260624.md, and explains the minimal truthful citation repair without running cloud mutation.",
+        "Any touched maintained surfaces continue to represent path.private-cluster-none-dns-zone-v3 as exact-mounted-source-backed but still unknown at the current evidence ceiling; no duplicate spec/replay branches, no pass promotion, and no live execution ask are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T15:13:12.678Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624_20260624151312",
+        "assigned_at": "2026-06-24T15:13:12.724Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624_20260624151312",
+        "worker_started_at": "2026-06-24T15:13:36.449Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed canonical private-cluster none-DNS-zone-v3 citation surfaces by adding the 2026-06-24 evidence-ceiling note to the maintained feature/spec/spec-index carriers and wrote an archive note documenting updated vs unchanged surfaces, while preserving path.private-cluster-none-dns-zone-v3 as unknown with no cloud mutation.",
+        "last_worker_completed_at": "2026-06-24T15:18:12.188Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T15:18:49.243Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-24: archive evidence exists and documents updated vs unchanged canonical surfaces; maintained feature/spec/spec-index carriers now cite evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-or-equivalent-ceiling-20260624.md while preserving path.private-cluster-none-dns-zone-v3 as mounted-source-backed unknown/evidence-ceiling only, with no pass promotion or live execution ask."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-canonical-evidence-citation-refresh-20260624"
+      ],
+      "result": "Refreshed canonical private-cluster none-DNS-zone-v3 citation surfaces by adding the 2026-06-24 evidence-ceiling note to the maintained feature/spec/spec-index carriers and wrote an archive note documenting updated vs unchanged surfaces, while preserving path.private-cluster-none-dns-zone-v3 as unknown with no cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T15:18:49.243Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-24: archive evidence exists and documents updated vs unchanged canonical surfaces; maintained feature/spec/spec-index carriers now cite evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-or-equivalent-ceiling-20260624.md while preserving path.private-cluster-none-dns-zone-v3 as mounted-source-backed unknown/evidence-ceiling only, with no pass promotion or live execution ask."
+      },
+      "status": "done"
+    }
+  ]
+}

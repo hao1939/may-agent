@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T01:57:57.744Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 owner review accepted the post-send truth artifact: for path.serverless-virtualnodes.standard there is now durable evidence that the branch is truthfully approval-waiting after send/handoff proof, with zero runnable live leaves and no missing already-approved candidate. Archive the completed truth-check leaf so this branch cleanly carries one exact family-level blocked external wait only; do not recreate a bounded live verification leaf unless returned approval/deny/redirect/blocker proof arrives for the exact packet, and treat any project-level runnable-live wording as stale side text rather than tree truth.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-standard-live-idle-metric-truth-artifact-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture durable repo-local evidence for whether path.serverless-virtualnodes.standard is truthfully approval-blocked or whether an already-approved exact bounded live attempt exists but is missing from the task tree, using the current task-tree frontier, model/status state, mounted-source-backed execute contract, and any approval-proof artifact produced by the active send/handoff leaf only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-live-idle-metric-truth-artifact-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the current task-tree frontier and confirm-runnable state, the exact approval-gate evidence for path.serverless-virtualnodes.standard, and a precise classification of the live-idle-with-runnable-work breach as either metric/tree misalignment or a missing exact approved live candidate.",
+        "If a concrete approved live candidate truly exists, the artifact names the exact leaf to create or resume plus the linked approval proof; otherwise it records the exact approval-proof gap and the minimal task-tree/metric alignment action needed without inventing new cloud work.",
+        "No cloud mutation, no sibling serverless expansion, and no reopening of already-complete mounted-source/spec/model closure occurs from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier-truth-serverless-live-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T01:50:05.965Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T01:54:19.334Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T01:54:34.241Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during 2026-06-26 watchdog owner review because the task depended on approval-gate evidence that does not yet exist. A follow-up leaf will run only after the active approval-send/evidence task produces a durable repo-local approval artifact or authoritative reply for path.serverless-virtualnodes.standard."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T01:54:34.241Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during 2026-06-26 watchdog owner review because the task depended on approval-gate evidence that does not yet exist. A follow-up leaf will run only after the active approval-send/evidence task produces a durable repo-local approval artifact or authoritative reply for path.serverless-virtualnodes.standard."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtualnodes-standard-live-idle-truth-after-approval-proof-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After a durable repo-local approval-gate artifact exists for path.serverless-virtualnodes.standard, capture evidence for whether the live-idle breach is truthful metric/tree misalignment or a missing exact approved live candidate, using the then-current frontier, confirm-runnable output, model/status state, mounted-source-backed execute contract, and the linked approval proof only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-live-idle-truth-after-approval-proof-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the current task-tree frontier and confirm-runnable state after the approval-gate artifact lands, the exact linked approval proof for path.serverless-virtualnodes.standard, and a precise classification of the live-idle-with-runnable-work breach as either metric/tree misalignment or a missing exact approved live candidate.",
+        "If a concrete approved live candidate truly exists, the artifact names the exact leaf to create or resume plus the linked approval proof; otherwise it records the exact approval-proof gap or denial/redirect outcome and the minimal task-tree/metric alignment action needed without inventing new cloud work.",
+        "No cloud mutation, no sibling serverless expansion, and no reopening of already-complete mounted-source/spec/model closure occurs from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier-truth-serverless-live-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T01:54:41.546Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T01:55:06.298Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced immediately after approval-send proof review because the dependency was satisfied: the exact bounded VirtualNodes standard approval packet now has durable repo-local send/handoff proof. The next truthful step is a runnable truth-check leaf that classifies whether the live-idle breach is just awaiting reply, misaligned with the tree, or missing an approved live candidate."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T01:55:06.298Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced immediately after approval-send proof review because the dependency was satisfied: the exact bounded VirtualNodes standard approval packet now has durable repo-local send/handoff proof. The next truthful step is a runnable truth-check leaf that classifies whether the live-idle breach is just awaiting reply, misaligned with the tree, or missing an approved live candidate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture durable repo-local evidence for whether path.serverless-virtualnodes.standard is truthfully approval-waiting after the newly proved send/handoff, or whether an already-approved exact bounded live attempt exists but is missing from the task tree, using the current frontier, confirm-runnable state, model/status state, mounted-source-backed execute contract, and the linked send-proof artifact only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the current task-tree frontier and confirm-runnable state, the exact linked approval-send proof for path.serverless-virtualnodes.standard, and a precise classification of the live-idle-with-runnable-work breach as either truthful approval-waiting, metric/tree misalignment, or a missing exact approved live candidate.",
+        "If a concrete approved live candidate truly exists, the artifact names the exact leaf to create or resume plus the linked approval proof; otherwise it records the exact current send-without-reply gap and the minimal task-tree or metric alignment action needed without inventing new cloud work.",
+        "No cloud mutation, no sibling serverless expansion, and no reopening of already-complete mounted-source/spec/model closure occurs from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier-truth-serverless-live-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T01:55:10.830Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626_20260626015513",
+        "assigned_at": "2026-06-26T01:55:13.029Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626_20260626015513",
+        "worker_started_at": "2026-06-26T01:55:31.283Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive artifact at evidence/archive/serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626.md, proving the current state is truthful approval-waiting after send-proof with zero runnable live leaves and only a stale project/metric side-misalignment remaining.",
+        "last_worker_completed_at": "2026-06-26T01:57:11.354Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T01:57:57.691Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 review: the archive artifact cites the current frontier and empty confirm-runnable result, proves the exact standard branch has send/handoff proof but no returned approval artifact, and truthfully classifies the branch as approval-waiting with only stale project-level runnable-live text remaining."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626"
+      ],
+      "result": "Wrote the requested archive artifact at evidence/archive/serverless-virtualnodes-standard-live-idle-truth-artifact-post-send-proof-20260626.md, proving the current state is truthful approval-waiting after send-proof with zero runnable live leaves and only a stale project/metric side-misalignment remaining.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T01:57:57.691Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 review: the archive artifact cites the current frontier and empty confirm-runnable result, proves the exact standard branch has send/handoff proof but no returned approval artifact, and truthfully classifies the branch as approval-waiting with only stale project-level runnable-live text remaining."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:20:05.339Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier review: the row47 accepted-surface-shape decision leaf is now represented as predecessor context only and can be archived under this parent. The lane still has two active repo-local implementation leaves: vm-prerelease-row46-accepted-model-path-landing-20260620 must land the dedicated accepted feature-path/spec/view carrier for path.cluster-autoscaler.vm-prerelease-mincount-recovery, and vm-prerelease-row47-accepted-model-path-landing-20260620 must land the dedicated accepted feature-path/spec/view carrier for path.cluster-autoscaler.vm-prerelease-overscale-node-stability. MachinesPreview remains a single truthful external wait only: the narrowed owner handoff packet is send-ready, but there is still no durable repo-local proof of an actual send/escalation or an authoritative reply, so no additional repo-local response-await or drafting leaf is warranted until that human handoff occurs.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row47-accepted-surface-shape-decision-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Choose the minimal truthful accepted-surface shape for VM prerelease row 47 so the dedicated overscale carrier can later land without silently reusing the generic overscale path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row47-accepted-surface-shape-decision-20260620.md"
+      ],
+      "acceptance": [
+        "The work compares the repo-local model/view conventions against the dedicated row-47 carrier and determines whether row 47 should land as a distinct accepted feature path, an accepted execution-variant/path mechanism, or another bounded owner-approved representation.",
+        "The evidence note cites the dedicated row-47 authoring proof, the existing generic accepted overscale path, and the exact model/view files or conventions that constrain the decision, then states the minimal truthful landing shape and affected files.",
+        "If current repo-local structure already supports direct landing, the note records the concrete patch plan and validation steps for the follow-up implementation leaf; if it does not, the note names the exact model/tooling gap instead of leaving a vague blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "coverage.virtualmachine-prerelease.row47"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:15:45.571Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T15:15:50.870Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row47-accepted-surface-shape-decision-20260620_20260620151556",
+        "assigned_at": "2026-06-20T15:15:56.109Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row47-accepted-surface-shape-decision-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row47-accepted-surface-shape-decision-20260620_20260620151556",
+        "worker_started_at": "2026-06-20T15:16:19.121Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-47 accepted-surface shape decision note at evidence/archive/vm-prerelease-row47-accepted-surface-shape-decision-20260620.md, concluding that row 47 should land as a distinct accepted feature path/spec pair rather than as an execution-variant of the generic overscale path.",
+        "last_worker_completed_at": "2026-06-20T15:17:54.534Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:18:26.436Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/vm-prerelease-row47-accepted-surface-shape-decision-20260620.md: it truthfully compares generic vs dedicated overscale carriers, cites repo-local model/view conventions, and concludes row 47 must land as its own accepted feature path/spec pair rather than as an execution-variant of the generic overscale path."
+      },
+      "session_id": "s_task_vm-prerelease-row47-accepted-surface-shape-decision-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row47-accepted-surface-shape-decision-20260620"
+      ],
+      "result": "Wrote the row-47 accepted-surface shape decision note at evidence/archive/vm-prerelease-row47-accepted-surface-shape-decision-20260620.md, concluding that row 47 should land as a distinct accepted feature path/spec pair rather than as an execution-variant of the generic overscale path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:18:26.436Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/vm-prerelease-row47-accepted-surface-shape-decision-20260620.md: it truthfully compares generic vs dedicated overscale carriers, cites repo-local model/view conventions, and concludes row 47 must land as its own accepted feature path/spec pair rather than as an execution-variant of the generic overscale path."
+      },
+      "status": "done"
+    }
+  ]
+}

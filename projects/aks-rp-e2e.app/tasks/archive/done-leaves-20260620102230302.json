@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:22:30.302Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Evidence-feedback/model-update owner hygiene (2026-06-20T10:22Z): the accepted serverless rerun-signal review packet is durable provenance only and no longer needs separate frontier visibility. This lane still has one truthful live wait, shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620, whose helper-held project/model gate remains unchanged for model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json within the maintained seven-file batch. No new blocker family or review action came from this watchdog wake; continue active mounted-source source-reconciliation work in feature-knowledge-and-specs and revisit this carrier only after the helper releases that shared project/model gate and the sibling slices no longer cohabit the batch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the current runtime-blocked model verdict for path.serverless-virtual-nodes.subnet-validation, existing repo-local serverless specs/replays, and accepted source-backed evidence, write a bounded follow-up packet that defines the exact non-cloud signals that would justify another replay attempt and the exact local spec/replay deltas that can proceed before any cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites path.serverless-virtual-nodes.subnet-validation from the knowledge-map views/model, the current runtime-blocked rerun guidance, and the exact repo-local specs/replays or source-backed notes consulted.",
+        "Archive note distinguishes material rerun signals from noise by naming concrete product/environment/source changes that would justify replaying the subnet-validation branch, plus at least one explicit no-rerun case that should leave the path blocked.",
+        "Archive note names the next execution-free local follow-up actions (spec/replay/evidence updates) that can happen before any cloud rerun and identifies which claims, if any, still require fresh runtime evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:serverless-virtual-nodes-rerun-signal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:15:40.918Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T10:15:41.062Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620_20260620101601",
+        "assigned_at": "2026-06-20T10:16:01.008Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620_20260620101601",
+        "worker_started_at": "2026-06-20T10:16:01.145Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded follow-up packet at evidence/archive/serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620.md, grounding rerun criteria in the current blocked model verdict, accepted live evidence, repo-local spec/replay state, and mounted source-backed witness-targeting differences.",
+        "last_worker_completed_at": "2026-06-20T10:18:03.997Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T10:21:43.492Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620.md: it cites the blocked path/model state, distinguishes material rerun signals from noise, preserves the current runtime-blocked posture, and names concrete local non-cloud follow-ups despite the empty trace evidence field."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:21:43.492Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/serverless-virtual-nodes-rerun-signal-and-local-followup-packet-20260620.md: it cites the blocked path/model state, distinguishes material rerun signals from noise, preserves the current runtime-blocked posture, and names concrete local non-cloud follow-ups despite the empty trace evidence field."
+      },
+      "status": "done"
+    }
+  ]
+}

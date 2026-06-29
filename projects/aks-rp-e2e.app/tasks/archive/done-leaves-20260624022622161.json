@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:26:22.161Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review closed the latest storage CSI repo-local slice: accepted mounted-source boundary maps now pin both raw-block and XFS to exact handwritten-source contracts without widening into sibling disk surfaces, and the file-clone replay drift repair is complete. The truthful next executable work is the two already-active bounded replay-carrier skeleton tasks for path.storage-csi-disk-raw-block and path.storage-csi-disk-xfs; external approval/devbox waits remain compressed and unchanged until returned proof or the 2026-06-26 follow-up point.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-raw-block-mounted-source-boundary-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded repo-local boundary map for path.storage-csi-disk-raw-block from mounted handwritten source plus maintained spec/replay/model carriers so the knowledge map separates exact raw-block inputs, expected behavior points, current observed-status ceiling, adjacent storage CSI disk surfaces, and the next live verification packet without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-mounted-source-boundary-map-20260624.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted handwritten source file(s)/scenario, maintained spec/replay/model/view links, and enumerates the disk raw-block contract as exact source-backed inputs and expected behaviors without widening into resize, xfs, clone, snapshot, or Azure File semantics.",
+        "The note records the current observed-status ceiling truthfully (repo-local source-grounded draft only), identifies adjacent same-family surfaces worth keeping distinct, and names the exact future verification packet if live evidence is later pursued.",
+        "If the maintained model/view wording for path.storage-csi-disk-raw-block needs a bounded sync to stay claim-safe with the boundary map, land that minimal edit plus validation evidence; otherwise record why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:21:09.802Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-mounted-source-boundary-map-20260624_20260624022109",
+        "assigned_at": "2026-06-24T02:21:09.850Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-mounted-source-boundary-map-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-mounted-source-boundary-map-20260624_20260624022109",
+        "worker_started_at": "2026-06-24T02:21:22.100Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded archive note `evidence/archive/storage-csi-disk-raw-block-mounted-source-boundary-map-20260624.md`, grounding the raw-block path to exact mounted source lines, maintained feature/spec/model carriers, adjacent distinct storage-csi surfaces, the current draft/source-grounded evidence ceiling, and the exact future live verification packet; no maintained model/view edit was required because current wording is already claim-safe.",
+        "last_worker_completed_at": "2026-06-24T02:23:45.468Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:24:52.978Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct archive-note review: the raw-block boundary map cites exact mounted handwritten source plus maintained feature/spec/model/view carriers, keeps the Block+VolumeDevice+/dev/sdx+dd contract narrowly separated from resize/xfs/clone/filesystem siblings, records the truthful source-grounded draft evidence ceiling, and correctly notes that no maintained wording edit was required."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-mounted-source-boundary-map-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-mounted-source-boundary-map-20260624"
+      ],
+      "result": "Wrote the bounded archive note `evidence/archive/storage-csi-disk-raw-block-mounted-source-boundary-map-20260624.md`, grounding the raw-block path to exact mounted source lines, maintained feature/spec/model carriers, adjacent distinct storage-csi surfaces, the current draft/source-grounded evidence ceiling, and the exact future live verification packet; no maintained model/view edit was required because current wording is already claim-safe.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:24:52.978Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct archive-note review: the raw-block boundary map cites exact mounted handwritten source plus maintained feature/spec/model/view carriers, keeps the Block+VolumeDevice+/dev/sdx+dd contract narrowly separated from resize/xfs/clone/filesystem siblings, records the truthful source-grounded draft evidence ceiling, and correctly notes that no maintained wording edit was required."
+      },
+      "status": "done"
+    }
+  ]
+}

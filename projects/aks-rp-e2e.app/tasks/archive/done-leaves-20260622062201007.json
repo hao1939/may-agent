@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:22:01.008Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the row-36 Azure Monitor AAD-auth execute-carrier slice: replays/msi-azure-monitor-aad-auth-vm-prerelease.ts now preserves the mounted-source row-36 contract as an execute-gated replay, and evidence/archive/row36-check-20260622-msi-azure-monitor-aad-auth-vm-prerelease.{md,json} plus row36-gated-20260622-msi-azure-monitor-aad-auth-vm-prerelease.{md,json} prove the carrier stays non-mutating unless explicitly unlocked. That accepted row-36 evidence now feeds the active vmpr-row27-row36-checkpoint-readiness-audit-20260622 repo-checkpoint slice audit, while localdns-row53-maintained-visibility-decision-20260622 remains the other active repo-local model/view decision and the single external human-transport family wait stays compressed as the only blocked frontier item.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Upgrade row 36 Scenario_MSI_AzureMonitorAADAuth_VirtualMachine from a check-only wrapper into a repo-local execute-gated replay carrier that preserves the mounted-source contract without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/msi-azure-monitor-aad-auth-vm-prerelease.ts"
+      ],
+      "acceptance": [
+        "Replay replaces the current check-only wrapper with an execute-gated carrier for row 36 that cites the mounted source contract from prerelease/checkin and the Azure Monitor AAD auth scenario files.",
+        "Replay preserves the bounded row-36 input/expectation path: pre-create Log Analytics workspace, create VM-prerelease cluster with omsagent enabled plus useAADAuth=true, and validate ama-logs DaemonSet plus ama-logs-rs Deployment presence, without broadening scope beyond the mounted source.",
+        "Repo-local checks or dry-readiness evidence show the replay remains non-mutating until explicitly executed and the task records any companion spec/model updates needed to keep row-36 carrier status truthful."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replays/msi-azure-monitor-aad-auth-vm-prerelease.ts"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:15:50.846Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622_20260622061550",
+        "assigned_at": "2026-06-22T06:15:50.893Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622_20260622061550",
+        "worker_started_at": "2026-06-22T06:16:00.557Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Replaced replays/msi-azure-monitor-aad-auth-vm-prerelease.ts with an execute-gated row-36 live carrier and generated check/gated evidence under evidence/archive proving the replay stays non-mutating until explicitly unlocked.",
+        "last_worker_completed_at": "2026-06-22T06:19:38.680Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:20:28.534Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result after review: replays/msi-azure-monitor-aad-auth-vm-prerelease.ts is now an execute-gated row-36 live carrier, and evidence/archive/row36-check-20260622-msi-azure-monitor-aad-auth-vm-prerelease.md plus row36-gated-20260622-msi-azure-monitor-aad-auth-vm-prerelease.md verify mounted-source/spec/index lineage and that the replay stays non-mutating unless both --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=msi-azure-monitor-aad-auth-vm-prerelease are supplied."
+      },
+      "session_id": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row36-azure-monitor-aad-auth-execute-carrier-authoring-20260622"
+      ],
+      "result": "Replaced replays/msi-azure-monitor-aad-auth-vm-prerelease.ts with an execute-gated row-36 live carrier and generated check/gated evidence under evidence/archive proving the replay stays non-mutating until explicitly unlocked.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:20:28.534Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result after review: replays/msi-azure-monitor-aad-auth-vm-prerelease.ts is now an execute-gated row-36 live carrier, and evidence/archive/row36-check-20260622-msi-azure-monitor-aad-auth-vm-prerelease.md plus row36-gated-20260622-msi-azure-monitor-aad-auth-vm-prerelease.md verify mounted-source/spec/index lineage and that the replay stays non-mutating unless both --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=msi-azure-monitor-aad-auth-vm-prerelease are supplied."
+      },
+      "status": "done"
+    }
+  ]
+}

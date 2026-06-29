@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:19:05.031Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning pass confirmed the watchdog review event was stale: network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621 is no longer a live task-tree leaf, so its accepted meaning remains preserved only as history while the sole live network-cni branch stays network-cni-overlay-dualstack-migration-owner-handoff-proof-or-app-gap-20260621. The project frontier remains intentionally split between two active workspace-only leaves (network-cni handoff-proof/app-gap follow-up and vmpr row-27/29/30/31/32/33/34 shared-carrier isolation pass) plus two family-level blocked waits (runtime row-63 tooling reconciliation and external human transport proof). No runnable refill was needed because both active leaves are already assigned and confirm-runnable returned an empty list.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row27-34-done-slice-isolation-plan-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted VM prerelease dirty-workspace triage into a concrete isolation plan for the nearest future checkpoint candidate by enumerating the exact row-27/29/30/31/32/33/34 files and tracked shared carriers that belong to that completed family, separating any unrelated/mixed carriers, and ending with a truthful owner-ready boundary for a later checkpoint attempt or an exact reason isolation still cannot be made coherent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row27-34-done-slice-isolation-plan-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted dirty-workspace triage plus fresh repo-local file grouping evidence, and produces one bounded row-27/29/30/31/32/33/34 isolation map that names included files/carriers, excluded mixed files, and any remaining ambiguity.",
+        "Artifact ends with one concrete next state for checkpoint readiness only: either a smallest coherent future done slice is identified with exact file scope and related task lineage, or the exact still-mixed carriers are named with the minimum follow-up needed before domain:checkpoint becomes truthful.",
+        "Task stays in the user-review/workspace lane only: no commit, no file deletion/move, no cloud mutation, and no reopening of blocked external-send or runtime waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:16:14.263Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row27-34-done-slice-isolation-plan-20260621_20260621101614",
+        "assigned_at": "2026-06-21T10:16:14.313Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row27-34-done-slice-isolation-plan-20260621",
+        "worker_started_attempt_id": "a_vmpr-row27-34-done-slice-isolation-plan-20260621_20260621101614",
+        "worker_started_at": "2026-06-21T10:16:42.829Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the owner-ready row-27/29/30/31/32/33/34 isolation map at evidence/archive/vmpr-row27-34-done-slice-isolation-plan-20260621.md, tying accepted dirty-workspace triage to fresh repo-local file grouping and naming the exact mixed shared carriers that still block a truthful checkpoint.",
+        "last_worker_completed_at": "2026-06-21T10:18:11.986Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:18:25.905Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row27-34-done-slice-isolation-plan-20260621.md satisfies acceptance by citing the accepted dirty-workspace triage, enumerating the exact included row-27/29/30/31/32/33/34 files and evidence families, naming the still-mixed shared carriers, and ending with one truthful next step: do a narrow shared-carrier isolation pass before any future checkpoint."
+      },
+      "session_id": "s_task_vmpr-row27-34-done-slice-isolation-plan-20260621",
+      "session_history": [
+        "s_task_vmpr-row27-34-done-slice-isolation-plan-20260621"
+      ],
+      "result": "Authored the owner-ready row-27/29/30/31/32/33/34 isolation map at evidence/archive/vmpr-row27-34-done-slice-isolation-plan-20260621.md, tying accepted dirty-workspace triage to fresh repo-local file grouping and naming the exact mixed shared carriers that still block a truthful checkpoint.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:18:25.905Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row27-34-done-slice-isolation-plan-20260621.md satisfies acceptance by citing the accepted dirty-workspace triage, enumerating the exact included row-27/29/30/31/32/33/34 files and evidence families, naming the still-mixed shared carriers, and ending with one truthful next step: do a narrow shared-carrier isolation pass before any future checkpoint."
+      },
+      "status": "done"
+    }
+  ]
+}

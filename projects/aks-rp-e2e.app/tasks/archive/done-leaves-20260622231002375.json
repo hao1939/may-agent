@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:10:02.375Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 completion rollup refresh: the RP nodepool lifecycle non-rollback calibration is already normalized to done despite the stale task-completed trigger payload, and its accepted evidence keeps the five non-rollback carriers at truthful unknown while rollback siblings remain untouched. The single exact external-human proof wait stays unchanged under focus-vmpr-row50-hardening-and-external-wait-separation-20260622. Because the runnable backlog had emptied, a new bounded repo-local refill leaf now targets the next likely overclaimed blocked family: VM prerelease VirtualMachines rows 25, 26, 29, 30, 31, 32, and 34 blocked-vs-unknown status audit, explicitly excluding row 27, row 33, row 76, rollback, and private-cluster follow-up.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-routing-vmpr-blocked-vs-unknown-status-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: after the paired VM prerelease mounted-source lineage audits, classify the five newly blocked App Routing VM prerelease paths (default-acnginx-internal, osm-acnginx-internal, osm-external-nginx.external, osm-external-nginx.internal, osm-internal-nginx-internal) as true blocked states versus unknown modeled carriers, keeping only rows with an accepted gate/precondition blocker in blocked and linking any truthful shared wait instead of creating a new one.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vmpr-blocked-vs-unknown-status-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/app-routing-vmpr-blocked-vs-unknown-status-audit-20260622.md cites the spec-path reconcile plus both 2026-06-22 mounted-source lineage audits, names the exact five path ids, and explains the status decision for each path without falling back to generic source blockers.",
+        "Maintained repo-local model/status wording is updated only as needed for those five path ids, any shared external wait linkage stays compressed to the existing family-level wait, bun run check passes, and no cloud mutation is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-routing.vmpr.blocked-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:59:53.800Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T22:59:53.905Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-vmpr-blocked-vs-unknown-status-audit-20260622_20260622230036",
+        "assigned_at": "2026-06-22T23:00:36.664Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-vmpr-blocked-vs-unknown-status-audit-20260622",
+        "worker_started_attempt_id": "a_app-routing-vmpr-blocked-vs-unknown-status-audit-20260622_20260622230036",
+        "worker_started_at": "2026-06-22T23:00:40.225Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the five App Routing VM prerelease blocked-vs-unknown paths, wrote an archive decision packet, and updated the maintained model/view statuses for those exact path ids from blocked to truthful unknown where no accepted gate/precondition blocker remains. Validation included model/view readback and a passing bun run check after formatting a pre-existing replay file that was already dirty in the worktree.",
+        "last_worker_completed_at": "2026-06-22T23:05:30.055Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T23:07:12.076Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted: evidence/archive/app-routing-vmpr-blocked-vs-unknown-status-audit-20260622.md cites the spec-path reconcile plus both 2026-06-22 mounted-source lineage audits, gives per-path decisions for the five App Routing VM prerelease carriers, and keeps them out of the external-human wait family. Planner verification reran 'cd /app/projects/aks-rp-e2e && bun run check' successfully and read back model/path-summary surfaces showing those five exact path ids as unknown rather than blocked, so the worker result satisfies acceptance."
+      },
+      "session_id": "s_task_app-routing-vmpr-blocked-vs-unknown-status-audit-20260622",
+      "session_history": [
+        "s_task_app-routing-vmpr-blocked-vs-unknown-status-audit-20260622"
+      ],
+      "result": "Audited the five App Routing VM prerelease blocked-vs-unknown paths, wrote an archive decision packet, and updated the maintained model/view statuses for those exact path ids from blocked to truthful unknown where no accepted gate/precondition blocker remains. Validation included model/view readback and a passing bun run check after formatting a pre-existing replay file that was already dirty in the worktree.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T23:07:12.076Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted: evidence/archive/app-routing-vmpr-blocked-vs-unknown-status-audit-20260622.md cites the spec-path reconcile plus both 2026-06-22 mounted-source lineage audits, gives per-path decisions for the five App Routing VM prerelease carriers, and keeps them out of the external-human wait family. Planner verification reran 'cd /app/projects/aks-rp-e2e && bun run check' successfully and read back model/path-summary surfaces showing those five exact path ids as unknown rather than blocked, so the worker result satisfies acceptance."
+      },
+      "status": "done"
+    }
+  ]
+}

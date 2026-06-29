@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:31:11.127Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 post-completion reconciliation accepts the private-cluster DNS standalone collapse repair as parent-level provenance: the repo-local duplicate standalone dns-zone-system and dns-zone-none ownership surfaces have been collapsed back to their canonical owners with the exact accepted source-equivalent evidence ceiling preserved, so that branch no longer needs a live leaf. The only active regular-learning mover is managedsystem-pool-boundary-map-canonicalize-20260620, which should continue as the next durable worked-example lane for accepted/rejected inputs, expectations, observed behavior, adjacent surfaces, and unknown edges around ManagedSystem Pool plus create-time and VirtualMachines-adjacent constraints. Keep external-send-proof-dispatch-family-20260620 unchanged as the single truthful blocked carrier for the VM/MachinesPreview external-human transport ceiling until durable repo-local send or escalation proof, or an authoritative reply, is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-dns-zone-standalone-collapse-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted dns-zone-system and dns-zone-none source-equivalent reconcile artifacts to perform the smallest truthful repo-local ownership repair that collapses both standalone private-cluster DNS-mode branches back into their canonical owners, removing duplicate standalone maintenance surfaces while preserving the exact mounted/source-equivalent evidence ceiling for default/system behavior and the canonical V3 none-DNS branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-dns-zone-standalone-collapse-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Task updates the exact repo-local duplicate ownership surfaces named by the accepted reconcile artifacts — including features/private-cluster.yaml, features/private-cluster/dns-zone-modes.yaml, specs/private-cluster-dns-zone-system.json, specs/private-cluster-dns-zone-none.json, replays/private-cluster-dns-zone-system.ts, replays/private-cluster-dns-zone-none.ts, model/knowledge-map/model.json, and regenerated maintained views such as model/knowledge-map/views/path-summary.json — so standalone dns-zone-system and dns-zone-none are no longer maintained as independent first-class branches when canonical owners already exist.",
+        "Task preserves and cites the accepted evidence ceiling from evidence/archive/private-cluster-dns-zone-system-source-equivalent-reconcile-20260620.md and evidence/archive/private-cluster-dns-zone-none-source-equivalent-reconcile-20260620.md, keeping canonical ownership on the existing PrivateLink/default-system surfaces and the existing none-dns-zone-v3 landing without inventing new feature branches or cloud work.",
+        "Artifact summarizes the exact cleanup posture taken, names any retired/downgraded standalone file surfaces and resulting canonical owners, and proves the repo-local inventory/model no longer overstates two extra standalone DNS-mode branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-dns-zone-standalone-collapse-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:24:53.759Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-dns-zone-standalone-collapse-repair-20260620_20260620192456",
+        "assigned_at": "2026-06-20T19:24:56.673Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-dns-zone-standalone-collapse-repair-20260620",
+        "worker_started_attempt_id": "a_private-cluster-dns-zone-standalone-collapse-repair-20260620_20260620192456",
+        "worker_started_at": "2026-06-20T19:25:22.295Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collapsed duplicate standalone private-cluster DNS system/none ownership back to canonical owners by updating family/feature packets, superseding duplicate specs and replays, removing duplicate accepted-model paths, regenerating knowledge-map views, and writing the requested repair artifact.",
+        "last_worker_completed_at": "2026-06-20T19:29:31.594Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:30:17.276Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: the repair artifact documents collapse of duplicate standalone private-cluster DNS system/none ownership back to canonical owners, and repo-local diffstat shows the exact targeted surfaces were updated (features/private-cluster.yaml, features/private-cluster/dns-zone-modes.yaml, features/private-cluster/privatelink.yaml, specs/private-cluster-dns-zone-{system,none}.json, replays/private-cluster-dns-zone-{system,none}.ts, specs/index.json, model/knowledge-map/model.json, and regenerated views)."
+      },
+      "session_id": "s_task_private-cluster-dns-zone-standalone-collapse-repair-20260620",
+      "session_history": [
+        "s_task_private-cluster-dns-zone-standalone-collapse-repair-20260620"
+      ],
+      "result": "Collapsed duplicate standalone private-cluster DNS system/none ownership back to canonical owners by updating family/feature packets, superseding duplicate specs and replays, removing duplicate accepted-model paths, regenerating knowledge-map views, and writing the requested repair artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:30:17.276Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: the repair artifact documents collapse of duplicate standalone private-cluster DNS system/none ownership back to canonical owners, and repo-local diffstat shows the exact targeted surfaces were updated (features/private-cluster.yaml, features/private-cluster/dns-zone-modes.yaml, features/private-cluster/privatelink.yaml, specs/private-cluster-dns-zone-{system,none}.json, replays/private-cluster-dns-zone-{system,none}.ts, specs/index.json, model/knowledge-map/model.json, and regenerated views)."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T17:56:52.893Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review after defender-profile runtime-bundle rerun timeout and adjacent egress follow-ups: accepted rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628 as partial progress because the post-port single-spec workflow launched the intended 23-step live plan and proved the new carrier is runnable, but the session wall-clock expired before a terminal verdict; continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628 now owns final-result recovery or a longer-lived rerun. Also archive same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628 as accepted proof that workflow checkout still targeted a pre-repair ref/branch and therefore surfaced the old ENOENT carrier, with prepare-workflow-visible-ref-egress-lockdown-vm-prerelease-vhd-matrix-fallback-repair-20260628 owning the committed-ref repair. Archive align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628 as accepted prerequisite-port completion; rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628 remains the live source-faithful verdict rerun.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run a bounded single-spec verification for spec.defender-profile.vm-prerelease-matrix using the newly ported repo-local runtime-bundle carrier so the branch either records a trustworthy live verdict or the next exact execution gate.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "Execute the single-spec workflow only against the post-2026-06-28 runtime-bundle ported carrier and archive the run/result references used.",
+        "If execution fails or is still gated, record the exact remaining runtime or environment blocker instead of broadening the hypothesis.",
+        "If execution succeeds far enough to classify the spec, update the branch with the truthful verdict ceiling and any remaining deferred negative-path note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:31:47.079Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T17:49:23.440Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628",
+        "worker_started_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628_20260628174923",
+        "worker_started_at": "2026-06-28T17:49:38.588Z",
+        "stale_active_requeued_at": "2026-06-28T17:49:19.628Z",
+        "stale_active_requeue_reason": "Owner stale-active review: session s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628 is still marked running but lastActivityAt stalled at 2026-06-28T17:32:45.901Z with only 28 ops while other reruns advanced; requeue this single-spec leaf so a fresh worker session can retry instead of silently holding active capacity.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628_20260628173206",
+        "promoted_at": "2026-06-28T17:49:19.701Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628_20260628174923",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Executed the single-spec workflow against the post-port defender-profile runtime-bundle carrier, confirmed the runner accepted the new 23-step live plan, and wrote a blocker artifact documenting that the live run exceeded session/tool wall-clock before emitting a final result.",
+        "last_worker_completed_at": "2026-06-28T17:53:53.975Z",
+        "last_worker_evidence": [
+          "evidence/archive/defender-profile-vm-prerelease-matrix-runtime-bundle-rerun-blocker-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:55:34.953Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the worker proved the post-2026-06-28 runtime-bundle-ported defender-profile carrier is the one the live runner launched and archived the exact long-running run context in evidence/archive/defender-profile-vm-prerelease-matrix-runtime-bundle-rerun-blocker-20260628.md. Because no trustworthy final result was emitted before session timeout, this leaf's bounded goal is complete and the concrete successor is continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628 to harvest the launched run or rerun in a longer-lived executor."
+      },
+      "session_id": "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628",
+      "session_history": [
+        "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-runtime-bundle-port-20260628"
+      ],
+      "result": "Executed the single-spec workflow against the post-port defender-profile runtime-bundle carrier, confirmed the runner accepted the new 23-step live plan, and wrote a blocker artifact documenting that the live run exceeded session/tool wall-clock before emitting a final result.",
+      "evidence": [
+        "evidence/archive/defender-profile-vm-prerelease-matrix-runtime-bundle-rerun-blocker-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:55:34.953Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the worker proved the post-2026-06-28 runtime-bundle-ported defender-profile carrier is the one the live runner launched and archived the exact long-running run context in evidence/archive/defender-profile-vm-prerelease-matrix-runtime-bundle-rerun-blocker-20260628.md. Because no trustworthy final result was emitted before session timeout, this leaf's bounded goal is complete and the concrete successor is continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628 to harvest the launched run or rerun in a longer-lived executor."
+      },
+      "status": "done"
+    },
+    {
+      "id": "same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run one bounded same-spec workflow execution for spec.egress-lockdown.vm-prerelease-vhd-matrix using a workflow checkout proven to contain the repaired mounted-source→repo-local matrix fallback so the branch records the first post-repair workflow/live verdict or exact new gate beyond the old ENOENT crash.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "The run proves the workflow checkout contains the repaired replay file for spec.egress-lockdown.vm-prerelease-vhd-matrix before trusting results.",
+        "The result records whether the workflow now progresses beyond the prior mounted-source ENOENT, with exact run/evidence links for this spec only.",
+        "If execution is still gated, the leaf captures the exact remaining workflow/runtime/environment blocker without reopening the already-accepted repo-local fallback repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.egress-lockdown.vm-prerelease-vhd-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:50:14.328Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628_20260628175014",
+        "assigned_at": "2026-06-28T17:50:14.402Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-",
+        "worker_started_attempt_id": "a_same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628_20260628175014",
+        "worker_started_at": "2026-06-28T17:50:53.421Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote a durable blocker note showing the repaired egress-lockdown replay exists only in the local working tree, while HEAD/origin/dev and all visible refs lack the fallback markers, so a trustworthy same-spec workflow rerun cannot yet prove post-repair behavior.",
+        "last_worker_completed_at": "2026-06-28T17:53:06.980Z",
+        "last_worker_evidence": [
+          "evidence/archive/same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:55:50.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the worker satisfied this leaf's bounded purpose by proving no workflow-visible ref yet contains the accepted fallback repair, so a same-spec rerun now would be untrustworthy for post-repair classification. The concrete successor is prepare-workflow-visible-ref-egress-lockdown-vm-prerelease-vhd-matrix-fallback-repair-20260628, which must produce a repair-bearing committed ref before any new workflow rerun."
+      },
+      "session_id": "s_task_same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-",
+      "session_history": [
+        "s_task_same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-"
+      ],
+      "result": "Wrote a durable blocker note showing the repaired egress-lockdown replay exists only in the local working tree, while HEAD/origin/dev and all visible refs lack the fallback markers, so a trustworthy same-spec workflow rerun cannot yet prove post-repair behavior.",
+      "evidence": [
+        "evidence/archive/same-spec-workflow-rerun-egress-lockdown-vm-prerelease-vhd-matrix-after-fallback-checkout-proof-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:55:50.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the worker satisfied this leaf's bounded purpose by proving no workflow-visible ref yet contains the accepted fallback repair, so a same-spec rerun now would be untrustworthy for post-repair classification. The concrete successor is prepare-workflow-visible-ref-egress-lockdown-vm-prerelease-vhd-matrix-fallback-repair-20260628, which must produce a repair-bearing committed ref before any new workflow rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map and port the mounted-source network prerequisite wiring required by spec.egress-lockdown.fips into the repo-local carrier enough to remove the current EmptySubnetError preassertion stop, or record the exact smallest remaining gap if full alignment is still not possible.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "The work identifies the mounted-source subnet/VNet prerequisite path this spec expects and relates it to the current repo-local carrier.",
+        "The result either ports the missing network prerequisite wiring or records the exact remaining carrier-alignment gap that still leaves the subnet empty, with durable evidence for this spec only.",
+        "The branch ends with a concrete next verification gate aimed at reaching product assertions rather than repeating the already-accepted create-failure evidence capture."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.egress-lockdown.fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:50:31.653Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628_20260628175031",
+        "assigned_at": "2026-06-28T17:50:31.727Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628",
+        "worker_started_attempt_id": "a_align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628_20260628175031",
+        "worker_started_at": "2026-06-28T17:50:53.513Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Mapped the mounted-source network prerequisite path for spec.egress-lockdown.fips and ported repo-local carrier subnet/VNet wiring into features/egress-lockdown/tests/egress-lockdown-fips.ts, but did not perform a live gated rerun to prove EmptySubnetError is cleared.",
+        "last_worker_completed_at": "2026-06-28T17:53:36.744Z",
+        "last_worker_evidence": [
+          "features/egress-lockdown/tests/egress-lockdown-fips.ts"
+        ],
+        "reviewed_at": "2026-06-28T17:55:03.447Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the worker mapped the mounted-source subnet/VNet prerequisite path for spec.egress-lockdown.fips and ported that wiring into features/egress-lockdown/tests/egress-lockdown-fips.ts, satisfying the repo-local alignment goal. The remaining proof gap is no longer mapping/porting but one bounded live rerun to verify whether EmptySubnetError is cleared, so the concrete successor is rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628."
+      },
+      "session_id": "s_task_align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628",
+      "session_history": [
+        "s_task_align-spec-egress-lockdown-fips-repo-local-carrier-with-mounted-network-prereqs-20260628"
+      ],
+      "result": "Mapped the mounted-source network prerequisite path for spec.egress-lockdown.fips and ported repo-local carrier subnet/VNet wiring into features/egress-lockdown/tests/egress-lockdown-fips.ts, but did not perform a live gated rerun to prove EmptySubnetError is cleared.",
+      "evidence": [
+        "features/egress-lockdown/tests/egress-lockdown-fips.ts"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:55:03.447Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the worker mapped the mounted-source subnet/VNet prerequisite path for spec.egress-lockdown.fips and ported that wiring into features/egress-lockdown/tests/egress-lockdown-fips.ts, satisfying the repo-local alignment goal. The remaining proof gap is no longer mapping/porting but one bounded live rerun to verify whether EmptySubnetError is cleared, so the concrete successor is rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628."
+      },
+      "status": "done"
+    }
+  ]
+}

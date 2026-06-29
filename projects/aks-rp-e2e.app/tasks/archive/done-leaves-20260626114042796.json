@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T11:40:42.796Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 planning update reconciled the problem-resolved wake into the current launcher-proof branch. The app-side verifier patch/testing claim is accepted only as upstream evidence that code-side fallback may now exist; the branch remains open until verify-single-spec-gh-launcher-runtime-refresh-and-fallback-20260626 records durable live runtime proof on the executing launcher surface after refresh/reload. Decomposition under this parent is now repaired: the earlier preserved-order retry queue is separated from the later nsg-control/static-egress-vmss sibling work, so the next reviewed action after launcher proof is to consume the older queue first and only then move to newer siblings.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture durable repo-local proof for the newly observed single-spec GitHub dispatch failure and determine the exact repair/escalation path for the launcher contract mismatch: verify why the current REST fallback launcher sends workflow_dispatch input loop_key that run-single-spec.yaml no longer accepts, record the failing command/response and current workflow input contract, and classify whether the fix belongs in repo-local launcher code, workflow YAML, or an external owner handoff before any further net-integration single-spec retries.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/single-spec-gh-dispatch-loop-key-contract-mismatch-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records the exact failing launcher invocation surface, the returned HTTP 422 unexpected input loop_key evidence, and the current workflow_dispatch input contract from the checked-in workflow or equivalent authoritative surface.",
+        "The artifact states one concrete next action: repo-local repair candidate, exact external escalation target, or exact resume condition if blocked outside this repo.",
+        "No downstream net-integration sibling spec is launched while this contract blocker remains unresolved."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:33:41.049Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626_20260626113344",
+        "assigned_at": "2026-06-26T11:33:44.557Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626",
+        "worker_started_attempt_id": "a_diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626_20260626113344",
+        "worker_started_at": "2026-06-26T11:34:09.450Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured a durable diagnosis artifact proving the single-spec GitHub dispatch failure is a loop_key contract/deployment skew, with exact 422 evidence, local-vs-remote workflow contract comparison, and a concrete repo-local runtime refresh next action.",
+        "last_worker_completed_at": "2026-06-26T11:37:09.440Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:37:38.003Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable archive artifact proves the single-spec GitHub dispatch failure is a repo-local launcher/runtime vs remote workflow contract skew (HTTP 422 unexpected input loop_key), not a spec/product result, and records the correct next action: verify the executing runtime now uses the existing 422 retry-without-loop_key fallback before any downstream net-integration launches."
+      },
+      "session_id": "s_task_diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626",
+      "session_history": [
+        "s_task_diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626"
+      ],
+      "result": "Captured a durable diagnosis artifact proving the single-spec GitHub dispatch failure is a loop_key contract/deployment skew, with exact 422 evidence, local-vs-remote workflow contract comparison, and a concrete repo-local runtime refresh next action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:37:38.003Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable archive artifact proves the single-spec GitHub dispatch failure is a repo-local launcher/runtime vs remote workflow contract skew (HTTP 422 unexpected input loop_key), not a spec/product result, and records the correct next action: verify the executing runtime now uses the existing 422 retry-without-loop_key fallback before any downstream net-integration launches."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-later-net-integration-single-spec-siblings-after-retry-queue-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the verified current single-spec launcher surface is used to consume the preserved-order earlier retry queue first, run and review the next newer net-integration single-spec siblings in order: spec.net-integration.nsg-control, then spec.net-integration.static-egress-vmss.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "The verified current single-spec launcher surface was used before launching either newer sibling.",
+        "The preserved-order retry queue for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags was retried or reclassified before launching either newer sibling.",
+        "spec.net-integration.nsg-control was reviewed to pass, fail, blocked, or error with evidence/model updates as needed before spec.net-integration.static-egress-vmss was consumed.",
+        "spec.net-integration.static-egress-vmss was reviewed to pass, fail, blocked, or error with evidence/model updates as needed.",
+        "Spec-loop state was updated for both newer siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:26:29.608Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T11:40:42.747Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the oversized mixed leaf with two concrete successors: retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626 now owns the earlier queue retry/review work, and verify-newer-net-integration-single-spec-siblings-after-earlier-retry-queue-20260626 now owns only the later sibling launches after that queue is reviewed."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T11:40:42.747Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the oversized mixed leaf with two concrete successors: retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626 now owns the earlier queue retry/review work, and verify-newer-net-integration-single-spec-siblings-after-earlier-retry-queue-20260626 now owns only the later sibling launches after that queue is reviewed."
+      },
+      "status": "done"
+    }
+  ]
+}

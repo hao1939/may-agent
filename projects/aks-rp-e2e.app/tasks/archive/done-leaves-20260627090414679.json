@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T09:04:14.679Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier owner pass finishes root hygiene for the already accepted NATGW V2 cleanup slice: remaining done cleanup leaves are archived because their durable meaning is already captured in project rollup context and they do not create new runnable capacity. The tree now intentionally shows one active repo-local MultiNIC mounted-source reconciliation leaf plus the single focus branch carrying the three exact external waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair maintained-surface drift for path.net-integration.natgw-v2-migration-v2-to-block now that the exact execute lane exists: update the durable knowledge-map/model and path-summary wording/references so they describe the current features/net-integration/tests carrier and implemented mutation-gated --execute lane while preserving the path's unknown observed-behavior status.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "Update the maintained path surfaces for path.net-integration.natgw-v2-migration-v2-to-block so they no longer claim the execute lane is not yet implemented and no longer point replayRef at a missing replays/net-integration-natgw-v2-migration-v2-to-block.ts file; cite the actual current carrier under features/net-integration/tests or the truthful maintained equivalent.",
+        "Preserve the path verdict as unknown and explicitly avoid inventing observed pass/fail/block evidence; the cleanup must be wording/reference reconciliation only, backed by repo-local file evidence and a short durable note if needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T08:55:55.096Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627_20260627085555",
+        "assigned_at": "2026-06-27T08:55:55.145Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627_20260627085555",
+        "worker_started_at": "2026-06-27T08:56:09.159Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the maintained NAT Gateway V2 V2→block knowledge-map surfaces so they now point at the real features/net-integration/tests carrier and describe the implemented mutation-gated --execute lane without changing the path’s unknown verdict.",
+        "last_worker_completed_at": "2026-06-27T08:58:13.962Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T08:58:53.380Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-27 owner review: current model/path-summary text now points to features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.ts, describes the implemented mutation-gated --execute lane, and preserves the path as unknown with no invented live verdict."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-block-maintained-surface-drift-cleanup-20260627"
+      ],
+      "result": "Reconciled the maintained NAT Gateway V2 V2→block knowledge-map surfaces so they now point at the real features/net-integration/tests carrier and describe the implemented mutation-gated --execute lane without changing the path’s unknown verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T08:58:53.380Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-27 owner review: current model/path-summary text now points to features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.ts, describes the implemented mutation-gated --execute lane, and preserves the path as unknown with no invented live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

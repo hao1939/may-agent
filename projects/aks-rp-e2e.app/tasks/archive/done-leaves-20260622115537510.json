@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:55:37.510Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 problem-event reconciliation + hygiene pass: the project.owner.requested problem wake for network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622 is already satisfied structurally because that stale sync leaf was review-rejected after a blocked/error worker result with no evidence and replaced by the narrower active successor network-acns-basic-retina-update-retina-enterprise-model-view-landing-20260622. Archive the two safe done leaves whose durable meaning is already captured here: NATGW v2 dual-stack BYO v4prefix+v6ip maintained-carrier reconciliation is complete, and the obsolete ACNS sync leaf now stands only as a replaced precursor to the active landing task. Remaining live frontier stays intentionally small and truthful: one active repo-local ACNS Retina Enterprise model/view landing leaf and one separate family-level external-human-transport wait; no duplicate ACNS problem-solver branch, no cloud mutation, and no merge with the external wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the remaining maintained model/view carrier for Scenario_Basic_Retina_Update_Retina_Enterprise so path.network-acns-basic-retina-update-retina-enterprise and spec.network-acns.basic-retina-update-retina-enterprise are exposed consistently on repo-local knowledge-map surfaces without broadening beyond this exact ACNS update path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the newly landed replay/spec-index carrier plus the exact pre-change missing maintained surfaces for path.network-acns-basic-retina-update-retina-enterprise and/or spec.network-acns.basic-retina-update-retina-enterprise in the knowledge-map model/views, then records the narrow truthful landing chosen for this exact path.",
+        "Maintained repo-local model/view surfaces are updated consistently for this exact ACNS update path, including regenerated views if touched, and the artifact confirms no cloud execution, no external-human transport, and no unrelated ACNS cleanup."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "acns-model-sync"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:49:47.176Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-22T11:52:56.237Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_retry_20260622115256",
+        "worker_started_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_20260622115256",
+        "worker_started_at": "2026-06-22T11:53:19.074Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-22T11:52:03.119Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-22T11:52:56.041Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Worker attempt ended in error/blocked with no evidence, so acceptance is unverified; return this exact ACNS model/view sync leaf to execution with an artifact-backed repo-local landing or a concrete evidence-backed blocker.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_20260622114947",
+        "promoted_at": "2026-06-22T11:52:56.136Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_20260622115256",
+        "reviewed_at": "2026-06-22T11:54:30.423Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the stale active retry because this leaf's assigned attempt ended blocked/error with no task artifact. A narrower fresh leaf should start from the landed replay/spec-index evidence in evidence/archive/network-acns-basic-retina-update-retina-enterprise-replay-index-sync-20260622.md and produce the missing model/view landing artifact instead of carrying forward unsupported active progress."
+      },
+      "session_history": [
+        "s_task_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622",
+        "s_task_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_retry_20260622115256"
+      ],
+      "result": "error",
+      "evidence": [],
+      "session_id": "s_task_network-acns-basic-retina-update-retina-enterprise-model-view-sync-20260622_retry_20260622115256",
+      "resolution": "replaced",
+      "done_at": "2026-06-22T11:54:30.423Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the stale active retry because this leaf's assigned attempt ended blocked/error with no task artifact. A narrower fresh leaf should start from the landed replay/spec-index evidence in evidence/archive/network-acns-basic-retina-update-retina-enterprise-replay-index-sync-20260622.md and produce the missing model/view landing artifact instead of carrying forward unsupported active progress."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained carrier mismatch for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip so the model/view/spec surfaces truthfully carry the already-final terminal verdict for this exact dual-stack BYO v4-prefix plus v6-IP path, removing any stale ready-to-rerun implication and regenerating affected maintained views if touched.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the current conflicting maintained surfaces for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip, records the exact mounted-source contract they are supposed to carry, and states the chosen truthful repo-local classification with rationale, explicitly resolving the stale-terminal-versus-ready-path mismatch.",
+        "The maintained repo-local surfaces are updated consistently for this path (including regenerated views if touched), and the artifact confirms no cloud execution, no external-human transport, and no broad net-integration reclassification beyond this exact path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "natgw-v2-carrier-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:47:49.635Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-22T11:52:56.185Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_retry_20260622115256",
+        "worker_started_attempt_id": "a_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_20260622115256",
+        "worker_started_at": "2026-06-22T11:53:19.035Z",
+        "stale_active_requeued_at": "2026-06-22T11:52:56.086Z",
+        "stale_active_requeue_reason": "Requeue this stale active leaf so the next attempt stays narrow: reconcile repo-local carrier surfaces to the already-final product-gap verdict for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip rather than implying a rerun/retry.",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_20260622114749",
+        "promoted_at": "2026-06-22T11:52:56.136Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_20260622115256",
+        "reviewed_at": "2026-06-22T11:54:30.372Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622.md: it cites the conflicting model-vs-feature/spec carriers, the mounted source Scenario_NATGatewayV2_DS_BYOIP_V4Prefix_V6IP contract, and the maintained carrier repairs in features/net-integration/natgw-v2-ds-byoip-v4prefix-v6ip.yaml, specs/net-integration-natgw-v2-ds-byoip-v4prefix-v6ip.json, and specs/index.json, resolving the stale terminal-versus-ready mismatch without cloud execution."
+      },
+      "session_history": [
+        "s_task_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622",
+        "s_task_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_retry_20260622115256"
+      ],
+      "session_id": "s_task_network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622_retry_20260622115256",
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:54:30.372Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/network-natgw-v2-ds-byoip-v4prefix-v6ip-carrier-reconcile-20260622.md: it cites the conflicting model-vs-feature/spec carriers, the mounted source Scenario_NATGatewayV2_DS_BYOIP_V4Prefix_V6IP contract, and the maintained carrier repairs in features/net-integration/natgw-v2-ds-byoip-v4prefix-v6ip.yaml, specs/net-integration-natgw-v2-ds-byoip-v4prefix-v6ip.json, and specs/index.json, resolving the stale terminal-versus-ready mismatch without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

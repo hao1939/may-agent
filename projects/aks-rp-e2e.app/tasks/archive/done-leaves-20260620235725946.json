@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T23:57:25.946Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 planning-update review accepted the VirtualMachines auto-zone sibling future-run packet as durable evidence: row-31 and row-32 now have one grouped execute-ready plan packet with exact auth/mutation gates and row-local verdict boundaries, so no further planner decomposition is needed there until a later execution-authoring or execution-approval step is intentionally chosen. The blocked VM prerelease focus branch still carries exactly one truthful external-human send/escalation-proof ceiling via external-send-proof-dispatch-family-20260620. The live repo-local movers are now narrowed to managedsystem-create-time-replay-wording-cleanup-20260620 and private-cluster-mounted-source-coverage-batch-20260620; do not refill with duplicate waits or speculative cloud-execution tasks from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-auto-zone-pair-run-plan-preflight-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the newly execute-capable VirtualMachines auto-zone sibling pair into one bounded future-run packet without cloud mutation: use the completed row-32 mixed-SKU authoring evidence plus the existing row-31 sibling surfaces to document the exact combined execution plan, required auth/subscription/mutation gates, cluster grouping assumptions, and the precise live verdict boundary each row would prove if later executed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-auto-zone-pair-run-plan-preflight-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact row-31 and row-32 replay/spec/evidence surfaces, including the completed row-32 mixed-SKU authoring artifact and the local plan evidence showing the two rows can batch compatibly, without inventing product behavior beyond those sources.",
+        "Artifact records the exact future execute commands, required AKS_RP_E2E_ALLOW_CLOUD_MUTATION gates, Azure auth/subscription preflight, and whether the pair should run as one cluster-compatible batch or separate runs, with a short rationale tied to repo-local evidence.",
+        "Artifact ends with the precise live verdict boundary and non-claim boundary for each auto-zone row so a later mutating replay can be approved/rejected cleanly; no cloud execution is performed in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T23:54:28.369Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-auto-zone-pair-run-plan-preflight-20260620_20260620235428",
+        "assigned_at": "2026-06-20T23:54:28.418Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-auto-zone-pair-run-plan-preflight-20260620",
+        "worker_started_attempt_id": "a_virtualmachines-auto-zone-pair-run-plan-preflight-20260620_20260620235428",
+        "worker_started_at": "2026-06-20T23:54:38.193Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested future-run preflight packet at evidence/archive/virtualmachines-auto-zone-pair-run-plan-preflight-20260620.md, citing exact row-31/row-32 source/spec/replay/evidence surfaces, grouped-plan rationale, Azure/auth/mutation gates, exact future commands, and row-specific live-verdict boundaries without any cloud execution.",
+        "last_worker_completed_at": "2026-06-20T23:56:36.720Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T23:57:22.413Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/virtualmachines-auto-zone-pair-run-plan-preflight-20260620.md cites the exact row-31 and row-32 mounted source/spec/replay/evidence surfaces, records the grouped-plan artifact runs/plans/plan_20260620234748719_htfuxe.json plus exact future execute commands and Azure/mutation gates, and ends with row-specific live-verdict and non-claim boundaries without any cloud execution."
+      },
+      "session_id": "s_task_virtualmachines-auto-zone-pair-run-plan-preflight-20260620",
+      "session_history": [
+        "s_task_virtualmachines-auto-zone-pair-run-plan-preflight-20260620"
+      ],
+      "result": "Wrote the requested future-run preflight packet at evidence/archive/virtualmachines-auto-zone-pair-run-plan-preflight-20260620.md, citing exact row-31/row-32 source/spec/replay/evidence surfaces, grouped-plan rationale, Azure/auth/mutation gates, exact future commands, and row-specific live-verdict boundaries without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T23:57:22.413Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/virtualmachines-auto-zone-pair-run-plan-preflight-20260620.md cites the exact row-31 and row-32 mounted source/spec/replay/evidence surfaces, records the grouped-plan artifact runs/plans/plan_20260620234748719_htfuxe.json plus exact future execute commands and Azure/mutation gates, and ends with row-specific live-verdict and non-claim boundaries without any cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

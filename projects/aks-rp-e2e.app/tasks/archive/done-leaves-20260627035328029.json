@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T03:53:28.029Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier review kept the blocked family unchanged because both child waits still have durable repo-local send/handoff proof and no returned reply, redirect, or new steering. Archive the accepted network-cni swift-v1 VNetScale dual-stack external-datapath carrier leaf because its durable meaning is now captured in evidence plus prior review, and leave network-cni-swiftv1-vnetscale-dual-stack-basic-datapath-carrier-authoring-20260627 as the only live repo-local authoring path. confirm-runnable remains empty, so do not invent duplicate local setup/source/spec/send work while the two external waits remain exact and the basic-datapath carrier is already active.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the repo-local canonical carrier for mounted scenario Scenario_VnetScale_DualStack_External_DataPath from swiftv1ponv6peering.go: land one draft/source-grounded network-swift-v1-vnetscale-dual-stack-external-datapath spec, placeholder replay/test wiring, and normalized model/path coverage, while attaching the _Windows and _Overlake siblings only as execution variants and running no cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627.md"
+      ],
+      "acceptance": [
+        "Durable artifact cites the exact mounted source scenario/file(s) used for the carrier boundary, names the repo-local spec/test/model files added or updated, and explains why the Windows and Overlake siblings are execution variants rather than separate canonical carriers.",
+        "Repo-local surfaces are updated consistently enough that the new canonical carrier is visible in the accepted spec/replay/model inventory without inventing LB, service-endpoint, or private-link coverage and without running cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-external-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T03:44:11.322Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627_20260627034411",
+        "assigned_at": "2026-06-27T03:44:11.376Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627",
+        "worker_started_attempt_id": "a_network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627_20260627034411",
+        "worker_started_at": "2026-06-27T03:44:21.251Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the repo-local canonical external-datapath carrier for the mounted Swift v1 VNetScale dual-stack family, adding the new spec/test/evidence surfaces plus normalized model and feature-catalog wiring while keeping Windows and Overlake as execution variants only. Regenerated the spec catalog and knowledge-map views, and verified the new placeholder test passes locally with no cloud execution.",
+        "last_worker_completed_at": "2026-06-27T03:50:50.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T03:51:35.977Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-27 review: the durable artifact cites the exact mounted swiftv1 source files, names the repo-local spec/test/model surfaces added or updated, explains why the _Windows and _Overlake siblings remain execution variants only, and matches the worker summary that regenerated the spec/knowledge-map inventory without cloud execution."
+      },
+      "session_id": "s_task_network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627",
+      "session_history": [
+        "s_task_network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627"
+      ],
+      "result": "Authored the repo-local canonical external-datapath carrier for the mounted Swift v1 VNetScale dual-stack family, adding the new spec/test/evidence surfaces plus normalized model and feature-catalog wiring while keeping Windows and Overlake as execution variants only. Regenerated the spec catalog and knowledge-map views, and verified the new placeholder test passes locally with no cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T03:51:35.977Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-27 review: the durable artifact cites the exact mounted swiftv1 source files, names the repo-local spec/test/model surfaces added or updated, explains why the _Windows and _Overlake siblings remain execution variants only, and matches the worker summary that regenerated the spec/knowledge-map inventory without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

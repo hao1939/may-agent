@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:25:05.294Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog-review-pending reconciliation accepted the already-reviewed private-cluster BYO-DNS topology work and compacted the completed private-cluster/localdns leaves into project memory. Current live frontier is intentionally narrow: keep private-cluster-next-mounted-source-gap-selection-20260622c as the sole repo-local active leaf to choose the next truthful private-cluster mounted-source gap after the accepted topology-exact no-run decision, and preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human wait pending later out-of-runtime proof. No duplicate BYO-DNS reconciliation, duplicate blocked waits, or cloud-mutation execute branches were introduced in this planning pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-fips-source-backed-verdict-reconciliation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted LocalDNS+FIPS mounted-source audit to reconcile repo-local carriers and the model verdict for path.localdns.fips: replace the stale final product-blocked classification with the precise source-backed execution/environment-blocked note supported by current evidence, update any exact feature/spec/model/view carriers that still overstate the product verdict, and record the durable retest condition without creating a new execute branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-fips-source-backed-verdict-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "The task updates or confirms the exact repo-local carriers for path.localdns.fips so they reflect the mounted-source supported-path intent and the current evidence-backed blocker class rather than terminal product-blocked/product-constraint wording.",
+        "The resulting artifact names the exact files changed or confirmed, cites the accepted audit plus the quota/throttling execution evidence, and records the precise non-product retest condition for future verification.",
+        "No cloud mutation is run, no duplicate replay branch or external-wait leaf is introduced, and the work remains a repo-local verdict/model reconciliation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "localdns-fips-boundary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:11:01.729Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-fips-source-backed-verdict-reconciliation-20260622_20260622131101",
+        "assigned_at": "2026-06-22T13:11:01.777Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-fips-source-backed-verdict-reconciliation-20260622",
+        "worker_started_attempt_id": "a_localdns-fips-source-backed-verdict-reconciliation-20260622_20260622131101",
+        "worker_started_at": "2026-06-22T13:11:17.104Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.localdns.fips from stale product-blocked to source-backed environment-blocked across the canonical model, LocalDNS feature carriers, and a durable evidence artifact; regenerated maintained views and manually synced the stale terminal-classification report row.",
+        "last_worker_completed_at": "2026-06-22T13:19:51.031Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T13:21:22.046Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via repo-local evidence: evidence/archive/localdns-fips-source-backed-verdict-reconciliation-20260622.md cites the mounted-source audit plus quota/throttling execute artifacts and records the durable retest condition, while the bounded carrier set now reflects environment-blocked LocalDNS+FIPS intent in model/knowledge-map/model.json, features/localdns/fips-source-packet.yaml, features/localdns.yaml, and features/localdns/os-arch-matrix.yaml without reopening execution."
+      },
+      "session_id": "s_task_localdns-fips-source-backed-verdict-reconciliation-20260622",
+      "session_history": [
+        "s_task_localdns-fips-source-backed-verdict-reconciliation-20260622"
+      ],
+      "result": "Reconciled path.localdns.fips from stale product-blocked to source-backed environment-blocked across the canonical model, LocalDNS feature carriers, and a durable evidence artifact; regenerated maintained views and manually synced the stale terminal-classification report row.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T13:21:22.046Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via repo-local evidence: evidence/archive/localdns-fips-source-backed-verdict-reconciliation-20260622.md cites the mounted-source audit plus quota/throttling execute artifacts and records the durable retest condition, while the bounded carrier set now reflects environment-blocked LocalDNS+FIPS intent in model/knowledge-map/model.json, features/localdns/fips-source-packet.yaml, features/localdns.yaml, and features/localdns/os-arch-matrix.yaml without reopening execution."
+      },
+      "status": "done"
+    }
+  ]
+}

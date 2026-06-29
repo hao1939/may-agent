@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:43:43.938Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner hygiene rollup after stale watchdog review: confirmed private-cluster-none-dns-zone-v3 review pressure was duplicate/stale because that readiness packet had already been accepted and archived at 2026-06-23T12:42:35Z. Current truthful live frontier is unchanged: one active repo-local cloud-provider credential-provider exact-contract hardening leaf plus the single family-level external-human proof wait. Repo-local private-cluster, OIDC wrapper-parity, and Speculor batch-1 inventory work stay completed and must not be reopened unless new source, model, or operator-return evidence changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "speculor-uncovered-scenario-batch1-source-inventory-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: inventory one bounded mounted-source speculor slice against current specs/replays/model coverage, producing a durable gap matrix that names the exact source scenarios already covered, the ones still uncovered, and the smallest next repo-local source-backed candidate(s) to seed after current ManagedSystem hygiene finishes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-uncovered-scenario-batch1-source-inventory-20260623.md"
+      ],
+      "acceptance": [
+        "An archive note cites the exact mounted /app/sources/aks-rp speculor source files and scenario/test anchors inspected, cross-references existing specs/replays/model paths for that slice, and distinguishes covered vs uncovered scenarios without cloud execution.",
+        "The note names at least one concrete next candidate artifact slice (feature/spec/replay/model/evidence) with scope small enough for a single follow-up leaf, so the project keeps a truthful repo-local refill path after managedsystem-create-time-initial-pool-replay-source-lineage-hygiene-20260623 completes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor.source-inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:33:41.301Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T12:33:44.967Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-uncovered-scenario-batch1-source-inventory-20260623_20260623123411",
+        "assigned_at": "2026-06-23T12:34:11.255Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-uncovered-scenario-batch1-source-inventory-20260623",
+        "worker_started_attempt_id": "a_speculor-uncovered-scenario-batch1-source-inventory-20260623_20260623123411",
+        "worker_started_at": "2026-06-23T12:34:14.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested source-inventory note at evidence/archive/speculor-uncovered-scenario-batch1-source-inventory-20260623.md by auditing the mounted Speculor cloudprovider slice against existing feature/spec/replay/model coverage and naming credential-provider exact-contract hardening as the smallest next repo-local candidate.",
+        "last_worker_completed_at": "2026-06-23T12:36:42.067Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:37:33.510Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/speculor-uncovered-scenario-batch1-source-inventory-20260623.md cites the exact mounted speculor/cloudprovider source carriers and validators, proves all four bounded source scenarios already have feature/spec/replay/model landings, and truthfully identifies cloud-provider-credential-provider exact-contract hardening as the smallest next repo-local source-backed slice."
+      },
+      "session_id": "s_task_speculor-uncovered-scenario-batch1-source-inventory-20260623",
+      "session_history": [
+        "s_task_speculor-uncovered-scenario-batch1-source-inventory-20260623"
+      ],
+      "result": "Produced the requested source-inventory note at evidence/archive/speculor-uncovered-scenario-batch1-source-inventory-20260623.md by auditing the mounted Speculor cloudprovider slice against existing feature/spec/replay/model coverage and naming credential-provider exact-contract hardening as the smallest next repo-local candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T12:37:33.510Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/speculor-uncovered-scenario-batch1-source-inventory-20260623.md cites the exact mounted speculor/cloudprovider source carriers and validators, proves all four bounded source scenarios already have feature/spec/replay/model landings, and truthfully identifies cloud-provider-credential-provider exact-contract hardening as the smallest next repo-local source-backed slice."
+      },
+      "status": "done"
+    }
+  ]
+}

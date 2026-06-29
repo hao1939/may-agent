@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-29T16:50:00.111Z",
+  "updated_at": "2026-06-29T18:38:44.474Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "verify-spec-node-http-proxy-update",
+  "active_task_id": "verify-spec-private-cluster-vnet-integration-update-private",
   "tasks": {
     "project": {
       "id": "project",
@@ -269,13 +269,13 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Hold the single truthful family-level external wait for the already-routed out-of-runtime human/operator dependencies still supported by durable evidence: (a) VM prerelease row 33 approval/send-proof return and (b) shared-identity rows 75-76 identity/registration artifact return. Keep this as the only live family wait because the accepted 2026-06-26 follow-up/escalation is already spent; no age-based resend or duplicate escalation is truthful from this leaf.",
+      "goal": "Hold the single truthful family-level external wait for the already-routed out-of-runtime human/operator dependencies still supported by durable evidence: (a) VM prerelease row 33 / spec.node-pool-config.skip-gpu-driver authoritative proof on AKS E2Ev3 - GPU - PreRelease (pipeline 465738, rp-gpu-prerelease, eastus2) for Scenario_Skip_GPU_Driver or Scenario_Skip_GPU_Driver_Scriptless with same-contract scenario-level results or exact GPU-carrier blocker proof, and (b) shared-identity rows 75-76 identity/registration artifact return. Keep this as the only live family wait because the accepted 2026-06-26 follow-up/escalation is already spent; no age-based resend or duplicate escalation is truthful from this leaf.",
       "inputs": [],
       "outputs": [
         "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md"
       ],
       "acceptance": [
-        "A returned human/operator or maintainer reply is archived with timestamp, channel, recipient or escalation path, sender/owner, linked packet path or bundle id, and either row-33 approval/send-proof evidence or rows-75/76 shared-identity artifact/value evidence.",
+        "A returned human/operator or maintainer reply is archived with timestamp, channel, recipient or escalation path, sender/owner, linked packet path or bundle id, and either (a) row-33 / spec.node-pool-config.skip-gpu-driver proof naming Scenario_Skip_GPU_Driver or Scenario_Skip_GPU_Driver_Scriptless with scenario-level pass/product-mismatch/GPU-carrier-blocker evidence from AKS E2Ev3 - GPU - PreRelease eastus2, or (b) rows-75/76 shared-identity artifact/value evidence.",
         "The branch remains represented by one exact family-level external wait only; do not split it unless a returned reply/proof or authoritative reroute separates row 33 from rows 75-76 into independently actionable owners."
       ],
       "forbidden": [],
@@ -283,7 +283,7 @@
         "external-human-transport"
       ],
       "depends_on": [],
-      "blocker": "Blocked only on returned external proof or an authoritative reply/reroute for the already-routed human/operator family now limited to (a) VM prerelease row 33 approval/send-proof evidence and (b) shared-identity rows 75-76 identity/registration artifacts. Durable blocker evidence remains in evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md, including the accepted 2026-06-26 follow-up/escalation proof. Age alone is not a truthful resend trigger. If no reply arrives sooner, re-open owner review no earlier than the shared 2026-06-29T16:45:00Z checkpoint, and at that checkpoint only classify whether any new reply/proof/reroute landed; do not auto-resend from this leaf without new evidence.",
+      "blocker": "Blocked only on returned external proof or an authoritative reply/reroute for the already-routed human/operator family now limited to (a) VM prerelease row 33 / spec.node-pool-config.skip-gpu-driver scenario-level evidence from AKS E2Ev3 - GPU - PreRelease (pipeline 465738, rp-gpu-prerelease, eastus2) naming Scenario_Skip_GPU_Driver or Scenario_Skip_GPU_Driver_Scriptless and showing same-contract pass, product mismatch, or exact GPU-carrier blocker, and (b) shared-identity rows 75-76 identity/registration artifacts. Durable blocker evidence remains in evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md plus evidence/archive/prepare-skip-gpu-driver-gpu-prerelease-eastus2-carrier-followup-20260629.md. The accepted 2026-06-26 follow-up/escalation proof is already spent; age alone is not a truthful resend trigger. If no reply arrives sooner, re-open owner review no earlier than the shared 2026-06-29T16:45:00Z checkpoint, and at that checkpoint only classify whether any new reply/proof/reroute landed; do not auto-resend from this leaf without new evidence.",
       "trace": {
         "created_at": "2026-06-22T08:58:13.736Z",
         "created_by": "task-tree-tool"
@@ -296,137 +296,109 @@
       "priority": "P1",
       "owner": "aks-explorer",
       "children": [
-        "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622",
-        "await-human-operator-response-latency-family-checkpoint-20260629"
+        "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622"
       ],
-      "goal": "Keep one visible mid-term focus branch that ties the active single-spec verification wave to the truthful passive wait families without widening risk: drain the current verifier wave, finish the bounded KMS trust-service evidence reconciliation retry, and preserve the human/operator waits until checkpoint, returned proof/reply, redirect, decline, or reroute changes them.",
+      "goal": "Keep one visible mid-term focus branch that ties the active single-spec verification wave to the truthful passive wait families without widening risk: drain the current node-config/OIDC-heavy verifier wave, absorb the repo-local review/repair leaves that turn non-pass artifacts into truthful carrier or verdict decisions, and preserve the human/operator waits until returned proof/reply or reviewed checkpoint follow-up changes them.",
       "context": {
-        "horizon": "12-24h from 2026-06-29T13:40:00Z",
+        "horizon": "12-24h from 2026-06-29T17:05:00Z",
         "success_criteria": [
-          "Spec verification remains the primary active lane: keep the current 10-spec single-spec wave draining in aks-spec-verification-loop, and classify each verifier result as pass, fail, error, or concrete blocker with durable spec-loop evidence.",
-          "Complete the bounded repo-local follow-up reconcile-path-kms-v2-trust-service-public-cluster-private-kv-post-repair-evidence-retry-20260629 without a blind cloud rerun, updating model/spec/evidence surfaces only from accepted artifacts.",
+          "Spec verification remains the primary active lane: keep the current single-spec wave draining in aks-spec-verification-loop while workflowProgress stays at running=10/targetRunning=10, and classify each verifier result as pass, fail, error, or concrete blocker with durable spec-loop evidence.",
+          "Drain the current repo-local review/repair queue without blind cloud reruns: classify the shared runner-termination family, review the OIDC and OSM non-pass artifacts, reconcile the non-live signing-key-rotation skip, and keep the skip-gpu and ssh-public-key carrier fixes bounded to truthful source/carrier repair.",
           "Keep feature-reference and feature-compact loops dormant unless a concrete packet, citation, source-coverage, or compact-artifact signal appears that adds durable repo-local knowledge beyond the current verification wave.",
-          "Do not widen risk from this focus review: allow already-dispatched single-spec workflow execution to continue, but keep the aad-rbac known-run publication wait and the two human/operator wait families passive until their exact artifact, checkpoint, reply, proof, reroute, or decline signals land."
+          "Do not widen risk from this focus review: allow already-dispatched single-spec workflow execution to continue, but keep the external-send-proof human/operator family wait, the aad-rbac publication wait, the westus2 cluster-count family wait, and the ACNS live-slot/gh-az-capable-host wait passive until their exact reply, proof, artifact, checkpoint, reroute, or live-slot signals land."
         ],
         "progress_review": {
-          "last_reviewed_at": "2026-06-29T13:40:00Z",
+          "last_reviewed_at": "2026-06-29T17:05:00Z",
           "status": "updated",
-          "summary": "The focus remains within the approved risk envelope, but the durable content needed refresh: the old two-task repo-local repair tail is gone, and the active surface is now a 10-spec verifier wave plus one bounded KMS evidence-reconciliation retry, with the same 3 passive waits.",
+          "summary": "The approved direction still fits, but the branch needed a durable content refresh: the earlier KMS-centered verifier wave is no longer the active mid-term story. The actual frontier is now a node-config/OIDC-heavy verification-and-review wave with no runnable backlog outside the controller-owned spec loop, plus the same bounded passive waits.",
           "evidence": [
-            "2026-06-29 task-tree summary/frontier at 13:34:00Z shows 11 active leaves, 0 runnable, 0 review, and 3 blocked waits. The active frontier is 10 single-spec verifier leaves plus reconcile-path-kms-v2-trust-service-public-cluster-private-kv-post-repair-evidence-retry-20260629.",
-            "2026-06-29 aks-spec-verification-loop workflowProgress previously reported pending=331 and running=10 at 13:31:20Z, and the latest task-tree frontier at 13:34:00Z still shows a full active verification wave rather than a repo-local-only tail.",
-            "2026-06-29 verify-spec-managedsystem-add-immutability-delete-combined has already moved to done/terminal with workflow run 28372123650 classified as error after SIGTERM interruption, proving the wave is producing concrete reviewed outcomes that now need continued drain rather than a focus pivot.",
-            "2026-06-29 project metrics read tasksCompleted24h=1127, liveRunsStarted24h=0, liveRunsSucceeded24h=0, specUnverifiedCount=0, specFailedCount=0, unknownPathMetric=63. The metric surface still argues against adding new manual live-risk from the focus review even while the existing verifier wave remains active.",
-            "2026-06-29 bun run status -- --json still reports coverage.missingScenarioRefs=0, featuresWithoutPaths=0, pathsWithoutSpec=0, and pathsWithoutEvidence=0, so the immediate gap is execution-result review and evidence/model reconciliation, not source/spec completeness."
+            "2026-06-29 task-tree summary/frontier at 16:58:14Z shows 0 runnable, 0 waiting, 6 active leaves, 6 review leaves, and 4 blocked waits. The active frontier is verify-spec-node-http-proxy-update, verify-spec-node-image-upgrade-operation, verify-spec-node-pool-config-fips-enabled, verify-spec-node-pool-config-kubereserved, repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629, and verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629.",
+            "aks-spec-verification-loop workflowProgress at 2026-06-29T16:33:57.538Z still reports pending=199, running=10, targetRunning=10, done=202, nonPass=59, and openChildren=10, so the controller-owned execution lane remains saturated and useful without adding new manual live probes.",
+            "2026-06-29 owner heartbeat and rollups converted recent verifier output into durable follow-up work: verify-spec-ossku-migration-azurelinux-to-azurelinux3 was accepted as a pass, node-fips/node-http-proxy create runs were collapsed into classify-shared-single-spec-runner-termination-family-20260629, OIDC/OSM leaves were converted to repo-local review tasks, and the human/operator checkpoint wait was truthfully replaced by review-human-operator-response-latency-family-post-checkpoint-20260629.",
+            "2026-06-29 project metrics read tasksCompleted24h=1037, liveRunsStarted24h=0, liveRunsSucceeded24h=0, specUnverifiedCount=0, specFailedCount=0, unknownPathMetric=64. The metric surface still argues against widening into new manual live-risk from this focus review.",
+            "2026-06-29 bun run status -- --json reports features=645, paths=723, coverage.missingScenarioRefs=0, featuresWithoutPaths=0, pathsWithoutSpec=0, and pathsWithoutEvidence=0. The immediate gap is review/execution-result truth repair and model synchronization, not source/spec completeness."
           ]
         },
-        "allowed_risk": "Allow the already-dispatched single-spec workflow wave to continue, plus repo-local result classification, evidence/model/spec-loop synchronization, and the bounded no-rerun KMS trust-service reconciliation retry. Do not launch new manual cloud probes from this focus review, do not widen into speculative new feature families, and keep the aad-rbac publication wait plus the two human/operator wait families passive until their explicit resume signals land.",
+        "allowed_risk": "Allow the already-dispatched single-spec workflow wave to continue, plus repo-local result classification, evidence/model/spec-loop synchronization, and bounded source/carrier repair for the current OIDC/OSM/node-config follow-up leaves. Do not launch new manual cloud probes from this focus review, do not widen into speculative new feature families, and keep the 4 explicit blocked waits passive until their resume signals land.",
         "needs_approval": false,
         "observations": {
-          "frontier_active_leaf_count": 11,
-          "frontier_review_leaf_count": 0,
-          "frontier_blocked_leaf_count": 3,
+          "frontier_active_leaf_count": 6,
+          "frontier_review_leaf_count": 6,
+          "frontier_blocked_leaf_count": 4,
           "frontier_runnable_leaf_count": 0,
           "frontier_waiting_leaf_count": 0,
           "linked_active_task_ids": [
             "aks-spec-verification-loop",
-            "verify-spec-deployment-safeguards-pss-level-change",
-            "verify-spec-kms-v2plus-enable-cmk-from-v2-public",
-            "verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version",
-            "verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms",
-            "verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public",
-            "verify-spec-kms-v2plus-enable-pmk-from-v2-private",
-            "verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
-            "verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
-            "verify-spec-kms-v2plus-negative-cases",
-            "verify-spec-managementplane-addon-failed-recovery",
-            "reconcile-path-kms-v2-trust-service-public-cluster-private-kv-post-repair-evidence-retry-20260629"
+            "verify-spec-node-http-proxy-update",
+            "verify-spec-node-image-upgrade-operation",
+            "verify-spec-node-pool-config-fips-enabled",
+            "verify-spec-node-pool-config-kubereserved",
+            "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
+            "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629"
           ],
-          "linked_review_task_ids": [],
+          "linked_review_task_ids": [
+            "classify-shared-single-spec-runner-termination-family-20260629",
+            "oidcdefrev",
+            "oidcv133rt404",
+            "osmmaybe",
+            "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
+            "review-human-operator-response-latency-family-post-checkpoint-20260629"
+          ],
           "linked_blocked_task_ids": [
-            "await-human-operator-response-latency-family-checkpoint-20260629",
             "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622",
-            "wait-aad-rbac-known-run-28371054186-checkpoint-20260629"
+            "wait-aad-rbac-known-run-28371054186-checkpoint-20260629",
+            "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629",
+            "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629"
           ],
           "signals": [
-            "What the project learned since the last focus review: the earlier aad-rbac and workload-autoscaler repo-local cleanup tail has cleared, managedsystem add+immutability already produced a reviewed terminal error artifact, and the active frontier has refilled into a KMS-heavy verifier wave plus one bounded repo-local KMS evidence retry.",
-            "Are live executions producing useful evidence? The useful execution surface is the already-dispatched single-spec workflow wave, not new manual probes. Metrics still show 0 started / 0 succeeded in the last 24h, so owner attention should go to draining and classifying the current wave rather than widening risk.",
-            "Current blockers remain external/publication waits rather than bad decomposition: one aad-rbac known-run artifact-publication wait and the same two human/operator wait families, each with explicit resume checkpoints or returned-proof conditions.",
-            "Parallel work is filled with concrete executable leaves because the spec loop currently exposes 10 active single-spec verifier leaves plus one bounded repo-local reconciliation retry, while dormant loops stay intentionally empty.",
-            "The next 12-24h focus still matches the project goal if it keeps the spec-verification lane primary, turns the current wave into durable reviewed evidence/model updates, and leaves the three passive waits unchanged until their exact signals land."
+            "What the project learned since the last focus review: the KMS-centered active wave has cleared from the visible frontier, recent verifier output produced one accepted pass plus several truthful repo-local follow-up leaves, and the human/operator checkpoint family has advanced from passive wait to post-checkpoint review without widening cloud risk.",
+            "Are live executions producing useful evidence? Yes, but only through the already-dispatched single-spec controller wave. Metrics still show 0 manual live starts / 0 successes in the last 24h, so owner attention should stay on draining and classifying the existing wave rather than starting fresh manual probes.",
+            "Current blockers are mostly external/publication/capacity waits rather than bad decomposition: one human/operator proof-return family wait, one aad-rbac artifact-publication wait, one westus2 environment-family recovery wait, and one ACNS promotion/live-host wait, all with explicit resume signals.",
+            "Parallel work is filled with concrete executable or review leaves because the spec loop still owns 10 running children while the visible owner frontier contains 6 active repo-local/spec-review leaves and 6 review leaves; feature-reference and feature-compact can stay dormant without starving useful work.",
+            "The next 12-24h focus still matches the project goal if it keeps the spec-verification lane primary, turns the current non-pass artifacts into durable carrier/verdict decisions, and leaves the 4 passive waits unchanged until their exact signals land."
           ]
         },
-        "rollup_summary": "2026-06-29 watchdog blocked-frontier review reaffirms this branch as a pure external-wait compression lane and repairs no decomposition because none is currently false. Both child waits remain truthful and non-duplicative: await-human-operator-response-latency-family-checkpoint-20260629 is the sole checkpoint-driven family review for the governed reply-latency waits at 2026-06-29T16:45:00Z, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the sole already-routed proof-return wait for VM prerelease row 33 plus shared-identity rows 75-76. No resend, source-inspection, setup, or escalation leaf is created from this branch before returned proof/reply/redirect/decline or the shared checkpoint changes blocker truth.",
-        "archived_done_leaf_count": 22,
+        "rollup_summary": "2026-06-29 owner accepted the post-checkpoint human/operator latency rereview: no new durable reply, proof, or reroute evidence exists, so this focus branch continues to carry one exact passive external-send-proof wait for the out-of-runtime family while the active spec-verification lane absorbs repo-local repairs and resume-surface checks.",
+        "archived_done_leaf_count": 2,
         "rollup_archives": [
           {
-            "archive": "tasks/archive/done-leaves-20260629060921319.json",
+            "archive": "tasks/archive/done-leaves-20260629183405069.json",
             "archived": 1,
-            "at": "2026-06-29T06:09:21.319Z",
-            "summary": "2026-06-29 blocked-frontier hygiene review removes the misleading pre-checkpoint active placeholder. Before 2026-06-29T16:45:00Z there is no truthful runnable owner action in this branch: the live frontier is exactly two consolidated human/operator family waits, one for shared reply latency and one for already-routed external proof return. Both waits already preserve the checkpoint and earlier-resume conditions, so the branch should stay blocked until a durable reply/proof/redirect/decline arrives or the checkpoint is actually reached.",
+            "at": "2026-06-29T18:34:05.069Z",
+            "summary": "2026-06-29 owner accepted the post-checkpoint human/operator latency rereview: no new durable reply, proof, or reroute evidence exists, so this focus branch continues to carry one exact passive external-send-proof wait for the out-of-runtime family while the active spec-verification lane absorbs repo-local repairs and resume-surface checks.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "review-human-operator-family-checkpoint-20260629-1645z"
+              "review-human-operator-response-latency-family-post-checkpoint-20260629"
             ]
           },
           {
-            "archive": "tasks/archive/done-leaves-20260629060224462.json",
+            "archive": "tasks/archive/done-leaves-20260629170613657.json",
             "archived": 1,
-            "at": "2026-06-29T06:02:24.463Z",
-            "summary": "2026-06-29 task-completed owner review accepts the row-37 managed AAD evidence-path reconciliation: mounted AKS RP source, maintained repo-local packet/spec/replay/model surfaces, and the accepted westus2 9/10 + HTTP 409 branch evidence now point at one truthful carrier for path.aad-rbac.managed-v2-lifecycle. Archive that completed child because its durable meaning is preserved on this parent, leaving this focus branch in its intended blocked-only shape: the human/operator latency checkpoint wait and the older out-of-runtime send-proof family wait remain the only live children until reply, proof, reroute, decline, or the shared 2026-06-29T16:45:00Z checkpoint changes blocker state.",
+            "at": "2026-06-29T17:06:13.658Z",
+            "summary": "2026-06-29 owner review accepted the post-checkpoint human/operator latency rereview: no new durable reply, proof, or reroute evidence exists, so the branch continues to carry one exact passive external-send-proof wait for the out-of-runtime family while the active spec-verification lane absorbs repo-local repairs and resume-surface checks.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "reconcile-row37-managed-aad-evidence-path-20260629"
-            ]
-          },
-          {
-            "archive": "tasks/archive/done-leaves-20260629055432597.json",
-            "archived": 1,
-            "at": "2026-06-29T05:54:32.597Z",
-            "summary": "2026-06-29 task-completed owner review accepted the mounted-source row-37 carrier reconciliation for path.aad-rbac.managed-v2-lifecycle: exact mounted AKS RP source and repo-local carriers now agree on the VM prerelease Scenario_AAD boundary, and the retained reviewed-exception fail verdict stays focused on the positive adminGroupObjectIDs+tenantID update branch rather than any missing-source ambiguity. Archive that completed child because its durable meaning is now preserved on this parent, returning the branch to its intended shape of only the two truthful human/operator family waits until reply/proof/reroute or the shared 2026-06-29T16:45:00Z checkpoint changes blocker state.",
-            "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "classify-vm-prerelease-aad-rbac-managed-v2-lifecycle-source-alignment-20260629"
-            ]
-          },
-          {
-            "archive": "tasks/archive/done-leaves-20260629051024429.json",
-            "archived": 1,
-            "at": "2026-06-29T05:10:24.429Z",
-            "summary": "2026-06-29 owner review accepted the row-33 mounted-source closure note: VM prerelease row 33 is now source-bounded to Scenario_VMs_AcceleratedNetworking on the shared VirtualMachines + VMsAgentPoolAutoscalePreview carrier with the mixedskupool two-entry manual mixed-SKU system-pool input and per-SKU NIC EnableAcceleratedNetworking true/false expectation. That closes repo-local source ambiguity for row 33 without reopening execution. This focus branch is now purely an external-wait compression branch: the single human/operator latency checkpoint wait remains the truthful timer-gated family hold, and the external send-proof family remains the only live blocker for returned approval/proof on row 33 plus the already-routed shared-identity artifact requests.",
-            "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "map-vm-prerelease-mounted-source-coverage-row33-20260629"
-            ]
-          },
-          {
-            "archive": "tasks/archive/done-leaves-20260629022709358.json",
-            "archived": 1,
-            "at": "2026-06-29T02:27:09.358Z",
-            "summary": "2026-06-29 task-completed owner review accepts the mounted-source row-37 carrier reconciliation for path.aad-rbac.managed-v2-lifecycle: exact mounted AKS RP source and repo-local carriers now agree on the VM prerelease Scenario_AAD boundary, and the retained reviewed-exception fail verdict stays focused on the positive adminGroupObjectIDs+tenantID update branch rather than any missing-source ambiguity. Archive that completed child because its durable meaning is now preserved on this parent, returning the branch to its intended shape of only the two truthful human/operator family waits until reply/proof/reroute or the shared 2026-06-29T16:45:00Z checkpoint changes blocker state.",
-            "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "vm-prerelease-row37-mounted-source-carrier-reconciliation-20260629"
+              "rereview-human-operator-response-latency-family-post-checkpoint-20260629"
             ]
           }
         ]
       },
       "acceptance": [
-        "This branch remains the single visible carrier for its two direct external wait leaves: await-human-operator-response-latency-family-checkpoint-20260629 for the governed eight-wait reply family, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 for the older out-of-runtime proof family.",
-        "Do not create speculative source/spec/setup/rerun/send leaves from this focus branch before the shared 2026-06-29T16:45:00Z checkpoint; reopen or replace a child only on returned proof/reply, redirect, decline, explicit steering, or a concrete reviewed repair signal."
+        "This branch remains the single visible carrier for its two direct human/operator family leaves: review-human-operator-response-latency-family-post-checkpoint-20260629 for the post-checkpoint latency-family review and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 for the older out-of-runtime proof-return family.",
+        "Do not create speculative source/spec/setup/rerun/send leaves from this focus branch unless a returned proof/reply, the post-checkpoint review outcome, a redirect/decline, explicit steering, or a concrete reviewed repair signal makes one carrier newly actionable."
       ],
       "trace": {
         "created_at": "2026-06-23T02:14:18Z",
         "created_by": "focus-progress-review",
-        "rolled_up_at": "2026-06-29T13:40:48.984Z",
+        "rolled_up_at": "2026-06-29T18:34:05.069Z",
         "rolled_up_by": "task-tree-tool",
-        "reviewed_at": "2026-06-29T13:40:00Z",
+        "reviewed_at": "2026-06-29T17:05:00Z",
         "reviewed_by": "focus-plan-review"
       },
-      "updated_at": "2026-06-29T13:40:00Z",
+      "updated_at": "2026-06-29T17:05:00Z",
       "state": "blocked",
-      "result": "2026-06-29 focus review kept the direction inside the approved risk envelope and refreshed the branch to match the actual frontier: the focus is now the active 10-spec verifier wave plus the bounded KMS evidence retry, with the same 3 passive waits.",
-      "blocker": "Direct external-wait children remain blocked until checkpoint/reply/proof/reroute signals land, but the overall focus plan stays active because linked verification work continues in aks-spec-verification-loop. Do not create duplicate resend, setup, source-inspection, or cloud-rerun leaves from this branch before those explicit resume signals."
+      "result": "2026-06-29 focus-plan refresh kept the direction inside the approved risk envelope and updated the branch to match the actual node-config/OIDC-heavy verification-and-review wave: 6 active leaves, 6 review leaves, and 4 passive waits with no separate runnable backlog outside the spec loop.",
+      "blocker": "Direct human/operator wait children remain blocked until reply/proof/reroute signals land, and the other linked blocked leaves remain passive until their exact publication, recovery, or live-slot signals appear. The overall focus plan stays active because linked verification and repo-local review work continues in aks-spec-verification-loop; do not create duplicate resend, setup, source-inspection, or new manual cloud-rerun leaves from this branch without those explicit resume signals."
     },
     "aks-spec-verification-loop": {
       "id": "aks-spec-verification-loop",
@@ -436,23 +408,16 @@
       "priority": "P1",
       "owner": "aks-explorer",
       "children": [
-        "wait-aad-rbac-known-run-28371054186-checkpoint-20260629",
         "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629",
-        "verify-spec-node-fips-ossku-azurelinux-create",
-        "verify-spec-node-fips-ossku-ubuntu-create",
-        "verify-spec-node-http-proxy-create",
-        "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629",
-        "verify-spec-node-http-proxy-update",
-        "verify-spec-node-image-upgrade-operation",
-        "verify-spec-node-pool-config-fips-enabled",
-        "verify-spec-node-pool-config-kubereserved",
-        "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
-        "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
-        "verify-spec-ossku-migration-azurelinux-to-azurelinux3",
-        "osmmaybe",
-        "oidcdefrev",
-        "oidcv133rt404",
-        "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629"
+        "review-spec-node-http-proxy-create-timeout90-run-28389908499-20260629",
+        "wait-real-cluster-tuple-response-for-spec-oidc-issuer-v133-explicit-enable-runtime-20260629",
+        "review-spec-network-acns-basic-retina-update-retina-enterprise-run-28391146628-20260629",
+        "verify-spec-private-cluster-vnet-integration-update-private",
+        "review-spec-aad-rbac-known-run-28371054186-on-publication-20260629",
+        "verify-spec-rp-cluster-lifecycle-upgrade-k8s-version",
+        "review-spec-oidc-default-by-version-run-28391106496-on-publication-20260629",
+        "verify-spec-rp-nodepool-lifecycle-scale-manual",
+        "sweep-same-run-publication-frontier-20260629"
       ],
       "goal": "Preserve the durable spec-verification lane, keep the current active single-spec verification/retry frontier truthful while controller throughput stays above target, and use repo-local specLoopFollowup leaves only when reviewed non-pass results need bounded reconciliation instead of another blind cloud rerun.",
       "inputs": [
@@ -485,86 +450,83 @@
           "completionReady": false,
           "executionDrained": false,
           "reason": "spec-loop state still has non-terminal specs",
-          "pending": 199,
+          "pending": 149,
           "running": 10,
           "targetRunning": 10,
           "surplusRunning": 0,
-          "pass": 184,
+          "pass": 206,
           "fail": 0,
-          "error": 59,
-          "nonPass": 59,
-          "done": 202,
+          "error": 79,
+          "nonPass": 79,
+          "done": 210,
           "openChildren": 10,
           "openFollowups": 0,
           "lastPulseCreated": 0,
           "lastPulseCreatedFollowups": 0,
           "lastPulseAssigned": 0,
           "lastPulseReconciledArchivedDone": 0,
-          "updatedAt": "2026-06-29T16:33:57.538Z"
+          "updatedAt": "2026-06-29T18:12:02.451Z"
         },
         "targetRunning": 10,
-        "rollup_summary": "2026-06-29 owner planning review rejected the blind meaning of the auto-accepted verify-spec-oidc-issuer-signing-key-rotation completion: workflow run 28387418403 reported top-level status=passed only because the single-spec runner skipped spec.oidc-issuer.signing-key-rotation as test_not_implemented/non-live-executable, so new leaf reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629 now carries the repo-local carrier/source-equivalent decision instead of any blind rerun. The spec-verification lane otherwise stays intentionally saturated with the existing active verifier wave and exact family waits.",
-        "archived_done_leaf_count": 1672,
+        "rollup_summary": "2026-06-29 owner accepted the westus2 cluster-count family post-checkpoint review: no new durable same-surface recovery proof, reviewed alternate live-surface proof, or authoritative reroute/decline landed, so wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the single truthful family blocker. The spec-verification lane therefore stays intentionally narrow: three assigned single-spec verifiers continue draining the active wave, the four GitHub run publication waits still stand until same-run artifacts or terminal status appear, and the exact external tuple wait remains unchanged until the routed reply changes bounded next action.",
+        "archived_done_leaf_count": 1789,
         "rollup_archives": [
           {
-            "archive": "tasks/archive/done-leaves-20260629163951334.json",
-            "archived": 12,
-            "at": "2026-06-29T16:39:51.335Z",
-            "summary": "2026-06-29 owner planning review rejected the blind meaning of the auto-accepted verify-spec-oidc-issuer-signing-key-rotation completion: workflow run 28387418403 reported top-level status=passed only because the single-spec runner skipped spec.oidc-issuer.signing-key-rotation as test_not_implemented/non-live-executable, so new leaf reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629 now carries the repo-local carrier/source-equivalent decision instead of any blind rerun. The spec-verification lane otherwise stays intentionally saturated with the existing active verifier wave and exact family waits.",
+            "archive": "tasks/archive/done-leaves-20260629183241319.json",
+            "archived": 1,
+            "at": "2026-06-29T18:32:41.319Z",
+            "summary": "2026-06-29 owner accepted the westus2 cluster-count family post-checkpoint review: no new durable same-surface recovery proof, reviewed alternate live-surface proof, or authoritative reroute/decline landed, so wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the single truthful family blocker. The spec-verification lane therefore stays intentionally narrow: three assigned single-spec verifiers continue draining the active wave, the four GitHub run publication waits still stand until same-run artifacts or terminal status appear, and the exact external tuple wait remains unchanged until the routed reply changes bounded next action.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "reconcile-spec-node-pool-config-disable-ssh-lifecycle-run-28386236395-artifacts-20260629",
-              "verify-spec-node-pool-config-kata-vm-isolation",
-              "reconcile-spec-network-swift-v2-network-policy-cilium-run-28382578674-artifacts-20260629",
-              "verify-spec-node-pool-config-motd-customization",
-              "verify-spec-node-pool-config-node-taints",
-              "verify-spec-node-pool-config-ssh-public-key-update-windows",
-              "verify-spec-oidc-issuer-default-by-version",
-              "verify-spec-oidc-issuer-discovery-jwks",
-              "verify-spec-oidc-issuer-jwks-endpoint-validation",
-              "verify-spec-oidc-issuer-post-delete-cleanup",
-              "verify-spec-oidc-issuer-signing-key-rotation",
-              "verify-spec-oidc-issuer-v133-explicit-enable-runtime"
+              "review-westus2-cluster-count-preflight-family-post-checkpoint-20260629"
             ]
           },
           {
-            "archive": "tasks/archive/done-leaves-20260629163821085.json",
-            "archived": 1,
-            "at": "2026-06-29T16:38:21.086Z",
-            "summary": "2026-06-29 owner completion review accepted verify-spec-node-pool-config-trusted-launch with artifact-backed pass evidence from workflow run 28387050195: the top-level result.json reports status=passed and spec.node-pool-config.trusted-launch=pass, with SecureBoot+vTPM persisted and validated on a 2-node cluster, and workflow-metadata loop_key matches the verifier attempt. The spec-verification lane otherwise remains intentionally saturated at targetRunning=10/openChildren=10 with the same active verifier wave and repo-local follow-up leaves, so no new refill or rerun was created from this wake. Existing blocked family waits for aad-rbac artifact publication, westus2 preflight recovery, and ACNS retina-enterprise promotion remain the single truthful passive waits after prior owner rechecks; no new blocker family was introduced by this pass.",
+            "archive": "tasks/archive/done-leaves-20260629182926252.json",
+            "archived": 3,
+            "at": "2026-06-29T18:29:26.252Z",
+            "summary": "2026-06-29 owner accepted the publication-waits family reconciliation as already-accounted-for lane knowledge: the archived worker review confirmed no newer same-run publication or terminal surfaces for runs 28371054186, 28389908499, 28391106496, and 28391146628, so the four blocked review-on-publication leaves remain unchanged. The lane also archives the completed rp-nodepool-lifecycle.upgrade-nodeimage pass and the accepted rp.available-agent-pool-versions carrier-repair/reconciliation slice. Next live owner follow-up is the new bounded westus2 cluster-count family post-checkpoint review while the three assigned single-spec verifiers continue draining the active wave.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "verify-spec-node-pool-config-trusted-launch"
+              "verify-spec-rp-nodepool-lifecycle-upgrade-nodeimage",
+              "reconcile-spec-rp-available-agent-pool-versions-run-28392970570-error-20260629",
+              "repair-spec-rp-available-agent-pool-versions-response-shape-carrier-20260629"
             ]
           },
           {
-            "archive": "tasks/archive/done-leaves-20260629163647989.json",
+            "archive": "tasks/archive/done-leaves-20260629182619579.json",
             "archived": 1,
-            "at": "2026-06-29T16:36:47.989Z",
-            "summary": "2026-06-29 owner planning review repaired the OIDC/OSM verifier branch after two worker completions and one mis-accepted terminal review. verify-spec-open-service-mesh-addon-lifecycle is accepted only as carrier evidence that single-spec live execution is not truthful for this path, with osmmaybe created to map the exact source/check-only or shared-cluster carrier before any requeue. verify-spec-oidc-issuer-v133-explicit-enable-runtime is accepted only as nonterminal runtime-failure evidence; oidcv133rt404 must inspect run 28387483218 to classify the GET-cluster 404 as missing carrier, access scope, runner drift, or artifact ceiling. verify-spec-oidc-issuer-default-by-version had been auto-accepted to done despite a blocked/error outcome from run 28387129302, so oidcdefrev now carries the required owner review of the four failed version-gate assertions to decide product behavior vs spec drift vs runner/artifact gap. The active single-spec frontier remains saturated at 10, so these repo-local evidence/carrier leaves stay as the next truthful runnable backlog rather than blind live reruns.",
+            "at": "2026-06-29T18:26:19.580Z",
+            "summary": "2026-06-29 planning review accepted two repo-local review leaves and reconciled a stale worker-completion wake for the already-rolled-up agentpool-upgrade-resume dedicated carrier repair. The spec lane now knows: (1) publication-wait family rereview found no newer same-run artifact or terminal surfaces for runs 28371054186, 28389908499, 28391106496, and 28391146628, so their blocked review-on-publication leaves remain the single truthful waits; (2) rp.available-agent-pool-versions carrier repair is landed repo-locally with authoritative properties.agentPoolVersions parsing, exact current-version membership assertion, bounded raw GET body capture, and passing --check validation, so the truthful successor is workflow-ref publication followed by one bounded same-spec rerun; (3) the separate worker-completion event for spec.rp-nodepool-lifecycle.agentpool-upgrade-resume references a task id no longer present in the live tree and is treated as already-accounted-for carrier-repair work, not new product verification. Active focus remains the four assigned verifier leaves while blocked work stays concentrated in exact publication/external waits.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "verify-spec-open-service-mesh-addon-lifecycle"
+              "reconcile-spec-loop-publication-review-waits-family-20260629"
             ]
           },
           {
-            "archive": "tasks/archive/done-leaves-20260629163302801.json",
+            "archive": "tasks/archive/done-leaves-20260629182506518.json",
             "archived": 1,
-            "at": "2026-06-29T16:33:02.801Z",
-            "summary": "2026-06-29 owner accepted the skip-gpu-driver artifact review as a nonterminal source-drift classification and converted it into one concrete repair leaf: mounted source shows Scenario_Skip_GPU_Driver is a baseline-cluster create followed by Install and None GPU add-pool validation plus nvidia-smi comparison, while run 28386826080 only proved a divergent create-time GPU-pool request failing with an incomplete HTTP 400 artifact ceiling. A new backlog task repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629 now owns source-equivalent carrier repair and raw ARM error preservation before any rerun. The accepted ssh-public-key-update-linux preflight repair also remains captured at parent level, with its rerun-ready verifier backlog leaf preserved for the next truthful controller slot, while the active verifier wave stays at target and blocked family waits remain unchanged.",
+            "at": "2026-06-29T18:25:06.518Z",
+            "summary": "2026-06-29 planning update reconciled the stale worker-completion wake for spec.rp.operation-status-polling and accepted the repo-local agentpool-upgrade-resume carrier repair. The archived verifier leaf already truthfully preserves the 28393003343 pass: workflow metadata loop_key matches the verifier lineage, top-level result single-rp-operation-status-polling_119114 reports status=passed with spec.rp.operation-status-polling pass reason '3/3 claims passed', and the nested spec-runner result records passed terminal assertions through Azure-AsyncOperation polling on westus2. The lane now also preserves the accepted dedicated carrier repair for rp-nodepool-lifecycle.agentpool-upgrade-resume: checked-in scenario + wrapper align with mounted source, local --check/vitest validation pass, and the next truthful action is one bounded live rerun when explicitly gated. Live work remains the current narrow active verifier wave plus publication-wait reconciliation and the existing exact blocked waits; no extra verifier leaf was added in this pass because the lane still has multiple active leaves and no newly reviewed gap demanded a replacement branch.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "reconcile-spec-node-pool-config-skip-gpu-driver-run-28386826080-artifacts-20260629"
+              "repair-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-dedicated-carrier-20260629"
             ]
           },
           {
-            "archive": "tasks/archive/done-leaves-20260629163216883.json",
-            "archived": 1,
-            "at": "2026-06-29T16:32:16.883Z",
-            "summary": "2026-06-29 owner accepted the ssh-public-key-update-linux preflight repair as real repo-local progress and converted it into the next truthful spec action: saved run 28386900939 remains only preflight ENOENT evidence with no execute/product verdict, the repaired runner/scenario-lib/ssh-public-key-live-carrier.ts now passes check mode both with and without the VM prerelease coverage ledger, and a new backlog verifier leaf verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629 now holds the rerun-ready cloud retry. Existing node-pool-config passes remain accepted at parent level, the active verifier wave stays saturated, and the exact blocked family waits remain unchanged until their stated checkpoints or earlier durable evidence changes them.",
+            "archive": "tasks/archive/done-leaves-20260629182228635.json",
+            "archived": 7,
+            "at": "2026-06-29T18:22:28.635Z",
+            "summary": "2026-06-29 planning update accepted the containerd-config-validation pass into durable lane memory and converted the largest blocked review family into one active reconciliation slice. Archived done verifier leaves now preserve accepted pass coverage for rp.available-agent-pool-versions, rp.operation-status-polling, rp.snapshot-apply-to-new-pool, rp.snapshot-create-from-nodepool, and runtime-container.containerd-config-validation plus the repo-local remediator and agentpool-upgrade-resume review followup closures. Live work remains a narrow mix of active single-spec verifiers, two bounded repo-local reconciliation/repair leaves, the new publication-wait family review, and exact external waits.",
             "reason": "owner rolled up completed child tasks",
             "task_ids": [
-              "repair-ssh-public-key-update-linux-preflight-wiring-20260629"
+              "verify-spec-rp-available-agent-pool-versions",
+              "verify-spec-rp-operation-status-polling",
+              "verify-spec-rp-snapshot-apply-to-new-pool",
+              "verify-spec-rp-snapshot-create-from-nodepool",
+              "verify-spec-runtime-container-containerd-config-validation",
+              "repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629",
+              "review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629"
             ]
           }
         ],
@@ -577,11 +539,11 @@
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
         "last_session": "s_task_aks-spec-verification-loop",
-        "last_controller_pulse_at": "2026-06-29T16:33:57.523Z",
+        "last_controller_pulse_at": "2026-06-29T18:12:02.434Z",
         "last_controller_pulse_summary": "Spec loop aks-spec-verification-loop controller pulse created 0 child task(s); releasing controller slot before child assignment.",
         "throughput_tuned_at": "2026-06-29T04:17:47.532Z",
         "throughput_tuned_by": "capacity-headroom-balance",
-        "rolled_up_at": "2026-06-29T16:39:51.335Z",
+        "rolled_up_at": "2026-06-29T18:32:41.319Z",
         "rolled_up_by": "task-tree-tool",
         "reopened_at": "2026-06-29T09:11:33.860Z",
         "reopened_by": "codex",
@@ -598,35 +560,6 @@
       "session_history": [
         "s_task_aks-spec-verification-loop"
       ]
-    },
-    "await-human-operator-response-latency-family-checkpoint-20260629": {
-      "id": "await-human-operator-response-latency-family-checkpoint-20260629",
-      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
-      "state": "blocked",
-      "kind": "domain_leaf",
-      "priority": "P2",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Hold the single truthful post-checkpoint wait for the shared human:operator latency family until the 2026-06-29T16:45:00Z checkpoint arrives or a durable reply/proof/redirect/decline lands earlier, governing the eight reply-needed waits in one place. This family wait is the sole owner follow-up driver at the checkpoint: if silence still persists then, review the governed family once and send one combined follow-up/escalation only if the durable evidence still supports it.",
-      "inputs": [],
-      "outputs": [
-        "../aks-rp-e2e/evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md"
-      ],
-      "acceptance": [
-        "Task remains blocked only while the shared 2026-06-29T16:45:00Z checkpoint is still in the future and no earlier durable reply/proof/redirect/decline changes the governed wait family.",
-        "At or after the checkpoint, the next worker re-reads evidence/archive/prepare-human-operator-response-latency-checkpoint-packet-20260628.md against current waits and either records one combined follow-up/escalation for the eight reply-needed waits or documents the exact reason shared follow-up is no longer truthful.",
-        "Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as passive unless a real reroute/proof/reply appears; do not send an age-only duplicate reminder."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "operator-response:human-operator-latency-family"
-      ],
-      "depends_on": [],
-      "blocker": "Blocked only on time or earlier durable reply-state change. Do not act before 2026-06-29T16:45:00Z: evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md shows an earlier follow-up would be a false duplicate. Resume sooner only if a durable reply/proof/redirect/decline changes one of the governed waits; otherwise resume at or after 2026-06-29T16:45:00Z to review the family once and send at most one combined follow-up/escalation if silence still persists.",
-      "trace": {
-        "created_at": "2026-06-28T21:15:59.867Z",
-        "created_by": "task-tree-tool"
-      }
     },
     "aks-feature-reference-loop": {
       "id": "aks-feature-reference-loop",
@@ -933,35 +866,6 @@
       "done_at": "2026-06-29T04:30:16.190Z",
       "done_by": "task-tree-tool"
     },
-    "wait-aad-rbac-known-run-28371054186-checkpoint-20260629": {
-      "id": "wait-aad-rbac-known-run-28371054186-checkpoint-20260629",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "blocked",
-      "kind": "domain_leaf",
-      "priority": "P2",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Hold the single truthful remote-publication wait for already-dispatched run 28371054186 of spec.aad-rbac.nonaad-to-aadv2-migration until the 2026-06-29T18:15:00Z checkpoint or an earlier first downloadable artifact/terminal result appears, and keep duplicate reruns/setup work closed because this existing run is still the earliest truthful evidence source.",
-      "inputs": [],
-      "outputs": [
-        "../aks-rp-e2e/evidence/archive/aad-rbac-known-run-28371054186-checkpoint-review-20260629.md"
-      ],
-      "acceptance": [
-        "The tree preserves one live wait for run 28371054186 that names the exact 2026-06-29T18:15:00Z checkpoint and the earlier-resume condition of first downloadable artifact or terminal result.",
-        "The existing checkpoint evidence note is cited as proof that the pre-checkpoint session performed no compliant recheck and that an earlier follow-up would be duplicate noise.",
-        "No cloud rerun or speculative classification is proposed before the checkpoint; the next truthful action is a post-checkpoint artifact/terminal-result review."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
-      ],
-      "depends_on": [],
-      "blocker": "Blocked only on remote workflow artifact publication or terminal completion of already-dispatched run 28371054186 for spec.aad-rbac.nonaad-to-aadv2-migration. 2026-06-29 owner review rechecked the environment-overblock warning and confirmed there is still no truthful local setup repair, alternate environment, or duplicate rerun that can beat the first downloadable artifact or terminal status from this exact run. Resume at the 2026-06-29T18:15:00Z checkpoint or sooner if a durable artifact/result lands.",
-      "trace": {
-        "created_at": "2026-06-29T13:04:22.940Z",
-        "created_by": "task-tree-tool"
-      }
-    },
     "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629": {
       "id": "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629",
       "parent_id": "aks-spec-verification-loop",
@@ -991,555 +895,118 @@
         "created_by": "task-tree-tool"
       }
     },
-    "verify-spec-node-fips-ossku-azurelinux-create": {
-      "id": "verify-spec-node-fips-ossku-azurelinux-create",
+    "review-spec-node-http-proxy-create-timeout90-run-28389908499-20260629": {
+      "id": "review-spec-node-http-proxy-create-timeout90-run-28389908499-20260629",
       "parent_id": "aks-spec-verification-loop",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
-      "priority": "P1",
+      "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Run and review spec.node-fips.ossku-azurelinux-create through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-fips.ossku-azurelinux-create",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
+      "goal": "Hold the owner review slot for already-dispatched rerun 28389908499 for spec.node-http-proxy.create-timeout90 and resume at the first durable artifact-publication or terminal-completion surface.",
+      "inputs": [],
       "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
+        "../aks-rp-e2e/evidence/archive/spec-node-http-proxy-create-timeout90-run-28389908499-review-20260629.md"
       ],
       "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-fips.ossku-azurelinux-create"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-fips.ossku-azurelinux-create",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T15:42:42.684Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-fips-ossku-azurelinux-create_20260629154242",
-        "assigned_at": "2026-06-29T15:42:42.750Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-fips-ossku-azurelinux-create",
-        "worker_started_attempt_id": "a_verify-spec-node-fips-ossku-azurelinux-create_20260629154242",
-        "worker_started_at": "2026-06-29T15:43:12.838Z",
-        "last_worker_result": "blocked",
-        "last_worker_claim": "blocked",
-        "last_worker_summary": "Spec spec.node-fips.ossku-azurelinux-create workflow run 28384344082 classified as error. Loop key: verify-spec-node-fips-ossku-azurelinux-create-a_verify-spec-node-fips-ossku-azurelinux-cre. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384344082 Result: runs/test-results/single-node-fips-ossku-azurelinux-create_341007/artifacts/node-fips-ossku-azurelinux-create/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384344082/aks-rp-e2e-28384344082-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384344082/aks-rp-e2e-28384344082-spec-test-results/test-results/single-node-fips-ossku-azurelinux-create_341007/result.json run watch issue: GitHub run completed with conclusion failure",
-        "last_worker_completed_at": "2026-06-29T16:43:57.601Z",
-        "last_worker_evidence": []
-      },
-      "session_id": "s_task_verify-spec-node-fips-ossku-azurelinux-create",
-      "session_history": [
-        "s_task_verify-spec-node-fips-ossku-azurelinux-create"
-      ],
-      "result": "Spec spec.node-fips.ossku-azurelinux-create workflow run 28384344082 classified as error. Loop key: verify-spec-node-fips-ossku-azurelinux-create-a_verify-spec-node-fips-ossku-azurelinux-cre. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384344082 Result: runs/test-results/single-node-fips-ossku-azurelinux-create_341007/artifacts/node-fips-ossku-azurelinux-create/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384344082/aks-rp-e2e-28384344082-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384344082/aks-rp-e2e-28384344082-spec-test-results/test-results/single-node-fips-ossku-azurelinux-create_341007/result.json run watch issue: GitHub run completed with conclusion failure",
-      "evidence": []
-    },
-    "verify-spec-node-fips-ossku-ubuntu-create": {
-      "id": "verify-spec-node-fips-ossku-ubuntu-create",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "review",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-fips.ossku-ubuntu-create through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-fips.ossku-ubuntu-create",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-fips.ossku-ubuntu-create"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-fips.ossku-ubuntu-create",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T15:43:25.395Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-fips-ossku-ubuntu-create_20260629154325",
-        "assigned_at": "2026-06-29T15:43:25.414Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-fips-ossku-ubuntu-create",
-        "worker_started_attempt_id": "a_verify-spec-node-fips-ossku-ubuntu-create_20260629154325",
-        "worker_started_at": "2026-06-29T15:43:42.248Z",
-        "last_worker_result": "blocked",
-        "last_worker_claim": "blocked",
-        "last_worker_summary": "Spec spec.node-fips.ossku-ubuntu-create workflow run 28384375236 classified as error. Loop key: verify-spec-node-fips-ossku-ubuntu-create-a_verify-spec-node-fips-ossku-ubuntu-create_2026. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384375236 Result: runs/test-results/single-node-fips-ossku-ubuntu-create_414162/artifacts/node-fips-ossku-ubuntu-create/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384375236/aks-rp-e2e-28384375236-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384375236/aks-rp-e2e-28384375236-spec-test-results/test-results/single-node-fips-ossku-ubuntu-create_414162/result.json run watch issue: GitHub run completed with conclusion failure",
-        "last_worker_completed_at": "2026-06-29T16:44:30.571Z",
-        "last_worker_evidence": []
-      },
-      "session_id": "s_task_verify-spec-node-fips-ossku-ubuntu-create",
-      "session_history": [
-        "s_task_verify-spec-node-fips-ossku-ubuntu-create"
-      ],
-      "result": "Spec spec.node-fips.ossku-ubuntu-create workflow run 28384375236 classified as error. Loop key: verify-spec-node-fips-ossku-ubuntu-create-a_verify-spec-node-fips-ossku-ubuntu-create_2026. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384375236 Result: runs/test-results/single-node-fips-ossku-ubuntu-create_414162/artifacts/node-fips-ossku-ubuntu-create/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384375236/aks-rp-e2e-28384375236-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384375236/aks-rp-e2e-28384375236-spec-test-results/test-results/single-node-fips-ossku-ubuntu-create_414162/result.json run watch issue: GitHub run completed with conclusion failure",
-      "evidence": []
-    },
-    "verify-spec-node-http-proxy-create": {
-      "id": "verify-spec-node-http-proxy-create",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "review",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-http-proxy.create through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-http-proxy.create",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
+        "GitHub run 28389908499 reaches a downloadable artifact or terminal status and the result is reviewed against the older 60-minute SIGTERM family.",
+        "The review records whether the 90-minute carrier changed only runner-envelope behavior or also produced a product verdict/blocker for spec.node-http-proxy.create."
       ],
       "forbidden": [],
       "conflict_scope": [
         "spec:spec.node-http-proxy.create"
       ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-http-proxy.create",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
+      "depends_on": [],
       "trace": {
-        "created_at": "2026-06-29T15:44:08.078Z",
+        "created_at": "2026-06-29T17:19:53.266Z",
         "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-http-proxy-create_20260629154408",
-        "assigned_at": "2026-06-29T15:44:08.098Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-http-proxy-create",
-        "worker_started_attempt_id": "a_verify-spec-node-http-proxy-create_20260629154408",
-        "worker_started_at": "2026-06-29T15:44:16.382Z",
-        "last_worker_result": "blocked",
-        "last_worker_claim": "blocked",
-        "last_worker_summary": "Spec spec.node-http-proxy.create workflow run 28384412888 classified as error. Loop key: verify-spec-node-http-proxy-create-a_verify-spec-node-http-proxy-create_20260629154408. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384412888 Result: runs/test-results/single-node-http-proxy-create_441320/artifacts/node-http-proxy-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384412888/aks-rp-e2e-28384412888-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384412888/aks-rp-e2e-28384412888-spec-test-results/test-results/single-node-http-proxy-create_441320/result.json run watch issue: GitHub run completed with conclusion failure",
-        "last_worker_completed_at": "2026-06-29T16:44:53.894Z",
-        "last_worker_evidence": []
+        "reviewed_at": "2026-06-29T18:38:20.907Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by sweep-same-run-publication-frontier-20260629 so the current empty runnable frontier turns into one actionable same-run review pass instead of a passive per-run publication wait."
       },
-      "session_id": "s_task_verify-spec-node-http-proxy-create",
-      "session_history": [
-        "s_task_verify-spec-node-http-proxy-create"
-      ],
-      "result": "Spec spec.node-http-proxy.create workflow run 28384412888 classified as error. Loop key: verify-spec-node-http-proxy-create-a_verify-spec-node-http-proxy-create_20260629154408. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384412888 Result: runs/test-results/single-node-http-proxy-create_441320/artifacts/node-http-proxy-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384412888/aks-rp-e2e-28384412888-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384412888/aks-rp-e2e-28384412888-spec-test-results/test-results/single-node-http-proxy-create_441320/result.json run watch issue: GitHub run completed with conclusion failure",
-      "evidence": []
+      "resolution": "replaced",
+      "done_at": "2026-06-29T18:38:20.907Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by sweep-same-run-publication-frontier-20260629 so the current empty runnable frontier turns into one actionable same-run review pass instead of a passive per-run publication wait."
+      }
     },
-    "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629": {
-      "id": "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629",
+    "wait-real-cluster-tuple-response-for-spec-oidc-issuer-v133-explicit-enable-runtime-20260629": {
+      "id": "wait-real-cluster-tuple-response-for-spec-oidc-issuer-v133-explicit-enable-runtime-20260629",
       "parent_id": "aks-spec-verification-loop",
       "state": "blocked",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Hold the single truthful wait for the post-instrumentation same-spec rerun of spec.network-acns.basic-retina-update-retina-enterprise until both a real verifier-wave live slot is available and a gh/az-capable execution host is chosen, then rerun the same direct single-spec carrier and classify the child milestone witness.",
+      "goal": "Hold the exact post-send external wait for spec.oidc-issuer.v133-explicit-enable-runtime until the routed human:operator ask returns either one real AKS 1.33 pre-enable cluster tuple plus az aks show proof, an authoritative no-such-cluster reply, or a precise redirect naming the true owner.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-post-instrumentation-live-rerun.md"
+        "../aks-rp-e2e/evidence/archive/oidc-issuer-v133-explicit-enable-runtime-real-cluster-tuple-response-20260629.md"
       ],
       "acceptance": [
-        "The resumed rerun stays same-spec and same direct single-spec carrier, using the repo-local milestone instrumentation only to classify where execution last reached or failed.",
-        "A durable review note cites child status.json, steps.jsonl, and milestones.json (or terminal result) and names the last reached milestone boundary with any resulting model/spec-loop update.",
-        "Until both queue capacity and a gh/az-capable live host exist, the leaf remains the single truthful wait carrying the exact resume condition instead of presenting fake runnable backlog."
+        "A review note cites the returned reply/proof tied to the already-sent packet and records the resulting same-spec next step: rerun gate, redirected ask, or final no-cluster disposition.",
+        "Until a reply lands, this leaf remains the single truthful blocked representation of the external wait with exact send-proof and resume conditions instead of an unsent passive hold."
       ],
       "forbidden": [],
       "conflict_scope": [
-        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+        "spec:spec.oidc-issuer.v133-explicit-enable-runtime"
       ],
       "depends_on": [],
-      "blocker": "Blocked only on the single owner-held promotion wait proven by evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md: (1) the active verifier wave remained saturated at targetRunning=10/openChildren=10 so this spec was not yet a truthful live slot, and (2) the reviewed worker host lacked gh/az live-execution capability. No separate local setup/diagnosis action was discovered from this completion; resume only when the owner explicitly promotes this spec into an available live slot on a gh/az-capable host, then rerun the same direct single-spec carrier and classify child status.json/steps.jsonl/milestones.json.",
+      "blocker": "Blocked only on a reply to the already-routed packet evidenced in evidence/archive/oidc-issuer-v133-explicit-enable-runtime-real-cluster-tuple-send-proof-20260629.md. 2026-06-29 owner rechecked the source-exactness warning and kept this as the single truthful external wait only after exhausting bounded local/source-equivalent surfaces: mounted Go source, checked-in specs/replays, accepted repo-local evidence ceilings, and alternate runtime/setup paths do not yield the required real pre-enable Kubernetes 1.33 cluster tuple. Resume when human:operator returns either (1) a real tuple that satisfies the exact path contract or (2) an authoritative reroute/denial that changes the next bounded action.",
       "trace": {
-        "created_at": "2026-06-29T16:01:32.843Z",
+        "created_at": "2026-06-29T17:33:22.844Z",
         "created_by": "task-tree-tool"
       }
     },
-    "verify-spec-node-http-proxy-update": {
-      "id": "verify-spec-node-http-proxy-update",
+    "review-spec-network-acns-basic-retina-update-retina-enterprise-run-28391146628-20260629": {
+      "id": "review-spec-network-acns-basic-retina-update-retina-enterprise-run-28391146628-20260629",
       "parent_id": "aks-spec-verification-loop",
-      "state": "active",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-http-proxy.update through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-http-proxy.update",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-http-proxy.update"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-http-proxy.update",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T16:06:20.725Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-http-proxy-update_20260629160620",
-        "assigned_at": "2026-06-29T16:06:20.749Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-http-proxy-update",
-        "worker_started_attempt_id": "a_verify-spec-node-http-proxy-update_20260629160620",
-        "worker_started_at": "2026-06-29T16:06:29.299Z"
-      },
-      "session_id": "s_task_verify-spec-node-http-proxy-update",
-      "session_history": [
-        "s_task_verify-spec-node-http-proxy-update"
-      ]
-    },
-    "verify-spec-node-image-upgrade-operation": {
-      "id": "verify-spec-node-image-upgrade-operation",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "active",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-image.upgrade-operation through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-image.upgrade-operation",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-image.upgrade-operation"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-image.upgrade-operation",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T16:08:42.384Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-image-upgrade-operation_20260629160842",
-        "assigned_at": "2026-06-29T16:08:42.404Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-image-upgrade-operation",
-        "worker_started_attempt_id": "a_verify-spec-node-image-upgrade-operation_20260629160842",
-        "worker_started_at": "2026-06-29T16:08:55.170Z"
-      },
-      "session_id": "s_task_verify-spec-node-image-upgrade-operation",
-      "session_history": [
-        "s_task_verify-spec-node-image-upgrade-operation"
-      ]
-    },
-    "verify-spec-node-pool-config-fips-enabled": {
-      "id": "verify-spec-node-pool-config-fips-enabled",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "active",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-pool-config.fips-enabled through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-pool-config.fips-enabled",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-pool-config.fips-enabled"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-pool-config.fips-enabled",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T16:14:01.334Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-pool-config-fips-enabled_20260629161401",
-        "assigned_at": "2026-06-29T16:14:01.354Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-pool-config-fips-enabled",
-        "worker_started_attempt_id": "a_verify-spec-node-pool-config-fips-enabled_20260629161401",
-        "worker_started_at": "2026-06-29T16:14:13.117Z"
-      },
-      "session_id": "s_task_verify-spec-node-pool-config-fips-enabled",
-      "session_history": [
-        "s_task_verify-spec-node-pool-config-fips-enabled"
-      ]
-    },
-    "verify-spec-node-pool-config-kubereserved": {
-      "id": "verify-spec-node-pool-config-kubereserved",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "active",
-      "kind": "domain_leaf",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Run and review spec.node-pool-config.kubereserved through the single-spec workflow.",
-      "inputs": [
-        "spec:spec.node-pool-config.kubereserved",
-        "workflow:run-single-spec.yaml",
-        "target:staging",
-        "timeoutMinutes:60"
-      ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
-      ],
-      "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
-        "Spec-loop state was updated."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-pool-config.kubereserved"
-      ],
-      "workflow": "single-spec-verifier",
-      "context": {
-        "specId": "spec.node-pool-config.kubereserved",
-        "githubWorkflow": "run-single-spec.yaml",
-        "target": "staging",
-        "branch": "dev",
-        "timeoutMinutes": "60",
-        "stateRef": ".state/spec-loop/state.json",
-        "loopTaskId": "aks-spec-verification-loop"
-      },
-      "trace": {
-        "created_at": "2026-06-29T16:16:26.024Z",
-        "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-node-pool-config-kubereserved_20260629161626",
-        "assigned_at": "2026-06-29T16:16:26.044Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-pool-config-kubereserved",
-        "worker_started_attempt_id": "a_verify-spec-node-pool-config-kubereserved_20260629161626",
-        "worker_started_at": "2026-06-29T16:16:39.186Z"
-      },
-      "session_id": "s_task_verify-spec-node-pool-config-kubereserved",
-      "session_history": [
-        "s_task_verify-spec-node-pool-config-kubereserved"
-      ]
-    },
-    "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629": {
-      "id": "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Run and review spec.node-pool-config.ssh-public-key-update-linux through the single-spec workflow now that the accepted repo-local carrier repair removed the clean-runner ENOENT preflight failure and fixed probeRef derivation from config.specFile.",
+      "goal": "Hold the owner review slot for already-dispatched rerun 28391146628 for spec.network.acns-basic-retina.update-retina-enterprise and resume at the first durable artifact-publication or terminal-completion surface.",
       "inputs": [],
       "outputs": [
-        ".state/spec-loop/state.json",
-        "runs/test-results/",
-        "test-results/"
+        "../aks-rp-e2e/evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-run-28391146628-review-20260629.md"
       ],
       "acceptance": [
-        "GitHub workflow run completed or produced a concrete blocker.",
-        "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix follow-up was proposed when needed.",
-        "The rerun uses the repaired ssh-public-key live carrier rather than reclassifying the old preflight-only run as a product verdict."
+        "GitHub run 28391146628 reached a terminal state or produced downloadable durable artifacts for the exact same-spec rerun.",
+        "workflow/status/result artifacts were reviewed in order, including status.json, steps.jsonl, milestones JSON, and result/diagnosis/summary when present.",
+        "The rerun was classified as pass, fail, error, or concrete blocker for spec.network.acns-basic-retina.update-retina-enterprise, and any needed model/spec-loop followup was recorded."
       ],
       "forbidden": [],
       "conflict_scope": [
-        "spec:spec.node-pool-config.ssh-public-key-update-linux"
+        "spec:spec.network.acns-basic-retina.update-retina-enterprise"
       ],
       "depends_on": [],
       "trace": {
-        "created_at": "2026-06-29T16:32:16.759Z",
+        "created_at": "2026-06-29T17:40:13.785Z",
         "created_by": "task-tree-tool",
-        "promoted_at": "2026-06-29T16:33:14.456Z",
-        "promoted_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:34:37.193Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
-        "stale_active_requeued_at": "2026-06-29T16:49:59.826Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629_20260629163437"
+        "reviewed_at": "2026-06-29T18:38:20.856Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by sweep-same-run-publication-frontier-20260629 so the owner performs one bounded same-run publication sweep across the current GitHub-run wait family before recreating only the truthful surviving waits."
       },
-      "session_id": "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
-      "session_history": [
-        "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629"
-      ]
+      "resolution": "replaced",
+      "done_at": "2026-06-29T18:38:20.856Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by sweep-same-run-publication-frontier-20260629 so the owner performs one bounded same-run publication sweep across the current GitHub-run wait family before recreating only the truthful surviving waits."
+      }
     },
-    "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629": {
-      "id": "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
+    "verify-spec-private-cluster-vnet-integration-update-private": {
+      "id": "verify-spec-private-cluster-vnet-integration-update-private",
       "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
-      "kind": "domain_leaf",
-      "priority": "P2",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Repair spec.node-pool-config.skip-gpu-driver and its repo-local carrier to match the mounted Scenario_Skip_GPU_Driver contract: create a baseline cluster first, add one GPU pool with Install, add one GPU pool with None/skip-driver, preserve raw ARM 4xx payloads, and leave the path ready for a bounded rerun review instead of conflating create-time GPU-pool admission with the handwritten source scenario.",
-      "inputs": [],
-      "outputs": [
-        "../aks-rp-e2e/evidence/archive/repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629.md"
-      ],
-      "acceptance": [
-        "The note cites the mounted source locations and the exact checked-in spec/probe drift that made run 28386826080 nonterminal.",
-        "Checked-in spec and carrier code are updated so the replay follows baseline create -> add Install GPU pool -> add None GPU pool -> persisted field checks -> nvidia-smi comparison, or the note records the exact bounded repo-local reason this could not be completed.",
-        "Any HTTP 4xx/5xx path touched by the repair preserves raw ARM error payload/code/message in emitted evidence so future reviews are not limited to provisioningState=undefined.",
-        "The output states whether spec.node-pool-config.skip-gpu-driver is rerun-ready or what single remaining exact blocker still prevents a truthful rerun."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.node-pool-config.skip-gpu-driver"
-      ],
-      "depends_on": [],
-      "trace": {
-        "created_at": "2026-06-29T16:33:02.661Z",
-        "created_by": "task-tree-tool",
-        "promoted_at": "2026-06-29T16:33:14.456Z",
-        "promoted_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:34:37.193Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
-        "stale_active_requeued_at": "2026-06-29T16:49:59.881Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629_20260629163437"
-      },
-      "session_id": "s_task_repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
-      "session_history": [
-        "s_task_repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629"
-      ]
-    },
-    "verify-spec-ossku-migration-azurelinux-to-azurelinux3": {
-      "id": "verify-spec-ossku-migration-azurelinux-to-azurelinux3",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "review",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P1",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Run and review spec.ossku-migration.azurelinux-to-azurelinux3 through the single-spec workflow.",
+      "goal": "Run and review spec.private-cluster.vnet-integration-update-private through the single-spec workflow.",
       "inputs": [
-        "spec:spec.ossku-migration.azurelinux-to-azurelinux3",
+        "spec:spec.private-cluster.vnet-integration-update-private",
         "workflow:run-single-spec.yaml",
         "target:staging",
         "timeoutMinutes:60"
@@ -1558,11 +1025,11 @@
       ],
       "forbidden": [],
       "conflict_scope": [
-        "spec:spec.ossku-migration.azurelinux-to-azurelinux3"
+        "spec:spec.private-cluster.vnet-integration-update-private"
       ],
       "workflow": "single-spec-verifier",
       "context": {
-        "specId": "spec.ossku-migration.azurelinux-to-azurelinux3",
+        "specId": "spec.private-cluster.vnet-integration-update-private",
         "githubWorkflow": "run-single-spec.yaml",
         "target": "staging",
         "branch": "dev",
@@ -1571,87 +1038,131 @@
         "loopTaskId": "aks-spec-verification-loop"
       },
       "trace": {
-        "created_at": "2026-06-29T16:33:35.211Z",
+        "created_at": "2026-06-29T17:45:22.788Z",
         "created_by": "task-tree-tool",
-        "current_attempt_id": "a_verify-spec-ossku-migration-azurelinux-to-azurelinux3_20260629163335",
-        "assigned_at": "2026-06-29T16:33:35.262Z",
+        "current_attempt_id": "a_verify-spec-private-cluster-vnet-integration-update-private_20260629174522",
+        "assigned_at": "2026-06-29T17:45:22.808Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_verify-spec-ossku-migration-azurelinux-to-azurelinux3",
-        "worker_started_attempt_id": "a_verify-spec-ossku-migration-azurelinux-to-azurelinux3_20260629163335",
-        "worker_started_at": "2026-06-29T16:34:07.387Z",
-        "last_worker_result": "done",
-        "last_worker_claim": "done",
-        "last_worker_summary": "Spec spec.ossku-migration.azurelinux-to-azurelinux3 workflow run 28387504703 classified as pass. Loop key: verify-spec-ossku-migration-azurelinux-to-azurelinux3-a_verify-spec-ossku-migration-azurel. OSSKU migration AzureLinux → AzureLinux3 validated: 6/6 claim assertions OK. POST osSKU=AzureLinux3, nodeImageVersion=AKSAzureLinux-V3gen2-202606.19.0, nodes=1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387504703 Result: runs/test-results/single-ossku-migration-azurelinux-to-azurelinux3_432413/artifacts/ossku-migration-azurelinux-to-azurelinux3/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387504703/aks-rp-e2e-28387504703-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387504703/aks-rp-e2e-28387504703-spec-test-results/test-results/single-ossku-migration-azurelinux-to-azurelinux3_432413/result.json",
-        "last_worker_completed_at": "2026-06-29T16:39:56.963Z",
-        "last_worker_evidence": []
+        "last_session": "s_task_verify-spec-private-cluster-vnet-integration-update-private",
+        "worker_started_attempt_id": "a_verify-spec-private-cluster-vnet-integration-update-private_20260629174522",
+        "worker_started_at": "2026-06-29T17:45:54.004Z"
       },
-      "session_id": "s_task_verify-spec-ossku-migration-azurelinux-to-azurelinux3",
+      "session_id": "s_task_verify-spec-private-cluster-vnet-integration-update-private",
       "session_history": [
-        "s_task_verify-spec-ossku-migration-azurelinux-to-azurelinux3"
-      ],
-      "result": "Spec spec.ossku-migration.azurelinux-to-azurelinux3 workflow run 28387504703 classified as pass. Loop key: verify-spec-ossku-migration-azurelinux-to-azurelinux3-a_verify-spec-ossku-migration-azurel. OSSKU migration AzureLinux → AzureLinux3 validated: 6/6 claim assertions OK. POST osSKU=AzureLinux3, nodeImageVersion=AKSAzureLinux-V3gen2-202606.19.0, nodes=1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387504703 Result: runs/test-results/single-ossku-migration-azurelinux-to-azurelinux3_432413/artifacts/ossku-migration-azurelinux-to-azurelinux3/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387504703/aks-rp-e2e-28387504703-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387504703/aks-rp-e2e-28387504703-spec-test-results/test-results/single-ossku-migration-azurelinux-to-azurelinux3_432413/result.json",
-      "evidence": []
+        "s_task_verify-spec-private-cluster-vnet-integration-update-private"
+      ]
     },
-    "osmmaybe": {
-      "id": "osmmaybe",
+    "review-spec-aad-rbac-known-run-28371054186-on-publication-20260629": {
+      "id": "review-spec-aad-rbac-known-run-28371054186-on-publication-20260629",
       "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Map spec.open-service-mesh-addon.lifecycle to its truthful non-live execution carrier using mounted source/spec artifacts, and update the repo-local capability/task context so the single-spec runner is no longer treated as the primary execution path.",
+      "goal": "Hold the single truthful owner review slot for already-dispatched GitHub run 28371054186 for spec.aad-rbac.known and resume only when that same run publishes durable artifacts or reaches terminal completion; this is not an environment-setup retry task.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/open-service-mesh-addon-lifecycle-carrier-map-20260629.md"
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-known-run-28371054186-review-20260629.md"
       ],
       "acceptance": [
-        "Mounted source/spec evidence identifies whether this path is source/check-only or requires an existing/shared-cluster carrier.",
-        "The exact reason single-spec live execution is untruthful for this spec is recorded with cited artifacts.",
-        "Task-tree or model context is updated with the truthful carrier/next execution path."
+        "Downloaded artifact or terminal run result for 28371054186 is reviewed and cited.",
+        "The exact same-spec verdict surface is classified as pass, fail, blocked, error, or runner/test-method gap with evidence.",
+        "The next same-spec action is decided without launching a duplicate rerun unless the published evidence specifically justifies it."
       ],
       "forbidden": [],
       "conflict_scope": [
-        "spec:spec.open-service-mesh-addon.lifecycle"
+        "spec:spec.aad-rbac.known"
       ],
       "depends_on": [],
       "trace": {
-        "created_at": "2026-06-29T16:35:50.266Z",
+        "created_at": "2026-06-29T18:04:45.558Z",
         "created_by": "task-tree-tool",
-        "promoted_at": "2026-06-29T16:36:48.112Z",
-        "promoted_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:37:29.647Z",
+        "reviewed_at": "2026-06-29T18:38:20.806Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by sweep-same-run-publication-frontier-20260629 so the four exact same-run publication waits are reviewed together and converted back into evidence-backed per-spec outcomes instead of remaining passive blocked leaves."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T18:38:20.806Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by sweep-same-run-publication-frontier-20260629 so the four exact same-run publication waits are reviewed together and converted back into evidence-backed per-spec outcomes instead of remaining passive blocked leaves."
+      }
+    },
+    "verify-spec-rp-cluster-lifecycle-upgrade-k8s-version": {
+      "id": "verify-spec-rp-cluster-lifecycle-upgrade-k8s-version",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-cluster-lifecycle.upgrade-k8s-version through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.upgrade-k8s-version",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.upgrade-k8s-version"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.upgrade-k8s-version",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop"
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:05:24.933Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-upgrade-k8s-version_20260629180524",
+        "assigned_at": "2026-06-29T18:05:24.953Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_osmmaybe",
-        "stale_active_requeued_at": "2026-06-29T16:49:59.938Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_osmmaybe_20260629163729"
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-upgrade-k8s-version",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-upgrade-k8s-version_20260629180524",
+        "worker_started_at": "2026-06-29T18:05:35.457Z"
       },
-      "session_id": "s_task_osmmaybe",
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-upgrade-k8s-version",
       "session_history": [
-        "s_task_osmmaybe"
+        "s_task_verify-spec-rp-cluster-lifecycle-upgrade-k8s-version"
       ]
     },
-    "oidcdefrev": {
-      "id": "oidcdefrev",
+    "review-spec-oidc-default-by-version-run-28391106496-on-publication-20260629": {
+      "id": "review-spec-oidc-default-by-version-run-28391106496-on-publication-20260629",
       "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Review run 28387129302 for spec.oidc-issuer.default-by-version, classify whether the four failed version-gate assertions are real product behavior, spec expectation drift, or an artifact/runner gap, and record the next truthful action.",
+      "goal": "Hold the owner review slot for already-dispatched rerun 28391106496 for spec.oidc.default-by-version and resume at the first durable artifact-publication or terminal-completion surface.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/oidc-issuer-default-by-version-run-28387129302-review-20260629.md"
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-dev-run-28391106496-review-20260629.md"
       ],
       "acceptance": [
-        "Run 28387129302 artifacts are inspected and each failed assertion is mapped to the expected version-gate behavior/path.",
-        "The result is classified as product behavior, spec drift, environment/runner issue, or artifact ceiling with supporting evidence.",
-        "A concrete next step is recorded: model update, source-backed follow-up, rerun gate, or terminal retest condition."
+        "The review records the published durable evidence for run 28391106496 on trusted SHA 3e49dc8fbb6af75cd0a6abc51df1b5cab0aba0dd and classifies only these accepted assertions: k8s>=1.34 gate, issuer URL populated, no create-time mutation, and discovery reachable.",
+        "The resulting note keeps api-version and projected-sa-token-settings claims retired; if the run ends nonterminally or without usable artifacts, it records the exact publication/runtime outcome instead of widening scope."
       ],
       "forbidden": [],
       "conflict_scope": [
@@ -1659,112 +1170,122 @@
       ],
       "depends_on": [],
       "trace": {
-        "created_at": "2026-06-29T16:35:50.330Z",
+        "created_at": "2026-06-29T18:07:00.341Z",
         "created_by": "task-tree-tool",
-        "promoted_at": "2026-06-29T16:36:48.112Z",
-        "promoted_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:37:29.644Z",
+        "reviewed_at": "2026-06-29T18:38:20.959Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by sweep-same-run-publication-frontier-20260629 so same-run publication status is reviewed in one bounded evidence pass and only the truthful next leaf is restored afterward."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T18:38:20.959Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by sweep-same-run-publication-frontier-20260629 so same-run publication status is reviewed in one bounded evidence pass and only the truthful next leaf is restored afterward."
+      }
+    },
+    "verify-spec-rp-nodepool-lifecycle-scale-manual": {
+      "id": "verify-spec-rp-nodepool-lifecycle-scale-manual",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-nodepool-lifecycle.scale-manual through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-nodepool-lifecycle.scale-manual",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-nodepool-lifecycle.scale-manual"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-nodepool-lifecycle.scale-manual",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop"
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:08:42.750Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-scale-manual_20260629180842",
+        "assigned_at": "2026-06-29T18:08:42.815Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_oidcdefrev",
-        "stale_active_requeued_at": "2026-06-29T16:49:59.994Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_oidcdefrev_20260629163729"
+        "last_session": "s_task_verify-spec-rp-nodepool-lifecycle-scale-manual",
+        "worker_started_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-scale-manual_20260629180842",
+        "worker_started_at": "2026-06-29T18:09:21.228Z"
       },
-      "session_id": "s_task_oidcdefrev",
+      "session_id": "s_task_verify-spec-rp-nodepool-lifecycle-scale-manual",
       "session_history": [
-        "s_task_oidcdefrev"
+        "s_task_verify-spec-rp-nodepool-lifecycle-scale-manual"
       ]
     },
-    "oidcv133rt404": {
-      "id": "oidcv133rt404",
+    "sweep-same-run-publication-frontier-20260629": {
+      "id": "sweep-same-run-publication-frontier-20260629",
       "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Inspect run 28387483218 for spec.oidc-issuer.v133-explicit-enable-runtime and classify whether the GET-cluster 404 came from missing carrier state, credential/access scope, or runner/spec drift, then record the truthful next step.",
+      "goal": "Review the exact same-run artifact/terminal status for GitHub runs 28371054186, 28391146628, 28389908499, and 28391106496, then classify each spec into accepted same-run evidence, a renewed exact wait, or a concrete follow-up leaf without triggering new cloud mutation.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/oidc-issuer-v133-explicit-enable-runtime-run-28387483218-404-review-20260629.md"
+        "../aks-rp-e2e/evidence/archive/same-run-publication-frontier-sweep-20260629.md"
       ],
       "acceptance": [
-        "Run 28387483218 artifacts/logs are reviewed and the exact failing GET-cluster step is identified.",
-        "The 404 is classified as missing cluster/carrier, credential/access issue, runner issue, or artifact ceiling with supporting evidence.",
-        "A concrete next action is recorded: rerun gate, source/spec follow-up, environment ask, or terminal retest condition."
+        "Checks the current durable publication/terminal surface for all four exact GitHub runs; records per-run evidence and next classification in evidence/archive/same-run-publication-frontier-sweep-20260629.md; and for each affected spec either (a) marks the replaced wait satisfied with same-run evidence, (b) restores one truthful exact wait with updated resume condition, or (c) creates one concrete follow-up leaf tied to the observed same-run state."
       ],
       "forbidden": [],
       "conflict_scope": [
-        "spec:spec.oidc-issuer.v133-explicit-enable-runtime"
+        "spec:spec.aad-rbac.known",
+        "spec:spec.network.acns-basic-retina.update-retina-enterprise",
+        "spec:spec.node-http-proxy.create-timeout90",
+        "spec:spec.oidc.default-by-version"
       ],
       "depends_on": [],
       "trace": {
-        "created_at": "2026-06-29T16:36:06.487Z",
+        "created_at": "2026-06-29T18:38:20.705Z",
         "created_by": "task-tree-tool",
-        "promoted_at": "2026-06-29T16:36:48.112Z",
-        "promoted_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:37:29.647Z",
+        "current_attempt_id": "a_sweep-same-run-publication-frontier-20260629_20260629183820",
+        "assigned_at": "2026-06-29T18:38:20.756Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_oidcv133rt404",
-        "stale_active_requeued_at": "2026-06-29T16:50:00.050Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_oidcv133rt404_20260629163729"
+        "last_session": "s_task_sweep-same-run-publication-frontier-20260629",
+        "worker_started_attempt_id": "a_sweep-same-run-publication-frontier-20260629_20260629183820",
+        "worker_started_at": "2026-06-29T18:38:44.472Z"
       },
-      "session_id": "s_task_oidcv133rt404",
+      "session_id": "s_task_sweep-same-run-publication-frontier-20260629",
       "session_history": [
-        "s_task_oidcv133rt404"
-      ]
-    },
-    "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629": {
-      "id": "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
-      "parent_id": "aks-spec-verification-loop",
-      "state": "backlog",
-      "kind": "domain_leaf",
-      "priority": "P2",
-      "owner": "aks-explorer",
-      "children": [],
-      "goal": "Review skipped run 28387418403 for spec.oidc-issuer.signing-key-rotation and replace the blind done classification with a repo-local carrier/source-equivalent decision plus follow-up evidence.",
-      "inputs": [],
-      "outputs": [
-        "../aks-rp-e2e/evidence/archive/spec-oidc-issuer-signing-key-rotation-skipped-run-review-20260629.md"
-      ],
-      "acceptance": [
-        "Artifact cites run 28387418403 result.json skipped/test_not_implemented evidence and explains why the single-spec runner did not execute the contract.",
-        "Artifact identifies the next truthful path for this spec: source-equivalent check, existing/shared-cluster carrier replay, or final non-live-executable ceiling, using mounted source/e2ev3 evidence instead of a blind rerun.",
-        "Task updates or proposes the needed spec/model/replay follow-up from that classification."
-      ],
-      "forbidden": [],
-      "conflict_scope": [
-        "spec:spec.oidc-issuer.signing-key-rotation"
-      ],
-      "depends_on": [],
-      "trace": {
-        "created_at": "2026-06-29T16:39:51.210Z",
-        "created_by": "task-tree-tool",
-        "assigned_at": "2026-06-29T16:39:51.272Z",
-        "assigned_by": "planner",
-        "assigned_worker": "aks-explorer",
-        "last_session": "s_task_reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
-        "stale_active_requeued_at": "2026-06-29T16:50:00.107Z",
-        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: assigned active leaf never started a live worker session while verification gaps remain",
-        "stale_active_fresh_session": false,
-        "previous_attempt_id": "a_reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629_20260629163951"
-      },
-      "session_id": "s_task_reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
-      "session_history": [
-        "s_task_reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629"
+        "s_task_sweep-same-run-publication-frontier-20260629"
       ]
     }
   },
   "active_task_ids": [
-    "verify-spec-node-http-proxy-update",
-    "verify-spec-node-image-upgrade-operation",
-    "verify-spec-node-pool-config-fips-enabled",
-    "verify-spec-node-pool-config-kubereserved"
+    "verify-spec-private-cluster-vnet-integration-update-private",
+    "verify-spec-rp-cluster-lifecycle-upgrade-k8s-version",
+    "verify-spec-rp-nodepool-lifecycle-scale-manual",
+    "sweep-same-run-publication-frontier-20260629"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {

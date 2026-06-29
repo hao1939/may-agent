@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T07:09:15.820Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning hygiene completion: archive the last accepted storage-csi coverage-map leaf now that its bounded meaning is captured in root history; the only live repo-local work remains storage-csi-adjacent-replay-test-coherence-audit-20260625 and the five exact external waits remain unchanged until the 2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-mounted-replay-coverage-map-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local storage-csi family coverage map from the handwritten/mounted source and the maintained storage-csi replay set so the next storage-csi boundary work is explicit: for storage-csi-file-resize, storage-csi-disk-xfs, and storage-csi-disk-raw-block, capture the input path, expectation path, existing replay/source coverage, observed repo-local evidence status, and the single best next bounded no-cloud or future-live gap without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-mounted-replay-coverage-map-20260625.md"
+      ],
+      "acceptance": [
+        "The artifact cites the exact mounted handwritten source and/or maintained replay files used for storage-csi-file-resize, storage-csi-disk-xfs, and storage-csi-disk-raw-block, and maps each slice to its key inputs, expected assertions/behavior, and current repo-local evidence status without guessing feature intent.",
+        "The artifact identifies at least one concrete next bounded successor for the storage-csi family (repo-local authoring/model/replay refinement or an explicitly gated future-live probe) and explains why that successor is the best gap to close next.",
+        "The task remains repo-local and no-cloud only: no live execution, no mutation gate use, and no model verdict changes outside documenting the coverage map and recommended next leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.storage-csi.coverage-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:58:24.080Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-mounted-replay-coverage-map-20260625_20260625065824",
+        "assigned_at": "2026-06-25T06:58:24.129Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-mounted-replay-coverage-map-20260625",
+        "worker_started_attempt_id": "a_storage-csi-mounted-replay-coverage-map-20260625_20260625065824",
+        "worker_started_at": "2026-06-25T06:58:53.291Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested repo-local storage-csi coverage map at evidence/archive/storage-csi-mounted-replay-coverage-map-20260625.md, grounding file-resize, disk-xfs, and disk-raw-block in mounted source/spec/replay evidence and identifying XFS replay/test coherence repair as the best next bounded successor.",
+        "last_worker_completed_at": "2026-06-25T07:02:26.374Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T07:03:05.918Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: artifact cites exact mounted source plus maintained replay/spec carriers for storage-csi-file-resize, storage-csi-disk-xfs, and storage-csi-disk-raw-block; it records current repo-local evidence status for each slice and truthfully identifies storage-csi-disk-xfs replay/test coherence repair as the single best next bounded no-cloud successor."
+      },
+      "session_id": "s_task_storage-csi-mounted-replay-coverage-map-20260625",
+      "session_history": [
+        "s_task_storage-csi-mounted-replay-coverage-map-20260625"
+      ],
+      "result": "Built the requested repo-local storage-csi coverage map at evidence/archive/storage-csi-mounted-replay-coverage-map-20260625.md, grounding file-resize, disk-xfs, and disk-raw-block in mounted source/spec/replay evidence and identifying XFS replay/test coherence repair as the best next bounded successor.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T07:03:05.918Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: artifact cites exact mounted source plus maintained replay/spec carriers for storage-csi-file-resize, storage-csi-disk-xfs, and storage-csi-disk-raw-block; it records current repo-local evidence status for each slice and truthfully identifies storage-csi-disk-xfs replay/test coherence repair as the single best next bounded no-cloud successor."
+      },
+      "status": "done"
+    }
+  ]
+}

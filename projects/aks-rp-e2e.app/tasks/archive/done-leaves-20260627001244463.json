@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T00:12:44.463Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 blocked-frontier review: kept both blocked leaves as the single truthful external waits after rechecking the watchdog warning and current evidence shape; no duplicate local send/source/setup work is justified. Archived the accepted Swift v1/source-coverage and storage Speculor repair leaves so the live frontier stays focused on three active repo-local authoring/model repairs, the narrowed external-human transport family wait, and the private-cluster operator decision wait.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted mounted Swift v1 dual-stack family map into an owner-ready repo-local canonical landing proposal that defines the exact five family carriers, proposed feature/path naming, variant handling for Windows/Overlake, and the minimal spec/model authoring sequence needed without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627.md"
+      ],
+      "acceptance": [
+        "Reuse the accepted family map and name the exact five canonical family carriers to add, with one row per family covering mounted scenario names, intended repo-local landing target, and why no existing carrier is sufficient.",
+        "Propose the concrete repo-local authoring shape for each family: expected feature/spec/model artifacts or exact placeholders, plus how _Windows and _Overlake are represented as variants rather than separate canonicals.",
+        "Conclude with a bounded recommended authoring order or batching plan that is executable repo-locally with no cloud mutation and no new external wait creation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-swiftv1-dualstack-canonical-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:04:12.899Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627_20260627000602",
+        "assigned_at": "2026-06-27T00:06:02.997Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627",
+        "worker_started_attempt_id": "a_network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627_20260627000602",
+        "worker_started_at": "2026-06-27T00:06:03.426Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the owner-ready Swift v1 dual-stack canonical landing proposal at evidence/archive/network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627.md, defining the exact five canonical family carriers, variant handling for Windows/Overlake, and a bounded repo-local authoring order with no cloud execution.",
+        "last_worker_completed_at": "2026-06-27T00:07:43.462Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:08:37.310Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627.md because it names the exact five Swift v1 dual-stack canonical family carriers, keeps _Windows/_Overlake as execution variants rather than separate canonicals, and gives a bounded repo-local no-cloud authoring order."
+      },
+      "session_id": "s_task_network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627",
+      "session_history": [
+        "s_task_network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627"
+      ],
+      "result": "Authored the owner-ready Swift v1 dual-stack canonical landing proposal at evidence/archive/network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627.md, defining the exact five canonical family carriers, variant handling for Windows/Overlake, and a bounded repo-local authoring order with no cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:08:37.310Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/network-cni-swiftv1-dualstack-canonical-landing-proposal-20260627.md because it names the exact five Swift v1 dual-stack canonical family carriers, keeps _Windows/_Overlake as execution variants rather than separate canonicals, and gives a bounded repo-local no-cloud authoring order."
+      },
+      "status": "done"
+    },
+    {
+      "id": "speculor-mounted-source-coverage-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the remaining handwritten e2ev3 speculor scenarios into a source-backed coverage packet that links each scenario to canonical feature/spec/replay/model surfaces and identifies the next bounded repo-local authoring work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-mounted-source-coverage-map-20260626.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted Go source files/suites/scenarios inspected for the selected speculor remainder slice and summarize their intended AKS input and expectation boundaries.",
+        "Quantify which scenarios already have adequate coverage versus uncovered or stale coverage in features/specs/replays/model artifacts, with exact file-path evidence.",
+        "Propose grouped actionable next leaves or terminal no-action decisions for the uncovered/stale slice, keeping the work repo-local and not reopening the existing external wait families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T23:56:10.957Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T23:56:20.013Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-mounted-source-coverage-map-20260626_20260626235925",
+        "assigned_at": "2026-06-26T23:59:25.958Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-mounted-source-coverage-map-20260626",
+        "worker_started_attempt_id": "a_speculor-mounted-source-coverage-map-20260626_20260626235925",
+        "worker_started_at": "2026-06-26T23:59:26.360Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested Speculor mounted-source coverage packet for the cloudprovider + storage remainder slice and wrote it to evidence/archive/speculor-mounted-source-coverage-map-20260626.md, mapping mounted scenarios to current feature/spec/replay/model carriers and naming the next bounded repo-local repair leaves.",
+        "last_worker_completed_at": "2026-06-27T00:02:30.637Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:03:22.914Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/speculor-mounted-source-coverage-map-20260626.md cites the exact mounted cloudprovider+storage source files, quantifies adequate vs stale/misaligned carriers, and its proposed follow-ons are supported by concrete repo-local drift evidence (full-cache negative still uses stale Scenario_FullCacheOSDisk_Negative + Standard_B2s/256GB shape; mcr-mirror-monitor still preserves a cluster-create contract despite mounted non-cluster monitor source)."
+      },
+      "session_id": "s_task_speculor-mounted-source-coverage-map-20260626",
+      "session_history": [
+        "s_task_speculor-mounted-source-coverage-map-20260626"
+      ],
+      "result": "Built the requested Speculor mounted-source coverage packet for the cloudprovider + storage remainder slice and wrote it to evidence/archive/speculor-mounted-source-coverage-map-20260626.md, mapping mounted scenarios to current feature/spec/replay/model carriers and naming the next bounded repo-local repair leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:03:22.914Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/speculor-mounted-source-coverage-map-20260626.md cites the exact mounted cloudprovider+storage source files, quantifies adequate vs stale/misaligned carriers, and its proposed follow-ons are supported by concrete repo-local drift evidence (full-cache negative still uses stale Scenario_FullCacheOSDisk_Negative + Standard_B2s/256GB shape; mcr-mirror-monitor still preserves a cluster-create contract despite mounted non-cluster monitor source)."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Complete acceptance for the advanced-disk mounted-lineage refresh by adding the missing metadata-only evidence note and verifying whether any paired packet/model metadata also need the same mounted source lineage updates for the five storage-csi carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-speculor-advanced-disk-mounted-lineage-refresh-20260627.md"
+      ],
+      "acceptance": [
+        "Create a durable evidence note that names the five refreshed storage-csi carriers, states this was a metadata/source-lineage refresh only, and cites the exact mounted /app/sources/aks-rp plan files now referenced.",
+        "Confirm whether paired packet/model metadata for the five carriers required updates; either update the affected repo-local files or state in the evidence note that no paired packet/model metadata duplicated the stale lineage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-advanced-disk-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:07:23.123Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627_20260627000746",
+        "assigned_at": "2026-06-27T00:07:46.473Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627",
+        "worker_started_attempt_id": "a_storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627_20260627000746",
+        "worker_started_at": "2026-06-27T00:07:46.951Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated evidence/archive/storage-speculor-advanced-disk-mounted-lineage-refresh-20260627.md to explicitly document the five advanced-disk storage-csi carriers, confirm the metadata-only mounted-source lineage refresh, and record that paired packet metadata was refreshed while current knowledge-model metadata required no further update.",
+        "last_worker_completed_at": "2026-06-27T00:08:45.753Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:10:04.458Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the evidence note now names the five advanced-disk storage-csi carriers, cites the mounted plan files, and records that paired packet metadata was refreshed while current knowledge-model metadata required no further update."
+      },
+      "session_id": "s_task_storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627",
+      "session_history": [
+        "s_task_storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627"
+      ],
+      "result": "Updated evidence/archive/storage-speculor-advanced-disk-mounted-lineage-refresh-20260627.md to explicitly document the five advanced-disk storage-csi carriers, confirm the metadata-only mounted-source lineage refresh, and record that paired packet metadata was refreshed while current knowledge-model metadata required no further update.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:10:04.458Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the evidence note now names the five advanced-disk storage-csi carriers, cites the mounted plan files, and records that paired packet metadata was refreshed while current knowledge-model metadata required no further update."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-speculor-advanced-disk-mounted-lineage-refresh-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh already-adequate advanced-disk storage Speculor carriers from stale devbox lineage to mounted /app/sources/aks-rp/... lineage so the repo-local source references accurately point at the current handwritten storage plans without changing behavior claims.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-encryption-at-host.json",
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-ultrassd.json",
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-byok.json",
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-byok-ephemeral-os.json",
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-full-cache-os-disk.json"
+      ],
+      "acceptance": [
+        "Replace stale devbox lineage references in the named advanced-disk storage-csi carriers with the exact mounted /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage plan paths, keeping scenario ids and behavioral claims aligned with mounted source.",
+        "Update any paired packets/model metadata that duplicate the stale lineage, and leave a concise evidence note showing this branch is metadata refresh only, not a behavior re-interpretation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-advanced-disk-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:03:23.049Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T00:03:25.102Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-speculor-advanced-disk-mounted-lineage-refresh-20260627_20260627000338",
+        "assigned_at": "2026-06-27T00:03:38.883Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-speculor-advanced-disk-mounted-lineage-refresh-20260627",
+        "worker_started_attempt_id": "a_storage-speculor-advanced-disk-mounted-lineage-refresh-20260627_20260627000338",
+        "worker_started_at": "2026-06-27T00:03:39.407Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the five assigned advanced-disk storage-csi carriers from stale devbox lineage to mounted /app/sources/aks-rp source paths, updating paired packet/spec metadata and adding a metadata-only evidence note.",
+        "last_worker_completed_at": "2026-06-27T00:06:30.429Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:07:25.436Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review did not accept closure: the worker updated five spec files from stale devbox lineage to mounted /app/sources/aks-rp paths, but task-tree show still has empty evidence and no durable metadata-only evidence note, and acceptance also required verifying any paired packet/model metadata. Replaced by storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627 to finish the missing acceptance slice with exact evidence/verification."
+      },
+      "session_id": "s_task_storage-speculor-advanced-disk-mounted-lineage-refresh-20260627",
+      "session_history": [
+        "s_task_storage-speculor-advanced-disk-mounted-lineage-refresh-20260627"
+      ],
+      "result": "Refreshed the five assigned advanced-disk storage-csi carriers from stale devbox lineage to mounted /app/sources/aks-rp source paths, updating paired packet/spec metadata and adding a metadata-only evidence note.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T00:07:25.436Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review did not accept closure: the worker updated five spec files from stale devbox lineage to mounted /app/sources/aks-rp paths, but task-tree show still has empty evidence and no durable metadata-only evidence note, and acceptance also required verifying any paired packet/model metadata. Replaced by storage-speculor-advanced-disk-mounted-lineage-evidence-repair-20260627 to finish the missing acceptance slice with exact evidence/verification."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-speculor-full-cache-negative-mounted-boundary-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the storage Speculor full-cache negative carrier surfaces so the canonical spec/packet/replay preserve the exact mounted Scenario_Full_Cache_OsDisk_Negative boundary: EnableOSDiskFullCaching=true with the mounted 4-vCPU rejection shape and FullCacheVMSizeNotInCandidateList expectation, and record any remaining model contradiction as bounded repo-local evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-full-cache-os-disk-negative.json",
+        "../aks-rp-e2e/features/storage-csi/tests/storage-csi-full-cache-os-disk-negative.ts",
+        "../aks-rp-e2e/features/storage-csi/packets/full-cache-os-disk-negative.yaml"
+      ],
+      "acceptance": [
+        "Update the carrier surfaces to use the mounted scenario spelling Scenario_Full_Cache_OsDisk_Negative and remove the stale repo-local Standard_B2s + osDiskSizeGB=256 framing where it contradicts the mounted source boundary.",
+        "Preserve the mounted rejection proof surface by making the primary expected outcome the 4-vCPU full-cache rejection with FullCacheVMSizeNotInCandidateList (or an explicitly justified exact equivalent), with file-path evidence across spec/replay/packet.",
+        "Document any remaining model/metadata contradiction as bounded repo-local evidence rather than silently keeping stale devbox-era semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-full-cache-negative"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:03:23.004Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T00:03:25.102Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-speculor-full-cache-negative-mounted-boundary-repair-20260627_20260627000338",
+        "assigned_at": "2026-06-27T00:03:38.883Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-speculor-full-cache-negative-mounted-boundary-repair-20260627",
+        "worker_started_attempt_id": "a_storage-speculor-full-cache-negative-mounted-boundary-repair-20260627_20260627000338",
+        "worker_started_at": "2026-06-27T00:03:39.371Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Repaired the storage full-cache negative spec, replay, and packet carriers to match the mounted Scenario_Full_Cache_OsDisk_Negative 4-vCPU EnableOSDiskFullCaching=true rejection boundary, and recorded bounded evidence showing the knowledge model still contains stale Standard_B2s-era pass surfaces.",
+        "last_worker_completed_at": "2026-06-27T00:08:28.718Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:10:09.174Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after decomposition repair: the mounted full-cache negative carrier surfaces now preserve Scenario_Full_Cache_OsDisk_Negative with the 4-vCPU FullCacheVMSizeNotInCandidateList rejection boundary across spec/replay/packet, and the remaining knowledge-model contradiction has been split into successor task storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627."
+      },
+      "session_id": "s_task_storage-speculor-full-cache-negative-mounted-boundary-repair-20260627",
+      "session_history": [
+        "s_task_storage-speculor-full-cache-negative-mounted-boundary-repair-20260627"
+      ],
+      "result": "Repaired the storage full-cache negative spec, replay, and packet carriers to match the mounted Scenario_Full_Cache_OsDisk_Negative 4-vCPU EnableOSDiskFullCaching=true rejection boundary, and recorded bounded evidence showing the knowledge model still contains stale Standard_B2s-era pass surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:10:09.174Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after decomposition repair: the mounted full-cache negative carrier surfaces now preserve Scenario_Full_Cache_OsDisk_Negative with the 4-vCPU FullCacheVMSizeNotInCandidateList rejection boundary across spec/replay/packet, and the remaining knowledge-model contradiction has been split into successor task storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627."
+      },
+      "status": "done"
+    }
+  ]
+}

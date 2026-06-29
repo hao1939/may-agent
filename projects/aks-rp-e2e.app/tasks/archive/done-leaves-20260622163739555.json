@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T16:37:39.555Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review: keep the frontier intentionally serialized on conflict scope virtualmachine-prerelease-source while the active repo-local landing task vm-prerelease-row1-ppg-maintained-model-landing-20260622 runs. The waiting backlog leaves vm-prerelease-row9-runtime-container-kscr-maintained-model-landing-20260622 and vm-prerelease-rows3to5-rp-nodepool-lifecycle-maintained-model-landing-20260622 remain the next repo-local maintained-model landings and should start only after the active row 1 slice finishes. The single blocked family leaf external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 still truthfully compresses the shared out-of-runtime human/operator proof wait with exact resume condition already evidenced, so no duplicate blocker or retry leaf is needed in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-storage-matrix-model-linkage-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted-source-backed VirtualMachine prerelease storage matrix rows 12-18 and 20-22 whose feature/spec ids were not directly discoverable in model/knowledge-map/model.json or views/path-summary.json, and repair or explicitly justify the canonical direct linkage for that Linux/Flatcar CSI matrix.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-storage-matrix-model-linkage-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Starting from evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md, inspect the repo-local model/view carriers for rows 12-18 and 20-22 and classify each as direct-link-present, alias-only, or missing.",
+        "For any missing or alias-only storage-matrix row, either update the canonical repo-local model/view carrier or document the exact justified reason no direct link is added yet, with one concrete next action if debt remains.",
+        "Keep the task repo-local only: no cloud execution and no reopening the compressed external wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T16:21:45.406Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-storage-matrix-model-linkage-audit-20260622_20260622162915",
+        "assigned_at": "2026-06-22T16:29:15.688Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-storage-matrix-model-linkage-audit-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-storage-matrix-model-linkage-audit-20260622_20260622162915",
+        "worker_started_at": "2026-06-22T16:29:17.145Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the canonical repo-local model/view linkage for VM prerelease storage matrix rows 12-18 and 20-22 by landing a new source-backed feature/scenario/DAG/path in model/knowledge-map/model.json, regenerating path-summary.json, and writing the audit artifact under evidence/archive/.",
+        "last_worker_completed_at": "2026-06-22T16:34:02.546Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T16:34:47.517Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact documents rows 12-18 and 20-22 as starting missing, lands canonical storage-csi-vm-prerelease-linux-matrix feature/scenario/dag/path in model.json, regenerates path-summary.json, and leaves no remaining alias-only repo-local linkage debt for this Linux storage matrix slice."
+      },
+      "session_id": "s_task_vm-prerelease-storage-matrix-model-linkage-audit-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-storage-matrix-model-linkage-audit-20260622"
+      ],
+      "result": "Repaired the canonical repo-local model/view linkage for VM prerelease storage matrix rows 12-18 and 20-22 by landing a new source-backed feature/scenario/DAG/path in model/knowledge-map/model.json, regenerating path-summary.json, and writing the audit artifact under evidence/archive/.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T16:34:47.517Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact documents rows 12-18 and 20-22 as starting missing, lands canonical storage-csi-vm-prerelease-linux-matrix feature/scenario/dag/path in model.json, regenerates path-summary.json, and leaves no remaining alias-only repo-local linkage debt for this Linux storage matrix slice."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:10:03.999Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog blocked-frontier review: this lane now has one active actionable child and one exact external wait. Keep vm-prerelease-rows46-47-accepted-surface-landing-20260620 as the sole repo-local focus for landing accepted reviewed-surface treatment for the dedicated VM prerelease row-46/row-47 carriers. Keep machinespreview-external-send-proof-or-reply-wait-20260620 as the single truthful MachinesPreview wait because repo-local review already proved the narrowed handoff packet is send-ready and no further drafting or response-await leaf is truthful until durable proof of real external send/escalation or the authoritative reply is preserved repo-locally. Archive the completed rows46-47 promotion-decision leaf because its durable meaning is now represented by the active landing task plus the blocked-carrier evidence boundary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review whether the newly authored dedicated VM prerelease carriers for rows 46 and 47 can now be promoted from candidate-only to accepted reviewed coverage/model surfaces, or else document the exact remaining ceiling and keep the ledger truthful.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620.md"
+      ],
+      "acceptance": [
+        "Owner review compares the dedicated row-46 and row-47 source-backed carriers against the current VM prerelease coverage ledger, selectors, and any accepted path/model surfaces, and records the exact promotion decision for each row rather than assuming dedicated artifacts imply acceptance.",
+        "If the current reviewed surfaces can truthfully express the dedicated carriers, the task lands the minimal repo-local coverage/model/selector updates for rows 46 and/or 47 and validates them with the relevant non-cloud checks; otherwise it leaves the ledger candidate-only and records the exact accepted-surface ceiling plus what file or model change would be required next.",
+        "The evidence note cites the row-46 and row-47 dedicated authoring proofs, names the final path/spec/replay mapping (or the explicit non-promotion reason), and leaves the project with one clear next local action rather than an implicit review gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "coverage.virtualmachine-prerelease.rows46-47"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:06:24.744Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620_20260620150624",
+        "assigned_at": "2026-06-20T15:06:24.791Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620_20260620150624",
+        "worker_started_at": "2026-06-20T15:06:39.798Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed row-46 and row-47 dedicated VM prerelease CAS carriers, reran local check-mode proofs, and wrote evidence/archive/vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620.md concluding both rows must remain candidate-only until accepted model/path surfaces are extended.",
+        "last_worker_completed_at": "2026-06-20T15:08:59.080Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:09:25.012Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620.md: the dedicated row-46 and row-47 VM prerelease carriers are source-backed and pass fresh non-cloud checks, but accepted reviewed surfaces still do not truthfully land them as dedicated model/path coverage. The current candidate-only ledger/selector state remains correct, so this review closes with one exact next local action: add accepted dedicated model/path landings (or another explicit accepted-surface treatment) before any coverage promotion claim."
+      },
+      "session_id": "s_task_vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620"
+      ],
+      "result": "Reviewed row-46 and row-47 dedicated VM prerelease CAS carriers, reran local check-mode proofs, and wrote evidence/archive/vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620.md concluding both rows must remain candidate-only until accepted model/path surfaces are extended.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:09:25.012Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/vm-prerelease-rows46-47-dedicated-coverage-promotion-decision-20260620.md: the dedicated row-46 and row-47 VM prerelease carriers are source-backed and pass fresh non-cloud checks, but accepted reviewed surfaces still do not truthfully land them as dedicated model/path coverage. The current candidate-only ledger/selector state remains correct, so this review closes with one exact next local action: add accepted dedicated model/path landings (or another explicit accepted-surface treatment) before any coverage promotion claim."
+      },
+      "status": "done"
+    }
+  ]
+}

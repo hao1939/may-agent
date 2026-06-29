@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T01:51:44.675Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review: preserved the single truthful external-human wait unchanged because its resume condition is already exact and owner-send/handoff proof is archived. Archived the remaining safe done row-75 repair leaf now that its durable meaning is captured at the project root. The only live repo-local work remains managedsystem-initial-pool-boundary-source-packet-20260623, which must reconcile path.managedsystem.create-time-initial-pool against handwritten/source/spec/model evidence and record any exact follow-up maintenance without implying a fresh runtime retry while the current product-gap retest condition stands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row75-model-view-status-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the accepted knowledge-map model/view surfaces for path.virtualmachine-prerelease.row75-aksconformance-core so they match the already-landed source/spec/replay evidence: restore the exact selected inputs and composed deployment+tunnel+metrics behavior, cite the row-75 execute-gated evidence chain, and replace the current generic draft bridge with a truthful blocked-or-execute-gated maintained status without touching unrelated VM/private-cluster waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row75-model-view-status-repair-20260623.md"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json records the exact row-75 selectedInputs, expected behavior bundle, and evidence attachments justified by the existing row-75 source/spec/replay archive notes, and no unrelated VM prerelease or external-human wait paths are changed.",
+        "Regenerated maintained views (at least path-summary/status-summary plus any directly generated companion views) reflect the repaired row-75 boundary/status, and the archive note cites exact before/after repo evidence and the commands used."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.virtualmachine-prerelease.row75-aksconformance-core"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:45:53.808Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row75-model-view-status-repair-20260623_20260623014553",
+        "assigned_at": "2026-06-23T01:45:53.854Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row75-model-view-status-repair-20260623",
+        "worker_started_attempt_id": "a_vmpr-row75-model-view-status-repair-20260623_20260623014553",
+        "worker_started_at": "2026-06-23T01:46:09.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-75 accepted knowledge-map/model surfaces in model/knowledge-map/model.json, regenerated maintained views, and wrote evidence/archive/vmpr-row75-model-view-status-repair-20260623.md documenting the exact before/after evidence and commands.",
+        "last_worker_completed_at": "2026-06-23T01:48:50.809Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T01:49:02.423Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vmpr-row75-model-view-status-repair-20260623.md: the worker repaired path.virtualmachine-prerelease.row75-aksconformance-core from the stale generic draft bridge back to the exact row-75 selected-input and deployment+tunnel+metrics blocked execute-gated model/view state, citing only existing row-75 source/spec/replay evidence and leaving unrelated VM/private-cluster waits untouched."
+      },
+      "session_id": "s_task_vmpr-row75-model-view-status-repair-20260623",
+      "session_history": [
+        "s_task_vmpr-row75-model-view-status-repair-20260623"
+      ],
+      "result": "Repaired row-75 accepted knowledge-map/model surfaces in model/knowledge-map/model.json, regenerated maintained views, and wrote evidence/archive/vmpr-row75-model-view-status-repair-20260623.md documenting the exact before/after evidence and commands.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T01:49:02.423Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vmpr-row75-model-view-status-repair-20260623.md: the worker repaired path.virtualmachine-prerelease.row75-aksconformance-core from the stale generic draft bridge back to the exact row-75 selected-input and deployment+tunnel+metrics blocked execute-gated model/view state, citing only existing row-75 source/spec/replay evidence and leaving unrelated VM/private-cluster waits untouched."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:35:42.156Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning update rejects the reviewed spec.machines.agentpool-api-crud verifier run as non-terminal product evidence and archives it as a replaced child. Run 28361388097 only established a repo-local artifact-routing/reporting mismatch: the emitted single-spec result bundle reported status=empty with zero counts and specResults=[], so the branch gained no trustworthy behavior verdict for the machines agentpool API CRUD path. The concrete next work is the newly assigned artifact-routing diagnosis leaf for that run, alongside the already-active westus2 ManagedSystem capacity diagnosis and the remaining active spec-verifier leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-machines-agentpool-api-crud",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.machines.agentpool-api-crud through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.machines.agentpool-api-crud",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.machines.agentpool-api-crud"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.machines.agentpool-api-crud",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Review rejected the worker claim as a spec verdict. Run 28361388097 only proves a runner/reporting artifact-routing mismatch: the emitted result.json at .state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json has status=empty, zero counts, and specResults=[], so no trustworthy pass/fail/blocked behavior classification exists for spec.machines.agentpool-api-crud. Replaced by diagnose-spec-machines-agentpool-api-crud-run-28361388097-artifact-routing-mismatch for bounded repo-local triage before any rerun or model update."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:12:16.550Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-machines-agentpool-api-crud_20260629091345",
+        "assigned_at": "2026-06-29T09:13:45.729Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-machines-agentpool-api-crud",
+        "worker_started_attempt_id": "a_verify-spec-machines-agentpool-api-crud_20260629091345",
+        "worker_started_at": "2026-06-29T09:13:51.835Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.machines.agentpool-api-crud workflow run 28361388097 classified as error. Loop key: verify-spec-machines-agentpool-api-crud-a_verify-spec-machines-agentpool-api-crud_20260629. artifact-routing-mismatch for spec.machines.agentpool-api-crud; run=28361388097; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361388097 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:34:38.658Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:35:33.568Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review rejected the worker claim as a spec verdict. Run 28361388097 only proves a runner/reporting artifact-routing mismatch: the emitted result.json at .state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json has status=empty, zero counts, and specResults=[], so no trustworthy pass/fail/blocked behavior classification exists for spec.machines.agentpool-api-crud. Replaced by diagnose-spec-machines-agentpool-api-crud-run-28361388097-artifact-routing-mismatch for bounded repo-local triage before any rerun or model update."
+      },
+      "session_id": "s_task_verify-spec-machines-agentpool-api-crud",
+      "session_history": [
+        "s_task_verify-spec-machines-agentpool-api-crud"
+      ],
+      "result": "Spec spec.machines.agentpool-api-crud workflow run 28361388097 classified as error. Loop key: verify-spec-machines-agentpool-api-crud-a_verify-spec-machines-agentpool-api-crud_20260629. artifact-routing-mismatch for spec.machines.agentpool-api-crud; run=28361388097; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361388097 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361388097/aks-rp-e2e-28361388097-spec-test-results/test-results/single-machines-agentpool-api-crud_421623/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:35:33.568Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

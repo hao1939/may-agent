@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T20:06:19.982Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review: revalidated that external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 is still the single truthful family-level external-human-transport wait because the archive proves only repo-local approval-dispatch/message.created handoff, not any later out-of-runtime send/reply/approval/execution result. The current live repo-local branch is vm-prerelease-mounted-source-row-map-rebuild-20260622, which should use mounted AKS RP handwritten source (prerelease.go/checkin.go plus directly referenced scenarios) to rebuild exact source-backed coverage/status for rows 25+50, 40-43, 33, and 76 and separate any remaining repo-local gaps from the shared external wait. Archive the completed private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622 leaf because its durable meaning is now root-level: private-cluster none-dns-zone-v3 has no remaining repo-local source/spec/model gap and should stay represented only by the shared external wait pending later human/operator proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.private-cluster-none-dns-zone-v3 from existing repo-local evidence into a single best-known-equivalent spec/status artifact that states the exact source/spec/model ceiling, the remaining unknowns, and whether any runnable repo-local replay/model follow-up remains before the external-human transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites existing repo-local carrier evidence/spec/replay artifacts for path.private-cluster-none-dns-zone-v3, states the exact best-known-equivalent contract and evidence ceiling without waiting on perfect handwritten source, and identifies any smallest truthful follow-up leaf or confirms the branch is external-wait-only.",
+        "The task does not create duplicate blocked waits, does not require cloud mutation, and leaves the project with a clearer status decision for the unknown path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T20:02:51.622Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622_20260622200251",
+        "assigned_at": "2026-06-22T20:02:51.674Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622_20260622200251",
+        "worker_started_at": "2026-06-22T20:03:02.756Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested reconciliation artifact for path.private-cluster-none-dns-zone-v3, concluding the existing spec/replay is the best-known-equivalent mounted-source carrier and that the branch is external-wait-only for product-verdict advancement.",
+        "last_worker_completed_at": "2026-06-22T20:04:52.928Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T20:05:26.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact cites mounted source, spec, replay, accepted live evidence, and fresh repo-local check/dry-run results; it truthfully concludes path.private-cluster-none-dns-zone-v3 is external-wait-only for verdict advancement and does not create a duplicate blocked wait."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-best-known-equivalent-spec-reconciliation-20260622"
+      ],
+      "result": "Created the requested reconciliation artifact for path.private-cluster-none-dns-zone-v3, concluding the existing spec/replay is the best-known-equivalent mounted-source carrier and that the branch is external-wait-only for product-verdict advancement.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T20:05:26.172Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact cites mounted source, spec, replay, accepted live evidence, and fresh repo-local check/dry-run results; it truthfully concludes path.private-cluster-none-dns-zone-v3 is external-wait-only for verdict advancement and does not create a duplicate blocked wait."
+      },
+      "status": "done"
+    }
+  ]
+}

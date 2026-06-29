@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:04:02.954Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner reconciled the stale watchdog-review-pending trigger: repo-wide-bun-check-replay-frontier-rp-nodepool-lifecycle-agentpool-upgrade-resume-single-file-writeback-20260624 was already accepted via its archived evidence, reducing the shared repo-wide format frontier from 19 warned replay files to 18 and leaving no live review leaves. The single truthful local next action remains repo-wide-bun-check-replay-frontier-secops-fips-advanced-single-file-writeback-20260624, while virtualmachine-prerelease-coverage-ledger-checkpoint-gate-wait-20260624 stays blocked on the shared repo-wide format gate until bun run check returns green again. The external-wait family under focus-mounted-source-coverage-closure-and-external-wait-20260623 remains compressed and unchanged because no new authoritative replies arrived in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact next single-file warning slice replays/node-pool-config-disable-ssh-lifecycle.ts from the accepted 26-warning rerun, then rerun targeted verification for that same file and refresh the repo-wide warning count without widening into other files, cloud work, or checkpoint landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/node-pool-config-disable-ssh-lifecycle.ts, targeted verification output for that same file, and git diff or equivalent proof showing only the intended formatting changes in that file.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the replays/node-pool-config-disable-ssh-lifecycle.ts writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no formatting outside replays/node-pool-config-disable-ssh-lifecycle.ts, no cloud execution, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T18:39:13.862Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624_20260624183913",
+        "assigned_at": "2026-06-24T18:39:13.908Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624_20260624183913",
+        "worker_started_at": "2026-06-24T18:39:39.525Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/node-pool-config-disable-ssh-lifecycle.ts and archived evidence showing the targeted file is clean plus the refreshed repo-wide format frontier dropped from 26 to 25 warned files.",
+        "last_worker_completed_at": "2026-06-24T18:42:17.056Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T18:43:15.328Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624.md: bounded writeback touched only replays/node-pool-config-disable-ssh-lifecycle.ts, targeted prettier --check passed for that file, and refreshed repo-wide bun run check reduced the format frontier from 26 to 25 warned files."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/node-pool-config-disable-ssh-lifecycle.ts and archived evidence showing the targeted file is clean plus the refreshed repo-wide format frontier dropped from 26 to 25 warned files.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T18:43:15.328Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-node-pool-config-disable-ssh-lifecycle-single-file-writeback-20260624.md: bounded writeback touched only replays/node-pool-config-disable-ssh-lifecycle.ts, targeted prettier --check passed for that file, and refreshed repo-wide bun run check reduced the format frontier from 26 to 25 warned files."
+      },
+      "status": "done"
+    }
+  ]
+}

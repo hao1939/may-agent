@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T23:29:53.416Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 blocked-frontier owner review: no review leaves and no new authoritative returned-proof artifacts changed the compressed external-wait family. Preserve the seven-leaf blocked frontier under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until authoritative reply proof arrives or the 2026-06-26 follow-up window opens, while the sole live repo-local learning work remains model-knowledge-map-featurepaths-192-serverless-virtual-nodes-enable-family-repair-20260625 repairing the next validator family from mounted-source and repo-local evidence only.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the next remaining repo-local validator family now starting at featurePaths[190] by reconciling path.secops-fips-node-attestation against existing specs, maintained model rows, archive evidence, and mounted AKS RP source, adding or relinking only the minimum accepted inputDag surface needed for the exact node-attestation branch, then rerun validator plus maintained-view generation and record whether the branch clears and whether adjacent featurePaths[191] path.secops-identity-binding-managed-identity is the next separate handoff or part of the same tightly-coupled family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625.md"
+      ],
+      "acceptance": [
+        "Archive artifact records the exact current validator issue(s) at featurePaths[190], identifies the missing or mismatched inputDag linkage for path.secops-fips-node-attestation, cites repo-local reasoning from existing archive packets/specs/model rows and mounted AKS RP source for the minimum accepted node-attestation branch, then reruns bun model/tools/src/validate.ts model/knowledge-map/model.json plus bun model/tools/src/generate-knowledge-map-views.ts model/knowledge-map/model.json model/knowledge-map/views and states whether the branch clears and what first remaining validator family appears next, explicitly noting featurePaths[191] if it remains adjacent.",
+        "Work stays entirely repo-local in the evidence-feedback/model-update lane: use existing repo artifacts and mounted AKS RP source at /app/sources/aks-rp; perform no cloud mutation or approval asks; do not reopen the blocked external-wait family; and do not widen beyond the exact secops FIPS node-attestation input-dag branch except to repair or explicitly report an immediately adjacent tightly-coupled validator family when the same bounded source/model evidence makes that coupling necessary."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T23:15:27.627Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625_20260625231527",
+        "assigned_at": "2026-06-25T23:15:27.679Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625",
+        "worker_started_attempt_id": "a_model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625_20260625231527",
+        "worker_started_at": "2026-06-25T23:15:35.921Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the normalized DAG linkage for featurePaths[190] / path.secops-fips-node-attestation in model/knowledge-map/model.json, regenerated maintained views, and wrote a repo-local evidence note showing that featurePaths[191] remains the next separate identity-binding handoff.",
+        "last_worker_completed_at": "2026-06-25T23:19:11.358Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T23:19:39.723Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review against evidence/archive/model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625.md: featurePaths[190] gained normalized DAG dag.secops-fips.node-attestation, post-repair validator stopped reporting path.secops-fips-node-attestation, maintained views regenerated with selected inputs for that path, and adjacent featurePaths[191] path.secops-identity-binding-managed-identity remains the next separate handoff rather than part of the same family."
+      },
+      "session_id": "s_task_model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625",
+      "session_history": [
+        "s_task_model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625"
+      ],
+      "result": "Repaired the normalized DAG linkage for featurePaths[190] / path.secops-fips-node-attestation in model/knowledge-map/model.json, regenerated maintained views, and wrote a repo-local evidence note showing that featurePaths[191] remains the next separate identity-binding handoff.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T23:19:39.723Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review against evidence/archive/model-knowledge-map-featurepaths-190-secops-fips-node-attestation-family-repair-20260625.md: featurePaths[190] gained normalized DAG dag.secops-fips.node-attestation, post-repair validator stopped reporting path.secops-fips-node-attestation, maintained views regenerated with selected inputs for that path, and adjacent featurePaths[191] path.secops-identity-binding-managed-identity remains the next separate handoff rather than part of the same family."
+      },
+      "status": "done"
+    }
+  ]
+}

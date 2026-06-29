@@ -2,6 +2,9 @@ import { defineProjectApp, workflowHandlers } from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
+const specLoopTaskId = "aks-spec-verification-loop";
+const featureReferenceLoopTaskId = "aks-feature-reference-loop";
+const featureCompactLoopTaskId = "aks-feature-compact-loop";
 const appTaskContext =
   "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nsource: /app/sources/aks-rp";
 
@@ -22,7 +25,7 @@ export default defineProjectApp({
     kind: "git",
     repo: "git@github.com:hao1939/aks-rp-e2e.git",
     localPath: "../aks-rp-e2e",
-    branch: "main",
+    branch: "dev",
   },
 
   budget: {
@@ -164,7 +167,6 @@ export default defineProjectApp({
         { type: "project.planning.requested", target: { project: projectId } },
         { type: "project.comment.created", target: { project: projectId } },
         { type: "project.tick", target: { project: projectId } },
-        { type: "project.action.invoked", target: { project: projectId } },
         {
           type: "project.focus.approval.submitted",
           target: { project: projectId },
@@ -199,12 +201,7 @@ export default defineProjectApp({
       accepts: [
         { type: "project.task.assigned", target: { project: projectId } },
       ],
-      emits: [
-        "project.task.completed",
-        "project.spec-loop.tick",
-        "project.feature-reference-loop.tick",
-        "project.feature-compact-loop.tick",
-      ],
+      emits: ["project.task.completed", "project.task.tick"],
       context: taskTreeContext,
     },
     {
@@ -261,7 +258,11 @@ export default defineProjectApp({
         timeoutMs: 600_000,
       },
       accepts: [
-        { type: "project.spec-loop.tick", target: { project: projectId } },
+        {
+          type: "project.task.tick",
+          target: { project: projectId },
+          actions: ["spec-loop"],
+        },
       ],
       emits: ["project.task.assigned"],
       context: [
@@ -286,8 +287,9 @@ export default defineProjectApp({
       },
       accepts: [
         {
-          type: "project.feature-reference-loop.tick",
+          type: "project.task.tick",
           target: { project: projectId },
+          actions: ["feature-reference-loop"],
         },
       ],
       emits: ["project.task.assigned"],
@@ -313,8 +315,9 @@ export default defineProjectApp({
       },
       accepts: [
         {
-          type: "project.feature-compact-loop.tick",
+          type: "project.task.tick",
           target: { project: projectId },
+          actions: ["feature-compact-loop"],
         },
       ],
       emits: ["project.task.assigned"],
@@ -396,9 +399,7 @@ export default defineProjectApp({
           "project.owner.requested",
           "project.task.assigned",
           "project.task.completed",
-          "project.spec-loop.tick",
-          "project.feature-reference-loop.tick",
-          "project.feature-compact-loop.tick",
+          "project.task.tick",
           "project.problem.requested",
           "project.problem.resolved",
           "project.problem.escalated",
@@ -551,10 +552,12 @@ export default defineProjectApp({
             ? input.taskId.trim()
             : "aks-spec-verification-loop";
         return {
-          type: "project.spec-loop.tick",
+          type: "project.task.tick",
+          action: "spec-loop",
           target: { project: projectId, taskId },
           data: {
             project: projectId,
+            action: "spec-loop",
             taskId,
             task_id: taskId,
             reason: "manual-spec-loop-pulse",
@@ -577,10 +580,12 @@ export default defineProjectApp({
             ? input.taskId.trim()
             : "aks-feature-reference-loop";
         return {
-          type: "project.feature-reference-loop.tick",
+          type: "project.task.tick",
+          action: "feature-reference-loop",
           target: { project: projectId, taskId },
           data: {
             project: projectId,
+            action: "feature-reference-loop",
             taskId,
             task_id: taskId,
             reason: "manual-feature-reference-loop-pulse",
@@ -603,10 +608,12 @@ export default defineProjectApp({
             ? input.taskId.trim()
             : "aks-feature-compact-loop";
         return {
-          type: "project.feature-compact-loop.tick",
+          type: "project.task.tick",
+          action: "feature-compact-loop",
           target: { project: projectId, taskId },
           data: {
             project: projectId,
+            action: "feature-compact-loop",
             taskId,
             task_id: taskId,
             reason: "manual-feature-compact-loop-pulse",

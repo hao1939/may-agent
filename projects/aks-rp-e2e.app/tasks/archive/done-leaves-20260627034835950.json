@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T03:48:35.950Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 blocked-frontier planning update kept the tree truthful after rechecking the only blocked family and the latest accepted network-cni source-gap packet. Archive the completed mounted-source packet because its durable meaning is already captured by the accepted evidence and because it directly yielded the one live repo-local execution path: network-cni-swiftv1-vnetscale-dual-stack-external-datapath-carrier-authoring-20260627 remains the only active leaf. Preserve the two blocked children under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged as exact external waits only: the narrowed VM prerelease/shared-identity proof family and the private-cluster system->none operator decision wait. confirm-runnable remains empty, there are still no review leaves to accept, and the private-cluster environment-overblock warning stays intentionally rejected because repo-local handoff proof is already durable. Do not create duplicate local setup/source/spec/send work unless a returned reply/proof/redirect or new human steering changes one of those waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-gap-packet-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map one bounded mounted-source learning slice for the uncovered network-cni family: inventory the handwritten Go e2ev3 network-cni scenarios still outside the accepted knowledge map/spec surfaces, classify each scenario into already-covered / source-equivalent / missing coverage, and recommend the next single highest-value repo-local follow-up leaf without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-gap-packet-20260627.md"
+      ],
+      "acceptance": [
+        "Durable packet cites the exact mounted source files/scenarios inspected, names the current model/spec/replay coverage status for each bounded scenario in the selected network-cni slice, and distinguishes already-covered versus missing coverage without guessing feature intent.",
+        "Packet ends with one concrete next-step recommendation tied to the strongest uncovered or weakly-mapped network-cni scenario, suitable for a later worker leaf under feature knowledge/specs or evidence/model update lanes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-gap-analysis"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T03:41:45.046Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-gap-packet-20260627_20260627034147",
+        "assigned_at": "2026-06-27T03:41:47.685Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-gap-packet-20260627",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-gap-packet-20260627_20260627034147",
+        "worker_started_at": "2026-06-27T03:42:06.089Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/network-cni-mounted-source-gap-packet-20260627.md`, a bounded Swift v1 dual-stack VNetScale mounted-source inventory classifying each scenario as already-covered, source-equivalent, or missing coverage, and ending with a single highest-value next leaf recommendation.",
+        "last_worker_completed_at": "2026-06-27T03:43:32.135Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T03:44:11.268Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the packet cites the exact mounted Swift v1 dual-stack source files, truthfully classifies all 15 scenarios as already-covered/source-equivalent/missing coverage against current spec/test/model surfaces, and ends with one bounded next leaf recommendation: external-datapath canonical carrier authoring with Windows/Overlake variants attached only as execution metadata."
+      },
+      "session_id": "s_task_network-cni-mounted-source-gap-packet-20260627",
+      "session_history": [
+        "s_task_network-cni-mounted-source-gap-packet-20260627"
+      ],
+      "result": "Produced `evidence/archive/network-cni-mounted-source-gap-packet-20260627.md`, a bounded Swift v1 dual-stack VNetScale mounted-source inventory classifying each scenario as already-covered, source-equivalent, or missing coverage, and ending with a single highest-value next leaf recommendation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T03:44:11.268Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the packet cites the exact mounted Swift v1 dual-stack source files, truthfully classifies all 15 scenarios as already-covered/source-equivalent/missing coverage against current spec/test/model surfaces, and ends with one bounded next leaf recommendation: external-datapath canonical carrier authoring with Windows/Overlake variants attached only as execution metadata."
+      },
+      "status": "done"
+    }
+  ]
+}

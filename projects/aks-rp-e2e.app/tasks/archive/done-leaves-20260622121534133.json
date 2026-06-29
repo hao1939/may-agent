@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T12:15:34.133Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier refill/owner review accepted the completed ACNS Retina Enterprise -> ACNS Cilium maintained-model reconcile and archived it because its durable meaning is now captured at the project root: the exact source-grounded unknown path is landed on accepted model/view surfaces and no longer needs a live review leaf. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human-transport wait. Refill repo-local capacity with one bounded active learning/reconciliation leaf, virtualmachines-vmas-to-vms-migration-slb-maintained-model-view-reconcile-20260622, so the frontier keeps moving on mounted-source/spec/model work instead of reopening the external wait or widening into cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the create-time Retina Enterprise maintained landing is reviewed, reconcile the Retina Enterprise -> ACNS Cilium update branch on maintained knowledge-map surfaces by using the existing mounted-source/spec/replay carriers plus current accepted model/view state to either land the exact normalized slice or correct any stale prior landing claim, then regenerate views and archive exact evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted-source and repo-local carriers for Retina Enterprise -> ACNS Cilium update, checks current accepted model/view exposure after the predecessor landing, and either updates only the maintained slice for feature network-acns-retina-enterprise-update-acns-cilium, scenario.network.acns.retina.enterprise.update.acns.cilium, dag.network-acns-retina-enterprise-update-acns-cilium, path.network-acns-retina-enterprise-update-acns-cilium, and spec.network-acns.retina-enterprise-update-acns-cilium linkage, or records why no model delta was needed because those exact ids are already present.",
+        "Regenerated maintained views truthfully expose the final update-branch state on current accepted surfaces, and the task stays bounded: no k8s-upgrade widening, no create-time branch relanding beyond cited predecessor evidence, no cloud execution, and no external-human transport."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "acns-model-sync"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T12:09:57.256Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622_20260622121052",
+        "assigned_at": "2026-06-22T12:10:52.892Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622",
+        "worker_started_attempt_id": "a_network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622_20260622121052",
+        "worker_started_at": "2026-06-22T12:10:55.583Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale Retina Enterprise -> ACNS Cilium maintained landing by adding the exact feature/scenario/DAG/path slice to model/knowledge-map/model.json, regenerating maintained views, and archiving evidence at evidence/archive/network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T12:15:06.776Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T12:15:28.995Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker reconcile: archive evidence proves the prior landing claim was stale, cites mounted source plus existing repo-local carriers, lands the exact feature/scenario/DAG/path/spec slice for path.network-acns-retina-enterprise-update-acns-cilium on model/view surfaces, and regenerates maintained views without widening into execution or adjacent branches."
+      },
+      "session_id": "s_task_network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622",
+      "session_history": [
+        "s_task_network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622"
+      ],
+      "result": "Reconciled the stale Retina Enterprise -> ACNS Cilium maintained landing by adding the exact feature/scenario/DAG/path slice to model/knowledge-map/model.json, regenerating maintained views, and archiving evidence at evidence/archive/network-acns-retina-enterprise-update-acns-cilium-maintained-model-view-reconcile-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T12:15:28.995Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker reconcile: archive evidence proves the prior landing claim was stale, cites mounted source plus existing repo-local carriers, lands the exact feature/scenario/DAG/path/spec slice for path.network-acns-retina-enterprise-update-acns-cilium on model/view surfaces, and regenerates maintained views without widening into execution or adjacent branches."
+      },
+      "status": "done"
+    }
+  ]
+}

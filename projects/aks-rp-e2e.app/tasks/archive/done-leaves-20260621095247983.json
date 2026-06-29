@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:52:47.983Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed wake required no new execution branch: the completed row-75 shared-identity family-linkage leaf was already accepted and its durable meaning is now represented directly by the blocked successor vmpr-row75-aksconformance-core-rerun-after-shared-identity-20260621 plus the shared family wait external-send-proof-dispatch-family-20260620. The live frontier therefore stays intentionally narrow: two active non-cloud diagnostic/classification leaves (addonv2 row-63 runtime session diagnosis and Windows2022 overlay dual-stack HTTP400 boundary classification) and one shared external-human transport/reply family wait covering row-33 execute approval plus row-75/row-76 shared-identity resumption. Row-33 blocker wording was tightened to preserve that this is an approval wait only, not local setup debt.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row75-shared-identity-family-linkage-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the exact row-75 shared-identity blocker after replay promotion by comparing the accepted row-75 no-identity execute evidence with the existing row-76 shared-identity ask/family carrier, then leave one truthful next state for path.virtualmachine-prerelease.row75-aksconformance-core only: either reuse the existing shared-identity external ask/family blocker with exact row-75 wording, or produce the narrowest additional owner-facing ask artifact needed to request the missing AKS_RP_E2E_ASSIGN_IDENTITY value without widening beyond the unchanged row-75 carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row75-shared-identity-family-linkage-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact explicitly links evidence/archive/task-row75-execute-gated-noidentity-20260621-virtualmachine-prerelease-row75-aksconformance-core.md and the current row-76 shared-identity ask/family authorities, and states whether row-75 can truthfully share that same external ask/resume condition.",
+        "If the existing row-76 shared-identity ask fully covers row-75, the task records the exact family-link wording needed for row-75 so planning can add the blocked live-verdict successor without duplicating waits; if not, it produces the minimum exact row-75 owner-facing ask packet or blocker authority required.",
+        "Result stays bounded to path.virtualmachine-prerelease.row75-aksconformance-core and does not run cloud mutation or broaden into row-76 admin-tunnel execution, generic identity discovery, or unrelated VM prerelease families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:49:31.020Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row75-shared-identity-family-linkage-20260621_20260621094931",
+        "assigned_at": "2026-06-21T09:49:31.067Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row75-shared-identity-family-linkage-20260621",
+        "worker_started_attempt_id": "a_vmpr-row75-shared-identity-family-linkage-20260621_20260621094931",
+        "worker_started_at": "2026-06-21T09:49:53.960Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-75 shared-identity family-linkage artifact under evidence/archive, concluding that row-75 should reuse the existing row-76 shared-identity external ask/family blocker with row-75-specific wording only.",
+        "last_worker_completed_at": "2026-06-21T09:50:51.790Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T09:51:47.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after artifact review: evidence/archive/vmpr-row75-shared-identity-family-linkage-20260621.md shows row-75 is blocked by the same missing AKS_RP_E2E_ASSIGN_IDENTITY input already modeled by the row-76 shared-identity ask, so the truthful next state is a row-75-specific blocked live-rerun successor linked to the existing external-send-proof family rather than a duplicate owner ask."
+      },
+      "session_id": "s_task_vmpr-row75-shared-identity-family-linkage-20260621",
+      "session_history": [
+        "s_task_vmpr-row75-shared-identity-family-linkage-20260621"
+      ],
+      "result": "Produced the row-75 shared-identity family-linkage artifact under evidence/archive, concluding that row-75 should reuse the existing row-76 shared-identity external ask/family blocker with row-75-specific wording only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T09:51:47.016Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after artifact review: evidence/archive/vmpr-row75-shared-identity-family-linkage-20260621.md shows row-75 is blocked by the same missing AKS_RP_E2E_ASSIGN_IDENTITY input already modeled by the row-76 shared-identity ask, so the truthful next state is a row-75-specific blocked live-rerun successor linked to the existing external-send-proof family rather than a duplicate owner ask."
+      },
+      "status": "done"
+    }
+  ]
+}

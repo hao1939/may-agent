@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:11:46.788Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update accepted the AAD admin-group prerequisite family note: mounted source plus run 28364156662 show AKS_RP_E2E_AAD_ADMIN_GROUP_OID and AKS_RP_E2E_AAD_TENANT_ID gate only spec.aad-rbac.nonaad-to-aadv2-migration. The direct follow-up remains the active runner-input repair leaf for that one spec, while verify-spec-aad-rbac-rbac-disabled-to-aadv2 stays independently runnable and must not inherit the prerequisite blocker. The lane still carries an unrelated managed-v2 workflow-dispatch 500 retry and a separate shared westus2 ManagedSystem capacity wait; to answer the blocked-action warning without inventing duplicate waits, a new active diagnosis leaf now maps affected specs and checks whether any bounded reroute or source-equivalent carrier exists beyond the accepted wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-aad-rbac-nonaad-reset",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.aad-rbac.nonaad-reset through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.aad-rbac.nonaad-reset",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-reset"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.nonaad-reset",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.nonaad-reset workflow run 28364160462 classified as pass. Loop key: verify-spec-aad-rbac-nonaad-reset-a_verify-spec-aad-rbac-nonaad-reset_20260629100114. Non-AAD ResetAADProfile negative contract passed: cluster created with enableRBAC=true and no AAD, ResetAADProfile was rejected with the expected invalid-operation contract (HTTP 400). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364160462 Result: runs/test-results/single-aad-rbac-nonaad-reset_321552/artifacts/aad-rbac-nonaad-reset/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/test-results/single-aad-rbac-nonaad-reset_321552/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:59:15.123Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:59:38.776Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-nonaad-reset_20260629100114",
+        "assigned_at": "2026-06-29T10:01:14.116Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-nonaad-reset",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-nonaad-reset_20260629100114",
+        "worker_started_at": "2026-06-29T10:02:51.590Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.aad-rbac.nonaad-reset workflow run 28364160462 classified as pass. Loop key: verify-spec-aad-rbac-nonaad-reset-a_verify-spec-aad-rbac-nonaad-reset_20260629100114. Non-AAD ResetAADProfile negative contract passed: cluster created with enableRBAC=true and no AAD, ResetAADProfile was rejected with the expected invalid-operation contract (HTTP 400). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364160462 Result: runs/test-results/single-aad-rbac-nonaad-reset_321552/artifacts/aad-rbac-nonaad-reset/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/test-results/single-aad-rbac-nonaad-reset_321552/result.json",
+        "last_worker_completed_at": "2026-06-29T10:08:11.127Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:08:16.475Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.nonaad-reset workflow run 28364160462 classified as pass. Loop key: verify-spec-aad-rbac-nonaad-reset-a_verify-spec-aad-rbac-nonaad-reset_20260629100114. Non-AAD ResetAADProfile negative contract passed: cluster created with enableRBAC=true and no AAD, ResetAADProfile was rejected with the expected invalid-operation contract (HTTP 400). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364160462 Result: runs/test-results/single-aad-rbac-nonaad-reset_321552/artifacts/aad-rbac-nonaad-reset/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/test-results/single-aad-rbac-nonaad-reset_321552/result.json"
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-nonaad-reset",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-nonaad-reset"
+      ],
+      "result": "Spec spec.aad-rbac.nonaad-reset workflow run 28364160462 classified as pass. Loop key: verify-spec-aad-rbac-nonaad-reset-a_verify-spec-aad-rbac-nonaad-reset_20260629100114. Non-AAD ResetAADProfile negative contract passed: cluster created with enableRBAC=true and no AAD, ResetAADProfile was rejected with the expected invalid-operation contract (HTTP 400). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364160462 Result: runs/test-results/single-aad-rbac-nonaad-reset_321552/artifacts/aad-rbac-nonaad-reset/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364160462/aks-rp-e2e-28364160462-spec-test-results/test-results/single-aad-rbac-nonaad-reset_321552/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:08:16.475Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

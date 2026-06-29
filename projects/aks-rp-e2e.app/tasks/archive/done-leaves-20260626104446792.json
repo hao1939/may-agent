@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:44:46.792Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ssh-public-key-update-row40-mounted-source-boundary-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: map the exact mounted-source and repo-local replay/spec boundary for VM prerelease row-40 SSH public-key update only. Determine how the unchanged row-40 carrier splits into path.node-pool-config.ssh-public-key-update-linux and path.node-pool-config.ssh-public-key-update-windows, record the authoritative source/replay/spec surfaces and expected Linux-vs-Windows behavior, and leave one concrete next action for bounded replay/spec work without widening into row-39 Disable SSH or unrelated VM prerelease paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-mounted-source-boundary-20260626.md"
+      ],
+      "acceptance": [
+        "The archive cites the exact mounted Go source file(s), current repo-local replay/spec/path surfaces, and the precise row-40 scenario identity for the SSH public-key update carrier only.",
+        "The archive states whether Linux and Windows are one shared carrier with two path verdict branches or require separate replay/spec handling, and records the exact next bounded repo-local action for this carrier only.",
+        "No cloud mutation is attempted, and no edits are made outside evidence/model/spec/replay understanding for the row-40 carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:node-pool-config-ssh-public-key-update"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T10:28:10.534Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ssh-public-key-update-row40-mounted-source-boundary-20260626_20260626102812",
+        "assigned_at": "2026-06-26T10:28:12.620Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ssh-public-key-update-row40-mounted-source-boundary-20260626",
+        "worker_started_attempt_id": "a_ssh-public-key-update-row40-mounted-source-boundary-20260626_20260626102812",
+        "worker_started_at": "2026-06-26T10:28:28.576Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-40 SSH public-key update boundary note at evidence/archive/ssh-public-key-update-row40-mounted-source-boundary-20260626.md, citing exact mounted-source, repo-local spec/replay/path surfaces, Linux-vs-Windows split behavior, and one concrete next repo-local action without any cloud mutation.",
+        "last_worker_completed_at": "2026-06-26T10:30:13.354Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T10:30:42.559Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive /app/projects/aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-mounted-source-boundary-20260626.md cites the exact mounted-source files, current repo-local spec/replay/path surfaces, and correctly concludes the historical row-40 SSH public-key-update family must remain split into separate Linux and Windows exact carriers rather than one recompressed replay/spec leaf; it also leaves one bounded no-cloud successor only."
+      },
+      "session_id": "s_task_ssh-public-key-update-row40-mounted-source-boundary-20260626",
+      "session_history": [
+        "s_task_ssh-public-key-update-row40-mounted-source-boundary-20260626"
+      ],
+      "result": "Produced the bounded row-40 SSH public-key update boundary note at evidence/archive/ssh-public-key-update-row40-mounted-source-boundary-20260626.md, citing exact mounted-source, repo-local spec/replay/path surfaces, Linux-vs-Windows split behavior, and one concrete next repo-local action without any cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T10:30:42.559Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive /app/projects/aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-mounted-source-boundary-20260626.md cites the exact mounted-source files, current repo-local spec/replay/path surfaces, and correctly concludes the historical row-40 SSH public-key-update family must remain split into separate Linux and Windows exact carriers rather than one recompressed replay/spec leaf; it also leaves one bounded no-cloud successor only."
+      },
+      "status": "done"
+    }
+  ]
+}

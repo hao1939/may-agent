@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:00:38.729Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Archived the accepted VM prerelease row-50 adjacent-source leaf because its durable meaning is already preserved in the project rollup and archive evidence: mounted-source knowledge now truthfully carries the post-row48 row order through autoscaled-systemnodepool service CIDR, with maintained row-local carriers named and explicit source-only no-live-verdict ceilings retained. The live frontier remains intentionally narrow and truthful for the blocked-frontier review wake: two disjoint repo-local learning leaves stay active (VM prerelease row-51 adjacent-source extraction and VM checkin suite source inventory), while the single external-send-proof family remains the only useful blocked wait until real human transport proof or authoritative replies arrive after the recorded re-review threshold.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row50-next-adjacent-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: using mounted AKS RP e2ev3 source plus the accepted VM prerelease adjacent-source chain through row 49 CAS scale-from-zero taints CriticalAddonsOnly, extract the next exact row-local VirtualMachine prerelease contract immediately after the row-49 branch so the post-row49 frontier is predeclared without cloud execution or broad family rewrites.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-next-adjacent-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Produce one bounded evidence packet that cites the exact mounted-source suite/plan/scenario/validator carriers for the next adjacent VM prerelease branch after the row-49 CAS scale-from-zero taints CriticalAddonsOnly contract, including truthful source-order to maintained-pipeline mapping and any already-maintained row-local path/spec/replay carriers.",
+        "Name the next maintained ids/path/spec/replay carriers that should be used or extended after the accepted row-49 branch, and state any no-live-verdict ceiling clearly if the branch is still source-backed only.",
+        "Keep scope bounded to adjacent-source extraction only: no cloud execution, no model landing for sibling branches beyond identifying the next exact target, and no reopening the external-send-proof blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-adjacent-source-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T16:55:49.469Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row50-next-adjacent-source-packet-20260621_20260621165549",
+        "assigned_at": "2026-06-21T16:55:49.526Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row50-next-adjacent-source-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row50-next-adjacent-source-packet-20260621_20260621165549",
+        "worker_started_at": "2026-06-21T16:56:06.828Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded evidence packet `evidence/archive/vmpr-row50-next-adjacent-source-packet-20260621.md`, proving from mounted AKS RP source that row 50 (`Scenario_CAS_Stateful_Set_VirtualMachine`) is the exact next adjacent VM prerelease branch after accepted row 49, and naming the maintained path/spec/replay carriers plus the no-live-verdict ceiling.",
+        "last_worker_completed_at": "2026-06-21T16:57:32.002Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T16:58:10.781Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row50-next-adjacent-source-packet-20260621.md source-proves row 50 (Scenario_CAS_Stateful_Set_VirtualMachine) as the exact next adjacent VM prerelease branch after accepted row 49, names the maintained row-50 path/spec/replay carriers, predeclares row 51 as the following adjacent branch, and keeps a truthful no-live-verdict ceiling."
+      },
+      "session_id": "s_task_vmpr-row50-next-adjacent-source-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row50-next-adjacent-source-packet-20260621"
+      ],
+      "result": "Produced the bounded evidence packet `evidence/archive/vmpr-row50-next-adjacent-source-packet-20260621.md`, proving from mounted AKS RP source that row 50 (`Scenario_CAS_Stateful_Set_VirtualMachine`) is the exact next adjacent VM prerelease branch after accepted row 49, and naming the maintained path/spec/replay carriers plus the no-live-verdict ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T16:58:10.781Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row50-next-adjacent-source-packet-20260621.md source-proves row 50 (Scenario_CAS_Stateful_Set_VirtualMachine) as the exact next adjacent VM prerelease branch after accepted row 49, names the maintained row-50 path/spec/replay carriers, predeclares row 51 as the following adjacent branch, and keeps a truthful no-live-verdict ceiling."
+      },
+      "status": "done"
+    }
+  ]
+}

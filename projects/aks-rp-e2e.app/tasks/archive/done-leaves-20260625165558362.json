@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T16:55:58.362Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 focus-plan reconciliation: the approved no-cloud focus still holds, but the just-accepted network-cni overlay ILPIP execution-envelope note is now durable history rather than the live lane. Keep the six exact external returned-proof waits compressed under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until authoritative reply or the 2026-06-26 follow-up window, and make serverless-virtual-nodes-multi-pod-burst-mounted-source-packet-20260625 the single active bounded repo-local learning leaf so the next no-cloud path packet advances without widening into cloud mutation or duplicate waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-ilpip-execution-envelope-note-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Define the bounded execution envelope for the network-cni overlay ILPIP family by reviewing both exact replay carriers together and recording the truthful non-cloud vs live gate behavior, required preflight signals, cleanup expectations, and evidence contract needed before any future live execution discussion, without running cloud mutation or changing accepted path verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-execution-envelope-note-20260625.md"
+      ],
+      "acceptance": [
+        "A new archive note cites both exact replay carriers plus the accepted family coverage note and states the family-level execution contract: what repo-local check mode proves, what live execution would additionally need, which gate variable or approval concept would be required, and what evidence would count as preflight readiness for either branch.",
+        "The note explicitly records cleanup-quality expectations and truthful stop conditions, keeps base vs dual-stack carrier differences visible where they affect execution evidence, and does not perform or imply any cloud mutation, live verdict, or model-status promotion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:52:24.809Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-execution-envelope-note-20260625_20260625165224",
+        "assigned_at": "2026-06-25T16:52:24.860Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-execution-envelope-note-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-execution-envelope-note-20260625_20260625165224",
+        "worker_started_at": "2026-06-25T16:52:47.274Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the ILPIP family execution-envelope note at evidence/archive/network-cni-overlay-ilpip-execution-envelope-note-20260625.md, grounded in both exact replay carriers, their check-evidence JSON files, the accepted family coverage note, the specs, and mounted source cleanup contract. No cloud mutation or model-status changes were performed.",
+        "last_worker_completed_at": "2026-06-25T16:54:07.731Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:54:48.176Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-cni-overlay-ilpip-execution-envelope-note-20260625.md: the note cites both exact ILPIP replay carriers plus accepted family coverage evidence, truthfully distinguishes repo-local check proof from still-execution-gated live behavior, records branch-specific gate/preflight/cleanup evidence requirements, and makes no cloud-mutation, live-verdict, or model-promotion claim."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-execution-envelope-note-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-execution-envelope-note-20260625"
+      ],
+      "result": "Wrote the ILPIP family execution-envelope note at evidence/archive/network-cni-overlay-ilpip-execution-envelope-note-20260625.md, grounded in both exact replay carriers, their check-evidence JSON files, the accepted family coverage note, the specs, and mounted source cleanup contract. No cloud mutation or model-status changes were performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:54:48.176Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-cni-overlay-ilpip-execution-envelope-note-20260625.md: the note cites both exact ILPIP replay carriers plus accepted family coverage evidence, truthfully distinguishes repo-local check proof from still-execution-gated live behavior, records branch-specific gate/preflight/cleanup evidence requirements, and makes no cloud-mutation, live-verdict, or model-promotion claim."
+      },
+      "status": "done"
+    }
+  ]
+}

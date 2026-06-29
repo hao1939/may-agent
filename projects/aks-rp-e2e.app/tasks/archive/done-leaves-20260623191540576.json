@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:15:40.576Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update for the stale watchdog-review-pending wake: accepted three completed review leaves after checking their durable archive artifacts. The project now knows that the network-cni cilium preview-upgrade exact ask packet has packet-specific approval-dispatch/message.created proof and should remain represented only through the existing shared external-human wait for a returned reply; net-integration MultiNIC mixed is canonically attached to mounted handwritten Scenario_MultiNIC_Mixed with old two-pool staging evidence left historical/non-canonical; and the cloud-provider credential-provider baseline branch already remains truthfully unknown, with the only anomaly being visible-tree bookkeeping after the original accepted leaf was archived. Validator triage also completed and selected one concrete next repo-local repair slice: node-http-proxy missing input-DAG wiring. Current truthful frontier is one active repo-local node-http-proxy model repair leaf plus the two unchanged exact blocked waits (shared external-human transport family and selected-host SSH environment wait).",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-23 net-integration variant linkage gap map plus mounted AKS RP MultiNIC handwritten source and the current repo-local feature/spec/replay/model surfaces, resolve the remaining MultiNIC mixed carrier split by deciding whether path.net-integration.multinic-mixed stays mounted-source exact or the older two-pool staging-pass contract moves to a different exact sibling, then reconcile the affected maintained surfaces so one truthful canonical landing remains without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted MultiNIC source files and the current repo-local feature/spec/replay/model/path-summary carriers, records the explicit canonicalization decision for Scenario_MultiNIC_Mixed, and lists every maintained surface that was updated or intentionally left unchanged so the remaining carrier truth is unambiguous.",
+        "The work stays repo-local and bounded to MultiNIC mixed canonicalization: no cloud mutation, no reopening of already-healthy net-integration variant families, and no duplication of the path.network-cni-cilium-preview-upgrade external-human transport branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-multinic-mixed"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:04:11.280Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623_20260623190411",
+        "assigned_at": "2026-06-23T19:04:11.329Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623",
+        "worker_started_attempt_id": "a_net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623_20260623190411",
+        "worker_started_at": "2026-06-23T19:04:24.306Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Canonicalized net-integration MultiNIC mixed to the exact mounted Scenario_MultiNIC_Mixed contract, updated the repo-local spec/replay/spec-index/model surfaces, regenerated maintained knowledge-map views, and wrote a durable archive note documenting the decision plus unchanged historical carriers.",
+        "last_worker_completed_at": "2026-06-23T19:13:58.707Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:14:23.869Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-23 archive artifact cites the exact mounted MultiNIC handwritten sources, decides that path.net-integration.multinic-mixed stays attached to Scenario_MultiNIC_Mixed, and records the repo-local spec/replay/model/view reconciliations needed to remove the old two-pool staging-pass contract from the canonical landing. This completes the bounded canonicalization decision truthfully without cloud work."
+      },
+      "session_id": "s_task_net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623",
+      "session_history": [
+        "s_task_net-integration-multinic-mixed-canonicalization-decision-and-surface-reconcile-20260623"
+      ],
+      "result": "Canonicalized net-integration MultiNIC mixed to the exact mounted Scenario_MultiNIC_Mixed contract, updated the repo-local spec/replay/spec-index/model surfaces, regenerated maintained knowledge-map views, and wrote a durable archive note documenting the decision plus unchanged historical carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:14:23.869Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-23 archive artifact cites the exact mounted MultiNIC handwritten sources, decides that path.net-integration.multinic-mixed stays attached to Scenario_MultiNIC_Mixed, and records the repo-local spec/replay/model/view reconciliations needed to remove the old two-pool staging-pass contract from the canonical landing. This completes the bounded canonicalization decision truthfully without cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

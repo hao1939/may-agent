@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:08:02.186Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier planning pass kept the frontier truthful and trimmed stale done detail: the mounted-source rows-25-50 repo-local map is already accepted durable context and is archived, the single exact external-human transport wait remains external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, and the sole live repo-local execution slice stays vm-prerelease-row25-manual-count-normalized-metadata-repair-20260622 until it produces fresh archive evidence for the row-25 manual-count=8 metadata repair without changing row-50 carriers or reopening the shared wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows-25-50-mounted-source-spec-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP VM prerelease source contract for rows 25 and 50 into the canonical repo-local spec/replay/model carriers so the project knows whether those rows already have truthful local coverage or need one bounded metadata repair, without cloud execution or reopening the shared external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows-25-50-mounted-source-spec-map-20260622.md"
+      ],
+      "acceptance": [
+        "Using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any directly referenced scenario definitions, identify the exact row-25 and row-50 behaviors, cite the current canonical specs/replays/model paths that cover them (or the precise repo-local gap), and record whether a follow-on metadata/spec repair is needed.",
+        "Archive evidence names the exact mounted-source lines/files and repo-local carriers checked, confirms no cloud run and no duplicate external-human wait, and either closes the mapping question or points to one bounded successor leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-rows-25-50"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:02:33.758Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows-25-50-mounted-source-spec-map-20260622_20260622180233",
+        "assigned_at": "2026-06-22T18:02:33.807Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows-25-50-mounted-source-spec-map-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-rows-25-50-mounted-source-spec-map-20260622_20260622180233",
+        "worker_started_at": "2026-06-22T18:02:52.312Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new archive note at evidence/archive/vm-prerelease-rows-25-50-mounted-source-spec-map-20260622.md mapping mounted-source row 25 and row 50 into current canonical spec/replay/model carriers. The evidence closes row 50 as already truthfully covered locally and identifies one bounded row-25 normalized-metadata repair: add the missing manual-count=8 input to the canonical DAG/path surfaces.",
+        "last_worker_completed_at": "2026-06-22T18:05:31.748Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:05:53.155Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted mounted-source review: evidence/archive/vm-prerelease-rows-25-50-mounted-source-spec-map-20260622.md proves row 50 is already truthfully covered locally and narrows row 25 to one exact repo-local repair: add the mounted-source manual-count=8 input to the canonical normalized DAG/path carriers without reopening any external-human wait."
+      },
+      "session_id": "s_task_vm-prerelease-rows-25-50-mounted-source-spec-map-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-rows-25-50-mounted-source-spec-map-20260622"
+      ],
+      "result": "Authored a new archive note at evidence/archive/vm-prerelease-rows-25-50-mounted-source-spec-map-20260622.md mapping mounted-source row 25 and row 50 into current canonical spec/replay/model carriers. The evidence closes row 50 as already truthfully covered locally and identifies one bounded row-25 normalized-metadata repair: add the missing manual-count=8 input to the canonical DAG/path surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:05:53.155Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted mounted-source review: evidence/archive/vm-prerelease-rows-25-50-mounted-source-spec-map-20260622.md proves row 50 is already truthfully covered locally and narrows row 25 to one exact repo-local repair: add the mounted-source manual-count=8 input to the canonical normalized DAG/path carriers without reopening any external-human wait."
+      },
+      "status": "done"
+    }
+  ]
+}

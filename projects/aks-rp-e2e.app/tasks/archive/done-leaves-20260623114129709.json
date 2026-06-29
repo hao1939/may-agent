@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T11:41:29.709Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier review accepted the ManagedSystem create-time initial/default-pool boundary packet and archived it into the root summary. The project now truthfully records path.managedsystem.create-time-initial-pool as a terminal repo-local product-gap branch on the minimal name+mode create-time contract: request admission is proven, downstream provisioning fails in RP-owned sku.DefaultClaim ARM64/x64 defaulting, and reopen is gated only on fresh owner/source proof that the same minimal contract now provisions successfully or the RP fix lands. No new runnable source/spec/model follow-up is created from that branch. With this review closed, the only live frontier remains the single family-level external human-proof wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622; keep that wait compressed and do not reopen completed repo-local closure while awaiting returned operator proof or an authoritative response change.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-initial-pool-boundary-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: build the first durable boundary map for path.managedsystem.create-time-initial-pool from handwritten e2ev3/source-backed carriers and existing repo-local specs/model so the project has one exact accepted/rejected input/expectation/coverage/gap packet for the ManagedSystem create-time initial/default pool product-gap without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-initial-pool-boundary-map-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the exact handwritten e2ev3 and mounted-source authorities, current model/path status and retest condition, and the repo-local feature/spec/replay carriers that cover or fail to cover path.managedsystem.create-time-initial-pool.",
+        "The packet maps accepted inputs, rejected or failing edges, expected behavior, observed product-gap evidence, adjacent surfaces, and concrete next bounded probes or authoring gaps, without cloud mutation or reopening unrelated external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-create-time-initial-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T11:39:31.148Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-initial-pool-boundary-map-20260623_20260623113931",
+        "assigned_at": "2026-06-23T11:39:31.205Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-initial-pool-boundary-map-20260623",
+        "worker_started_attempt_id": "a_managedsystem-create-time-initial-pool-boundary-map-20260623_20260623113931",
+        "worker_started_at": "2026-06-23T11:39:56.015Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local ManagedSystem create-time boundary artifact at evidence/archive/managedsystem-create-time-initial-pool-boundary-map-20260623.md, grounding accepted/rejected inputs, expectation path, authoritative source/spec/model/evidence coverage, current product-gap verdict, retest gate, and adjacent next-test surfaces without any cloud execution.",
+        "last_worker_completed_at": "2026-06-23T11:39:56.043Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T11:41:29.658Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-create-time-initial-pool-boundary-map-20260623.md grounds the exact handwritten and mounted-source authorities, repo-local spec/replay/model carriers, accepted name+mode-only create-time contract, observed admitted-then-provisioning-fails ARM64/x64 sku.DefaultClaim product-gap, and exact retest gate without cloud mutation or reopening unrelated waits."
+      },
+      "session_id": "s_task_managedsystem-create-time-initial-pool-boundary-map-20260623",
+      "session_history": [
+        "s_task_managedsystem-create-time-initial-pool-boundary-map-20260623"
+      ],
+      "result": "Produced the requested repo-local ManagedSystem create-time boundary artifact at evidence/archive/managedsystem-create-time-initial-pool-boundary-map-20260623.md, grounding accepted/rejected inputs, expectation path, authoritative source/spec/model/evidence coverage, current product-gap verdict, retest gate, and adjacent next-test surfaces without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T11:41:29.658Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-create-time-initial-pool-boundary-map-20260623.md grounds the exact handwritten and mounted-source authorities, repo-local spec/replay/model carriers, accepted name+mode-only create-time contract, observed admitted-then-provisioning-fails ARM64/x64 sku.DefaultClaim product-gap, and exact retest gate without cloud mutation or reopening unrelated waits."
+      },
+      "status": "done"
+    }
+  ]
+}

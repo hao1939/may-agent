@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T18:45:43.437Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner checkpoint: path.network-cni-cilium-preview-upgrade is now represented by one concrete active owner-facing unblock packet task rather than a premature passive quota wait. Accepted branch evidence still fixes the replay carrier on subscription 26fe00f8-9173-4872-9134-bb1d2e00343a at eastus2 Standard_D4ds_v5 x2 needing 8 standardDDSv5Family vCPUs, with eastus2 and westus2 both remaining 0, so only authoritative quota proof or an owner-approved equivalent execution environment can reopen execution after the ask packet is finished. path.net-integration.natgw-v2-migration-v2-to-none remains the other active repo-local repair lane, while the private-cluster selected-host SSH branch stays the single truthful path-specific environment wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-preview-upgrade-standardddsv5-quota-owner-proof-or-equivalent-environment-wait-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold one exact branch-local wait for path.network-cni-cilium-preview-upgrade until the same replay carrier is unblocked by authoritative standardDDSv5Family quota proof in eastus2 or by an owner-approved equivalent execution environment with the same carrier intent, without reopening generic Cilium/source work or cloning passive waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-preview-upgrade-standardddsv5-quota-owner-proof-or-equivalent-environment-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A durable artifact or authoritative owner update proves the same replay carrier can truthfully resume, including timestamp, subscription, region, VM-family evidence, and limit/current/remaining numbers showing eastus2 standardDDSv5Family remaining >= 8 or an owner-approved equivalent environment with the same branch-local replay intent.",
+        "The branch remains represented by one exact blocked wait only: it preserves the accepted raw HTTP 400 and 2026-06-23 quota follow-up evidence, records the owner ask and exact resume condition, and does not reopen generic upgrade/Cilium work or create duplicate quota waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-preview-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:41:54.795Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T18:45:34.846Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced this premature passive environment wait because the owner-facing unblock action is still local project work. The stale review task from the watchdog wake is already superseded by active leaf network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623, which now owns the exact quota/equivalent-environment packet needed before any truthful response-await or environment wait can remain."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T18:45:34.846Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced this premature passive environment wait because the owner-facing unblock action is still local project work. The stale review task from the watchdog wake is already superseded by active leaf network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623, which now owns the exact quota/equivalent-environment packet needed before any truthful response-await or environment wait can remain."
+      },
+      "status": "done"
+    }
+  ]
+}

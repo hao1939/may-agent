@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T02:00:03.193Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the June 21 repo-local knowledge-map refresh slice: managedsystem-field-rejection-spec-refresh-20260621 and managedsystem-field-rejection-wording-reconcile-20260621 closed the ManagedSystem rejection wording/spec parity loop, and source-private-cluster-scenario-coverage-map-20260621 captured the mounted-source private-cluster scenario map needed for bounded follow-on landings. The live project frontier is now intentionally minimal: private-cluster-shared-apiserver-subnet-model-landing-20260621 remains the single active repo-local next step to land the shared API server subnet success path into maintained model/view surfaces, while external-send-proof-dispatch-family-20260620 remains the only truthful external-human transport ceiling for the already prepared MachinesPreview and VM prerelease packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-field-rejection-spec-refresh-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the stale ManagedSystem count/type field-rejection spec surfaces so specs/managedsystem-field-rejection-matrix.json, specs/managedsystem-count-mutation-negative.json, specs/managedsystem-type-mutation-negative.json, and the derived specs/index.json consistently describe count/type rejection as closed by the accepted 2026-06-20 evidence rather than still execution-gated.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/index.json"
+      ],
+      "acceptance": [
+        "The three source spec JSON files are edited repo-locally so matrix/statusReason, execution-health, staging-coverage, testcase status, and evidenceRefs consistently match the accepted 2026-06-20 count/type rejection closure without changing product verdicts or creating any cloud-execution ask.",
+        "The derived specs/index.json mirror is refreshed from the updated source specs so it no longer repeats stale count/type execution-gated wording.",
+        "Task cites or preserves the reconcile packet at evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md as the bounded edit plan and leaves external-send-proof-dispatch-family-20260620 as the single live external-human blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:56:22.214Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-field-rejection-spec-refresh-20260621_20260621015624",
+        "assigned_at": "2026-06-21T01:56:24.930Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-field-rejection-spec-refresh-20260621",
+        "worker_started_attempt_id": "a_managedsystem-field-rejection-spec-refresh-20260621_20260621015624",
+        "worker_started_at": "2026-06-21T01:56:41.619Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the ManagedSystem field-rejection matrix, count spec, and type spec to reflect accepted 2026-06-20 count/type closure, then refreshed specs/index.json so it no longer carries stale execution-gated wording and now includes the type spec entry.",
+        "last_worker_completed_at": "2026-06-21T01:58:34.307Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:59:27.641Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct file-level review against evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md: specs/managedsystem-field-rejection-matrix.json, specs/managedsystem-count-mutation-negative.json, and specs/managedsystem-type-mutation-negative.json now carry closed/pass wording plus accepted 2026-06-20 evidence refs, and specs/index.json includes refreshed managedsystem entries with the stale execution-gated wording removed while external-send-proof-dispatch-family-20260620 remains the only live external-human blocker family."
+      },
+      "session_id": "s_task_managedsystem-field-rejection-spec-refresh-20260621",
+      "session_history": [
+        "s_task_managedsystem-field-rejection-spec-refresh-20260621"
+      ],
+      "result": "Updated the ManagedSystem field-rejection matrix, count spec, and type spec to reflect accepted 2026-06-20 count/type closure, then refreshed specs/index.json so it no longer carries stale execution-gated wording and now includes the type spec entry.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:59:27.641Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct file-level review against evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md: specs/managedsystem-field-rejection-matrix.json, specs/managedsystem-count-mutation-negative.json, and specs/managedsystem-type-mutation-negative.json now carry closed/pass wording plus accepted 2026-06-20 evidence refs, and specs/index.json includes refreshed managedsystem entries with the stale execution-gated wording removed while external-send-proof-dispatch-family-20260620 remains the only live external-human blocker family."
+      },
+      "status": "done"
+    }
+  ]
+}

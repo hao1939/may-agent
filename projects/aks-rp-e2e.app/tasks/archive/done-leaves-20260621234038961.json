@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:40:38.961Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review keeps the tree intentionally narrow after accepting the row-31 auto-zone single-SKU landing. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621 because accepted 2026-06-21 audit artifacts already prove repo-local packet preparation and local dispatch proof for MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity packaging; only real human transport or authoritative reply outside runtime can resume those branches. Repo-local forward work stays on one active VirtualMachines source/model slice: vmpr-row32-auto-zone-mixed-sku-model-landing-20260621 is now the sole active adjacent prerelease landing, preserving separation from row 31, row 30 mixed-SKU deallocate, and the generic lifecycle branch without reopening blocked execution or duplicating the external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row31-auto-zone-single-sku-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land VM prerelease row 31 auto-zone single-SKU behavior into the maintained knowledge map as a dedicated VirtualMachines path using mounted source plus existing spec/replay lineage, while keeping the branch separate from row 30 mixed-SKU deallocate and generic VirtualMachines lifecycle coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row31-auto-zone-single-sku-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP VM prerelease source plus existing repo-local spec/replay/index authorities to add a truthful dedicated maintained landing for the exact row-31 auto-zone single-SKU contract in model/knowledge-map/model.json and regenerate affected views.",
+        "Keep the landing narrowly row-scoped: preserve the exact auto-zone single-SKU semantics and document why it stays separate from row 30 mixed-SKU deallocate, row 29 mixed-SKU lifecycle, and generic VirtualMachines lifecycle coverage.",
+        "Write one durable repo-local evidence packet summarizing the maintained landing and reused authorities only; no cloud execution, no new external-human wait handling, and no product pass/fail claim beyond source/spec/model grounding."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:35:42.266Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row31-auto-zone-single-sku-model-landing-20260621_20260621233601",
+        "assigned_at": "2026-06-21T23:36:01.599Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row31-auto-zone-single-sku-model-landing-20260621",
+        "worker_started_attempt_id": "a_vmpr-row31-auto-zone-single-sku-model-landing-20260621_20260621233601",
+        "worker_started_at": "2026-06-21T23:36:20.816Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed row-31 VM prerelease auto-zone single-SKU into the maintained knowledge map by updating model/knowledge-map/model.json, regenerating maintained views, and writing durable evidence/archive/vmpr-row31-auto-zone-single-sku-model-landing-20260621.md. The maintained row now stays explicitly separate from row 29 mixed-SKU lifecycle, row 30 mixed-SKU deallocate, row 32 mixed-SKU auto-zone, and generic VirtualMachines lifecycle coverage.",
+        "last_worker_completed_at": "2026-06-21T23:39:13.000Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:39:39.063Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row31-auto-zone-single-sku-model-landing-20260621.md shows mounted source plus existing spec/replay lineage landed the exact row-31 auto-zone single-SKU path into model/knowledge-map/model.json, regenerated maintained views, and kept the branch explicitly separate from rows 29/30/32 and generic VirtualMachines lifecycle coverage with no cloud verdict claims."
+      },
+      "session_id": "s_task_vmpr-row31-auto-zone-single-sku-model-landing-20260621",
+      "session_history": [
+        "s_task_vmpr-row31-auto-zone-single-sku-model-landing-20260621"
+      ],
+      "result": "Landed row-31 VM prerelease auto-zone single-SKU into the maintained knowledge map by updating model/knowledge-map/model.json, regenerating maintained views, and writing durable evidence/archive/vmpr-row31-auto-zone-single-sku-model-landing-20260621.md. The maintained row now stays explicitly separate from row 29 mixed-SKU lifecycle, row 30 mixed-SKU deallocate, row 32 mixed-SKU auto-zone, and generic VirtualMachines lifecycle coverage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:39:39.063Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row31-auto-zone-single-sku-model-landing-20260621.md shows mounted source plus existing spec/replay lineage landed the exact row-31 auto-zone single-SKU path into model/knowledge-map/model.json, regenerated maintained views, and kept the branch explicitly separate from rows 29/30/32 and generic VirtualMachines lifecycle coverage with no cloud verdict claims."
+      },
+      "status": "done"
+    }
+  ]
+}

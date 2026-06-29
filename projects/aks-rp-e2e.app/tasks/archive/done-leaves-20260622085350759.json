@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:53:50.759Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner update accepted the mounted-source packet for Scenario_Basic_Retina_Update_Retina_Enterprise: the repo now has exact evidence that the update slice is distinct from both create-time Basic Retina and create-time Retina Enterprise because it carries a Basic Retina start state, an in-place advancedNetworking observability mutation, and a post-update enterprise Retina/Hubble/TLS verification surface. The external human-transport proof wait remains the single truthful blocked family-level wait. Forward local capacity is now concentrated on one runnable repo-local authoring leaf to land the exact feature/spec carrier for this ACNS update slice from the accepted packet.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-frontier-inventory-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the next uncovered mounted handwritten network-cni source frontier using exact AKS RP source plus current repo-local feature/spec/replay/model carriers, and determine whether one bounded repo-local exact-contract/model-view gap should be landed next or whether this first network-cni slice is already covered/no-local-gap.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-frontier-inventory-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted network-cni source files/scenarios reviewed and the current repo-local carriers/surfaces compared, without guessing beyond inspected source and maintained evidence.",
+        "Artifact classifies the reviewed mounted network-cni branches into already-covered, exact-model-gap needing one bounded follow-up, externally gated, or no-local-gap categories, and if a local gap remains it names exactly one highest-value next leaf with the maintained surface/evidence gap to close.",
+        "Artifact records any local validation/check commands used and confirms no cloud execution, no duplicate external-human wait, and no duplicate spec/replay authoring were introduced during the inventory."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:48:04.601Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-frontier-inventory-20260622_20260622084804",
+        "assigned_at": "2026-06-22T08:48:04.649Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-frontier-inventory-20260622",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-frontier-inventory-20260622_20260622084804",
+        "worker_started_at": "2026-06-22T08:48:29.403Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/network-cni-mounted-source-frontier-inventory-20260622.md`, re-inventorying the mounted ACNS update-family frontier and concluding that `Scenario_Retina_Enterprise_Update_ACNS_Cilium` is now an exact-model-gap while the highest-value next exact-contract leaf is `network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622`.",
+        "last_worker_completed_at": "2026-06-22T08:51:17.185Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:51:49.562Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 mounted-source inventory artifact: it cites exact AKS RP network-cni source files and current repo-local carriers, classifies ACNS update-family branches truthfully, confirms no cloud execution or duplicate waits/authoring, and identifies  as the single highest-value next local exact-contract leaf."
+      },
+      "session_id": "s_task_network-cni-mounted-source-frontier-inventory-20260622",
+      "session_history": [
+        "s_task_network-cni-mounted-source-frontier-inventory-20260622"
+      ],
+      "result": "Produced `evidence/archive/network-cni-mounted-source-frontier-inventory-20260622.md`, re-inventorying the mounted ACNS update-family frontier and concluding that `Scenario_Retina_Enterprise_Update_ACNS_Cilium` is now an exact-model-gap while the highest-value next exact-contract leaf is `network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:51:49.562Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 mounted-source inventory artifact: it cites exact AKS RP network-cni source files and current repo-local carriers, classifies ACNS update-family branches truthfully, confirms no cloud execution or duplicate waits/authoring, and identifies  as the single highest-value next local exact-contract leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce one exact mounted-source packet for Scenario_Basic_Retina_Update_Retina_Enterprise using mounted AKS RP source plus current repo-local neighbor carriers, so the next missing ACNS update-family exact-contract slice is defined without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP source files/lines for Scenario_Basic_Retina_Update_Retina_Enterprise, including scenario identity, start-state request contract, update mutator, and post-update verification surface, without guessing beyond inspected source.",
+        "Artifact compares the mounted slice against current repo-local adjacent carriers/surfaces, proves why existing basic-Retina and retina-enterprise carriers are only neighbors rather than exact carriers, and proposes exact future feature/spec/replay/path ids for this missing branch.",
+        "Artifact records any local validation commands used and confirms no cloud execution, no duplicate external-human wait, and no duplicate spec/replay authoring were introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:51:49.608Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622_20260622085149",
+        "assigned_at": "2026-06-22T08:51:49.666Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622",
+        "worker_started_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622_20260622085149",
+        "worker_started_at": "2026-06-22T08:52:06.287Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the mounted-source comparison packet for Scenario_Basic_Retina_Update_Retina_Enterprise at evidence/archive/network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622.md, citing exact mounted source lines, neighboring repo-local carriers, and proposed future exact ids without any cloud execution.",
+        "last_worker_completed_at": "2026-06-22T08:53:19.075Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:53:50.598Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 owner review: evidence/archive/network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622.md cites the exact mounted source for Scenario_Basic_Retina_Update_Retina_Enterprise, proves the start-state/update/post-update contract, explains why the existing basic and enterprise carriers are adjacent-only, and proposes exact future ids without cloud execution or duplicate waits."
+      },
+      "session_id": "s_task_network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622",
+      "session_history": [
+        "s_task_network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622"
+      ],
+      "result": "Produced the mounted-source comparison packet for Scenario_Basic_Retina_Update_Retina_Enterprise at evidence/archive/network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622.md, citing exact mounted source lines, neighboring repo-local carriers, and proposed future exact ids without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:53:50.598Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 owner review: evidence/archive/network-acns-basic-retina-update-retina-enterprise-mounted-source-packet-20260622.md cites the exact mounted source for Scenario_Basic_Retina_Update_Retina_Enterprise, proves the start-state/update/post-update contract, explains why the existing basic and enterprise carriers are adjacent-only, and proposes exact future ids without cloud execution or duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

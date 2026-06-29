@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:29:43.958Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review accepted the row-150 VM-substrate search as a blocker-tightening result: evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md proves no truthful repo-local VirtualMachines + shared-identity carrier exists for the explicit kubeProxyConfig create-IPTABLES/update-IPVS lifecycle, so blocker vm-prerelease-row150-kubeproxy-vm-substrate-blocker-20260620 remains the single live wait. MachinesPreview still waits on external send proof. Active feature work remains vm-prerelease-execution-gated-source-map-20260620 and vm-prerelease-gap-batch-identity-vnet-runner-20260620 to turn remaining VM prerelease gaps into exact source-backed authoring slices.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row163-node-not-ready-restart-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land exact repo-local authoring for VM prerelease row 163 (Scenario_NodeNotReady_Restart) from mounted remediator source: feature packet, spec, replay, coverage/feature-set linkage, and evidence for the VirtualMachines restart/remediation contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row163-node-not-ready-restart-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Row 163 is strict-covered by one exact repo-local feature/spec/replay/path set grounded in /app/sources/aks-rp/test/e2e/suites/remediator/main.go, preserving the VM branch mutators (systemctl stop kubelet and systemctl disable kubelet), the remediation timing/wait behavior, and the required aks-auto-repair event reasons NodeRebootStart/NodeRebootEnd/NodeReimageStart/NodeReimageEnd.",
+        "Any selector, coverage, and feature-set surfaces needed for row 163 are updated consistently, and bun runner/schema-check.ts, bun runner/wiring-check.ts, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt pass after the landing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:16:14.234Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row163-node-not-ready-restart-authoring-20260620_20260620141614",
+        "assigned_at": "2026-06-20T14:16:14.283Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row163-node-not-ready-restart-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row163-node-not-ready-restart-authoring-20260620_20260620141614",
+        "worker_started_at": "2026-06-20T14:16:26.606Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed exact repo-local authoring for VM prerelease row 163 with new feature/spec/replay surfaces, updated selector/coverage files, and verified schema, wiring, replay check, and plan generation all pass.",
+        "last_worker_completed_at": "2026-06-20T14:23:41.549Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:24:33.527Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review using evidence/archive/vm-prerelease-row163-node-not-ready-restart-authoring-20260620.md as primary proof: row 163 now has a dedicated source-grounded feature/spec/replay packet, coverage and selector files were updated consistently, the non-mutating replay check passed, and schema/wiring/plan verification are recorded as passing after the landing."
+      },
+      "session_id": "s_task_vm-prerelease-row163-node-not-ready-restart-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row163-node-not-ready-restart-authoring-20260620"
+      ],
+      "result": "Landed exact repo-local authoring for VM prerelease row 163 with new feature/spec/replay surfaces, updated selector/coverage files, and verified schema, wiring, replay check, and plan generation all pass.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:24:33.527Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review using evidence/archive/vm-prerelease-row163-node-not-ready-restart-authoring-20260620.md as primary proof: row 163 now has a dedicated source-grounded feature/spec/replay packet, coverage and selector files were updated consistently, the non-mutating replay check passed, and schema/wiring/plan verification are recorded as passing after the landing."
+      },
+      "status": "done"
+    }
+  ]
+}

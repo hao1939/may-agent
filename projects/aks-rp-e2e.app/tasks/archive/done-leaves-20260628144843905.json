@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T14:48:43.905Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 single-spec verifier liveness review: accepted evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md as the shared diagnosis for repeated stale-active/session-not-running requeues across verifier leaves. Fresh worker_started traces are not credible liveness proof for workflow=single-spec-verifier without matching runtime sessions rows, so repair-single-spec-verifier-session-handoff-runtime-contract-20260628 remains the primary active remediation. Until that repair resolves the contract, avoid refilling additional single-spec-verifier backlog just to maintain concurrency; exposed active verifier leaves stay under the existing retry gate rather than serving as proof of real throughput.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-single-spec-verifier-stale-active-session-churn-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the repeated 2026-06-28 single-spec-verifier stale-active session-not-running churn across requeued verifier leaves, produce one shared family-level evidence artifact, and leave a concrete corrective action or bounded runtime escalation for future stale-active cycles.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md"
+      ],
+      "acceptance": [
+        "Artifact names the affected verifier leaves, their repeated stale-active/requeue evidence, and why worker_started traces alone were not accepted as live-session proof.",
+        "Diagnosis identifies one concrete cause class or narrows the failure to a bounded verifier-runtime/app-handoff surface with exact next inspection points.",
+        "The branch records one next corrective action, retry gate, or external escalation so future stale-active watchdog wakes do not need to rediscover this churn family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow:single-spec-verifier-runtime"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:15:14.028Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-single-spec-verifier-stale-active-session-churn-20260628_20260628144307",
+        "assigned_at": "2026-06-28T14:43:07.193Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-single-spec-verifier-stale-active-session-churn-20260628",
+        "worker_started_attempt_id": "a_diagnose-single-spec-verifier-stale-active-session-churn-20260628_20260628144307",
+        "worker_started_at": "2026-06-28T14:43:24.468Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the shared diagnosis artifact `evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md`, naming the affected verifier leaves, documenting repeated stale-active/requeue evidence, and narrowing the cause to a bounded verifier-runtime/app-handoff session-liveness contract gap with a concrete repair path.",
+        "last_worker_completed_at": "2026-06-28T14:46:47.149Z",
+        "last_worker_evidence": [
+          "evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T14:47:18.489Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md satisfies the diagnosis acceptance by naming the repeated stale-active verifier leaves, proving worker_started is not durable liveness proof, and narrowing the shared cause to the single-spec-verifier session-handoff/watchdog contract with a concrete repair path."
+      },
+      "session_id": "s_task_diagnose-single-spec-verifier-stale-active-session-churn-20260628",
+      "session_history": [
+        "s_task_diagnose-single-spec-verifier-stale-active-session-churn-20260628"
+      ],
+      "result": "Produced the shared diagnosis artifact `evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md`, naming the affected verifier leaves, documenting repeated stale-active/requeue evidence, and narrowing the cause to a bounded verifier-runtime/app-handoff session-liveness contract gap with a concrete repair path.",
+      "evidence": [
+        "evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:47:18.489Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/single-spec-verifier-stale-active-session-churn-20260628.md satisfies the diagnosis acceptance by naming the repeated stale-active verifier leaves, proving worker_started is not durable liveness proof, and narrowing the shared cause to the single-spec-verifier session-handoff/watchdog contract with a concrete repair path."
+      },
+      "status": "done"
+    }
+  ]
+}

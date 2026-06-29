@@ -1,0 +1,539 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T15:06:13.482Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner stale-active cleanup: accepted verify-spec-deployment-safeguards-admissions-enforcer as a reviewed pass from workflow run 28326178017, then repaired the stale-active frontier by requeuing and freshly reassigning verify-spec-dataplane-proxy-connectivity and verify-spec-deployment-safeguards-basic-enable-disable after watchdog confirmed their prior sessions were not running and had no completion evidence. The deployment-safeguards family now keeps three concrete live leaves (basic-enable-disable, level-change-warn-to-enforce, private-cluster-enable-disable) plus new pss-level-change throughput while dataplane.proxy-connectivity is retried with a fresh session. Archived done children below are already represented by prior rollup summaries and no longer need to stay expanded in the open tree.",
+  "archived": 8,
+  "tasks": [
+    {
+      "id": "verify-spec-custom-node-config-eviction-reserved-create",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.custom-node-config.eviction-reserved-create through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.custom-node-config.eviction-reserved-create",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.custom-node-config.eviction-reserved-create"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.custom-node-config.eviction-reserved-create",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: artifact result.json for workflow run 28326150262 classifies spec.custom-node-config.eviction-reserved-create as fail (status=nonpassing, counts.fail=1, spec status=fail, category=product_failure, reason='Cluster creation failed: provisioningState='). Worker result/claim said blocked, but owner review normalized the verdict to fail; no shared runtime-family blocker is proven from this run alone, so sibling custom-node-config work remains the next comparison signal."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:43:20.069Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:56:30.020Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-custom-node-config-eviction-reserved-create_20260628145648",
+        "assigned_at": "2026-06-28T14:56:48.765Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-custom-node-config-eviction-reserved-create",
+        "worker_started_attempt_id": "a_verify-spec-custom-node-config-eviction-reserved-create_20260628145648",
+        "worker_started_at": "2026-06-28T14:56:53.566Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.custom-node-config.eviction-reserved-create workflow run 28326150262 classified as fail. Loop key: verify-spec-custom-node-config-eviction-reserved-create-a_verify-spec-custom-node-config-e. Cluster creation failed: provisioningState= Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326150262 Result: runs/test-results/single-custom-node-config-eviction-reserved-create_718449/artifacts/custom-node-config-eviction-reserved-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326150262/aks-rp-e2e-28326150262-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326150262/aks-rp-e2e-28326150262-spec-test-results/test-results/single-custom-node-config-eviction-reserved-create_718449/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T14:57:32.519Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T14:59:30.162Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: artifact result.json for workflow run 28326150262 classifies spec.custom-node-config.eviction-reserved-create as fail (status=nonpassing, counts.fail=1, spec status=fail, category=product_failure, reason='Cluster creation failed: provisioningState='). Worker result/claim said blocked, but owner review normalized the verdict to fail; no shared runtime-family blocker is proven from this run alone, so sibling custom-node-config work remains the next comparison signal."
+      },
+      "session_id": "s_task_verify-spec-custom-node-config-eviction-reserved-create",
+      "session_history": [
+        "s_task_verify-spec-custom-node-config-eviction-reserved-create"
+      ],
+      "result": "Spec spec.custom-node-config.eviction-reserved-create workflow run 28326150262 classified as fail. Loop key: verify-spec-custom-node-config-eviction-reserved-create-a_verify-spec-custom-node-config-e. Cluster creation failed: provisioningState= Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326150262 Result: runs/test-results/single-custom-node-config-eviction-reserved-create_718449/artifacts/custom-node-config-eviction-reserved-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326150262/aks-rp-e2e-28326150262-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326150262/aks-rp-e2e-28326150262-spec-test-results/test-results/single-custom-node-config-eviction-reserved-create_718449/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:59:30.162Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-custom-node-config-kubelet-os-create",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.custom-node-config.kubelet-os-create through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.custom-node-config.kubelet-os-create",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.custom-node-config.kubelet-os-create"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.custom-node-config.kubelet-os-create",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted workflow run 28326148969 as a truthful pass: result.json shows status=passed with spec.custom-node-config.kubelet-os-create status=pass and the worker summary cites verified kubeletConfig + linuxOSConfig persistence/assertion coverage."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:43:20.082Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:56:30.020Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-custom-node-config-kubelet-os-create_20260628145648",
+        "assigned_at": "2026-06-28T14:56:48.765Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-custom-node-config-kubelet-os-create",
+        "worker_started_attempt_id": "a_verify-spec-custom-node-config-kubelet-os-create_20260628145648",
+        "worker_started_at": "2026-06-28T14:56:50.096Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.custom-node-config.kubelet-os-create workflow run 28326148969 classified as pass. Loop key: verify-spec-custom-node-config-kubelet-os-create-a_verify-spec-custom-node-config-kubelet-. All kubeletConfig + linuxOSConfig assertions passed: API persistence, kubelet flags, sysctls, THP, and swap verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326148969 Result: runs/test-results/single-custom-node-config-kubelet-os-create_712846/artifacts/custom-node-config-kubelet-os-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326148969/aks-rp-e2e-28326148969-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326148969/aks-rp-e2e-28326148969-spec-test-results/test-results/single-custom-node-config-kubelet-os-create_712846/result.json",
+        "last_worker_completed_at": "2026-06-28T15:03:26.982Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T15:04:46.075Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted workflow run 28326148969 as a truthful pass: result.json shows status=passed with spec.custom-node-config.kubelet-os-create status=pass and the worker summary cites verified kubeletConfig + linuxOSConfig persistence/assertion coverage."
+      },
+      "session_id": "s_task_verify-spec-custom-node-config-kubelet-os-create",
+      "session_history": [
+        "s_task_verify-spec-custom-node-config-kubelet-os-create"
+      ],
+      "result": "Spec spec.custom-node-config.kubelet-os-create workflow run 28326148969 classified as pass. Loop key: verify-spec-custom-node-config-kubelet-os-create-a_verify-spec-custom-node-config-kubelet-. All kubeletConfig + linuxOSConfig assertions passed: API persistence, kubelet flags, sysctls, THP, and swap verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326148969 Result: runs/test-results/single-custom-node-config-kubelet-os-create_712846/artifacts/custom-node-config-kubelet-os-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326148969/aks-rp-e2e-28326148969-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326148969/aks-rp-e2e-28326148969-spec-test-results/test-results/single-custom-node-config-kubelet-os-create_712846/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:04:46.075Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-defender-profile-vm-prerelease-matrix",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.defender-profile.vm-prerelease-matrix through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.defender-profile.vm-prerelease-matrix",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.defender-profile.vm-prerelease-matrix",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "This review leaf appears to belong to the same source/check-only VM-prerelease family as cost-analysis, but the current worker claim is not yet owner-accepted as a final spec verdict. Replace it with document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628 so one bounded family task can verify the exact scenario path, confirm source/check-only versus live-capable status, and record the durable non-live-ceiling or successor decision without treating workflow conclusion failure as product evidence."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:43:20.109Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:57:37.976Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-defender-profile-vm-prerelease-matrix_20260628145757",
+        "assigned_at": "2026-06-28T14:57:57.345Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-defender-profile-vm-prerelease-matrix",
+        "worker_started_attempt_id": "a_verify-spec-defender-profile-vm-prerelease-matrix_20260628145757",
+        "worker_started_at": "2026-06-28T14:58:01.060Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.defender-profile.vm-prerelease-matrix workflow run 28326179570 classified as blocked. Loop key: verify-spec-defender-profile-vm-prerelease-matrix-a_verify-spec-defender-profile-vm-prerel. Spec spec.defender-profile.vm-prerelease-matrix has scenario test features/defender-profile/tests/defender-profile-vm-prerelease-matrix.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326179570 Result: runs/test-results/single-defender-profile-vm-prerelease-matrix_829627/artifacts/defender-profile-vm-prerelease-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326179570/aks-rp-e2e-28326179570-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326179570/aks-rp-e2e-28326179570-spec-test-results/test-results/single-defender-profile-vm-prerelease-matrix_829627/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T14:58:49.319Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T15:00:47.775Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "This review leaf appears to belong to the same source/check-only VM-prerelease family as cost-analysis, but the current worker claim is not yet owner-accepted as a final spec verdict. Replace it with document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628 so one bounded family task can verify the exact scenario path, confirm source/check-only versus live-capable status, and record the durable non-live-ceiling or successor decision without treating workflow conclusion failure as product evidence."
+      },
+      "session_id": "s_task_verify-spec-defender-profile-vm-prerelease-matrix",
+      "session_history": [
+        "s_task_verify-spec-defender-profile-vm-prerelease-matrix"
+      ],
+      "result": "Spec spec.defender-profile.vm-prerelease-matrix workflow run 28326179570 classified as blocked. Loop key: verify-spec-defender-profile-vm-prerelease-matrix-a_verify-spec-defender-profile-vm-prerel. Spec spec.defender-profile.vm-prerelease-matrix has scenario test features/defender-profile/tests/defender-profile-vm-prerelease-matrix.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326179570 Result: runs/test-results/single-defender-profile-vm-prerelease-matrix_829627/artifacts/defender-profile-vm-prerelease-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326179570/aks-rp-e2e-28326179570-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326179570/aks-rp-e2e-28326179570-spec-test-results/test-results/single-defender-profile-vm-prerelease-matrix_829627/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T15:00:47.775Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "classify-source-check-only-single-spec-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the current source/check-only single-spec review family into durable spec/replay/model follow-up so these leaves stop cycling as fake live-execution failures.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/source-check-only-single-spec-family-20260628.md"
+      ],
+      "acceptance": [
+        "Map each reviewed source/check-only spec to its scenario test path and state whether it should stay source-equivalent, gain gated live execution, or be retired from the live spec queue.",
+        "Record the exact next task(s) or explicit non-live ceiling decision for the current family members reviewed in this wave.",
+        "Preserve enough durable evidence that the owner can close or retry future similar review leaves without rereading raw workflow artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-source-check-only-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T13:02:17.981Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-source-check-only-single-spec-family-20260628_20260628145732",
+        "assigned_at": "2026-06-28T14:57:32.594Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-source-check-only-single-spec-family-20260628",
+        "worker_started_attempt_id": "a_classify-source-check-only-single-spec-family-20260628_20260628145732",
+        "worker_started_at": "2026-06-28T14:57:57.484Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable classification note at evidence/archive/source-check-only-single-spec-family-20260628.md that maps the current source/check-only single-spec family to exact scenario tests, distinguishes true non-live ceilings from live-capable verifier-runtime-gated specs, and records concrete owner next actions.",
+        "last_worker_completed_at": "2026-06-28T15:00:03.729Z",
+        "last_worker_evidence": [
+          "evidence/archive/source-check-only-single-spec-family-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T15:00:47.829Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the family classification artifact at evidence/archive/source-check-only-single-spec-family-20260628.md. It durably maps the current cluster-autoscaler source/check-only review family to exact scenario files, separates true non-live ceilings from live-capable specs gated only by verifier-runtime credibility, and gives owner-ready queue decisions for future similar reviews."
+      },
+      "session_id": "s_task_classify-source-check-only-single-spec-family-20260628",
+      "session_history": [
+        "s_task_classify-source-check-only-single-spec-family-20260628"
+      ],
+      "result": "Produced a durable classification note at evidence/archive/source-check-only-single-spec-family-20260628.md that maps the current source/check-only single-spec family to exact scenario tests, distinguishes true non-live ceilings from live-capable verifier-runtime-gated specs, and records concrete owner next actions.",
+      "evidence": [
+        "evidence/archive/source-check-only-single-spec-family-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:00:47.829Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the family classification artifact at evidence/archive/source-check-only-single-spec-family-20260628.md. It durably maps the current cluster-autoscaler source/check-only review family to exact scenario files, separates true non-live ceilings from live-capable specs gated only by verifier-runtime credibility, and gives owner-ready queue decisions for future similar reviews."
+      },
+      "status": "done"
+    },
+    {
+      "id": "document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map spec.cost-analysis.vm-prerelease-source-seed and spec.defender-profile.vm-prerelease-matrix to their checked-in scenario files, confirm whether each is a true source/check-only ceiling or a live-capable spec, and record the durable non-live-ceiling or live-authoring decision so future owner review can close similar leaves without rereading workflow artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md"
+      ],
+      "acceptance": [
+        "For spec.cost-analysis.vm-prerelease-source-seed and spec.defender-profile.vm-prerelease-matrix, record the exact scenario test path plus the repo-local evidence that shows source/check-only ceiling versus live-capable execution.",
+        "State the owner decision for each spec: retire from routine single-spec live retry in current form, create a bounded live-authoring successor, or keep on a separate runtime-gated live track.",
+        "Preserve enough durable evidence that current review leaves can be accepted as truthful spec verdicts without using GitHub workflow conclusion failure as product evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-source-check-only-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T15:00:27.590Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628_20260628150049",
+        "assigned_at": "2026-06-28T15:00:49.972Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628",
+        "worker_started_attempt_id": "a_document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628_20260628150049",
+        "worker_started_at": "2026-06-28T15:01:10.214Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable source-check classification artifact at evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md showing both VM prerelease cost-analysis and defender-profile leaves are upstream live-capable in mounted AKS RP source but still repo-local check-validation carriers, with owner guidance to replace routine live retries with bounded live-authoring successors.",
+        "last_worker_completed_at": "2026-06-28T15:03:57.625Z",
+        "last_worker_evidence": [
+          "evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T15:04:46.128Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md: mounted AKS RP source proves both VM prerelease families are live-capable upstream, while current repo-local carriers remain check-validation placeholders that should not be routine live-retried in current form."
+      },
+      "session_id": "s_task_document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628",
+      "session_history": [
+        "s_task_document-source-check-only-vm-prerelease-cost-analysis-defender-family-20260628"
+      ],
+      "result": "Produced a durable source-check classification artifact at evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md showing both VM prerelease cost-analysis and defender-profile leaves are upstream live-capable in mounted AKS RP source but still repo-local check-validation carriers, with owner guidance to replace routine live retries with bounded live-authoring successors.",
+      "evidence": [
+        "evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:04:46.128Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/source-check-only-vm-prerelease-cost-analysis-defender-family-20260628.md: mounted AKS RP source proves both VM prerelease families are live-capable upstream, while current repo-local carriers remain check-validation placeholders that should not be routine live-retried in current form."
+      },
+      "status": "done"
+    },
+    {
+      "id": "escalate-single-spec-verifier-runtime-session-contract-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Own the shared workflow:single-spec-verifier-runtime fallout after the accepted 2026-06-28 escalation: keep one visible retry gate for the current stale-active verifier family (cluster-autoscaler scale-from-zero-labels-fips, scale-from-zero-labels-manageddisks, vm-prerelease-service-principal, vm-prerelease-spot), record the owner decision to pause additional single-spec-verifier refill until durable liveness proof exists, and either normalize the tree truthfully or produce the exact app-tooling/runtime-owner follow-up needed.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md"
+      ],
+      "acceptance": [
+        "Follow-up artifact cites the accepted runtime-session escalation bundle and records the owner decision that no additional single-spec-verifier backlog leaves should be assigned until assigned verifier task.session_id is visible in runtime sessions during execution or an alternate durable in-flight surface is shipped.",
+        "Artifact explicitly names the currently affected verifier leaves (cluster-autoscaler scale-from-zero-labels-fips, scale-from-zero-labels-manageddisks, vm-prerelease-service-principal, vm-prerelease-spot) and states whether each has been truthfully replaced in the tree, remains pending only behind the shared retry gate, or still needs app-tooling support to normalize stale-active state.",
+        "If current task-tree/app primitives still cannot preserve the retry gate cleanly, the artifact records the exact tooling/runtime-owner action needed; otherwise it states the exact retry rule for recreating verifier leaves once the contract repair is proven."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow:single-spec-verifier-runtime"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:51:34.128Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_escalate-single-spec-verifier-runtime-session-contract-family-20260628_20260628145457",
+        "assigned_at": "2026-06-28T14:54:57.385Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_escalate-single-spec-verifier-runtime-session-contract-family-20260628",
+        "worker_started_attempt_id": "a_escalate-single-spec-verifier-runtime-session-contract-family-20260628_20260628145457",
+        "worker_started_at": "2026-06-28T14:55:25.996Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested follow-up artifact at evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md, documenting the accepted escalation, explicit pause-on-refill owner decision, the replaced/completed status of the affected verifier leaves, and the exact runtime/app-tooling liveness repair still required.",
+        "last_worker_completed_at": "2026-06-28T14:57:29.576Z",
+        "last_worker_evidence": [
+          "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T15:00:47.891Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the follow-up artifact at evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md. It records the owner pause-on-refill rule, confirms the stale-active verifier leaves were normalized truthfully under one shared runtime-contract gate, and leaves repair-single-spec-verifier-runtime-family-followup-frontier-20260628 as the remaining active repair lane."
+      },
+      "session_id": "s_task_escalate-single-spec-verifier-runtime-session-contract-family-20260628",
+      "session_history": [
+        "s_task_escalate-single-spec-verifier-runtime-session-contract-family-20260628"
+      ],
+      "result": "Wrote the requested follow-up artifact at evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md, documenting the accepted escalation, explicit pause-on-refill owner decision, the replaced/completed status of the affected verifier leaves, and the exact runtime/app-tooling liveness repair still required.",
+      "evidence": [
+        "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:00:47.891Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the follow-up artifact at evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-20260628.md. It records the owner pause-on-refill rule, confirms the stale-active verifier leaves were normalized truthfully under one shared runtime-contract gate, and leaves repair-single-spec-verifier-runtime-family-followup-frontier-20260628 as the remaining active repair lane."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-single-spec-verifier-runtime-family-followup-frontier-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Correct the single-spec verifier runtime/session follow-up against the current tree: reconcile the accepted stale-active family with the actual active single-spec-verifier frontier and restate the owner refill rule without claiming zero active verifier leaves unless the tree proves it.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-corrected-20260628.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted runtime-session escalation bundle plus current task-tree evidence and explains why the prior follow-up could not be accepted as-is.",
+        "Artifact explicitly names the stale-active family from the accepted escalation goal (cluster-autoscaler scale-from-zero-labels-fips, cluster-autoscaler scale-from-zero-labels-manageddisks, vm-prerelease-service-principal, vm-prerelease-spot) and states the actual current tree disposition for each without substituting unrelated specs.",
+        "Artifact resolves the contradiction between the recorded pause-on-additional-refill decision and the current active single-spec-verifier leaves by stating whether those active leaves predated the pause, remain allowed in flight, or require separate normalization, and defines the exact retry/refill rule going forward.",
+        "If any active single-spec-verifier leaves remain outside the stale-active family, the artifact distinguishes them from the shared runtime-contract gate instead of claiming there are zero active verifier leaves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow:single-spec-verifier-runtime"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:58:49.395Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-single-spec-verifier-runtime-family-followup-frontier-20260628_20260628145849",
+        "assigned_at": "2026-06-28T14:58:49.452Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-single-spec-verifier-runtime-family-followup-frontier-20260628",
+        "worker_started_attempt_id": "a_repair-single-spec-verifier-runtime-family-followup-frontier-20260628_20260628145849",
+        "worker_started_at": "2026-06-28T14:59:02.925Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the corrected follow-up artifact `evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-corrected-20260628.md`, reconciling the accepted runtime-session family with the actual current single-spec-verifier frontier and restating the refill rule without falsely claiming zero active verifier leaves.",
+        "last_worker_completed_at": "2026-06-28T15:00:51.098Z",
+        "last_worker_evidence": [
+          "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-corrected-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T15:02:31.151Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the corrected artifact cites the accepted runtime/session escalation bundle, names the exact stale-active family (scale-from-zero-labels-fips, scale-from-zero-labels-manageddisks, vm-prerelease-service-principal, vm-prerelease-spot), distinguishes the still-active unrelated verifier leaves, and restates the pause rule as family-scoped refill/retry gating rather than a false zero-active-global claim."
+      },
+      "session_id": "s_task_repair-single-spec-verifier-runtime-family-followup-frontier-20260628",
+      "session_history": [
+        "s_task_repair-single-spec-verifier-runtime-family-followup-frontier-20260628"
+      ],
+      "result": "Wrote the corrected follow-up artifact `evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-corrected-20260628.md`, reconciling the accepted runtime-session family with the actual current single-spec-verifier frontier and restating the refill rule without falsely claiming zero active verifier leaves.",
+      "evidence": [
+        "evidence/archive/single-spec-verifier-runtime-session-contract-family-followup-corrected-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:02:31.151Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the corrected artifact cites the accepted runtime/session escalation bundle, names the exact stale-active family (scale-from-zero-labels-fips, scale-from-zero-labels-manageddisks, vm-prerelease-service-principal, vm-prerelease-spot), distinguishes the still-active unrelated verifier leaves, and restates the pause rule as family-scoped refill/retry gating rather than a false zero-active-global claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-deployment-safeguards-admissions-enforcer",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.deployment-safeguards.admissions-enforcer through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.deployment-safeguards.admissions-enforcer",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.deployment-safeguards.admissions-enforcer"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.deployment-safeguards.admissions-enforcer",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted worker review: workflow run 28326178017 produced a reviewed pass for spec.deployment-safeguards.admissions-enforcer with all three claim assertions satisfied (protected pod not mutated, offensive denied in unprotected, offensive allowed in protected); acceptance criteria met and spec-loop state/result artifacts were reviewed."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:43:20.123Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:57:37.976Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-deployment-safeguards-admissions-enforcer_20260628145757",
+        "assigned_at": "2026-06-28T14:57:57.345Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-deployment-safeguards-admissions-enforcer",
+        "worker_started_attempt_id": "a_verify-spec-deployment-safeguards-admissions-enforcer_20260628145757",
+        "worker_started_at": "2026-06-28T14:57:58.057Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.deployment-safeguards.admissions-enforcer workflow run 28326178017 classified as pass. Loop key: verify-spec-deployment-safeguards-admissions-enforcer-a_verify-spec-deployment-safeguards-. Admissions enforcer webhook lifecycle passed. All 3 claim assertions passed. Protected pod not mutated. Offensive denied in unprotected. Offensive allowed in protected. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326178017 Result: runs/test-results/single-deployment-safeguards-admissions-enforcer_817907/artifacts/deployment-safeguards-admissions-enforcer/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326178017/aks-rp-e2e-28326178017-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326178017/aks-rp-e2e-28326178017-spec-test-results/test-results/single-deployment-safeguards-admissions-enforcer_817907/result.json",
+        "last_worker_completed_at": "2026-06-28T15:05:14.799Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T15:06:13.167Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: workflow run 28326178017 produced a reviewed pass for spec.deployment-safeguards.admissions-enforcer with all three claim assertions satisfied (protected pod not mutated, offensive denied in unprotected, offensive allowed in protected); acceptance criteria met and spec-loop state/result artifacts were reviewed."
+      },
+      "session_id": "s_task_verify-spec-deployment-safeguards-admissions-enforcer",
+      "session_history": [
+        "s_task_verify-spec-deployment-safeguards-admissions-enforcer"
+      ],
+      "result": "Spec spec.deployment-safeguards.admissions-enforcer workflow run 28326178017 classified as pass. Loop key: verify-spec-deployment-safeguards-admissions-enforcer-a_verify-spec-deployment-safeguards-. Admissions enforcer webhook lifecycle passed. All 3 claim assertions passed. Protected pod not mutated. Offensive denied in unprotected. Offensive allowed in protected. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326178017 Result: runs/test-results/single-deployment-safeguards-admissions-enforcer_817907/artifacts/deployment-safeguards-admissions-enforcer/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326178017/aks-rp-e2e-28326178017-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326178017/aks-rp-e2e-28326178017-spec-test-results/test-results/single-deployment-safeguards-admissions-enforcer_817907/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:06:13.167Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:46:07.766Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 blocked-frontier owner review repaired this branch to eliminate misleading runnable dependency-gated leaves. No durable repo-local returned approval/reply proof exists yet, so both the previously active private-cluster none-dns-zone-v3 live-run leaf and the early dated follow-up leaf were retired as replaced representations rather than left runnable. The branch now truthfully keeps one live blocker only: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. Its blocker text now explicitly carries the post-2026-06-26 rule: if the first blocked-frontier owner review after that date still finds no returned proof, the owner must promote one exact follow-up/escalation action instead of carrying the passive wait unchanged. Do not reopen completed repo-local source/spec/model closure or split the shared wait; next useful action is authoritative returned proof or the dated owner follow-up trigger.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "external-send-proof-dispatch-family-follow-up-or-escalation-if-silent-after-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "If no durable repo-local returned external approval/reply proof is recorded for the covered external-send-proof-dispatch family by the first blocked-frontier owner review after 2026-06-26, send one exact follow-up or escalation through the correct external channel, capture durable proof of that follow-up/escalation, and restate the single family-level resume condition without reopening completed repo-local source/spec/model closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-follow-up-or-escalation-if-silent-after-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records the date check, the absence of returned proof as of that review, the exact follow-up or escalation channel/recipient/owner, the linked prior dispatch packet path or bundle id, the specific asks covered, and any new response SLA, blocker, or owner handoff returned.",
+        "The branch still carries one truthful family-level external wait only: either the original wait remains with refreshed returned-proof evidence, or it is replaced by a better-bounded family-level follow-up/escalation representation; no duplicate child waits or reopened local rediscovery work are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [
+        "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622"
+      ],
+      "trace": {
+        "created_at": "2026-06-23T14:45:30.569Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T14:46:00.105Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Retired this premature runnable leaf because the dated follow-up is not actionable yet and the branch must keep one truthful live blocker only. The post-2026-06-26 escalation trigger is now captured directly in external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 and the parent rollup instead of as an immediately runnable duplicate task."
+      },
+      "context": {
+        "activation_gate": "Only becomes assignable if the shared external wait is still unresolved at the first blocked-frontier owner review after 2026-06-26.",
+        "acceptance_note": "Retired this premature runnable leaf because the dated follow-up is not actionable yet and the branch must keep one truthful live blocker only. The post-2026-06-26 escalation trigger is now captured directly in external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 and the parent rollup instead of as an immediately runnable duplicate task."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T14:46:00.105Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-none-dns-zone-v3-authorized-exact-lifecycle-live-run-on-proof-return-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "When durable repo-local returned external approval/reply proof lands for path.private-cluster-none-dns-zone-v3, execute the exact source-aligned one-cluster private-cluster system->none lifecycle with the dedicated spec/replay unchanged, capture the full ordered live evidence set, and update the maintained model/view only if that one accepted run closes the current execution ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-authorized-exact-lifecycle-live-run-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive result or blocker artifact records the returned external approval/reply proof plus the explicit subscription/location tuple, executor auth proof, canonical spec-runner invocation, and the ordered same-cluster lifecycle evidence for create.system, managed-zone existence before update, update.none, managed-zone deletion after update, scale-up to 3, scale-down to 1, and cleanup status.",
+        "If one accepted run proves the full same-cluster lifecycle, the task updates the maintained model/view/status from the current unknown execution ceiling; otherwise it records the exact remaining gap or blocker without reopening completed source/spec closure or creating a duplicate blocked child wait for the existing family-level external-human ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [
+        "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622"
+      ],
+      "trace": {
+        "created_at": "2026-06-23T14:45:11.287Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T14:46:00.158Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Retired this premature runnable leaf because the exact live run is not actionable until the existing family-level external returned-proof wait resolves. That future execution slice remains captured in the parent rollup and should be recreated or re-promoted only when durable returned proof actually lands, rather than appearing as a runnable backlog item now."
+      },
+      "context": {
+        "activation_gate": "Returned external approval/reply proof must be archived first; this execution leaf is not assignable before the shared external wait is resolved.",
+        "acceptance_note": "Retired this premature runnable leaf because the exact live run is not actionable until the existing family-level external returned-proof wait resolves. That future execution slice remains captured in the parent rollup and should be recreated or re-promoted only when durable returned proof actually lands, rather than appearing as a runnable backlog item now."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T14:46:00.158Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

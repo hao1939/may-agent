@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T22:48:38.873Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner accepted the storage-csi csidrivers local validation as durable root history: the repaired replay, spec, feature packet, and mounted csidrivers source still agree on the bounded create-disabled -> enable-all-three -> addon-validation -> upgrade -> disable-all-three lifecycle; local check mode passed, execute mode stayed intentionally gated, and spec dry-run proved runner wiring without cloud mutation. With the speculor remainder matrix, replay fidelity repair, and local validation slices archived, the visible frontier should stay compressed to focus-mounted-source-coverage-closure-and-external-wait-20260623 only. There is no truthful runnable local work before the 2026-06-26 follow-up window; keep the five exact external waits unchanged until returned proof arrives or that window opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "speculor-remainder-mounted-source-gap-matrix-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map one uncovered speculor-remainder mounted-source slice into a durable scenario-to-coverage matrix so the project has truthful runnable knowledge work while external approval waits remain blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-remainder-mounted-source-gap-matrix-20260624.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the exact mounted AKS RP Go source files and handwritten e2ev3 scenarios reviewed for one uncovered speculor-remainder slice, lists the scenario names or rows inspected, and maps each to existing or missing feature/spec/replay/model coverage.",
+        "Artifact names 1-3 concrete successor tasks or no-cloud/model updates with suggested conflict scopes and output paths, and explicitly states whether each successor is independent of the current five external waits or still gated by one of them.",
+        "No cloud mutation, no external-send follow-up before the 2026-06-26 gate, and no reopening of the current blocked-frontier wait family are performed from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "coverage.speculor-remainder"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T22:38:40.239Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-remainder-mounted-source-gap-matrix-20260624_20260624223840",
+        "assigned_at": "2026-06-24T22:38:40.300Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-remainder-mounted-source-gap-matrix-20260624",
+        "worker_started_attempt_id": "a_speculor-remainder-mounted-source-gap-matrix-20260624_20260624223840",
+        "worker_started_at": "2026-06-24T22:39:10.178Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact `evidence/archive/speculor-remainder-mounted-source-gap-matrix-20260624.md`, mapping the mounted Speculor storage `csidrivers` remainder slice to current feature/spec/replay/model coverage and identifying replay-fidelity as the remaining no-cloud gap independent of the external waits.",
+        "last_worker_completed_at": "2026-06-24T22:41:26.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T22:41:59.649Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/speculor-remainder-mounted-source-gap-matrix-20260624.md: it cites exact mounted source files and Scenario_CSI_Drivers rows 101-112, distinguishes intentional metadata-only coverage from true gaps, and identifies the remaining independent repo-local next step as replay fidelity repair for replays/storage-csi-csidrivers.ts without reopening the five external waits."
+      },
+      "session_id": "s_task_speculor-remainder-mounted-source-gap-matrix-20260624",
+      "session_history": [
+        "s_task_speculor-remainder-mounted-source-gap-matrix-20260624"
+      ],
+      "result": "Created the requested archive artifact `evidence/archive/speculor-remainder-mounted-source-gap-matrix-20260624.md`, mapping the mounted Speculor storage `csidrivers` remainder slice to current feature/spec/replay/model coverage and identifying replay-fidelity as the remaining no-cloud gap independent of the external waits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T22:41:59.649Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/speculor-remainder-mounted-source-gap-matrix-20260624.md: it cites exact mounted source files and Scenario_CSI_Drivers rows 101-112, distinguishes intentional metadata-only coverage from true gaps, and identifies the remaining independent repo-local next step as replay fidelity repair for replays/storage-csi-csidrivers.ts without reopening the five external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:11:15.080Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review kept the frontier intentionally minimal and truthful: the bounded node-custom-ca-trust post-rerun environment-gate reconcile is accepted and archived as completed repo-local evidence, the single live repo-local action remains vm-prerelease-mounted-source-row-contract-reconcile-20260622 to map mounted-source-backed intent and local coverage for VM prerelease rows 25+50, 40-43, 33, and 76, and the only blocked sibling remains the family-level external human/operator proof wait. No new live execution or duplicate external/source waits were introduced in this planner pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted bounded node-custom-ca-trust live rerun into repo-local knowledge surfaces: replace the stale PEM-decode diagnosis with the observed eastus2 Standard_D4s_v5 subscription restriction, update the truthful current status/next-action framing for path.node-custom-ca-trust.create, and identify the exact replay-side VM-size prerequisite for any future bounded rerun without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "The output cites the accepted rerun evidence and records the exact old CATrustPreviewCAPEMDecodeFailure vs new eastus2 Standard_D4s_v5 restriction, stating the maintained verdict/status for path.node-custom-ca-trust.create and whether the current blocker is environment/subscription rather than payload decode.",
+        "The work identifies where the replay currently requests Standard_D4s_v5, names the exact repo-local prerequisite for the next bounded live rerun (allowed VM size override, different region/subscription, or equivalent), and updates any touched model/view/status surfaces consistently with that conclusion.",
+        "No cloud mutation is performed; this is repo-local evidence/model/replay-prep work only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path-node-custom-ca-trust-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:07:16.023Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622_20260622110718",
+        "assigned_at": "2026-06-22T11:07:18.161Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622",
+        "worker_started_attempt_id": "a_node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622_20260622110718",
+        "worker_started_at": "2026-06-22T11:07:41.838Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled node-custom-ca-trust post-rerun environment gating in a new archive note and updated the replay to allow VM-size override via env vars, replacing the stale active PEM-decode framing with the observed eastus2 Standard_D4s_v5 subscription restriction.",
+        "last_worker_completed_at": "2026-06-22T11:09:45.495Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:10:10.234Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the accepted rerun evidence, replaces the stale PEM-decode blocker with the observed eastus2 Standard_D4s_v5 subscription restriction, records the maintained unknown verdict for path.node-custom-ca-trust.create, and the repo-local replay now allows VM-size override for the next bounded rerun prerequisite."
+      },
+      "session_id": "s_task_node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622",
+      "session_history": [
+        "s_task_node-custom-ca-trust-post-rerun-environment-gate-reconcile-20260622"
+      ],
+      "result": "Reconciled node-custom-ca-trust post-rerun environment gating in a new archive note and updated the replay to allow VM-size override via env vars, replacing the stale active PEM-decode framing with the observed eastus2 Standard_D4s_v5 subscription restriction.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:10:10.234Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the accepted rerun evidence, replaces the stale PEM-decode blocker with the observed eastus2 Standard_D4s_v5 subscription restriction, records the maintained unknown verdict for path.node-custom-ca-trust.create, and the repo-local replay now allows VM-size override for the next bounded rerun prerequisite."
+      },
+      "status": "done"
+    }
+  ]
+}

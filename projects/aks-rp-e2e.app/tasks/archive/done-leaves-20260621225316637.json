@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T22:53:16.637Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner rollup accepts the repo-local cluster-autoscaler wording cleanup through VM prerelease row 46: the completed minCount recovery packet now truthfully preserves the dedicated VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + exact 3/5/3 delete-and-recover contract as source-grounded only, with no new live-verification claim. The only meaningful open repo-local follow-on remains the active row-47 overscale packet update in features/cluster-autoscaler.yaml, which should preserve the mounted-source no-overscale expectation without widening scope; keep the single external human-transport family wait unchanged as the only live blocked carrier for the covered human send/reply dependencies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ca-vmpr-mincount-feature-wording-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the maintained cluster-autoscaler feature packet wording with the accepted source-grounded unknown verdict for the VM prerelease minCount recovery path, so the repo-local feature surface truthfully reflects what row-46 does and does not prove without inventing fresh live coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/cluster-autoscaler.yaml"
+      ],
+      "acceptance": [
+        "Update features/cluster-autoscaler.yaml (or the nearest maintained wording for the VM prerelease minCount recovery branch) so it explicitly preserves the accepted unknown/not-live-verified status for row-46 VirtualMachines prerelease minCount recovery, including the exact 3/5/3 autoscale shape and recovery expectation without claiming fresh execution success.",
+        "Wording must stay aligned with the accepted model/view status for path.cluster-autoscaler.vm-prerelease-mincount-recovery, the linked source-grounded row-46 evidence already in the repo, and must not spawn cloud reruns, new external waits, or broader model reshaping.",
+        "Task remains repo-local feature/model-truth maintenance only; if a brief rationale note is needed it should be written under evidence/archive, but no replay execution or subscription/environment setup is allowed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:51:10.287Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ca-vmpr-mincount-feature-wording-sync-20260621_20260621225110",
+        "assigned_at": "2026-06-21T22:51:10.336Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ca-vmpr-mincount-feature-wording-sync-20260621",
+        "worker_started_attempt_id": "a_ca-vmpr-mincount-feature-wording-sync-20260621_20260621225110",
+        "worker_started_at": "2026-06-21T22:51:24.974Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated features/cluster-autoscaler.yaml so the cas-mincount-recovery packet now reflects the accepted VM prerelease row-46 source-grounded unknown wording: exact VirtualMachines + preview + Kubernetes 1.33 + 3/5/3 delete-and-recover contract, without claiming fresh live execution.",
+        "last_worker_completed_at": "2026-06-21T22:52:21.727Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:52:39.843Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/cluster-autoscaler.yaml now truthfully preserves the dedicated VM prerelease row-46 minCount recovery branch as source-grounded only, including VirtualMachines + preview + Kubernetes 1.33 + exact 3/5/3 delete-and-recover expectations without claiming fresh live execution."
+      },
+      "session_id": "s_task_ca-vmpr-mincount-feature-wording-sync-20260621",
+      "session_history": [
+        "s_task_ca-vmpr-mincount-feature-wording-sync-20260621"
+      ],
+      "result": "Updated features/cluster-autoscaler.yaml so the cas-mincount-recovery packet now reflects the accepted VM prerelease row-46 source-grounded unknown wording: exact VirtualMachines + preview + Kubernetes 1.33 + 3/5/3 delete-and-recover contract, without claiming fresh live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:52:39.843Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/cluster-autoscaler.yaml now truthfully preserves the dedicated VM prerelease row-46 minCount recovery branch as source-grounded only, including VirtualMachines + preview + Kubernetes 1.33 + exact 3/5/3 delete-and-recover expectations without claiming fresh live execution."
+      },
+      "status": "done"
+    }
+  ]
+}

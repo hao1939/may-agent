@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T23:11:33.485Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review: keep the private-cluster none-dns-zone-v3 branch as a truthful single external decision wait despite the environment-overblock warning because durable routed send-proof already exists in evidence/archive/private-cluster-none-dns-zone-v3-authorization-dispatch-20260626.md (accepted approval-dispatch submission plus message.created to human:operator) and no bounded repo-local source/spec/setup/alternate-environment action remains for the unchanged same-cluster system->none carrier. Preserve the external-send-proof family wait unchanged as the separate truthful human/operator dependency for VM prerelease row 33 plus shared-identity rows 75-76. Archive the completed private-cluster packet/review/dispatch leaves because their durable meaning now lives in the project rollup while path.private-cluster-none-dns-zone-v3 stays open only pending returned approval, decline, redirect, or exact blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Draft the repo-local user-review authorization packet for the future live probe of path.private-cluster-none-dns-zone-v3: convert the accepted execute-gate packet into the exact human approval ask naming the required mutation authorization, blank subscription/location fields to fill, exact evidence the run would add, and explicit non-goals so a later operator can approve or decline without reopening repo-local reconciliation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md"
+      ],
+      "acceptance": [
+        "Produce a concise repo-local approval packet that cites the accepted execute-gate artifact, states that the path remains unknown pending an explicitly authorized same-cluster system->none live run, and lists the exact human inputs still needed: approval to mutate, subscription, location, and execution owner/runtime.",
+        "Record the exact run purpose and boundaries: only capture system-phase persistence, managed-zone existence/deletion, and post-transition scale behavior for this path; do not run cloud mutation from this task and do not reopen source/spec/replay wording or expand into sibling private-cluster paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:55:11.678Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626_20260626225511",
+        "assigned_at": "2026-06-26T22:55:11.722Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626_20260626225511",
+        "worker_started_at": "2026-06-26T22:55:27.841Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the repo-local human approval packet for the private-cluster none-DNS V3 live probe at evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md, translating the accepted execute-gate packet into a concrete mutation-authorization ask with required blanks, exact evidence gain, and explicit non-goals.",
+        "last_worker_completed_at": "2026-06-26T22:55:56.039Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T22:56:26.882Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted: the packet exists at evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md, cites the execute-gate basis, preserves required blanks and exact evidence gain, and explicitly keeps path.private-cluster-none-dns-zone-v3 unknown pending a later explicitly authorized live mutation run."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626"
+      ],
+      "result": "Created the repo-local human approval packet for the private-cluster none-DNS V3 live probe at evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md, translating the accepted execute-gate packet into a concrete mutation-authorization ask with required blanks, exact evidence gain, and explicit non-goals.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T22:56:26.882Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted: the packet exists at evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md, cites the execute-gate basis, preserves required blanks and exact evidence gain, and explicitly keeps path.private-cluster-none-dns-zone-v3 unknown pending a later explicitly authorized live mutation run."
+      },
+      "status": "done"
+    }
+  ]
+}

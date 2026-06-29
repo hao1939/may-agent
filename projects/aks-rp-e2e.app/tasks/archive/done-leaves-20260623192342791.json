@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:23:42.791Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier owner review found no new worker claims, confirm-runnable remains empty, and the truthful live frontier is still one active repo-local slice plus two exact blocked waits. Keep traffic-api-proxy-normalized-carrier-gap-repair-20260623 as the single active validator/model repair leaf; preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged until returned proof arrives or the first owner review after 2026-06-26; preserve private-cluster-vnet-auth-service-tags-selected-host-ssh-environment-wait-20260623 unchanged because the latest selected-host preflight reconciliation still ends at same-launcher SSH step-1 timeout to devbox with no fresh endpoint/access update. Archive the completed direct children below because their durable meaning already lives in evidence/archive and the parent rollup, so compact visible tree noise without reopening those slices.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-scenario-gap-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted AKS RP private-cluster handwritten/e2ev3 source plus current repo-local feature/spec/replay/model surfaces, produce a bounded gap map of remaining private-cluster scenarios that still lack an exact maintained landing or have ambiguous path/carrier linkage, so the next repo-local work can prioritize one concrete source-backed branch without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-scenario-gap-map-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted private-cluster source files/scenario identifiers reviewed, lists the remaining uncovered or ambiguously landed private-cluster scenarios with their current repo-local carrier status, and recommends one highest-value next repo-local leaf.",
+        "The work stays repo-local and bounded to private-cluster source/carrier mapping: no cloud mutation, no generic cross-family expansion, and no reopening of path.private-cluster-none-dns-zone-v3 source ambiguity already reconciled."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:52:58.890Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-scenario-gap-map-20260623_20260623185302",
+        "assigned_at": "2026-06-23T18:53:02.574Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-scenario-gap-map-20260623",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-scenario-gap-map-20260623_20260623185302",
+        "worker_started_at": "2026-06-23T18:53:28.082Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable gap-map artifact at evidence/archive/private-cluster-mounted-source-scenario-gap-map-20260623.md, citing exact mounted private-cluster source files/scenario identifiers, classifying the remaining stale or weakly landed private-cluster scenarios, and recommending one highest-value next repo-local leaf.",
+        "last_worker_completed_at": "2026-06-23T19:00:55.434Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:01:32.435Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-mounted-source-scenario-gap-map-20260623.md cites exact mounted private-cluster scenario files/identifiers, classifies the remaining stale or weakly landed private-cluster branches, and recommends private-cluster-egress-outboundtype-mounted-source-truthfulness-reconcile as the highest-value bounded repo-local follow-up."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-scenario-gap-map-20260623",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-scenario-gap-map-20260623"
+      ],
+      "result": "Produced the requested durable gap-map artifact at evidence/archive/private-cluster-mounted-source-scenario-gap-map-20260623.md, citing exact mounted private-cluster source files/scenario identifiers, classifying the remaining stale or weakly landed private-cluster scenarios, and recommending one highest-value next repo-local leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:01:32.435Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-mounted-source-scenario-gap-map-20260623.md cites exact mounted private-cluster scenario files/identifiers, classifies the remaining stale or weakly landed private-cluster branches, and recommends private-cluster-egress-outboundtype-mounted-source-truthfulness-reconcile as the highest-value bounded repo-local follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:37:53.866Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 stale-active owner review tightened the spec-loop branch without inventing new execution work. The shared artifact-retention diagnosis for run 28371054186 is now accepted and archived as repo-local routing/state-ingestion omission evidence, so future follow-up should target local repair surfaces rather than treating the run as remote artifact loss. Separately, the watchdog-flagged retry for spec.ccp-metricsserver.resource-metrics-api was not accepted as in-flight progress: its assigned session showed no activity after worker start, so the leaf was requeued and then reassigned as a fresh single-spec retry, making it the one clear runnable recovery action instead of a silently stuck active slot.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-spec-loop-artifact-retention-family-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared spec-loop artifact-retention/ingestion gap exposed by AAD RBAC run 28371054186: inspect local artifact download, naming, and state-ingestion paths to determine whether the missing terminal bundle is caused by absent artifact retention, a local routing mismatch, or state-update omission, then record the bounded next fix or evidence ceiling without inventing later product progress.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-spec-loop-artifact-retention-family-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the accepted 28371054186 recovery evidence and the exact local spec-loop/runtime code or state surfaces checked for artifact download, naming, and ingestion.",
+        "It classifies the gap as one of: artifact never retained, retained but not discovered due to naming/routing, or retained but not ingested into state, with evidence for the chosen classification.",
+        "It names one concrete next owner action: exact repo-local fix surface, bounded follow-up investigation, or explicit evidence ceiling if no truthful local progress remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-family:spec-loop-artifact-retention"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:32:14.130Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-loop-artifact-retention-family-20260629_20260629123214",
+        "assigned_at": "2026-06-29T12:32:14.191Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-loop-artifact-retention-family-20260629",
+        "worker_started_attempt_id": "a_diagnose-spec-loop-artifact-retention-family-20260629_20260629123214",
+        "worker_started_at": "2026-06-29T12:32:36.459Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested diagnosis note at evidence/archive/diagnose-spec-loop-artifact-retention-family-20260629.md, classifying run 28371054186 as a repo-local spec-loop routing/state-ingestion omission rather than a proven remote artifact-retention failure or naming mismatch.",
+        "last_worker_completed_at": "2026-06-29T12:36:21.183Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-spec-loop-artifact-retention-family-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:37:10.768Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted diagnosis note: evidence classifies run 28371054186 as a repo-local spec-loop routing/state-ingestion omission rather than a proven remote artifact-retention failure, and it names repo-local repair as the next truthful action."
+      },
+      "session_id": "s_task_diagnose-spec-loop-artifact-retention-family-20260629",
+      "session_history": [
+        "s_task_diagnose-spec-loop-artifact-retention-family-20260629"
+      ],
+      "result": "Wrote the requested diagnosis note at evidence/archive/diagnose-spec-loop-artifact-retention-family-20260629.md, classifying run 28371054186 as a repo-local spec-loop routing/state-ingestion omission rather than a proven remote artifact-retention failure or naming mismatch.",
+      "evidence": [
+        "evidence/archive/diagnose-spec-loop-artifact-retention-family-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:37:10.768Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted diagnosis note: evidence classifies run 28371054186 as a repo-local spec-loop routing/state-ingestion omission rather than a proven remote artifact-retention failure, and it names repo-local repair as the next truthful action."
+      },
+      "status": "done"
+    }
+  ]
+}

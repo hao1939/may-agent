@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:59:57.688Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "2026-06-20 owner rollup: this lane's recent evidence-feedback work is fully accepted and archived. The row-190 Windows runner ledger attachment remains accepted as a reviewed-exception pipeline_only exclusion with passing replay/wiring validation, and checkpoint-helper archive-ownership visibility is now repaired: domain:checkpoint resolves accepted ownership from archived done-leaf records, regression tests passed, and the bounded VM-only packet switched from needs-planner-review to candidate. No open children remain under this lane; follow-on work continues in the feature/spec and runner lanes.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row190-windows-runner-ledger-attachment-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Attach the landed row-190 Windows runner harness terminal-exclusion spec/replay into specs/index.json and the VM prerelease coverage/features ledgers, then run bounded non-mutating validation and record the final row-190 disposition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row190-windows-runner-ledger-attachment-20260620.md"
+      ],
+      "acceptance": [
+        "specs/index.json includes spec.windows.runner-pipeline-harness-virtualmachines with the correct featurePathIds, probeRef, specState, and terminalClassification.",
+        "virtualmachine-prerelease-coverage.json/md and virtualmachine-prerelease.features.txt move row 190 off missing-spec without changing rows 206, 212, 213, or 216.",
+        "Artifact records replay --check and wiring-check results, or one exact repo-local validation failure if they do not pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "row190-windows-runner-ledgers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:50:15.966Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:50:29.906Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row190-windows-runner-ledger-attachment-20260620_20260620135058",
+        "assigned_at": "2026-06-20T13:50:58.693Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row190-windows-runner-ledger-attachment-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row190-windows-runner-ledger-attachment-20260620_20260620135058",
+        "worker_started_at": "2026-06-20T13:51:51.847Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Attached row 190 into specs/index.json and the VM prerelease ledgers, fixed the row-190 replay’s absolute-path check-mode bug, and recorded validation evidence in a new archive note. Row 190 is now covered as a reviewed-exception pipeline_only terminal exclusion; rows 206, 212, 213, and 216 remain missing-spec.",
+        "last_worker_completed_at": "2026-06-20T13:55:48.155Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:56:56.681Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row190-windows-runner-ledger-attachment-20260620.md shows specs/index.json now includes spec.windows.runner-pipeline-harness-virtualmachines with reviewed-exception/pipeline_only wiring, VM prerelease ledgers move row 190 off missing-spec without changing rows 206/212/213/216, and bounded validation passed via the row-190 replay --check plus runner/wiring-check."
+      },
+      "session_id": "s_task_vm-prerelease-row190-windows-runner-ledger-attachment-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row190-windows-runner-ledger-attachment-20260620"
+      ],
+      "result": "Attached row 190 into specs/index.json and the VM prerelease ledgers, fixed the row-190 replay’s absolute-path check-mode bug, and recorded validation evidence in a new archive note. Row 190 is now covered as a reviewed-exception pipeline_only terminal exclusion; rows 206, 212, 213, and 216 remain missing-spec.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:56:56.681Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row190-windows-runner-ledger-attachment-20260620.md shows specs/index.json now includes spec.windows.runner-pipeline-harness-virtualmachines with reviewed-exception/pipeline_only wiring, VM prerelease ledgers move row 190 off missing-spec without changing rows 206/212/213/216, and bounded validation passed via the row-190 replay --check plus runner/wiring-check."
+      },
+      "status": "done"
+    },
+    {
+      "id": "checkpoint-helper-archive-ownership-visibility-repair-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the VM-only checkpoint helper archive-ownership visibility gap so domain:checkpoint can recognize the two accepted archived VM evidence files as owned, then rerun the bounded packet and record whether it becomes a truthful candidate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/checkpoint-helper-archive-ownership-visibility-repair-20260620.md"
+      ],
+      "acceptance": [
+        "The work proves one supported archive-visibility repair path: either domain:checkpoint resolves accepted ownership from archived done-leaf records, or an equivalent supported task-tree/archive metadata path makes the two accepted owners helper-visible without reopening unrelated branches.",
+        "The bounded helper rerun using evidence/archive/checkpoint-helper-vm-only-candidate-packet-20260620.paths.txt is recorded after the repair attempt, including whether recommendation changes from needs-planner-review to candidate.",
+        "Artifact ends with one exact disposition: usable VM-only checkpoint candidate packet, or one remaining app-local blocker with the next bounded repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint-helper-vm-packet-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:55:08.296Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_checkpoint-helper-archive-ownership-visibility-repair-20260620_20260620135508",
+        "assigned_at": "2026-06-20T13:55:08.396Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_checkpoint-helper-archive-ownership-visibility-repair-20260620",
+        "worker_started_attempt_id": "a_checkpoint-helper-archive-ownership-visibility-repair-20260620_20260620135508",
+        "worker_started_at": "2026-06-20T13:55:18.404Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated /app/projects/aks-rp-e2e.app/scripts/domain-checkpoint.ts to include archived done-leaf tasks in ownership resolution, added regression coverage in domain-checkpoint.test.ts, and wrote evidence/archive/checkpoint-helper-archive-ownership-visibility-repair-20260620.md showing the VM-only bounded packet now evaluates as candidate.",
+        "last_worker_completed_at": "2026-06-20T13:57:30.531Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:57:58.458Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/checkpoint-helper-archive-ownership-visibility-repair-20260620.md proves domain:checkpoint now resolves accepted ownership from archived done-leaf records, regression tests pass, and the bounded VM-only packet recommendation changed from needs-planner-review to candidate."
+      },
+      "session_id": "s_task_checkpoint-helper-archive-ownership-visibility-repair-20260620",
+      "session_history": [
+        "s_task_checkpoint-helper-archive-ownership-visibility-repair-20260620"
+      ],
+      "result": "Updated /app/projects/aks-rp-e2e.app/scripts/domain-checkpoint.ts to include archived done-leaf tasks in ownership resolution, added regression coverage in domain-checkpoint.test.ts, and wrote evidence/archive/checkpoint-helper-archive-ownership-visibility-repair-20260620.md showing the VM-only bounded packet now evaluates as candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:57:58.458Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/checkpoint-helper-archive-ownership-visibility-repair-20260620.md proves domain:checkpoint now resolves accepted ownership from archived done-leaf records, regression tests pass, and the bounded VM-only packet recommendation changed from needs-planner-review to candidate."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T16:59:36.061Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner pass keeps external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human-transport wait because repo-local approval-dispatch and initial human handoff proof are already archived and the only residue is later out-of-runtime human/operator completion proof. Repo-local capacity now stays split across two bounded source-backed lanes: vm-prerelease-next-source-row-frontier-packet-20260622 remains the active VirtualMachine prerelease mounted-source frontier leaf, and private-cluster-none-dns-zone-v3-mounted-source-equivalence-packet-20260622 is added as the next independent mounted-source equivalence packet so the reopened Go e2ev3 closure can advance without cloud execution or duplicate waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-next-bounded-model-linkage-frontier-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md plus the 2026-06-22 linkage audit artifacts, take the next still-missing VirtualMachine prerelease direct-link candidate that already has a bounded repo-local source/spec/evidence chain and either land or confirm its canonical maintained-model/view linkage so the candidate is directly discoverable in model.json and path-summary.json, or record that no bounded direct-link frontier remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-next-bounded-model-linkage-frontier-20260622.md"
+      ],
+      "acceptance": [
+        "Identify the exact selected candidate row/path/feature ids from the prerelease suite coverage packet or linked audit artifacts, inspect the cited mounted-source/spec/evidence chain, and either update model/knowledge-map/model.json plus regenerated maintained views for a truthful canonical landing or record the exact normalized-input/expectation ceiling proving no bounded repo-local direct-link candidate remains.",
+        "Keep the task repo-local only with no cloud execution and no reopening of external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, and cite the exact canonical files changed or inspected plus any narrower follow-up exposed by the selected candidate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T16:55:46.879Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-next-bounded-model-linkage-frontier-20260622_20260622165546",
+        "assigned_at": "2026-06-22T16:55:46.929Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-next-bounded-model-linkage-frontier-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-next-bounded-model-linkage-frontier-20260622_20260622165546",
+        "worker_started_at": "2026-06-22T16:56:10.746Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded the bounded VM prerelease direct-linkage ceiling in evidence/archive/vm-prerelease-next-bounded-model-linkage-frontier-20260622.md after confirming all packet/audit frontier candidates are already directly discoverable in model.json and path-summary.json. No model/view edits were needed because the remaining bounded direct-link frontier is closed.",
+        "last_worker_completed_at": "2026-06-22T16:57:43.947Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T16:58:13.965Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vm-prerelease-next-bounded-model-linkage-frontier-20260622.md: the bounded VirtualMachine prerelease direct-link frontier is truthfully closed because the packet/audit candidates (rows 1, 3-5, 9, 12-18, 20-22, and 54, plus adjacent row 25 and row 55 checks) are already directly discoverable in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, so no additional repo-local model/view landing was needed."
+      },
+      "session_id": "s_task_vm-prerelease-next-bounded-model-linkage-frontier-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-next-bounded-model-linkage-frontier-20260622"
+      ],
+      "result": "Recorded the bounded VM prerelease direct-linkage ceiling in evidence/archive/vm-prerelease-next-bounded-model-linkage-frontier-20260622.md after confirming all packet/audit frontier candidates are already directly discoverable in model.json and path-summary.json. No model/view edits were needed because the remaining bounded direct-link frontier is closed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T16:58:13.965Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vm-prerelease-next-bounded-model-linkage-frontier-20260622.md: the bounded VirtualMachine prerelease direct-link frontier is truthfully closed because the packet/audit candidates (rows 1, 3-5, 9, 12-18, 20-22, and 54, plus adjacent row 25 and row 55 checks) are already directly discoverable in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, so no additional repo-local model/view landing was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

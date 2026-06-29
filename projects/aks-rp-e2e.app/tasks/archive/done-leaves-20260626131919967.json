@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:19:19.967Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review accepts both cluster-autoscaler mounted-source packet-sync leaves as completed no-cloud context: long-unregistered-nodes now has a durable source-backed boundary packet for its prerelease path, and autoscaling-base now has a mounted-source carrier chain plus exact delete-mode autoscaling expectations showing the current spec/model text is stale and the replay is only a thin substrate scaffold. Archive those completed root leaves because their durable meaning is represented here. Live repo-local work now splits cleanly into (1) the already-active long-unregistered-nodes HTTP 400 diagnostic and (2) the newly created autoscaling-base packet/spec/model sync backlog leaf, while the single truthful external-human family wait remains unchanged.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a no-cloud mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes that maps the exact handwritten source/loader/matrix carrier chain, accepted and adjacent input boundary, expected autoscaler behavior around long-unregistered nodes, and current spec/replay/model linkage so the next safe action is explicit without reopening the external-wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted Go source carrier(s) and any checked-in replay/spec artifacts for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes, with enough detail to reproduce the source-backed intent locally.",
+        "The writeup records accepted inputs, rejected or adjacent edges, expected long-unregistered-node autoscaler behavior, current model status, and the precise next safe action (packet/spec sync, replay check, or execute gate) for this path only.",
+        "No cloud mutation or duplicate external-human wait work is introduced; the task stays within repo-local source/spec/model/evidence work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:14:18.694Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626_20260626131418",
+        "assigned_at": "2026-06-26T13:14:18.748Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626_20260626131418",
+        "worker_started_at": "2026-06-26T13:14:46.290Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes, documenting the exact mounted source/spec/replay/model chain, input and adjacent boundaries, expected behavior, current blocker evidence, and the next safe path-local action.",
+        "last_worker_completed_at": "2026-06-26T13:16:56.895Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:17:55.409Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites the mounted VirtualMachines/checkin+prerelease source chain, preserves the exact registered-then-deleted long-unregistered-node boundary and expectations, confirms the checked-in spec/replay/model linkage, and truthfully leaves live behavior unknown behind the existing create-time HTTP 400 blocker."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-mounted-source-packet-sync-20260626"
+      ],
+      "result": "Produced the requested mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes, documenting the exact mounted source/spec/replay/model chain, input and adjacent boundaries, expected behavior, current blocker evidence, and the next safe path-local action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:17:55.409Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites the mounted VirtualMachines/checkin+prerelease source chain, preserves the exact registered-then-deleted long-unregistered-node boundary and expectations, confirms the checked-in spec/replay/model linkage, and truthfully leaves live behavior unknown behind the existing create-time HTTP 400 blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a no-cloud mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-autoscaling-base that maps the exact handwritten source/loader/matrix carrier chain, accepted and adjacent input boundary, expected autoscaler base behavior, and current spec/replay/model linkage so the next safe action is explicit without reopening the external-wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted Go source carrier(s) and any checked-in replay/spec artifacts for path.cluster-autoscaler.vm-prerelease-autoscaling-base, with enough detail to reproduce the source-backed intent locally.",
+        "The writeup records accepted inputs, rejected or adjacent edges, expected autoscaler base behavior, current model status, and the precise next safe action (packet/spec sync, replay check, or execute gate) for this path only.",
+        "No cloud mutation or duplicate external-human wait work is introduced; the task stays within repo-local source/spec/model/evidence work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-autoscaling-base"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:15:29.256Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T13:15:34.731Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626_20260626131550",
+        "assigned_at": "2026-06-26T13:15:50.995Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626_20260626131550",
+        "worker_started_at": "2026-06-26T13:15:51.400Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested no-cloud mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-autoscaling-base and archived it under evidence/archive with exact mounted source, spec/replay/model linkage, accepted/adjacent boundary, expected base behavior, and next safe action.",
+        "last_worker_completed_at": "2026-06-26T13:18:20.382Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:19:03.013Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted on owner review: the archive artifact cites the exact mounted clusterautoscaling/main.go + utils.go + autoscalerloader.go + VirtualMachines matrix carrier chain, records the row-124 accepted/adjacent boundary and expected delete-mode autoscaling behavior, and shows the current spec/model text is stale while the replay remains only a thin substrate probe; next safe action is repo-local packet/spec/model sync, not live execution or reopening the external wait."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-mounted-source-packet-sync-20260626"
+      ],
+      "result": "Produced the requested no-cloud mounted-source packet sync for path.cluster-autoscaler.vm-prerelease-autoscaling-base and archived it under evidence/archive with exact mounted source, spec/replay/model linkage, accepted/adjacent boundary, expected base behavior, and next safe action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:19:03.013Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted on owner review: the archive artifact cites the exact mounted clusterautoscaling/main.go + utils.go + autoscalerloader.go + VirtualMachines matrix carrier chain, records the row-124 accepted/adjacent boundary and expected delete-mode autoscaling behavior, and shows the current spec/model text is stale while the replay remains only a thin substrate probe; next safe action is repo-local packet/spec/model sync, not live execution or reopening the external wait."
+      },
+      "status": "done"
+    }
+  ]
+}

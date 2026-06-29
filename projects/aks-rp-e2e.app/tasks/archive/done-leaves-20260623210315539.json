@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:03:15.539Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner planning update archived the two newly accepted linkage-reconcile leaves after bounded review: rp-cluster-lifecycle-maintenance-state-linkage-reconcile-20260623 and rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623 now both have durable repo-local archive notes and bounded model/path linkage updates without widening verdicts or adding cloud work. This focus branch now carries one remaining active repo-local reconcile leaf for path.rp-cluster-lifecycle.nodeless-cluster-crud, whose purpose is to repair exact normalized feature/scenario/replay/model linkage around the existing terminal product-gap boundary flagged by project hygiene, plus the single family-level external wait that should remain untouched until returned human/operator proof arrives or the first owner blocked-frontier review after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the existing canonical RP list-credentials spec plus repo-local feature/scenario/replay/model carriers to restore the exact normalized linkage and claim-safe boundary for path.rp-cluster-lifecycle.list-credentials without any cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact canonical spec, feature/scenario carriers, replay/index pointers, and current model/view entries used to determine whether path.rp-cluster-lifecycle.list-credentials is exact, source-equivalent, or still draft, and explains the bounded list-credentials expectation envelope claim-safely.",
+        "Any model update remains bounded to path.rp-cluster-lifecycle.list-credentials and only repairs normalized feature/scenario/input-DAG/path linkage, draft wording, or rerun-gate text when supported by the reviewed carriers; do not invent a live execution verdict or widen into create/get/delete, stop/start, or upgrade siblings.",
+        "Repo-local only: no cloud mutation, no new external-human wait, and no planning/control subbranch creation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "rp-cluster-lifecycle.list-credentials"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:54:58.612Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T20:54:58.696Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-23T20:58:13.148Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623",
+        "worker_started_attempt_id": "a_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623_20260623205813",
+        "worker_started_at": "2026-06-23T20:58:17.349Z",
+        "stale_active_requeued_at": "2026-06-23T20:57:40.129Z",
+        "stale_active_requeue_reason": "Shared output ../aks-rp-e2e/model/knowledge-map/model.json means these repo-local linkage repairs should run one-by-one under the automation contract; keep create-get-delete as the sole active focus leaf and return list-credentials to backlog.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623_20260623205514",
+        "current_attempt_id": "a_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623_20260623205813",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the repo-local canonical linkage for path.rp-cluster-lifecycle.list-credentials, added a durable archive note, repaired the bounded model entries/DAG/path linkage in model/knowledge-map/model.json, and regenerated derived knowledge-map views.",
+        "last_worker_completed_at": "2026-06-23T21:01:37.191Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:02:29.110Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites canonical spec/replay/quartet packet, mounted credential handler/test source, gated probe lineage, and bounded model repairs for path.rp-cluster-lifecycle.list-credentials without claiming a live rerun verdict."
+      },
+      "session_id": "s_task_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623",
+      "session_history": [
+        "s_task_rp-cluster-lifecycle-list-credentials-linkage-reconcile-20260623"
+      ],
+      "result": "Reconciled the repo-local canonical linkage for path.rp-cluster-lifecycle.list-credentials, added a durable archive note, repaired the bounded model entries/DAG/path linkage in model/knowledge-map/model.json, and regenerated derived knowledge-map views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:02:29.110Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites canonical spec/replay/quartet packet, mounted credential handler/test source, gated probe lineage, and bounded model repairs for path.rp-cluster-lifecycle.list-credentials without claiming a live rerun verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

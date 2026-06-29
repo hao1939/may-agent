@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T11:13:56.155Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner reconciled a stale watchdog review-pending wake against the accepted second-hop readiness packet. Archive the already-accepted review leaf private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623 into the parent summary so this branch now truthfully carries one live repo-local successor: private-cluster-vnet-integration-update-public-second-hop-replay-init-regression-repair-20260623, which is already assigned and remains the sole actionable leaf to repair the replay-local checkOnly initialization regression and re-run bounded local --check verification. Preserve the single family-level blocked external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged until returned operator proof or an authoritative response changes its exact resume condition; do not create duplicate review/successor leaves or reopen completed repo-local source/spec/model closure.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a durable repo-local execution-readiness packet for path.private-cluster-vnet-integration-update-public-second-hop that summarizes the mounted-source/spec/replay/model evidence, defines the exact second-hop behavior boundary still unobserved, and records the narrowest future dedicated replay/run gate without performing cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623.md"
+      ],
+      "acceptance": [
+        "Archive packet cites the exact mounted source plus current feature/spec/replay/model/status artifacts for path.private-cluster-vnet-integration-update-public-second-hop and states the precise second-hop lifecycle edge that remains unknown.",
+        "Packet records the concrete future verification gate and prerequisites for a dedicated second-hop replay or probe, with no live execution, duplicate blocker leaves, or source rediscovery beyond bounded repo-local evidence review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-update-public-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T11:07:51.252Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623_20260623110751",
+        "assigned_at": "2026-06-23T11:07:51.306Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623_20260623110751",
+        "worker_started_at": "2026-06-23T11:08:33.079Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested execution-readiness packet at evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623.md, grounding the mounted second-hop boundary in source/spec/replay/model/status evidence and documenting the exact remaining unknown plus future branch-local replay gate. Also discovered and recorded a current repo-local replay init regression that blocks fresh --check readiness for this carrier.",
+        "last_worker_completed_at": "2026-06-23T11:10:48.635Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T11:12:53.432Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet grounds the mounted updateMC2->checkMC2 boundary in source/spec/replay/model/status evidence, keeps the path unknown pending live observation, and narrows the immediate repo-local successor to repairing the replay init regression before fresh branch-local --check readiness can be re-verified."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623"
+      ],
+      "result": "Authored the requested execution-readiness packet at evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execution-readiness-packet-20260623.md, grounding the mounted second-hop boundary in source/spec/replay/model/status evidence and documenting the exact remaining unknown plus future branch-local replay gate. Also discovered and recorded a current repo-local replay init regression that blocks fresh --check readiness for this carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T11:12:53.432Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet grounds the mounted updateMC2->checkMC2 boundary in source/spec/replay/model/status evidence, keeps the path unknown pending live observation, and narrows the immediate repo-local successor to repairing the replay init regression before fresh branch-local --check readiness can be re-verified."
+      },
+      "status": "done"
+    }
+  ]
+}

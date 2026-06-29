@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:36:45.137Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review preserves the truthful frontier unchanged while tightening top-level hygiene: keep vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626 as the sole active local mounted-source branch, keep vm-prerelease-mounted-source-boundary-mapping-row59-inproc-quote-helper-disabled-20260626 as the legitimate same-scope follower waiting only on the row-58 conflict to clear, and preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external wait with no repo-local reopen from silence alone. Completed SGX/source-map setup context for the umbrella mounted-source kickoff and row-57 Coffeelake boundary map now rolls up to the project root; the next useful local action remains completion/review of row 58, after which row 59 becomes the natural next activation candidate unless new returned proof or human steering changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-boundary-mapping-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VM prerelease source plus existing repo-local artifacts to map path.sgx-addon.vm-prerelease.coffeelake-out-of-proc from handwritten row 57: identify the exact carrier, extract accepted inputs, expected behavior, rejected or adjacent edges, and existing replay/model coverage, then record whether the path can move from unknown to a narrower source-backed status without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/",
+        "../aks-rp-e2e/model/knowledge-map/"
+      ],
+      "acceptance": [
+        "Mounted source evidence from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or referenced scenario definitions is cited to show the exact row-57 SGX Coffeelake carrier and its create/update or runtime intent.",
+        "A durable archive note records the row-57 input path, expected behavior path, existing replay/model coverage, accepted and rejected or adjacent edges, and the precise remaining gap without launching cloud execution.",
+        "If evidence is strong enough, the capability model or knowledge-map is updated to a narrower status or verdict; otherwise the task leaves one exact next bounded replay or spec leaf naming the missing evidence needed to progress."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:vm-prerelease-mounted-source-boundary-maps"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:29:45.659Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-boundary-mapping-20260626_20260626123041",
+        "assigned_at": "2026-06-26T12:30:41.522Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-boundary-mapping-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-boundary-mapping-20260626_20260626123041",
+        "worker_started_at": "2026-06-26T12:30:42.255Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable archive note at evidence/archive/vm-prerelease-mounted-source-boundary-mapping-row57-coffeelake-out-of-proc-20260626.md showing row 57 already has exact mounted-source-backed carrier, spec/replay/model coverage, and that no model edit is needed because only live SGX runtime evidence remains missing.",
+        "last_worker_completed_at": "2026-06-26T12:33:10.443Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:33:57.259Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-mounted-source-boundary-mapping-row57-coffeelake-out-of-proc-20260626.md cites the exact mounted SGX row-57 carrier, preserves accepted/rejected boundary plus existing feature/spec/replay/model coverage, and truthfully leaves only the row-57 live SGX runtime artifact gap with no model edit needed."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-boundary-mapping-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-boundary-mapping-20260626"
+      ],
+      "result": "Produced a durable archive note at evidence/archive/vm-prerelease-mounted-source-boundary-mapping-row57-coffeelake-out-of-proc-20260626.md showing row 57 already has exact mounted-source-backed carrier, spec/replay/model coverage, and that no model edit is needed because only live SGX runtime evidence remains missing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:33:57.259Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-mounted-source-boundary-mapping-row57-coffeelake-out-of-proc-20260626.md cites the exact mounted SGX row-57 carrier, preserves accepted/rejected boundary plus existing feature/spec/replay/model coverage, and truthfully leaves only the row-57 live SGX runtime artifact gap with no model edit needed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:41:50.939Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog planning reconciliation: the stale review event for spec-path-record-batch1 was already satisfied and archived in the prior rollup, so no review leaf remains. The active repo-local frontier is now more concrete: keep spec-path-record-batch2 authoring in flight, replace the broad network-cni post-batch1 audit with direct authoring of the three exact carrier gaps named by accepted batch1 evidence, and preserve the single external-human proof wait unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-go-coverage-batch2-post-batch1-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: after network-cni-mounted-go-coverage-batch1-20260622 is accepted, use the then-current uncovered-family frontier plus mounted AKS RP Go e2ev3 source to map the next bounded batch of at most 10 network-CNI scenarios into truthful repo-local coverage knowledge without cloud mutation. Record exact source files and scenario names, determine carrier status for each, update only directly affected feature/spec/model surfaces plus a durable archive note, and do not reopen execution-blocked families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-go-coverage-batch2-post-batch1-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/network-cni-mounted-go-coverage-batch2-post-batch1-20260622.md lists the exact next bounded set of network-CNI scenarios chosen from the post-batch1 uncovered-family frontier, their mounted Go source file paths and scenario names, the carrier status for each, the files updated, and any residual uncovered frontier left for later batches.",
+        "Any directly affected feature/spec/model/view files are updated consistently for the audited scenarios, and bun run check passes after the bounded batch without unrelated drift or any cloud/external execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-coverage.network-cni.batch1"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T23:37:13.092Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-go-coverage-batch2-post-batch1-20260622_20260622234010",
+        "assigned_at": "2026-06-22T23:40:10.302Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-go-coverage-batch2-post-batch1-20260622",
+        "worker_started_attempt_id": "a_network-cni-mounted-go-coverage-batch2-post-batch1-20260622_20260622234010",
+        "worker_started_at": "2026-06-22T23:40:28.990Z",
+        "reviewed_at": "2026-06-22T23:41:50.887Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the generic post-batch1 frontier audit with a more concrete bounded authoring leaf driven directly by accepted batch1 evidence: land truthful repo-local carriers for the three named gaps (ACNS Performance DualStack, Cilium Stop/Start, Retina Enterprise→Basic downgrade) before spending more cycles on another broad scenario-mapping batch."
+      },
+      "session_id": "s_task_network-cni-mounted-go-coverage-batch2-post-batch1-20260622",
+      "session_history": [
+        "s_task_network-cni-mounted-go-coverage-batch2-post-batch1-20260622"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T23:41:50.887Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the generic post-batch1 frontier audit with a more concrete bounded authoring leaf driven directly by accepted batch1 evidence: land truthful repo-local carriers for the three named gaps (ACNS Performance DualStack, Cilium Stop/Start, Retina Enterprise→Basic downgrade) before spending more cycles on another broad scenario-mapping batch."
+      },
+      "status": "done"
+    }
+  ]
+}

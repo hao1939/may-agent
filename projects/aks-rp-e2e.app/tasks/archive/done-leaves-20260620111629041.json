@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:16:29.041Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 task-completed wake: accepted the serverless subnet-validation authority-gap follow-up as done because the archive note records exact repo-local wording/metadata tightening in features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts while explicitly preserving the mounted-source authority gap outside the helper-held seven-file batch. This lane now carries that serverless branch as locally tightened and moves forward with the already-active adjacent ACI witness-family consistency pass plus the VM prerelease LocalDNS linkage audit.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert the accepted serverless virtual nodes witness-authority gap note into the smallest truthful repo-local follow-up by checking the current spec/replay wording and metadata for the dedicated subnet-validation path, then either repairing the wording/metadata or writing the exact remaining pending delta without touching the helper-held knowledge-map batch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620.md"
+      ],
+      "acceptance": [
+        "Use the accepted witness-authority note and the current repo-local serverless virtual nodes spec/replay artifacts to state whether the dedicated subnet-validation path already has truthful authority wording or still overclaims witness strength.",
+        "If a truthful repo-local repair is possible without model/knowledge-map/model.json or model/knowledge-map/views/path-summary.json, update the affected spec/replay/metadata files and record the exact before/after anchors in the archive note; otherwise record the smallest exact pending delta and why it still cannot be landed repo-locally.",
+        "Keep the slice non-cloud and outside the helper-held seven-file checkpoint batch, naming every touched file and explicitly confirming whether the task leaves a runnable follow-on or resolves the authority-gap wording locally."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:serverless-virtual-nodes-authority-gap"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:14:43.984Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620_20260620111445",
+        "assigned_at": "2026-06-20T11:14:45.634Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620_20260620111445",
+        "worker_started_at": "2026-06-20T11:15:05.244Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened the serverless subnet-validation repo-local authority wording across features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts, and wrote the follow-up archive note documenting the mounted-source gap and exact local changes.",
+        "last_worker_completed_at": "2026-06-20T11:15:05.258Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:15:50.802Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence and repo-local diffs confirm the dedicated subnet-validation path now states the ACI witness envelope as a repo-local convention rather than mounted handwritten-source authority, with bounded edits in features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts and no new checkpoint/model wait created."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:15:50.802Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence and repo-local diffs confirm the dedicated subnet-validation path now states the ACI witness envelope as a repo-local convention rather than mounted handwritten-source authority, with bounded edits in features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts and no new checkpoint/model wait created."
+      },
+      "status": "done"
+    }
+  ]
+}

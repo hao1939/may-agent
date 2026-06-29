@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:01:20.305Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner rollup after row-44 selector/coverage acceptance: VM prerelease source-backed authoring for rows 3-4, 35, 36, 39-40, and 44 is durably accepted, and row 44 now graduated into the reviewed selector plus coverage-accounting surfaces with planner inclusion proven by evidence/archive/vm-prerelease-row44-selector-and-coverage-promotion-20260620.md. The remaining live work in this lane is the active row-44 execute-capable replay-contract definition task, while the MachinesPreview branch continues as one truthful external wait pending durable proof of send/handoff or an authoritative preview-registration reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "machinespreview-owner-handoff-escalation-request-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Package the exact human owner/operator escalation request for the existing MachinesPreview send-ready packet so the next non-runtime actor knows what to send, where durable proof must be recorded, and how the current blocked rerun path resumes without pretending a send already happened.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-owner-handoff-escalation-request-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md plus evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md, and restates the exact external ask/replay contract without claiming outbound send already occurred.",
+        "Artifact names the required durable proof fields for completion: channel, recipient or escalation path, sent timestamp, and any authoritative reply or preview-registration result that would unblock the unchanged westus2/local rerun contract.",
+        "Work stays bounded to packaging the existing handoff/escalation request for a human owner/operator and does not perform live cloud execution or duplicate the blocked wait carrier itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:58:13.042Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_machinespreview-owner-handoff-escalation-request-20260620_20260620125828",
+        "assigned_at": "2026-06-20T12:58:28.962Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_machinespreview-owner-handoff-escalation-request-20260620",
+        "worker_started_attempt_id": "a_machinespreview-owner-handoff-escalation-request-20260620_20260620125828",
+        "worker_started_at": "2026-06-20T12:58:29.130Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded owner/operator escalation packaging artifact at evidence/archive/machinespreview-owner-handoff-escalation-request-20260620.md, citing the existing handoff packet and proof-capture note while preserving the unchanged blocked rerun contract and explicitly not claiming any send already occurred.",
+        "last_worker_completed_at": "2026-06-20T12:58:56.889Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:00:20.003Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/machinespreview-owner-handoff-escalation-request-20260620.md: it packages the exact human owner/operator ask from the existing send-ready packet, names the required durable proof fields and unchanged rerun resume contract, and truthfully avoids claiming that any send already happened, leaving the existing external wait carrier as the single live blocker."
+      },
+      "session_id": "s_task_machinespreview-owner-handoff-escalation-request-20260620",
+      "session_history": [
+        "s_task_machinespreview-owner-handoff-escalation-request-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:00:20.003Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/machinespreview-owner-handoff-escalation-request-20260620.md: it packages the exact human owner/operator ask from the existing send-ready packet, names the required durable proof fields and unchanged rerun resume contract, and truthfully avoids claiming that any send already happened, leaving the existing external wait carrier as the single live blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

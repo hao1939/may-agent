@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:48:46.235Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 post-recovery owner review: keep vmpr-privatecluster-separation-batch6-20260621 as the only active repo-workspace lane. Its bounded job is still one model-first separation pass from evidence/archive/vmpr-model-row26-separation-batch5-20260621.md: separate only remaining private-cluster maintained material that still co-carries with the target VM maintained checkpoint family, regenerate maintained views, rerun validator-baseline evidence, and recount the truthful VM-only maintained blocker subset. The shared blocked frontier stays collapsed into external-send-proof-dispatch-family-20260620 after warning review confirmed it is a single exact external-human transport wait, not a missing local setup lane. Done work now establishes two durable bases: vmpr-model-row26-separation-batch5-20260621 identified the row-26/private-cluster mixed-carrier slice to attack next, and vmpr-rows25-50-source-bounds-20260621 closed local source interpretation for the VM prerelease live-operator ask so future progress there depends on real send proof or authoritative reply rather than more source reading.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-model-row26-separation-batch5-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the exact row-26-only hunk list from evidence/archive/vmpr-maintained-three-way-carrier-separation-batch4-20260621.md to perform one bounded model-first repo-workspace separation pass in model/knowledge-map/model.json, removing or relocating only the pure row 26 capacity-based-surge maintained additions away from the target VM rows 27/29/30/31/32/33/34 and private-cluster maintained additions; then regenerate the maintained knowledge-map views, validate the model/views, and record the new smallest truthful blocker subset for any VM-only maintained checkpoint claim without claiming a checkpoint.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-model-row26-separation-batch5-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-maintained-three-way-carrier-separation-batch4-20260621.md and the current repo diff, then names exactly which row-26-only model.json hunks were separated or explains with diff evidence why one of those supposedly pure row-26 hunks could not be separated cleanly.",
+        "The worker updates model/knowledge-map/model.json only for the pure row-26 capacity-based-surge maintained material identified in batch4, regenerates the affected maintained views (evidence-matrix.json, graph-view.json, path-summary.json, status-summary.json), and records regeneration plus validator-baseline evidence without falsely claiming repo checks pass when the baseline already fails outside this slice.",
+        "The archive note states whether the five-file maintained blocker family shrank after regeneration, naming the exact remaining mixed carriers or hunks that still prevent a truthful VM-only maintained checkpoint slice. The task does not claim any commit or checkpoint happened."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:41:59.586Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-model-row26-separation-batch5-20260621_20260621044159",
+        "assigned_at": "2026-06-21T04:41:59.639Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-model-row26-separation-batch5-20260621",
+        "worker_started_attempt_id": "a_vmpr-model-row26-separation-batch5-20260621_20260621044159",
+        "worker_started_at": "2026-06-21T04:42:17.558Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Performed the bounded row-26 model-first separation in model/knowledge-map/model.json, regenerated the maintained views, and wrote evidence/archive/vmpr-model-row26-separation-batch5-20260621.md documenting the reduced row-26 diff footprint and the remaining five-file VM+private-cluster blocker family. The repo-local validator still fails at the same 735-error baseline (with 7 extra warnings in the current worktree), so I could not truthfully claim a passing repo-check result.",
+        "last_worker_completed_at": "2026-06-21T04:47:21.444Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:47:51.225Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a truthful bounded narrowing result: evidence/archive/vmpr-model-row26-separation-batch5-20260621.md shows the row-26 semantic maintained additions were removed from model.json and no longer appear as tagged additions in regenerated view diffs, while the same five-file blocker family remains for a different reason (target VM plus private-cluster co-carriage). The worker also documented that validator failure remained at the pre-existing 735-error baseline, so this branch is complete as separation evidence rather than a repo-check pass claim."
+      },
+      "session_id": "s_task_vmpr-model-row26-separation-batch5-20260621",
+      "session_history": [
+        "s_task_vmpr-model-row26-separation-batch5-20260621"
+      ],
+      "result": "Performed the bounded row-26 model-first separation in model/knowledge-map/model.json, regenerated the maintained views, and wrote evidence/archive/vmpr-model-row26-separation-batch5-20260621.md documenting the reduced row-26 diff footprint and the remaining five-file VM+private-cluster blocker family. The repo-local validator still fails at the same 735-error baseline (with 7 extra warnings in the current worktree), so I could not truthfully claim a passing repo-check result.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:47:51.225Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a truthful bounded narrowing result: evidence/archive/vmpr-model-row26-separation-batch5-20260621.md shows the row-26 semantic maintained additions were removed from model.json and no longer appear as tagged additions in regenerated view diffs, while the same five-file blocker family remains for a different reason (target VM plus private-cluster co-carriage). The worker also documented that validator failure remained at the pre-existing 735-error baseline, so this branch is complete as separation evidence rather than a repo-check pass claim."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:53:55.149Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 owner review accepted vm-prerelease-plan-proof-after-row26-metadata-20260620 as the bounded post-row26 consistency checkpoint: the repo-local planner reran cleanly against evidence/pipelines/virtualmachine-prerelease.features.txt, row 26 remained selected and grouped with the capacity-surge slice, and the validated selector/spec/coverage-JSON/replay surfaces now truthfully describe execute-gated row-26 coverage without claiming cloud mutation or product pass/fail. Durable meaning for this branch is now simple: repo-local VM prerelease runner/planning alignment for the current row-26 replacement slice is complete, while the only remaining live runner child is the exact external wait vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620 for human send-proof or authoritative operator reply on the separate combined rows-25-and-50 bundle.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-plan-proof-after-row26-metadata-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regenerate bounded VM prerelease plan proof after the accepted row-26 metadata alignment so the current replacement slice has a fresh repo-local planning/consistency checkpoint without claiming live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-plan-proof-after-row26-metadata-20260620.md"
+      ],
+      "acceptance": [
+        "Run a bounded repo-local plan/proof command against evidence/pipelines/virtualmachine-prerelease.features.txt, record the exact command/result in the artifact, and capture whether the current replacement slice still plans cleanly after the row-26 metadata correction.",
+        "Artifact explicitly checks at least one row-26-related planning/coverage surface so stale check-only wording is no longer present in the regenerated or validated plan inputs.",
+        "Artifact states that any live execute work remains separately gated and does not claim cloud mutation or product pass/fail coverage from this repo-local proof step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:replays"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:51:40.260Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-plan-proof-after-row26-metadata-20260620_20260620165140",
+        "assigned_at": "2026-06-20T16:51:40.311Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-plan-proof-after-row26-metadata-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-plan-proof-after-row26-metadata-20260620_20260620165140",
+        "worker_started_at": "2026-06-20T16:51:59.050Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Regenerated the bounded VM prerelease row-26 plan-proof artifact at evidence/archive/vm-prerelease-plan-proof-after-row26-metadata-20260620.md after rerunning the repo-local planner and validating row-26 selector/coverage/spec/replay surfaces. Confirmed the current capacity-surge replacement slice still plans cleanly without claiming any live execution.",
+        "last_worker_completed_at": "2026-06-20T16:53:06.403Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:53:55.103Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review based on evidence/archive/vm-prerelease-plan-proof-after-row26-metadata-20260620.md: bounded 'bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt' succeeded, row 26 remained selected in the exact planner input and grouped in the expected capacity-surge slice, active selector/spec/coverage JSON/replay surfaces now describe execute-gated row-26 coverage rather than stale check-only wording, and the artifact explicitly preserves the no-live-execution boundary."
+      },
+      "session_id": "s_task_vm-prerelease-plan-proof-after-row26-metadata-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-plan-proof-after-row26-metadata-20260620"
+      ],
+      "result": "Regenerated the bounded VM prerelease row-26 plan-proof artifact at evidence/archive/vm-prerelease-plan-proof-after-row26-metadata-20260620.md after rerunning the repo-local planner and validating row-26 selector/coverage/spec/replay surfaces. Confirmed the current capacity-surge replacement slice still plans cleanly without claiming any live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:53:55.103Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review based on evidence/archive/vm-prerelease-plan-proof-after-row26-metadata-20260620.md: bounded 'bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt' succeeded, row 26 remained selected in the exact planner input and grouped in the expected capacity-surge slice, active selector/spec/coverage JSON/replay surfaces now describe execute-gated row-26 coverage rather than stale check-only wording, and the artifact explicitly preserves the no-live-execution boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

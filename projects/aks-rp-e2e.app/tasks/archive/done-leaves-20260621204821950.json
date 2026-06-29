@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:48:21.950Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 metric-breach reconciliation: treat aks-rp-e2e.run.live-idle-with-runnable-work as a transient metric/frontier mismatch rather than a true refill incident because the confirmed frontier has no runnable leaves and already carries two freshly assigned repo-local active tasks: vmpr-row60-addon-maintained-knowledge-map-landing-20260621 for frontier/vmpr and app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621 for frontier/app-monitoring. Keep vmpr-row25-capacity-based-surge-maintained-knowledge-map-landing-20260621 waiting until vmpr-row60 clears the shared frontier/vmpr conflict scope, preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful external-human-transport wait, and archive the accepted app-monitoring source-semantics unblock leaf now that its meaning is preserved by the active reconcile successor and parent summary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane rework: reconcile the row-63 Azure Monitor Metrics source-semantics landing so the maintained path/status surfaces, spec/replay wiring, and evidence packet all agree on the truthful post-source-unblock state without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md"
+      ],
+      "acceptance": [
+        "Either update the maintained model/view status surfaces so path.app-monitoring-addonv2-azure-monitor-metrics no longer claims an external-proof/source-semantics blocker and instead truthfully reflects the mounted-source-backed execution-gated contract, or preserve blocked wording only with exact evidence showing why execution-gated landing is still not representable.",
+        "Produce a durable rework note citing the exact mounted source anchors and exact repo files changed in this pass, including whether specs/index, runs/index, or generated view surfaces changed, and record explicit outcomes for validate/generate/check/execute-gate commands.",
+        "Keep the pass repo-local only: no cloud execution, no external-human transport work, and no product pass/fail overclaim beyond the mounted-source-backed contract and execute gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:44:33.259Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621_20260621204433",
+        "assigned_at": "2026-06-21T20:44:33.308Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621_20260621204433",
+        "worker_started_at": "2026-06-21T20:45:21.990Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Pinned the row-63 Azure Monitor Metrics source semantics using mounted aks-rp source, updated the accepted knowledge-map model/view surfaces from external-proof-needed to execution-gated, and wrote the durable evidence packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T20:45:22.009Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:47:35.500Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-63 source-semantics unblock because the durable evidence packet proves the mounted-source request/readback contract and runtime assertion bundle, removes the stale external-proof/source-semantics blocker, and keeps the remaining limit truthfully scoped to execute authorization only. The evidence note has a stale attempt-id header, so the already-active successor app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621 remains the bounded follow-up to reconcile all maintained status/view surfaces and clean any residual packet mismatch without cloud execution."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621"
+      ],
+      "result": "Pinned the row-63 Azure Monitor Metrics source semantics using mounted aks-rp source, updated the accepted knowledge-map model/view surfaces from external-proof-needed to execution-gated, and wrote the durable evidence packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:47:35.500Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-63 source-semantics unblock because the durable evidence packet proves the mounted-source request/readback contract and runtime assertion bundle, removes the stale external-proof/source-semantics blocker, and keeps the remaining limit truthfully scoped to execute authorization only. The evidence note has a stale attempt-id header, so the already-active successor app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621 remains the bounded follow-up to reconcile all maintained status/view surfaces and clean any residual packet mismatch without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

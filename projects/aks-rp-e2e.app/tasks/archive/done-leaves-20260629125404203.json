@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:54:04.203Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 blocked-frontier planning kept the two consolidated human/operator waits unchanged and accepted another verifier-ingestion outcome in the spec loop. The known-run backfill for spec.aad-rbac.nonaad-to-aadv2-migration proved the repaired verifier path can bind run 28371054186 without redispatch, but that run is still in_progress with zero artifacts, so the loop now carries one exact blocked follow-up leaf waiting for a terminal downloadable result before ingestion/classification resumes. Remaining loop work is still the active single-spec verification/retry drain plus this bounded known-run artifact wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "apply-aad-rbac-known-run-backfill-28371054186-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the bounded known-run verifier/spec-loop backfill path to reattach spec.aad-rbac.nonaad-to-aadv2-migration run 28371054186 into local artifact/result ingestion and record whether existing archived artifacts can now be classified without redispatch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md"
+      ],
+      "acceptance": [
+        "Worker binds spec.aad-rbac.nonaad-to-aadv2-migration + run 28371054186 through the accepted repo-local recovery path and records the exact local command/evidence used.",
+        "The review states whether existing run 28371054186 artifacts/result can now be ingested and classified through the verifier path, or fails closed with the exact repo-local blocker, without dispatching a new workflow run.",
+        "The outcome stays bounded to artifact/state ingestion for run 28371054186 and does not claim new cloud/product evidence beyond what the recovered artifacts truthfully show."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:46:30.698Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_apply-aad-rbac-known-run-backfill-28371054186-20260629_20260629124630",
+        "assigned_at": "2026-06-29T12:46:30.751Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_apply-aad-rbac-known-run-backfill-28371054186-20260629",
+        "worker_started_attempt_id": "a_apply-aad-rbac-known-run-backfill-28371054186-20260629_20260629124630",
+        "worker_started_at": "2026-06-29T12:46:59.192Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Exercised the accepted known-run verifier backfill path for spec.aad-rbac.nonaad-to-aadv2-migration run 28371054186, wrote a bounded archive review at evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md, and confirmed the run can be rebound without redispatch but still cannot be ingested/classified because it remains in_progress with zero artifacts.",
+        "last_worker_completed_at": "2026-06-29T12:53:33.512Z",
+        "last_worker_evidence": [
+          "evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:54:04.146Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the bounded backfill review in evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md: the known-run verifier path is repaired and reattaches run 28371054186 without redispatch, but the run still reports in_progress with zero artifacts, so classification must wait on a terminal downloadable result and is now represented by the new exact blocked follow-up leaf await-aad-rbac-known-run-28371054186-terminal-artifacts."
+      },
+      "session_id": "s_task_apply-aad-rbac-known-run-backfill-28371054186-20260629",
+      "session_history": [
+        "s_task_apply-aad-rbac-known-run-backfill-28371054186-20260629"
+      ],
+      "result": "Exercised the accepted known-run verifier backfill path for spec.aad-rbac.nonaad-to-aadv2-migration run 28371054186, wrote a bounded archive review at evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md, and confirmed the run can be rebound without redispatch but still cannot be ingested/classified because it remains in_progress with zero artifacts.",
+      "evidence": [
+        "evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:54:04.146Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the bounded backfill review in evidence/archive/apply-aad-rbac-known-run-backfill-28371054186-20260629.md: the known-run verifier path is repaired and reattaches run 28371054186 without redispatch, but the run still reports in_progress with zero artifacts, so classification must wait on a terminal downloadable result and is now represented by the new exact blocked follow-up leaf await-aad-rbac-known-run-28371054186-terminal-artifacts."
+      },
+      "status": "done"
+    }
+  ]
+}

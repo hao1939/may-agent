@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T04:32:30.763Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-25 owner reconciliation: accepted storage-csi-disk-raw-block live-carrier gap packet is now durable history only and proves the current raw-block replay remains check-only until a truthful execute-capable carrier is designed. Keep the same five exact external returned-proof waits unchanged, and make the single local next step the newly assigned repo-local execute-carrier slice for raw-block so future implementation can stay bounded, non-cloud, and specific to /dev/sdx + dd.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-raw-block-live-carrier-gap-packet-20260625",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded repo-local execution-carrier gap packet for path.storage-csi-disk-raw-block that maps the exact spec/replay/code surfaces preventing a truthful live raw-block probe today, names the minimal implementation seam for a future execute-capable carrier, and preserves the current non-cloud gate without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-live-carrier-gap-packet-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the exact spec, replay, and helper code locations currently leaving raw-block at runSourceSpecCheck/check-only behavior, explains why current --execute is not a real live raw-block carrier, and identifies the smallest truthful implementation seam for a future execute-capable path.storage-csi-disk-raw-block probe.",
+        "The packet stays strictly repo-local, does not implement or run cloud execution, does not reopen the five external waits, and ends with one concrete next engineering leaf only if the carrier seam is clear enough to execute later."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T04:29:02.615Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-live-carrier-gap-packet-20260625_20260625042902",
+        "assigned_at": "2026-06-25T04:29:02.660Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-live-carrier-gap-packet-20260625",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-live-carrier-gap-packet-20260625_20260625042902",
+        "worker_started_at": "2026-06-25T04:29:31.009Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded repo-local gap packet at evidence/archive/storage-csi-disk-raw-block-live-carrier-gap-packet-20260625.md, documenting why storage-csi raw-block remains check-only today and identifying the smallest truthful future execute-carrier seam.",
+        "last_worker_completed_at": "2026-06-25T04:31:36.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T04:32:20.126Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after reading evidence/archive/storage-csi-disk-raw-block-live-carrier-gap-packet-20260625.md: the packet truthfully proves raw-block remains check-only today, cites the exact source/spec/replay/helper surfaces, preserves the non-cloud gate, and names one bounded future execute-carrier seam without reopening the five external waits."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-live-carrier-gap-packet-20260625",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-live-carrier-gap-packet-20260625"
+      ],
+      "result": "Produced the bounded repo-local gap packet at evidence/archive/storage-csi-disk-raw-block-live-carrier-gap-packet-20260625.md, documenting why storage-csi raw-block remains check-only today and identifying the smallest truthful future execute-carrier seam.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T04:32:20.126Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after reading evidence/archive/storage-csi-disk-raw-block-live-carrier-gap-packet-20260625.md: the packet truthfully proves raw-block remains check-only today, cites the exact source/spec/replay/helper surfaces, preserves the non-cloud gate, and names one bounded future execute-carrier seam without reopening the five external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

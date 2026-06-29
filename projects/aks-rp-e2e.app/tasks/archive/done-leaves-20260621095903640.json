@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:59:03.640Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog-review-pending wake was reconciled without reopening work: network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621 was already accepted at 09:56Z, so the stale review pointer now resolves as no-op history. The VM prerelease blocked family remains intentionally collapsed under external-send-proof-dispatch-family-20260620, and the row-33 blocker text now explicitly records the 2026-06-21 owner recheck that this is approval transport wait only, not local environment/setup debt. To avoid an empty runnable frontier behind the single active addonv2 stale-writer investigation, a new bounded non-cloud network-cni source-equivalent boundary-mapping leaf for the dual-stack migration path has been added and assigned so the project retains a durable learning lane if the runtime reconciliation branch stalls.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Patch replays/network-cni-azure-overlay-dual-stack-windows2022.ts so the existing Windows2022 overlay dual-stack create-failure branch durably records ARM HTTP 400 detail for the same carrier — error.code, error.message, bounded body snippet, and useful correlation/request headers from createRes.body/createRes.headers — without changing the spec/path/gate or launching a cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact replay file change and shows the create-failure branch now persists bounded HTTP 400 payload detail from createRes.body/createRes.headers for op.create-windows2022-overlay-dualstack-cluster on the unchanged Windows2022-only carrier.",
+        "Artifact records a repo-local verification step (for example code inspection or check output) proving the repair is wired without broadening into row-94, Windows2025, or other network-cni families and without launching cloud mutation.",
+        "Task stays scoped to replays/network-cni-azure-overlay-dual-stack-windows2022.ts and the exact path.network-cni-azure-overlay-dual-stack-windows2022 evidence ceiling; it must not rerun the carrier yet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:54:12.152Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621_20260621095412",
+        "assigned_at": "2026-06-21T09:54:12.197Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621_20260621095412",
+        "worker_started_at": "2026-06-21T09:54:36.036Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Patched `replays/network-cni-azure-overlay-dual-stack-windows2022.ts` so the existing Windows2022 create-failure branch now persists bounded ARM HTTP failure detail from `createRes.body`/`createRes.headers`, and wrote the scoped evidence artifact `evidence/archive/network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621.md` with repo-local verification and scope proof.",
+        "last_worker_completed_at": "2026-06-21T09:55:55.937Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T09:56:26.812Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker repair: evidence/archive/network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621.md cites the exact replay-only change, and code inspection confirms the unchanged Windows2022 create-failure branch now persists bounded ARM HTTP 400 detail from createRes.body/createRes.headers via formatCreateFailureDetail(createRes) plus the cluster-create-http-response-detail assertion without launching a cloud rerun or broadening into adjacent network-cni families."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621"
+      ],
+      "result": "Patched `replays/network-cni-azure-overlay-dual-stack-windows2022.ts` so the existing Windows2022 create-failure branch now persists bounded ARM HTTP failure detail from `createRes.body`/`createRes.headers`, and wrote the scoped evidence artifact `evidence/archive/network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621.md` with repo-local verification and scope proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T09:56:26.812Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker repair: evidence/archive/network-cni-overlay-dualstack-windows2022-create-http400-evidence-persistence-repair-20260621.md cites the exact replay-only change, and code inspection confirms the unchanged Windows2022 create-failure branch now persists bounded ARM HTTP 400 detail from createRes.body/createRes.headers via formatCreateFailureDetail(createRes) plus the cluster-create-http-response-detail assertion without launching a cloud rerun or broadening into adjacent network-cni families."
+      },
+      "status": "done"
+    }
+  ]
+}

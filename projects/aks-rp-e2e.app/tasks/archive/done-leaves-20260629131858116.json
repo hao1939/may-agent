@@ -1,0 +1,353 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:18:58.116Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepts two more bounded repo-local outcomes in this lane and keeps the live frontier narrow on the existing active single-spec verification drain. Run 28374036986 for spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration is accepted only as an opaque create-time HTTP 500 classification: the durable note proves a spec-local evidence-capture gap/retry candidate and explicitly rejects any model downgrade, blind rerun, or shared KMS family escalation from that run alone. The CCP connected-cluster proxy-auth surrogate branch is now also repaired and accepted repo-locally: the spec/test carriers require Azure Kubernetes Service RBAC Reader at managed-cluster scope for the clusterToken-derived principal and use kubectl get pods as the source-backed positive witness, with local --check verification only. The single AAD-RBAC known-run wait was re-reviewed as a truthful remote-publication checkpoint rather than an environment setup blocker, so no duplicate diagnosis branch is needed before artifact publication. Remaining open work stays on the already-assigned active verifier leaves plus the active KMS source-alignment/apply and VM prerelease rerun-prep branches.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the create-time HTTP 500 from staging run 28374036986 for spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration using the produced result/log artifacts and nearby KMS verifier context before any rerun or blocker decision.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2plus-enable-cmk-from-v2-private-vnet-integration-run-28374036986-http500-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact review captures the exact available failure surface for run 28374036986, including whether ARM/body detail exists or evidence ceiling remains.",
+        "The outcome is classified as spec-local retry, shared KMS create-time diagnosis candidate, model update, or exact external blocker with resume condition.",
+        "The note explains why no blind rerun or durable blocked/product verdict is justified yet if evidence remains inconclusive."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:12:00.799Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-20260629_20260629131200",
+        "assigned_at": "2026-06-29T13:12:00.866Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-202",
+        "worker_started_attempt_id": "a_classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-20260629_20260629131200",
+        "worker_started_at": "2026-06-29T13:12:28.199Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28374036986 artifact surfaces and wrote a durable classification note concluding the create-time HTTP 500 is a spec-local retry candidate with missing RP-body evidence, not yet a shared KMS family, model downgrade, or external blocker.",
+        "last_worker_completed_at": "2026-06-29T13:14:29.221Z",
+        "last_worker_evidence": [
+          "evidence/archive/kms-v2plus-enable-cmk-from-v2-private-vnet-integration-run-28374036986-http500-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:16:08.826Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the worker classification: run 28374036986 produced a durable HTTP 500 analysis artifact and the packet trace shows a bounded spec-local retry candidate with missing RP-body evidence, not a shared KMS family blocker or model downgrade."
+      },
+      "session_id": "s_task_classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-202",
+      "session_history": [
+        "s_task_classify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-http500-run-28374036986-202"
+      ],
+      "result": "Reviewed run 28374036986 artifact surfaces and wrote a durable classification note concluding the create-time HTTP 500 is a spec-local retry candidate with missing RP-body evidence, not yet a shared KMS family, model downgrade, or external blocker.",
+      "evidence": [
+        "evidence/archive/kms-v2plus-enable-cmk-from-v2-private-vnet-integration-run-28374036986-http500-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:16:08.826Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the worker classification: run 28374036986 produced a durable HTTP 500 analysis artifact and the packet trace shows a bounded spec-local retry candidate with missing RP-body evidence, not a shared KMS family blocker or model downgrade."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the model-status boundary update lands, reconcile the trusted-service public-cluster/private-KV repo spec and replay with mounted handwritten source for the private-KV recovery and rotation sequence so future runs stop encoding the known drift.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2-trust-service-private-kv-source-alignment-plan-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source, repo spec JSON, and replay TS are compared for the private-KV recovery path, first-rotation preconditions, and second-rotation guard semantics with exact file citations.",
+        "The output names the minimal repo-local spec/replay edits needed to restore source-equivalent behavior, including MC reconcile-after-recovery handling, replaceAllSecretsBeforeFirstRotation, and tightening the expected pre-replace second-rotation failure guard.",
+        "No cloud rerun is launched; the task either lands bounded repo-local repair guidance or identifies one narrower follow-up edit/review leaf justified by the citations."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:10:02.199Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629_20260629131227",
+        "assigned_at": "2026-06-29T13:12:27.843Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629",
+        "worker_started_attempt_id": "a_repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629_20260629131227",
+        "worker_started_at": "2026-06-29T13:12:29.456Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a source-alignment repair plan artifact for the KMS v2 trust-service public-cluster/private-KV spec/replay, comparing mounted handwritten source, repo spec, and replay with exact citations and naming the minimal repo-local fixes.",
+        "last_worker_completed_at": "2026-06-29T13:14:03.952Z",
+        "last_worker_evidence": [
+          "evidence/archive/kms-v2-trust-service-private-kv-source-alignment-plan-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:14:51.942Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded source-backed repair-plan artifact as satisfying the review leaf: it cites mounted source, repo spec, and replay for the private-KV recovery, first-rotation precondition, and second-rotation guard drift. This accepts the artifact only as repo-local guidance; branch closure still depends on landing a follow-up edit task, not on treating the KMS trust-service lifecycle as cleared."
+      },
+      "session_id": "s_task_repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629",
+      "session_history": [
+        "s_task_repair-spec-kms-v2-trust-service-private-kv-source-alignment-20260629"
+      ],
+      "result": "Produced a source-alignment repair plan artifact for the KMS v2 trust-service public-cluster/private-KV spec/replay, comparing mounted handwritten source, repo spec, and replay with exact citations and naming the minimal repo-local fixes.",
+      "evidence": [
+        "evidence/archive/kms-v2-trust-service-private-kv-source-alignment-plan-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:14:51.942Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded source-backed repair-plan artifact as satisfying the review leaf: it cites mounted source, repo spec, and replay for the private-KV recovery, first-rotation precondition, and second-rotation guard drift. This accepts the artifact only as repo-local guidance; branch closure still depends on landing a follow-up edit task, not on treating the KMS trust-service lifecycle as cleared."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-aad-rbac-known-run-28371054186-checkpoint-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "At or after the 2026-06-29T18:15:00Z checkpoint, recheck known run 28371054186 for spec.aad-rbac.nonaad-to-aadv2-migration and either ingest the first downloadable artifacts/terminal result or capture exact stalled-run external evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-known-run-28371054186-checkpoint-review-20260629.md"
+      ],
+      "acceptance": [
+        "If the run reaches terminal state or publishes artifacts, the review documents the ingestion/retry handoff needed to classify the spec without redispatch.",
+        "If the run is still in_progress with zero artifacts at checkpoint, the review captures timestamped stalled-run evidence and the exact external owner or escalation needed.",
+        "The task does not launch a new spec run unless a reviewed contradiction proves the known-run path unusable."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:00:28.427Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T13:00:28.678Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_review-aad-rbac-known-run-28371054186-checkpoint-20260629_20260629130051",
+        "assigned_at": "2026-06-29T13:00:51.179Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-aad-rbac-known-run-28371054186-checkpoint-20260629",
+        "worker_started_attempt_id": "a_review-aad-rbac-known-run-28371054186-checkpoint-20260629_20260629130051",
+        "worker_started_at": "2026-06-29T13:00:53.913Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Created the assigned checkpoint-review artifact documenting that this session occurred before the required 2026-06-29T18:15:00Z checkpoint, so no compliant recheck was performed and the task remains timing-blocked.",
+        "last_worker_completed_at": "2026-06-29T13:01:51.669Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-known-run-28371054186-checkpoint-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:04:22.993Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the pre-checkpoint review leaf with one exact blocked wait because the worker evidence proves this session occurred before 2026-06-29T18:15:00Z and no compliant recheck was yet actionable."
+      },
+      "session_id": "s_task_review-aad-rbac-known-run-28371054186-checkpoint-20260629",
+      "session_history": [
+        "s_task_review-aad-rbac-known-run-28371054186-checkpoint-20260629"
+      ],
+      "result": "Created the assigned checkpoint-review artifact documenting that this session occurred before the required 2026-06-29T18:15:00Z checkpoint, so no compliant recheck was performed and the task remains timing-blocked.",
+      "evidence": [
+        "evidence/archive/aad-rbac-known-run-28371054186-checkpoint-review-20260629.md"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T13:04:22.993Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the pre-checkpoint review leaf with one exact blocked wait because the worker evidence proves this session occurred before 2026-06-29T18:15:00Z and no compliant recheck was yet actionable."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review the completed repo-local repair for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease so the missing worker-completion review is represented in-tree, accepting only the bounded carrier alignment/diagnostics prep that the evidence supports and explicitly not a live spec verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-nginx-carrier-alignment-20260629.md"
+      ],
+      "acceptance": [
+        "Review records whether the repair evidence and TS replay actually align the repo carrier to mounted Scenario_New_VNET as a bounded equivalent, including source-equivalent nginx image selection and rollout diagnostics capture.",
+        "Review decision states clearly that no live cloud rerun happened, so the path/spec verdict remains unresolved and only later rerun-prep may follow from acceptance."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:16:08.876Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T13:16:16.564Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the worker repair as credible repo-local prep only: the evidence note and replay show mounted Scenario_New_VNET nginx-image/helper alignment as a bounded TypeScript equivalent plus richer rollout diagnostics, and they explicitly confirm no live rerun occurred so spec/path verdicts remain unresolved."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:16:16.564Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the worker repair as credible repo-local prep only: the evidence note and replay show mounted Scenario_New_VNET nginx-image/helper alignment as a bounded TypeScript equivalent plus richer rollout diagnostics, and they explicitly confirm no live rerun occurred so spec/path verdicts remain unresolved."
+      },
+      "status": "done"
+    },
+    {
+      "id": "source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect mounted AKS RP source plus the current spec/replay carriers for spec.ccp.connected-cluster-proxy-auth to decide whether the surrogate positive RunCommand path should include an Azure Kubernetes Service RBAC role-assignment prerequisite, a different caller principal, or a different success command before namespace listing is expected to succeed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted adjacent source authority and the current spec/replay carriers for spec.ccp.connected-cluster-proxy-auth are cited, including the AKS RunCommand/AAD role-assignment precedent if applicable.",
+        "The review states whether run 28373266402's Forbidden result is best explained by a missing RBAC prerequisite, wrong principal, wrong success command, or unresolved evidence ceiling, and names the exact repo-local model/spec follow-up if one is justified.",
+        "No fresh cloud rerun is proposed unless the review identifies a concrete newly clarified execution gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp.connected-cluster-proxy-auth"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:06:52.531Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629_20260629130652",
+        "assigned_at": "2026-06-29T13:06:52.608Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629",
+        "worker_started_attempt_id": "a_source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629_20260629130652",
+        "worker_started_at": "2026-06-29T13:07:13.878Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the assigned source review and wrote durable evidence at evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md. The review concludes run 28373266402 is best explained by a missing Azure Kubernetes Service RBAC Reader assignment for the clusterToken-derived principal, with a secondary repo-local command-alignment issue.",
+        "last_worker_completed_at": "2026-06-29T13:09:42.681Z",
+        "last_worker_evidence": [
+          "evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:10:35.856Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md: mounted AAD RunCommand source plus run 28373266402 support missing Azure Kubernetes Service RBAC Reader assignment for the clusterToken-derived principal as the main cause of the Forbidden result, with kubectl get namespaces identified as a weaker surrogate witness than kubectl get pods. The review is evidence-backed and justifies a repo-local surrogate contract repair without a fresh cloud rerun."
+      },
+      "session_id": "s_task_source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629",
+      "session_history": [
+        "s_task_source-review-ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-20260629"
+      ],
+      "result": "Completed the assigned source review and wrote durable evidence at evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md. The review concludes run 28373266402 is best explained by a missing Azure Kubernetes Service RBAC Reader assignment for the clusterToken-derived principal, with a secondary repo-local command-alignment issue.",
+      "evidence": [
+        "evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:10:35.856Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/ccp-connected-cluster-proxy-auth-positive-runcommand-rbac-source-review-20260629.md: mounted AAD RunCommand source plus run 28373266402 support missing Azure Kubernetes Service RBAC Reader assignment for the clusterToken-derived principal as the main cause of the Forbidden result, with kubectl get namespaces identified as a weaker surrogate witness than kubectl get pods. The review is evidence-backed and justifies a repo-local surrogate contract repair without a fresh cloud rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the CCP connected-cluster proxy auth surrogate spec/replay contract so the positive AKS RunCommand branch requires Azure Kubernetes Service RBAC Reader on the clusterToken-derived principal and uses the best source-backed success witness.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-connected-cluster-proxy-auth-surrogate-rbac-repair-20260629.md"
+      ],
+      "acceptance": [
+        "The current CCP surrogate spec/replay carriers are updated or precisely staged for update so they no longer treat AKS_RP_E2E_AAD_ADMIN_GROUP_OID plus adminGroupObjectIDs alone as sufficient proof for the positive Azure-RBAC-governed branch.",
+        "The repair cites mounted AAD RunCommand source and the accepted 2026-06-29 source-review note, and it makes the clusterToken-derived principal plus Azure Kubernetes Service RBAC Reader assignment at managed-cluster scope explicit before positive success is expected.",
+        "The chosen positive success witness is justified against source precedent, preferring kubectl get pods over namespace listing if the surrogate remains AKS RunCommand-based, and no fresh cloud rerun is launched as part of this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp.connected-cluster-proxy-auth"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:10:35.909Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629_20260629131038",
+        "assigned_at": "2026-06-29T13:10:38.836Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629",
+        "worker_started_attempt_id": "a_repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629_20260629131038",
+        "worker_started_at": "2026-06-29T13:10:56.848Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the CCP connected-cluster proxy-auth surrogate spec/replay contract to require Azure Kubernetes Service RBAC Reader on the clusterToken-derived principal and prefer kubectl get pods as the positive witness; wrote the requested repair artifact and verified local preflight passes.",
+        "last_worker_completed_at": "2026-06-29T13:15:48.497Z",
+        "last_worker_evidence": [
+          "features/ccp-agent/specs/ccp-connected-cluster-proxy-auth.json",
+          "features/ccp-agent/tests/ccp-connected-cluster-proxy-auth.ts",
+          "evidence/archive/ccp-connected-cluster-proxy-auth-surrogate-rbac-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:18:58.000Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the CCP surrogate RBAC repair: the artifact plus repaired spec/test carriers make the clusterToken-derived principal, Azure Kubernetes Service RBAC Reader at managed-cluster scope, and kubectl get pods success witness explicit with mounted-source backing and local --check verification, so no further review leaf is needed."
+      },
+      "session_id": "s_task_repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629",
+      "session_history": [
+        "s_task_repair-spec-ccp-connected-cluster-proxy-auth-surrogate-rbac-preconditions-20260629"
+      ],
+      "result": "Repaired the CCP connected-cluster proxy-auth surrogate spec/replay contract to require Azure Kubernetes Service RBAC Reader on the clusterToken-derived principal and prefer kubectl get pods as the positive witness; wrote the requested repair artifact and verified local preflight passes.",
+      "evidence": [
+        "features/ccp-agent/specs/ccp-connected-cluster-proxy-auth.json",
+        "features/ccp-agent/tests/ccp-connected-cluster-proxy-auth.ts",
+        "evidence/archive/ccp-connected-cluster-proxy-auth-surrogate-rbac-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:18:58.000Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the CCP surrogate RBAC repair: the artifact plus repaired spec/test carriers make the clusterToken-derived principal, Azure Kubernetes Service RBAC Reader at managed-cluster scope, and kubectl get pods success witness explicit with mounted-source backing and local --check verification, so no further review leaf is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

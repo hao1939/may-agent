@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T03:02:29.525Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 owner planning update accepted and archived the serverless schedulerctrl validating-webhook family gate-packet leaf after review: its durable meaning now lives in evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md plus this focus summary, preserving the exact future-live gate for the eight-leaf allow/disallow × public/private/APIServerVNetIntegration family without claiming live execution proof. This focus branch now truthfully reduces to one active repo-local landing leaf for path.storage-csi-file-resize model/view reconciliation and the same single family-level external-human wait; addonv2 ACI connector and validating-webhook packet authoring are closed here and must not be reopened unless new source or run evidence changes the boundary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded future-live execution gate packet for the path.serverless-schedulerctrl.validating-webhook family so a later mutating verification can stay truthful about the public/private/APIServerVNetIntegration allow+disallow topology carriers, exact mutation gate, ordered preflight, kubectl-apply evidence contract, cleanup, and resume conditions without widening into addonv2 ACI connector, row-62 VM/shared-identity, or unrelated serverless families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted validating-webhook source slices plus the maintained spec/replay/model carriers, and enumerates the bounded future-live prerequisites for the public/private/APIServerVNetIntegration allow+disallow family without claiming execution proof.",
+        "Record the exact non-cloud and cloud gates for a future live probe, including the replay-discovered AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, ordered preflight checks, allow/disallow kubectl-apply evidence expectations, cleanup expectations, named evidence outputs, and truthful resume/abort conditions if any prerequisite is missing.",
+        "If a small maintained wording/model/view sync is needed so the family gate is claim-safe, validate it repo-locally and cite that proof; otherwise state why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-schedulerctrl.validating-webhook.family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:57:24.471Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624_20260624025727",
+        "assigned_at": "2026-06-24T02:57:27.142Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624_20260624025727",
+        "worker_started_at": "2026-06-24T02:57:52.238Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded future-live execution gate packet for the serverless scheduler-controller validating-webhook family at evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md, grounded in mounted source plus maintained spec/replay/model carriers and verified with repo-local check/dry-run/execute-blocked proofs.",
+        "last_worker_completed_at": "2026-06-24T03:00:13.364Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:01:26.174Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md fully captures the mounted source anchors, exact topology-paired mutation gates, ordered non-cloud/cloud preflights, execute-blocked proof posture, and explicit no-maintained-edit judgment required by the task acceptance, so this branch is complete and future live work can start from the packet without reopening repo-local boundary discovery."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624"
+      ],
+      "result": "Authored the bounded future-live execution gate packet for the serverless scheduler-controller validating-webhook family at evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md, grounded in mounted source plus maintained spec/replay/model carriers and verified with repo-local check/dry-run/execute-blocked proofs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:01:26.174Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-family-live-execution-gate-packet-20260624.md fully captures the mounted source anchors, exact topology-paired mutation gates, ordered non-cloud/cloud preflights, execute-blocked proof posture, and explicit no-maintained-edit judgment required by the task acceptance, so this branch is complete and future live work can start from the packet without reopening repo-local boundary discovery."
+      },
+      "status": "done"
+    }
+  ]
+}

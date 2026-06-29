@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:38:03.535Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after reviewed completion: row-29 vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621 is accepted and archived as the trusted source-backed reconciliation that moved path.virtualmachines.mixed-sku-lifecycle off stale draft to blocked/execute-capable-but-gated. The remaining repo-local truthfulness frontier is two leaves only: vmpr-mixed-sku-upgrade-derived-surface-repair-20260621 must repair the already-proven contradictory row-27 maintained surfaces before vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621 can be accepted, and vmpr-managedsystem-agentpool-vm-prerelease-model-summary-sync-20260621 must resolve whether the stale-terminal-retry warning is a real prerelease-path surface bug or a path-id mismatch against the already-final path.virtualmachines.managedsystem-combined product-gap verdict. The single blocked external-send-proof family remains the only truthful external wait and stays compressed unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/model-repair lane: reconcile the still-draft maintained path path.virtualmachines.mixed-sku-lifecycle using the mounted-source row-29 contract plus existing repo-local feature/spec/replay carriers so the path carries a truthful maintained status/verdict without opening a live execute lane.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Use the existing mounted-source row-29 contract plus checked-in feature/spec/replay/model carriers to determine the truthful maintained status/verdict for path.virtualmachines.mixed-sku-lifecycle, and document the exact source/spec/replay/evidence chain supporting that decision.",
+        "Update the affected maintained model surfaces (at minimum model/knowledge-map/model.json and dependent generated views/ledgers if linkage or status changes) so the mixed-sku-lifecycle path is no longer left as an unexplained draft while preserving any separate execute-gate or adjacent VM prerelease branches.",
+        "Produce a bounded repo-local artifact summarizing the verdict decision, exact files changed, and verification commands/checks used; no cloud execution and no external-send-proof family edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-mixed-sku-lifecycle-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:31:20.992Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621_20260621173124",
+        "assigned_at": "2026-06-21T17:31:24.519Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621_20260621173124",
+        "worker_started_at": "2026-06-21T17:31:44.004Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled row-29 mixed-SKU lifecycle from stale draft to blocked/execute-capable-but-gated in the maintained knowledge model, regenerated dependent views, and wrote a bounded evidence note documenting the mounted-source/spec/replay/evidence chain.",
+        "last_worker_completed_at": "2026-06-21T17:36:08.391Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:37:05.849Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the row-29 reconciliation after review of evidence/archive/vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621.md: it cites the mounted source contract, checked-in spec/replay carriers, maintained model/view updates, and direct post-change verification that path.virtualmachines.mixed-sku-lifecycle is no longer draft and now truthfully carries blocked/execute-capable-but-gated status."
+      },
+      "session_id": "s_task_vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621"
+      ],
+      "result": "Reconciled row-29 mixed-SKU lifecycle from stale draft to blocked/execute-capable-but-gated in the maintained knowledge model, regenerated dependent views, and wrote a bounded evidence note documenting the mounted-source/spec/replay/evidence chain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:37:05.849Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the row-29 reconciliation after review of evidence/archive/vmpr-mixed-sku-lifecycle-path-status-reconciliation-20260621.md: it cites the mounted source contract, checked-in spec/replay carriers, maintained model/view updates, and direct post-change verification that path.virtualmachines.mixed-sku-lifecycle is no longer draft and now truthfully carries blocked/execute-capable-but-gated status."
+      },
+      "status": "done"
+    }
+  ]
+}

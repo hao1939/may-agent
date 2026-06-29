@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T15:06:31.164Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Blocked-frontier review compressed the external-human transport family back to one truthful blocked leaf: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 now carries both the returned-proof resume condition and the first post-2026-06-26 follow-up/escalation trigger, so the duplicate blocked sibling was replaced. To fix the refill incident without reopening cloud execution, the branch now restores concrete repo-local backlog under the same no-cloud envelope: cloud-provider-batch1-unmapped-scenario-source-spec-model-hardening-20260623, net-integration-batch2-variant-source-spec-model-hardening-20260623, and probe-artifact-burst-duplicate-family-canonicalization-20260623 join the already-active private-cluster-none-dns-zone-v3-model-evidence-ceiling-hardening-20260623. The VM prerelease row-37 mounted-source reconciliation remains represented in prior rollups and archive evidence, so it can be archived from the live branch without losing meaning.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact mounted-source prerelease/checkin carrier for the VM prerelease row 37 managed AAD lifecycle path so the project keeps one source-backed explanation of the current environment-blocked state and the exact same carrier to rerun when create-time access recovers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact /app/sources/aks-rp prerelease/checkin files and scenario definitions for row 37 or its source-equivalent carrier, records the expected login-VM-backed adminUsers lifecycle contract, and links that contract to the current model/evidence state without new execution.",
+        "The task stays repo-local and narrows rerun identity or source-backed blocker wording only; it does not trigger cloud mutation, duplicate blocked waits, or broad VirtualMachine branch expansion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T15:01:04.892Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T15:01:25.085Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623_20260623150136",
+        "assigned_at": "2026-06-23T15:01:36.489Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623",
+        "worker_started_attempt_id": "a_vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623_20260623150136",
+        "worker_started_at": "2026-06-23T15:01:59.310Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable archive note reconciling VM prerelease row 37 managed AAD to the exact mounted-source Scenario_AAD/Scenario_AAD_VirtualMachine carrier and tying the current blocked status to the accepted create-time ARM Canceled ceiling without any new execution.",
+        "last_worker_completed_at": "2026-06-23T15:04:03.796Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T15:04:45.762Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note pins row 37 to mounted Scenario_AAD/Scenario_AAD_VirtualMachine, preserves the login-VM-backed adminUsers managed-AAD lifecycle contract, and keeps the current blocker truthfully classified as create-time environment failure before any row-37 product assertions ran."
+      },
+      "session_id": "s_task_vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623",
+      "session_history": [
+        "s_task_vm-prerelease-row37-managed-aad-carrier-mounted-source-reconciliation-20260623"
+      ],
+      "result": "Created a durable archive note reconciling VM prerelease row 37 managed AAD to the exact mounted-source Scenario_AAD/Scenario_AAD_VirtualMachine carrier and tying the current blocked status to the accepted create-time ARM Canceled ceiling without any new execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T15:04:45.762Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note pins row 37 to mounted Scenario_AAD/Scenario_AAD_VirtualMachine, preserves the login-VM-backed adminUsers managed-AAD lifecycle contract, and keeps the current blocker truthfully classified as create-time environment failure before any row-37 product assertions ran."
+      },
+      "status": "done"
+    }
+  ]
+}

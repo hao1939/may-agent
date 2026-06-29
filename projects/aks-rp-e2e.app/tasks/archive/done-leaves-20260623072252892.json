@@ -1,0 +1,294 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:22:52.892Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the bounded SecOps FIPS Kata blocked carrier and the VM prerelease row-55 selectability hygiene decision. The project now keeps those outcomes as durable repo-local knowledge while active work continues on network-cni preview upgrade, private-cluster VNet integration wording sync, and storage-csi Azure File resize; the only blocked frontier remains the single external-human proof wait, and storage-csi clone follow-ups stay waiting behind the active storage-csi conflict scope.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "storage-csi-blob-verifynfs-mounted-source-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted Blob CSI verifyNFS handwritten sub-branch into repo-local carriers so one bounded uncovered Blob source slice becomes visible without widening into the entire Blob lifecycle family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-blob-verifynfs-mounted-source-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact verifyNFS branch in /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/blobcsi.go and states the specific request/expectation contract carried by that sub-branch.",
+        "Relevant repo-local carrier surfaces are added or updated so this exact Blob verifyNFS branch is visible without widening scope, naming the exact feature/spec/replay/model files added or updated or the bounded carrier gap that remains after inspection.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of the broader Blob mountpoint or private-endpoint branches, and no external-send/escalation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:59:33.042Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:08:35.560Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-blob-verifynfs-mounted-source-landing-20260623_20260623071705",
+        "assigned_at": "2026-06-23T07:17:05.210Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-blob-verifynfs-mounted-source-landing-20260623",
+        "worker_started_attempt_id": "a_storage-csi-blob-verifynfs-mounted-source-landing-20260623_20260623071705",
+        "worker_started_at": "2026-06-23T07:17:07.135Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the exact mounted Blob CSI verifyNFS branch into repo-local carriers by adding a bounded feature packet, draft spec, replay scaffold, and durable archive note under the storage-csi family, all source-backed to mounted blobcsi.go and helper semantics only.",
+        "last_worker_completed_at": "2026-06-23T07:20:54.265Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:21:40.553Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable archive note cites mounted blobcsi.go verifyNFS and helper anchors, and repo-local bounded carriers now exist at features/storage-csi/blob-verify-nfs.yaml, specs/storage-csi-blob-verify-nfs.json, and replays/storage-csi-blob-verify-nfs.ts without widening into adjacent Blob branches."
+      },
+      "session_id": "s_task_storage-csi-blob-verifynfs-mounted-source-landing-20260623",
+      "session_history": [
+        "s_task_storage-csi-blob-verifynfs-mounted-source-landing-20260623"
+      ],
+      "result": "Landed the exact mounted Blob CSI verifyNFS branch into repo-local carriers by adding a bounded feature packet, draft spec, replay scaffold, and durable archive note under the storage-csi family, all source-backed to mounted blobcsi.go and helper semantics only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:21:40.553Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable archive note cites mounted blobcsi.go verifyNFS and helper anchors, and repo-local bounded carriers now exist at features/storage-csi/blob-verify-nfs.yaml, specs/storage-csi-blob-verify-nfs.json, and replays/storage-csi-blob-verify-nfs.ts without widening into adjacent Blob branches."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-blob-fuse2-clone-mounted-source-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted Blob CSI Fuse2 clone handwritten sub-branch into repo-local carriers so one bounded uncovered Blob clone slice is available for repo-local closure without reopening the whole Blob family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-blob-fuse2-clone-mounted-source-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact Fuse2 clone branch in /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/blobcsi.go and states the specific request/expectation contract for the original and cloned Blob PVC flow.",
+        "Relevant repo-local carrier surfaces are added or updated so this exact Blob Fuse2 clone branch is visible without widening scope, naming the exact feature/spec/replay/model files added or updated or the bounded carrier gap that remains after inspection.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of the broader Blob lifecycle or private-endpoint branches, and no external-send/escalation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:59:33.106Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:08:35.560Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-blob-fuse2-clone-mounted-source-landing-20260623_20260623070904",
+        "assigned_at": "2026-06-23T07:09:04.926Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-blob-fuse2-clone-mounted-source-landing-20260623",
+        "worker_started_attempt_id": "a_storage-csi-blob-fuse2-clone-mounted-source-landing-20260623_20260623070904",
+        "worker_started_at": "2026-06-23T07:09:40.802Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed a bounded repo-local Blob CSI blobfuse2 clone carrier with a new feature packet, spec carrier, and durable archive note, all source-backed from mounted blobcsi.go and explicitly scoped away from broader Blob lifecycle/private-endpoint work.",
+        "last_worker_completed_at": "2026-06-23T07:16:33.894Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:17:52.052Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: durable archive note cites exact mounted blobcsi.go Fuse2 clone branch, names the new repo-local carrier files, and current workspace shows those carriers exist as newly added files (features/storage-csi/blob-fuse2-clone.yaml and specs/storage-csi-blob-fuse2-clone.json) without widening into broader Blob work."
+      },
+      "session_id": "s_task_storage-csi-blob-fuse2-clone-mounted-source-landing-20260623",
+      "session_history": [
+        "s_task_storage-csi-blob-fuse2-clone-mounted-source-landing-20260623"
+      ],
+      "result": "Landed a bounded repo-local Blob CSI blobfuse2 clone carrier with a new feature packet, spec carrier, and durable archive note, all source-backed from mounted blobcsi.go and explicitly scoped away from broader Blob lifecycle/private-endpoint work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:17:52.052Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: durable archive note cites exact mounted blobcsi.go Fuse2 clone branch, names the new repo-local carrier files, and current workspace shows those carriers exist as newly added files (features/storage-csi/blob-fuse2-clone.yaml and specs/storage-csi-blob-fuse2-clone.json) without widening into broader Blob work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-mounted-source-coverage-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted AKS RP VirtualMachine prerelease/checkin handwritten source coverage against current repo-local carriers, starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, so one exact source-backed prerelease slice or bounded carrier gap becomes the next non-storage closure target without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-coverage-audit-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted suite files inspected (at minimum prerelease.go and checkin.go, plus any referenced scenario definitions actually followed) and maps the concrete prerelease/checkin rows or paths they cover to current repo-local feature/spec/replay/model carriers.",
+        "The note identifies one explicit bounded outcome for VirtualMachine prerelease coverage closure: either a specific uncovered or weakly-carried prerelease slice with exact next file targets, or evidence that the current repo-local carriers already bound the remaining gap without further authoring.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of the separate external-human wait family, and no generic VM family rewrite outside the exact slices inspected."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:13:07.753Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-audit-20260623_20260623071307",
+        "assigned_at": "2026-06-23T07:13:07.803Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-coverage-audit-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-audit-20260623_20260623071307",
+        "worker_started_at": "2026-06-23T07:13:33.470Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source VirtualMachine prerelease coverage audit and wrote a durable archive note identifying rows 54-56 as the exact inspected slice, with row 55 selectability/index hygiene as the next bounded non-storage closure target.",
+        "last_worker_completed_at": "2026-06-23T07:17:20.970Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:17:52.107Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: durable archive note audits mounted prerelease.go/checkin.go plus referenced scenario files, maps VM prerelease rows 54-56 to current repo-local carriers, and identifies row-55 selector/index hygiene as the next bounded non-storage closure target."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-coverage-audit-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-coverage-audit-20260623"
+      ],
+      "result": "Completed the mounted-source VirtualMachine prerelease coverage audit and wrote a durable archive note identifying rows 54-56 as the exact inspected slice, with row 55 selectability/index hygiene as the next bounded non-storage closure target.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:17:52.107Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: durable archive note audits mounted prerelease.go/checkin.go plus referenced scenario files, maps VM prerelease rows 54-56 to current repo-local carriers, and identifies row-55 selector/index hygiene as the next bounded non-storage closure target."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-row55-selectability-hygiene-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide and land the exact active/selectable repo-local carrier surface for VirtualMachine prerelease row 55 so the canonical source-backed ManagedSystem enable slice is either promoted into active indexed/feature-set surfaces or explicitly retained as superseded lineage with a documented selector rationale.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row55-selectability-hygiene-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the accepted row-55 audit and names the exact row-55 source-backed lineage now in play (at minimum specs/superseded/managedsystem-standalone-e2ev3-enable.json, replays/managedsystem-standalone-e2ev3-enable.ts, specs/managedsystem-rest-add-existing.json, and the prerelease feature-set files inspected).",
+        "Repo-local selector/index surfaces are updated or explicitly bounded so the row-55 outcome is truthful and inspectable, naming the exact files changed (for example specs/index.json and the prerelease feature-set surfaces) or recording the exact reason the canonical source-backed row-55 carrier should remain non-selectable.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of row 54 or row 56 carrier decisions, no storage-csi work, and no external-human wait-family changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:17:52.166Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row55-selectability-hygiene-20260623_20260623071752",
+        "assigned_at": "2026-06-23T07:17:52.229Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row55-selectability-hygiene-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row55-selectability-hygiene-20260623_20260623071752",
+        "worker_started_at": "2026-06-23T07:18:16.244Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-55 selectability hygiene audit and wrote a durable archive note concluding that the canonical standalone ManagedSystem enable slice should remain non-selectable execution-variant lineage while the active/selectable row-55 carrier stays the REST add-existing spec/path.",
+        "last_worker_completed_at": "2026-06-23T07:22:31.252Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:22:52.846Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the row-55 hygiene decision: the archive note cites the mounted VirtualMachine prerelease/checkin lineage, proves the standalone ManagedSystem enable carrier remains inspectable but intentionally non-selectable, and shows the active selector/index surface still truthfully resolves through the REST add-existing carrier without repo changes."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row55-selectability-hygiene-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row55-selectability-hygiene-20260623"
+      ],
+      "result": "Completed the row-55 selectability hygiene audit and wrote a durable archive note concluding that the canonical standalone ManagedSystem enable slice should remain non-selectable execution-variant lineage while the active/selectable row-55 carrier stays the REST add-existing spec/path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:22:52.846Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the row-55 hygiene decision: the archive note cites the mounted VirtualMachine prerelease/checkin lineage, proves the standalone ManagedSystem enable carrier remains inspectable but intentionally non-selectable, and shows the active selector/index surface still truthfully resolves through the REST add-existing carrier without repo changes."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted Scenario_Cluster_FIPS_Kata_Blocked source packet into one direct feature/spec/replay/model carrier without cloud execution, preserving the three Kata rejection directions as a bounded repo-local SecOps FIPS slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites /app/sources/aks-rp/test/e2ev3/sigs/secops/clusterfips/plans/cluster_fips_kata_blocked.go and states the exact three rejection directions for the Kata + FIPS boundary.",
+        "Relevant repo-local carriers are added or updated so this exact mounted Kata-blocked slice is visible as a direct feature/spec/replay/model branch, naming the exact files changed.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of already-landed SecOps FIPS guardrail slices, and no widening into general Windows or Ubuntu compatibility work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:22:08Z",
+        "created_by": "metric-alert-triage",
+        "current_attempt_id": "a_secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623_20260623072205",
+        "assigned_at": "2026-06-23T07:22:05.986Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623",
+        "worker_started_attempt_id": "a_secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623_20260623072205",
+        "worker_started_at": "2026-06-23T07:22:09.600Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the direct repo-local Kata blocked SecOps FIPS carrier: added feature/spec/replay/archive note files, registered spec/index and normalized model path `path.secops-fips.kata-blocked`, regenerated maintained views, and verified the new source-grounded replay passes check mode.",
+        "last_worker_completed_at": "2026-06-23T07:22:09.640Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:22:52.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker result: the archive note cites the mounted cluster_fips_kata_blocked.go source, preserves the three Kata+FIPS rejection directions, names the landed feature/spec/replay/model carriers, and records a successful non-mutating source-spec check for the new repo-local slice."
+      },
+      "session_id": "s_task_secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623",
+      "session_history": [
+        "s_task_secops-fips-mounted-source-kata-blocked-bounded-slice-reconcile-20260623"
+      ],
+      "result": "Landed the direct repo-local Kata blocked SecOps FIPS carrier: added feature/spec/replay/archive note files, registered spec/index and normalized model path `path.secops-fips.kata-blocked`, regenerated maintained views, and verified the new source-grounded replay passes check mode.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:22:52.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker result: the archive note cites the mounted cluster_fips_kata_blocked.go source, preserves the three Kata+FIPS rejection directions, names the landed feature/spec/replay/model carriers, and records a successful non-mutating source-spec check for the new repo-local slice."
+      },
+      "status": "done"
+    }
+  ]
+}

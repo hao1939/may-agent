@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:50:20.819Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 blocked-frontier refill: preserve the single truthful external-human wait for VM prerelease row 33 approval/send-proof return plus shared-identity rows 75-76, archive the already-accepted private-cluster reconcile sibling because its durable meaning now lives in repo evidence/model surfaces, and reopen exactly one runnable private-cluster follow-up to resolve why path.private-cluster-none-dns-zone-v3 still appears unknown despite the accepted reconcile work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-summary-followup-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the mismatch between the still-unknown model status for path.private-cluster-none-dns-zone-v3 and the accepted 2026-06-26 reconcile work: inspect the existing private-cluster evidence/model surfaces, then either land a repo-local status/model update with exact evidence links or write a bounded blocker note explaining why the path must remain unknown.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-summary-followup-20260626.md"
+      ],
+      "acceptance": [
+        "Durably record the current truth for path.private-cluster-none-dns-zone-v3 in repo-local evidence. Either (a) update the model/status surfaces away from unknown with exact evidence links and cite the changed files, or (b) produce a bounded artifact explaining why unknown is still truthful and what exact evidence is still missing. Do not run cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:44:27.407Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T22:44:32.175Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-summary-followup-20260626_20260626224440",
+        "assigned_at": "2026-06-26T22:44:40.554Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-summary-followup-20260626",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-summary-followup-20260626_20260626224440",
+        "worker_started_at": "2026-06-26T22:45:02.944Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable follow-up artifact at evidence/archive/private-cluster-none-dns-zone-v3-model-summary-followup-20260626.md concluding that path.private-cluster-none-dns-zone-v3 should remain an execution-ceiling unknown, with no model/view edits needed because maintained status surfaces already match the accepted truth.",
+        "last_worker_completed_at": "2026-06-26T22:45:55.899Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T22:46:24.078Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-model-summary-followup-20260626.md satisfies acceptance path (b) by durably explaining why path.private-cluster-none-dns-zone-v3 truthfully remains an execution-ceiling unknown and why no repo-local model/view edits were needed."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-summary-followup-20260626",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-summary-followup-20260626"
+      ],
+      "result": "Wrote a durable follow-up artifact at evidence/archive/private-cluster-none-dns-zone-v3-model-summary-followup-20260626.md concluding that path.private-cluster-none-dns-zone-v3 should remain an execution-ceiling unknown, with no model/view edits needed because maintained status surfaces already match the accepted truth.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T22:46:24.078Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-model-summary-followup-20260626.md satisfies acceptance path (b) by durably explaining why path.private-cluster-none-dns-zone-v3 truthfully remains an execution-ceiling unknown and why no repo-local model/view edits were needed."
+      },
+      "status": "done"
+    }
+  ]
+}

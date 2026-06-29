@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:45:21.361Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review accepted the MachinesPreview external-send escalation brief as a repo-local clarification artifact only. This lane still has one truthful live external dependency: the send-ready MachinesPreview packet exists, but no durable proof of actual human send/handoff outside runtime has been captured, so machinespreview-external-owner-send-wait-carrier-20260620 remains the single blocked representation until timestamped send/handoff proof or an authoritative preview-registration reply arrives. Separate active repo-local progress continues on VM prerelease source-suite inventory/gap mapping.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "machinespreview-external-send-escalation-brief-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author one durable repo-local escalation brief that links the existing MachinesPreview send-ready packet to the exact external send chain and proof fields, so the human owner/operator action is actionable and the project does not drift into a false response-await state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-external-send-escalation-brief-20260620.md"
+      ],
+      "acceptance": [
+        "The brief cites the existing send-ready packet evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md and the current proof-capture file evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md.",
+        "The brief states the exact external route when runtime cannot deliver: session owner -> May -> Hao, and names the required durable proof fields for any later send/handoff record: timestamp, channel, recipient, packet linkage, and whether an authoritative reply arrived.",
+        "The brief does not claim any send, handoff, escalation, or response already occurred; it only makes the external ask concrete for the unchanged westus2/local MachinesPreview rerun contract."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:43:23.567Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_machinespreview-external-send-escalation-brief-20260620_20260620144323",
+        "assigned_at": "2026-06-20T14:43:23.609Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_machinespreview-external-send-escalation-brief-20260620",
+        "worker_started_attempt_id": "a_machinespreview-external-send-escalation-brief-20260620_20260620144323",
+        "worker_started_at": "2026-06-20T14:43:33.032Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested MachinesPreview external-send escalation brief at evidence/archive/machinespreview-external-send-escalation-brief-20260620.md, linking the existing send-ready packet and proof-gap note while making the exact external route and required proof fields explicit without claiming any send occurred.",
+        "last_worker_completed_at": "2026-06-20T14:44:11.991Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:45:21.317Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the brief durably links the existing MachinesPreview send-ready packet and the no-send-yet proof note, states the exact external route session owner -> May -> Hao plus required proof fields, and does not falsely claim send/handoff/reply already occurred. This clarifies the external dependency without changing the live blocked carrier."
+      },
+      "session_id": "s_task_machinespreview-external-send-escalation-brief-20260620",
+      "session_history": [
+        "s_task_machinespreview-external-send-escalation-brief-20260620"
+      ],
+      "result": "Authored the requested MachinesPreview external-send escalation brief at evidence/archive/machinespreview-external-send-escalation-brief-20260620.md, linking the existing send-ready packet and proof-gap note while making the exact external route and required proof fields explicit without claiming any send occurred.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:45:21.317Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the brief durably links the existing MachinesPreview send-ready packet and the no-send-yet proof note, states the exact external route session owner -> May -> Hao plus required proof fields, and does not falsely claim send/handoff/reply already occurred. This clarifies the external dependency without changing the live blocked carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

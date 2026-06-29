@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:20:06.237Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier/planning update: accepted the bounded node-http-proxy input-DAG repair after checking its durable archive evidence and validator delta. The project now carries that repo-local model slice as complete, keeps both blocked waits unchanged on their explicit resume conditions (shared external-human reply proof after 2026-06-26 if still silent, and selected-host SSH step-1 reachability for private-cluster auth service tags), and refills active work with one new bounded repo-local validator family slice: traffic-api-proxy normalized-carrier gap repair for the missing scenario/feature/judgment references identified in the accepted validator triage artifact.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "node-http-proxy-input-dag-wiring-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-23 model-validator failure-family triage artifact plus the current model/knowledge-map carriers, repair the bounded node-http-proxy subfamily by adding the three missing normalized input DAGs and selected input-node wiring for path.node-http-proxy.create, path.node-http-proxy.trusted-ca, and path.node-http-proxy.update, then rerun the validator and regenerate maintained views to record the direct issue-count delta without widening into other validator families or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-http-proxy-input-dag-wiring-repair-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the accepted 2026-06-23 validator triage note and the exact model carriers changed, adds the three missing dag.node-http-proxy.* entries plus selectedInputNodeIds for the three node-http-proxy paths, reruns the validator and view generation commands, and records the exact before/after validator lines or counts attributable to this bounded family.",
+        "The work stays repo-local and bounded to node-http-proxy input-DAG wiring: no cloud mutation, no reopening of accepted private-cluster or cloud-provider branches, and no broad cleanup of unrelated validator families beyond the exact edits required for these three paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-http-proxy-model-dag"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:15:33.093Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-http-proxy-input-dag-wiring-repair-20260623_20260623191535",
+        "assigned_at": "2026-06-23T19:15:35.679Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-http-proxy-input-dag-wiring-repair-20260623",
+        "worker_started_attempt_id": "a_node-http-proxy-input-dag-wiring-repair-20260623_20260623191535",
+        "worker_started_at": "2026-06-23T19:16:10.773Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the bounded node-http-proxy model slice by adding three missing input DAGs and wiring selectedInputNodeIds in model/knowledge-map/model.json, then reran validation/view generation and wrote evidence/archive/node-http-proxy-input-dag-wiring-repair-20260623.md with the exact before/after validator delta (-9 attributable lines).",
+        "last_worker_completed_at": "2026-06-23T19:18:46.455Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:19:51.399Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-23 node-http-proxy archive evidence: model/knowledge-map/model.json now contains dag.node-http-proxy.create|trusted-ca|update plus populated selectedInputNodeIds for the three node-http-proxy paths, validator rerun removed the exact 6 unknown-input-dag errors and 3 feature-path-without-input-nodes warnings for this family, and maintained views were regenerated without widening scope beyond the bounded repo-local model slice."
+      },
+      "session_id": "s_task_node-http-proxy-input-dag-wiring-repair-20260623",
+      "session_history": [
+        "s_task_node-http-proxy-input-dag-wiring-repair-20260623"
+      ],
+      "result": "Repaired the bounded node-http-proxy model slice by adding three missing input DAGs and wiring selectedInputNodeIds in model/knowledge-map/model.json, then reran validation/view generation and wrote evidence/archive/node-http-proxy-input-dag-wiring-repair-20260623.md with the exact before/after validator delta (-9 attributable lines).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:19:51.399Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-23 node-http-proxy archive evidence: model/knowledge-map/model.json now contains dag.node-http-proxy.create|trusted-ca|update plus populated selectedInputNodeIds for the three node-http-proxy paths, validator rerun removed the exact 6 unknown-input-dag errors and 3 feature-path-without-input-nodes warnings for this family, and maintained views were regenerated without widening scope beyond the bounded repo-local model slice."
+      },
+      "status": "done"
+    }
+  ]
+}

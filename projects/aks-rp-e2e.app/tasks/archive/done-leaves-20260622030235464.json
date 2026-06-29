@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T03:02:35.465Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 stale watchdog review metadata reconciled: the requested row53 packaging review was already accepted and archived, and the remaining rows54-76 adjacency-map done leaf is now folded into the project branch summary. Durable branch knowledge is unchanged but cleaner: mounted-source adjacency still proves rows54-56 are the only current VM prerelease ManagedSystem family, row54 remains the only live repo-local residue needing a truthfulness audit, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful external-human family wait. No new backlog leaf is needed from this wake because vmpr-row54-managedsystem-model-view-residue-audit-20260622 is already the sole concrete active next action.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows54-76-mounted-source-adjacency-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease source to map the row54-76 residue family adjacent to the current dirty VM prerelease work: identify the exact suite/scenario/file surfaces behind those rows, classify which residue belongs to maintained carriers versus orphan/draft support, and name the smallest truthful next residue family after the row27 checkpoint slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows54-76-mounted-source-adjacency-map-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites exact mounted-source evidence from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and any directly referenced scenario definitions needed to explain rows54-76 adjacency.",
+        "Artifact maps the rows54-76 adjacent residue surfaces to exact maintained suite/scenario/helpers or draft residues, and classifies each cited surface as preserved carrier, separate follow-up family, or superseded/orphan support.",
+        "Artifact names one smallest next repo-local residue family/task candidate without running cloud execution, opening a human transport ask, or mutating current dirty checkpoint slices."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-mounted-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:57:26.311Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows54-76-mounted-source-adjacency-map-20260622_20260622025726",
+        "assigned_at": "2026-06-22T02:57:26.359Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows54-76-mounted-source-adjacency-map-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows54-76-mounted-source-adjacency-map-20260622_20260622025726",
+        "worker_started_at": "2026-06-22T02:57:51.657Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source adjacency artifact at evidence/archive/vmpr-rows54-76-mounted-source-adjacency-map-20260622.md, classifying rows 54-76 into truthful source families and identifying rows 54-56 ManagedSystem adjacency—narrowed to row 54 model/view residue—as the smallest next residue family after row 27.",
+        "last_worker_completed_at": "2026-06-22T03:00:16.091Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:00:33.925Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 mounted-source adjacency map: artifact cites exact prerelease/checkin and referenced plan evidence, truthfully splits rows54-76 into ManagedSystem, SGX, addon/addonv2/ASM, and AKSConformance families, and names rows54-56 ManagedSystem—narrowed to row54 model/view residue—as the smallest repo-local successor without cloud or external-ask widening."
+      },
+      "session_id": "s_task_vmpr-rows54-76-mounted-source-adjacency-map-20260622",
+      "session_history": [
+        "s_task_vmpr-rows54-76-mounted-source-adjacency-map-20260622"
+      ],
+      "result": "Produced the requested mounted-source adjacency artifact at evidence/archive/vmpr-rows54-76-mounted-source-adjacency-map-20260622.md, classifying rows 54-76 into truthful source families and identifying rows 54-56 ManagedSystem adjacency—narrowed to row 54 model/view residue—as the smallest next residue family after row 27.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:00:33.925Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 mounted-source adjacency map: artifact cites exact prerelease/checkin and referenced plan evidence, truthfully splits rows54-76 into ManagedSystem, SGX, addon/addonv2/ASM, and AKSConformance families, and names rows54-56 ManagedSystem—narrowed to row54 model/view residue—as the smallest repo-local successor without cloud or external-ask widening."
+      },
+      "status": "done"
+    }
+  ]
+}

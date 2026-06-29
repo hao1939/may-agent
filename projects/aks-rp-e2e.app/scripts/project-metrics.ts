@@ -3,6 +3,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
 import {
+  listRunnableBacklogTaskIds,
   summarizeTaskTree,
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
@@ -17,6 +18,8 @@ type TaskNode = {
   children?: string[];
   depends_on?: string[];
   session_id?: string;
+  workflow?: string;
+  context?: Record<string, unknown>;
   updated_at?: string;
   trace?: Record<string, unknown>;
   attempts?: unknown[];
@@ -83,6 +86,19 @@ type SpecMetrics = {
   unknown: number;
 };
 
+type SpecLoopState = {
+  specs?: Record<
+    string,
+    {
+      status?: string;
+      taskId?: string | null;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >;
+};
+
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const effectiveAppDir = resolve(process.env.AKS_RP_E2E_APP_DIR ?? appDir);
 const projectDir = resolve(
@@ -93,7 +109,7 @@ const stateDbPath = resolve(
     join(effectiveAppDir, "..", "..", ".state", "may.db"),
 );
 const desiredParallelism = Number.parseInt(
-  process.env.AKS_RP_E2E_DESIRED_PARALLELISM ?? "5",
+  process.env.AKS_RP_E2E_DESIRED_PARALLELISM ?? "1",
   10,
 );
 const staleActiveNoActivityMs = Number.parseInt(
@@ -529,6 +545,85 @@ function activeTaskWorkerSessionRow(
   }
 }
 
+function activeTaskFeatureReferenceSessionRow(
+  task: TaskNode,
+): Record<string, unknown> | null {
+  const featureKey =
+    typeof task.context?.featureKey === "string"
+      ? task.context.featureKey.trim()
+      : "";
+  if (!featureKey || !existsSync(stateDbPath)) return null;
+  const db = new Database(stateDbPath, { readonly: true });
+  const featurePattern = new RegExp(
+    String.raw`feature\s+${featureKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\.|\n|\r|\s)`,
+    "i",
+  );
+  try {
+    const rows = db
+      .query(
+        `
+      select status, outcome, opCount, startedAt, lastActivityAt, task
+      from sessions
+      where source = 'workflow:feature-reference-collector'
+      order by startedAt desc
+      limit 200
+    `,
+      )
+      .all() as Array<Record<string, unknown>>;
+    for (const row of rows) {
+      const taskText = typeof row.task === "string" ? row.task : "";
+      if (featurePattern.test(taskText)) return row;
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
+function loadVerifierLivenessByTaskId(): Map<
+  string,
+  {
+    specId: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    heartbeatAt?: string | null;
+  }
+> {
+  const state = readJson<SpecLoopState | null>(
+    join(effectiveAppDir, ".state", "spec-loop", "state.json"),
+    null,
+  );
+  const byTaskId = new Map<
+    string,
+    {
+      specId: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >();
+  const specs = state?.specs ?? {};
+  for (const [specId, spec] of Object.entries(specs)) {
+    if (!spec || typeof spec !== "object") continue;
+    if (spec.status !== "running") continue;
+    if (!spec.taskId || typeof spec.taskId !== "string") continue;
+    byTaskId.set(spec.taskId, {
+      specId,
+      activeAttemptId:
+        typeof spec.activeAttemptId === "string" ? spec.activeAttemptId : null,
+      activeTaskSessionId:
+        typeof spec.activeTaskSessionId === "string"
+          ? spec.activeTaskSessionId
+          : null,
+      heartbeatAt:
+        typeof spec.heartbeatAt === "string" ? spec.heartbeatAt : null,
+    });
+  }
+  return byTaskId;
+}
+
 function activeLeafTasks(): TaskNode[] {
   const tree = loadTaskTree();
   return Object.values(tree.tasks ?? {}).filter(
@@ -559,6 +654,31 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     typeof task.session_id === "string" && task.session_id.trim()
       ? task.session_id.trim()
       : "";
+  const verifierByTaskId = loadVerifierLivenessByTaskId();
+  const verifier = taskId ? verifierByTaskId.get(taskId) : undefined;
+  const currentAttemptId =
+    typeof task.trace?.current_attempt_id === "string"
+      ? task.trace.current_attempt_id
+      : null;
+
+  if (
+    task.workflow === "single-spec-verifier" &&
+    verifier &&
+    verifier.activeTaskSessionId === sessionId &&
+    verifier.activeAttemptId === currentAttemptId
+  ) {
+    const heartbeatMs = verifier.heartbeatAt
+      ? Date.parse(verifier.heartbeatAt)
+      : Number.NaN;
+    if (
+      Number.isFinite(heartbeatMs) &&
+      Date.now() - heartbeatMs <= staleActiveNoActivityMs
+    ) {
+      return null;
+    }
+    return "verifier-no-heartbeat";
+  }
+
   if (!sessionId) {
     return activeTaskIsWithinStartGrace(task) ? null : "missing-session";
   }
@@ -575,6 +695,11 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     const workerReason = sessionRestartReasonFromRow(workerRow);
     if (workerReason === null) return null;
     if (workerReason !== "session-not-running") return workerReason;
+
+    const featureRow = activeTaskFeatureReferenceSessionRow(task);
+    const featureReason = sessionRestartReasonFromRow(featureRow);
+    if (featureReason === null) return null;
+    if (featureReason !== "session-not-running") return featureReason;
   }
   return reason;
 }
@@ -590,57 +715,27 @@ function runningActiveTaskCount(): number {
 }
 
 function hasLiveExecutionRunnableBacklog(): boolean {
-  const tree = loadTaskTree();
-  const taskMap = tree.tasks ?? {};
-  const tasks = Object.values(taskMap);
-  const idSignals = [
-    "staging",
-    "execute",
-    "execution",
-    "verify",
-    "verification",
-    "frontier",
-    "spec-runner",
-    "ready-spec-execution",
-    "live",
-  ];
-  const negativeSignals = [
-    "repo-local",
-    "source-holder-response-await",
-    "handwritten-source",
-    "ownership-attach",
-    "checkpoint",
-    "canonical-branch-scout",
-    "contradiction-reconcile",
-    "planner",
-    "focus-plan",
-    "metadata",
-    "repair",
-    "reconcile",
-    "draft-sweep",
-  ];
-
-  return tasks.some((task) => {
-    if (taskState(task) !== "backlog" || !isLeaf(task)) return false;
-    if (
-      (task.depends_on ?? []).some((dependencyId) => {
-        if (typeof dependencyId !== "string") return false;
-        const dependency = taskMap[dependencyId];
-        if (!dependency) return false;
-        return taskState(dependency) !== "done";
-      })
-    ) {
-      return false;
-    }
-    const haystack = [task.id, task.goal, task.kind, task.parent_id]
-      .filter((value): value is string => Boolean(value))
-      .join(" ")
-      .toLowerCase();
-    const hasExecutionSignal = idSignals.some((signal) =>
-      haystack.includes(signal),
-    );
-    if (!hasExecutionSignal) return false;
-    return !negativeSignals.some((signal) => haystack.includes(signal));
+  return listRunnableBacklogTaskIds(
+    taskTreeConfig({
+      appDir: effectiveAppDir,
+      projectDir,
+      worker: "aks-explorer",
+      maxConcurrent: desiredParallelism,
+    }),
+    200,
+  ).some((taskId) => {
+    const haystack = taskId.toLowerCase();
+    return [
+      "staging",
+      "execute",
+      "execution",
+      "verify",
+      "verification",
+      "frontier",
+      "spec-runner",
+      "ready-spec-execution",
+      "live",
+    ].some((signal) => haystack.includes(signal));
   });
 }
 
@@ -735,15 +830,46 @@ function recentPlannerRuns(hours: number): PlannerRun[] {
   });
 }
 
+function plannerTimedOut(run: PlannerRun): boolean {
+  const result = (run.result ?? "").toLowerCase();
+  return result.includes("timed out after");
+}
+
+function plannerTouchesOwnerSteps(run: PlannerRun): boolean {
+  return (
+    run.steps?.includes("event-review") ||
+    run.steps?.includes("planning-update") ||
+    false
+  );
+}
+
+function plannerTimeoutStreak24h(runs: PlannerRun[]): number {
+  const ordered = [...runs]
+    .filter((run) => plannerTouchesOwnerSteps(run))
+    .sort(
+      (a, b) => (plannerRunTimestamp(a) ?? 0) - (plannerRunTimestamp(b) ?? 0),
+    );
+  let streak = 0;
+  for (let index = ordered.length - 1; index >= 0; index -= 1) {
+    if (plannerTimedOut(ordered[index])) {
+      streak += 1;
+      continue;
+    }
+    break;
+  }
+  return streak;
+}
+
 function isSlowPlannerRun(run: PlannerRun): boolean {
   if (typeof run.durationMs === "number" && Number.isFinite(run.durationMs)) {
     return run.durationMs >= 180_000;
   }
+  const status = (run.status ?? "").toLowerCase();
   const result = (run.result ?? "").toLowerCase();
   return (
     result.includes("timed out after") ||
-    result.includes("interrupted") ||
-    result.includes("cancelled")
+    status === "interrupted" ||
+    status === "cancelled"
   );
 }
 
@@ -790,8 +916,7 @@ function valueFor(metricId: string): number {
     "aks-rp-e2e.model.unknown-path-count": () =>
       (pathStatus.unknown ?? 0) + (pathStatus["source-enumerated"] ?? 0),
     "aks-rp-e2e.model.failed-path-count": () => pathStatus.fail ?? 0,
-    "aks-rp-e2e.model.blocked-path-count": () =>
-      (pathStatus.blocked ?? 0) + (pathStatus["blocked-infra"] ?? 0),
+    "aks-rp-e2e.model.blocked-path-count": () => pathStatus.blocked ?? 0,
     "aks-rp-e2e.feature.unknown-count": () =>
       (featureStatus.unknown ?? 0) + (featureStatus.partial ?? 0),
     "aks-rp-e2e.spec.total-count": () => countSpecs(),
@@ -829,14 +954,7 @@ function valueFor(metricId: string): number {
         ? 1
         : 0,
     "aks-rp-e2e.planner.timeout-24h": () =>
-      plannerRecent.filter((run) => {
-        const result = (run.result ?? "").toLowerCase();
-        return (
-          result.includes("timed out after") &&
-          (run.steps?.includes("event-review") ||
-            run.steps?.includes("planning-update"))
-        );
-      }).length,
+      plannerTimeoutStreak24h(plannerRecent),
     "aks-rp-e2e.planner.slow-count-24h": () =>
       plannerRecent.filter((run) => isSlowPlannerRun(run)).length,
     "aks-rp-e2e.artifact.duplicate-group-count": () => duplicateArtifactCount(),

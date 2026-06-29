@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T00:08:55.976Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-29 watchdog blocked-frontier review reconfirmed that the project frontier should remain intentionally blocked-only until a real resume signal lands. focus-mounted-source-coverage-closure-and-external-wait-20260623 still truthfully carries the two human/operator wait families: one shared latency checkpoint review at or after 2026-06-29T16:45:00Z unless earlier reply/proof/redirect/decline arrives, plus the separate already-routed out-of-runtime proof wait for VM prerelease row 33 and shared-identity rows 75-76. aks-spec-verification-loop still truthfully carries the single westus2 cluster-count preflight recovery gate for affected KMS verification work, with no new local setup/escalation leaf justified absent same-surface recovery proof, an alternate environment, or authoritative reroute/decline. Archived the previously reviewed dirty-domain-slices done leaf because its meaning is now preserved in the parent rollup and no runnable/review work exists before those exact resume conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-dirty-domain-slices-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review and land the current repo-dirty domain slices surfaced by the checkpoint helper, splitting them into coherent repo-local review leaves so blocked waits remain truthful while unowned feature/model/runner edits gain explicit task coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-dirty-domain-slices-20260628.md"
+      ],
+      "acceptance": [
+        "Each currently dirty slice from the 2026-06-28 checkpoint helper is attached to one concrete child leaf with named files and a bounded accept/reject decision.",
+        "The project frontier regains runnable repo-local work without inventing cloud execution or duplicate external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:29:52.394Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-29T00:08:02.197Z",
+        "rolled_up_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T00:08:02.248Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted branch closure: every dirty slice from the 2026-06-28 checkpoint-helper review was classified into concrete child work and the remaining accepted VPA + VM row-29 clean slice was landed as bounded commit 7c9b7040 with exact evidence, leaving no further review work under this workspace branch."
+      },
+      "context": {
+        "rollup_summary": "The 2026-06-28 dirty-domain review branch is now complete. Owner review accepts three final facts under this branch: (1) archived-output ownership metadata was repaired enough for checkpoint-helper to classify the VPA trio as candidate, (2) the mixed generated-view residue was narrowed into one exact accepted ten-file VPA + VM row-29 maintained slice with the row-29 packet yaml explicitly excluded, and (3) that slice landed as bounded commit 7c9b7040c4a96002a71a2af6ba27db7e745bc86a while unrelated repo dirt remained uncommitted and the full-model validator ceiling stayed pre-existing repo-wide noise rather than a checkpoint blocker.",
+        "archived_done_leaf_count": 18,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260629000802197.json",
+            "archived": 3,
+            "at": "2026-06-29T00:08:02.197Z",
+            "summary": "The 2026-06-28 dirty-domain review branch is now complete. Owner review accepts three final facts under this branch: (1) archived-output ownership metadata was repaired enough for checkpoint-helper to classify the VPA trio as candidate, (2) the mixed generated-view residue was narrowed into one exact accepted ten-file VPA + VM row-29 maintained slice with the row-29 packet yaml explicitly excluded, and (3) that slice landed as bounded commit 7c9b7040c4a96002a71a2af6ba27db7e745bc86a while unrelated repo dirt remained uncommitted and the full-model validator ceiling stayed pre-existing repo-wide noise rather than a checkpoint blocker.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "repair-vpa-profile-state-archived-output-ownership-metadata-20260628",
+              "prepare-vpa-vm-row29-clean-slice-checkpoint-decision-20260629",
+              "checkpoint-vpa-vm-row29-ten-file-clean-slice-20260629"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628235823103.json",
+            "archived": 2,
+            "at": "2026-06-28T23:58:23.104Z",
+            "summary": "The 2026-06-28 dirty-domain review branch now has an accepted classified no-commit outcome for the narrowed VPA + VM row-29 maintained landing slice. Owner review now accepts two closed facts under this branch: (1) checkpoint-helper ownership visibility for the accepted VPA trio spec path was narrowed to an archived-output metadata problem rather than a broader model/spec question, and (2) the remaining generated-view residue is no longer unknown drift but a known mixed family: intended VPA contract-core shrink and row-29 propagation plus out-of-scope private-cluster public-FQDN wording refresh, cluster-autoscaler row-47 evidence/diagnosis refresh, and harmless timestamp/order churn. The row-29 packet yaml remains excluded and the branch stays no-commit until the single remaining active task repairs archived-output ownership metadata and reruns the bounded VPA-trio checkpoint to classify whether helper-visible ownership is restored.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "resolve-vpa-profile-state-helper-ownership-gap-20260628",
+              "classify-generated-view-residual-drift-for-vpa-row29-slice-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628235353109.json",
+            "archived": 3,
+            "at": "2026-06-28T23:53:53.110Z",
+            "summary": "The 2026-06-28 dirty-domain review branch now has an accepted no-commit outcome for the attempted VPA + VM row-29 maintained landing slice. Owner review accepts that the previously named unrelated maintained families were removed from model/knowledge-map/model.json and that the old broad shared aggregate is no longer the exact blocker. What remains is a narrower repo-local residual pair: (1) the workload-autoscaler VPA profile-state spec still leaves the VPA trio slice at needs-planner-review because checkpoint-helper cannot see an accepted owner/ownership state, and (2) regenerated maintained views still pull in non-VPA/non-row29 drift such as private-cluster public-FQDN wording refresh, cluster-autoscaler row-47 evidence appearance, and generatedAt/evidence-order churn. The next truthful work is to split those two residual families into separate executable leaves while keeping the row-29 packet yaml excluded and preserving the current no-commit decision.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "split-unrelated-maintained-churn-from-vpa-row29-slice-20260628",
+              "isolate-shared-knowledge-map-maintained-aggregate-for-vpa-row29-slice-20260628",
+              "split-unrelated-maintained-families-out-of-shared-knowledge-map-vpa-row29-slice-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628234410092.json",
+            "archived": 2,
+            "at": "2026-06-28T23:44:10.093Z",
+            "summary": "The 2026-06-28 dirty-domain review branch now has an accepted no-commit decision for the attempted VPA + VM row-29 landing slice: the VPA compact/spec trio and the row-29 maintained repair are correctly identified, the row-29 packet yaml stays explicitly out of scope, and the remaining blocker is unrelated maintained churn mixed into the shared model/view files. The only open child under this branch is now one runnable repo-local isolation task that must split defender-profile, private-cluster none-dns-zone-v3, cluster-autoscaler overscale, and any other non-VPA/non-row29 maintained edits out of the shared knowledge-map surfaces, then rerun diff + checkpoint evidence to decide whether the narrowed slice becomes commit-ready.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "land-clean-vpa-vm-row29-residue-slice-20260628",
+              "re-isolate-vpa-row29-maintained-surface-slice-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628233815049.json",
+            "archived": 4,
+            "at": "2026-06-28T23:38:15.050Z",
+            "summary": "The 2026-06-28 dirty-domain review branch now has four accepted outcomes: network/private-cluster/platform landed as clean truthfulness batches, runner/runtime landed as a clean status slice, workload-autoscaler VPA profile-state residue is narrowed to the accepted 3-behavior compact/spec boundary, and VirtualMachines row-29 mixed-sku lifecycle residue is repaired to the maintained feature-local carrier across model/views. The remaining owner action is no longer review; it is one bounded landing/checkpoint slice that isolates only the newly accepted VPA compact/spec and VM row-29 model/view files from unrelated repo dirt and records the commit decision.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "land-clean-network-privatecluster-platform-truthfulness-batches-20260628",
+              "land-clean-runner-runtime-status-slice-20260628",
+              "reconcile-vpa-profile-state-adjacent-compact-spec-residue-20260628",
+              "repair-vm-mixed-sku-lifecycle-row29-nextaction-model-residue-20260628"
+            ]
+          }
+        ],
+        "acceptance_note": "Accepted branch closure: every dirty slice from the 2026-06-28 checkpoint-helper review was classified into concrete child work and the remaining accepted VPA + VM row-29 clean slice was landed as bounded commit 7c9b7040 with exact evidence, leaving no further review work under this workspace branch."
+      },
+      "result": "Child review pending: repair-vm-mixed-sku-lifecycle-row29-nextaction-model-residue-20260628, reconcile-vpa-profile-state-adjacent-compact-spec-residue-20260628.",
+      "resolution": "completed",
+      "done_at": "2026-06-29T00:08:02.248Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

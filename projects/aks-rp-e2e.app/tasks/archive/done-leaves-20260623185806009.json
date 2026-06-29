@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T18:58:06.009Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the network-cni escalation-route reconciliation artifact and archived the completed route-diagnosis leaf. Durable branch meaning now is explicit: path.network-cni-cilium-preview-upgrade has a known project approval route (human:operator with fallback session owner -> May -> Hao), but this runtime had no outbound transport and no approval-dispatch proof row for the exact ask packet, so the truthful open representation is one recreated path-specific blocked human-send/escalation-proof wait rather than an active route task or passive reply wait. The remaining live project frontier is one active repo-local private-cluster source-gap mapping leaf plus three exact blocked waits with dated or evidence-based resume conditions; no duplicate waits or speculative retries were introduced in this blocked-frontier pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the existing path.network-cni-cilium-preview-upgrade ask packet and failed-handoff evidence, reconcile the exact out-of-runtime transport/escalation route for the eastus2 standardDDSv5Family>=8 quota-or-equivalent-environment request, so the branch is represented by a truthful active owner problem-solving task instead of only a passive environment-style wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the existing ask packet and failed-handoff evidence, names the exact external owner/channel/escalation path available for this request or proves that no repo-local transport route exists, and states the next truthful task-tree representation/resume condition for path.network-cni-cilium-preview-upgrade.",
+        "The work stays repo-local and bounded to transport/escalation-route reconciliation for this one path: no cloud mutation, no generic Cilium source rediscovery, and no duplicate passive waits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-preview-upgrade-owner-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:55:27.169Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623_20260623185527",
+        "assigned_at": "2026-06-23T18:55:27.219Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623_20260623185527",
+        "worker_started_at": "2026-06-23T18:55:56.070Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable escalation-route reconciliation artifact for path.network-cni-cilium-preview-upgrade, tying the exact ask packet and failed-handoff proof to the project’s human approval/escalation path and clarifying that the existing blocked human-send/escalation-proof wait remains the truthful branch representation until real send proof or direct quota/equivalent-environment evidence appears.",
+        "last_worker_completed_at": "2026-06-23T18:57:34.062Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T18:58:02.507Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the reconciliation artifact as sufficient review evidence: it cites the exact ask packet, failed-handoff proof, shared approval-route authorities, and dispatch ledger check, proving the project-level human:operator escalation path exists while this runtime had no outbound transport and no dispatch proof row for this exact packet. Therefore the active route-diagnosis leaf is complete and the truthful branch representation is the recreated path-specific blocked human-send/escalation-proof wait rather than an active transport task or passive reply-wait."
+      },
+      "session_id": "s_task_network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623"
+      ],
+      "result": "Produced the durable escalation-route reconciliation artifact for path.network-cni-cilium-preview-upgrade, tying the exact ask packet and failed-handoff proof to the project’s human approval/escalation path and clarifying that the existing blocked human-send/escalation-proof wait remains the truthful branch representation until real send proof or direct quota/equivalent-environment evidence appears.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T18:58:02.507Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the reconciliation artifact as sufficient review evidence: it cites the exact ask packet, failed-handoff proof, shared approval-route authorities, and dispatch ledger check, proving the project-level human:operator escalation path exists while this runtime had no outbound transport and no dispatch proof row for this exact packet. Therefore the active route-diagnosis leaf is complete and the truthful branch representation is the recreated path-specific blocked human-send/escalation-proof wait rather than an active transport task or passive reply-wait."
+      },
+      "status": "done"
+    }
+  ]
+}

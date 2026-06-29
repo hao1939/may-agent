@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T13:44:26.875Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the serverless/virtual-nodes mounted-source coverage gap packet as credible evidence: it maps the mounted handwritten source family to current repo-local carriers and identifies exact mounted-standard execute-contract landing as the next bounded closure slice. Keep serverless-virtualnodes-standard-execute-contract-landing-20260623 as the sole active follow-up and leave the single external-human proof wait unchanged until a returned operator artifact changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/spec lane: inspect the mounted AKS RP serverless/virtualnodes handwritten e2ev3 source family and map each scenario or assertion cluster to current repo-local feature/spec/model coverage, producing one bounded gap packet that distinguishes already-covered behavior from concrete missing coverage worth modeling next. Do not run cloud execution, do not edit accepted model.json unless the gap packet proves an unambiguous repo-local metadata correction, and do not widen beyond the serverless-virtual-nodes family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623.md"
+      ],
+      "acceptance": [
+        "The output cites exact mounted handwritten source anchors for the serverless/virtualnodes family plus the current repo-local carriers (features/specs/replays/model or coverage summaries), and lists which scenario/behavior slices are already covered versus still missing or weakly covered.",
+        "The packet names at least one concrete next candidate leaf for durable project work, or records the exact file-level reason the family is already sufficiently covered for now; no cloud mutation, no duplicate external waits, and no broad unrelated family expansion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T13:40:33.150Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623_20260623134033",
+        "assigned_at": "2026-06-23T13:40:33.193Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623_20260623134033",
+        "worker_started_at": "2026-06-23T13:41:06.775Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested serverless/virtual-nodes mounted-source coverage gap packet at evidence/archive/serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623.md, mapping exact mounted handwritten source anchors to current repo-local carriers and identifying the next bounded leaf as exact mounted-standard execute-contract landing.",
+        "last_worker_completed_at": "2026-06-23T13:42:56.874Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T13:43:49.668Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source coverage gap packet because the archive cleanly separates mounted sigs/virtualnodes from mounted sigs/serverless, maps the exact handwritten anchors to current repo-local carriers, confirms the blocked subnet/DNS rows already stay truthful, and nominates one bounded next slice: landing execute-contract-ready closure for the exact mounted serverless-virtualnodes standard scenario."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623"
+      ],
+      "result": "Produced the requested serverless/virtual-nodes mounted-source coverage gap packet at evidence/archive/serverless-virtual-nodes-mounted-source-coverage-gap-packet-20260623.md, mapping exact mounted handwritten source anchors to current repo-local carriers and identifying the next bounded leaf as exact mounted-standard execute-contract landing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T13:43:49.668Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source coverage gap packet because the archive cleanly separates mounted sigs/virtualnodes from mounted sigs/serverless, maps the exact handwritten anchors to current repo-local carriers, confirms the blocked subnet/DNS rows already stay truthful, and nominates one bounded next slice: landing execute-contract-ready closure for the exact mounted serverless-virtualnodes standard scenario."
+      },
+      "status": "done"
+    }
+  ]
+}

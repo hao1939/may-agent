@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:17:22.976Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner task-completed review: accepted the stale MultiNIC mixed completion event by checking the durable archive note plus the maintained canonical carriers. The project now treats path.net-integration.multinic-mixed as the exact mounted handwritten Scenario_MultiNIC_Mixed contract, with the older two-pool staging-pass evidence retained only as historical non-canonical evidence. Current truthful frontier is unchanged: one active repo-local node-http-proxy input-DAG wiring repair leaf plus the two exact blocked waits (shared external-human transport family and selected-host SSH environment wait).",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-canonical-landing-reconcile-20260623b",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the existing 2026-06-23 cloud-provider credential-provider canonicalization artifact plus the maintained feature/spec/replay/model/view surfaces, re-establish one visible tree leaf for the baseline credential-provider branch by confirming or repairing the canonical unknown landing and documenting the bookkeeping anomaly that dropped the original review task, without widening into upgrade rows 189/214 or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-canonical-landing-reconcile-20260623b.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the existing cloud-provider credential-provider canonicalization artifact and the maintained feature/spec/replay/model/view surfaces reviewed or changed, records whether the baseline branch already has the truthful canonical unknown landing or what exact residue was repaired, and leaves the branch represented again by one visible tree leaf with no split-brain across maintained carriers.",
+        "The work stays repo-local and bounded to the baseline cloud-provider credential-provider branch: no cloud mutation, no reopening of external-human waits, no widening into VM prerelease upgrade rows 189/214, and no cross-family canonicalization beyond the exact maintained surfaces touched or revalidated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:11:49.624Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-canonical-landing-reconcile-20260623b_20260623191149",
+        "assigned_at": "2026-06-23T19:11:49.675Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-canonical-landing-reconcile-20260623b",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-canonical-landing-reconcile-20260623b_20260623191149",
+        "worker_started_at": "2026-06-23T19:12:04.487Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented the cloud-provider credential-provider bookkeeping reconcile in evidence/archive/cloud-provider-credential-provider-canonical-landing-reconcile-20260623b.md after rechecking the accepted canonicalization artifact, maintained feature/spec/replay/model/view surfaces, and task-tree archive evidence. Confirmed the canonical baseline branch already remains truthfully unknown and that the only anomaly was the original review leaf being archived out of visible tree state.",
+        "last_worker_completed_at": "2026-06-23T19:14:04.448Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:15:19.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-23b archive artifact rechecked the accepted credential-provider canonicalization, the maintained feature/spec/replay/model/view carriers, and the task-tree archive evidence, confirming the baseline branch already remains truthfully unknown and that the only issue was visible-tree bookkeeping after the original accepted leaf was archived. This closes the bounded reconcile leaf with no further carrier repair needed."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-canonical-landing-reconcile-20260623b",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-canonical-landing-reconcile-20260623b"
+      ],
+      "result": "Documented the cloud-provider credential-provider bookkeeping reconcile in evidence/archive/cloud-provider-credential-provider-canonical-landing-reconcile-20260623b.md after rechecking the accepted canonicalization artifact, maintained feature/spec/replay/model/view surfaces, and task-tree archive evidence. Confirmed the canonical baseline branch already remains truthfully unknown and that the only anomaly was the original review leaf being archived out of visible tree state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:15:19.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-23b archive artifact rechecked the accepted credential-provider canonicalization, the maintained feature/spec/replay/model/view carriers, and the task-tree archive evidence, confirming the baseline branch already remains truthfully unknown and that the only issue was visible-tree bookkeeping after the original accepted leaf was archived. This closes the bounded reconcile leaf with no further carrier repair needed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T19:32:32.250Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 task-completed planning update: accepted and archived the completed network-cni overlay ILPIP base verification contract packet as durable repo-local evidence for the exact mixed-OS IPv4-only base branch envelope, required future Linux+Windows IPv4 witnesses, and blocked-vs-fail boundaries without dual-stack inheritance. The live frontier remains intentionally narrow: one active reconcile leaf to align maintained path-summary/model/spec linkage with that accepted base contract, plus the unchanged compressed external-wait parent for the seven blocked follow-up waits pending the 2026-06-26 review window or earlier authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-ilpip-base-verification-contract-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Define the bounded future verification contract for path.network-cni-azure-overlay-ilpip by comparing the maintained base ILPIP branch against the dual-stack sibling and mounted source anchors, then write one repo-local packet that fixes the exact mixed-OS IPv4-only input envelope, expected egress assertions, and non-pass boundaries before any live run is considered.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive packet compares the canonical base ILPIP path with its dual-stack refinement and mounted source/spec/replay anchors, states the exact IPv4-only mixed-OS verification envelope, and lists the bounded assertions this branch would need before any live run.",
+        "The task stays repo-local only: no cloud mutation, no new external wait, no widening into dual-stack/generic overlay/node-public-IP siblings, and it records stage-specific blocked/fail boundaries for cluster readiness, Linux/Windows ILPIP witness gaps, and IPv4 egress proof mismatch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.network-cni-azure-overlay-ilpip"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T19:29:19.956Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-base-verification-contract-packet-20260625_20260625192920",
+        "assigned_at": "2026-06-25T19:29:20.005Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-base-verification-contract-packet-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-base-verification-contract-packet-20260625_20260625192920",
+        "worker_started_at": "2026-06-25T19:29:37.510Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the repo-local base ILPIP verification contract packet at evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md, comparing the maintained base branch with the dual-stack sibling and mounted source to fix the exact mixed-OS IPv4-only envelope, required future assertions, and blocked-vs-fail boundaries before any live run.",
+        "last_worker_completed_at": "2026-06-25T19:30:47.124Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T19:31:30.408Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md compares the mounted ILPIP source, base spec, and dual-stack sibling to fix the exact mixed-OS IPv4-only input envelope, required future Linux/Windows egress assertions, and blocked-vs-fail boundaries without widening scope or adding cloud execution."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-base-verification-contract-packet-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-base-verification-contract-packet-20260625"
+      ],
+      "result": "Authored the repo-local base ILPIP verification contract packet at evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md, comparing the maintained base branch with the dual-stack sibling and mounted source to fix the exact mixed-OS IPv4-only envelope, required future assertions, and blocked-vs-fail boundaries before any live run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T19:31:30.408Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md compares the mounted ILPIP source, base spec, and dual-stack sibling to fix the exact mixed-OS IPv4-only input envelope, required future Linux/Windows egress assertions, and blocked-vs-fail boundaries without widening scope or adding cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T08:44:43.704Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review accepted the private-cluster authorized-service-tags replay host-routing implementation: the dedicated replay is no longer host-blind and now consumes the runner host-selection surface, routes decisive witness commands through the selected host, materializes host-side kubeconfig, emits host attestation evidence, and preserves the same product assertions without cloud mutation. With repo-local private-cluster implementation work accepted, this focus branch is reduced to the single exact family-level external-human wait plus archived readiness/source evidence; no duplicate wait or new private-cluster ask is added from this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-replay-host-routing-implementation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update replays/private-cluster-vnet-integration-auth-service-tags.ts to consume the existing runner --host / AKS_RP_E2E_EXECUTION_HOST surface, route decisive az/kubectl witness steps through the selected host, materialize kubeconfig on that host, emit host-identity/attestation evidence, and clean up host-side artifacts without changing product assertions or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-replay-host-routing-implementation-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites exact replay and reusable host-aware runner/replay surfaces, and the repo lands or precisely stages replay-local changes for host resolution, host-routed witness command execution, host-side kubeconfig materialization, host attestation evidence, and cleanup, all checkable without cloud mutation.",
+        "The task records the exact remaining non-local preconditions for a future trustworthy verification run of path.private-cluster-vnet-integration-auth-service-tags, does not open a new external ask, and keeps the single family-level external-human wait unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T08:38:38.447Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-replay-host-routing-implementation-20260623_20260623083838",
+        "assigned_at": "2026-06-23T08:38:38.497Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-replay-host-routing-implementation-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-replay-host-routing-implementation-20260623_20260623083838",
+        "worker_started_at": "2026-06-23T08:39:04.042Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented host-aware routing in replays/private-cluster-vnet-integration-auth-service-tags.ts and wrote a durable archive note documenting the landed replay-local changes and remaining non-local preconditions for a trustworthy future verification run.",
+        "last_worker_completed_at": "2026-06-23T08:42:34.490Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T08:44:43.635Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-auth-service-tags-replay-host-routing-implementation-20260623.md documents the landed replay-local host-routing, host-attestation, host-side kubeconfig materialization, and cleanup changes in replays/private-cluster-vnet-integration-auth-service-tags.ts, while keeping the same product assertions and single family-level external-human wait unchanged."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-replay-host-routing-implementation-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-replay-host-routing-implementation-20260623"
+      ],
+      "result": "Implemented host-aware routing in replays/private-cluster-vnet-integration-auth-service-tags.ts and wrote a durable archive note documenting the landed replay-local changes and remaining non-local preconditions for a trustworthy future verification run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T08:44:43.635Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-auth-service-tags-replay-host-routing-implementation-20260623.md documents the landed replay-local host-routing, host-attestation, host-side kubeconfig materialization, and cleanup changes in replays/private-cluster-vnet-integration-auth-service-tags.ts, while keeping the same product assertions and single family-level external-human wait unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

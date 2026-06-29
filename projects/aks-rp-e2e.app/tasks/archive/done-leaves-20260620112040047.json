@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:20:40.047Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner planning reconciliation: accepted vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620 based on the archive note and repo-local coverage-ledger edits showing row 53 is candidate-only/generic-adjacent rather than exact VM prerelease coverage because the local landing preserves LocalDNS behavior family plus LocalDNSPreview but not the mounted VirtualMachines + VMsAgentPoolAutoscalePreview suite substrate. The remaining live feature lane work is now (1) a narrowed active westus2 MachinesPreview gate recheck for the two Machines-family environment-blocked paths, and (2) the waiting vm-prerelease-draft-promotion-batch-20260620 model-update batch, which should stay queued until the active model-touching retry finishes or is reclassified.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the repo-local VM prerelease coverage linkage for the LocalDNS enable/disable VirtualMachine row adjacent to rows 52/53 so the maintained coverage surfaces truthfully classify whether the current LocalDNS candidate preserves only the behavior family or exact mounted-source VM prerelease substrate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Use the accepted adjacent-gap map at evidence/archive/vm-prerelease-checkin-coverage-adjacent-gap-map-20260620.md plus mounted source anchors in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and the referenced LocalDNS scenario definition to determine the truthful row classification: exact, candidate-only/generic-adjacent, or missing local coverage.",
+        "If the current row wording overstates or obscures the mounted-source relationship, update evidence/pipelines/virtualmachine-prerelease-coverage.json and evidence/pipelines/virtualmachine-prerelease-coverage.md for that LocalDNS enable/disable VM prerelease row, and update specs/localdns-os-arch-matrix.json or the closest bounded repo-local LocalDNS artifact only if needed to preserve the conclusion.",
+        "Write an archive note citing the exact source and repo-local file anchors, keep the slice repo-local with no model/knowledge-map landing edits and no cloud execution, and explicitly record whether the VirtualMachines substrate plus any enabling feature flags are preserved or missing in the current local candidate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-row53-localdns-linkage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:11:07.423Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620_20260620111107",
+        "assigned_at": "2026-06-20T11:11:07.468Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620_20260620111107",
+        "worker_started_at": "2026-06-20T11:11:35.889Z",
+        "reviewed_at": "2026-06-20T11:20:39.950Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted repo-local archive evidence: ../aks-rp-e2e/evidence/archive/vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620.md cites exact mounted-source and repo-local anchors, proves row 53 preserves only the LocalDNS behavior family plus LocalDNSPreview while missing the VirtualMachines + VMsAgentPoolAutoscalePreview suite substrate, and records the corresponding coverage-ledger corrections in evidence/pipelines/virtualmachine-prerelease-coverage.{json,md}."
+      },
+      "session_id": "s_task_vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:20:39.950Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted repo-local archive evidence: ../aks-rp-e2e/evidence/archive/vm-prerelease-row53-localdns-enable-disable-linkage-audit-20260620.md cites exact mounted-source and repo-local anchors, proves row 53 preserves only the LocalDNS behavior family plus LocalDNSPreview while missing the VirtualMachines + VMsAgentPoolAutoscalePreview suite substrate, and records the corresponding coverage-ledger corrections in evidence/pipelines/virtualmachine-prerelease-coverage.{json,md}."
+      },
+      "status": "done"
+    }
+  ]
+}

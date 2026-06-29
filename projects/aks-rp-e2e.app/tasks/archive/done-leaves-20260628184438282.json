@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:44:38.282Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 metric-recovery owner update: accepted the row-37 AAD reconcile review as durable source-backed narrowing for path.aad-rbac.managed-v2-lifecycle. The maintained branch stays one canonical VirtualMachine PreRelease -> CheckIn -> Scenario_AAD path with fail-like non-pass status limited to the positive adminGroupObjectIDs+tenantID update branch, while eastus2 helper-VM SkuNotAvailable remains only variant history. The live frontier remains the two active cleanup tasks: (1) build the operator-response follow-up matrix so the five blocked waits under this parent can be consolidated or escalated at the 2026-06-29 checkpoint, and (2) update defender-profile VM prerelease wording so live evidence is carried as request/readback-vs-runtime split plus exact retest gate. Archived older completed leaves whose durable meaning is now carried by this branch summary and successor artifacts.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the completed spec.defender-profile.vm-prerelease-matrix live fail artifacts, reconcile the exact persisted-request-vs-runtime mismatch into the capability model/spec packet, and archive the bounded owner-ready interpretation with next retest condition or follow-up ask.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect the durable rerun artifacts for single-defender-profile-vm-prerelease-matrix_734848 and restate the exact failing and passing assertions, run identifiers, and evidence paths without rerunning cloud work.",
+        "Decide whether the observed empty GET workspace field with successful defender runtime bundles should be recorded as product gap, spec mismatch, or another bounded verdict surface, and name the exact capability-model/status updates or follow-up question implied by the evidence.",
+        "Archive a durable reconciliation note that leaves one truthful next action for this spec family: model/status update ready for acceptance, or one precise external/source-backed follow-up ask if the verdict cannot yet be classified locally."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:40:37.626Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628_20260628184037",
+        "assigned_at": "2026-06-28T18:40:37.677Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628",
+        "worker_started_attempt_id": "a_reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628_20260628184037",
+        "worker_started_at": "2026-06-28T18:40:50.415Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived an owner-ready reconciliation note at evidence/archive/reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628.md that restates the exact completed run/artifacts, separates the three failing GET-persistence assertions from the passing Defender runtime-bundle assertions, and recommends treating the verdict as a spec/probe readback-contract mismatch rather than an accepted product gap until stronger source/API evidence exists.",
+        "last_worker_completed_at": "2026-06-28T18:42:48.723Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:43:55.257Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-28 defender-profile rerun is a trustworthy bounded live observation showing three GET-persistence assertion failures alongside passing runtime-bundle branches, so this leaf is complete as reconciliation evidence and does not justify a final product-gap verdict."
+      },
+      "session_id": "s_task_reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628",
+      "session_history": [
+        "s_task_reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628"
+      ],
+      "result": "Archived an owner-ready reconciliation note at evidence/archive/reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628.md that restates the exact completed run/artifacts, separates the three failing GET-persistence assertions from the passing Defender runtime-bundle assertions, and recommends treating the verdict as a spec/probe readback-contract mismatch rather than an accepted product gap until stronger source/API evidence exists.",
+      "evidence": [
+        "evidence/archive/reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:43:55.257Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-28 defender-profile rerun is a trustworthy bounded live observation showing three GET-persistence assertion failures alongside passing runtime-bundle branches, so this leaf is complete as reconciliation evidence and does not justify a final product-gap verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

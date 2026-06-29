@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:59:19.465Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease repo-local frontier follow-through is now absorbed through source-order row 53 / maintained row 52: the accepted CAS long-unregistered-nodes and LocalDNS AzureLinux frontier-proof packets preserve exact row-numbering truth, cite mounted prerelease/checkin adjacency, and prove canonical row-51 and row-52 carriers already cover those branches without new model/spec/replay authoring or cloud execution. The only live regular-learning frontier remains vmpr-post-row53-row54-localdns-enable-disable-frontier-proof-20260621, which should stay bounded to the exact adjacent sibling after LocalDNS AzureLinux and must either cite canonical repo-local enable/disable carriers or record the truthful source-backed stop line/gap note. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621, which stays as the single truthful external-human-transport wait because no newer real send/handoff/escalation proof or authoritative reply exists and the 2026-06-22T10:08:46Z re-review threshold is still in the future.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/evidence-feedback lane: after the active row-52 CAS long-unregistered-nodes frontier packet closes, produce a bounded source-order row-53 VM prerelease frontier-proof packet for the exact adjacent sibling after CAS long-unregistered nodes, starting from mounted checkin/prerelease adjacency and determining whether localdns AzureLinux already has canonical repo-local carriers or whether the truthful outcome is a source-backed stop line/gap note. Keep scope to repo-local source/evidence/spec/replay/model inspection only; no cloud execution and no external-send work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing the exact mounted checkin/prerelease adjacency immediately after source-order row 52 CAS long-unregistered nodes, preserving exact row-numbering truth and naming the adjacent VM prerelease sibling or source-backed stop line.",
+        "State whether canonical repo-local carriers already exist for that adjacent branch by citing exact existing path/spec/replay/coverage/model artifacts when present, or by recording the precise bounded repo-local gap if the branch lacks those carriers; do not invent cloud/product verdicts.",
+        "Name the next truthful follow-up boundary after this packet while making no cloud mutation claims and no external-human-transport claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:54:15.746Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621_20260621195553",
+        "assigned_at": "2026-06-21T19:55:53.819Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621_20260621195553",
+        "worker_started_at": "2026-06-21T19:55:54.589Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested frontier-proof packet at evidence/archive/vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621.md, proving the exact adjacent sibling after CAS long-unregistered nodes is LocalDNS AzureLinux and documenting the existing repo-local carrier set plus the remaining checked-in model/view caveat.",
+        "last_worker_completed_at": "2026-06-21T19:57:47.278Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:58:12.851Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621.md proves the exact post-row52 adjacent sibling is source-order row 53 / maintained row 52 LocalDNS AzureLinux, cites existing exact repo-local carriers (spec/replay/index/coverage/check), and truthfully limits the remaining issue to a checked-in model/view presentation caveat rather than a missing carrier gap."
+      },
+      "session_id": "s_task_vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621"
+      ],
+      "result": "Produced the requested frontier-proof packet at evidence/archive/vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621.md, proving the exact adjacent sibling after CAS long-unregistered nodes is LocalDNS AzureLinux and documenting the existing repo-local carrier set plus the remaining checked-in model/view caveat.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:58:12.851Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-post-row52-row53-localdns-azurelinux-frontier-proof-20260621.md proves the exact post-row52 adjacent sibling is source-order row 53 / maintained row 52 LocalDNS AzureLinux, cites existing exact repo-local carriers (spec/replay/index/coverage/check), and truthfully limits the remaining issue to a checked-in model/view presentation caveat rather than a missing carrier gap."
+      },
+      "status": "done"
+    }
+  ]
+}

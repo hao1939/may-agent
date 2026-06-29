@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T23:51:38.622Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 follow-up hygiene pass keeps the frontier readable after the blocked-frontier review. Archive virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620 because its durable meaning already lives in accepted evidence and updated repo-local replay/spec/model surfaces: the row-31 auto-zone single-SKU branch is now execute-gated, source-backed, and explicitly separated from row-32 mixed-SKU semantics. The live frontier remains intentionally narrow: managedsystem-create-time-replay-wording-cleanup-20260620 and virtualmachines-auto-zone-mixed-sku-replay-body-authoring-20260620 are the only repo-local active movers, while focus-vm-prerelease-pipeline-replacement-20260620 continues to carry external-send-proof-dispatch-family-20260620 as the single truthful external-human send/escalation wait. Do not refill with duplicate VM prerelease waits or more packet-drafting work until one of those active leaves lands or durable external send/escalation proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the mounted VM prerelease row-31 auto-zone single-SKU branch from draft/check-only into a bounded execute-capable repo-local replay slice without running cloud mutation: use /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus referenced scenario definitions to pin the exact row-31 input and assertions, update the corresponding spec/replay surface so path.virtualmachines.auto-zone-single-sku distinguishes itself from row-32 mixed-SKU auto-zone, and record the exact local validation evidence and any remaining execute gate separately.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "The task leaves durable repo-local evidence that cites the exact mounted row-31 source lineage, the touched spec/replay files, and the accepted input/expectation boundary for the single-SKU auto-zone branch, explicitly separating it from row-32 mixed-SKU auto-zone semantics.",
+        "The corresponding replay/spec surface is advanced beyond a generic draft/check-only state toward an execute-capable bounded branch, and the artifact records the local non-cloud validation commands and outcomes needed to prove the repo-local authoring slice is sound.",
+        "No cloud execution is performed; any remaining live-mutation authorization or environment gate is recorded as a future execute step rather than silently folded into this authoring task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T23:37:25.013Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620_20260620233725",
+        "assigned_at": "2026-06-20T23:37:25.057Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620",
+        "worker_started_attempt_id": "a_virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620_20260620233725",
+        "worker_started_at": "2026-06-20T23:37:39.270Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an execute-gated row-31 replay body in replays/virtualmachines-auto-zone-single-sku.ts, tightened the single-vs-mixed-SKU boundary across spec/model/coverage surfaces, and wrote durable evidence at evidence/archive/virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620.md with local check/plan/gate outcomes.",
+        "last_worker_completed_at": "2026-06-20T23:49:05.348Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T23:49:49.309Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after planner review: durable artifact evidence/archive/virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620.md cites mounted row-31 source lineage and local check/gate outcomes; repo-local surfaces now show an execute-gated row-31 replay body, explicit single-manual-profile vs row-32 mixed-SKU separation, and linked evidence outputs vm-row31-exec-body-check-20260620 and vm-row31-exec-body-gate-20260620."
+      },
+      "session_id": "s_task_virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620",
+      "session_history": [
+        "s_task_virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620"
+      ],
+      "result": "Implemented an execute-gated row-31 replay body in replays/virtualmachines-auto-zone-single-sku.ts, tightened the single-vs-mixed-SKU boundary across spec/model/coverage surfaces, and wrote durable evidence at evidence/archive/virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620.md with local check/plan/gate outcomes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T23:49:49.309Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after planner review: durable artifact evidence/archive/virtualmachines-auto-zone-single-sku-replay-body-authoring-20260620.md cites mounted row-31 source lineage and local check/gate outcomes; repo-local surfaces now show an execute-gated row-31 replay body, explicit single-manual-profile vs row-32 mixed-SKU separation, and linked evidence outputs vm-row31-exec-body-check-20260620 and vm-row31-exec-body-gate-20260620."
+      },
+      "status": "done"
+    }
+  ]
+}

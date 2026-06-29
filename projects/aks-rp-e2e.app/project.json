@@ -5,7 +5,7 @@
   "type": "project-app",
   "priority": "P1",
   "policy": {
-    "maxConcurrent": 5,
+    "maxConcurrent": 80,
     "maxTaskAttempts": 2,
     "mode": "aggressive-push"
   },
@@ -13,7 +13,7 @@
     "id": "aks-rp-e2e",
     "path": "../aks-rp-e2e",
     "repo": "git@github.com:hao1939/aks-rp-e2e.git",
-    "branch": "main"
+    "branch": "dev"
   },
   "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
   "strategy": [
@@ -25,44 +25,54 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "The live task tree now shows 2389 total tasks with 2292 done, 4 active westus2/local execute leaves (6 active nodes total), 0 review leaves, 68 blocked nodes (61 blocked leaves), and 23 backlog leaves. The frontier is materially cleaner: `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is now a reviewed real product pass backed by a replay-owned westus2/local rerun with verified cleanup, while `ccp-agent-lifecycle-deployment-westus2-local-execute-20260619` and `app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619` remain closed as real product passes. The earlier managed-v2 stable-empty review and its preview-bodyful follow-up now resolve to a truthful blocked route: `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` reached live westus2/local execution but stalled earlier in baseline cluster create with ARM long-running operation status `Canceled`, so no new ResetAADProfile product verdict was reached. `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619`, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619`, `private-cluster-vnet-integration-update-westus2-local-execute-20260619`, `cloud-provider-multiple-slb-westus2-local-execute-20260619`, and `managedsystem-day2-count-type-westus2-local-execute-20260619` remain truthfully blocked on their specific reproduced non-auth/runtime blockers.",
-    "activeTaskId": "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
+    "summary": "The approved focus still fits the next 12-24h, but the durable focus context needed refresh to match the actual frontier. Task-tree summary/frontier at 2026-06-29T16:58:14Z shows no runnable or waiting backlog, 6 active frontier leaves, 6 review leaves, and 4 blocked waits, while aks-spec-verification-loop remains saturated at running=10/targetRunning=10 with 199 pending specs behind it. Since the last focus review, the wave produced one accepted pass, several repo-local OIDC/OSM/node-config review or repair leaves, and one post-checkpoint human/operator review leaf, while project metrics still show 0 manual live starts / 0 successes in the last 24h. Owner attention should stay on draining, classifying, and truth-repairing the current wave rather than widening risk.",
+    "activeTaskId": "verify-spec-node-http-proxy-update",
     "metrics": {
-      "features": 411,
-      "featuresPass": 340,
-      "paths": 478,
-      "pathsPass": 412,
-      "passRatePaths": "86.2%",
-      "passRateFeatures": "82.7%",
-      "tasksCompleted": 2292,
-      "tasksActive": 6,
-      "tasksInReview": 0,
-      "tasksBlocked": 68,
-      "tasksBacklog": 23,
-      "tasksTotal": 2389,
-      "uncommittedChanges": 338,
-      "lastCommit": "a4c157d",
-      "unknownPaths": 1,
-      "blockedLeafCount": 61
+      "features": 645,
+      "paths": 723,
+      "tasksCompleted24h": 1037,
+      "liveRunsStarted24h": 0,
+      "liveRunsSucceeded24h": 0,
+      "specUnverifiedCount": 0,
+      "specFailedCount": 0,
+      "unknownPathMetric": 64,
+      "blockedLeafCount": 4,
+      "runnableLeafCount": 0,
+      "activeLeafCount": 6,
+      "reviewLeafCount": 6
     }
   },
   "currentFocus": {
-    "summary": "The current 12-24h focus is to keep the promoted westus2/local execute set moving from `tasks/tree.json` authority while preserving the exact blocked routes, including the newly confirmed managed-v2 preview-bodyful cluster-create cancellation, and keep `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` closed as a real product pass rather than a stale blocked frontier leaf.",
-    "nextAction": "Use `tasks/tree.json` plus the fresh westus2/local evidence notes as the routing authority. Keep `ccp-coredns-metrics-endpoint-westus2-local-execute-20260619`, `kms-v2-managed-hsm-westus2-local-execute-20260619`, `ccp-security-patch-azurelinux-westus2-local-execute-20260619`, and `localdns-cluster-topology-westus2-local-execute-20260619` as the live active execute leaves. Keep `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` blocked on the reproduced baseline cluster-create ARM `Canceled` path until the same westus2/local preview-bodyful command family can run without that runtime cancellation. Keep `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619` blocked on the surrogate `InvalidAADClusterToken` contract, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619` blocked on upgrade-envelope plus `HTTP 409` sequencing repair, `private-cluster-vnet-integration-update-westus2-local-execute-20260619` blocked on baseline cluster-create cancellation, `managedsystem-day2-count-type-westus2-local-execute-20260619` blocked on the local Azure CLI create-path crash, and `cloud-provider-multiple-slb-westus2-local-execute-20260619` blocked on the reproduced ARM deserializer rejection until a real environment/request-surface change occurs.",
+    "summary": "The current 12-24h focus is still on track inside the approved risk envelope: keep aks-spec-verification-loop as the primary lane, drain the active node-config verification wave, absorb the 6-leaf review queue, finish the repo-local OIDC/OSM/skip-gpu/ssh-public-key follow-ups that turn non-pass artifacts into truthful carrier or verdict decisions, and keep the 4 explicit waits passive until their exact checkpoints, replies, proofs, artifacts, or live-slot signals land.",
+    "nextAction": "Normal owner loop should keep aks-spec-verification-loop primary: review the 6 review leaves first, then continue classifying and repairing the 6 active frontier leaves without launching new manual live probes. Prioritize classify-shared-single-spec-runner-termination-family-20260629, oidcdefrev, oidcv133rt404, osmmaybe, reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629, and review-human-operator-response-latency-family-post-checkpoint-20260629; then keep the repo-local skip-gpu and ssh-public-key follow-ups moving and preserve the 4 blocked waits as passive until their exact resume signals land. Leave feature-reference and feature-compact dormant unless a concrete source/packet/compact signal adds durable repo-local knowledge beyond this wave.",
     "activeTaskIds": [
-      "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
-      "kms-v2-managed-hsm-westus2-local-execute-20260619",
-      "ccp-security-patch-azurelinux-westus2-local-execute-20260619",
-      "localdns-cluster-topology-westus2-local-execute-20260619"
+      "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "aks-spec-verification-loop",
+      "verify-spec-node-http-proxy-update",
+      "verify-spec-node-image-upgrade-operation",
+      "verify-spec-node-pool-config-fips-enabled",
+      "verify-spec-node-pool-config-kubereserved",
+      "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
+      "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
+      "classify-shared-single-spec-runner-termination-family-20260629",
+      "oidcdefrev",
+      "oidcv133rt404",
+      "osmmaybe",
+      "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
+      "review-human-operator-response-latency-family-post-checkpoint-20260629",
+      "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622",
+      "wait-aad-rbac-known-run-28371054186-checkpoint-20260629",
+      "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629",
+      "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629"
     ],
-    "focusPlanId": "focus-plan-westus2-local-queue-20260619",
+    "focusPlanId": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
     "focusPlanStatus": "active",
-    "priorFocusPlanId": "go-e2ev3-total-coverage-closure-20260617",
-    "priorFocusResult": "completed",
+    "priorFocusPlanId": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+    "priorFocusResult": "updated",
     "focusReview": {
-      "reviewedAt": "2026-06-19T14:24:05.375Z",
+      "reviewedAt": "2026-06-29T17:05:00Z",
       "result": "updated",
-      "note": "Frontier reconciliation now reflects the managed-v2 preview-bodyful execute truthfully: the branch produced real westus2/local blocker evidence and moved from active focus to blocked, leaving four live westus2/local execute leaves in the current queue."
+      "note": "No approval-worthy direction or risk change is needed. The focus branch was stale because the frontier advanced from the earlier KMS-centered wave to a node-config/OIDC-heavy verification-and-review wave with 6 active leaves, 6 review leaves, and 4 explicit waits, but the truthful next 12-24h remains to drain that wave, convert its non-pass artifacts into durable carrier/verdict decisions, and avoid widening into new manual live work."
     }
   },
   "focusPlan": {
@@ -79,5 +89,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-19T14:24:05.375Z"
+  "updatedAt": "2026-06-29T17:05:00Z"
 }

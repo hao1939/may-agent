@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:35:45.680Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner hygiene rollup accepted the two latest workflow-basis reviews as preserved parent context: the nsg-control retry remains fully explained by the stale origin/dev import state, and the node-public-ip review contract remains preserved as the bounded evidence checklist for the next workflow attempt. With the origin/dev shared-clusters arm-rest import repair now proven on commit fe246c37407e4f08a5942089851fdcfb94fb5e8d, this lane should stay narrowed to exactly one live child: queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626, which treats origin/dev remote branch truth as authoritative and records the exact run outcome before any wider refill.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the current NSG-control rerun diagnosis is accepted and the proven vitest-runtime shared-clusters import defect is repaired on the workflow branch, queue and review one bounded single-spec workflow for spec.net-integration.node-public-ip from the same dev-infra-core priority set, then record whether the exact workflow path passes, fails with a terminal signal, blocks on environment/runner state, or exposes another distinct infrastructure defect.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626.md"
+      ],
+      "acceptance": [
+        "A single run-single-spec.yaml workflow attempt for spec.net-integration.node-public-ip is queued against the intended origin/dev state only after the current NSG-control retry clears the runner slot, and the output artifact captures run URL/id plus the commit SHA tested.",
+        "The output artifact states pass, fail, blocked, or error for the exact workflow path and names any precise rerun gate instead of recommending a blind retry."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:25:32.709Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626_20260626192832",
+        "assigned_at": "2026-06-26T19:28:32.511Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626_20260626192832",
+        "worker_started_at": "2026-06-26T19:28:32.884Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded a durable blocker review for the node-public-ip single-spec workflow in evidence/archive/verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626.md. The review proves the runner slot cleared after NSG-control, but origin/dev still carries the shared vitest-runtime stale import, so no truthful queue attempt was made and the exact rerun gate is documented.",
+        "last_worker_completed_at": "2026-06-26T19:29:47.505Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:31:04.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 bounded gate review: the evidence artifact proves no truthful node-public-ip single-spec queue attempt should occur yet because origin/dev still carries the stale runner/vitest-runtime/shared-clusters.ts arm-rest import. The worker correctly stopped at the shared workflow bootstrap blocker, recorded the exact remote-proof resume condition, and this completed review is now superseded by a future queue/review leaf that will run only after origin/dev repair proof and the source-backed review contract are both in hand."
+      },
+      "session_id": "s_task_verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626",
+      "session_history": [
+        "s_task_verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626"
+      ],
+      "result": "Recorded a durable blocker review for the node-public-ip single-spec workflow in evidence/archive/verify-spec-net-integration-node-public-ip-single-spec-workflow-after-nsg-control-20260626.md. The review proves the runner slot cleared after NSG-control, but origin/dev still carries the shared vitest-runtime stale import, so no truthful queue attempt was made and the exact rerun gate is documented.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:31:04.172Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 bounded gate review: the evidence artifact proves no truthful node-public-ip single-spec queue attempt should occur yet because origin/dev still carries the stale runner/vitest-runtime/shared-clusters.ts arm-rest import. The worker correctly stopped at the shared workflow bootstrap blocker, recorded the exact remote-proof resume condition, and this completed review is now superseded by a future queue/review leaf that will run only after origin/dev repair proof and the source-backed review contract are both in hand."
+      },
+      "status": "done"
+    }
+  ]
+}

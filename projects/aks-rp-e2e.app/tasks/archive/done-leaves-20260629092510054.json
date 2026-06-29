@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:25:10.054Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning update accepts the reviewed baseline diagnosis for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease run 28361552076: the archive note cites stdout.log, stderr.log, and spec-runner/result.json and narrows the failure to a workflow/source-mount ENOENT on /app/sources/aks-rp/test/e2e/suites/newvnet/main.go before any product assertion ran. Preserve diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts as the immediate same-spec follow-on so planning can determine whether the post-fix rerun remained in that runner family or exposed a different first-failure surface. Also repair the weak review frontier for spec.cloud-provider.ccm-lifecycle: the worker summary names run 28361383317 and a shared-mode update anomaly, but that is not artifact-backed enough to accept as a final blocked/error classification, so the branch now carries one concrete diagnosis leaf against that exact run instead of a generic review stall. Active verifier work remains otherwise unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose run 28361552076 for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease by reviewing stdout/stderr/spec-runner artifacts and classifying the exact blocker or failure surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-diagnosis.md"
+      ],
+      "acceptance": [
+        "The diagnosis cites stdout.log, stderr.log, and spec-runner/result.json from run 28361552076.",
+        "The result is classified narrowly enough to distinguish concrete environment blocker, product failure, runner issue, or another exact surface.",
+        "If the cause matches an existing blocker family, the diagnosis names the family and concrete resume condition; otherwise it proposes the one next corrective or evidence-update action.",
+        "The diagnosis leaves the spec ready for either truthful blocking, model update, or targeted rerun planning without another generic environment_blocker claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:17:55.048Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:18:02.960Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts_20260629091805",
+        "assigned_at": "2026-06-29T09:18:05.674Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts",
+        "worker_started_attempt_id": "a_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts_20260629091805",
+        "worker_started_at": "2026-06-29T09:18:29.227Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28361552076 for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease and wrote a durable archive note classifying it as a runner/workflow source-mount blocker caused by missing `/app/sources/aks-rp/test/e2e/suites/newvnet/main.go`, not a product or generic environment failure.",
+        "last_worker_completed_at": "2026-06-29T09:20:18.455Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-diagnosis.md"
+        ],
+        "reviewed_at": "2026-06-29T09:25:09.897Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites stdout.log, stderr.log, and spec-runner/result.json for run 28361552076 and narrows the outcome to a runner/workflow source-mount ENOENT on /app/sources/aks-rp/test/e2e/suites/newvnet/main.go before any product assertion ran; keep run 28361817517 diagnosis as the immediate next truth-maintaining step for this spec."
+      },
+      "session_id": "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts",
+      "session_history": [
+        "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts"
+      ],
+      "result": "Diagnosed run 28361552076 for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease and wrote a durable archive note classifying it as a runner/workflow source-mount blocker caused by missing `/app/sources/aks-rp/test/e2e/suites/newvnet/main.go`, not a product or generic environment failure.",
+      "evidence": [
+        "evidence/archive/spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-diagnosis.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:25:09.897Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites stdout.log, stderr.log, and spec-runner/result.json for run 28361552076 and narrows the outcome to a runner/workflow source-mount ENOENT on /app/sources/aks-rp/test/e2e/suites/newvnet/main.go before any product assertion ran; keep run 28361817517 diagnosis as the immediate next truth-maintaining step for this spec."
+      },
+      "status": "done"
+    }
+  ]
+}

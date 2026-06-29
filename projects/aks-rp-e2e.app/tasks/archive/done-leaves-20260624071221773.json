@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:12:21.773Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog-runnable-backlog owner review: the refill wake was stale because serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624 had already been assigned active at 07:11Z, so maxConcurrent=1 is truthfully consumed and no new assignment was made. Keep private-cluster-second-hop-private-executor-parity-20260624 as the single queued repo-local follow-up until that active serverless private contract-gap task lands or is explicitly cleared. Preserve the four exact external waits unchanged—aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623, external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623, and serverless-schedulerctrl-validating-webhook-public-approval-returned-proof-wait-20260624—because each already has send/handoff proof and no bounded local source/spec/setup/diagnosis retry remains before the 2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-second-hop-checkpoint-executor-gap-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact repo-local second-hop coverage for private-cluster VNet integration update public/private carriers by tracing checkpoint packet handoff, replay wiring, and execute-path requirements, then record the precise current capability or missing executor gap without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-second-hop-checkpoint-executor-gap-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact compares the public and private second-hop specs/replays/check-mode contracts, cites the current checkpoint env vars and executor expectations, and states what is already implemented versus still missing with file references.",
+        "If a repo-local gap remains, the artifact names one exact follow-on replay/model task needed to close it; if no gap remains, it records the bounded execute contract to use later without widening scope to first-hop private-cluster or auth-service-tags work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.private-cluster-vnet-integration.second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:04:29.556Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T07:07:16.349Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-second-hop-checkpoint-executor-gap-20260624_20260624070806",
+        "assigned_at": "2026-06-24T07:08:06.654Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-second-hop-checkpoint-executor-gap-20260624",
+        "worker_started_attempt_id": "a_private-cluster-second-hop-checkpoint-executor-gap-20260624_20260624070806",
+        "worker_started_at": "2026-06-24T07:08:44.597Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive artifact at evidence/archive/private-cluster-second-hop-checkpoint-executor-gap-20260624.md, reconciling mounted source, second-hop specs/replays, checkpoint env contracts, and confirming the remaining repo-local gap is private-second-hop executor parity.",
+        "last_worker_completed_at": "2026-06-24T07:10:45.714Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:11:08.812Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-second-hop-checkpoint-executor-gap-20260624.md cites mounted update_public.go/update_private.go, both second-hop specs/features/replays, the exact checkpoint env/gate contracts, and proves the remaining repo-local gap is private second-hop executor parity only; follow-on replay work is now split into a separate concrete leaf."
+      },
+      "session_id": "s_task_private-cluster-second-hop-checkpoint-executor-gap-20260624",
+      "session_history": [
+        "s_task_private-cluster-second-hop-checkpoint-executor-gap-20260624"
+      ],
+      "result": "Produced the requested archive artifact at evidence/archive/private-cluster-second-hop-checkpoint-executor-gap-20260624.md, reconciling mounted source, second-hop specs/replays, checkpoint env contracts, and confirming the remaining repo-local gap is private-second-hop executor parity.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:11:08.812Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-second-hop-checkpoint-executor-gap-20260624.md cites mounted update_public.go/update_private.go, both second-hop specs/features/replays, the exact checkpoint env/gate contracts, and proves the remaining repo-local gap is private second-hop executor parity only; follow-on replay work is now split into a separate concrete leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

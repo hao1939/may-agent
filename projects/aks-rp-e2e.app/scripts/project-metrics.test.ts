@@ -19,6 +19,11 @@ type TreeTask = {
   children?: string[];
   kind?: string;
   depends_on?: string[];
+  outputs?: string[];
+  acceptance?: string[];
+  conflict_scope?: string[];
+  workflow?: string;
+  context?: Record<string, unknown>;
 };
 
 async function makeFixture() {
@@ -28,6 +33,7 @@ async function makeFixture() {
   const dbPath = join(root, "may.db");
 
   await mkdir(join(appDir, "tasks"), { recursive: true });
+  await mkdir(join(appDir, ".state", "spec-loop"), { recursive: true });
   await mkdir(join(projectDir, "model", "knowledge-map"), { recursive: true });
   await mkdir(join(projectDir, "specs"), { recursive: true });
   await mkdir(join(projectDir, "replays"), { recursive: true });
@@ -48,6 +54,20 @@ async function makeFixture() {
   await writeFile(
     join(projectDir, "specs", "index.json"),
     `${JSON.stringify({ specs: [] }, null, 2)}\n`,
+  );
+  await writeFile(
+    join(appDir, ".state", "spec-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 1,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs: {},
+      },
+      null,
+      2,
+    )}\n`,
   );
 
   return { root, appDir, projectDir, dbPath };
@@ -80,6 +100,8 @@ async function writeTree(
             state: "active",
             children: [],
             goal: "Run a feature verification task.",
+            outputs: ["evidence/archive/active-task.md"],
+            acceptance: ["Complete the active task."],
             ...activeTask,
           },
           ...extraTasks,
@@ -100,6 +122,8 @@ function writeSession(
     opCount?: number;
     startedAt?: number;
     lastActivityAt?: number | null;
+    source?: string | null;
+    task?: string | null;
   },
 ) {
   const db = new Database(dbPath);
@@ -110,16 +134,20 @@ function writeSession(
       outcome text,
       opCount integer default 0,
       startedAt integer not null,
-      lastActivityAt integer
+      lastActivityAt integer,
+      source text,
+      task text
     )
   `);
-  db.query("insert into sessions values (?, ?, ?, ?, ?, ?)").run(
+  db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
     row.sessionId,
     row.status,
     row.outcome ?? null,
     row.opCount ?? 0,
     row.startedAt ?? Date.now(),
     row.lastActivityAt ?? null,
+    row.source ?? null,
+    row.task ?? null,
   );
   db.close();
 }
@@ -140,6 +168,26 @@ async function metricValue(
       .quiet()
       .text()
   ).trim();
+}
+
+async function writeSpecLoopState(
+  fixture: Awaited<ReturnType<typeof makeFixture>>,
+  specs: Record<string, Record<string, unknown>>,
+) {
+  await writeFile(
+    join(fixture.appDir, ".state", "spec-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 1,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs,
+      },
+      null,
+      2,
+    )}\n`,
+  );
 }
 
 describe("project metrics", () => {
@@ -263,6 +311,150 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("treats synthetic s_task session ids as healthy when a matching feature-reference collector session is running", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_collect-feature-reference-aad-rbac",
+      context: { featureKey: "aad-rbac" },
+    });
+    const db = new Database(fixture.dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer,
+        source text,
+        task text
+      )
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_real_feature_reference",
+      "running",
+      null,
+      1,
+      Date.now() - 10_000,
+      Date.now(),
+      "workflow:feature-reference-collector",
+      "Collect official references for feature aad-rbac.",
+    );
+    db.close();
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("0");
+  });
+
+  test("treats single-spec verifier task as healthy when spec-loop heartbeat is fresh", async () => {
+    const fixture = await makeFixture();
+    const attemptId = "a_verify-spec-example_20260628164011";
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_verify-spec-example",
+      workflow: "single-spec-verifier",
+      trace: {
+        current_attempt_id: attemptId,
+      },
+    });
+    await writeSpecLoopState(fixture, {
+      "spec.example": {
+        status: "running",
+        taskId: "active-task",
+        attempts: 1,
+        lastRunId: null,
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        activeAttemptId: attemptId,
+        activeTaskSessionId: "s_task_verify-spec-example",
+        heartbeatAt: new Date().toISOString(),
+      },
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("0");
+  });
+
+  test("flags single-spec verifier task when spec-loop heartbeat is stale", async () => {
+    const fixture = await makeFixture();
+    const attemptId = "a_verify-spec-example_20260628164011";
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_verify-spec-example",
+      workflow: "single-spec-verifier",
+      trace: {
+        current_attempt_id: attemptId,
+      },
+    });
+    await writeSpecLoopState(fixture, {
+      "spec.example": {
+        status: "running",
+        taskId: "active-task",
+        attempts: 1,
+        lastRunId: null,
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        activeAttemptId: attemptId,
+        activeTaskSessionId: "s_task_verify-spec-example",
+        heartbeatAt: new Date(Date.now() - 10_000).toISOString(),
+      },
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("1");
+  });
+
+  test("treats completed task-worker task as stale after session ends", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_active-task",
+      trace: {
+        assigned_at: new Date(Date.now() - 120_000).toISOString(),
+        worker_started_at: new Date(Date.now() - 110_000).toISOString(),
+      },
+    });
+    const db = new Database(fixture.dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer,
+        source text,
+        task text
+      )
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_task_active-task",
+      "done",
+      null,
+      5,
+      Date.now() - 120_000,
+      Date.now() - 90_000,
+      "workflow:task-worker",
+      'Task Worker Mode\n\nAssigned task:\n```json\n{\n  "id": "active-task"\n}\n```',
+    );
+    db.close();
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("1");
+  });
+
   test("does not count blocked-dependent live backlog as runnable work", async () => {
     const fixture = await makeFixture();
     await writeFile(
@@ -290,6 +482,8 @@ describe("project metrics", () => {
           children: [],
           goal: "Wait for auth gate.",
           kind: "domain_leaf",
+          outputs: ["evidence/archive/blocked-auth.md"],
+          acceptance: ["Record the auth blocker."],
         },
         "live-backlog": {
           id: "live-backlog",
@@ -299,6 +493,8 @@ describe("project metrics", () => {
           goal: "Run live staging execution once gate opens.",
           kind: "domain_leaf",
           depends_on: ["blocked-auth"],
+          outputs: ["evidence/archive/live-backlog.md"],
+          acceptance: ["Execute the live staging run once unblocked."],
         },
       },
     );
@@ -313,6 +509,103 @@ describe("project metrics", () => {
     expect(
       await metricValue(fixture, "aks-rp-e2e.run.live-idle-with-runnable-work"),
     ).toBe("0");
+  });
+
+  test("does not count conflict-waiting live backlog as runnable work", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      join(fixture.projectDir, "specs", "index.json"),
+      `${JSON.stringify(
+        {
+          specs: [{ id: "spec.live", status: "ready", specState: "ready" }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeFile(
+      join(fixture.projectDir, "replays", "probe-live.ts"),
+      "export {};\n",
+    );
+    await writeTree(
+      fixture.appDir,
+      {
+        session_id: "s_running",
+        goal: "Active live carrier authoring task.",
+        outputs: ["evidence/archive/active-live.md"],
+        acceptance: ["Finish the active live carrier task."],
+        conflict_scope: ["bundle:live"],
+      },
+      {
+        "live-waiting": {
+          id: "live-waiting",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "Author the live execute-ready follow-on carrier.",
+          kind: "domain_leaf",
+          outputs: ["evidence/archive/live-waiting.md"],
+          acceptance: ["Produce the live carrier authoring artifact."],
+          conflict_scope: ["bundle:live"],
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.run.live-idle-with-runnable-work"),
+    ).toBe("0");
+  });
+
+  test("counts truly runnable live backlog when task-tree semantics say it is runnable", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      join(fixture.projectDir, "specs", "index.json"),
+      `${JSON.stringify(
+        {
+          specs: [{ id: "spec.live", status: "ready", specState: "ready" }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeFile(
+      join(fixture.projectDir, "replays", "probe-live.ts"),
+      "export {};\n",
+    );
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "live-runnable": {
+          id: "live-runnable",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "Run live staging execution for the next ready branch.",
+          kind: "domain_leaf",
+          outputs: ["evidence/archive/live-runnable.md"],
+          acceptance: ["Execute or author the next live branch artifact."],
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.run.live-idle-with-runnable-work"),
+    ).toBe("1");
   });
 
   test("blocked task metric counts all blocked leaves, not the capped frontier display", async () => {
@@ -524,6 +817,31 @@ describe("project metrics", () => {
             "Routine watchdog refill seeded model-gap work without owner-agent planning.",
         }),
         JSON.stringify({
+          ts: new Date().toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          result:
+            "Reviewed a worker packet mentioning an interrupted downstream run without planner slowness.",
+        }),
+        JSON.stringify({
+          ts: new Date(Date.now() - 5_000).toISOString(),
+          kind: "planner_wake",
+          status: "interrupted",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          result: "Planner session interrupted by runtime restart.",
+        }),
+        JSON.stringify({
+          ts: new Date(Date.now() + 10_000).toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          result: 'Agent step "aks-explorer" timed out after 180000ms',
+        }),
+        JSON.stringify({
           ts: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
           kind: "planner_wake",
           status: "assigned",
@@ -540,6 +858,6 @@ describe("project metrics", () => {
     );
     expect(
       await metricValue(fixture, "aks-rp-e2e.planner.slow-count-24h"),
-    ).toBe("2");
+    ).toBe("4");
   });
 });

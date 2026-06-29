@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:27:12.144Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review cleared the stale row-41 review wake: the accepted row-41 secure-TLS basic maintained landing is now summarized at the project root and archived, leaving vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622 as the single active repo-local source/model reconciliation slice. The frontier stays compressed and truthful: external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the only live blocked family because accepted 2026-06-21 audit plus local-dispatch artifacts already prove packet preparation and repo-local dispatch proof for the covered asks, so resume there only on real human transport proof or authoritative replies outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the active row-40 Linux SSH public-key landing, reconcile only VM prerelease row 41 into maintained knowledge-map/model/view surfaces by using the mounted secure-TLS basic source lineage plus the existing repo-local canonical carrier artifacts, preserving row 41 as an exact VM-prerelease execution variant under the existing secure-tls-basic branch without widening to row 42/43, new branch authoring, cloud execution, or external-human-transport work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622.md"
+      ],
+      "acceptance": [
+        "Update the maintained knowledge-map/model/view surfaces so row 41 is represented truthfully under the existing secure TLS basic carrier as the exact VM-prerelease VirtualMachines variant, citing mounted source lineage from the VM prerelease/checkin suites plus the existing repo-local canonical carrier artifacts rather than inventing a new row-only branch.",
+        "Record one evidence note that names the mounted source anchors and the existing repo-local row-41 canonical-carrier/check artifacts, and states exactly which maintained surfaces changed for this row-41-only reconciliation.",
+        "Keep scope bounded to row 41 maintained reconciliation only: do not widen to row 42/43 secure-TLS follow-ons, do not launch cloud execution, do not reopen the shared external-human-transport blocker family, and do not replace the existing secure-tls-basic branch with a duplicate row-specific feature."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:16:36.421Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622_20260622002015",
+        "assigned_at": "2026-06-22T00:20:15.073Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622",
+        "worker_started_attempt_id": "a_vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622_20260622002015",
+        "worker_started_at": "2026-06-22T00:20:16.019Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease row 41 into maintained knowledge-map/model/view surfaces by updating model/knowledge-map/model.json to attach path.secure-tls-bootstrap.basic-lifecycle to the existing row-41 execution variant and adding a durable evidence note at evidence/archive/vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622.md. Regenerated maintained views successfully; validator still reports many pre-existing unrelated model issues outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-22T00:25:52.222Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:26:22.322Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622.md cites mounted checkin/prerelease/basic/common source anchors plus existing row-41 canonical carrier/check artifacts, and the worker summary matches a bounded landing on path.secure-tls-bootstrap.basic-lifecycle with regenerated maintained views only. The broad model/view diff is consistent with view regeneration, and no contradictory scope widening to row 42/43 or external-human-transport work was evidenced in this review."
+      },
+      "session_id": "s_task_vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622",
+      "session_history": [
+        "s_task_vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622"
+      ],
+      "result": "Reconciled VM prerelease row 41 into maintained knowledge-map/model/view surfaces by updating model/knowledge-map/model.json to attach path.secure-tls-bootstrap.basic-lifecycle to the existing row-41 execution variant and adding a durable evidence note at evidence/archive/vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622.md. Regenerated maintained views successfully; validator still reports many pre-existing unrelated model issues outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:26:22.322Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622.md cites mounted checkin/prerelease/basic/common source anchors plus existing row-41 canonical carrier/check artifacts, and the worker summary matches a bounded landing on path.secure-tls-bootstrap.basic-lifecycle with regenerated maintained views only. The broad model/view diff is consistent with view regeneration, and no contradictory scope widening to row 42/43 or external-human-transport work was evidenced in this review."
+      },
+      "status": "done"
+    }
+  ]
+}

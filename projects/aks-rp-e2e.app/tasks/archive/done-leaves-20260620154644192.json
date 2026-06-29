@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:46:44.192Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog blocked-frontier review: archive the accepted serverless-virtual-nodes-source-coverage-audit-20260620 leaf now that its durable meaning is represented on this lane. Current lane truth: serverless-schedulerctrl-lifecycle-source-packet-20260620 is the active source-backed packet for the scheduler-controller lifecycle quartet; machinespreview-external-send-proof-or-reply-wait-20260620 remains the single truthful external-human wait for the MachinesPreview preview-registration branch until durable repo-local send/escalation proof or an authoritative reply exists; vm-prerelease-post-row48-next-candidate-selection-20260620 should remain waiting behind the active runner task vm-prerelease-row48-spec-replay-refresh-20260620 rather than being assigned early.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-source-coverage-audit-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted handwritten Serverless Virtual Nodes e2ev3 source against current repo-local feature/spec/model coverage so the project can decide whether the existing blocked subnet-validation path is the whole truthful family view or whether a new non-cloud feature/spec/model branch should be opened.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md"
+      ],
+      "acceptance": [
+        "The audit cites the mounted handwritten Serverless Virtual Nodes source anchors it reviewed plus the current repo-local model/spec/replay carriers for this family, without running cloud mutation.",
+        "The audit classifies the reviewed family surfaces into already-covered, terminally blocked/ceilinged, or missing-non-cloud-follow-up, and states whether path.serverless-virtual-nodes.subnet-validation already truthfully carries the family-level gap.",
+        "If a new follow-up is justified, the audit names the smallest truthful next leaf with intended lane and durable outputs; if not, it records the evidence-backed ceiling so future wakes do not invent duplicate passive blockers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:43:21.311Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T15:43:21.354Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-source-coverage-audit-20260620_20260620154326",
+        "assigned_at": "2026-06-20T15:43:26.712Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-source-coverage-audit-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-source-coverage-audit-20260620_20260620154326",
+        "worker_started_at": "2026-06-20T15:43:42.408Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the Serverless Virtual Nodes source coverage audit and wrote a durable evidence report at evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md. The audit shows mounted sigs/serverless is now scheduler-controller source, so path.serverless-virtual-nodes.subnet-validation is only a branch-level ACI blocker, not the truthful family-level gap.",
+        "last_worker_completed_at": "2026-06-20T15:45:04.856Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:45:39.728Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the audit because the durable evidence report cites exact mounted serverless and virtualnodes source anchors, compares current repo-local carriers, and proves that path.serverless-virtual-nodes.subnet-validation is only the narrow ACI branch blocker while the truthful missing family-level follow-up is a bounded scheduler-controller lifecycle source packet."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-source-coverage-audit-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-source-coverage-audit-20260620"
+      ],
+      "result": "Completed the Serverless Virtual Nodes source coverage audit and wrote a durable evidence report at evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md. The audit shows mounted sigs/serverless is now scheduler-controller source, so path.serverless-virtual-nodes.subnet-validation is only a branch-level ACI blocker, not the truthful family-level gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:45:39.728Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the audit because the durable evidence report cites exact mounted serverless and virtualnodes source anchors, compares current repo-local carriers, and proves that path.serverless-virtual-nodes.subnet-validation is only the narrow ACI branch blocker while the truthful missing family-level follow-up is a bounded scheduler-controller lifecycle source packet."
+      },
+      "status": "done"
+    }
+  ]
+}

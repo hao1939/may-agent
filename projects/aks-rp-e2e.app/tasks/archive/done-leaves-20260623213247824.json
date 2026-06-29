@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:32:47.824Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier planning update: accepted the AAD row-37 narrowing review and compressed path.aad-rbac.managed-v2-lifecycle to one exact external execution-approval wait limited to returned approval plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle proof for the unchanged westus2 row-37 carrier. The two pre-existing external waits stay unchanged because their first owner follow-up trigger remains after 2026-06-26. Available capacity remains on the two repo-local active leaves private-cluster-addonv2-coreaddons-privatecluster-contract-packet-20260623 and rp-cluster-lifecycle-new-vnet-vm-prerelease-linkage-reconcile-20260623; do not reopen broader auth/quota/source rediscovery on any blocked branch before new authoritative proof.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP e2ev3 source plus the already-sent readiness packet to decide whether path.aad-rbac.managed-v2-lifecycle still has a bounded repo-local setup/diagnosis/alternate-environment move, or must return to one exact external wait with a narrower blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the mounted source files and scenario definitions that govern the VM prerelease AAD/RBAC row-37 path, names the concrete environment/auth inputs they require, and compares them with the current readiness ask/evidence.",
+        "Artifact ends with one owner decision only: either identify a concrete runnable follow-up leaf (setup/diagnosis/alternate environment/shared escalation) with exact scope, or justify recreating a single passive external wait with the exact missing returned proof and resume condition; no cloud mutation is run from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:24:13.135Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623_20260623212418",
+        "assigned_at": "2026-06-23T21:24:18.184Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623_20260623212418",
+        "worker_started_at": "2026-06-23T21:24:46.657Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive decision note at evidence/archive/aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623.md. It uses mounted row-37 source plus current readiness/send proof to conclude the path still has one bounded repo-local narrowing move before returning to a single external wait.",
+        "last_worker_completed_at": "2026-06-23T21:29:14.408Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:29:47.606Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the mounted row-37 VM prerelease AAD source files, compares them with the already-sent readiness ask, and shows a bounded repo-local narrowing move still exists because launcher ARM auth, tenant/group values, and westus2 replay-default quota are now locally evidenced; the branch should not return to a broad passive wait yet."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623"
+      ],
+      "result": "Created the requested archive decision note at evidence/archive/aad-rbac-managed-v2-lifecycle-mounted-source-readiness-decision-20260623.md. It uses mounted row-37 source plus current readiness/send proof to conclude the path still has one bounded repo-local narrowing move before returning to a single external wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:29:47.606Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the mounted row-37 VM prerelease AAD source files, compares them with the already-sent readiness ask, and shows a bounded repo-local narrowing move still exists because launcher ARM auth, tenant/group values, and westus2 replay-default quota are now locally evidenced; the branch should not return to a broad passive wait yet."
+      },
+      "status": "done"
+    },
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn path.aad-rbac.managed-v2-lifecycle into one narrower external wait by capturing the now-local row-37 readiness facts (launcher ARM auth, source-backed tenant/group inputs, and westus2 replay-default quota proof) and reducing the missing proof to execution approval only, without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the mounted row-37 source files, the existing readiness-send proof, the local check evidence, and the replay-default environment tuple to show which prior readiness facts are now repo-local rather than externally unknown.",
+        "Artifact ends with one exact successor only: either a recreated single external wait whose blocker is limited to returned execution approval / AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle proof, or a narrower repo-local follow-up justified by evidence. No cloud mutation runs from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:29:47.662Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623_20260623212950",
+        "assigned_at": "2026-06-23T21:29:50.802Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623_20260623212950",
+        "worker_started_at": "2026-06-23T21:30:20.611Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested narrowing artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md, showing row-37 readiness facts now closed repo-locally and reducing the remaining blocker to execution approval / exact mutation-gate proof only.",
+        "last_worker_completed_at": "2026-06-23T21:31:54.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:32:41.751Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md: the artifact cites the mounted row-37 source, existing readiness-send proof, local check/quota/auth evidence, and truthfully narrows path.aad-rbac.managed-v2-lifecycle to execution approval / exact mutation-gate proof only, with no cloud mutation run."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623"
+      ],
+      "result": "Created the requested narrowing artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md, showing row-37 readiness facts now closed repo-locally and reducing the remaining blocker to execution approval / exact mutation-gate proof only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:32:41.751Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md: the artifact cites the mounted row-37 source, existing readiness-send proof, local check/quota/auth evidence, and truthfully narrows path.aad-rbac.managed-v2-lifecycle to execution approval / exact mutation-gate proof only, with no cloud mutation run."
+      },
+      "status": "done"
+    }
+  ]
+}

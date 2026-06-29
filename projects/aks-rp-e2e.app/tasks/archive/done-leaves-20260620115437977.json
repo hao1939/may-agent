@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:54:37.977Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier review: feature/spec lane remains intentionally narrow with one active private-cluster source-consume leaf and one truthful MachinesPreview external wait. The active leaf now supersedes the earlier private-cluster source inventory as durable progress, while MachinesPreview stays blocked because repo-local evidence proves the ask is send-ready but no outbound owner/operator transport or authoritative reply exists inside this runtime. Next owner action in this lane is unchanged: let the active private-cluster consume task finish, and revisit the MachinesPreview branch only after human repo-local proof of send/handoff or an authoritative preview-registration/equivalent-environment reply arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-go-source-inventory-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the highest-priority uncovered private-cluster handwritten e2ev3 scenarios from mounted AKS RP source into one source-backed evidence packet that names scenario intent, candidate input/expectation paths, current model/spec coverage, and the first bounded follow-up slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-go-source-inventory-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence packet cites the mounted Go e2ev3 private-cluster sources it inspected and lists the concrete scenarios or suites reviewed.",
+        "For each reviewed scenario, the packet maps scenario intent to candidate feature/input/expectation paths and states whether model/knowledge-map/model.json or existing specs already cover that behavior, with exact IDs when they do.",
+        "The packet ends with one bounded next action: either a concrete new source/spec/model task to add, or an evidence-backed statement that no uncovered private-cluster gap remains in the reviewed slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:49:19.372Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-go-source-inventory-20260620_20260620114919",
+        "assigned_at": "2026-06-20T11:49:19.420Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-go-source-inventory-20260620",
+        "worker_started_attempt_id": "a_private-cluster-go-source-inventory-20260620_20260620114919",
+        "worker_started_at": "2026-06-20T11:49:32.508Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new mounted-source evidence packet at evidence/archive/private-cluster-go-source-inventory-20260620.md inventorying three highest-priority uncovered private-cluster scenarios from /app/sources/aks-rp, mapping each to candidate feature/input/expectation paths, current repo-local coverage, and one bounded next owner action.",
+        "last_worker_completed_at": "2026-06-20T11:52:20.111Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:52:46.246Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-go-source-inventory-20260620.md cites the mounted AKS RP private-cluster sources it inspected, maps all three reviewed scenarios to candidate feature/input/expectation paths with exact current repo-local coverage judgments, and ends with one bounded next action focused on Scenario_Private_Cluster_With_K8S_Validation."
+      },
+      "session_id": "s_task_private-cluster-go-source-inventory-20260620",
+      "session_history": [
+        "s_task_private-cluster-go-source-inventory-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:52:46.246Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-go-source-inventory-20260620.md cites the mounted AKS RP private-cluster sources it inspected, maps all three reviewed scenarios to candidate feature/input/expectation paths with exact current repo-local coverage judgments, and ends with one bounded next action focused on Scenario_Private_Cluster_With_K8S_Validation."
+      },
+      "status": "done"
+    }
+  ]
+}

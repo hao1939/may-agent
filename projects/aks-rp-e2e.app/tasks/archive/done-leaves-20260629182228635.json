@@ -1,0 +1,495 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T18:22:28.635Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update accepted the containerd-config-validation pass into durable lane memory and converted the largest blocked review family into one active reconciliation slice. Archived done verifier leaves now preserve accepted pass coverage for rp.available-agent-pool-versions, rp.operation-status-polling, rp.snapshot-apply-to-new-pool, rp.snapshot-create-from-nodepool, and runtime-container.containerd-config-validation plus the repo-local remediator and agentpool-upgrade-resume review followup closures. Live work remains a narrow mix of active single-spec verifiers, two bounded repo-local reconciliation/repair leaves, the new publication-wait family review, and exact external waits.",
+  "archived": 7,
+  "tasks": [
+    {
+      "id": "verify-spec-rp-available-agent-pool-versions",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp.available-agent-pool-versions through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp.available-agent-pool-versions",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp.available-agent-pool-versions"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp.available-agent-pool-versions",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the worker review only as non-terminal triage: run 28392970570 ended in workflow failure/error, so this verifier leaf is closed in favor of reconcile-spec-rp-available-agent-pool-versions-run-28392970570-error-20260629 for bounded repo-local classification and rerun decision."
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:09:39.243Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-available-agent-pool-versions_20260629180939",
+        "assigned_at": "2026-06-29T18:09:39.266Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-available-agent-pool-versions",
+        "worker_started_attempt_id": "a_verify-spec-rp-available-agent-pool-versions_20260629180939",
+        "worker_started_at": "2026-06-29T18:10:20.773Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.rp.available-agent-pool-versions workflow run 28392970570 classified as error. Loop key: verify-spec-rp-available-agent-pool-versions-a_verify-spec-rp-available-agent-pool-version. rp-available-agent-pool-versions: 0/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392970570 Result: runs/test-results/single-rp-available-agent-pool-versions_046064/artifacts/rp-available-agent-pool-versions/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392970570/aks-rp-e2e-28392970570-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392970570/aks-rp-e2e-28392970570-spec-test-results/test-results/single-rp-available-agent-pool-versions_046064/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T18:16:50.634Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T18:19:22.820Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker review only as non-terminal triage: run 28392970570 ended in workflow failure/error, so this verifier leaf is closed in favor of reconcile-spec-rp-available-agent-pool-versions-run-28392970570-error-20260629 for bounded repo-local classification and rerun decision."
+      },
+      "session_id": "s_task_verify-spec-rp-available-agent-pool-versions",
+      "session_history": [
+        "s_task_verify-spec-rp-available-agent-pool-versions"
+      ],
+      "result": "Spec spec.rp.available-agent-pool-versions workflow run 28392970570 classified as error. Loop key: verify-spec-rp-available-agent-pool-versions-a_verify-spec-rp-available-agent-pool-version. rp-available-agent-pool-versions: 0/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392970570 Result: runs/test-results/single-rp-available-agent-pool-versions_046064/artifacts/rp-available-agent-pool-versions/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392970570/aks-rp-e2e-28392970570-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392970570/aks-rp-e2e-28392970570-spec-test-results/test-results/single-rp-available-agent-pool-versions_046064/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:22.820Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-operation-status-polling",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp.operation-status-polling through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp.operation-status-polling",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp.operation-status-polling"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp.operation-status-polling",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the pass review for run 28393003343: spec.rp.operation-status-polling reached a clean 3/3 claim pass and needs no bounded follow-up beyond normal model absorption."
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:10:14.587Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-operation-status-polling_20260629181014",
+        "assigned_at": "2026-06-29T18:10:14.631Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-operation-status-polling",
+        "worker_started_attempt_id": "a_verify-spec-rp-operation-status-polling_20260629181014",
+        "worker_started_at": "2026-06-29T18:10:55.984Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp.operation-status-polling workflow run 28393003343 classified as pass. Loop key: verify-spec-rp-operation-status-polling-a_verify-spec-rp-operation-status-polling_20260629. rp-operation-status-polling: 3/3 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28393003343 Result: runs/test-results/single-rp-operation-status-polling_119114/artifacts/rp-operation-status-polling/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393003343/aks-rp-e2e-28393003343-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393003343/aks-rp-e2e-28393003343-spec-test-results/test-results/single-rp-operation-status-polling_119114/result.json",
+        "last_worker_completed_at": "2026-06-29T18:18:12.599Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T18:19:43.565Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the pass review for run 28393003343: spec.rp.operation-status-polling reached a clean 3/3 claim pass and needs no bounded follow-up beyond normal model absorption."
+      },
+      "session_id": "s_task_verify-spec-rp-operation-status-polling",
+      "session_history": [
+        "s_task_verify-spec-rp-operation-status-polling"
+      ],
+      "result": "Spec spec.rp.operation-status-polling workflow run 28393003343 classified as pass. Loop key: verify-spec-rp-operation-status-polling-a_verify-spec-rp-operation-status-polling_20260629. rp-operation-status-polling: 3/3 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28393003343 Result: runs/test-results/single-rp-operation-status-polling_119114/artifacts/rp-operation-status-polling/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393003343/aks-rp-e2e-28393003343-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393003343/aks-rp-e2e-28393003343-spec-test-results/test-results/single-rp-operation-status-polling_119114/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:43.565Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-snapshot-apply-to-new-pool",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp.snapshot-apply-to-new-pool through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp.snapshot-apply-to-new-pool",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp.snapshot-apply-to-new-pool"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp.snapshot-apply-to-new-pool",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the pass review for run 28392993581: spec.rp.snapshot-apply-to-new-pool passed 2/2 claims, so the current same-spec verification slice is complete."
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:10:14.597Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-snapshot-apply-to-new-pool_20260629181014",
+        "assigned_at": "2026-06-29T18:10:14.659Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-snapshot-apply-to-new-pool",
+        "worker_started_attempt_id": "a_verify-spec-rp-snapshot-apply-to-new-pool_20260629181014",
+        "worker_started_at": "2026-06-29T18:10:46.123Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp.snapshot-apply-to-new-pool workflow run 28392993581 classified as pass. Loop key: verify-spec-rp-snapshot-apply-to-new-pool-a_verify-spec-rp-snapshot-apply-to-new-pool_2026. rp-snapshot-apply-to-new-pool: 2/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392993581 Result: runs/test-results/single-rp-snapshot-apply-to-new-pool_119299/artifacts/rp-snapshot-apply-to-new-pool/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392993581/aks-rp-e2e-28392993581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392993581/aks-rp-e2e-28392993581-spec-test-results/test-results/single-rp-snapshot-apply-to-new-pool_119299/result.json",
+        "last_worker_completed_at": "2026-06-29T18:17:29.399Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T18:19:43.625Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the pass review for run 28392993581: spec.rp.snapshot-apply-to-new-pool passed 2/2 claims, so the current same-spec verification slice is complete."
+      },
+      "session_id": "s_task_verify-spec-rp-snapshot-apply-to-new-pool",
+      "session_history": [
+        "s_task_verify-spec-rp-snapshot-apply-to-new-pool"
+      ],
+      "result": "Spec spec.rp.snapshot-apply-to-new-pool workflow run 28392993581 classified as pass. Loop key: verify-spec-rp-snapshot-apply-to-new-pool-a_verify-spec-rp-snapshot-apply-to-new-pool_2026. rp-snapshot-apply-to-new-pool: 2/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392993581 Result: runs/test-results/single-rp-snapshot-apply-to-new-pool_119299/artifacts/rp-snapshot-apply-to-new-pool/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392993581/aks-rp-e2e-28392993581-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392993581/aks-rp-e2e-28392993581-spec-test-results/test-results/single-rp-snapshot-apply-to-new-pool_119299/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:43.625Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-snapshot-create-from-nodepool",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp.snapshot-create-from-nodepool through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp.snapshot-create-from-nodepool",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp.snapshot-create-from-nodepool"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp.snapshot-create-from-nodepool",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the pass review for run 28392997288: spec.rp.snapshot-create-from-nodepool passed 2/2 claims and does not justify any duplicate rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:10:14.607Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-snapshot-create-from-nodepool_20260629181014",
+        "assigned_at": "2026-06-29T18:10:14.684Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-snapshot-create-from-nodepool",
+        "worker_started_attempt_id": "a_verify-spec-rp-snapshot-create-from-nodepool_20260629181014",
+        "worker_started_at": "2026-06-29T18:10:50.084Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp.snapshot-create-from-nodepool workflow run 28392997288 classified as pass. Loop key: verify-spec-rp-snapshot-create-from-nodepool-a_verify-spec-rp-snapshot-create-from-nodepoo. rp-snapshot-create-from-nodepool: 2/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392997288 Result: runs/test-results/single-rp-snapshot-create-from-nodepool_120932/artifacts/rp-snapshot-create-from-nodepool/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392997288/aks-rp-e2e-28392997288-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392997288/aks-rp-e2e-28392997288-spec-test-results/test-results/single-rp-snapshot-create-from-nodepool_120932/result.json",
+        "last_worker_completed_at": "2026-06-29T18:16:29.326Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T18:19:43.687Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the pass review for run 28392997288: spec.rp.snapshot-create-from-nodepool passed 2/2 claims and does not justify any duplicate rerun."
+      },
+      "session_id": "s_task_verify-spec-rp-snapshot-create-from-nodepool",
+      "session_history": [
+        "s_task_verify-spec-rp-snapshot-create-from-nodepool"
+      ],
+      "result": "Spec spec.rp.snapshot-create-from-nodepool workflow run 28392997288 classified as pass. Loop key: verify-spec-rp-snapshot-create-from-nodepool-a_verify-spec-rp-snapshot-create-from-nodepoo. rp-snapshot-create-from-nodepool: 2/2 claims passed Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28392997288 Result: runs/test-results/single-rp-snapshot-create-from-nodepool_120932/artifacts/rp-snapshot-create-from-nodepool/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392997288/aks-rp-e2e-28392997288-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28392997288/aks-rp-e2e-28392997288-spec-test-results/test-results/single-rp-snapshot-create-from-nodepool_120932/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:43.687Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-runtime-container-containerd-config-validation",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.runtime-container.containerd-config-validation through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.runtime-container.containerd-config-validation",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.runtime-container.containerd-config-validation"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.runtime-container.containerd-config-validation",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the pass review for run 28393050176: containerd-config-validation passed all 4 claims with the expected OCIContainer/containerd/runc observations, so this verifier leaf is complete."
+      },
+      "trace": {
+        "created_at": "2026-06-29T18:11:20.239Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-runtime-container-containerd-config-validation_20260629181120",
+        "assigned_at": "2026-06-29T18:11:20.267Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-runtime-container-containerd-config-validation",
+        "worker_started_attempt_id": "a_verify-spec-runtime-container-containerd-config-validation_20260629181120",
+        "worker_started_at": "2026-06-29T18:11:47.240Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.runtime-container.containerd-config-validation workflow run 28393050176 classified as pass. Loop key: verify-spec-runtime-container-containerd-config-validation-a_verify-spec-runtime-container. Containerd config validation passed: 4/4 claims OK. Cluster created with OCIContainer runtime, 2 nodes. Containerd running, config valid, runc handler registered, version compatible. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28393050176 Result: runs/test-results/single-runtime-container-containerd-config-validation_214661/artifacts/runtime-container-containerd-config-validation/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393050176/aks-rp-e2e-28393050176-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393050176/aks-rp-e2e-28393050176-spec-test-results/test-results/single-runtime-container-containerd-config-validation_214661/result.json",
+        "last_worker_completed_at": "2026-06-29T18:17:07.780Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T18:19:43.747Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the pass review for run 28393050176: containerd-config-validation passed all 4 claims with the expected OCIContainer/containerd/runc observations, so this verifier leaf is complete."
+      },
+      "session_id": "s_task_verify-spec-runtime-container-containerd-config-validation",
+      "session_history": [
+        "s_task_verify-spec-runtime-container-containerd-config-validation"
+      ],
+      "result": "Spec spec.runtime-container.containerd-config-validation workflow run 28393050176 classified as pass. Loop key: verify-spec-runtime-container-containerd-config-validation-a_verify-spec-runtime-container. Containerd config validation passed: 4/4 claims OK. Cluster created with OCIContainer runtime, 2 nodes. Containerd running, config valid, runc handler registered, version compatible. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28393050176 Result: runs/test-results/single-runtime-container-containerd-config-validation_214661/artifacts/runtime-container-containerd-config-validation/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393050176/aks-rp-e2e-28393050176-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28393050176/aks-rp-e2e-28393050176-spec-test-results/test-results/single-runtime-container-containerd-config-validation_214661/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:43.747Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the dedicated single-spec carrier for spec.remediator.node-not-ready-restart so repo-local execution no longer drains as generic test_not_implemented, then record the truthful runner/model outcome and next live-execution gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-remediator-node-not-ready-restart-single-spec-carrier-repair-20260629.md"
+      ],
+      "acceptance": [
+        "The task identifies the exact repo-local carrier/source surface that causes spec.remediator.node-not-ready-restart to skip, updates the relevant runner/spec code or metadata, and leaves check-mode or focused local verification proving the classification changed from blind skip to a truthful execute-capable or explicitly gated state.",
+        "The resulting note preserves scope to the dedicated remediator carrier and states whether any future cloud run is newly enabled or still mutation-gated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.remediator.node-not-ready-restart"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T18:06:48.558Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629_20260629180648",
+        "assigned_at": "2026-06-29T18:06:48.622Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629",
+        "worker_started_attempt_id": "a_repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629_20260629180648",
+        "worker_started_at": "2026-06-29T18:07:19.081Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the dedicated remediator single-spec carrier by replacing the old scaffold with an explicit execution-gated contract in `features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.ts`, added focused verification in its `.test.ts`, and recorded the resulting check-pass / live-gated blocker outcome in `evidence/archive/spec-remediator-node-not-ready-restart-single-spec-carrier-repair-20260629.md`.",
+        "last_worker_completed_at": "2026-06-29T18:15:07.148Z",
+        "last_worker_evidence": [
+          "features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.ts",
+          "features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.test.ts",
+          "evidence/archive/spec-remediator-node-not-ready-restart-single-spec-carrier-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T18:19:43.804Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local carrier repair: the remediator single-spec path now uses an explicit execution-gated contract with focused test coverage and a durable note that truthfully preserves the remaining live-mutation gate."
+      },
+      "session_id": "s_task_repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629",
+      "session_history": [
+        "s_task_repair-spec-remediator-node-not-ready-restart-single-spec-carrier-20260629"
+      ],
+      "result": "Repaired the dedicated remediator single-spec carrier by replacing the old scaffold with an explicit execution-gated contract in `features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.ts`, added focused verification in its `.test.ts`, and recorded the resulting check-pass / live-gated blocker outcome in `evidence/archive/spec-remediator-node-not-ready-restart-single-spec-carrier-repair-20260629.md`.",
+      "evidence": [
+        "features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.ts",
+        "features/remediator-node-not-ready-restart/tests/remediator-node-not-ready-restart.test.ts",
+        "evidence/archive/spec-remediator-node-not-ready-restart-single-spec-carrier-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:19:43.804Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local carrier repair: the remediator single-spec path now uses an explicit execution-gated contract with focused test coverage and a durable note that truthfully preserves the remaining live-mutation gate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the skipped single-spec result for spec.rp-nodepool-lifecycle.agentpool-upgrade-resume, capture why run 28392887389 is not accepted verification coverage, and identify the truthful next carrier/source-backed path for this spec.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-followup-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact records the reviewed result.json evidence from run 28392887389 and explains why skipped/test_not_implemented is not accepted live verification coverage for this spec.",
+        "Artifact identifies the best bounded next path for the spec (mounted-source/check-only mapping, shared-cluster carrier, or exact replacement replay task) without rerunning the same single-spec flow blindly.",
+        "Task output leaves one concrete successor action or model/evidence update that can be reviewed by the owner."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-nodepool-lifecycle.agentpool-upgrade-resume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T18:12:02.773Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T18:12:14.006Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629_20260629181226",
+        "assigned_at": "2026-06-29T18:12:26.939Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629",
+        "worker_started_attempt_id": "a_review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629_20260629181226",
+        "worker_started_at": "2026-06-29T18:12:49.632Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28392887389 for spec.rp-nodepool-lifecycle.agentpool-upgrade-resume and wrote a durable archive note showing the result was only skipped/test_not_implemented runner-surface evidence, not live verification coverage, plus the bounded next action to repair the dedicated carrier before any rerun.",
+        "last_worker_completed_at": "2026-06-29T18:15:32.143Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-followup-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T18:17:40.181Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-followup-20260629 truthfully downgrades run 28392887389 to skipped/test_not_implemented runner-surface evidence only, rejects any live-verification interpretation, and leaves one bounded next action to repair the dedicated source-backed carrier before any rerun."
+      },
+      "session_id": "s_task_review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629",
+      "session_history": [
+        "s_task_review-spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-carrier-followup-20260629"
+      ],
+      "result": "Reviewed run 28392887389 for spec.rp-nodepool-lifecycle.agentpool-upgrade-resume and wrote a durable archive note showing the result was only skipped/test_not_implemented runner-surface evidence, not live verification coverage, plus the bounded next action to repair the dedicated carrier before any rerun.",
+      "evidence": [
+        "evidence/archive/spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-followup-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:17:40.181Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/spec-rp-nodepool-lifecycle-agentpool-upgrade-resume-skipped-followup-20260629 truthfully downgrades run 28392887389 to skipped/test_not_implemented runner-surface evidence only, rejects any live-verification interpretation, and leaves one bounded next action to repair the dedicated source-backed carrier before any rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:51:47.087Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning update reconciled the stale watchdog review pointer to the already-accepted private-cluster none-dns-zone-v3 mounted-source boundary map: the live frontier now stays on two repo-local active follow-ups only, private-cluster-none-dns-zone-v3-model-view-landing-20260624 and private-cluster-vnet-integration-update-public-second-hop-mounted-source-boundary-map-20260624. The latest safe done tranche is durably captured in archive evidence/model surfaces: VM prerelease row03 hybrid substrate repair is accepted, row03/row04 substrate drift reconciliation is accepted, and row04 substrate truthfulness review is accepted. The blocked frontier still truthfully compresses to the same three exact external waits, with aad-rbac row37 approval remaining a reviewed heuristic-noise environment-overblock until the first post-2026-06-26 follow-up.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local row-03 VirtualMachine prerelease carrier to match the mounted-source hybrid substrate: keep the operated user pool explicitly VMSS, stop overstating the cluster/system pool as VMSS where the suite envelope inherits VirtualMachines, update replay/spec/model wording accordingly, regenerate any maintained views, and record the exact file-level evidence without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624.md"
+      ],
+      "acceptance": [
+        "specs/rp-nodepool-lifecycle-agentpool-operations.json, replays/rp-nodepool-lifecycle-agentpool-operations.ts, and the affected model/view surfaces are updated so row 03 truthfully expresses the mounted-source hybrid carrier: VirtualMachines suite/system context plus a VMSS operated user pool.",
+        "A durable archive note cites the mounted-source suite and agent_pool_operations.go lines used for the repair and explains why row 04 remains unchanged.",
+        "No cloud mutation or remote execution occurs; this is repo-local carrier repair only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model.virtualmachine.row03-hybrid-substrate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T00:30:22.042Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624_20260624003022",
+        "assigned_at": "2026-06-24T00:30:22.089Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624_20260624003022",
+        "worker_started_at": "2026-06-24T00:30:47.825Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-03’s repo-local carrier to reflect the mounted hybrid substrate across spec, replay, model, regenerated views, and archive evidence; documented exact source lines and why row 04 remains out of scope.",
+        "last_worker_completed_at": "2026-06-24T00:37:12.573Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:37:31.642Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local row-03 repair: evidence/archive/virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624.md cites mounted suite checkin.go plus agent_pool_operations.go, explains the hybrid VirtualMachines suite/system context with a VMSS operated user pool, documents the row-03 carrier updates across spec/replay/model/views, and bounds row 04 as separate work."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624"
+      ],
+      "result": "Repaired row-03’s repo-local carrier to reflect the mounted hybrid substrate across spec, replay, model, regenerated views, and archive evidence; documented exact source lines and why row 04 remains out of scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:37:31.642Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local row-03 repair: evidence/archive/virtualmachine-prerelease-row03-hybrid-substrate-repair-20260624.md cites mounted suite checkin.go plus agent_pool_operations.go, explains the hybrid VirtualMachines suite/system context with a VMSS operated user pool, documents the row-03 carrier updates across spec/replay/model/views, and bounds row 04 as separate work."
+      },
+      "status": "done"
+    }
+  ]
+}

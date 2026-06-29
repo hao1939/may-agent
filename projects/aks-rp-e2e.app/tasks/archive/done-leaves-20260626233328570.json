@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T23:33:28.570Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier reaffirmation: both live leaves remain the truthful compressed external waits and no repo-local retry/setup/source/spec action was reopened from this packet. Archive the completed private-cluster source-landing/map/family packet leaves because their durable meaning is already represented at the project root: the private-cluster same-cluster system->none branch is repo-locally complete through routed operator authorization evidence, while the separate focus branch remains blocked only on returned human proof for VM prerelease row 33 plus shared-identity rows 75-76.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-dns-variant-machine-aware-family-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the maintained family-level packet features/private-cluster/packets/machines-private-cluster-dns-variants.yaml so the mounted private-cluster machines DNS-variant source landing is materialized repo-locally with shared machineLifecycleSpine, preserved canonical DNS carrier attachments, explicit create-time-none adjacency, and no duplicate runnable specs/replays/waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/private-cluster/packets/machines-private-cluster-dns-variants.yaml"
+      ],
+      "acceptance": [
+        "Create the family-level packet at features/private-cluster/packets/machines-private-cluster-dns-variants.yaml and cite the three mounted RP scenario rows plus machines_plan_helper.go as the source basis.",
+        "Record one shared machineLifecycleSpine section for aksmanagedap -> create machine -> machine succeeded with Kubernetes.NodeName -> backing node Ready, and attach each mounted row to the preserved canonical private-cluster DNS carriers with explicit non-ownership adjacency for the create-time none row versus path.private-cluster-none-dns-zone-v3.",
+        "Keep the packet bounded to source/model linkage only: reference adjacent machine/NAP carriers, but do not mint new runnable specs, replays, model paths, cloud execution, or duplicate waits from this authoring task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-dns-variant-machine-aware-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T23:27:24.888Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-dns-variant-machine-aware-family-packet-20260626_20260626232724",
+        "assigned_at": "2026-06-26T23:27:24.933Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-dns-variant-machine-aware-family-packet-20260626",
+        "worker_started_attempt_id": "a_private-cluster-dns-variant-machine-aware-family-packet-20260626_20260626232724",
+        "worker_started_at": "2026-06-26T23:27:43.686Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new family-level packet `features/private-cluster/packets/machines-private-cluster-dns-variants.yaml`, grounding the three mounted RP machines DNS-variant scenarios plus `machines_plan_helper.go`, preserving canonical DNS carrier ownership, and explicitly keeping the create-time none row adjacent—not owned by—the V3 system→none path.",
+        "last_worker_completed_at": "2026-06-26T23:29:03.603Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T23:29:31.442Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/private-cluster/packets/machines-private-cluster-dns-variants.yaml exists, cites the three mounted RP scenario rows plus machines_plan_helper.go, records one shared machineLifecycleSpine, preserves canonical DNS carrier ownership, and keeps the create-time privateDNSZone=none row adjacent/non-owning relative to path.private-cluster-none-dns-zone-v3 without minting duplicate specs, replays, waits, or model paths."
+      },
+      "session_id": "s_task_private-cluster-dns-variant-machine-aware-family-packet-20260626",
+      "session_history": [
+        "s_task_private-cluster-dns-variant-machine-aware-family-packet-20260626"
+      ],
+      "result": "Authored the new family-level packet `features/private-cluster/packets/machines-private-cluster-dns-variants.yaml`, grounding the three mounted RP machines DNS-variant scenarios plus `machines_plan_helper.go`, preserving canonical DNS carrier ownership, and explicitly keeping the create-time none row adjacent—not owned by—the V3 system→none path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T23:29:31.442Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/private-cluster/packets/machines-private-cluster-dns-variants.yaml exists, cites the three mounted RP scenario rows plus machines_plan_helper.go, records one shared machineLifecycleSpine, preserves canonical DNS carrier ownership, and keeps the create-time privateDNSZone=none row adjacent/non-owning relative to path.private-cluster-none-dns-zone-v3 without minting duplicate specs, replays, waits, or model paths."
+      },
+      "status": "done"
+    }
+  ]
+}

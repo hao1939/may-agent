@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T08:01:49.426Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning-update accepted the storage-csi Azure File private-endpoint evidence reconciliation: the archive note proves path.storage-csi-file-private-endpoint is currently source-grounded only and does not yet have trustworthy observed-behavior evidence, so any product-proof work must remain a later explicitly gated verification slice rather than being implied by the accepted model landing. To keep the frontier runnable without opening ungated cloud mutation, the next repo-local learning leaf is now private-cluster-none-dns-zone-v3-mounted-source-envelope-20260623, which should bound the remaining unknown Private Cluster System→None Private DNS Zone V3 branch from mounted source and current carriers while the single external human/operator wait stays unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Follow the accepted storage-csi-file-private-endpoint-model-enrichment-20260623 repo-local model update by reviewing the existing spec/replay and any durable repo-local run evidence for the Azure File private-endpoint branch to determine whether path.storage-csi-file-private-endpoint already has trustworthy observed-behavior evidence, or whether the branch still needs a later gated live verification slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact spec/replay ids or file paths plus every durable repo-local evidence artifact examined for the Azure File private-endpoint branch, and maps them against the current behavior points on path.storage-csi-file-private-endpoint.",
+        "The note classifies each current behavior point as already backed by trustworthy execution evidence, source-grounded-only, or still missing, without claiming new cloud results or reopening repo-local carrier authoring.",
+        "If live verification is still required, the note names the exact bounded next verification slice, required proof shape, and any explicit mutation/preflight gate needed so the owner can queue a later verification task without rediscovering the branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:57:51.858Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623_20260623075751",
+        "assigned_at": "2026-06-23T07:57:51.914Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623",
+        "worker_started_attempt_id": "a_storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623_20260623075751",
+        "worker_started_at": "2026-06-23T07:58:17.789Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed mounted source, accepted model/path surfaces, archive notes, and repo-local run traces for the Azure File private-endpoint branch; wrote a durable reconciliation note concluding the path has only source-grounded evidence and still needs a later gated live verification slice.",
+        "last_worker_completed_at": "2026-06-23T08:00:04.705Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T08:01:49.274Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-23 archive reconciliation note: it cites the exact mounted-source/carrier/archive/run-trace surfaces for path.storage-csi-file-private-endpoint and truthfully concludes every current behavior point remains source-grounded-only with no durable observed-behavior proof yet; later cloud verification, if pursued, must be a separate gated slice for spec.storage-csi.file-private-endpoint-provision."
+      },
+      "session_id": "s_task_storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623",
+      "session_history": [
+        "s_task_storage-csi-file-private-endpoint-existing-evidence-reconcile-20260623"
+      ],
+      "result": "Reviewed mounted source, accepted model/path surfaces, archive notes, and repo-local run traces for the Azure File private-endpoint branch; wrote a durable reconciliation note concluding the path has only source-grounded evidence and still needs a later gated live verification slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T08:01:49.274Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-23 archive reconciliation note: it cites the exact mounted-source/carrier/archive/run-trace surfaces for path.storage-csi-file-private-endpoint and truthfully concludes every current behavior point remains source-grounded-only with no durable observed-behavior proof yet; later cloud verification, if pursued, must be a separate gated slice for spec.storage-csi.file-private-endpoint-provision."
+      },
+      "status": "done"
+    }
+  ]
+}

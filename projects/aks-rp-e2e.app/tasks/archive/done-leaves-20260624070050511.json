@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:00:50.511Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog blocked-frontier owner review revalidated that the open frontier is intentionally compressed to four exact external waits only: row-37 AAD RBAC approval return, family-level external dispatch return, private-cluster auth service tags devbox endpoint return, and serverless validating-webhook public approval return. Repo-local source/spec/model/setup narrowing for those waits is already complete and must stay closed until a returned authoritative artifact arrives or the first follow-up window on/after 2026-06-26 reuses each same branch for one bounded follow-up/escalation artifact. The accepted serverless public live-prep slice is now fully summarized at the parent: public-only approval packet, live-body authoring, first-live run plan, and send-proof capture are complete; only the exact returned-approval wait remains live on that feature path.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the execute-capable public-only live body for the serverless schedulerctrl validating-webhook replay, preserving the exact mounted-source invalid-then-valid admission contract and the exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-public, then rerun repo-local public-carrier preflights without performing cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/serverless-schedulerctrl-validating-webhook-public.ts",
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624.md"
+      ],
+      "acceptance": [
+        "Replay gains an execute-capable public-only live body or equivalent tracked implementation path that remains bounded to the public validating-webhook carrier, preserves invalid-then-valid ordering, requires the exact public mutation gate, and does not widen into private/APIServerVNetIntegration carriers.",
+        "Archive note records the exact replay/spec/model-affecting changes, reruns repo-local public preflights (carrier check, syntax check, dry-run, and execute-gate behavior), and states clearly whether execute remains intentionally blocked pending cloud approval or is otherwise still non-mutating.",
+        "Task remains repo-local only: no cloud mutation run, no new external wait unless new evidence proves one is required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T06:47:44.248Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624_20260624064744",
+        "assigned_at": "2026-06-24T06:47:44.301Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624_20260624064744",
+        "worker_started_at": "2026-06-24T06:48:07.431Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored an execute-capable public-only live body in replays/serverless-schedulerctrl-validating-webhook-public.ts and recorded repo-local verification plus gate behavior in evidence/archive/serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624.md. Re-ran public carrier check, syntax check, spec dry-run, and execute-gate proofs without performing cloud mutation.",
+        "last_worker_completed_at": "2026-06-24T06:53:06.329Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T06:54:12.609Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker result: the replay now has an execute-capable public-only live body that preserves the exact mounted-source invalid-then-valid admission contract, keeps AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-public as the only execute gate, and the archive note records passing repo-local carrier/syntax/dry-run checks plus truthful gated/blocked execute behavior without any cloud mutation."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624"
+      ],
+      "result": "Authored an execute-capable public-only live body in replays/serverless-schedulerctrl-validating-webhook-public.ts and recorded repo-local verification plus gate behavior in evidence/archive/serverless-schedulerctrl-validating-webhook-public-live-body-authoring-20260624.md. Re-ran public carrier check, syntax check, spec dry-run, and execute-gate proofs without performing cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T06:54:12.609Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker result: the replay now has an execute-capable public-only live body that preserves the exact mounted-source invalid-then-valid admission contract, keeps AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-public as the only execute gate, and the archive note records passing repo-local carrier/syntax/dry-run checks plus truthful gated/blocked execute behavior without any cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:52:50.735Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: accepted the VirtualMachines + ManagedSystem combined terminal-judgment reconcile after verifying the new archive note and model path agree on a terminal unsupported-combination/product-constraint reading within the repo's product-gap bucket, with the accepted boundary narrowed to the minimal ManagedSystem request contract and rerun gated only on new support signals. The live project frontier stays intentionally narrow: one active repo-local linkage-reconcile leaf remains in flight for path.rp-cluster-lifecycle.create-get-delete, and the single family-level external human-proof wait remains truthful and unchanged until returned proof arrives or the first owner review after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the current repo-local model/evidence plus API-version/source/spec carriers to reconcile the exact terminal judgment for path.virtualmachines.managedsystem-combined: document whether the branch is best represented as unsupported-by-design constraint vs product gap, record the exact accepted/rejected combination boundary, and update wording claim-safely without any cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact evidence/source/spec/API-version carriers that support the current VirtualMachines + ManagedSystem combined verdict and explains the accepted vs rejected boundary, including any mismatch between status/rootCause/label wording found before repair.",
+        "Any model update remains bounded to path.virtualmachines.managedsystem-combined and only normalizes terminal judgment wording or retest conditions when the reviewed carriers support it; do not invent a new execution claim or broaden into unrelated ManagedSystem or VM branches.",
+        "Repo-local only: no cloud mutation, no reopening of already-externalized waits, and no control/planning subbranch creation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:46:08.206Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623_20260623204608",
+        "assigned_at": "2026-06-23T20:46:08.304Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623_20260623204608",
+        "worker_started_at": "2026-06-23T20:47:11.737Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the terminal judgment for path.virtualmachines.managedsystem-combined by adding a durable evidence note and tightening model wording/evidence so the branch is explicitly treated as a terminal unsupported-combination product constraint within the existing product-gap bucket.",
+        "last_worker_completed_at": "2026-06-23T20:51:25.428Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:52:41.080Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence note and model path now align on a terminal unsupported-combination/product-constraint reading for path.virtualmachines.managedsystem-combined within the repo's product-gap bucket, with explicit accepted/rejected boundary and retest gated only on a new support signal."
+      },
+      "session_id": "s_task_virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623",
+      "session_history": [
+        "s_task_virtualmachines-managedsystem-combined-terminal-judgment-reconcile-20260623"
+      ],
+      "result": "Reconciled the terminal judgment for path.virtualmachines.managedsystem-combined by adding a durable evidence note and tightening model wording/evidence so the branch is explicitly treated as a terminal unsupported-combination product constraint within the existing product-gap bucket.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:52:41.080Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence note and model path now align on a terminal unsupported-combination/product-constraint reading for path.virtualmachines.managedsystem-combined within the repo's product-gap bucket, with explicit accepted/rejected boundary and retest gated only on a new support signal."
+      },
+      "status": "done"
+    }
+  ]
+}

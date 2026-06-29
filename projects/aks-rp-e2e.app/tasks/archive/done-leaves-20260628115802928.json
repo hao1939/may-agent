@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T11:58:02.928Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner task-completed refill: accept the private-cluster none-dns-zone-v3 mounted-source ceiling map as durable evidence that this path stays singular on the same-cluster system->none lifecycle, has reached its repo-local no-cloud evidence ceiling, and should not spawn more local source/spec/replay repair leaves unless new mounted source or accepted live evidence changes the boundary. The completed row-37 managed AAD wording update and the completed private-cluster ceiling-map leaf now have their durable meaning captured on this lane, so archive them and keep the visible live frontier focused on the shared App Routing existing-cluster operator-response wait plus controller-driven refill from the remaining spec backlog.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the canonical knowledge-map/model and generated path-summary wording for path.aad-rbac.managed-v2-lifecycle so they reflect the accepted westus2 9/10-claims branch-specific mismatch frontier while preserving eastus2 Standard_B2s SkuNotAvailable as an execution variant, not the whole-path verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-canonical-wording-update-20260628.md"
+      ],
+      "acceptance": [
+        "Modify the canonical model entry for path.aad-rbac.managed-v2-lifecycle to stop describing the path as only a generic helper-VM/pre-assertion blocker and instead record the deepest accepted current state from the westus2 row-37 artifact plus the exact retained eastus2 variant.",
+        "Regenerate or update the path-summary/view material so the stale canonical projection matches the accepted narrower verdict/retest wording for path.aad-rbac.managed-v2-lifecycle.",
+        "Archive a concise evidence note quoting the exact model/view wording changed, the evidence used, and any remaining uncertainty about the HTTP 409 branch cause."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:49:25.584Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628_20260628114925",
+        "assigned_at": "2026-06-28T11:49:25.633Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628",
+        "worker_started_attempt_id": "a_spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628_20260628114925",
+        "worker_started_at": "2026-06-28T11:49:43.881Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the canonical managed-v2 AAD path wording in model/knowledge-map/model.json and regenerated views so path.aad-rbac.managed-v2-lifecycle now reflects the westus2 9/10-claims HTTP 409 branch mismatch as the primary verdict, with eastus2 Standard_B2s SkuNotAvailable retained as an execution variant. Added a durable evidence note at evidence/archive/aad-rbac-managed-v2-lifecycle-canonical-wording-update-20260628.md documenting the exact wording change and remaining 409 uncertainty.",
+        "last_worker_completed_at": "2026-06-28T11:55:59.428Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/model.generated.md",
+          "evidence/archive/aad-rbac-managed-v2-lifecycle-canonical-wording-update-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:56:31.683Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence note and regenerated model/view outputs now consistently present path.aad-rbac.managed-v2-lifecycle as the westus2 9/10-claims HTTP 409 branch mismatch frontier, with eastus2 Standard_B2s retained only as an execution variant."
+      },
+      "session_id": "s_task_spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628",
+      "session_history": [
+        "s_task_spec-vm-prerelease-row37-managed-aad-canonical-model-view-wording-update-20260628"
+      ],
+      "result": "Updated the canonical managed-v2 AAD path wording in model/knowledge-map/model.json and regenerated views so path.aad-rbac.managed-v2-lifecycle now reflects the westus2 9/10-claims HTTP 409 branch mismatch as the primary verdict, with eastus2 Standard_B2s SkuNotAvailable retained as an execution variant. Added a durable evidence note at evidence/archive/aad-rbac-managed-v2-lifecycle-canonical-wording-update-20260628.md documenting the exact wording change and remaining 409 uncertainty.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/model.generated.md",
+        "evidence/archive/aad-rbac-managed-v2-lifecycle-canonical-wording-update-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:56:31.683Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence note and regenerated model/view outputs now consistently present path.aad-rbac.managed-v2-lifecycle as the westus2 9/10-claims HTTP 409 branch mismatch frontier, with eastus2 Standard_B2s retained only as an execution variant."
+      },
+      "status": "done"
+    },
+    {
+      "id": "spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted-source and handwritten e2ev3 coverage for path.private-cluster-none-dns-zone-v3, capture the exact input/expectation boundary already available repo-locally, and decide the next truthful no-cloud action (spec/replay follow-up, model split, or terminal evidence ceiling) without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628.md"
+      ],
+      "acceptance": [
+        "Produce an evidence archive note that cites the mounted AKS RP Go source and any handwritten e2ev3 carriers relevant to private-cluster none-dns-zone-v3, including exact file paths and the path/input/expectation mapping they support.",
+        "State whether the current model path should stay singular, split, gain a spec/replay follow-up, or receive a stronger terminal/blocked classification, with one concrete next task recommendation and no cloud-execution requirement."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:55:39.200Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628_20260628115539",
+        "assigned_at": "2026-06-28T11:55:39.248Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628",
+        "worker_started_attempt_id": "a_spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628_20260628115539",
+        "worker_started_at": "2026-06-28T11:55:58.420Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new evidence archive note at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628.md that maps mounted-source and handwritten e2e coverage for path.private-cluster-none-dns-zone-v3, confirms the exact singular system→none lifecycle boundary, and recommends preserving an execution-ceiling unknown without further repo-local repair work.",
+        "last_worker_completed_at": "2026-06-28T11:57:24.511Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:58:02.874Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archived ceiling-map note as sufficient review evidence: mounted source plus handwritten carriers confirm path.private-cluster-none-dns-zone-v3 is one singular same-cluster system->none lifecycle, repo-local spec/replay linkage is already complete, and the truthful no-cloud disposition is to keep status unknown with ceilingCategory=execution while suppressing new repo-local repair leaves unless new mounted source or accepted live evidence changes the boundary."
+      },
+      "session_id": "s_task_spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628",
+      "session_history": [
+        "s_task_spec-private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628"
+      ],
+      "result": "Created a new evidence archive note at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628.md that maps mounted-source and handwritten e2e coverage for path.private-cluster-none-dns-zone-v3, confirms the exact singular system→none lifecycle boundary, and recommends preserving an execution-ceiling unknown without further repo-local repair work.",
+      "evidence": [
+        "evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-ceiling-map-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:58:02.874Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archived ceiling-map note as sufficient review evidence: mounted source plus handwritten carriers confirm path.private-cluster-none-dns-zone-v3 is one singular same-cluster system->none lifecycle, repo-local spec/replay linkage is already complete, and the truthful no-cloud disposition is to keep status unknown with ceilingCategory=execution while suppressing new repo-local repair leaves unless new mounted source or accepted live evidence changes the boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

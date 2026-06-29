@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:06:23.612Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 task-completed owner rollup: accepted branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628 as the shared OIDC-auth family decision. The archived artifact proves the repeated branch-ref single-spec AADSTS700213 failures are one workflow-subject gate, not a spec-specific regression, and selects the authorized-ref bypass as the next action. This branch now carries three concrete active leaves: (1) move the egress-lockdown VM-prerelease fallback repair onto an already-authorized ref, (2) check whether the defender-profile VM-prerelease matrix single-spec run finished after planner timeout or rerun it in a longer-lived executor, and (3) use mounted source plus prior failure evidence to resolve deployment-safeguards ref selection before any new rerun is queued. Existing operator-response waits remain the only truthful blockers for their families; no additional planner control work is needed in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the repeated branch-ref single-spec workflow Azure federated login AADSTS700213 failures into one visible shared next-action family: determine whether an already-authorized ref can carry the needed repair content for affected specs, or else produce the exact operator/escalation send-proof needed to authorize the branch-subject workflow path before any more branch-ref reruns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628.md"
+      ],
+      "acceptance": [
+        "Use existing archived evidence, including evidence/archive/diagnose-single-spec-branch-ref-azure-federated-login-blocker-20260627.md and the new spec.egress-lockdown.vm-prerelease-vhd-matrix rerun evidence, to confirm whether the blocker is the same shared branch-subject OIDC auth gate rather than a spec-specific failure.",
+        "End with one concrete next action only: either identify an already-authorized ref/content path that can be used for the affected reruns without changing workflow auth, or archive exact human/operator escalation/send-proof for adding or substituting federated identity coverage for the branch-subject workflow path.",
+        "List the currently affected rerun branches/specs that should wait on this family result, and state the exact resume condition for retrying spec.egress-lockdown.vm-prerelease-vhd-matrix after the auth gate is cleared."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow-auth:single-spec-branch-ref-oidc-aadsts700213"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:03:22.490Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628_20260628180339",
+        "assigned_at": "2026-06-28T18:03:39.413Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628",
+        "worker_started_attempt_id": "a_branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628_20260628180339",
+        "worker_started_at": "2026-06-28T18:03:40.499Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested family-level OIDC auth next-action artifact at evidence/archive/branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628.md, confirming the repeated branch-ref failures are one shared AADSTS700213 subject-gate and selecting the authorized-ref bypass as the single next action.",
+        "last_worker_completed_at": "2026-06-28T18:05:04.029Z",
+        "last_worker_evidence": [
+          "evidence/archive/branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:05:35.615Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived artifact ties three single-spec branch-ref failures to the same AADSTS700213 branch-subject OIDC gate, proves the authorized-ref bypass already worked on dev for app-monitoring, and narrows the family to one concrete next action: move missing repair content onto an already-authorized ref before any further reruns."
+      },
+      "session_id": "s_task_branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628",
+      "session_history": [
+        "s_task_branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628"
+      ],
+      "result": "Produced the requested family-level OIDC auth next-action artifact at evidence/archive/branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628.md, confirming the repeated branch-ref failures are one shared AADSTS700213 subject-gate and selecting the authorized-ref bypass as the single next action.",
+      "evidence": [
+        "evidence/archive/branch-ref-single-spec-workflow-oidc-auth-family-next-action-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:05:35.615Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived artifact ties three single-spec branch-ref failures to the same AADSTS700213 branch-subject OIDC gate, proves the authorized-ref bypass already worked on dev for app-monitoring, and narrows the family to one concrete next action: move missing repair content onto an already-authorized ref before any further reruns."
+      },
+      "status": "done"
+    }
+  ]
+}

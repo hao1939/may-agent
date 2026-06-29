@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T22:27:34.753Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review kept all three blocked leaves unchanged because each is already the single truthful external returned-proof wait with repo-local narrowing/send proof complete and no bounded follow-up due before the first owner review on/after 2026-06-26. The scheduler-controller validating-webhook mounted-source matrix branch is accepted and archived as durable source coverage; the active repo-local frontier remains the private-cluster none-dns-zone-v3 mounted-source/spec/model closure packet and the serverless scheduler-controller execution-linkage proposal, which together refill capacity without reopening blocked environment/approval work or introducing cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local source-backed matrix for the eight scheduler-controller validating-webhook paths, mapping exact mounted Scenario_* coverage, expected allow/disallow outcomes, privacy/API Server VNet Integration dimensions, and current spec/replay/model linkage so the family has one durable learning artifact and a bounded next verification gap without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the exact mounted source files/scenario names that back all eight validating-webhook paths and records the allow/disallow x public/private/APIServerVNetIntegration matrix without widening into the lifecycle quartet.",
+        "Artifact records current spec/replay/index/model linkage and identifies the next bounded non-cloud follow-up needed to advance this family, with no cloud mutation or external-human wait introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.serverless-schedulerctrl.validating-webhook-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T22:23:33.825Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623_20260623222333",
+        "assigned_at": "2026-06-23T22:23:33.878Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623_20260623222333",
+        "worker_started_at": "2026-06-23T22:24:07.160Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source-backed matrix artifact for the eight scheduler-controller validating-webhook paths at evidence/archive/serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623.md, documenting exact scenario/file coverage, allow/disallow × privacy × API Server VNet Integration dimensions, current feature/model/view linkage, and the next bounded non-cloud follow-up.",
+        "last_worker_completed_at": "2026-06-23T22:25:20.841Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T22:26:13.427Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive matrix cites the exact mounted scheduler-controller plans/workflow/shared helpers for all eight validating-webhook scenarios, preserves the allow/disallow × public/private × API Server VNet Integration matrix, records the existing model/path/evidence linkage, and isolates the remaining non-cloud gap to spec/replay/index execution-linkage authoring."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623"
+      ],
+      "result": "Created the requested mounted-source-backed matrix artifact for the eight scheduler-controller validating-webhook paths at evidence/archive/serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260623.md, documenting exact scenario/file coverage, allow/disallow × privacy × API Server VNet Integration dimensions, current feature/model/view linkage, and the next bounded non-cloud follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T22:26:13.427Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive matrix cites the exact mounted scheduler-controller plans/workflow/shared helpers for all eight validating-webhook scenarios, preserves the allow/disallow × public/private × API Server VNet Integration matrix, records the existing model/path/evidence linkage, and isolates the remaining non-cloud gap to spec/replay/index execution-linkage authoring."
+      },
+      "status": "done"
+    }
+  ]
+}

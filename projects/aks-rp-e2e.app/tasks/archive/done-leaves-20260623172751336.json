@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T17:27:51.336Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update reconciled the just-accepted aad-rbac nonaad-reset evidence-registry backfill into project memory and removed the stale claim that it was still the active local capacity. The live frontier is now intentionally minimal and truthful: one repo-local active leaf remains for path.private-cluster-none-dns-zone-v3 family-wait linkage, whose job is only to preserve that local source/spec/replay/model closure is complete and that returned external proof is the sole remaining unresolved edge, and one single family-level blocked wait remains for external human/operator reply proof across the covered VM/private-cluster asks. No duplicate blocked children, no cloud reruns, and no reopened source/spec discovery were introduced; the next useful actions are either completing the active linkage slice or resuming immediately on authoritative returned proof (or the first blocked-frontier review after 2026-06-26 if silence continues).",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale-terminal-retry/model-hygiene warning for final path.aad-rbac.nonaad-reset by backfilling, canonicalizing, replacing, or removing only the currently sampled missing evidence registry references, so the accepted terminal product-gap path keeps only durable evidence ids that actually exist without reopening cloud execution, changing the final verdict, or widening into unrelated AAD-RBAC branches; this is repo-local final-path hygiene, not retry planning.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note lists the targeted missing evidence ids currently sampled by bun run check for path.aad-rbac.nonaad-reset, classifies each as canonicalize/backfill/remove/replace, explains the claim-safe disposition for every targeted reference, and explicitly records that this slice reconciles final-path evidence hygiene rather than authorizing a new retry or cloud rerun.",
+        "The touched accepted surfaces (at minimum model/knowledge-map/model.json and any evidence registry/index surface those refs depend on) no longer leave the targeted nonaad-reset evidence ids dangling, and the path.aad-rbac.nonaad-reset terminal product-gap verdict remains final/truthful with no widened scope into adjacent AAD-RBAC branches.",
+        "Repo-local verification is rerun for this slice and the targeted nonaad-reset evidence ids no longer appear in the missingEvidenceRefs sample output from bun run check."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-nonaad-reset-evidence-registry"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T17:17:59.948Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623_20260623171811",
+        "assigned_at": "2026-06-23T17:18:11.714Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623_20260623171811",
+        "worker_started_at": "2026-06-23T17:18:51.801Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Backfilled the non-AAD ResetAAD evidence registry slice by normalizing `path.aad-rbac.nonaad-reset` evidence refs in `model/knowledge-map/model.json`, adding missing top-level evidence entries, and writing the durable archive note `evidence/archive/aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623.md`. Repo-local `bun run check` now no longer samples the targeted nonaad-reset missing evidence ids; remaining missing refs belong to other paths.",
+        "last_worker_completed_at": "2026-06-23T17:25:12.194Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T17:26:34.229Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable archive note evidence/archive/aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623.md documents the bounded path.aad-rbac.nonaad-reset evidence-ref canonicalization/backfill/removal decisions, and repo-local verification shows the targeted nonaad-reset missingEvidenceRefs no longer sample while the final product-gap verdict stays unchanged."
+      },
+      "session_id": "s_task_aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623",
+      "session_history": [
+        "s_task_aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623"
+      ],
+      "result": "Backfilled the non-AAD ResetAAD evidence registry slice by normalizing `path.aad-rbac.nonaad-reset` evidence refs in `model/knowledge-map/model.json`, adding missing top-level evidence entries, and writing the durable archive note `evidence/archive/aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623.md`. Repo-local `bun run check` now no longer samples the targeted nonaad-reset missing evidence ids; remaining missing refs belong to other paths.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T17:26:34.229Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable archive note evidence/archive/aad-rbac-nonaad-reset-missing-evidence-registry-backfill-20260623.md documents the bounded path.aad-rbac.nonaad-reset evidence-ref canonicalization/backfill/removal decisions, and repo-local verification shows the targeted nonaad-reset missingEvidenceRefs no longer sample while the final product-gap verdict stays unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

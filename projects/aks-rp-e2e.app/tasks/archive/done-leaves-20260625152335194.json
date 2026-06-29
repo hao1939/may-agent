@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T15:23:35.194Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner review accepted the VM prerelease storage Linux aggregate row-exactness audit retry as durable repo-local regular-learning history: the archive evidence now confirms rows 12-18 and 20-22 stay truthfully represented by the existing aggregate storage-csi VM prerelease Linux carrier, with row-level auditability preserved in mounted source/spec/feature/model lineage rather than split into new canonical verdict paths. With that retry/problem branch closed and archived alongside the adjacent VM prerelease inventory/reconcile/ledger/gap leaves, the only truthful live frontier remains focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single six-wait returned-proof family, which should stay blocked unchanged until authoritative reply evidence arrives or the first bounded follow-up window opens on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-artifact-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repo-local VirtualMachine prerelease coverage artifacts to the mounted-source current truth that PreRelease aliases CheckIn and currently carries 58 scenarios, replacing stale 56-row assumptions while preserving the row-local overlays that matter for later feature/input/expectation mapping.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-artifact-reconcile-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence updates or audits the repo-local prerelease coverage carriers that still reflect the stale 56-row assumption, explicitly names the touched artifacts, and proves the mounted-source current suite truth is 58 carried scenarios under the PreRelease=CheckIn alias relationship.",
+        "The output preserves the important row-local overlays called out by the source inventory (AvailabilitySet override for VMAS->VMS migration, added Windows node-pool overlays for secure TLS bootstrap branches, and kube-1.33 pins for autoscale branches) so later mapping work does not flatten those distinctions.",
+        "Work stays repo-local only: no cloud mutation, no approval-send, no devbox execution, and no reopening of the blocked external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T14:52:37.577Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-artifact-reconcile-20260625_20260625145237",
+        "assigned_at": "2026-06-25T14:52:37.624Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-artifact-reconcile-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-artifact-reconcile-20260625_20260625145237",
+        "worker_started_at": "2026-06-25T14:52:50.579Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the repo-local VirtualMachine prerelease source-inventory carrier to mounted-source truth by updating evidence/pipelines/virtualmachine-prerelease.json from the stale 56/57 assumption to 58/58 and wrote archive evidence documenting the touched stale carriers and preserved row-local overlays.",
+        "last_worker_completed_at": "2026-06-25T14:57:47.555Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T14:58:36.493Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves mounted-source PreRelease=CheckIn truth is 58 scenarios, confirms evidence/pipelines/virtualmachine-prerelease.json was corrected to 58/58 while preserving the important overlays, and truthfully scopes the remaining stale work to virtualmachine-prerelease-coverage.json/.md only."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-artifact-reconcile-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-artifact-reconcile-20260625"
+      ],
+      "result": "Reconciled the repo-local VirtualMachine prerelease source-inventory carrier to mounted-source truth by updating evidence/pipelines/virtualmachine-prerelease.json from the stale 56/57 assumption to 58/58 and wrote archive evidence documenting the touched stale carriers and preserved row-local overlays.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T14:58:36.493Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves mounted-source PreRelease=CheckIn truth is 58 scenarios, confirms evidence/pipelines/virtualmachine-prerelease.json was corrected to 58/58 while preserving the important overlays, and truthfully scopes the remaining stale work to virtualmachine-prerelease-coverage.json/.md only."
+      },
+      "status": "done"
+    }
+  ]
+}

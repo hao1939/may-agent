@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:49:04.873Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 owner review accepted the row-26 VM prerelease capacity-based-surge-maxunavailable live replay implementation as complete repo-local runner work: evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620.md shows the mounted-source contract is implemented in the replay, local check/build validation passed, and execute now truthfully stops at the explicit AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate rather than missing execute logic. The current local mover in this lane is vm-prerelease-row26-metadata-alignment-20260620, which must update the stale spec/index/coverage descriptors so row 26 no longer claims check-only coverage while still clearly stating that cloud mutation/pass-fail coverage has not yet been run. The only other live child remains the exact external wait carrier vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620 for the separate rows-25-and-50 operator bundle; do not create new row-26 external waits unless later evidence proves a distinct external contract is needed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded live execute body for the source-grounded VirtualMachines capacity-based-surge-maxunavailable path so the replay can move from check-only wiring to a truthful execute gate/preflight surface without running cloud mutation from planning.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620.md"
+      ],
+      "acceptance": [
+        "Work uses the mounted AKS RP VirtualMachine prerelease/checkin source plus the existing source-grounded spec/replay pair to document the exact scenario contract and the smallest truthful execute phases needed for this path.",
+        "Repo-local replay changes, if any, are validated with bounded local checks and the artifact records the exact command/results plus the first real non-local blocker reached by execute (mutation gate, subscription/auth preflight, or another truthful ceiling).",
+        "If the current source does not support a truthful live execute implementation, the artifact records the exact repo-local ceiling and the replay/model state is left accurate rather than claiming product coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:replays"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:43:18.796Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620_20260620164318",
+        "assigned_at": "2026-06-20T16:43:18.927Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620_20260620164318",
+        "worker_started_at": "2026-06-20T16:43:40.148Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a bounded execute-gated live replay body for VM prerelease row 26 in replays/virtualmachines-capacity-based-surge-maxunavailable.ts and wrote the requested evidence artifact documenting source contract, local validation, and the first truthful execute blocker.",
+        "last_worker_completed_at": "2026-06-20T16:47:46.646Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:48:12.352Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620.md shows the mounted-source row-26 contract was implemented in replays/virtualmachines-capacity-based-surge-maxunavailable.ts, local check/build validation passed, and execute mode now truthfully stops at the explicit mutation gate instead of missing replay logic."
+      },
+      "session_id": "s_task_vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620"
+      ],
+      "result": "Implemented a bounded execute-gated live replay body for VM prerelease row 26 in replays/virtualmachines-capacity-based-surge-maxunavailable.ts and wrote the requested evidence artifact documenting source contract, local validation, and the first truthful execute blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:48:12.352Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-live-replay-implementation-20260620.md shows the mounted-source row-26 contract was implemented in replays/virtualmachines-capacity-based-surge-maxunavailable.ts, local check/build validation passed, and execute mode now truthfully stops at the explicit mutation gate instead of missing replay logic."
+      },
+      "status": "done"
+    }
+  ]
+}

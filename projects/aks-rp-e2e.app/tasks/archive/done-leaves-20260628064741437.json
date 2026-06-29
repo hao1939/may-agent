@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:47:41.437Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner rollup: the spec verification lane now preserves three accepted bounded outcomes in parent context instead of open leaf clutter. evidence/archive/verify-spec-ccp-coredns-component-lifecycle-after-identity-gate-20260628.md proves run 28313443977 kept coherent workflow/spec/artifact identity and reached only a trustworthy cluster-creation-timeout blocker before any CoreDNS product assertion, so the live successor is classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628 rather than reopening the verify leaf. The metricsserver pre-upgrade readiness review and autoupgrader k8s-rapid MTC identity-gate outcome remain accepted prior slices; open work in this lane is limited to the coredns timeout-family classification, the metricsserver carrier-repair/evidence-ceiling analysis, the autoupgrader daily-master identity-gated verification, and the shared app-routing operator wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the fresh single-spec rerun evidence for spec.ccp-metricsserver.upgrade-survival after SIGTERM recovery, and classify the new pre-upgrade-only failure shape from run 28313801188 so the next model/tree action reflects product-vs-runtime truth instead of the old interruption assumption.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628.md"
+      ],
+      "acceptance": [
+        "The archive cites run 28313801188 and the exact reviewed result/artifact paths, and confirms workflow metadata, top-level result.json specId, and artifact family all match spec.ccp-metricsserver.upgrade-survival before any verdict is accepted.",
+        "The archive explains the exact nonpass shape — metrics-server-pre-upgrade and metrics-api-pre-upgrade failed while upgrade and post-upgrade assertions passed — and classifies whether that is a bounded product failure, setup/runtime issue, or still-unknown gap using plan/assertion/source evidence rather than a blind rerun.",
+        "The archive names one concrete next action for the path/model/spec loop and explicitly records that the prior SIGTERM interruption blocker was cleared by this rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:44:06.541Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628_20260628064406",
+        "assigned_at": "2026-06-28T06:44:06.594Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628",
+        "worker_started_attempt_id": "a_review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628_20260628064406",
+        "worker_started_at": "2026-06-28T06:44:18.583Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28313801188 for spec.ccp-metricsserver.upgrade-survival, wrote a durable archive classifying the new pre-upgrade-only nonpass as a repo-local carrier timing/heuristic issue rather than the old SIGTERM blocker or a clean product failure, and named the concrete next owner action.",
+        "last_worker_completed_at": "2026-06-28T06:46:01.873Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:46:51.307Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628.md shows run 28313801188 cleared the prior SIGTERM blocker, preserved bundle identity, and narrowed the nonpass to a pre-upgrade carrier timing/heuristic gap rather than a clean product failure."
+      },
+      "session_id": "s_task_review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628",
+      "session_history": [
+        "s_task_review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628"
+      ],
+      "result": "Reviewed run 28313801188 for spec.ccp-metricsserver.upgrade-survival, wrote a durable archive classifying the new pre-upgrade-only nonpass as a repo-local carrier timing/heuristic issue rather than the old SIGTERM blocker or a clean product failure, and named the concrete next owner action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:46:51.307Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/review-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-failure-shape-20260628.md shows run 28313801188 cleared the prior SIGTERM blocker, preserved bundle identity, and narrowed the nonpass to a pre-upgrade carrier timing/heuristic gap rather than a clean product failure."
+      },
+      "status": "done"
+    }
+  ]
+}

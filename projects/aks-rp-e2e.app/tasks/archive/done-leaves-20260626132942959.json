@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:29:42.959Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 stale watchdog review wake reconciled without reopening work: the mincount-recovery packet/spec/model sync leaf was already owner-reviewed and remains accepted, alongside the autoscaling-base packet/spec/model sync completion. Active focus stays on the three repo-local VM prerelease cluster-autoscaler follow-ons now in flight (autoscaling-base replay repair, profile-matrix seed, service-principal seed). Keep the single external-human family wait unchanged. To refill spare concurrency under the current VM prerelease autoscaler focus, add a new mounted-source spot sibling so the next runnable backlog is explicit without broadening into cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync path.cluster-autoscaler.vm-prerelease-autoscaling-base repo-local packet/spec/model surfaces to the mounted clusterautoscaling source chain by replacing the stale 'missing handwritten body' claim with the recovered delete-mode base autoscaling contract, recording accepted/adjacent boundaries and expected behavior, and explicitly marking the current replay as a thin substrate scaffold that must be repaired before any execute gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/cluster-autoscaler-vm-prerelease-autoscaling-base.json",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626.md"
+      ],
+      "acceptance": [
+        "Spec/model/evidence cite the mounted clusterautoscaling/main.go + utils.go + autoscalerloader.go + e2ev2 VirtualMachines row chain and no longer claim the handwritten base body is unavailable for this path.",
+        "The synced packet records the exact row-124 substrate, delete-mode/system-pool disable-CAS single-user-pool-from-zero and multi-user-pool-from-zero expected behavior, adjacent family boundaries, and the precise replay gap for this path only.",
+        "No cloud mutation, no replay-body implementation, and no duplicate external-human wait are introduced; the result leaves a clear next step of replay repair before execute-gate work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-autoscaling-base"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:19:15.857Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T13:19:20.014Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626_20260626131937",
+        "assigned_at": "2026-06-26T13:19:37.637Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626_20260626131937",
+        "worker_started_at": "2026-06-26T13:19:38.128Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced the row-124 cluster-autoscaler autoscaling-base packet/spec/model to mounted source, replaced the stale missing-handwritten-body claim with the recovered delete-mode / disable-CAS / user-pool-from-zero contract, and documented that the current replay is only a thin substrate scaffold requiring repair before execute-gate work.",
+        "last_worker_completed_at": "2026-06-26T13:24:56.233Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:25:28.483Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626.md plus the synced spec/model now cite the mounted row-124 source chain, record the delete-mode / disable-CAS / user-pool-from-zero contract, and leave replay repair as the exact next step before any execute gate."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626"
+      ],
+      "result": "Synced the row-124 cluster-autoscaler autoscaling-base packet/spec/model to mounted source, replaced the stale missing-handwritten-body claim with the recovered delete-mode / disable-CAS / user-pool-from-zero contract, and documented that the current replay is only a thin substrate scaffold requiring repair before execute-gate work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:25:28.483Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-autoscaling-base-packet-spec-model-sync-20260626.md plus the synced spec/model now cite the mounted row-124 source chain, record the delete-mode / disable-CAS / user-pool-from-zero contract, and leave replay repair as the exact next step before any execute gate."
+      },
+      "status": "done"
+    }
+  ]
+}

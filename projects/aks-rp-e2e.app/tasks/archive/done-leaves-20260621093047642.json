@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:30:47.642Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner hygiene rollup archived the last two completed row-63 focus children because their durable meaning is already preserved on this focus branch and in linked evidence: runtime/session reconciliation completed far enough to allow the new active unchanged Standard_D2_v4 row-63 rerun leaf, and the earlier handoff-proof/reconcile leaves no longer carry independent next action. This done focus branch remains a historical checkpoint only; active project attention stays on addonv2-row63-live-runtime-verdict-rerun-after-reconcile-20260621, vmpr-row75-aksconformance-core-canonical-carrier-authoring-20260621, and the single external-send-proof family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-row63-runtime-owner-reconcile-or-escalate-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the single actionable row-63 runtime/session reconciliation decision for path.app-monitoring-addonv2-azure-monitor-metrics: use the accepted stale-session owner-repair evidence and current blocked wait to determine whether the two stale running sessions and orphaned execute PID 650824 are already reconciled/quarantined, or author one exact runtime-owner/operator handoff-escalation artifact with the owner, ask, evidence links, and resume condition required before any fresh unchanged Standard_D2_v4 rerun can be created.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-row63-runtime-owner-reconcile-or-escalate-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites addonv2-row63-runtime-session-reconcile-wait-20260621, the accepted stale-session owner-repair evidence, stale session ids s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 and s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621, and orphaned execute PID 650824.",
+        "Artifact resolves the truthful next owner action only: either durable evidence that the runtime/process surfaces are already reconciled so the blocked wait can be replaced by one fresh unchanged row-63 rerun leaf, or one exact owner/operator escalation-handoff with recipient/owner, channel or destination, ask, and explicit resume condition for reconciling the stale runtime surfaces.",
+        "Task does not run a fresh row-63 rerun, does not broaden beyond runtime/session cleanup ownership, and becomes the single visible actionable problem-solving leaf for this blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:10:39.607Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-row63-runtime-owner-reconcile-or-escalate-20260621_20260621091039",
+        "assigned_at": "2026-06-21T09:10:39.709Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-row63-runtime-owner-reconcile-or-escalate-20260621",
+        "worker_started_attempt_id": "a_addonv2-row63-runtime-owner-reconcile-or-escalate-20260621_20260621091039",
+        "worker_started_at": "2026-06-21T09:11:25.437Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-63 runtime reconciliation artifact at evidence/archive/addonv2-row63-runtime-owner-reconcile-or-escalate-20260621.md. It rechecked current runtime state, showed PID 650824 and one stale session are already cleared, identified the remaining stale running session, and authored the exact human:operator runtime-ownership handoff plus resume condition before any fresh rerun.",
+        "last_worker_completed_at": "2026-06-21T09:12:30.167Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T09:13:29.443Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/addonv2-row63-runtime-owner-reconcile-or-escalate-20260621.md: PID 650824 is gone, stale session s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621 is now done, but s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 still shows running. The truthful successor is a single runtime-owner handoff-proof or reconciliation mover, not a fresh row-63 rerun."
+      },
+      "session_id": "s_task_addonv2-row63-runtime-owner-reconcile-or-escalate-20260621",
+      "session_history": [
+        "s_task_addonv2-row63-runtime-owner-reconcile-or-escalate-20260621"
+      ],
+      "result": "Created the requested row-63 runtime reconciliation artifact at evidence/archive/addonv2-row63-runtime-owner-reconcile-or-escalate-20260621.md. It rechecked current runtime state, showed PID 650824 and one stale session are already cleared, identified the remaining stale running session, and authored the exact human:operator runtime-ownership handoff plus resume condition before any fresh rerun.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T09:13:29.443Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/addonv2-row63-runtime-owner-reconcile-or-escalate-20260621.md: PID 650824 is gone, stale session s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621 is now done, but s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 still shows running. The truthful successor is a single runtime-owner handoff-proof or reconciliation mover, not a fresh row-63 rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

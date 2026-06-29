@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:22:46.768Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: accepted the AAD row-37 readiness-request proof after verifying the archive note captured the exact approval-dispatch send proof and named the returned readiness facts now required to resume path.aad-rbac.managed-v2-lifecycle. The live frontier is intentionally blocked-only and truthful: aad-rbac-managed-v2-lifecycle-returned-readiness-proof-wait-20260623 now holds the single external wait for the authoritative AAD readiness reply, private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623 remains the single devbox endpoint/reachability wait, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single family-level approval/reply wait until returned proof arrives or the first owner follow-up after 2026-06-26. Do not reopen local source/spec/model/auth diagnosis or split any of these waits into duplicates before new authoritative proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Determine whether a durable out-of-runtime request/handoff already exists for the row-37 managed AAD lifecycle execution-gate packet; if not, send one bounded readiness request to the responsible owner/operator and capture repo-local proof that asks for working ARM auth, AKS_RP_E2E_AAD_ADMIN_GROUP_OID, AKS_RP_E2E_AAD_TENANT_ID, probe-specific mutation approval, and quota-readiness for one login VM plus one VM-prerelease cluster.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623.md"
+      ],
+      "acceptance": [
+        "The archive artifact records timestamp, channel, sender/owner, recipient or escalation path, and either links existing durable proof that the exact row-37 readiness ask was already routed or captures one newly sent bounded request for that same readiness packet.",
+        "The artifact names the exact returned proof needed to resume path.aad-rbac.managed-v2-lifecycle (ARM auth, AKS_RP_E2E_AAD_ADMIN_GROUP_OID, AKS_RP_E2E_AAD_TENANT_ID, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle, and quota-readiness), so the branch can truthfully transition back to one exact external wait after send-proof exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:18:04.565Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623_20260623211814",
+        "assigned_at": "2026-06-23T21:18:14.512Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623_20260623211814",
+        "worker_started_at": "2026-06-23T21:18:53.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured durable send-proof for the row-37 managed AAD lifecycle readiness ask by authoring evidence/archive/aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623.md, emitting the exact approval-dispatch request, and verifying accepted runtime event rows plus the approval-dispatch ledger entry for path.aad-rbac.managed-v2-lifecycle.",
+        "last_worker_completed_at": "2026-06-23T21:21:47.348Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:22:37.107Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623.md: the worker proved no exact current row-37 readiness ask previously existed, emitted one bounded approval-dispatch request for the exact readiness packet, and captured durable runtime-event plus approval-dispatch-ledger send-proof for path.aad-rbac.managed-v2-lifecycle. The repo-local action is complete; the branch now truthfully returns to one external wait for the authoritative readiness reply."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623"
+      ],
+      "result": "Captured durable send-proof for the row-37 managed AAD lifecycle readiness ask by authoring evidence/archive/aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623.md, emitting the exact approval-dispatch request, and verifying accepted runtime event rows plus the approval-dispatch ledger entry for path.aad-rbac.managed-v2-lifecycle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:22:37.107Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623.md: the worker proved no exact current row-37 readiness ask previously existed, emitted one bounded approval-dispatch request for the exact readiness packet, and captured durable runtime-event plus approval-dispatch-ledger send-proof for path.aad-rbac.managed-v2-lifecycle. The repo-local action is complete; the branch now truthfully returns to one external wait for the authoritative readiness reply."
+      },
+      "status": "done"
+    }
+  ]
+}

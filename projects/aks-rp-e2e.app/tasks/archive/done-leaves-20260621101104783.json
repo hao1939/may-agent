@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:11:04.783Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed reconciliation accepted the ManagedSystem boundary-map slice as durable knowledge: evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md now preserves the handwritten-source-backed split between the caller-owned ManagedSystem wire contract (existing-pool add stays mode-only; create-time contract stays name+mode only) and helper-internal setup details, plus the adjacent rejected/product-gap surfaces already tracked in the capability model. The sole immediate ManagedSystem successor remains managedsystem-mounted-source-narrative-contract-alignment-20260621 to audit repo-local narrative/model wording against mounted source and remove stale devbox-oriented phrasing; the blocked frontier is otherwise unchanged, with one shared external-send family wait covering the VM prerelease asks and the separate addonv2 runtime-session reconciliation wait still carrying the exact tooling blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-send-proof-dispatch-family-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Maintain the single authoritative family-level external-human send/escalation/reply wait for all send-ready-but-send-unproven asks that runtime cannot deliver itself: the MachinesPreview handoff packet, the VM prerelease rows-25-and-50 live-operator bundle, the row-76 shared-identity ask packet, and the row-33 execute-approval ask for vmpr-row33-accelerated-networking-live-rerun-gated-20260621. This is an exact transport ceiling rather than a local environment/setup gap; keep it as the only live cross-branch carrier until durable repo-local send/escalation proof or authoritative reply exists, and do not recreate duplicate wait, response-await, setup, or retry leaves without new contradictory evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites the send-ready packet artifacts and proof-capture authorities for the MachinesPreview handoff, VM prerelease rows-25-and-50 bundle, row-76 shared-identity ask, and the row-33 execute-approval packet rooted in evidence/archive/vmpr-row33-execute-approval-send-proof-or-family-link-20260621.md, keeping those covered packets visible on the single shared wait.",
+        "Resume only when a human owner/operator records durable repo-local send, escalation, or explicit approval proof with timestamp/channel/recipient linkage for one covered packet, or when an authoritative reply arrives and is linked to the corresponding proof-capture artifact.",
+        "Task remains the single live cross-branch carrier for the shared runtime transport ceiling, does not claim runtime can perform the outbound send, and preserves the next owner review trigger for all affected blocked branches without recreating duplicate send or response-await leaves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:51:08.776Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T10:05:50.350Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review task external-send-proof-dispatch-family-handoff-proof-or-escalation-20260621 proved none of the covered packets has durable repo-local send/handoff proof or authoritative reply, so the passive family reply-wait was no longer truthful and is replaced by the active owner-side send/handoff carrier external-send-proof-dispatch-family-owner-send-or-escalate-20260621."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:05:50.350Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review task external-send-proof-dispatch-family-handoff-proof-or-escalation-20260621 proved none of the covered packets has durable repo-local send/handoff proof or authoritative reply, so the passive family reply-wait was no longer truthful and is replaced by the active owner-side send/handoff carrier external-send-proof-dispatch-family-owner-send-or-escalate-20260621."
+      },
+      "status": "done"
+    }
+  ]
+}

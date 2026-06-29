@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:44:24.849Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 blocked-frontier owner review kept the three exact external waits unchanged because each already carries sent-proof plus a bounded returned-proof or post-2026-06-26 follow-up resume condition, and the aad-rbac environment-overblock warning remains heuristic noise rather than missing local setup work. Archived the latest safe repo-local done tranche because its durable meaning is already captured in archive evidence and current model/view surfaces, while the only live capacity path remains managedsystem-deep-dive-mounted-source-lineage-sync-20260624 for regular-learning mounted-source/model alignment.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-boundary-map-initial-worked-example-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the first durable ManagedSystem boundary-map worked example from repo-local sources and current accepted model surfaces: identify the accepted and rejected input paths, expectation path, adjacent surfaces, and unknown edges for ManagedSystem pool behavior without cloud execution, then archive the map and note any concrete follow-on model/spec repair leaves it exposes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-map-initial-worked-example-20260624.md"
+      ],
+      "acceptance": [
+        "Mounted-source, public spec/doc, and current model/view evidence are cited to describe the ManagedSystem boundary in the project’s canonical terms: accepted inputs, rejected inputs, expected behavior, observed/model status, adjacent surfaces, and explicit unknown edges.",
+        "The archive note names any exact existing paths already covering the boundary (for example create-time initial/default pool and VirtualMachines+ManagedSystem combined) and proposes at most a small number of concrete follow-on repo-local leaves if the boundary exposes a truthful next repair or gap-closure action.",
+        "No cloud mutation or remote execution occurs; this is a regular-learning lane artifact only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model.managedsystem.boundary-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T00:39:37.083Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T00:39:42.379Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-map-initial-worked-example-20260624_20260624004004",
+        "assigned_at": "2026-06-24T00:40:04.984Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-map-initial-worked-example-20260624",
+        "worker_started_attempt_id": "a_managedsystem-boundary-map-initial-worked-example-20260624_20260624004004",
+        "worker_started_at": "2026-06-24T00:40:08.158Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested ManagedSystem boundary-map worked example at evidence/archive/managedsystem-boundary-map-initial-worked-example-20260624.md using mounted AKS RP source, accepted model/view paths, and existing API/docs boundary evidence; no cloud execution was performed.",
+        "last_worker_completed_at": "2026-06-24T00:41:58.202Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:42:50.507Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-boundary-map-initial-worked-example-20260624.md cites mounted AKS RP source, accepted model/view paths, and API/docs evidence to describe accepted inputs, rejected inputs, expected behavior, observed/model status, adjacent surfaces, and explicit unknown edges for ManagedSystem with no cloud execution, and it names two bounded repo-local follow-on candidates."
+      },
+      "session_id": "s_task_managedsystem-boundary-map-initial-worked-example-20260624",
+      "session_history": [
+        "s_task_managedsystem-boundary-map-initial-worked-example-20260624"
+      ],
+      "result": "Created the requested ManagedSystem boundary-map worked example at evidence/archive/managedsystem-boundary-map-initial-worked-example-20260624.md using mounted AKS RP source, accepted model/view paths, and existing API/docs boundary evidence; no cloud execution was performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:42:50.507Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-boundary-map-initial-worked-example-20260624.md cites mounted AKS RP source, accepted model/view paths, and API/docs evidence to describe accepted inputs, rejected inputs, expected behavior, observed/model status, adjacent surfaces, and explicit unknown edges for ManagedSystem with no cloud execution, and it names two bounded repo-local follow-on candidates."
+      },
+      "status": "done"
+    }
+  ]
+}

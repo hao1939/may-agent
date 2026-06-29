@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:16:13.951Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog review accepted the pending row-27 mounted-source reconciliation and compacted the branch. VM prerelease row 27 mounted-source/spec/replay truth is now accepted knowledge, LocalDNS row 53 remains accepted as a no-change truthfulness check, vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622 is the single live repo-local task to align model.json plus path-summary with that accepted row-27 boundary, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful blocked family until real human transport proof or replies arrive for the covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted /app/sources/aks-rp plus the existing row-27 spec/replay carriers to decide whether path.virtualmachines.mixed-sku-upgrade is already truthfully represented as an execute-gated source-grounded contract or still carries stale source/runner wording, and record the bounded repo-local consequence without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Task creates ../aks-rp-e2e/evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md with exact citations to mounted AKS RP prerelease/checkin source plus the current spec/replay carriers for row-27, so review can verify the source-backed contract without implicit session memory.",
+        "Task determines the truthful maintained-surface consequence for path.virtualmachines.mixed-sku-upgrade: either confirm the current execute-gated source-grounded carrier is already accurate or identify the exact bounded spec/replay/model/view edits still needed, without inventing new live verdicts or reopening unrelated VirtualMachines branches.",
+        "Task stays repo-local and bounded: no cloud mutation, no human transport ask work, and no broader VirtualMachines family rewrite beyond the exact row-27 truthfulness repair or evidence-ceiling decision justified by mounted source."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-row27-truthfulness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:11:15.812Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622_20260622071122",
+        "assigned_at": "2026-06-22T07:11:22.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622_20260622071122",
+        "worker_started_at": "2026-06-22T07:11:50.829Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-27 mounted-source truthfulness reconcile artifact at evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md, concluding that the spec/replay/feature/coverage carriers are already truthful and only model/view carriers remain stale.",
+        "last_worker_completed_at": "2026-06-22T07:13:23.656Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:14:04.084Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 review: evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md cites mounted prerelease/checkin/plan/runner source plus current spec/replay/feature/coverage carriers, proves row-27 is already truthful as a source-grounded execute-gated contract, and narrows the remaining repair to model/knowledge-map/model.json plus regenerated views/path-summary.json only."
+      },
+      "session_id": "s_task_vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622"
+      ],
+      "result": "Created the requested row-27 mounted-source truthfulness reconcile artifact at evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md, concluding that the spec/replay/feature/coverage carriers are already truthful and only model/view carriers remain stale.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:14:04.084Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 review: evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-mounted-source-truthfulness-reconcile-20260622.md cites mounted prerelease/checkin/plan/runner source plus current spec/replay/feature/coverage carriers, proves row-27 is already truthful as a source-grounded execute-gated contract, and narrows the remaining repair to model/knowledge-map/model.json plus regenerated views/path-summary.json only."
+      },
+      "status": "done"
+    }
+  ]
+}

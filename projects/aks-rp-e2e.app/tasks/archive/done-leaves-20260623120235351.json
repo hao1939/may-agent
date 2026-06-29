@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:02:35.351Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 stale watchdog-review reconciliation: no review frontier remains for the cited JWKS gap packets, so the owner kept the three no-cloud workload-identity carrier-alignment leaves as the only active local learning work and preserved the single external-human wait unchanged. Archive the accepted disable/re-enable and upgrade-survival JWKS gap-packet leaves because their durable meaning is now carried by the active carrier-alignment leaves plus existing archive evidence; do not recreate review tasks from this stale wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: reconcile the mounted workload-identity after-re-enable JWKS validation callsite against the current repo-local disable/re-enable spec, replay, accepted path entry, and archive evidence, then write one durable no-cloud gap/execute-contract packet that states exactly what is already claimed, what the JWKS-after-re-enable branch still lacks, and whether the branch should later extend the existing path or remain a sibling carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted-source callsite plus the repo-local disable/re-enable spec, replay, accepted path/model entry, and relevant archive evidence; it preserves current observed runtime truth, distinguishes the accepted lifecycle/discovery claims from any missing JWKS-after-re-enable claim, and invents no new runtime pass/fail verdict.",
+        "The packet proposes the narrowest next repo-local follow-up for the after-re-enable JWKS branch, stays no-cloud/no-external-send, and does not reopen unrelated workload-identity, upgrade, Automatic-SKU, or external-human-wait branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workload-identity.disable-reenable-jwks-after-reenable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T11:54:16.101Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623_20260623115416",
+        "assigned_at": "2026-06-23T11:54:16.156Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623",
+        "worker_started_attempt_id": "a_workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623_20260623115416",
+        "worker_started_at": "2026-06-23T11:54:35.900Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested no-cloud archive packet reconciling the mounted workload-identity JWKS-after-re-enable callsite against the repo-local disable/re-enable spec, replay, accepted path, and evidence, with a narrow owner follow-up recommendation to extend the existing lifecycle path rather than create a sibling carrier.",
+        "last_worker_completed_at": "2026-06-23T11:57:06.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T11:58:48.402Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623.md cites the mounted after-re-enable JWKS callsite plus repo-local disable/re-enable spec/replay/model/evidence, preserves current accepted lifecycle truth without inventing a JWKS verdict, and recommends the narrow existing-path follow-up."
+      },
+      "session_id": "s_task_workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623",
+      "session_history": [
+        "s_task_workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623"
+      ],
+      "result": "Wrote the requested no-cloud archive packet reconciling the mounted workload-identity JWKS-after-re-enable callsite against the repo-local disable/re-enable spec, replay, accepted path, and evidence, with a narrow owner follow-up recommendation to extend the existing lifecycle path rather than create a sibling carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T11:58:48.402Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/workload-identity-disable-reenable-jwks-after-reenable-gap-packet-20260623.md cites the mounted after-re-enable JWKS callsite plus repo-local disable/re-enable spec/replay/model/evidence, preserves current accepted lifecycle truth without inventing a JWKS verdict, and recommends the narrow existing-path follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

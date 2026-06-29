@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:50:43.817Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-archived-owner-output-repair-20260620",
+  "summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should use the repaired archived owner tasks directly rather than reopening this checkpoint rerun branch without new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-archived-owner-output-checkpoint-rerun-20260620",
+      "parent_id": "vm-prerelease-archived-owner-output-repair-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the supported archived-owner output repair for the bounded 19-file VM prerelease draft-promotion set and rerun the same 20-file domain:checkpoint manifest so the current unattached-owner condition is cleared or precisely reduced with named residuals only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-archived-owner-output-checkpoint-rerun-20260620.md"
+      ],
+      "acceptance": [
+        "Work uses only the supported repo-local repair path identified for archived accepted-owner outputs and keeps the scope bounded to the same 20-file manifest, excluding the separate MachinesPreview and 7-file shared-model slices.",
+        "Artifact captures the exact rerun command and resulting domain:checkpoint manifest output, showing the prior unattached-owner condition no longer applies to those 19 files or naming each exact residual file and why it still cannot attach.",
+        "No cloud mutation, outbound send, or manual edits to tasks/tree.json or project.json occur; verification stays repo-local and checkpoint-based."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-archived-owner-output-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:15:58.918Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-archived-owner-output-checkpoint-rerun-20260620_20260620181745",
+        "assigned_at": "2026-06-20T18:17:45.170Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-archived-owner-output-checkpoint-rerun-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-archived-owner-output-checkpoint-rerun-20260620_20260620181745",
+        "worker_started_at": "2026-06-20T18:17:45.581Z",
+        "reviewed_at": "2026-06-20T18:18:24.826Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the premature rerun leaf after accepting the repair-path review: the current task-tree/app surface cannot mutate archived done-leaf outputs, so rerunning the same 20-file checkpoint manifest now would only repeat the known unattached-owner result. The archive-aware output-mutation tooling task is the truthful deterministic predecessor."
+      },
+      "session_id": "s_task_vm-prerelease-archived-owner-output-checkpoint-rerun-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-archived-owner-output-checkpoint-rerun-20260620"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T18:18:24.826Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the premature rerun leaf after accepting the repair-path review: the current task-tree/app surface cannot mutate archived done-leaf outputs, so rerunning the same 20-file checkpoint manifest now would only repeat the known unattached-owner result. The archive-aware output-mutation tooling task is the truthful deterministic predecessor."
+      },
+      "status": "done"
+    }
+  ]
+}

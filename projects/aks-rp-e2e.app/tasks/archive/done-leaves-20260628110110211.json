@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T11:01:10.211Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner blocked-frontier refill: this lane stays intentionally narrow with one active repo-local AAD managed-v2 canonical-mirror application leaf and one truthful App Routing existing-cluster operator-response wait. The six completed AAD/private-cluster diagnosis and checklist children already contributed durable evidence: row-37 VM-prerelease ceiling checks, canonical mirror safety diagnosis, clean-worktree recovery, and prior mirror/checklist setup proving why the shared model/view lane needs an isolated dedicated-clean-worktree application step. Archive those done children so the visible frontier reflects the real live spec/model state without reopening closed work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact repo-local ceiling for path.aad-rbac.managed-v2-lifecycle from mounted VirtualMachine prerelease source plus maintained spec/replay/model/evidence carriers, then leave one durable artifact saying whether the current helper-login-VM SkuNotAvailable state is already a fully bounded environment ceiling or needs a narrower successor task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628.md"
+      ],
+      "acceptance": [
+        "Durable evidence names the exact mounted VirtualMachine prerelease source/scenario for the row-37 managed AAD lifecycle path, the maintained repo carriers, accepted inputs, rejected/unsupported edges, expected behavior, adjacent surfaces, and the exact helper-login-VM environment ceiling without cloud mutation.",
+        "The task leaves one concrete project decision backed by repo-local evidence: either keep the current environment-blocked verdict/retest condition as already exact, or record the narrower successor replay/model/evidence task needed to reconcile the remaining gap without duplicating any external wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T10:31:19.062Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628_20260628103119",
+        "assigned_at": "2026-06-28T10:31:19.110Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628",
+        "worker_started_attempt_id": "a_spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628_20260628103119",
+        "worker_started_at": "2026-06-28T10:31:34.793Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable ceiling-check artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628.md, concluding the eastus2 helper-login-VM SkuNotAvailable state is exact for that variant but not the deepest repo-local ceiling because a later westus2 run already reached row-37 product assertions and isolated a narrower 409 update-branch frontier.",
+        "last_worker_completed_at": "2026-06-28T10:33:07.103Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T10:33:35.576Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable artifact proves the eastus2 helper-login-VM SkuNotAvailable ceiling is exact only for that replay variant, while later repo-local westus2 evidence already reaches row-37 assertions and narrows the next frontier to admin-groups-tenant-updated HTTP 409 reconciliation."
+      },
+      "session_id": "s_task_spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628",
+      "session_history": [
+        "s_task_spec-aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628"
+      ],
+      "result": "Produced the requested durable ceiling-check artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628.md, concluding the eastus2 helper-login-VM SkuNotAvailable state is exact for that variant but not the deepest repo-local ceiling because a later westus2 run already reached row-37 product assertions and isolated a narrower 409 update-branch frontier.",
+      "evidence": [
+        "evidence/archive/aad-rbac-managed-v2-lifecycle-vm-prerelease-ceiling-check-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T10:33:35.576Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable artifact proves the eastus2 helper-login-VM SkuNotAvailable ceiling is exact only for that replay variant, while later repo-local westus2 evidence already reaches row-37 assertions and narrows the next frontier to admin-groups-tenant-updated HTTP 409 reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

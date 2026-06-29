@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T18:18:39.606Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review keeps the single external-send family wait unchanged because the 2026-06-22T10:08:46Z re-review threshold is still in the future and no new external send/handoff/escalation proof or authoritative reply exists. The active lane remains vmpr-post-row37-privatecluster-catchup-separation-20260621 as the sole near-term runnable work. The queued ManagedSystem source-lineage task is clarified as repo-local model reconciliation for path.managedsystem.create-time-initial-pool's final product-gap verdict, not retry planning. Durable meaning from the accepted ManagedSystem boundary map and the accepted row-37 carrier separation audit is now carried by their evidence artifacts and their successor tasks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: use mounted AKS RP handwritten e2ev3 source plus current model/evidence to produce a ManagedSystem boundary map that reconciles the current final-path coverage for create-time initial/default pool and VirtualMachines+ManagedSystem combined, identifying accepted inputs, rejected inputs, adjacent surfaces, and the next narrow repo-local gap to model.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Read the mounted AKS RP source first and cite the exact ManagedSystem-relevant handwritten e2ev3 files/scenarios used, then map at least path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined into one source-backed boundary artifact.",
+        "Artifact must separate accepted inputs, rejected or product-gap inputs, expected behavior, observed evidence lineage, adjacent surfaces, and unknown edges, and state whether the current final verdicts are source-backed, evidence-backed, or only model-backed.",
+        "Stay repo-local only: no cloud execution, no external-send/escalation work, and no verdict reopening unless a direct source/model inconsistency is cited with the exact next repo-local fix needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T18:13:58.335Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621_20260621181526",
+        "assigned_at": "2026-06-21T18:15:26.860Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621",
+        "worker_started_attempt_id": "a_managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621_20260621181526",
+        "worker_started_at": "2026-06-21T18:15:27.842Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a new repo-local boundary artifact at evidence/archive/managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621.md that reconciles mounted handwritten source lineage with the maintained final verdicts for path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined.",
+        "last_worker_completed_at": "2026-06-21T18:17:01.572Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T18:17:34.081Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621.md cites exact mounted handwritten source for both ManagedSystem branches, reconciles the final product-gap verdicts with maintained evidence, and records the next repo-local gap as create-time source-lineage tightening rather than retry planning."
+      },
+      "session_id": "s_task_managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621",
+      "session_history": [
+        "s_task_managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621"
+      ],
+      "result": "Produced a new repo-local boundary artifact at evidence/archive/managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621.md that reconciles mounted handwritten source lineage with the maintained final verdicts for path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T18:17:34.081Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-boundary-map-mounted-source-and-final-path-reconciliation-20260621.md cites exact mounted handwritten source for both ManagedSystem branches, reconciles the final product-gap verdicts with maintained evidence, and records the next repo-local gap as create-time source-lineage tightening rather than retry planning."
+      },
+      "status": "done"
+    }
+  ]
+}

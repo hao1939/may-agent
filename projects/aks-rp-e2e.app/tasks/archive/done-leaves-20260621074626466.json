@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:46:26.466Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner stale-active review repaired the live frontier without scope expansion. The blocked manual transport family wait remains the single truthful external wait. Two prior done slices (row 150 kube-proxy VM carrier authoring and the first row 217 Windows Gen2 carrier extension attempt) are now summarized on the project parent and archived. The active frontier stays saturated at maxConcurrent=5, with three unchanged source-authoring leaves plus fresh reissue leaves for addonv2 row 63 D2_v4 rerun and VM prerelease row 217 after watchdog proved their prior active sessions were no longer running and no durable outputs existed at the declared artifact paths.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact maintained carrier for VM prerelease row 150 so the explicit kube-proxy custom-config lifecycle is no longer missing-spec: preserve create with networkProfile.kubeProxyConfig.mode=IPTABLES, update to IPVS with scheduler/timeout settings, runtime kube-proxy daemonset flag assertions, pod-to-service routing assertions, and the row-local VirtualMachines plus use_shared_identity=true substrate without collapsing into generic default-iptables or generic IPVS carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621.md"
+      ],
+      "acceptance": [
+        "Task cites the accepted evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md plus the exact mounted kubeproxy/custom_config.go and VM prerelease matrix rows that define the create-IPTABLES/update-IPVS lifecycle and the VirtualMachines plus use_shared_identity=true substrate.",
+        "Task lands or precisely authors the maintained carrier set needed for row 150: exact spec/replay/model path identifiers for the kube-proxy custom-config lifecycle, with explicit request/expectation coverage for create IPTABLES, update IPVS, daemonset flag validation, service-routing validation, and the truthful VM/shared-identity substrate.",
+        "Artifact records the exact files changed or authored, names the resulting maintained ids, and explains why the new carrier is exact for row 150 and not merely adjacent generic kube-proxy coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-platform-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:28:06.439Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:30:03.084Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621_20260621073021",
+        "assigned_at": "2026-06-21T07:30:21.767Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621",
+        "worker_started_attempt_id": "a_vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621_20260621073021",
+        "worker_started_at": "2026-06-21T07:30:22.358Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the exact maintained row-150 kube-proxy custom-config VM carrier across spec/replay/model/coverage surfaces, and validated the new row-150 lineage with a passing source-spec check. The global knowledge-map validator still reports many unrelated pre-existing model errors outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-21T07:41:19.011Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:42:17.680Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: worker produced the row-150 authoring artifact plus new spec/replay files for spec.network-datapath.kube-proxy-custom-config.vm-prerelease, and the artifact documents the exact mounted source/matrix lineage and passing bounded source-spec check needed to move row 150 out of missing-spec."
+      },
+      "session_id": "s_task_vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621",
+      "session_history": [
+        "s_task_vmpr-row150-kube-proxy-custom-config-vm-carrier-authoring-20260621"
+      ],
+      "result": "Authored the exact maintained row-150 kube-proxy custom-config VM carrier across spec/replay/model/coverage surfaces, and validated the new row-150 lineage with a passing source-spec check. The global knowledge-map validator still reports many unrelated pre-existing model errors outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:42:17.680Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: worker produced the row-150 authoring artifact plus new spec/replay files for spec.network-datapath.kube-proxy-custom-config.vm-prerelease, and the artifact documents the exact mounted source/matrix lineage and passing bounded source-spec check needed to move row 150 out of missing-spec."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row217-windows-gen2-carrier-extension-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded exact maintained carrier extension for VM prerelease row 217 from mounted source so Scenario_Windows2022_K8S_With_Gen2_vms is no longer left candidate-only once the Gen2-specific selector/assertion is modeled: preserve the existing Windows2022 + VirtualMachines base branch and add the exact validate_windows_gen2_nodes_image_version=true input plus the node label assertion that kubernetes.azure.com/node-image-version contains gen2, without widening into unrelated Windows password-reset or mixed-OS combination coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row217-windows-gen2-carrier-extension-20260621.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md plus the exact mounted source authorities /app/sources/aks-rp/test/e2e/suites/windows/windowsk8s.go and /app/sources/aks-rp/test/e2e/suites/windows/utils/utils.go that prove the row-217 VirtualMachines branch and the Gen2 node-image-version helper semantics.",
+        "Task lands or precisely authors the smallest maintained repo-local carrier update needed for row 217: exact spec/replay/model path identifiers preserving the existing Windows2022 + VirtualMachines base carrier while adding the validate_windows_gen2_nodes_image_version=true selector and the bounded assertion that kubernetes.azure.com/node-image-version contains gen2, and records the files changed or authored.",
+        "Artifact explains why the resulting carrier is exact for row 217 and still narrower than the larger row-205 password lifecycle and row-186 mixed-OS combination gaps, then names the resulting maintained ids or the smallest remaining blocker if exact landing still cannot be completed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:39:14.279Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T07:41:00.561Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row217-windows-gen2-carrier-extension-20260621",
+        "stale_active_requeued_at": "2026-06-21T07:41:00.515Z",
+        "stale_active_requeue_reason": "stale active cleanup: task remains active in tree but no matching live session row exists, so free the unhealthy slot and request a fresh worker session",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_vmpr-row217-windows-gen2-carrier-extension-20260621_20260621073914",
+        "current_attempt_id": "a_vmpr-row217-windows-gen2-carrier-extension-20260621_20260621074100",
+        "worker_started_attempt_id": "a_vmpr-row217-windows-gen2-carrier-extension-20260621_20260621074100",
+        "worker_started_at": "2026-06-21T07:41:17.906Z",
+        "reviewed_at": "2026-06-21T07:43:41.805Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after watchdog stale-active review: although the recycled attempt recorded worker_started_at, the wake packet still classified the session as not running, so this leaf no longer serves as a trustworthy live slot. Fresh bounded row-217 carrier-extension work now lives in vmpr-row217-windows-gen2-carrier-extension-retry-20260621 for a clean relaunch."
+      },
+      "session_id": "s_task_vmpr-row217-windows-gen2-carrier-extension-20260621",
+      "session_history": [
+        "s_task_vmpr-row217-windows-gen2-carrier-extension-20260621"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-21T07:43:41.805Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after watchdog stale-active review: although the recycled attempt recorded worker_started_at, the wake packet still classified the session as not running, so this leaf no longer serves as a trustworthy live slot. Fresh bounded row-217 carrier-extension work now lives in vmpr-row217-windows-gen2-carrier-extension-retry-20260621 for a clean relaunch."
+      },
+      "status": "done"
+    }
+  ]
+}

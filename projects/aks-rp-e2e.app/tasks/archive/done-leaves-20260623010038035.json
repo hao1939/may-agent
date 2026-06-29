@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T01:00:38.035Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review: accepted batch11 as the already-completed predecessor slice and archived its standalone leaf because its durable meaning now lives in the archive note plus project rollups. The live frontier remains unchanged: spec-path-record-batch12-post-batch11-authoring-20260623 is the sole active repo-local next-10 spec-path bridge slice, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful family-level external wait pending later out-of-runtime proof with no new local rework indicated.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-path-record-batch11-post-batch10-authoring-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane next bounded slice: land the exact next 10 missing spec-path bridges named by the accepted batch10 residual frontier, repo-local only with no cloud work. Target only these rows: path.secops-identity.reset-sp-vm-prerelease, path.secops-identity-binding-update-swap, path.secops-identity.user-assigned-lifecycle-vm-prerelease, path.secops.embargo-cve-vm-prerelease, path.serverless-schedulerctrl.disable-after-create, path.serverless-schedulerctrl.disable-after-enable, path.serverless-schedulerctrl.enable-on-create, path.serverless-schedulerctrl.enable-on-existing, path.serverless-addonv2-aci-connector, and path.serverless-virtualnodes.standard. Use evidence/archive/spec-path-record-batch10-post-batch9-authoring-20260623.md as the bounded predecessor note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note ../aks-rp-e2e/evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md records the exact 10 targeted path ids taken from the accepted batch10 residual frontier, the repo-local spec/source surfaces used, and the resulting model/view files updated, with no unrelated frontier expansion or cloud mutation.",
+        "model/knowledge-map/model.json plus the maintained derived views are updated consistently for the exact 10 targeted rows, and the note records the resulting missingSpecPathRecords delta plus the next residual frontier so the subsequent batch can start without rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-path-records.batch11"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:55:00.066Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-path-record-batch11-post-batch10-authoring-20260623_20260623005500",
+        "assigned_at": "2026-06-23T00:55:00.116Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-path-record-batch11-post-batch10-authoring-20260623",
+        "worker_started_attempt_id": "a_spec-path-record-batch11-post-batch10-authoring-20260623_20260623005500",
+        "worker_started_at": "2026-06-23T00:55:13.927Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed batch11's exact 10 missing spec-path bridges into model/knowledge-map/model.json, regenerated maintained views, and wrote evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md with the resulting hygiene delta and next residual frontier.",
+        "last_worker_completed_at": "2026-06-23T00:57:54.024Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:58:30.868Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md: it records the exact 10 targeted path ids from the accepted batch10 residual frontier, the repo-local source/spec surfaces used, regenerated maintained views, and the bounded hygiene delta missingSpecPathRecords 51→41 with the next residual frontier."
+      },
+      "session_id": "s_task_spec-path-record-batch11-post-batch10-authoring-20260623",
+      "session_history": [
+        "s_task_spec-path-record-batch11-post-batch10-authoring-20260623"
+      ],
+      "result": "Landed batch11's exact 10 missing spec-path bridges into model/knowledge-map/model.json, regenerated maintained views, and wrote evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md with the resulting hygiene delta and next residual frontier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:58:30.868Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/spec-path-record-batch11-post-batch10-authoring-20260623.md: it records the exact 10 targeted path ids from the accepted batch10 residual frontier, the repo-local source/spec surfaces used, regenerated maintained views, and the bounded hygiene delta missingSpecPathRecords 51→41 with the next residual frontier."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T13:39:50.352Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-adjacent-source-frontier-20260621",
+  "summary": "2026-06-21 owner review accepted and archived the row-38 Azure RBAC source-fidelity repair: the maintained feature/spec/replay/model surfaces plus generated views now truthfully preserve the mounted VM prerelease Scenario_Azure_RBAC create boundary, nil-after-create admin-group expectation, Azure RBAC disable/re-enable toggle branch, Reader allow/deny contract, and separation from row 37 plus Automatic SKU without cloud execution. With that repo-local repair complete, the next and only live focus child is vmpr-row39-disable-ssh-mounted-source-boundary-map-20260621, which should map the exact adjacent mounted-source boundary for row 39 and recommend at most one further repo-local follow-up if drift is found; the sibling external-send-proof family remains the only exact external wait outside this focus.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row38-source-fidelity-carrier-repair-20260621",
+      "parent_id": "focus-vmpr-adjacent-source-frontier-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: repair repo-local maintained row-38 Azure RBAC carriers so they exactly match the mounted VM prerelease Scenario_Azure_RBAC boundary proven in evidence/archive/vmpr-row38-azure-rbac-mounted-source-boundary-map-20260621.md, preserving row-38 separation from row 37 and the Automatic SKU variant without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row38-source-fidelity-carrier-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Update the maintained row-38 carriers at features/aad-rbac/azure-rbac-authorization.yaml, specs/aad-rbac-azure-rbac-authorization.json, and replays/aad-rbac-azure-rbac-authorization.ts so they preserve the exact mounted row-38 create boundary: managed=true plus enableAzureRBAC=true with no create-time adminUsers/adminGroupObjectIDs/tenantID, and they explicitly preserve row-38 separation from row 37 and from the Automatic SKU variant.",
+        "Preserve the row-38 source-backed expectation boundary across maintained carriers and the knowledge map/model surfaces: AdminGroupObjectIDs nil after create, disable->verify false->re-enable->verify true Azure RBAC toggle branch, and the login-VM Azure Kubernetes Service RBAC Reader allow/deny contract (pods allowed, secrets forbidden) on the VM prerelease substrate.",
+        "Write a durable evidence summary at evidence/archive/vmpr-row38-source-fidelity-carrier-repair-20260621.md naming the exact files updated plus any model/view regeneration or validation run used to keep the row-38 path truthful; no cloud execution, no external-ask changes, and no speculative product verdict beyond mounted-source-backed fidelity repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "row38-source-fidelity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T13:31:33.347Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row38-source-fidelity-carrier-repair-20260621_20260621133133",
+        "assigned_at": "2026-06-21T13:31:33.393Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row38-source-fidelity-carrier-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row38-source-fidelity-carrier-repair-20260621_20260621133133",
+        "worker_started_at": "2026-06-21T13:31:48.747Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-38 Azure RBAC source-fidelity carriers across feature/spec/replay/model surfaces, regenerated views, and wrote durable evidence plus a dry-run check artifact proving the row-38 VM prerelease boundary is preserved.",
+        "last_worker_completed_at": "2026-06-21T13:38:23.261Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T13:39:11.551Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the row-38 Azure RBAC source-fidelity repair: durable evidence at ../aks-rp-e2e/evidence/archive/vmpr-row38-source-fidelity-carrier-repair-20260621.md and the check artifact vmpr-row38-source-fidelity-check-20260621-aad-rbac-azure-rbac-authorization.json show the maintained feature/spec/replay/model surfaces now preserve the mounted VM prerelease Scenario_Azure_RBAC create boundary, nil-after-create admin-group expectation, toggle branch, Reader allow/deny contract, and separation from row 37 plus Automatic SKU without cloud execution or external-ask changes."
+      },
+      "session_id": "s_task_vmpr-row38-source-fidelity-carrier-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row38-source-fidelity-carrier-repair-20260621"
+      ],
+      "result": "Repaired row-38 Azure RBAC source-fidelity carriers across feature/spec/replay/model surfaces, regenerated views, and wrote durable evidence plus a dry-run check artifact proving the row-38 VM prerelease boundary is preserved.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T13:39:11.551Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the row-38 Azure RBAC source-fidelity repair: durable evidence at ../aks-rp-e2e/evidence/archive/vmpr-row38-source-fidelity-carrier-repair-20260621.md and the check artifact vmpr-row38-source-fidelity-check-20260621-aad-rbac-azure-rbac-authorization.json show the maintained feature/spec/replay/model surfaces now preserve the mounted VM prerelease Scenario_Azure_RBAC create boundary, nil-after-create admin-group expectation, toggle branch, Reader allow/deny contract, and separation from row 37 plus Automatic SKU without cloud execution or external-ask changes."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:15:45.764Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted vmpr-row38 Azure RBAC replay repair: the repo-local row-38 carrier now implements the exact Scenario_Azure_RBAC live executor shape, aligned replay/spec/feature/model/path-summary artifacts were updated, and local --check evidence passed without claiming any fresh cloud verdict. The active working set remains the three repo-local knowledge/spec reconciliation leaves (AAD semantic carrier corrections, ManagedSystem boundary-map reconciliation preserving the terminal product-gap verdict, and private-cluster auth service-tags model reconciliation). The single external-send-proof family remains the only live blocked wait pending off-runtime human send/handoff/escalation proof or authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row38-azure-rbac-replay-exact-live-executor-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning / runner-replays lane: repair replays/aad-rbac-azure-rbac-authorization.ts from source-fidelity/check-only mode into the exact VM prerelease row-38 live executor by implementing the mounted Scenario_Azure_RBAC create/get/toggle/login-VM Reader flow, preserving separation from row 37 managed AAD, row 36 Azure Monitor AAD auth, and Automatic SKU without cloud execution in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md"
+      ],
+      "acceptance": [
+        "Update replays/aad-rbac-azure-rbac-authorization.ts so the maintained replay reflects the exact mounted row-38 Scenario_Azure_RBAC live contract: create with managed=true+enableAzureRBAC=true and no create-time admin users/groups/tenant, verify post-create AdminGroupObjectIDs=nil, toggle Azure RBAC false then true, and preserve the login-VM MSI Reader allow/deny branch rather than remaining check-only/source-fidelity only.",
+        "Update any directly affected repo-local carrier surfaces needed to keep row-38 truth consistent after the replay repair (for example spec/model/path references or validation outputs if they change), while preserving separation from row 37 managed AAD lifecycle, row 36 Azure Monitor AAD auth, and Automatic SKU and without broadening to unrelated AAD families.",
+        "Write evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md summarizing the exact mounted source files/symbols used, the replay changes made, repo-local validation performed, and any remaining bounded gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row38-replay"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:08:14.538Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row38-azure-rbac-replay-exact-live-executor-20260621_20260621140817",
+        "assigned_at": "2026-06-21T14:08:17.083Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row38-azure-rbac-replay-exact-live-executor-20260621",
+        "worker_started_attempt_id": "a_vmpr-row38-azure-rbac-replay-exact-live-executor-20260621_20260621140817",
+        "worker_started_at": "2026-06-21T14:08:29.602Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired replays/aad-rbac-azure-rbac-authorization.ts into an execution-gated exact row-38 live executor, aligned spec/feature/model carrier metadata, regenerated the maintained path-summary view, and wrote evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md plus a passing local --check evidence JSON.",
+        "last_worker_completed_at": "2026-06-21T14:13:55.540Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:14:21.409Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md cites mounted Scenario_Azure_RBAC source, the replay/spec/model updates, and repo-local checks; grep confirmed the replay now carries the exact Azure RBAC create/toggle/login-VM Reader allow/deny contract, specs/path-summary were updated to exact-executor-implemented-unobserved wording, and evidence/archive/vmpr-row38-localcheck-20260621-aad-rbac-azure-rbac-authorization.json records pass with 8 assertions and 0 failed."
+      },
+      "session_id": "s_task_vmpr-row38-azure-rbac-replay-exact-live-executor-20260621",
+      "session_history": [
+        "s_task_vmpr-row38-azure-rbac-replay-exact-live-executor-20260621"
+      ],
+      "result": "Repaired replays/aad-rbac-azure-rbac-authorization.ts into an execution-gated exact row-38 live executor, aligned spec/feature/model carrier metadata, regenerated the maintained path-summary view, and wrote evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md plus a passing local --check evidence JSON.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:14:21.409Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row38-azure-rbac-replay-exact-live-executor-20260621.md cites mounted Scenario_Azure_RBAC source, the replay/spec/model updates, and repo-local checks; grep confirmed the replay now carries the exact Azure RBAC create/toggle/login-VM Reader allow/deny contract, specs/path-summary were updated to exact-executor-implemented-unobserved wording, and evidence/archive/vmpr-row38-localcheck-20260621-aad-rbac-azure-rbac-authorization.json records pass with 8 assertions and 0 failed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:53:08.889Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog stale-review cleanup: archived the remaining completed leaves whose durable meaning is already represented at the project root and linked evidence. VM prerelease/checkin suite rows 1-53 now have accepted repo-local carrier coverage with no new authoring gap, and the earlier private-cluster public-FQDN toggle user-review packet contributes only historical evidence. The live frontier is now intentionally minimal: continue private-cluster-none-dns-zone-v3-source-carrier-audit-20260622 as the sole repo-local source/spec/model task for path.private-cluster-none-dns-zone-v3, and preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the only truthful family-level external wait until new durable operator proof arrives.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted deliberate live-run plan for path.private-cluster-privatelink-public-fqdn-toggle into a concise user-review packet: cite the exact replay/spec/path ids, restate the explicit gated live command and prerequisites, name the remaining human decisions/inputs (subscription, region, run-id, go/no-go), and define the expected evidence/model-update follow-through for pass/fail/blocked outcomes, without cloud execution or creating a duplicate external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Archive packet cites the accepted live-run plan plus the exact replay/spec/path identifiers and records the explicit --execute / AKS_RP_E2E_ALLOW_CLOUD_MUTATION invocation, prerequisites, expected evidence locations, and the exact human inputs still needed before a deliberate live run.",
+        "The packet states how a later pass/fail/blocked live run should feed back into path.private-cluster-privatelink-public-fqdn-toggle model status without performing cloud execution now, and it does not introduce a passive response-await or duplicate external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:33:12.433Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622_20260622183312",
+        "assigned_at": "2026-06-22T18:33:12.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622",
+        "worker_started_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622_20260622183312",
+        "worker_started_at": "2026-06-22T18:33:25.761Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested user-review live-run packet at evidence/archive/private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622.md, grounded in the accepted 2026-06-22 live-run plan, spec/replay/source/path IDs, explicit gated execute command, remaining human inputs, and pass/fail/blocked model follow-through.",
+        "last_worker_completed_at": "2026-06-22T18:34:25.605Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:35:50.506Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet cites the exact path/spec/replay/source carriers, preserves the explicit --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, lists the remaining human inputs and expected evidence sinks, and correctly keeps this as a user-review packet rather than a duplicate passive wait."
+      },
+      "session_id": "s_task_private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622",
+      "session_history": [
+        "s_task_private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622"
+      ],
+      "result": "Created the requested user-review live-run packet at evidence/archive/private-cluster-privatelink-public-fqdn-toggle-user-review-live-run-packet-20260622.md, grounded in the accepted 2026-06-22 live-run plan, spec/replay/source/path IDs, explicit gated execute command, remaining human inputs, and pass/fail/blocked model follow-through.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:35:50.506Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet cites the exact path/spec/replay/source carriers, preserves the explicit --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, lists the remaining human inputs and expected evidence sinks, and correctly keeps this as a user-review packet rather than a duplicate passive wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-suite-row-carrier-matrix-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin suites to extend the worked-example row-boundary method across the remaining suite rows: enumerate each suite row/scenario, map it to the current repo-local spec/replay/path carrier when present, and name the exact next local authoring gap for any missing or ambiguous carrier without running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-suite-row-carrier-matrix-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, enumerates the remaining suite rows beyond the already-reviewed worked examples, and maps each to an exact repo-local carrier or to one explicit missing-carrier gap.",
+        "If any row lacks a clear repo-local carrier, the packet names the exact missing spec/replay/model file or bounded follow-up leaf needed; if carriers are already clear, it records a cited no-change judgment. No cloud mutation, duplicate external waits, or human-send tasks are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:48:45.750Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-suite-row-carrier-matrix-20260622_20260622184845",
+        "assigned_at": "2026-06-22T18:48:45.801Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-suite-row-carrier-matrix-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-suite-row-carrier-matrix-20260622_20260622184845",
+        "worker_started_at": "2026-06-22T18:49:09.863Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/vm-prerelease-suite-row-carrier-matrix-20260622.md`, a bounded audit of mounted VM prerelease/checkin suite rows 1-53 showing every remaining row already maps to an exact local spec/replay/path carrier and that no new authoring gap exists in this slice.",
+        "last_worker_completed_at": "2026-06-22T18:51:22.432Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:52:06.154Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/vm-prerelease-suite-row-carrier-matrix-20260622.md: mounted AKS RP checkin.go/prerelease.go rows 1-53 already map to exact repo-local spec + replay + path carriers, so this bounded audit is a cited no-change judgment with no new VM prerelease authoring gap."
+      },
+      "session_id": "s_task_vm-prerelease-suite-row-carrier-matrix-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-suite-row-carrier-matrix-20260622"
+      ],
+      "result": "Created `evidence/archive/vm-prerelease-suite-row-carrier-matrix-20260622.md`, a bounded audit of mounted VM prerelease/checkin suite rows 1-53 showing every remaining row already maps to an exact local spec/replay/path carrier and that no new authoring gap exists in this slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:52:06.154Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/vm-prerelease-suite-row-carrier-matrix-20260622.md: mounted AKS RP checkin.go/prerelease.go rows 1-53 already map to exact repo-local spec + replay + path carriers, so this bounded audit is a cited no-change judgment with no new VM prerelease authoring gap."
+      },
+      "status": "done"
+    }
+  ]
+}

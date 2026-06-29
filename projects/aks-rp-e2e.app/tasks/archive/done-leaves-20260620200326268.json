@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:03:26.268Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier review keeps the VM/MachinesPreview transport ceiling represented by exactly one live blocker: external-send-proof-dispatch-family-20260620 remains the single truthful family-level wait until durable repo-local proof of an actual human send/escalation or an authoritative reply is captured for the send-ready MachinesPreview packet or VM prerelease operator bundle. Regular-learning throughput stays on the already-active private-cluster-go-source-inventory-batch1-20260620 leaf, which is the only current non-blocked path and should continue without reopening cloud execution or drafting duplicate send-proof leaves. The completed serverless scheduler-controller disable-after-create authoring slice is now absorbed into parent provenance; its spec/replay wiring is durable, while the next planner pass should either consume the private-cluster inventory result or react to real external send/reply proof on the blocked family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the next repo-local scheduler-controller runnable contract for the mounted disable-after-create scenario by creating the exact spec and replay files grounded in /app/sources/aks-rp/test/e2ev3/sigs/serverless/plans/schedulerctrl/plans/scenariodisableaftercreate.go, preserving only the create-time ManagedByCRD cluster plus the post-create transition back to Default and the mounted overlay/managed-underlay/reconciliation/default-underlay checkpoints, without collapsing enable siblings or launching cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/serverless-schedulerctrl-disable-after-create.json",
+        "../aks-rp-e2e/replays/serverless-schedulerctrl-disable-after-create.ts"
+      ],
+      "acceptance": [
+        "Spec file defines the exact repo-local contract for feature path path.serverless-schedulerctrl.disable-after-create, cites the mounted disable-after-create authority and existing scheduler-controller evidence packet, and keeps the scenario bounded to create-time ManagedByCRD followed by the disable transition back to Default instead of collapsing sibling lifecycle leaves.",
+        "Replay file mirrors only the mounted disable-after-create checkpoints needed to validate overlay resources, managed underlay resources, SchedulerConfiguration reconciliation in ManagedByCRD mode before disable, and default underlay validation after disable, reusing shared scheduler-controller helpers where appropriate, and does not add enable-on-existing, disable-after-enable, or cloud execution in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:58:47.364Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620_20260620195847",
+        "assigned_at": "2026-06-20T19:58:47.408Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620_20260620195847",
+        "worker_started_at": "2026-06-20T19:59:13.046Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the disable-after-create scheduler-controller runnable contract by adding specs/serverless-schedulerctrl-disable-after-create.json and replays/serverless-schedulerctrl-disable-after-create.ts, then wired the new spec into specs/index.json and verified both replay check-mode and wiring checks passed.",
+        "last_worker_completed_at": "2026-06-20T20:01:49.260Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:02:23.317Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the disable-after-create scheduler-controller authoring slice: specs/serverless-schedulerctrl-disable-after-create.json now defines the exact path.serverless-schedulerctrl.disable-after-create contract with mounted scenariodisableaftercreate.go authority plus the ManagedByCRD -> Default rollback boundary, replays/serverless-schedulerctrl-disable-after-create.ts preserves only the mounted overlay/managed-underlay/reconciliation/default-underlay checkpoints for that leaf, and specs/index.json wires the new spec without reopening sibling enable/disable flows."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-disable-after-create-spec-replay-authoring-20260620"
+      ],
+      "result": "Authored the disable-after-create scheduler-controller runnable contract by adding specs/serverless-schedulerctrl-disable-after-create.json and replays/serverless-schedulerctrl-disable-after-create.ts, then wired the new spec into specs/index.json and verified both replay check-mode and wiring checks passed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:02:23.317Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the disable-after-create scheduler-controller authoring slice: specs/serverless-schedulerctrl-disable-after-create.json now defines the exact path.serverless-schedulerctrl.disable-after-create contract with mounted scenariodisableaftercreate.go authority plus the ManagedByCRD -> Default rollback boundary, replays/serverless-schedulerctrl-disable-after-create.ts preserves only the mounted overlay/managed-underlay/reconciliation/default-underlay checkpoints for that leaf, and specs/index.json wires the new spec without reopening sibling enable/disable flows."
+      },
+      "status": "done"
+    }
+  ]
+}

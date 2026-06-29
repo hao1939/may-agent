@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:20:41.965Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the VM prerelease rows 31-32 auto-zone maintained-carrier refresh: row 31 now selects the single-manual-profile input, row 32 now selects the VirtualMachines input, both carry current execute-gated status wording, and the maintained views were regenerated repo-locally. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621 pending durable human send/reply proof. The next runnable repo-local burn-down leaf is vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622 to map the adjacent networking-migration pair into truthful feature/spec/replay carriers and decide whether a follow-on maintained model/view repair is needed.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the maintained knowledge-model/view surfaces for path.virtualmachines.mixed-sku-upgrade so they match the already accepted 2026-06-22 mounted-source/spec/replay truthfulness packet for row 27 without changing live verdict posture or unrelated VirtualMachines branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Task updates model/knowledge-map/model.json for the virtualmachines-mixed-sku-upgrade feature, DAG inputs, and path.virtualmachines.mixed-sku-upgrade entry so they reflect the exact mounted-source row-27 boundary: VirtualMachines System pool, two manual profiles {1,1}, maxSurge=2, upgrade operation, preserved manual profiles and VirtualMachineNodesStatus, and the runner-disable execute gate.",
+        "Task regenerates model/knowledge-map/views/path-summary.json so the maintained view matches the repaired model entry, and records exact changed fields plus generation/check commands in ../aks-rp-e2e/evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622.md.",
+        "Task stays repo-local and bounded: no cloud mutation, no human-transport ask work, and no edits to already accepted row-local carriers unless the model/view repair discovers a concrete contradiction that is quoted exactly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-row27-model-view"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:14:04.130Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622_20260622071411",
+        "assigned_at": "2026-06-22T07:14:11.468Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622_20260622071411",
+        "worker_started_at": "2026-06-22T07:14:26.760Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-27 mixed-SKU upgrade maintained carriers in model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json so they now reflect the exact mounted-source System/{1,1}/maxSurge=2/upgrade boundary with blocked execute-gated posture. Wrote the requested evidence artifact documenting changed fields, source proof, and generation/check commands.",
+        "last_worker_completed_at": "2026-06-22T07:18:19.267Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:19:17.162Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 row-27 maintained-surface repair: evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622.md shows model.json feature/DAG/path plus regenerated path-summary now match the mounted-source System/{1,1}/maxSurge=2 upgrade boundary and preserve the execute-gated blocked posture without widening into unrelated VM branches."
+      },
+      "session_id": "s_task_vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622"
+      ],
+      "result": "Repaired row-27 mixed-SKU upgrade maintained carriers in model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json so they now reflect the exact mounted-source System/{1,1}/maxSurge=2/upgrade boundary with blocked execute-gated posture. Wrote the requested evidence artifact documenting changed fields, source proof, and generation/check commands.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:19:17.162Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 row-27 maintained-surface repair: evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622.md shows model.json feature/DAG/path plus regenerated path-summary now match the mounted-source System/{1,1}/maxSurge=2 upgrade boundary and preserve the execute-gated blocked posture without widening into unrelated VM branches."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows31-32-auto-zone-model-view-refresh-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the maintained knowledge-model/view carriers for VM prerelease rows 31-32 so path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku reflect the already accepted mounted-source/spec/replay truth: row 31 distinguishes a single manual profile, row 32 distinguishes a VirtualMachines pool with two manual profiles, and both preserve execute-gated status wording without changing live verdict posture or adjacent VM branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows31-32-auto-zone-model-view-refresh-20260622.md"
+      ],
+      "acceptance": [
+        "Task updates model/knowledge-map/model.json DAG/path surfaces for rows 31-32 so row 31 selects availabilityZones=auto + type=VirtualMachines + profileMultiplicity=single manual profile, and row 32 selects availabilityZones=auto + profileMultiplicity=two manual profiles + type=VirtualMachines, matching the accepted 2026-06-22 source/spec/replay reconciliation packet exactly.",
+        "Task regenerates the maintained view(s) needed for the touched model entries, including model/knowledge-map/views/path-summary.json, and records the exact changed fields plus generation/check commands in ../aks-rp-e2e/evidence/archive/vmpr-rows31-32-auto-zone-model-view-refresh-20260622.md.",
+        "Task stays repo-local and bounded: no cloud mutation, no human-transport ask work, and no edits outside the row-31/32 auto-zone maintained carriers unless a quoted contradiction in the already accepted packet requires a minimal correction."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-auto-zone-row31-32-model-view"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:19:17.208Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows31-32-auto-zone-model-view-refresh-20260622_20260622071917",
+        "assigned_at": "2026-06-22T07:19:17.255Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows31-32-auto-zone-model-view-refresh-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows31-32-auto-zone-model-view-refresh-20260622_20260622071917",
+        "worker_started_at": "2026-06-22T07:19:29.279Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed VM prerelease auto-zone rows 31-32 in the maintained knowledge-map by updating selected DAG/path inputs and execute-gated status wording in model/knowledge-map/model.json, regenerated maintained views, and wrote the evidence artifact at evidence/archive/vmpr-rows31-32-auto-zone-model-view-refresh-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T07:19:29.295Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:20:41.818Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22: the evidence artifact documents the exact row-31/32 model/view repair and repo-local regeneration, and grep spot-checks confirmed model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json now carry path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku with the added row-distinguishing selected inputs and updated execute-gated status wording."
+      },
+      "session_id": "s_task_vmpr-rows31-32-auto-zone-model-view-refresh-20260622",
+      "session_history": [
+        "s_task_vmpr-rows31-32-auto-zone-model-view-refresh-20260622"
+      ],
+      "result": "Refreshed VM prerelease auto-zone rows 31-32 in the maintained knowledge-map by updating selected DAG/path inputs and execute-gated status wording in model/knowledge-map/model.json, regenerated maintained views, and wrote the evidence artifact at evidence/archive/vmpr-rows31-32-auto-zone-model-view-refresh-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:20:41.818Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22: the evidence artifact documents the exact row-31/32 model/view repair and repo-local regeneration, and grep spot-checks confirmed model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json now carry path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku with the added row-distinguishing selected inputs and updated execute-gated status wording."
+      },
+      "status": "done"
+    }
+  ]
+}

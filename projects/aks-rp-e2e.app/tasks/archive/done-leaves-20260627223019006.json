@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T22:30:19.006Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-27 task-completed owner pass accepts prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627 as done-only carrier readiness: mounted-source scenario, repo-local packet/spec/replay/test wiring, and local guardrail/check/gated-execute evidence prove the exact NATGW V2→block execute carrier exists and fail-closes without any live mutation claim. Also archive the two completed app-routing rerun repair leaves because their durable meaning is now carried by the single active reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627 leaf, which owns the wrapper-vs-result terminal truth decision after rerun 28302955157. Keep the remaining frontier unchanged: one active reconciliation leaf plus the truthful waits for run 28298043331 terminal artifacts and the shared existing-cluster operator response family.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author and validate the exact repo-local execute-carrier for path.net-integration.natgw-v2-migration-v2-to-block so the maintained replay/spec lane distinguishes non-mutating default/--check validation from the future bounded --execute mutation path without claiming a live product verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627.md"
+      ],
+      "acceptance": [
+        "The task cites the current carrier gap for path.net-integration.natgw-v2-migration-v2-to-block, lands or documents the exact repo-local replay/spec/test wiring needed for the future --execute lane, verifies the non-mutating carrier locally (for example via the branch-local check path or equivalent repo-local validation), and archives evidence that clearly separates carrier readiness from any not-yet-run live V2→block migration verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.net-integration.natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T22:27:04.483Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T22:27:04.591Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627_20260627222730",
+        "assigned_at": "2026-06-27T22:27:30.601Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627",
+        "worker_started_attempt_id": "a_prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627_20260627222730",
+        "worker_started_at": "2026-06-27T22:27:32.329Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a bounded execute-carrier preparation note for NATGW V2→block under evidence/archive and locally verified the current replay/spec wiring, check-mode behavior, and fail-closed execute gate without running cloud mutation.",
+        "last_worker_completed_at": "2026-06-27T22:28:31.946Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T22:29:27.825Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627.md cites the mounted AKS RP scenario, the exact repo-local packet/spec/replay/test wiring, and local guardrail evidence (bun test plus check/gated execute runs) proving the execute carrier is present and fail-closed without claiming a live V2→block product verdict."
+      },
+      "session_id": "s_task_prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627",
+      "session_history": [
+        "s_task_prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627"
+      ],
+      "result": "Archived a bounded execute-carrier preparation note for NATGW V2→block under evidence/archive and locally verified the current replay/spec wiring, check-mode behavior, and fail-closed execute gate without running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T22:29:27.825Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/prep-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260627.md cites the mounted AKS RP scenario, the exact repo-local packet/spec/replay/test wiring, and local guardrail evidence (bun test plus check/gated execute runs) proving the execute carrier is present and fail-closed without claiming a live V2→block product verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local artifact-path write bug in features/app-routing/tests/app-routing-default-domain-http-reachability.ts, then perform one bounded rerun of spec.app-routing.default-domain-http-reachability and archive the terminal workflow/spec verdict with exact artifact/result references.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627.md"
+      ],
+      "acceptance": [
+        "The task cites the exact source change in features/app-routing/tests/app-routing-default-domain-http-reachability.ts that fixes the nested evidence/archive path ENOENT, performs or dispatches one bounded rerun of spec.app-routing.default-domain-http-reachability after that repair, and archives a terminal verdict with the run/result/artifact locations plus a statement distinguishing cleared test-carrier bug from any remaining product/environment outcome."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T22:10:16.926Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627_20260627221016",
+        "assigned_at": "2026-06-27T22:10:16.982Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627",
+        "worker_started_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627_20260627221016",
+        "worker_started_at": "2026-06-27T22:10:36.392Z",
+        "reviewed_at": "2026-06-27T22:25:45.238Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog stale-active owner review found no durable output at ../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627.md and no terminal rerun evidence for this attempt; replace the stale session-no-activity carrier with a fresh leaf so the repo-local fix + bounded rerun work can be retried explicitly."
+      },
+      "session_id": "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627",
+      "session_history": [
+        "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T22:25:45.238Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog stale-active owner review found no durable output at ../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627.md and no terminal rerun evidence for this attempt; replace the stale session-no-activity carrier with a fresh leaf so the repo-local fix + bounded rerun work can be retried explicitly."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-attempt the repo-local repair for features/app-routing/tests/app-routing-default-domain-http-reachability.ts, then perform one bounded rerun of spec.app-routing.default-domain-http-reachability and archive the terminal workflow/spec verdict with exact artifact/result references after confirming the stale 20260627 attempt produced no durable output.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b.md"
+      ],
+      "acceptance": [
+        "The task documents that the prior stale attempt produced no durable archive output, cites the exact source change in features/app-routing/tests/app-routing-default-domain-http-reachability.ts that fixes the nested evidence/archive path ENOENT, performs or dispatches one bounded rerun of spec.app-routing.default-domain-http-reachability after that repair, and archives a terminal verdict with the run/result/artifact locations plus a statement distinguishing cleared test-carrier bug from any remaining product/environment outcome."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T22:25:45.302Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b_20260627222545",
+        "assigned_at": "2026-06-27T22:25:45.363Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b",
+        "worker_started_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b_20260627222545",
+        "worker_started_at": "2026-06-27T22:26:08.634Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived the retry verdict for spec.app-routing.default-domain-http-reachability in evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b.md, documenting the missing stale output, the exact artifact-path repair in the probe, and the bounded rerun’s conflicting wrapper-vs-probe terminal surfaces.",
+        "last_worker_completed_at": "2026-06-27T22:27:49.518Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T22:28:19.340Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b.md proves the stale prior retry left no durable output, cites the exact mkdir(path.dirname(...)) repair in features/app-routing/tests/app-routing-default-domain-http-reachability.ts, and archives bounded rerun 28302955157 showing the old ENOENT carrier bug is cleared even though wrapper/pass and spec-runner blocked/environment surfaces still conflict."
+      },
+      "session_id": "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b",
+      "session_history": [
+        "s_task_repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b"
+      ],
+      "result": "Archived the retry verdict for spec.app-routing.default-domain-http-reachability in evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b.md, documenting the missing stale output, the exact artifact-path repair in the probe, and the bounded rerun’s conflicting wrapper-vs-probe terminal surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T22:28:19.340Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627b.md proves the stale prior retry left no durable output, cites the exact mkdir(path.dirname(...)) repair in features/app-routing/tests/app-routing-default-domain-http-reachability.ts, and archives bounded rerun 28302955157 showing the old ENOENT carrier bug is cleared even though wrapper/pass and spec-runner blocked/environment surfaces still conflict."
+      },
+      "status": "done"
+    }
+  ]
+}

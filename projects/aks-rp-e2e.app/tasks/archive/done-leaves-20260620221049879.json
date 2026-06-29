@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:10:49.879Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update accepted the bounded node-http-proxy scenario sourceRef normalization slice and compacted now-low-value completed repair leaves at the project root. Durable project knowledge at the root now preserves three finished non-cloud repair slices: serverless virtual-nodes delegation-service string hygiene, node-http-proxy normalized DAG repair, and node-http-proxy scenario sourceRef normalization backed by mounted httpproxy create/update/helper authorities and focused validator clearance. Open frontier is now explicit and readable: the only live external wait remains the consolidated VM prerelease/MachinesPreview send-proof family under focus-vm-prerelease-pipeline-replacement-20260620, while active repo-local work moves to the next bounded maintained-model slice serverless-schedulerctrl-four-path-model-reconcile-20260620 so underfilled capacity is spent on non-cloud knowledge-map progress rather than duplicating the external transport blocker.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "delegation-service-string-hygiene-serverless-virtual-nodes-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the repo-local serverless virtual-nodes carriers for the delegation-service wording drift and normalize authoritative prose/evidence references from Microsoft.ContainerInstances/containerGroups to the source-backed Microsoft.ContainerInstance/containerGroups wherever the path is describing the delegated ACI subnet contract, without changing the already accepted runtime/model boundary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/delegation-service-string-hygiene-serverless-virtual-nodes-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the repo-local carriers attached to path.serverless-virtual-nodes.subnet-validation and identify each place where delegation-service wording uses ContainerInstances vs the mounted/runtime-backed ContainerInstance string, with exact file citations in the evidence packet.",
+        "Apply only the bounded repo-local text/model-carrier repairs that are justified by mounted source and accepted runtime evidence, rerun any lightweight local checks needed for the touched files, and record exact before/after outcomes.",
+        "Do not broaden the path semantics or rerun cloud execution; end with a durable note stating any residual wording drift left intentionally untouched and why."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes-doc-hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:04:13.290Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_delegation-service-string-hygiene-serverless-virtual-nodes-20260620_20260620220434",
+        "assigned_at": "2026-06-20T22:04:34.663Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_delegation-service-string-hygiene-serverless-virtual-nodes-20260620",
+        "worker_started_attempt_id": "a_delegation-service-string-hygiene-serverless-virtual-nodes-20260620_20260620220434",
+        "worker_started_at": "2026-06-20T22:04:34.953Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the repo-local subnet-validation carriers for serverless virtual-nodes from Microsoft.ContainerInstances/containerGroups to the mounted-source-backed Microsoft.ContainerInstance/containerGroups, and wrote a durable evidence packet documenting citations, repairs, checks, and intentionally untouched residual drift.",
+        "last_worker_completed_at": "2026-06-20T22:08:03.836Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:08:33.358Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable evidence cites mounted AKS RP source standard_virtualnodes.go for the singular delegation string Microsoft.ContainerInstance/containerGroups, records each bounded repo-local carrier repaired for path.serverless-virtual-nodes.subnet-validation, and shows lightweight validation passed via local replay check and JSON parse sanity while the full model validator remains red only for unrelated pre-existing issues outside this slice."
+      },
+      "session_id": "s_task_delegation-service-string-hygiene-serverless-virtual-nodes-20260620",
+      "session_history": [
+        "s_task_delegation-service-string-hygiene-serverless-virtual-nodes-20260620"
+      ],
+      "result": "Normalized the repo-local subnet-validation carriers for serverless virtual-nodes from Microsoft.ContainerInstances/containerGroups to the mounted-source-backed Microsoft.ContainerInstance/containerGroups, and wrote a durable evidence packet documenting citations, repairs, checks, and intentionally untouched residual drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:08:33.358Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable evidence cites mounted AKS RP source standard_virtualnodes.go for the singular delegation string Microsoft.ContainerInstance/containerGroups, records each bounded repo-local carrier repaired for path.serverless-virtual-nodes.subnet-validation, and shows lightweight validation passed via local replay check and JSON parse sanity while the full model validator remains red only for unrelated pre-existing issues outside this slice."
+      },
+      "status": "done"
+    },
+    {
+      "id": "node-http-proxy-normalized-dag-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the first bounded knowledge-map validator debt slice by adding the missing normalized input DAGs and selected input-node mappings for the node-http-proxy create, trusted-ca, and update features/paths, so this family stops contributing known structural validator errors without requiring cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-http-proxy-normalized-dag-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Update model/knowledge-map/model.json to add the missing inputDags for dag.node-http-proxy.create, dag.node-http-proxy.trusted-ca, and dag.node-http-proxy.update, and populate the corresponding selectedInputNodeIds for path.node-http-proxy.create, path.node-http-proxy.trusted-ca, and path.node-http-proxy.update with truthful node ids.",
+        "Regenerate the knowledge-map views if the model workflow requires it, rerun the validator, and record durable before/after evidence showing the node-http-proxy unknown-input-dag and feature-path-without-input-nodes findings are cleared while any remaining repo-wide validator debt is explicitly treated as out of scope for this bounded slice.",
+        "Do not run cloud execution or broad repo-wide normalization; keep the slice limited to the three node-http-proxy features, three paths, and their DAG objects, and end with a durable evidence packet summarizing exact edits and residual validator debt outside this family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:02:36.328Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-http-proxy-normalized-dag-repair-20260620_20260620220236",
+        "assigned_at": "2026-06-20T22:02:36.383Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-http-proxy-normalized-dag-repair-20260620",
+        "worker_started_attempt_id": "a_node-http-proxy-normalized-dag-repair-20260620_20260620220236",
+        "worker_started_at": "2026-06-20T22:02:48.513Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the bounded node-http-proxy knowledge-map slice by adding three normalized input DAGs and populating selected input nodes for the create, trusted-ca, and update paths in model/knowledge-map/model.json, then regenerated derived views and wrote a durable evidence packet at evidence/archive/node-http-proxy-normalized-dag-repair-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T22:05:13.704Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:06:01.098Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/node-http-proxy-normalized-dag-repair-20260620.md: the bounded model slice added the three missing node-http-proxy DAGs, populated selected input nodes for the create/trusted-ca/update paths, regenerated derived views, and recorded before/after validator evidence showing the node-http-proxy unknown-input-dag and feature-path-without-input-nodes findings cleared while broader repo debt remains."
+      },
+      "session_id": "s_task_node-http-proxy-normalized-dag-repair-20260620",
+      "session_history": [
+        "s_task_node-http-proxy-normalized-dag-repair-20260620"
+      ],
+      "result": "Repaired the bounded node-http-proxy knowledge-map slice by adding three normalized input DAGs and populating selected input nodes for the create, trusted-ca, and update paths in model/knowledge-map/model.json, then regenerated derived views and wrote a durable evidence packet at evidence/archive/node-http-proxy-normalized-dag-repair-20260620.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:06:01.098Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/node-http-proxy-normalized-dag-repair-20260620.md: the bounded model slice added the three missing node-http-proxy DAGs, populated selected input nodes for the create/trusted-ca/update paths, regenerated derived views, and recorded before/after validator evidence showing the node-http-proxy unknown-input-dag and feature-path-without-input-nodes findings cleared while broader repo debt remains."
+      },
+      "status": "done"
+    },
+    {
+      "id": "node-http-proxy-scenario-source-ref-normalization-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the next bounded node-http-proxy knowledge-map validator debt slice by replacing the three node-http-proxy scenario sourceRefs that currently point at model feature ids with truthful source-backed references derived from mounted AKS RP handwritten e2ev3 plans/helpers, then regenerate views and revalidate so this family stops emitting scenario-source-not-evidence warnings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-http-proxy-scenario-source-ref-normalization-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the three node-http-proxy scenarios and identify the exact current invalid sourceRefs plus the mounted-source evidence or source-equivalent references that should replace them, citing the authoritative files in the durable note.",
+        "Apply only the bounded model/source-ref edits needed for scenario.node-http-proxy.create, scenario.node-http-proxy.trusted-ca, and scenario.node-http-proxy.update, regenerate knowledge-map views, rerun the validator, and record exact before/after evidence showing the node-http-proxy scenario-source-not-evidence warnings are cleared while unrelated validator debt remains out of scope.",
+        "Do not broaden beyond the three node-http-proxy scenarios or run cloud execution; end with a durable note describing any remaining node-http-proxy debt intentionally left for later slices."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:07:00.342Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-http-proxy-scenario-source-ref-normalization-20260620_20260620220700",
+        "assigned_at": "2026-06-20T22:07:00.390Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-http-proxy-scenario-source-ref-normalization-20260620",
+        "worker_started_attempt_id": "a_node-http-proxy-scenario-source-ref-normalization-20260620_20260620220700",
+        "worker_started_at": "2026-06-20T22:07:14.897Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the three node-http-proxy scenario sourceRefs in model/knowledge-map/model.json by adding mounted-source evidence ids and updating the scenario records, then regenerated views and wrote a durable note proving the scenario-source-not-evidence warnings were cleared.",
+        "last_worker_completed_at": "2026-06-20T22:09:49.710Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:10:49.691Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result after owner review: evidence/archive/node-http-proxy-scenario-source-ref-normalization-20260620.md cites the exact mounted httpproxy create/update/helper Go authorities, documents the before/after invalid scenario sourceRefs for the three node-http-proxy scenarios, and records successful view regeneration plus validator proof that the focused scenario-source-not-evidence warnings were cleared without broadening scope."
+      },
+      "session_id": "s_task_node-http-proxy-scenario-source-ref-normalization-20260620",
+      "session_history": [
+        "s_task_node-http-proxy-scenario-source-ref-normalization-20260620"
+      ],
+      "result": "Repaired the three node-http-proxy scenario sourceRefs in model/knowledge-map/model.json by adding mounted-source evidence ids and updating the scenario records, then regenerated views and wrote a durable note proving the scenario-source-not-evidence warnings were cleared.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:10:49.691Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result after owner review: evidence/archive/node-http-proxy-scenario-source-ref-normalization-20260620.md cites the exact mounted httpproxy create/update/helper Go authorities, documents the before/after invalid scenario sourceRefs for the three node-http-proxy scenarios, and records successful view regeneration plus validator proof that the focused scenario-source-not-evidence warnings were cleared without broadening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:06:56.252Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+  "summary": "VM prerelease wave1 MSI/SSH/localdns/ILB backend pool batch now serves as completed provenance only: the accepted bounded source-equivalent slice for row35 MSI system-assigned coverage superseded the earlier native-source-holder blocker and captured the durable local disposition for this batch. No open work remains here; future movement belongs in newer feature-spec or replay branches, not this closed family.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold VirtualMachine prerelease row 35 system-assigned identity attachment on the exact missing authoritative Scenario_MSI_SystemAssigned_Identity source dependency until one native/body excerpt or source-holder packet proves whether the row is equivalent to the existing secops system-assigned lifecycle chain or carries a VM-specific delta.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618.md plus the accepted row-35 source-boundary review, names the exact missing msiplans.Scenario_MSI_SystemAssigned_Identity source location or holder dependency, and records the single precise resume condition for recovering an authoritative request/expectation excerpt without reopening semantic rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.virtualmachines.msi-system-assigned",
+        "feature:identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:02:56.815Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.012Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.012Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Probe VM prerelease row 35 Scenario_MSI_SystemAssigned_Identity_VirtualMachine as one bounded source-equivalent slice to test whether the native-source blocker still hides truthful repo-local progress. Starting from vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618 and the nearest MSI/identity/local authorities already preserved in repo, determine whether one concrete bounded consumer or landing successor can proceed now, or prove the exact evidence ceiling that leaves row 35 externally blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites blocked leaf vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618 plus the nearest MSI/identity authorities already linked from that branch, then tests one bounded slice for truthful repo-local progress without exact native handwritten source.",
+        "The note ends with exactly one planner-usable result: one bounded successor to create now, or an explicit evidence ceiling that justifies keeping row 35 externally blocked on authoritative source-equivalent proof.",
+        "No cloud execution and no broad MSI/identity family rediscovery beyond the sampled row 35 contract occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-row35-msi-system-assigned"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:14:53.604Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620_20260620081456",
+        "assigned_at": "2026-06-20T08:14:56.451Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620_20260620081456",
+        "worker_started_at": "2026-06-20T08:15:19.834Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-35 bounded source-equivalent slice note at evidence/archive/vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620.md, concluding the existing blocker remains the only truthful row-local consumer and documenting the exact evidence ceiling that still blocks attachment.",
+        "last_worker_completed_at": "2026-06-20T08:16:29.050Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:17:49.059Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-35 bounded slice: the maintained secops system-assigned lifecycle remains the nearest candidate landing, but no native msiplans request/verdict excerpt was recovered, so the existing row-35 source-holder blocker stays as the only truthful consumer."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row35-msi-system-assigned-bounded-source-equivalent-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:17:49.059Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-35 bounded slice: the maintained secops system-assigned lifecycle remains the nearest candidate landing, but no native msiplans request/verdict excerpt was recovered, so the existing row-35 source-holder blocker stays as the only truthful consumer."
+      },
+      "status": "done"
+    }
+  ]
+}

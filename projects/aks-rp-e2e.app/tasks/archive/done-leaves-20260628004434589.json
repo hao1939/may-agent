@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T00:44:34.589Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner cleanup archives the remaining completed orphaned AAD RBAC review leaves and leaves this lane truthfully blocked-only. Their durable meaning is already represented in accepted archive evidence and this parent summary: azure-rbac-authorization remains environment-blocked on returned external prerequisite proof already carried by the focus branch, and azure-rbac-automatic-sku is terminal because run 28288238773 was already accepted as local source-drift, the replacement source-alignment repair completed, and maintained spec/model surfaces already carry pass truth. Keep only the two exact App Routing waits visible here: the existing-cluster operator-response family until a returned reply or its recorded owner-review trigger, and run 28298043331 until a truthful terminal workflow/artifact signal appears. Do not recreate retry/wait leaves for the archived AAD RBAC orphaned reviews unless new contradictory evidence appears.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the orphaned spec-loop result for spec.aad-rbac-azure-rbac-authorization and restore one truthful visible child outcome for this spec: accepted terminal evidence, one exact retry, or one exact wait backed by current captured workflow/artifact state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628.md"
+      ],
+      "acceptance": [
+        "Use current spec-loop/captured evidence for spec.aad-rbac-azure-rbac-authorization to produce one durable archive note and end with exactly one truthful disposition: accepted terminal status, one concrete retry leaf, or one exact blocked wait with explicit resume signal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac-azure-rbac-authorization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:38:47.764Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628_20260628004116",
+        "assigned_at": "2026-06-28T00:41:16.364Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628",
+        "worker_started_attempt_id": "a_review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628_20260628004116",
+        "worker_started_at": "2026-06-28T00:41:19.824Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the orphaned spec-loop state for spec.aad-rbac.azure-rbac-authorization and wrote a durable archive note concluding that the already accepted workflow run 28287937979 pass is the truthful visible child outcome, superseding retry/wait.",
+        "last_worker_completed_at": "2026-06-28T00:42:17.226Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:42:41.012Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the orphaned-result review: archive evidence shows spec-loop already records terminal pass for spec.aad-rbac.azure-rbac-authorization on workflow run 28287937979, captured artifacts are complete/passing, and the prior verifier leaf was already accepted and archived, so no retry/wait is more truthful than restoring that accepted terminal outcome."
+      },
+      "session_id": "s_task_review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628",
+      "session_history": [
+        "s_task_review-spec-aad-rbac-azure-rbac-authorization-orphaned-spec-loop-result-20260628"
+      ],
+      "result": "Reviewed the orphaned spec-loop state for spec.aad-rbac.azure-rbac-authorization and wrote a durable archive note concluding that the already accepted workflow run 28287937979 pass is the truthful visible child outcome, superseding retry/wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:42:41.012Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the orphaned-result review: archive evidence shows spec-loop already records terminal pass for spec.aad-rbac.azure-rbac-authorization on workflow run 28287937979, captured artifacts are complete/passing, and the prior verifier leaf was already accepted and archived, so no retry/wait is more truthful than restoring that accepted terminal outcome."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the orphaned spec-loop result for spec.aad-rbac-azure-rbac-automatic-sku and restore one truthful visible child outcome for this spec: accepted terminal evidence, one exact retry, or one exact wait backed by current captured workflow/artifact state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628.md"
+      ],
+      "acceptance": [
+        "Use current spec-loop/captured evidence for spec.aad-rbac-azure-rbac-automatic-sku to produce one durable archive note and end with exactly one truthful disposition: accepted terminal status, one concrete retry leaf, or one exact blocked wait with explicit resume signal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac-azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:38:47.812Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628_20260628004116",
+        "assigned_at": "2026-06-28T00:41:16.365Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628",
+        "worker_started_attempt_id": "a_review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628_20260628004116",
+        "worker_started_at": "2026-06-28T00:41:19.666Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable orphaned-spec review note for spec.aad-rbac.azure-rbac-automatic-sku concluding the truthful visible outcome is accepted terminal status, based on the already accepted 28288238773 source-drift review plus the completed source-alignment repair chain.",
+        "last_worker_completed_at": "2026-06-28T00:43:19.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:43:44.148Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the orphaned spec-loop outcome for spec.aad-rbac.azure-rbac-automatic-sku as already terminal: run 28288238773 was previously reviewed as a local source-drift finding, its replacement repair leaf completed and was accepted, and maintained spec/model surfaces already carry pass evidence, so no truthful retry or wait remains."
+      },
+      "session_id": "s_task_review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628",
+      "session_history": [
+        "s_task_review-spec-aad-rbac-azure-rbac-automatic-sku-orphaned-spec-loop-result-20260628"
+      ],
+      "result": "Wrote a durable orphaned-spec review note for spec.aad-rbac.azure-rbac-automatic-sku concluding the truthful visible outcome is accepted terminal status, based on the already accepted 28288238773 source-drift review plus the completed source-alignment repair chain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:43:44.148Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the orphaned spec-loop outcome for spec.aad-rbac.azure-rbac-automatic-sku as already terminal: run 28288238773 was previously reviewed as a local source-drift finding, its replacement repair leaf completed and was accepted, and maintained spec/model surfaces already carry pass evidence, so no truthful retry or wait remains."
+      },
+      "status": "done"
+    }
+  ]
+}

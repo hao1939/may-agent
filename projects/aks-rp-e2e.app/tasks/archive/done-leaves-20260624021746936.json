@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:17:46.936Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 planner refill/review accepted both storage clone mounted-source boundary maps after direct artifact validation: the new file-clone and disk-clone archive notes each cite exact mounted handwritten source plus maintained feature/spec/replay/model/view carriers, keep their Azure File vs Azure Disk PVC->PVC clone contracts narrowly separated, record truthful source-grounded draft ceilings, and confirm no maintained model/view wording sync was required. Both reviews surfaced replay-local carrier drift as the next repo-local maintenance work: keep storage-csi-file-clone-replay-check-drift-repair-20260624 as the single active runner-fix lane, queue storage-csi-disk-clone-replay-check-path-repair-20260624 plus storage-csi-disk-resize-mounted-source-boundary-map-20260624 as the next bounded no-cloud follow-ons, and leave the three exact external returned-proof waits unchanged until authoritative proof arrives or the first same-branch follow-up review on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-clone-mounted-source-boundary-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded repo-local boundary map for path.storage-csi-file-clone from the mounted handwritten source plus maintained spec/replay/model carriers so the knowledge map clearly separates exact clone inputs, expected behavior points, current observed-status ceiling, adjacent storage clone surfaces, and the next live verification packet without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-clone-mounted-source-boundary-map-20260624.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted handwritten source file(s)/scenario, maintained spec/replay/model/view links, and enumerates the clone contract as exact source-backed inputs and expected behaviors without widening into unrelated disk/file storage claims.",
+        "The note records the current observed-status ceiling truthfully (repo-local source-grounded draft only), identifies adjacent same-family surfaces worth keeping distinct, and names the exact future verification packet if live evidence is later pursued.",
+        "If the maintained model/view wording for path.storage-csi-file-clone needs a bounded sync to stay claim-safe with the boundary map, land that minimal edit plus validation evidence; otherwise record why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:14:32.606Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-mounted-source-boundary-map-20260624_20260624021432",
+        "assigned_at": "2026-06-24T02:14:32.655Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-mounted-source-boundary-map-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-mounted-source-boundary-map-20260624_20260624021432",
+        "worker_started_at": "2026-06-24T02:15:00.608Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive boundary map at evidence/archive/storage-csi-file-clone-mounted-source-boundary-map-20260624.md, grounding path.storage-csi-file-clone in the mounted source plus maintained carriers and documenting the current source-grounded ceiling, adjacent surfaces, and future bounded verification packet.",
+        "last_worker_completed_at": "2026-06-24T02:16:44.129Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:17:30.662Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the new archive note after direct evidence check: it cites the mounted azurefilecsi clone source plus maintained feature/spec/replay/model/view carriers, keeps path.storage-csi-file-clone bounded to the exact Azure File PVC->PVC clone contract, records the truthful source-grounded draft ceiling, identifies adjacent same-family surfaces, and explains why no maintained model/view wording sync was required. The note also surfaced a separate repo-local replay --check expectation drift, so that runner maintenance should continue in its own follow-up task rather than blocking acceptance of this boundary-map leaf."
+      },
+      "session_id": "s_task_storage-csi-file-clone-mounted-source-boundary-map-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-clone-mounted-source-boundary-map-20260624"
+      ],
+      "result": "Wrote the requested archive boundary map at evidence/archive/storage-csi-file-clone-mounted-source-boundary-map-20260624.md, grounding path.storage-csi-file-clone in the mounted source plus maintained carriers and documenting the current source-grounded ceiling, adjacent surfaces, and future bounded verification packet.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:17:30.662Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the new archive note after direct evidence check: it cites the mounted azurefilecsi clone source plus maintained feature/spec/replay/model/view carriers, keeps path.storage-csi-file-clone bounded to the exact Azure File PVC->PVC clone contract, records the truthful source-grounded draft ceiling, identifies adjacent same-family surfaces, and explains why no maintained model/view wording sync was required. The note also surfaced a separate repo-local replay --check expectation drift, so that runner maintenance should continue in its own follow-up task rather than blocking acceptance of this boundary-map leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

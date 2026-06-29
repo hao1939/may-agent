@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T15:39:32.285Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after accepted auth-service-tags contract review: archive the four newly safe done leaves because their durable meaning now lives in evidence/archive and, where applicable, the maintained source/spec/replay/model carriers. The mounted-source Authorized Service Tags contract is now settled repo-locally and no longer needs an open source-ambiguity task; its remaining gate is only alternate-host or explicit attestation proof before any future rerun/escalation. Keep aad-rbac-managed-v2-row37-carrier-baseline-reconcile-20260621 as the sole active repo-local next action because it is the only live runnable learning leaf and is still needed to name the minimum truthful next row-37 decomposition step. Keep external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single compressed external-human-transport family wait; do not split it without real out-of-runtime send/handoff/escalation proof or authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-model-view-branch-node-refinement-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: refine the normalized row-37 managed AAD lifecycle model/view surface so path.aad-rbac.managed-v2-lifecycle exposes branch-level operation nodes for the mounted source family instead of aggregate update-branches and reset-disable-negative buckets, without splitting the single row-37 feature/spec/replay family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-model-view-branch-node-refinement-20260621.md"
+      ],
+      "acceptance": [
+        "Use the accepted evidence/archive/aad-rbac-managed-v2-lifecycle-branch-coverage-inventory-20260621.md findings plus the current model/knowledge-map carriers to identify the exact aggregate nodes that need refinement and the exact branch-level nodes/labels the model and derived views should expose for row-37.",
+        "Produce a repo-local evidence note that cites the concrete model/view edits or, if no truthful edit is possible yet, the exact schema/tooling constraint that prevents the refinement and the minimum local follow-up needed.",
+        "Keep the task bounded to row-37 managed AAD lifecycle model/view decomposition only: no cloud mutation, no new sibling feature/spec/replay packets, and no broader AAD/RBAC sweep beyond the branch-node refinement."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-managed-v2-source-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T15:34:38.501Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-model-view-branch-node-refinement-20260621_20260621153438",
+        "assigned_at": "2026-06-21T15:34:38.544Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-model-view-branch-node-refinement-20260621",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-model-view-branch-node-refinement-20260621_20260621153438",
+        "worker_started_at": "2026-06-21T15:34:58.242Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote a blocker evidence note at evidence/archive/aad-rbac-managed-v2-model-view-branch-node-refinement-20260621.md showing the accepted row-37 branch-node refinement cannot be truthfully landed yet because the checked-in model/view carriers are on an older row-37 surface than the accepted inventory note assumes.",
+        "last_worker_completed_at": "2026-06-21T15:37:30.573Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T15:37:50.960Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the worker produced the requested blocker evidence note showing the branch-node refinement cannot be truthfully landed on the current checked-in row-37 carriers because the accepted inventory note assumes a newer model/view surface; this satisfies the task's alternative acceptance path by recording the exact local constraint and minimum follow-up needed."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-model-view-branch-node-refinement-20260621",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-model-view-branch-node-refinement-20260621"
+      ],
+      "result": "Wrote a blocker evidence note at evidence/archive/aad-rbac-managed-v2-model-view-branch-node-refinement-20260621.md showing the accepted row-37 branch-node refinement cannot be truthfully landed yet because the checked-in model/view carriers are on an older row-37 surface than the accepted inventory note assumes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T15:37:50.960Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the worker produced the requested blocker evidence note showing the branch-node refinement cannot be truthfully landed on the current checked-in row-37 carriers because the accepted inventory note assumes a newer model/view surface; this satisfies the task's alternative acceptance path by recording the exact local constraint and minimum follow-up needed."
+      },
+      "status": "done"
+    }
+  ]
+}

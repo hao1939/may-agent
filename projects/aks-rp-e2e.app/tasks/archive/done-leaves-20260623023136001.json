@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T02:31:36.001Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review accepted the bounded Storage CSI VM-prerelease row-13 raw-block envelope packet: the archive note ties the exact mounted VM Ubuntu selector and shared Azure Disk raw-block branch to the current aggregate matrix and generic raw-block carriers, and records the minimal future split edit set without reopening execution. This focus branch no longer carries unfinished repo-local row-13 source-packet work. The branch now reduces to one active repo-local next-step decision leaf—storage-csi-vmpr-row13-overlay-carrier-next-step-decision-20260623—to decide whether to keep the aggregate ceiling or open a dedicated row-13 overlay carrier next, while the single external-human family wait remains the only blocked child with the same exact resume condition.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-vmpr-row13-raw-block-envelope-packet-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write one bounded repo-local source packet for VM-prerelease row 13 (Azure Disk VM Ubuntu raw-block) that traces the exact mounted scenario envelope and raw-block branch to the existing generic raw-block carriers, and names the minimal spec/feature/replay/model edits required if the project chooses to split this row out of the aggregate Linux matrix next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-vmpr-row13-raw-block-envelope-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact row-13 selector lines and raw-block branch lines in /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurediskcsi.go, explains how they relate to existing repo-local carriers such as spec.storage-csi.disk-raw-block and spec.storage-csi.vm-prerelease-linux-matrix, and identifies the smallest truthful extraction seam.",
+        "The note lists the exact repo-local files that would need edits for a future row-13 dedicated carrier, or explicitly records why the aggregate matrix remains the truthful ceiling for now; no cloud execution, no verdict changes, and no widening beyond row 13 Azure Disk VM Ubuntu raw-block are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sig.storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T02:28:31.156Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-vmpr-row13-raw-block-envelope-packet-20260623_20260623022831",
+        "assigned_at": "2026-06-23T02:28:31.217Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-vmpr-row13-raw-block-envelope-packet-20260623",
+        "worker_started_attempt_id": "a_storage-csi-vmpr-row13-raw-block-envelope-packet-20260623_20260623022831",
+        "worker_started_at": "2026-06-23T02:28:57.737Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded archive packet `evidence/archive/storage-csi-vmpr-row13-raw-block-envelope-packet-20260623.md`, tracing row 13’s mounted VM Ubuntu selector and shared Azure Disk raw-block branch to the current aggregate matrix and generic raw-block carriers, and naming the minimal future split edit set.",
+        "last_worker_completed_at": "2026-06-23T02:30:51.358Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T02:31:35.799Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet cites the exact mounted row-13 VM Ubuntu selector and shared Azure Disk raw-block validation branch, explains why the aggregate VM-prerelease Linux matrix plus generic raw-block carrier remain the truthful repo-local ceiling today, and names the minimal future dedicated-carrier edit set without widening scope or opening execution."
+      },
+      "session_id": "s_task_storage-csi-vmpr-row13-raw-block-envelope-packet-20260623",
+      "session_history": [
+        "s_task_storage-csi-vmpr-row13-raw-block-envelope-packet-20260623"
+      ],
+      "result": "Wrote the bounded archive packet `evidence/archive/storage-csi-vmpr-row13-raw-block-envelope-packet-20260623.md`, tracing row 13’s mounted VM Ubuntu selector and shared Azure Disk raw-block branch to the current aggregate matrix and generic raw-block carriers, and naming the minimal future split edit set.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T02:31:35.799Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet cites the exact mounted row-13 VM Ubuntu selector and shared Azure Disk raw-block validation branch, explains why the aggregate VM-prerelease Linux matrix plus generic raw-block carrier remain the truthful repo-local ceiling today, and names the minimal future dedicated-carrier edit set without widening scope or opening execution."
+      },
+      "status": "done"
+    }
+  ]
+}

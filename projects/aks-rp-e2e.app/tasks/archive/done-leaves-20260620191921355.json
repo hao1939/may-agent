@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:19:21.355Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning ignored a stale watchdog-review-pending event for private-cluster-addonv2-coreaddons-authoring-20260620 because that leaf is already accepted and compacted into parent knowledge; the live frontier still has no review tasks. Project focus stays on the single active private-cluster-mounted-source-gap-map-slice3-20260620 source-frontier inventory, which is the only truthful repo-local mover and should propose the next bounded landing only after classifying dns-zone-system, dns-zone-none, and egress-outboundtype against mounted or accepted source-equivalent evidence. The VM/MachinesPreview branch remains intentionally collapsed to the single blocked external-send-proof-dispatch-family-20260620 carrier until durable repo-local send or escalation proof, or an authoritative reply, is recorded; no duplicate wait or response-await leaf should be recreated from this watchdog noise.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-private-endpoint-connections-lifecycle-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the second exact private-cluster private-endpoint-connections lifecycle landing repo-locally from the accepted mounted-source reconcile by adding dedicated feature/spec/replay surfaces for the customer custom-connection approve/wait/reject/delete branch while preserving the existing list-only landing as its own maintained path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/private-cluster-private-endpoint-connections-lifecycle.json"
+      ],
+      "acceptance": [
+        "specs/private-cluster-private-endpoint-connections-lifecycle.json is added with a source-backed private-cluster lifecycle contract covering customer VNet/subnet setup, manual custom private endpoint connection creation, exact two-connection expectation, custom-connection selection, approve/wait-succeeded/reject/delete lifecycle, and explicit separation from the existing list-only landing.",
+        "features/private-cluster/private-endpoint-connections-lifecycle.yaml and replays/private-cluster-private-endpoint-connections-lifecycle.ts are added as the paired maintained surfaces, with replay metadata and execution posture aligned to the new lifecycle branch without widening or restating the accepted list-only path.",
+        "Work stays repo-local and source-backed only: it cites the mounted Scenario_Private_Endpoint_Connections source and accepted reconcile artifact, performs no cloud execution, and limits model changes to only the new lifecycle landing surfaces if needed by the existing authoring pattern."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-private-endpoint-connections-lifecycle-authoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:13:29.693Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-authoring-20260620_20260620191329",
+        "assigned_at": "2026-06-20T19:13:29.743Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-private-endpoint-connections-lifecycle-authoring-20260620",
+        "worker_started_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-authoring-20260620_20260620191329",
+        "worker_started_at": "2026-06-20T19:13:42.706Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the new repo-local private-endpoint-connections lifecycle landing as a separate source-grounded spec/feature/replay trio, preserved the accepted list-only sibling path, updated specs/index.json, and verified the new replay passes source/spec wiring check.",
+        "last_worker_completed_at": "2026-06-20T19:17:29.413Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:18:27.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner file verification: features/private-cluster/private-endpoint-connections-lifecycle.yaml, specs/private-cluster-private-endpoint-connections-lifecycle.json, and replays/private-cluster-private-endpoint-connections-lifecycle.ts all exist in the domain repo, and bun run replays/private-cluster-private-endpoint-connections-lifecycle.ts --check passed with Scenario_Private_Endpoint_Connections source/spec wiring. Worker summary is now evidence-backed rather than empty-evidence only."
+      },
+      "session_id": "s_task_private-cluster-private-endpoint-connections-lifecycle-authoring-20260620",
+      "session_history": [
+        "s_task_private-cluster-private-endpoint-connections-lifecycle-authoring-20260620"
+      ],
+      "result": "Added the new repo-local private-endpoint-connections lifecycle landing as a separate source-grounded spec/feature/replay trio, preserved the accepted list-only sibling path, updated specs/index.json, and verified the new replay passes source/spec wiring check.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:18:27.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner file verification: features/private-cluster/private-endpoint-connections-lifecycle.yaml, specs/private-cluster-private-endpoint-connections-lifecycle.json, and replays/private-cluster-private-endpoint-connections-lifecycle.ts all exist in the domain repo, and bun run replays/private-cluster-private-endpoint-connections-lifecycle.ts --check passed with Scenario_Private_Endpoint_Connections source/spec wiring. Worker summary is now evidence-backed rather than empty-evidence only."
+      },
+      "status": "done"
+    }
+  ]
+}

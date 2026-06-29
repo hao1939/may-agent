@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T19:41:26.784Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 task-completed planning update: accepted and archived the ManagedSystem same-pool boundary status packet as durable repo-local evidence for the exact VirtualMachines+ManagedSystem same-pool request shape, terminal unsupported-combination/product-constraint verdict, decisive blocker wording, adjacent accepted ManagedSystem anchors, and retest condition; the companion create-time initial-pool and network-cni overlay path-summary reconciles are already represented by accepted rollups, so the only live frontier remains the compressed seven-leaf external returned-proof family under focus-mounted-source-coverage-closure-and-external-wait-20260623 pending earlier authoritative reply or the 2026-06-26 follow-up window.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-initial-pool-surface-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained create-time ManagedSystem initial/default pool path surfaces from the existing boundary/status audit evidence so path.managedsystem.create-time-initial-pool preserves the exact minimal name+mode contract, the architecture/SKU mismatch product-gap verdict, and the retest condition without drifting into broader VirtualMachines/ManagedSystem siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-initial-pool-surface-reconcile-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites evidence/archive/managedsystem-pool-boundary-matrix-20260625.md plus evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md and the maintained anchors model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, and model/knowledge-map/views/evidence-index.md, then states the exact current boundary/status for path.managedsystem.create-time-initial-pool.",
+        "If any maintained path/model/view wording or evidence linkage is stale for the create-time ManagedSystem initial/default pool branch, apply the exact repo-local-safe correction and refresh the touched maintained views without widening into path.virtualmachines.managedsystem-combined or other ManagedSystem/VirtualMachines siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.managedsystem.create-time-initial-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T19:36:56.409Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-initial-pool-surface-reconcile-20260625_20260625193656",
+        "assigned_at": "2026-06-25T19:36:56.460Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-initial-pool-surface-reconcile-20260625",
+        "worker_started_attempt_id": "a_managedsystem-create-time-initial-pool-surface-reconcile-20260625_20260625193656",
+        "worker_started_at": "2026-06-25T19:37:03.973Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the durable archive note `evidence/archive/managedsystem-create-time-initial-pool-surface-reconcile-20260625.md` reconciling the create-time ManagedSystem path against the accepted boundary matrix, alignment audit, and maintained model/view/spec anchors. No repo-local model or view repairs were needed because the maintained surfaces already preserve the exact minimal name+mode contract, product-gap verdict, architecture-mismatch cause, and retest condition.",
+        "last_worker_completed_at": "2026-06-25T19:37:46.963Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T19:38:53.116Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note durably cites the boundary matrix, status-alignment audit, and maintained model/view/spec anchors, and it truthfully confirms no repo-local repair was needed because path.managedsystem.create-time-initial-pool already preserves the exact minimal name+mode contract, product-gap verdict, architecture mismatch cause, and retest gate."
+      },
+      "session_id": "s_task_managedsystem-create-time-initial-pool-surface-reconcile-20260625",
+      "session_history": [
+        "s_task_managedsystem-create-time-initial-pool-surface-reconcile-20260625"
+      ],
+      "result": "Wrote the durable archive note `evidence/archive/managedsystem-create-time-initial-pool-surface-reconcile-20260625.md` reconciling the create-time ManagedSystem path against the accepted boundary matrix, alignment audit, and maintained model/view/spec anchors. No repo-local model or view repairs were needed because the maintained surfaces already preserve the exact minimal name+mode contract, product-gap verdict, architecture-mismatch cause, and retest condition.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T19:38:53.116Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note durably cites the boundary matrix, status-alignment audit, and maintained model/view/spec anchors, and it truthfully confirms no repo-local repair was needed because path.managedsystem.create-time-initial-pool already preserves the exact minimal name+mode contract, product-gap verdict, architecture mismatch cause, and retest gate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-base-path-summary-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained network-cni overlay ILPIP base path summary/model linkage from the newly accepted base verification contract packet so future planning preserves the exact mixed-OS IPv4-only branch identity, required Linux+Windows IPv4 witnesses, and blocked-vs-fail boundaries without borrowing dual-stack conclusions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-base-path-summary-reconcile-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites evidence/archive/network-cni-overlay-ilpip-base-verification-contract-packet-20260625.md plus the maintained path summary/model/spec anchors and states the exact base-path status ceiling: repo-local only, mixed-OS IPv4-only ILPIP, Linux+Windows IPv4 witness requirements, and no dual-stack inheritance.",
+        "If any maintained path-summary/model wording is stale or misleading for the base ILPIP branch, the task records the exact bounded correction needed (and applies it when repo-local and safe) without widening into dual-stack/generic overlay siblings or creating a live-execution ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.network-cni-azure-overlay-ilpip"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T19:31:30.456Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-base-path-summary-reconcile-20260625_20260625193130",
+        "assigned_at": "2026-06-25T19:31:30.505Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-base-path-summary-reconcile-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-base-path-summary-reconcile-20260625_20260625193130",
+        "worker_started_at": "2026-06-25T19:31:58.501Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the base ILPIP path/model linkage to the accepted verification contract by updating model evidence/path wording, regenerating maintained views, and writing a durable archive note documenting the exact mixed-OS IPv4-only ceiling and blocked-vs-fail boundaries.",
+        "last_worker_completed_at": "2026-06-25T19:35:19.387Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T19:36:56.343Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct verification that the archive note landed and the maintained surfaces model/knowledge-map/model.json, views/path-summary.json, and views/evidence-index.md now carry the base verification contract packet plus the mixed-OS IPv4-only, Linux+Windows witness, blocked-vs-fail, and no-dual-stack-inheritance wording for path.network-cni-azure-overlay-ilpip."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-base-path-summary-reconcile-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-base-path-summary-reconcile-20260625"
+      ],
+      "result": "Reconciled the base ILPIP path/model linkage to the accepted verification contract by updating model evidence/path wording, regenerating maintained views, and writing a durable archive note documenting the exact mixed-OS IPv4-only ceiling and blocked-vs-fail boundaries.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T19:36:56.343Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct verification that the archive note landed and the maintained surfaces model/knowledge-map/model.json, views/path-summary.json, and views/evidence-index.md now carry the base verification contract packet plus the mixed-OS IPv4-only, Linux+Windows witness, blocked-vs-fail, and no-dual-stack-inheritance wording for path.network-cni-azure-overlay-ilpip."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-combined-same-pool-boundary-status-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the adjacent same-pool VirtualMachines + ManagedSystem branch as a bounded repo-local knowledge packet so the maintained project surface preserves the exact request shape, rejection boundary, current product-gap/product-constraint verdict, evidence anchors, and retest condition for path.virtualmachines.managedsystem-combined without drifting back into the create-time initial/default pool sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-combined-same-pool-boundary-status-packet-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the maintained anchors and adjacent accepted ManagedSystem evidence needed to state the exact current boundary/status for path.virtualmachines.managedsystem-combined, including the same-pool request shape, current verdict classification, blocker wording, and retest condition.",
+        "If the maintained repo-local surface for the exact same-pool VirtualMachines + ManagedSystem branch is stale or blurred against the create-time ManagedSystem initial/default pool sibling, the task records the exact correction needed or applies the repo-local-safe wording/linkage repair without widening into unrelated ManagedSystem or VirtualMachines branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T19:38:53.164Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-combined-same-pool-boundary-status-packet-20260625_20260625193853",
+        "assigned_at": "2026-06-25T19:38:53.212Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-combined-same-pool-boundary-status-packet-20260625",
+        "worker_started_attempt_id": "a_managedsystem-combined-same-pool-boundary-status-packet-20260625_20260625193853",
+        "worker_started_at": "2026-06-25T19:39:04.094Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable archive note `evidence/archive/managedsystem-combined-same-pool-boundary-status-packet-20260625.md` capturing the exact same-pool VirtualMachines+ManagedSystem request shape, terminal unsupported-combination verdict, decisive blocker wording, adjacent accepted ManagedSystem anchors, and the retest condition while confirming no repo-local wording repair was needed.",
+        "last_worker_completed_at": "2026-06-25T19:40:31.849Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T19:41:21.290Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the reviewed archive note as durable same-pool VirtualMachines+ManagedSystem boundary evidence: it preserves the exact request shape, terminal unsupported-combination/product-constraint verdict, decisive blocker wording, adjacent ManagedSystem anchors, and retest condition, while confirming no repo-local wording or linkage repair is needed."
+      },
+      "session_id": "s_task_managedsystem-combined-same-pool-boundary-status-packet-20260625",
+      "session_history": [
+        "s_task_managedsystem-combined-same-pool-boundary-status-packet-20260625"
+      ],
+      "result": "Created the durable archive note `evidence/archive/managedsystem-combined-same-pool-boundary-status-packet-20260625.md` capturing the exact same-pool VirtualMachines+ManagedSystem request shape, terminal unsupported-combination verdict, decisive blocker wording, adjacent accepted ManagedSystem anchors, and the retest condition while confirming no repo-local wording repair was needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T19:41:21.290Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the reviewed archive note as durable same-pool VirtualMachines+ManagedSystem boundary evidence: it preserves the exact request shape, terminal unsupported-combination/product-constraint verdict, decisive blocker wording, adjacent ManagedSystem anchors, and retest condition, while confirming no repo-local wording or linkage repair is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

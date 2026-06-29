@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:55:24.100Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the remaining completed VM prerelease source-closure slice now captured in durable evidence and parent context: vm-prerelease-rows-25-50-source-map-20260621 proved rows 25 and 50 have mounted-source-backed carriers with no remaining local source ambiguity. The live project frontier is now intentionally three-way only: managedsystem-field-rejection-wording-reconcile-20260621 for repo-local ManagedSystem count/type wording parity, source-private-cluster-scenario-coverage-map-20260621 for source-backed private-cluster expansion, and external-send-proof-dispatch-family-20260620 as the single exact external-human transport ceiling until durable send/escalation proof or an authoritative reply exists for either packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows-25-50-source-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source to map the VirtualMachine prerelease rows-25-and-50 live-operator bundle into repo-local source-backed knowledge surfaces: identify the exact handwritten e2ev3 scenario/steps/assertions for rows 25 and 50, reconcile those expectations against existing prerelease packet/model coverage, and produce the next repo-local spec/model/evidence updates needed so this branch no longer depends on an exact-source blocker before any future external send or cloud retry decisions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows-25-50-source-map-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source files, scenario/step lineage, and row-25/row-50 expectation statements used for the VM prerelease bundle, with enough detail to audit source equivalence locally.",
+        "Task updates or identifies the exact repo-local prerelease spec/model/replay surfaces that must change next, and clarifies whether any remaining uncertainty is repo-local, source-backed, and bounded rather than a passive source-holder blocker.",
+        "Outcome stays repo-local only: no cloud execution, no duplicate external-send waits, and no new response-await placeholder is created for the VM prerelease branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:50:23.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows-25-50-source-map-20260621_20260621015023",
+        "assigned_at": "2026-06-21T01:50:23.582Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows-25-50-source-map-20260621",
+        "worker_started_attempt_id": "a_vm-prerelease-rows-25-50-source-map-20260621_20260621015023",
+        "worker_started_at": "2026-06-21T01:50:39.351Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the exact mounted-source lineage for VM prerelease rows 25 and 50, wrote the requested evidence packet, and repaired repo-local source-backed surfaces so row 50 now appears in the normalized knowledge map/spec index while row 25 metadata matches its implemented execute-gated replay.",
+        "last_worker_completed_at": "2026-06-21T01:50:39.369Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:51:08.905Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-rows-25-50-source-map-20260621.md cites exact mounted-source lineage for prerelease rows 25 and 50, documents the repaired repo-local spec/index/model/feature surfaces, and shows the VM prerelease branch no longer has a local source-ambiguity blocker; only the existing external-send-proof-dispatch-family-20260620 transport ceiling remains."
+      },
+      "session_id": "s_task_vm-prerelease-rows-25-50-source-map-20260621",
+      "session_history": [
+        "s_task_vm-prerelease-rows-25-50-source-map-20260621"
+      ],
+      "result": "Mapped the exact mounted-source lineage for VM prerelease rows 25 and 50, wrote the requested evidence packet, and repaired repo-local source-backed surfaces so row 50 now appears in the normalized knowledge map/spec index while row 25 metadata matches its implemented execute-gated replay.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:51:08.905Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-rows-25-50-source-map-20260621.md cites exact mounted-source lineage for prerelease rows 25 and 50, documents the repaired repo-local spec/index/model/feature surfaces, and shows the VM prerelease branch no longer has a local source-ambiguity blocker; only the existing external-send-proof-dispatch-family-20260620 transport ceiling remains."
+      },
+      "status": "done"
+    }
+  ]
+}

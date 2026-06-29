@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:23:20.250Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 stale-review reconciliation: the cited storage-csi clone replay repair wake was already accepted, so no review reopening was needed. Archive the completed storage-csi resize boundary map plus file-clone and disk-clone replay-check repairs as durable repo-local maintenance knowledge; keep the two active mounted-source boundary-map leaves for path.storage-csi-disk-raw-block and path.storage-csi-disk-xfs as the current no-cloud runnable focus, and leave the three exact external returned-proof waits unchanged until authoritative proof arrives or the first same-branch blocked-frontier review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-clone-replay-check-path-repair-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair replays/storage-csi-disk-clone.ts so it exposes a truthful repo-local --check path aligned to the current accepted path.storage-csi-disk-clone boundary and keeps live auth/subscription requirements behind execute-gated behavior only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-replay-check-path-repair-20260624.md"
+      ],
+      "acceptance": [
+        "replays/storage-csi-disk-clone.ts --check completes repo-locally without requiring live subscription/auth, and the archive note records the exact command plus the exact carrier/readiness fields repaired with no cloud execution.",
+        "The repair preserves the same bounded path.storage-csi-disk-clone contract and future execute-gated packet; it does not widen into resize, raw-block, xfs, snapshot, Azure File, or other storage claims.",
+        "If a truthful --check path cannot be repaired only in the replay carrier, the note records the exact conflicting maintained source of truth and the smallest follow-up needed instead of forcing a broad unrelated model rewrite."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:17:46.890Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-clone-replay-check-path-repair-20260624_20260624021815",
+        "assigned_at": "2026-06-24T02:18:15.896Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-clone-replay-check-path-repair-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-clone-replay-check-path-repair-20260624_20260624021815",
+        "worker_started_at": "2026-06-24T02:18:23.731Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired replays/storage-csi-disk-clone.ts from a force-live ARM scaffold into a repo-local source-grounded check carrier, and wrote evidence/archive/storage-csi-disk-clone-replay-check-path-repair-20260624.md documenting the exact repair plus check/execute-gated validation outputs.",
+        "last_worker_completed_at": "2026-06-24T02:20:34.424Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:21:09.753Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/storage-csi-disk-clone-replay-check-path-repair-20260624.md records exact repo-local --check and execute-gated validation commands, and the repaired replays/storage-csi-disk-clone.ts now routes through source-spec-check without live auth/subscription requirements while preserving the bounded path.storage-csi-disk-clone contract."
+      },
+      "session_id": "s_task_storage-csi-disk-clone-replay-check-path-repair-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-clone-replay-check-path-repair-20260624"
+      ],
+      "result": "Repaired replays/storage-csi-disk-clone.ts from a force-live ARM scaffold into a repo-local source-grounded check carrier, and wrote evidence/archive/storage-csi-disk-clone-replay-check-path-repair-20260624.md documenting the exact repair plus check/execute-gated validation outputs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:21:09.753Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/storage-csi-disk-clone-replay-check-path-repair-20260624.md records exact repo-local --check and execute-gated validation commands, and the repaired replays/storage-csi-disk-clone.ts now routes through source-spec-check without live auth/subscription requirements while preserving the bounded path.storage-csi-disk-clone contract."
+      },
+      "status": "done"
+    }
+  ]
+}

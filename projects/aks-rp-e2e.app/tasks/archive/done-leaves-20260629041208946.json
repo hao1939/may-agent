@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T04:12:08.946Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed owner cleanup accepts verify-spec-traffic-azure-service-mesh-upgrade-survival as a completed pass based on GitHub run 28347831099 and the recorded result.json/workflow-metadata artifact paths now stored on that child. Keep await-staging-westus2-cluster-count-preflight-family-recovery-20260628 as the single truthful live blocker for shared westus2 cluster-count preflight failures; future retries for file-resize, ultrassd, upgrade-survival, and similar same-surface staging verifier outcomes should stay linked to that family gate rather than spawning duplicate waits. The spec-verification lane remains throughput-saturated with many active children, so this wake adds no new verifier work and only rolls completed meaning up into the parent summary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-traffic-azure-service-mesh-upgrade-survival",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.traffic-azure-service-mesh.upgrade-survival through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.traffic-azure-service-mesh.upgrade-survival",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.traffic-azure-service-mesh.upgrade-survival"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.traffic-azure-service-mesh.upgrade-survival",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.traffic-azure-service-mesh.upgrade-survival workflow run 28347831099 classified as pass. Loop key: verify-spec-traffic-azure-service-mesh-upgrade-survival-a_verify-spec-traffic-azure-servic. traffic-azure-service-mesh-upgrade-survival passed: 1 claims verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28347831099 Result: runs/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/artifacts/traffic-azure-service-mesh-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T04:02:28.613Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-29T04:03:13.182Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-traffic-azure-service-mesh-upgrade-survival",
+        "stale_active_requeued_at": "2026-06-29T04:03:11.637Z",
+        "stale_active_requeue_reason": "spec loop found active verifier child with no queued assignment and no worker start",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-traffic-azure-service-mesh-upgrade-survival_20260629040230",
+        "current_attempt_id": "a_verify-spec-traffic-azure-service-mesh-upgrade-survival_20260629040313",
+        "worker_started_attempt_id": "a_verify-spec-traffic-azure-service-mesh-upgrade-survival_20260629040313",
+        "worker_started_at": "2026-06-29T04:04:55.860Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.traffic-azure-service-mesh.upgrade-survival workflow run 28347831099 classified as pass. Loop key: verify-spec-traffic-azure-service-mesh-upgrade-survival-a_verify-spec-traffic-azure-servic. traffic-azure-service-mesh-upgrade-survival passed: 1 claims verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28347831099 Result: runs/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/artifacts/traffic-azure-service-mesh-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/result.json",
+        "last_worker_completed_at": "2026-06-29T04:10:32.417Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T04:11:16.887Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.traffic-azure-service-mesh.upgrade-survival workflow run 28347831099 classified as pass. Loop key: verify-spec-traffic-azure-service-mesh-upgrade-survival-a_verify-spec-traffic-azure-servic. traffic-azure-service-mesh-upgrade-survival passed: 1 claims verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28347831099 Result: runs/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/artifacts/traffic-azure-service-mesh-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/result.json"
+      },
+      "session_id": "s_task_verify-spec-traffic-azure-service-mesh-upgrade-survival",
+      "session_history": [
+        "s_task_verify-spec-traffic-azure-service-mesh-upgrade-survival"
+      ],
+      "result": "Spec spec.traffic-azure-service-mesh.upgrade-survival workflow run 28347831099 classified as pass. Loop key: verify-spec-traffic-azure-service-mesh-upgrade-survival-a_verify-spec-traffic-azure-servic. traffic-azure-service-mesh-upgrade-survival passed: 1 claims verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28347831099 Result: runs/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/artifacts/traffic-azure-service-mesh-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28347831099/aks-rp-e2e-28347831099-spec-test-results/test-results/single-traffic-azure-service-mesh-upgrade-survival_522291/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T04:11:16.887Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

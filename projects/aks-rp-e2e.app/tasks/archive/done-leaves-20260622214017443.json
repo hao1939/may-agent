@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T21:40:17.443Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner reconciliation after task-completed wake: the vmpr row-50 accepted hardening packet checkpoint completion is already effectively accepted into project history because the archive note records the bounded dirty-repo slice review, checkpoint-helper verdict, exact one-file staging, and commit 9416ecca100f68c27aa79f77e605ab42da38a232. Archived the remaining safe done review leaf under project hygiene. Live frontier remains the two assigned repo-local landing leaves (ACNS cilium-upgrade dedicated carrier landing and SecOps FIPS standalone registration slice landing) plus the single preserved family-level external-human proof wait; no reopen of the external wait family and no new refill leaf added in this bounded wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-spec-index-split-review-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: use the accepted SecOps FIPS bounded packets plus current dirty specs/index.json residue to determine whether the three FIPS feature/spec landings can be isolated into a truthful standalone registration slice, or document the exact shared-surface blocker if they still cannot.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-spec-index-split-review-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact FIPS feature/spec files and the current specs/index.json registration surface, and states whether the advanced, backwards-compat, and version-gate landings are fully represented or still depend on unrelated shared residue.",
+        "The result recommends one bounded durable next move with exact file targets: isolated registration/checkpoint follow-up, or a precise shared-surface blocker/resume condition if truthful separation is still impossible.",
+        "No cloud mutation, no model-wide regeneration, and no reopening of the external-human wait family are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-local-secops-fips-index-split"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T21:36:00.777Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-spec-index-split-review-20260622_20260622213600",
+        "assigned_at": "2026-06-22T21:36:00.826Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-spec-index-split-review-20260622",
+        "worker_started_attempt_id": "a_secops-fips-spec-index-split-review-20260622_20260622213600",
+        "worker_started_at": "2026-06-22T21:36:17.439Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the three new SecOps cluster-FIPS feature/spec landings against mounted AKS RP source and current specs/index.json residue, then wrote archive evidence concluding the landings are independently sliceable but the current index blob is not a truthful standalone checkpoint because of unrelated residue.",
+        "last_worker_completed_at": "2026-06-22T21:39:12.389Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T21:39:42.449Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves the three SecOps FIPS feature/spec/replay landings are independently sliceable and that only unrelated specs/index.json residue prevents a truthful standalone checkpoint, so the review acceptance criteria are satisfied."
+      },
+      "session_id": "s_task_secops-fips-spec-index-split-review-20260622",
+      "session_history": [
+        "s_task_secops-fips-spec-index-split-review-20260622"
+      ],
+      "result": "Reviewed the three new SecOps cluster-FIPS feature/spec landings against mounted AKS RP source and current specs/index.json residue, then wrote archive evidence concluding the landings are independently sliceable but the current index blob is not a truthful standalone checkpoint because of unrelated residue.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T21:39:42.449Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves the three SecOps FIPS feature/spec/replay landings are independently sliceable and that only unrelated specs/index.json residue prevents a truthful standalone checkpoint, so the review acceptance criteria are satisfied."
+      },
+      "status": "done"
+    }
+  ]
+}

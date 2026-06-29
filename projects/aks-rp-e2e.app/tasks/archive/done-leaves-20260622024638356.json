@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:46:38.356Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog-review-pending reconciliation: accepted row29 knowledge-map prose/validation work is now archived into the project branch summary, and the only live project-level leaves are (1) vm-prerelease-row41-later-phase-carrier-authoring-20260622 for the repo-local secure-TLS basic-lifecycle later-phase carrier extension and (2) external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful family-level external-human wait. No review leaves remain from this wake; next local progress is the mounted-source/local-validation authoring pass for row 41, while all covered external asks stay compressed behind the shared resume-on-human-proof blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row29-knowledge-map-prose-sync-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining row-29 mixed-SKU lifecycle maintained-surface drift by updating the knowledge-map/model and derived status/path views so they describe the row as execute-capable but explicitly live-gated, matching the accepted row-29 truth packet and existing spec/replay/coverage surfaces without widening beyond row 29.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/model/knowledge-map/views/status-summary.json"
+      ],
+      "acceptance": [
+        "Row-29 feature/path prose in model/knowledge-map/model.json and regenerated row-29 status/path summaries no longer say the live replay implementation remains separate; they instead truthfully describe the maintained replay as execute-capable repo-locally with explicit cloud-mutation gating, citing the accepted 2026-06-22 row-29 truth packet as the grounding evidence.",
+        "Any row-29 evidence or coverage references needed for that wording are preserved or tightened without changing adjacent row-27 upgrade or row-30 deallocate boundaries, and the resulting row-29 status remains truthful about live execution still being gated rather than completed.",
+        "Work stays repo-local and model-oriented: update the bounded row-29 knowledge surfaces, regenerate any derived views they require, and record local validation output proving the knowledge-map/tooling still passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row29-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:39:10.593Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row29-knowledge-map-prose-sync-20260622_20260622023910",
+        "assigned_at": "2026-06-22T02:39:10.644Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row29-knowledge-map-prose-sync-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row29-knowledge-map-prose-sync-20260622_20260622023910",
+        "worker_started_at": "2026-06-22T02:39:30.484Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the row-29 mixed-SKU lifecycle knowledge-map prose in model/knowledge-map/model.json, added the accepted 2026-06-22 truth-packet evidence reference, and regenerated maintained path/status views so row 29 now reads execute-capable but explicitly live-gated without widening into row 27 or row 30.",
+        "last_worker_completed_at": "2026-06-22T02:41:28.659Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:45:39.988Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted during 2026-06-22 watchdog review: the worker updated bounded row-29 model/path/status wording to execute-capable but explicitly live-gated, and the paired validation artifact confirmed the touched knowledge surfaces plus repo-local validation without widening into rows 27 or 30."
+      },
+      "session_id": "s_task_vm-prerelease-row29-knowledge-map-prose-sync-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row29-knowledge-map-prose-sync-20260622"
+      ],
+      "result": "Updated the row-29 mixed-SKU lifecycle knowledge-map prose in model/knowledge-map/model.json, added the accepted 2026-06-22 truth-packet evidence reference, and regenerated maintained path/status views so row 29 now reads execute-capable but explicitly live-gated without widening into row 27 or row 30.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:45:39.988Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted during 2026-06-22 watchdog review: the worker updated bounded row-29 model/path/status wording to execute-capable but explicitly live-gated, and the paired validation artifact confirmed the touched knowledge surfaces plus repo-local validation without widening into rows 27 or 30."
+      },
+      "status": "done"
+    }
+  ]
+}

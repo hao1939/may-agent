@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T11:16:38.779Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 regular-learning owner review finished backlog hygiene: the vm-prerelease credential-provider upgrade matrix ready-state model sync leaf is accepted durable context and does not warrant a separate open top-level sibling. The project tree now intentionally exposes only the single truthful external-human family wait under focus-mounted-source-coverage-closure-and-external-wait-20260623, with no runnable repo-local work, duplicate blocked leaves, or speculative live/cloud follow-up added from silence alone. Resume only on returned durable external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the durable repo-local knowledge for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix so the model/workspace records the repaired exact execute gate, the bounded row-189/214 live command shapes, and the local-ready/no-cloud status proven by the 2026-06-26 repair artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626.md"
+      ],
+      "acceptance": [
+        "A repo-local artifact cites the accepted 2026-06-26 gate-repair evidence and identifies the exact execute gate requirement (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=vm-prerelease-tls-credential-upgrade-matrix), the bounded row-189/214 command shapes, and why broad gates are intentionally rejected.",
+        "The durable project understanding is updated in the appropriate repo-local knowledge surface (for example model/knowledge-map/model.json, generated views, or another established path-status surface) so path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix remains classified as locally ready for bounded live verification without claiming live pass/fail."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:11:27.710Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626_20260626111127",
+        "assigned_at": "2026-06-26T11:11:27.759Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626_20260626111127",
+        "worker_started_at": "2026-06-26T11:11:38.568Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the durable sync note for the VM prerelease credential-provider upgrade matrix and updated the accepted knowledge-map model/path-summary to cite the 2026-06-26 exact-gate repair, bounded row-189/214 execute shapes, and locally-ready/no-live-verdict posture.",
+        "last_worker_completed_at": "2026-06-26T11:14:32.176Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:15:01.645Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: durable archive note records the exact execute gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=vm-prerelease-tls-credential-upgrade-matrix, bounded row-189/214 command shapes, and intentional broad-gate rejection, and the repo-local model/path-summary now keep path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix at ready/local-only without claiming a live verdict."
+      },
+      "session_id": "s_task_vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-credential-provider-upgrade-matrix-ready-state-model-sync-20260626"
+      ],
+      "result": "Added the durable sync note for the VM prerelease credential-provider upgrade matrix and updated the accepted knowledge-map model/path-summary to cite the 2026-06-26 exact-gate repair, bounded row-189/214 execute shapes, and locally-ready/no-live-verdict posture.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:15:01.645Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: durable archive note records the exact execute gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=vm-prerelease-tls-credential-upgrade-matrix, bounded row-189/214 command shapes, and intentional broad-gate rejection, and the repo-local model/path-summary now keep path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix at ready/local-only without claiming a live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

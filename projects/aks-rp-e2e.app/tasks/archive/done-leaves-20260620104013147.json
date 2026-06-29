@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:40:13.147Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Blocked-frontier owner reconciliation (2026-06-20T10:39Z): archive the accepted row-27 VirtualMachine prerelease blocker packet because its durable meaning is now captured on this lane. Mounted-source review for Scenario_Mixed_SKU_Upgrade established that the current repo-local next step is not more source diagnosis but a later model/view landing update once the shared seven-file checkpoint gate clears. This lane is therefore reopened only for new repo-local source/spec expansion work that does not touch the helper-held knowledge-map files.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local blocker-classification packet for VirtualMachine prerelease row 27 (Scenario_Mixed_SKU_Upgrade) using mounted source and existing repo-local artifacts only. Reconcile mixed_sku_upgrade.go, suites/runner.go, specs/virtualmachines-mixed-sku-upgrade.json, replays/virtualmachines-mixed-sku-upgrade.ts, and current model/view landing to determine whether this prerelease slice should remain a generic source-grounded draft or be explicitly classified as source-backed blocked/known-risk because the runner disables it for a CRP ARM vm state mismatch. Do not run cloud execution and do not mutate shared model/view files from this leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive packet cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/mixed_sku_upgrade.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/runner.go plus the inspected repo-local spec, replay, and current model/view landing for the same slice.",
+        "Packet states the exact row-27 input path and expected upgrade-preservation assertions, then evaluates whether the runner disable note is sufficient repo-local evidence to classify the slice as explicit source-backed blocked/known-risk versus generic draft, with a clear rationale.",
+        "Packet ends with one concrete owner recommendation for the next tree/model step, while leaving any shared model/view mutation to a later evidence-feedback task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachine-mixed-sku-upgrade-blocker"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:36:12.314Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620_20260620103612",
+        "assigned_at": "2026-06-20T10:36:12.361Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620_20260620103612",
+        "worker_started_at": "2026-06-20T10:36:30.588Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-27 mixed-SKU upgrade blocker-classification packet at evidence/archive/virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620.md, reconciling mounted source, runner disable note, repo-local spec/replay, and current model/view landing into a source-backed blocked/known-risk recommendation.",
+        "last_worker_completed_at": "2026-06-20T10:37:40.367Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T10:38:31.510Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive packet cites mounted source mixed_sku_upgrade.go and suites/runner.go, reconciles repo-local spec/replay/model landing, and makes the exact next-step recommendation to reclassify row 27 / path.virtualmachines.mixed-sku-upgrade from generic draft to explicit source-backed blocked/known-risk without over-claiming live execution."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:38:31.510Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive packet cites mounted source mixed_sku_upgrade.go and suites/runner.go, reconciles repo-local spec/replay/model landing, and makes the exact next-step recommendation to reclassify row 27 / path.virtualmachines.mixed-sku-upgrade from generic draft to explicit source-backed blocked/known-risk without over-claiming live execution."
+      },
+      "status": "done"
+    }
+  ]
+}

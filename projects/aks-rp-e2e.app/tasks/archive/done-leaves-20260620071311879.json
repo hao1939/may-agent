@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T07:13:11.879Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "The bounded 2026-06-20 model-status drift slice is now durable at the lane level: model-feature-status-drift-reconcile-20260620 reconciled five stale feature-level statuses to accepted path truth (storage-csi-full-cache-os-disk-negative pass, storage-csi-mcr-mirror-monitor pass, network-cni-azure-overlay-dual-stack blocked, jwt-authenticator-upgrade-survival pass, app-monitoring-addonv2-azure-monitor-metrics blocked) while intentionally leaving secops-identity-binding-role-assignment unknown because its canonical path is still unresolved. Generated knowledge-map views were refreshed, no task routing changed, and the remaining live lane work is unchanged: localdns waits for a materially new signal, the shared seven-file knowledge-map checkpoint hold remains canonical, planner-timeout waits for the 24h window, and existing ManagedSystem create-time/day-2 follow-up resumes only on real new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "model-feature-status-drift-reconcile-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the current model feature-status drift identified by evidence/archive/model-draft-unknown-frontier-reconcile-20260620.md without changing task routing or running cloud probes. Update the model and regenerated views so storage-csi-full-cache-os-disk-negative and storage-csi-mcr-mirror-monitor no longer remain feature-level draft after passing paths landed, network-cni-azure-overlay-dual-stack and app-monitoring-addonv2-azure-monitor-metrics no longer remain feature-level unknown when their paths are already blocked with live task routing, and jwt-authenticator-upgrade-survival no longer remains feature-level unknown after its passing path closed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/model-feature-status-drift-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/model-draft-unknown-frontier-reconcile-20260620.md plus before/after model-status evidence, names each reconciled feature, and explains the exact status change applied or consciously deferred.",
+        "Repo-local model artifacts/views are updated so the five named feature-level draft/unknown drifts no longer disagree with accepted path truth, while existing blocked leaves for network-cni-azure-overlay-dual-stack, app-monitoring-addonv2-azure-monitor-metrics, and secops-identity-role-assignment-validation-live-execute-gate-await-20260620 remain unchanged unless the note proves a routing mismatch.",
+        "No cloud execution, no broad model cleanup, and no unrelated tree rewrites occur; this is a bounded feature-status reconciliation pass only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:feature-status-drift"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:08:21.947Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_model-feature-status-drift-reconcile-20260620_20260620070822",
+        "assigned_at": "2026-06-20T07:08:22.005Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_model-feature-status-drift-reconcile-20260620",
+        "worker_started_attempt_id": "a_model-feature-status-drift-reconcile-20260620_20260620070822",
+        "worker_started_at": "2026-06-20T07:08:41.746Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled five stale feature-level statuses in model/knowledge-map/model.json, regenerated maintained knowledge-map views, and wrote evidence/archive/model-feature-status-drift-reconcile-20260620.md documenting before/after truth and the intentional secops no-change defer.",
+        "last_worker_completed_at": "2026-06-20T07:11:14.024Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T07:11:41.574Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/model-feature-status-drift-reconcile-20260620.md documents the five targeted feature-status reconciliations with before/after model truth, generated views were refreshed, blocked task routing for network-cni/app-monitoring/secops was intentionally left unchanged, and the secops feature remained unknown by conscious defer rather than drift."
+      },
+      "session_id": "s_task_model-feature-status-drift-reconcile-20260620",
+      "session_history": [
+        "s_task_model-feature-status-drift-reconcile-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T07:11:41.574Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/model-feature-status-drift-reconcile-20260620.md documents the five targeted feature-status reconciliations with before/after model truth, generated views were refreshed, blocked task routing for network-cni/app-monitoring/secops was intentionally left unchanged, and the secops feature remained unknown by conscious defer rather than drift."
+      },
+      "status": "done"
+    }
+  ]
+}

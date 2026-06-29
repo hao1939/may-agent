@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:05:44.802Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog review confirmed privatecluster-shared-apiserver-subnet-model-reconciliation-20260621 was already accepted, so no new review/retry branch is needed. Live frontier stays intentionally narrow and truthful: privatecluster-shared-apiserver-subnet-model-wording-repair-20260621 is the direct stale-wording repair for the shared API-server subnet success path, privatecluster-mounted-source-scenario-inventory-second-batch-20260621 continues the bounded non-cloud private-cluster source inventory lane, and both blocked leaves remain the only exact external waits (human transport proof and explicit execute approval). Durable meaning for the accepted shared API-server subnet model reconciliation and the first private-cluster source inventory batch is preserved here and in linked evidence, so those completed leaves can archive cleanly while the next project action remains wording repair first, second-batch inventory in parallel.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-shared-apiserver-subnet-model-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the mounted shared_subnet.go success scenario into the maintained private-cluster knowledge surfaces by comparing the mounted source contract, the existing local spec/replay/feature carriers, and the current path-summary/model visibility for path.private-cluster-vnet-integration-shared-apiserver-subnet, while explicitly preserving the distinction from the already-accepted same-subnet negative path and without requesting cloud execution or approval.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-shared-apiserver-subnet-model-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted source anchors and existing local carriers for Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 (shared_subnet.go, spec, replay, feature packet, current model/path-summary entry) and summarizes the positive success-topology contract they encode.",
+        "Artifact reconciles how path.private-cluster-vnet-integration-shared-apiserver-subnet should appear in maintained model/path-summary surfaces relative to the already-accepted adjacent negative same-subnet path, naming any precise repo-local edits or follow-up authoring gaps needed, using only local/mounted evidence.",
+        "Task stays in the regular-learning/model-reconciliation lane only: no cloud execution, no approval ask, and no collapse of this source/model pass into the separate blocked execute-approval wait for the run-ready replay."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-integration-shared-apiserver-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:02:47.922Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-shared-apiserver-subnet-model-reconciliation-20260621_20260621110247",
+        "assigned_at": "2026-06-21T11:02:47.969Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-shared-apiserver-subnet-model-reconciliation-20260621",
+        "worker_started_attempt_id": "a_privatecluster-shared-apiserver-subnet-model-reconciliation-20260621_20260621110247",
+        "worker_started_at": "2026-06-21T11:02:56.958Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a reconciliation artifact at evidence/archive/privatecluster-shared-apiserver-subnet-model-reconciliation-20260621.md documenting the exact mounted shared_subnet.go contract, existing local carriers, current model/path-summary visibility, and the remaining stale wording gap versus the adjacent same-subnet negative path.",
+        "last_worker_completed_at": "2026-06-21T11:04:29.176Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:04:59.329Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-21 reconciliation artifact: it cites the exact mounted shared_subnet.go success scenario and suite anchors, maps the existing feature/spec/replay/model carriers for path.private-cluster-vnet-integration-shared-apiserver-subnet, preserves the distinction from the same-subnet negative sibling, and narrows the remaining gap to stale maintained wording only (execute-capable but mutation-gated, not check-only)."
+      },
+      "session_id": "s_task_privatecluster-shared-apiserver-subnet-model-reconciliation-20260621",
+      "session_history": [
+        "s_task_privatecluster-shared-apiserver-subnet-model-reconciliation-20260621"
+      ],
+      "result": "Created a reconciliation artifact at evidence/archive/privatecluster-shared-apiserver-subnet-model-reconciliation-20260621.md documenting the exact mounted shared_subnet.go contract, existing local carriers, current model/path-summary visibility, and the remaining stale wording gap versus the adjacent same-subnet negative path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:04:59.329Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-21 reconciliation artifact: it cites the exact mounted shared_subnet.go success scenario and suite anchors, maps the existing feature/spec/replay/model carriers for path.private-cluster-vnet-integration-shared-apiserver-subnet, preserves the distinction from the same-subnet negative sibling, and narrows the remaining gap to stale maintained wording only (execute-capable but mutation-gated, not check-only)."
+      },
+      "status": "done"
+    }
+  ]
+}

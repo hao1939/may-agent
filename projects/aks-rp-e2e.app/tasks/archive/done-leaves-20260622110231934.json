@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:02:31.934Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog review confirmed the requested repair-generated-view-refresh-blocker-custom-ca-20260622 review leaf was already rolled up and no live review backlog remains. The maintained frontier is now intentionally minimal: one active repo-local custom-CA validation leaf to run local check mode for the repaired canonical node-custom-ca-trust-create replay, plus one shared external human-transport wait for unrelated asks. Custom-CA duplicate-alias reconciliation and canonical PEM/base64 diagnosis are accepted and archived so the tree reflects only the remaining actionable work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-canonical-custom-ca-replay-pem-payload-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the canonical node-custom-ca-trust-create replay against mounted Scenario_CustomCA source and latest failing result to pinpoint the exact custom CA PEM/base64 test-input defect, and capture the bounded local repair or evidence ceiling without running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-canonical-custom-ca-replay-pem-payload-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted handwritten source path, the canonical replay file/path, and the latest failing run/result showing CATrustPreviewCAPEMDecodeFailure, then explains the exact mismatch in test input encoding/content that likely causes the failure.",
+        "If a bounded repo-local replay/input fix is clear, the artifact names the exact file/field/value shape to change and the validation/check command to run next; otherwise it records the exact evidence ceiling and the narrowest next repo-local investigation step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:58:37.288Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-canonical-custom-ca-replay-pem-payload-20260622_20260622105841",
+        "assigned_at": "2026-06-22T10:58:41.359Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-canonical-custom-ca-replay-pem-payload-20260622",
+        "worker_started_attempt_id": "a_diagnose-canonical-custom-ca-replay-pem-payload-20260622_20260622105841",
+        "worker_started_at": "2026-06-22T10:59:06.756Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested diagnosis artifact at evidence/archive/diagnose-canonical-custom-ca-replay-pem-payload-20260622.md, tying mounted Scenario_CustomCA source, canonical replay input shape, and latest CATrustPreviewCAPEMDecodeFailure evidence into a bounded replay-payload defect diagnosis with the next local check command.",
+        "last_worker_completed_at": "2026-06-22T11:00:32.495Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:01:05.930Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive cites mounted Scenario_CustomCA source, canonical replay field, and latest CATrustPreviewCAPEMDecodeFailure result, then pins the defect to malformed/non-source-equivalent base64 PEM input and names the exact repo-local replay field/value shape plus next local check command."
+      },
+      "session_id": "s_task_diagnose-canonical-custom-ca-replay-pem-payload-20260622",
+      "session_history": [
+        "s_task_diagnose-canonical-custom-ca-replay-pem-payload-20260622"
+      ],
+      "result": "Produced the requested diagnosis artifact at evidence/archive/diagnose-canonical-custom-ca-replay-pem-payload-20260622.md, tying mounted Scenario_CustomCA source, canonical replay input shape, and latest CATrustPreviewCAPEMDecodeFailure evidence into a bounded replay-payload defect diagnosis with the next local check command.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:01:05.930Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive cites mounted Scenario_CustomCA source, canonical replay field, and latest CATrustPreviewCAPEMDecodeFailure result, then pins the defect to malformed/non-source-equivalent base64 PEM input and names the exact repo-local replay field/value shape plus next local check command."
+      },
+      "status": "done"
+    }
+  ]
+}

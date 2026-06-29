@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:45:28.689Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier owner update: the root frontier is now intentionally minimal and truthful. Two active repo-local mounted-source learning leaves remain assigned and runnable without cloud mutation: network-acns-cilium-observability-authoring-from-mounted-source-20260620 for distinct ACNS Cilium observability source/spec/replay/model authoring, and network-acns-cilium-network-policy-mounted-source-lineage-audit-20260620 for exact Cilium-network-policy lineage repair from mounted AKS RP source. The VM prerelease replacement focus remains represented only by the single shared blocked family external-send-proof-dispatch-family-20260620, which truthfully carries the cross-branch external-human transport wait for durable send/escalation proof or an authoritative reply. Future wakes should review or continue the two active mounted-source leaves, and must not recreate duplicate send, response-await, packet-drafting, or stale completed secure-TLS linkage leaves unless new evidence changes those conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-securetls-knowledge-map-variant-linkage-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Attach VirtualMachine prerelease secure-TLS rows 41-43 to the canonical secure-TLS paths/specs in the knowledge-map model and regenerated views using the accepted features/secure-tls-bootstrap.yaml carrier packet, without inventing duplicate VM-only branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-securetls-knowledge-map-variant-linkage-20260620.md"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json records rows 41-43 as execution-variant linkage to path.secure-tls-bootstrap.basic-lifecycle, path.secure-tls-bootstrap.vnet-integration, and path.secure-tls-bootstrap.network-isolated with the exact canonical spec attachments and source-grounded limits from features/secure-tls-bootstrap.yaml.",
+        "Regenerated knowledge-map views/path summary surfaces reflect the three row attachments so repo-local row accounting stops treating them as carrier gaps.",
+        "Evidence cites features/secure-tls-bootstrap.yaml plus the accepted secure-TLS carrier artifact and records any remaining exactness limits, without cloud mutation or duplicate VM-only runnable specs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-securetls-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:38:52.643Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-securetls-knowledge-map-variant-linkage-20260620_20260620173929",
+        "assigned_at": "2026-06-20T17:39:29.184Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-securetls-knowledge-map-variant-linkage-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-securetls-knowledge-map-variant-linkage-20260620_20260620173929",
+        "worker_started_at": "2026-06-20T17:39:29.508Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Attached secure-TLS VM prerelease rows 41-43 to the canonical secure-TLS feature paths in model/knowledge-map/model.json, regenerated path-summary view metadata, and wrote evidence/archive/vm-prerelease-securetls-knowledge-map-variant-linkage-20260620.md documenting the canonical attachments and exactness limits.",
+        "last_worker_completed_at": "2026-06-20T17:43:18.999Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T17:43:50.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence archive confirms rows 41-43 were attached as execution variants to the canonical secure-TLS paths/specs, regenerated knowledge-map views now surface those linkages, and the remaining global model validation failures are explicitly unrelated pre-existing issues rather than blockers for this branch."
+      },
+      "session_id": "s_task_vm-prerelease-securetls-knowledge-map-variant-linkage-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-securetls-knowledge-map-variant-linkage-20260620"
+      ],
+      "result": "Attached secure-TLS VM prerelease rows 41-43 to the canonical secure-TLS feature paths in model/knowledge-map/model.json, regenerated path-summary view metadata, and wrote evidence/archive/vm-prerelease-securetls-knowledge-map-variant-linkage-20260620.md documenting the canonical attachments and exactness limits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T17:43:50.016Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence archive confirms rows 41-43 were attached as execution variants to the canonical secure-TLS paths/specs, regenerated knowledge-map views now surface those linkages, and the remaining global model validation failures are explicitly unrelated pre-existing issues rather than blockers for this branch."
+      },
+      "status": "done"
+    }
+  ]
+}

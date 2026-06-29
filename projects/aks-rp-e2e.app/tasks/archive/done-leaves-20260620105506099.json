@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:55:06.099Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner planning update: this lane now preserves the durable repo-local VM/source knowledge without keeping the rejected autoscale attempt live. Accepted prior work already established the row-45 mounted-source linkage baseline and closed the serverless virtual nodes authority-gap question. The earlier autoscale next-slice leaf was review-rejected because its claimed archive output was missing and no evidence was attached, then replaced by vm-prerelease-autoscale-source-anchor-retry-20260620. The only open work on this lane is that tighter repo-local retry, which must inspect prerelease.go/checkin.go plus referenced scenario definitions, compare one concrete adjacent autoscale prerelease slice against the current repo-local spec/replay linkage, and produce archive evidence for exact/partial/wrong linkage without touching helper-held knowledge-map landing files or running cloud work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Start from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, pick one concrete autoscale-related prerelease slice adjacent to row 45, and use mounted AKS RP source plus existing repo-local coverage artifacts to decide whether the current spec/replay linkage is exact, partial, or wrong and record the smallest truthful repo-local repair needed next without touching helper-held knowledge-map landing files or running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note names the exact selected adjacent autoscale-related prerelease slice, cites the precise mounted source anchor(s) reached from prerelease.go and/or checkin.go, and cites the current repo-local spec/replay target used for comparison.",
+        "Archive note gives an evidence-backed verdict of exact, partial, or wrong linkage; if partial or wrong, it names the exact file-level wording/metadata repair needed next, and if exact, it records why no repair is needed plus the next adjacent slice left to audit.",
+        "Task stays repo-local: no cloud execution, no edits to model/knowledge-map/model.json or model/knowledge-map/views/path-summary.json while the shared seven-file checkpoint carrier remains blocked, and no generic missing-source blocker is acceptable unless the note first shows those mounted source entry files and their referenced scenario definitions were inspected."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-autoscale-next"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:48:05.779Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T10:50:13.526Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_retry_20260620105013",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_20260620105013",
+        "worker_started_at": "2026-06-20T10:52:24.758Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-20T10:48:08.924Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-20T10:50:13.479Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Review rejected: claimed archive output ../aks-rp-e2e/evidence/archive/vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620.md is missing, last worker result carried no evidence, and acceptance cannot be verified.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_20260620104805",
+        "current_attempt_id": "a_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_20260620105013",
+        "reviewed_at": "2026-06-20T10:54:13.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced stale active leaf after repeated evidence-free worker error/blocked claims. Review rejection already established the claimed archive output was missing and no evidence was attached, so the useful next step is a fresh source-anchored repo-local retry with tighter acceptance instead of leaving this ambiguous active leaf in place."
+      },
+      "session_history": [
+        "s_task_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620",
+        "s_task_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_retry_20260620105013"
+      ],
+      "session_id": "s_task_vm-prerelease-autoscale-source-linkage-audit-next-slice-20260620_retry_20260620105013",
+      "resolution": "replaced",
+      "done_at": "2026-06-20T10:54:13.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced stale active leaf after repeated evidence-free worker error/blocked claims. Review rejection already established the claimed archive output was missing and no evidence was attached, so the useful next step is a fresh source-anchored repo-local retry with tighter acceptance instead of leaving this ambiguous active leaf in place."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:42:09.570Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review kept the single external-human-transport wait unchanged because accepted 2026-06-21 audit artifacts still prove all repo-local packet prep/dispatch work is done and leave only real human send/reply proof outside runtime. The immediate owner action remains the active repo-local stale-verdict repair for path.policy-addon.large-scale-audit; no new blocker family or duplicate wait is warranted until that mounted-source/source-equivalent reconciliation either updates the maintained model/view surfaces or records an exact remaining evidence ceiling. The VM prerelease adjacent secure-TLS maintained landing is accepted and can be archived under this parent while the active policy-addon recovery and the shared external wait remain the only open leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the accepted maintained row-44 cloud-provider IP-based LB backend-pool landing, reconcile exactly one next-adjacent VM prerelease follow-on row into the maintained knowledge-map/model/view surfaces by confirming the immediate post-cloud-provider row from mounted VM prerelease/checkin lineage plus existing repo-local carrier artifacts, without widening beyond that single confirmed adjacent row or reopening cloud/external-human-transport work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Evidence names the exact next-adjacent VM prerelease row and variant immediately after the maintained row-44 cloud-provider IP-based LB backend-pool row from mounted prerelease/checkin lineage, or records an exact adjacency correction if the immediate follow-on is not the expected autoscaled VMs CRUD row.",
+        "Maintained knowledge-map/model/view surfaces are updated truthfully for that one confirmed adjacent row only, citing the mounted source anchors plus the existing repo-local canonical carrier/check artifacts used.",
+        "Scope stays bounded to one adjacent row after maintained row 44 only: no widening to later rows, no cloud execution, no reopening the shared external-human-transport blocker family, and no replacement of the current row-44 cloud-provider branch shape unless the mounted source lineage requires an exact correction."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:34:21.216Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622_20260622003421",
+        "assigned_at": "2026-06-22T00:34:21.269Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622",
+        "worker_started_attempt_id": "a_vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622_20260622003421",
+        "worker_started_at": "2026-06-22T00:34:34.522Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Confirmed the immediate post-row44 VM prerelease follow-on is the canonical autoscaled VMs CRUD branch, wrote the bounded evidence note, and updated maintained model/view surfaces so row 45 now reflects the existing pass-backed carrier rather than the stale feature-level false-fail carryover.",
+        "last_worker_completed_at": "2026-06-22T00:40:01.523Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:40:30.715Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence artifact names the exact mounted-source anchors (virtualmachine/suites/checkin.go, virtualmachine/suites/prerelease.go, virtualmachine/plans/autoscale.go), preserves maintained row 45 vs source-order row 46 truth, and documents a bounded landing onto the existing canonical autoscaled-VMs CRUD carrier only. Git diff stat in the domain workspace confirms maintained model/view files changed during the task, so the worker claim is sufficiently supported for this row-45-only reconciliation."
+      },
+      "session_id": "s_task_vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622",
+      "session_history": [
+        "s_task_vmpr-post-row44-next-adjacent-autoscaled-vms-crud-maintained-landing-20260622"
+      ],
+      "result": "Confirmed the immediate post-row44 VM prerelease follow-on is the canonical autoscaled VMs CRUD branch, wrote the bounded evidence note, and updated maintained model/view surfaces so row 45 now reflects the existing pass-backed carrier rather than the stale feature-level false-fail carryover.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:40:30.715Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence artifact names the exact mounted-source anchors (virtualmachine/suites/checkin.go, virtualmachine/suites/prerelease.go, virtualmachine/plans/autoscale.go), preserves maintained row 45 vs source-order row 46 truth, and documents a bounded landing onto the existing canonical autoscaled-VMs CRUD carrier only. Git diff stat in the domain workspace confirms maintained model/view files changed during the task, so the worker claim is sufficiently supported for this row-45-only reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

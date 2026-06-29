@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T13:38:19.284Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Accepted the repo-local managed-v2 login-VM failure-detail capture repair and archived that completed child. The immediate next action remains the active row-37 post-capture rerun leaf for spec.aad-rbac.managed-v2-lifecycle, while the run-command-access principal-type repair rerun remains the second live AAD RBAC execution lane. No additional refill is needed until one of those active reruns returns new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the row-37 managed-v2 login-VM replay evidence capture so setup.login-vm-created preserves non-2xx ARM response detail/body (and any available provider error text/request identifiers) in repo-local artifacts, then archive the local repair note and rerun gate without launching new cloud mutation yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/aad-rbac/tests/aad-rbac-managed-v2-lifecycle.ts",
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627.md"
+      ],
+      "acceptance": [
+        "features/aad-rbac/tests/aad-rbac-managed-v2-lifecycle.ts records setup.login-vm-created failures with more than status-only detail, preserving response body text via existing helpers or equivalent extracted error detail when available.",
+        "The archive note cites the exact replay lines changed, explains what new evidence future reruns will preserve, and states that no cloud rerun was performed in this task.",
+        "The task leaves the next rerun gate explicit: only rerun the unchanged row-37 carrier after this capture repair is merged and reviewed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:34:17.583Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627_20260627133439",
+        "assigned_at": "2026-06-27T13:34:39.371Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627",
+        "worker_started_attempt_id": "a_repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627_20260627133439",
+        "worker_started_at": "2026-06-27T13:34:40.010Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-37 managed-v2 login-VM failure capture in features/aad-rbac/tests/aad-rbac-managed-v2-lifecycle.ts to preserve non-2xx ARM response detail via arm-create diagnostics, and archived the repo-local repair note in evidence/archive/aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627.md. Verified with local --check only; no cloud rerun was performed.",
+        "last_worker_completed_at": "2026-06-27T13:36:30.032Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:37:01.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the replay now records setup.login-vm-created with bodyful arm-create diagnostics instead of status-only text, the archive note cites exact changed ranges and preserved headers/error fields, and it explicitly records repo-local validation only with no cloud rerun."
+      },
+      "session_id": "s_task_repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627",
+      "session_history": [
+        "s_task_repair-aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627"
+      ],
+      "result": "Repaired row-37 managed-v2 login-VM failure capture in features/aad-rbac/tests/aad-rbac-managed-v2-lifecycle.ts to preserve non-2xx ARM response detail via arm-create diagnostics, and archived the repo-local repair note in evidence/archive/aad-rbac-managed-v2-login-vm-failure-detail-capture-20260627.md. Verified with local --check only; no cloud rerun was performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:37:01.172Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the replay now records setup.login-vm-created with bodyful arm-create diagnostics instead of status-only text, the archive note cites exact changed ranges and preserved headers/error fields, and it explicitly records repo-local validation only with no cloud rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

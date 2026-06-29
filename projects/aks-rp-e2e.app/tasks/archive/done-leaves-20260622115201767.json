@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:52:01.767Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner review accepted the MultiNIC dual-stack maintained-carrier audit as complete: archive evidence confirms path.net-integration.multinic-dualstack is already truthfully carried across source/feature/spec/replay/model/view surfaces with a source-grounded unknown verdict, so no follow-up leaf is needed for that branch. Remaining live owner work stays narrowed to two repo-local leaves only: (1) ACNS Retina Enterprise maintained model/view sync to expose the newly landed replay/spec-index contract on maintained knowledge-map surfaces, and (2) NATGW v2 dual-stack BYO v4prefix+v6ip maintained-carrier reconciliation to remove stale rerun implications and align the final terminal verdict across maintained surfaces. The single external human-transport wait remains compressed to one family-level blocked leaf and is not a local runner/model task.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-multinic-dualstack-maintained-carrier-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the exact maintained carrier for path.net-integration.multinic-dualstack by reconciling the mounted-source scenario with the current feature/spec/replay/model/view surfaces, so the project knows whether this exact MultiNIC dual-stack branch is already truthfully carried or still missing one narrow repo-local landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-multinic-dualstack-maintained-carrier-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted-source Scenario_MultiNIC_DualStack contract plus the current maintained feature/spec/replay/model/view carriers for path.net-integration.multinic-dualstack, recording the precise input path and expected behavior surface that distinguish it from the adjacent standard and mixed MultiNIC siblings.",
+        "The artifact ends with either (a) confirmation that the exact dual-stack branch is already truthfully carried on maintained repo-local surfaces, or (b) one concrete repo-local follow-up leaf for the exact missing surface; it must not trigger cloud execution, external-human transport, or reopen the finalized terminal net-integration verdict matrix."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "multinic-carrier-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:47:28.420Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-multinic-dualstack-maintained-carrier-audit-20260622_20260622114728",
+        "assigned_at": "2026-06-22T11:47:28.473Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-multinic-dualstack-maintained-carrier-audit-20260622",
+        "worker_started_attempt_id": "a_network-multinic-dualstack-maintained-carrier-audit-20260622_20260622114728",
+        "worker_started_at": "2026-06-22T11:48:12.415Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the exact maintained carrier for path.net-integration.multinic-dualstack and wrote evidence/archive/network-multinic-dualstack-maintained-carrier-audit-20260622.md, concluding the dual-stack branch is already truthfully carried across source/feature/spec/replay/model/view surfaces with a source-grounded unknown verdict.",
+        "last_worker_completed_at": "2026-06-22T11:49:31.131Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:49:59.108Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive audit cites Scenario_MultiNIC_DualStack and the exact distinguishing dual-stack input/expectation contract, then shows matching maintained feature/spec/replay/model/view carriers with a truthful source-grounded unknown verdict and no missing repo-local landing."
+      },
+      "session_id": "s_task_network-multinic-dualstack-maintained-carrier-audit-20260622",
+      "session_history": [
+        "s_task_network-multinic-dualstack-maintained-carrier-audit-20260622"
+      ],
+      "result": "Audited the exact maintained carrier for path.net-integration.multinic-dualstack and wrote evidence/archive/network-multinic-dualstack-maintained-carrier-audit-20260622.md, concluding the dual-stack branch is already truthfully carried across source/feature/spec/replay/model/view surfaces with a source-grounded unknown verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:49:59.108Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive audit cites Scenario_MultiNIC_DualStack and the exact distinguishing dual-stack input/expectation contract, then shows matching maintained feature/spec/replay/model/view carriers with a truthful source-grounded unknown verdict and no missing repo-local landing."
+      },
+      "status": "done"
+    }
+  ]
+}

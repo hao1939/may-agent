@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T22:23:23.926Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner archived the completed NAT Gateway V2 V2→none repo-local execution-prep slice as durable root history: live-control authoring, replay implementation, approval packet, and send-proof capture are all accepted and no longer need visible root leaves. The only open NATGW work remains the active model/task linkage reconciliation leaf for the stale terminal-warning check, plus the exact blocked returned-proof wait for path.net-integration.natgw-v2-migration-v2-to-none; keep the other external waits unchanged until returned proof or the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact repo-local live-execution approval packet for path.net-integration.natgw-v2-migration-v2-to-none using the newly attached execute carrier, so the project has a bounded authoritative ask describing the exact mutation gate, source-backed operation sequence, current gate/env-preflight evidence, and next external approval decision without widening into sibling natgw migration paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact links the exact mounted handwritten source and the 2026-06-24 implementation evidence, states the exact live sequence and required gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none, records the current execute-gated and missing-subscription preflight outcomes, and yields a ready-to-send approval packet or a precise reason the ask should not be sent yet.",
+        "The task stays repo-local only: no cloud mutation, no passive response-await blocker without send proof, no reopening of path.net-integration.outbound-migration-natgw-to-none or the V2-to-block/V2-to-LB siblings, and no edits to the existing compressed external-wait family unless the packet explicitly justifies a new exact wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T22:14:49.284Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624_20260624221449",
+        "assigned_at": "2026-06-24T22:14:49.333Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624_20260624221449",
+        "worker_started_at": "2026-06-24T22:15:02.533Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded live-execution approval packet for the exact NAT Gateway V2 V2→none path and archived it at evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md, grounded in mounted source plus 2026-06-24 check/gate/env-preflight evidence.",
+        "last_worker_completed_at": "2026-06-24T22:16:43.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T22:17:32.333Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md is a bounded send-ready packet for the exact path.net-integration.natgw-v2-migration-v2-to-none branch, records the exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none plus check/gate/missing-subscription preflight evidence, and explicitly avoids claiming any send, approval, cloud mutation, or reopening of the older outbound-migration-natgw-to-none constraint path."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624"
+      ],
+      "result": "Authored the bounded live-execution approval packet for the exact NAT Gateway V2 V2→none path and archived it at evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md, grounded in mounted source plus 2026-06-24 check/gate/env-preflight evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T22:17:32.333Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md is a bounded send-ready packet for the exact path.net-integration.natgw-v2-migration-v2-to-none branch, records the exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none plus check/gate/missing-subscription preflight evidence, and explicitly avoids claiming any send, approval, cloud mutation, or reopening of the older outbound-migration-natgw-to-none constraint path."
+      },
+      "status": "done"
+    }
+  ]
+}

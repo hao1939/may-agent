@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:53:07.130Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed refill review: accepted and archived the completed app-routing VM prerelease spec-path repair, the earlier dirty-repo checkpoint slicing audit, and the broader VM prerelease suite coverage map summary. The tree now carries three live repo-local leaves only: app-routing VM prerelease selector/body lineage audit, VM row45 autoscaled-vms-crud feature-crosswalk reconciliation, and refreshed dirty-repo checkpoint slicing against the current active frontier; keep the single external human-proof wait isolated under its focus branch and do not reopen repo-local source/spec work from that blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-routing-vm-prerelease-spec-path-records-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: reconcile the current app-routing VM prerelease missing spec-path records surfaced by model-hygiene so the maintained path↔spec linkage for the VM prerelease app-routing variants is explicit and check-clean without broadening into replay design or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-spec-path-records-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-spec-path-records-reconcile-20260622.md lists the exact app-routing VM prerelease path ids and spec ids repaired from the model-hygiene report, cites the repo-local source/spec surfaces touched, and explains any bounded non-creatable remainder truthfully.",
+        "Maintained model/spec/index surfaces are updated only as needed so the currently reported app-routing VM prerelease missing spec-path records are eliminated or reduced with truthful notes, and bun run check passes after the bounded repair.",
+        "No cloud mutation, no new external-human wait, and no scope broadening beyond the app-routing VM prerelease spec-path linkage family are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-routing.vm-prerelease.spec-path-records"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:42:36.476Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-vm-prerelease-spec-path-records-reconcile-20260622_20260622224241",
+        "assigned_at": "2026-06-22T22:42:41.642Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-vm-prerelease-spec-path-records-reconcile-20260622",
+        "worker_started_attempt_id": "a_app-routing-vm-prerelease-spec-path-records-reconcile-20260622_20260622224241",
+        "worker_started_at": "2026-06-22T22:43:02.104Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the six App Routing VM prerelease missing spec-path bridges in model/knowledge-map/model.json, regenerated maintained knowledge-map views, and wrote the archive note evidence/archive/app-routing-vm-prerelease-spec-path-records-reconcile-20260622.md documenting the exact path/spec repairs and bounded remainder posture.",
+        "last_worker_completed_at": "2026-06-22T22:49:37.666Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:51:11.053Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact documents the six repaired app-routing VM prerelease path↔spec bridges with mounted-source anchors and bounded remainder posture, and /app/projects/aks-rp-e2e bun run check passes after the repair with those six rows no longer present in model-hygiene samples."
+      },
+      "session_id": "s_task_app-routing-vm-prerelease-spec-path-records-reconcile-20260622",
+      "session_history": [
+        "s_task_app-routing-vm-prerelease-spec-path-records-reconcile-20260622"
+      ],
+      "result": "Repaired the six App Routing VM prerelease missing spec-path bridges in model/knowledge-map/model.json, regenerated maintained knowledge-map views, and wrote the archive note evidence/archive/app-routing-vm-prerelease-spec-path-records-reconcile-20260622.md documenting the exact path/spec repairs and bounded remainder posture.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:51:11.053Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact documents the six repaired app-routing VM prerelease path↔spec bridges with mounted-source anchors and bounded remainder posture, and /app/projects/aks-rp-e2e bun run check passes after the repair with those six rows no longer present in model-hygiene samples."
+      },
+      "status": "done"
+    }
+  ]
+}

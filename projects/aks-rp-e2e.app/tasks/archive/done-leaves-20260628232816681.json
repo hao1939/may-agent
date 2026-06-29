@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T23:28:16.681Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner review completes compaction of accepted repo-local rechecks in this lane: private-cluster none-dns-zone-v3 and multicnic-mixed status reviews both already rolled their durable meaning into lane context, and the only live work remains the single westus2 cluster-count preflight recovery family wait. Keep this lane blocked only on same-surface recovery proof, a durably proven alternate environment/endpoint, or an authoritative reroute/decline.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "recheck-private-cluster-none-dns-zone-v3-model-status-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the accepted private-cluster none-dns-zone-v3 source/spec reconciliation against the current knowledge-map outputs so path.private-cluster-none-dns-zone-v3 is no longer left as an unexplained unknown when a repo-local classification or exact next repair can be determined without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-status-recheck-20260628.md"
+      ],
+      "acceptance": [
+        "The review cites the current model entry for path.private-cluster-none-dns-zone-v3 together with the accepted 2026-06-28 repo-local reconciliation evidence/spec artifacts that should govern this path.",
+        "It explains exactly why the path still appears as unknown or, if the evidence is already sufficient, performs/records the bounded repo-local model/spec/evidence repair needed to move the path to a truthful non-unknown status.",
+        "It ends with one concrete next-safe-action only: no-change accepted with exact reason, a repo-local repair applied and evidenced, or one bounded successor task if additional local repair is still required; no cloud mutation is performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:23:09.030Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_recheck-private-cluster-none-dns-zone-v3-model-status-20260628_20260628232314",
+        "assigned_at": "2026-06-28T23:23:14.467Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_recheck-private-cluster-none-dns-zone-v3-model-status-20260628",
+        "worker_started_attempt_id": "a_recheck-private-cluster-none-dns-zone-v3-model-status-20260628_20260628232314",
+        "worker_started_at": "2026-06-28T23:23:28.544Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed path.private-cluster-none-dns-zone-v3 against current model, mounted source, maintained spec/replay, and accepted 2026-06-28 evidence; wrote a durable recheck note concluding the path is already truthfully classified as execution-ceiling unknown and needs no further repo-local repair.",
+        "last_worker_completed_at": "2026-06-28T23:24:25.907Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-none-dns-zone-v3-model-status-recheck-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T23:25:32.565Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review of evidence/archive/private-cluster-none-dns-zone-v3-model-status-recheck-20260628.md: it cites the current model/spec/replay/source surfaces and truthfully shows path.private-cluster-none-dns-zone-v3 remains execution-ceiling unknown with no further repo-local repair to apply until new accepted execution evidence exists."
+      },
+      "session_id": "s_task_recheck-private-cluster-none-dns-zone-v3-model-status-20260628",
+      "session_history": [
+        "s_task_recheck-private-cluster-none-dns-zone-v3-model-status-20260628"
+      ],
+      "result": "Reviewed path.private-cluster-none-dns-zone-v3 against current model, mounted source, maintained spec/replay, and accepted 2026-06-28 evidence; wrote a durable recheck note concluding the path is already truthfully classified as execution-ceiling unknown and needs no further repo-local repair.",
+      "evidence": [
+        "evidence/archive/private-cluster-none-dns-zone-v3-model-status-recheck-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T23:25:32.565Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review of evidence/archive/private-cluster-none-dns-zone-v3-model-status-recheck-20260628.md: it cites the current model/spec/replay/source surfaces and truthfully shows path.private-cluster-none-dns-zone-v3 remains execution-ceiling unknown with no further repo-local repair to apply until new accepted execution evidence exists."
+      },
+      "status": "done"
+    }
+  ]
+}

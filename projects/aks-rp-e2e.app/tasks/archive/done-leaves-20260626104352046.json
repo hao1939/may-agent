@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:43:52.046Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: build a bounded source/spec packet for path.cluster-autoscaler.vm-prerelease-overscale-node-stability by extracting the exact checked-in VM prerelease carrier from mounted e2ev3 source plus current repo-local artifacts, then record the scenario row/ordinal, selected inputs, expected overscale/node-stability behavior contract, current spec/replay/model coverage, and the one next repo-local authoring gap if the carrier is still incomplete.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted handwritten source location(s) and current repo-local carrier(s) for path.cluster-autoscaler.vm-prerelease-overscale-node-stability, including exact scenario/replay/spec/model identifiers or one exact missing-carrier gap.",
+        "The packet records the bounded input path and expectation contract for this path only, including row/ordinal if present, without cloud execution or edits to adjacent cluster-autoscaler rows unless required for source-equivalent linkage notes.",
+        "The result leaves this branch in one actionable repo-local state: either enough source-backed detail to author/repair the dedicated spec-replay/model surfaces next, or one exact local blocker naming the missing checked-in carrier to inspect."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature/cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T09:21:59.774Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626_20260626092159",
+        "assigned_at": "2026-06-26T09:21:59.840Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626",
+        "worker_started_attempt_id": "a_feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626_20260626092159",
+        "worker_started_at": "2026-06-26T09:22:08.128Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested source/spec packet at evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626.md, grounding the VM prerelease overscale path in mounted source, current spec/replay/model carriers, and the remaining repo-local next step.",
+        "last_worker_completed_at": "2026-06-26T09:23:41.136Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T09:24:13.639Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626.md cites the mounted VM prerelease and overscale source carriers, confirms the dedicated spec/replay/model ids already exist, bounds the exact input and ten-minute node-stability expectation contract, and leaves the branch in the truthful carrier-complete/observation-pending state with no missing checked-in carrier."
+      },
+      "session_id": "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626",
+      "session_history": [
+        "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626"
+      ],
+      "result": "Wrote the requested source/spec packet at evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626.md, grounding the VM prerelease overscale path in mounted source, current spec/replay/model carriers, and the remaining repo-local next step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T09:24:13.639Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-source-spec-20260626.md cites the mounted VM prerelease and overscale source carriers, confirms the dedicated spec/replay/model ids already exist, bounds the exact input and ten-minute node-stability expectation contract, and leaves the branch in the truthful carrier-complete/observation-pending state with no missing checked-in carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

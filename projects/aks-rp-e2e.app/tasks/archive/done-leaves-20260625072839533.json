@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T07:28:39.533Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner review confirms the watchdog review-pending wake was stale: serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625 was already accepted, and its durable meaning is now that the bounded source/spec/source-equivalent packet is complete while the next no-cloud learning slice is serverless-virtual-nodes-multi-pod-burst-execute-envelope-packet-20260625. Archive the accepted source-coverage leaf together with the completed storage-csi-file-clone-execute-capable-replay-implementation-20260625 leaf now that their outcomes are preserved in parent history, keep focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single blocked family of five exact returned-proof waits through the on/after-2026-06-26 follow-up window, and leave maxConcurrent=1 on the active serverless burst execute-envelope task.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a repo-local source/spec/coverage packet for path.serverless-virtual-nodes.multi-pod-burst: map any handwritten e2ev3, mounted source, existing replay/model/evidence coverage, define the accepted inputs and expected burst behavior boundary, and recommend the next bounded replay/model task without running a cloud probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625.md"
+      ],
+      "acceptance": [
+        "The archive packet cites the exact mounted source or checked-in artifacts reviewed for path.serverless-virtual-nodes.multi-pod-burst and states clearly whether handwritten/source-equivalent coverage exists or is missing.",
+        "The packet records the current best-known input path, expectation path, adjacent surfaces, and unknown edges for bounded multi-pod burst behavior, plus one concrete next task recommendation grounded in the evidence.",
+        "No cloud mutation or live execution occurs from this task; it is repo-local learning/spec closure only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.multi-pod-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T07:24:33.010Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625_20260625072433",
+        "assigned_at": "2026-06-25T07:24:33.060Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625_20260625072433",
+        "worker_started_at": "2026-06-25T07:25:02.237Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local source/spec/coverage packet at evidence/archive/serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625.md, documenting exact mounted-source findings, current repo-local carrier/model coverage, bounded burst input/expectation edges, and one concrete next task recommendation without any cloud execution.",
+        "last_worker_completed_at": "2026-06-25T07:27:02.467Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T07:27:46.760Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-25: evidence/archive/serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625.md cites the exact mounted virtualnodes sources and repo-local spec/replay/model surfaces, states clearly that exact handwritten burst coverage is missing, preserves the bounded input/expectation/adjacent/unknown-edge map for path.serverless-virtual-nodes.multi-pod-burst, and recommends one truthful next no-cloud replay execute-envelope packet without any live execution."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625"
+      ],
+      "result": "Produced the requested repo-local source/spec/coverage packet at evidence/archive/serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625.md, documenting exact mounted-source findings, current repo-local carrier/model coverage, bounded burst input/expectation edges, and one concrete next task recommendation without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T07:27:46.760Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-25: evidence/archive/serverless-virtual-nodes-multi-pod-burst-source-coverage-packet-20260625.md cites the exact mounted virtualnodes sources and repo-local spec/replay/model surfaces, states clearly that exact handwritten burst coverage is missing, preserves the bounded input/expectation/adjacent/unknown-edge map for path.serverless-virtual-nodes.multi-pod-burst, and recommends one truthful next no-cloud replay execute-envelope packet without any live execution."
+      },
+      "status": "done"
+    }
+  ]
+}

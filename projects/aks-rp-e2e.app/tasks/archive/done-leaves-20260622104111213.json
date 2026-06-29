@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T10:41:11.213Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review accepted the completed rows31-32 auto-zone maintained-status reconcile: mounted source plus existing replay/spec carriers justified moving both row-local paths from stale draft posture to blocked execute-capable maintained truth, and the archive artifact records the exact row-distinguishing inputs and touched model/view surfaces. The live frontier remains intentionally narrow: keep the single external human/operator out-of-runtime proof leaf as the only blocked family-level wait, while current repo-local capacity stays focused on the active rows29-30 mixed-SKU maintained-status reconcile and live-run failed-24h family triage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile VM prerelease rows 31-32 auto-zone maintained status against the mounted source and existing execute-gated repo-local carriers, and land any needed archive/spec/feature/model truth updates without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/auto_zone.go plus the existing row-31 and row-32 replay/spec/feature carriers, explains the final source-backed maintained-status truth for both auto-zone branches, and names exact touched repo-local paths.",
+        "If the current maintained draft/unknown posture is stale, the relevant repo-local spec/feature/model/view or status surfaces are updated to the truthful execute-gated/source-grounded state for rows 31-32; otherwise the artifact proves why no narrower repo-local change is needed. No cloud mutation or external-human wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-rows31-32-auto-zone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:36:48.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622_20260622103657",
+        "assigned_at": "2026-06-22T10:36:57.756Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622_20260622103657",
+        "worker_started_at": "2026-06-22T10:37:26.529Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease rows 31-32 auto-zone maintained status: updated model/knowledge-map/model.json and regenerated views so both paths are blocked execute-capable carriers with exact three-input row splits, then wrote archive evidence at evidence/archive/vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T10:40:10.533Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T10:40:33.216Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted source auto_zone.go, explains row-31/32 maintained truth, and records the landed model/view updates moving both paths from stale draft to blocked execute-capable status without cloud mutation."
+      },
+      "session_id": "s_task_vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622",
+      "session_history": [
+        "s_task_vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622"
+      ],
+      "result": "Reconciled VM prerelease rows 31-32 auto-zone maintained status: updated model/knowledge-map/model.json and regenerated views so both paths are blocked execute-capable carriers with exact three-input row splits, then wrote archive evidence at evidence/archive/vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T10:40:33.216Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted source auto_zone.go, explains row-31/32 maintained truth, and records the landed model/view updates moving both paths from stale draft to blocked execute-capable status without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

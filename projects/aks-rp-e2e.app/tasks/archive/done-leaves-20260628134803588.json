@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:48:03.588Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner review: compact-loop durable meaning remains captured at the parent. Earlier accepted compact packages for network-isolated, node-confidential-vm, node-custom-ca-trust, and node-pool-config still stand. network-cni is no longer misrepresented as ready: repair-compact-network-cni-inline-arm-dispatch was accepted after features/network-cni/compact/staging.summary.md was updated to partial and limited the remaining generated-check gap to spec.network-cni.azure-overlay-ilpip plus spec.network-cni.azure-overlay-ilpip-dualstack because Vitest lacks inline ARM dispatch. Keep compact-feature-azure-keyvault-secrets-provider active for fresh package generation, and pursue bound-network-cni-inline-arm-check-gap-20260628 to decide whether the ILPIP pair needs app/runtime support, package-local exclusion, or accepted long-term partial coverage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-compact-network-cni-inline-arm-dispatch",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the network-cni compact package after generated check-mode failed only on azure-overlay-ilpip and azure-overlay-ilpip-dualstack because Vitest runtime lacks inline ARM operation dispatch; classify the gap and leave the package in a truthful ready/partial state.",
+      "inputs": [],
+      "outputs": [
+        "features/network-cni/compact/staging.summary.md"
+      ],
+      "acceptance": [
+        "A durable note or updated compact summary explains whether the two failing network-cni specs must be excluded, translated, or left partial because inline ARM dispatch is unsupported in check mode.",
+        "Generated check-mode tests are rerun or the existing failure is converted into an explicit, package-local partial/blocker outcome with exact failing spec ids and runtime-gap reason.",
+        "The network-cni compact artifacts and loop state no longer claim an unqualified ready result when the inline ARM runtime gap remains unresolved."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T13:28:06.723Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-compact-network-cni-inline-arm-dispatch_20260628132806",
+        "assigned_at": "2026-06-28T13:28:06.789Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-compact-network-cni-inline-arm-dispatch",
+        "worker_started_attempt_id": "a_repair-compact-network-cni-inline-arm-dispatch_20260628132806",
+        "worker_started_at": "2026-06-28T13:29:14.962Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the network-cni compact package summary to truthfully classify the ILPIP pair as package-local blocked coverage, and reran the generated check suite to confirm only the two ILPIP specs fail because inline ARM dispatch is unimplemented in the Vitest runtime.",
+        "last_worker_completed_at": "2026-06-28T13:32:35.571Z",
+        "last_worker_evidence": [
+          "features/network-cni/compact/staging.summary.md"
+        ],
+        "reviewed_at": "2026-06-28T13:47:33.880Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker repair: features/network-cni/compact/staging.summary.md now truthfully marks the compact package partial, names spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack as the only remaining generated check failures, and classifies them as a package-local blocked inline ARM dispatch runtime gap instead of an unqualified ready result."
+      },
+      "session_id": "s_task_repair-compact-network-cni-inline-arm-dispatch",
+      "session_history": [
+        "s_task_repair-compact-network-cni-inline-arm-dispatch"
+      ],
+      "result": "Repaired the network-cni compact package summary to truthfully classify the ILPIP pair as package-local blocked coverage, and reran the generated check suite to confirm only the two ILPIP specs fail because inline ARM dispatch is unimplemented in the Vitest runtime.",
+      "evidence": [
+        "features/network-cni/compact/staging.summary.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T13:47:33.880Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker repair: features/network-cni/compact/staging.summary.md now truthfully marks the compact package partial, names spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack as the only remaining generated check failures, and classifies them as a package-local blocked inline ARM dispatch runtime gap instead of an unqualified ready result."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T16:40:11.361Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 stale-active owner cleanup: accepted verify-spec-industry-image-policy from archived run 28328596052 and replaced the pre-fix diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628 leaf with retry-spec-cloud-provider-ipbased-lb-backend-pool-after-artifact-routing-fix-20260628 because artifact routing was repaired on 2026-06-28. Requeued stale spec-verification leaves with no running session; kept the two still-live actives unchanged; refilled only three bounded follow-ups: the cloud-provider retry, cluster-autoscaler statefulset-pdb rerun, and one repo-local feature-reference collector for virtualmachines-agentpool-cli-add-multi-sku while avoiding KMS paths already marked final-gated in the model.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-industry-image-policy",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.industry.image-policy through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.industry.image-policy",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.industry.image-policy"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.industry.image-policy",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner accepted this leaf from archived run 28328596052 already captured in tasks/archive/done-leaves-20260628163400569.json and the aks-spec-verification-loop rollup; remove the accidental runnable duplicate instead of reassigning it."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:35:40.523Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T16:39:50.256Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted this leaf from archived run 28328596052 already captured in tasks/archive/done-leaves-20260628163400569.json and the aks-spec-verification-loop rollup; remove the accidental runnable duplicate instead of reassigning it."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-28T16:39:50.256Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review failed workflow run 28328477532 for spec.cloud-provider.ipbased-lb-backend-pool, inspect the row-44 assertion failures, and leave a durable classification plus the next model/retry action.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628.md"
+      ],
+      "acceptance": [
+        "Workflow metadata/result paths for run 28328477532 are cited.",
+        "The specific failed row-44 assertions are classified as product gap, environment issue, runner/spec mismatch, or retry candidate.",
+        "The artifact records the exact next action for this spec path (retry shape, model update, or blocker)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.ipbased-lb-backend-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T16:31:55.245Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628_20260628163155",
+        "assigned_at": "2026-06-28T16:31:55.545Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628",
+        "worker_started_attempt_id": "a_diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628_20260628163155",
+        "worker_started_at": "2026-06-28T16:33:16.225Z",
+        "reviewed_at": "2026-06-28T16:39:50.161Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Stale-active owner review replaced this pre-fix diagnosis leaf with retry-spec-cloud-provider-ipbased-lb-backend-pool-after-artifact-routing-fix-20260628 because the 2026-06-28 artifact-routing repair makes run 28328477532 an untrusted review bundle for current classification."
+      },
+      "session_id": "s_task_diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628",
+      "session_history": [
+        "s_task_diagnose-spec-cloud-provider-ipbased-lb-backend-pool-row44-failures-20260628"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T16:39:50.161Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Stale-active owner review replaced this pre-fix diagnosis leaf with retry-spec-cloud-provider-ipbased-lb-backend-pool-after-artifact-routing-fix-20260628 because the 2026-06-28 artifact-routing repair makes run 28328477532 an untrusted review bundle for current classification."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T17:00:32.185Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 blocked-frontier owner review kept external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged because its resume condition is still exact and not due yet: returned external proof, or the first owner review after 2026-06-26 if silence continues. In the same pass, owner hygiene archived the remaining safe done children because their durable meaning is already captured by their archive notes and this parent branch now has only two useful live children: the active virtualmachines-manual-scale-policy-authority-recovery-or-reslice-20260623 repo-local authority decision slice, and the single family-level external-human wait. No duplicate waits, reopened local source/spec/model closure, or live execution were introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin source plus current repo-local carriers to audit VM prerelease row 36 wording/linkage, proving the maintained row/feature/spec/replay/model surfaces are already exact-authority-safe or applying the minimum claim-safe cleanup if stale wait-family/manual-scale prose remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go carriers plus any referenced scenario definitions needed to explain what VM prerelease row 36 actually covers, and compares that authority against the current repo-local row/feature/spec/replay/model/index/view wording.",
+        "If the maintained repo-local wording is already exact-authority-safe, the note says so with evidence and no unnecessary edits; otherwise the task applies the minimum truthful repo-local cleanup so stale wait-family/manual-scale wording is removed or narrowed without reopening cloud execution or creating a new external wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-row36-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:56:41.341Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623_20260623165654",
+        "assigned_at": "2026-06-23T16:56:54.041Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623_20260623165654",
+        "worker_started_at": "2026-06-23T16:56:56.057Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited VM prerelease row 36 against mounted AKS RP suite/scenario source and current repo-local carriers, then wrote a durable archive note concluding the wording/linkage is already exact-authority-safe with no stale wait-family/manual-scale prose and no code/content edits needed.",
+        "last_worker_completed_at": "2026-06-23T16:58:48.079Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:59:31.839Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623.md: mounted checkin.go, prerelease.go, and azure_monitor_aad_auth.go prove row 36 is already exact-authority-safe, bounded to the omsagent + workspace + useAADAuth=true monitoring contract, and current repo-local row/feature/spec/replay/model/index/view carriers need no edits."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623"
+      ],
+      "result": "Audited VM prerelease row 36 against mounted AKS RP suite/scenario source and current repo-local carriers, then wrote a durable archive note concluding the wording/linkage is already exact-authority-safe with no stale wait-family/manual-scale prose and no code/content edits needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:59:31.839Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/virtualmachines-prerelease-row36-mounted-source-wording-audit-20260623.md: mounted checkin.go, prerelease.go, and azure_monitor_aad_auth.go prove row 36 is already exact-authority-safe, bounded to the omsagent + workspace + useAADAuth=true monitoring contract, and current repo-local row/feature/spec/replay/model/index/view carriers need no edits."
+      },
+      "status": "done"
+    }
+  ]
+}

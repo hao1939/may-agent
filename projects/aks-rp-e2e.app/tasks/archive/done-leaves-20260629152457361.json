@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:24:57.361Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the VM prerelease overlay+Cilium dual-stack carrier repair as durable source-backed reclassification work: the mounted VM matrix rows 95/96 plus overlay and Cilium handwritten source now define an execute-gated check-only boundary instead of a false ready-carrier, while the follow-on active leaf for bounded live rerun remains the only path back to cloud execution. Earlier service-connectivity probe-capture review remains represented by the active implementation leaf, so this branch now cleanly separates accepted evidence/model repair from pending carrier/runner implementation and spec-loop verification drain.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or truthfully reclassify the single-spec live carrier for spec.network-cni.vm-prerelease-overlay-cilium-dualstack using mounted AKS RP source so future verification follows the real VM prerelease CNI Overlay expectation path instead of a skipped wrapper result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-overlay-cilium-dualstack-live-carrier-repair-plan-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source evidence shows which carrier shape is authoritative for rows 95/96 (VirtualMachines + Cilium + dualStack + shared identity, plus AzureLinux variant where applicable), and the artifact names the exact repo-local replay/spec wiring gap that currently prevents truthful single-spec live execution.",
+        "Repo-local changes either (a) bind the spec to an actually executable replay with the required overlay/cilium/dual-stack request fields and bounded runtime validations, or (b) update the spec/model/evidence to state clearly that this path is shared-carrier-only and intentionally non-live for single-spec verification until such a replay exists.",
+        "Local validation shows the repaired carrier/model still passes nonmutating checks and documents the next verifier behavior without running cloud mutation from planner review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.vm-prerelease-overlay-cilium-dualstack"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:11:28.757Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629_20260629151128",
+        "assigned_at": "2026-06-29T15:11:28.814Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629",
+        "worker_started_attempt_id": "a_repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629_20260629151128",
+        "worker_started_at": "2026-06-29T15:12:21.243Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Truthfully reclassified spec.network-cni.vm-prerelease-overlay-cilium-dualstack from implied live-ready to source-grounded, execute-gated check-only state, and rewrote the feature-owned scenario test plus Vitest coverage to enforce the no-cloud boundary. Added a durable repair artifact under evidence/archive documenting mounted-source authority for rows 95/96 and the remaining model/view staleness the owner should address.",
+        "last_worker_completed_at": "2026-06-29T15:23:57.613Z",
+        "last_worker_evidence": [
+          "features/network-cni/specs/network-cni-vm-prerelease-overlay-cilium-dualstack.json",
+          "features/network-cni/tests/network-cni-vm-prerelease-overlay-cilium-dualstack.ts",
+          "features/network-cni/tests/network-cni-vm-prerelease-overlay-cilium-dualstack.test.ts",
+          "evidence/archive/vm-prerelease-overlay-cilium-dualstack-live-carrier-repair-plan-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:24:57.219Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: mounted VM matrix rows 95/96 plus overlay and Cilium handwritten source were cited in evidence/archive/vm-prerelease-overlay-cilium-dualstack-live-carrier-repair-plan-20260629.md, and the worker truthfully reclassified the spec/test surface from false live-ready to source-grounded execute-gated check-only state with concrete repo-local follow-up preserved in the active bounded live-rerun-after-carrier-implementation leaf."
+      },
+      "session_id": "s_task_repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629",
+      "session_history": [
+        "s_task_repair-live-carrier-network-cni-vm-prerelease-overlay-cilium-dualstack-20260629"
+      ],
+      "result": "Truthfully reclassified spec.network-cni.vm-prerelease-overlay-cilium-dualstack from implied live-ready to source-grounded, execute-gated check-only state, and rewrote the feature-owned scenario test plus Vitest coverage to enforce the no-cloud boundary. Added a durable repair artifact under evidence/archive documenting mounted-source authority for rows 95/96 and the remaining model/view staleness the owner should address.",
+      "evidence": [
+        "features/network-cni/specs/network-cni-vm-prerelease-overlay-cilium-dualstack.json",
+        "features/network-cni/tests/network-cni-vm-prerelease-overlay-cilium-dualstack.ts",
+        "features/network-cni/tests/network-cni-vm-prerelease-overlay-cilium-dualstack.test.ts",
+        "evidence/archive/vm-prerelease-overlay-cilium-dualstack-live-carrier-repair-plan-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:24:57.219Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: mounted VM matrix rows 95/96 plus overlay and Cilium handwritten source were cited in evidence/archive/vm-prerelease-overlay-cilium-dualstack-live-carrier-repair-plan-20260629.md, and the worker truthfully reclassified the spec/test surface from false live-ready to source-grounded execute-gated check-only state with concrete repo-local follow-up preserved in the active bounded live-rerun-after-carrier-implementation leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or bound the exact probe-output capture gap behind spec.network-datapath.service-connectivity run 28381940027 so future traffic assertions preserve service response evidence instead of only RunCommand wrapper text.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-datapath-service-connectivity-probe-capture-repair-20260629.md"
+      ],
+      "acceptance": [
+        "Review the current replay/spec probe implementation for ClusterIP, NodePort, and LoadBalancer checks and identify why stdout/body evidence was lost while exitCode stayed 0.",
+        "Propose or implement one deterministic capture contract for this spec (for example logs-based capture, non-interactive pod exec, or other bounded method) and explain why it avoids the archived ambiguity.",
+        "State whether the repaired contract justifies a same-spec rerun now or whether another prerequisite still blocks rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-datapath.service-connectivity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:18:09.481Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629_20260629151840",
+        "assigned_at": "2026-06-29T15:18:40.082Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629",
+        "worker_started_attempt_id": "a_repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629_20260629151840",
+        "worker_started_at": "2026-06-29T15:18:41.368Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the service-connectivity replay and archived run 28381940027, then wrote a repair artifact that identifies the stdout-loss cause, defines a deterministic logs-based probe capture contract, and states rerun should wait for that repair plus gate alignment.",
+        "last_worker_completed_at": "2026-06-29T15:21:46.143Z",
+        "last_worker_evidence": [
+          "evidence/archive/network-datapath-service-connectivity-probe-capture-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:23:05.629Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner repair note: run 28381940027 lost service-response bodies because RunCommand + interactive kubectl run --rm -i is not a deterministic capture channel; the reviewed next action is to implement a non-interactive logs-based probe contract plus mutation-gate alignment before any rerun."
+      },
+      "session_id": "s_task_repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629",
+      "session_history": [
+        "s_task_repair-spec-network-datapath-service-connectivity-probe-capture-contract-20260629"
+      ],
+      "result": "Reviewed the service-connectivity replay and archived run 28381940027, then wrote a repair artifact that identifies the stdout-loss cause, defines a deterministic logs-based probe capture contract, and states rerun should wait for that repair plus gate alignment.",
+      "evidence": [
+        "evidence/archive/network-datapath-service-connectivity-probe-capture-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:23:05.629Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner repair note: run 28381940027 lost service-response bodies because RunCommand + interactive kubectl run --rm -i is not a deterministic capture channel; the reviewed next action is to implement a non-interactive logs-based probe contract plus mutation-gate alignment before any rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

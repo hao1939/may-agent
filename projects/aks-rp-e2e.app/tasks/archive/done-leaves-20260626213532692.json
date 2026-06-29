@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T21:35:32.692Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review accepted the secure-TLS network-isolated reconciliation packet: the maintained knowledge-map and feature surfaces already truthfully keep row 43 attached to spec.secure-tls-bootstrap.network-isolated with source-grounded, structurally checked, live-behavior-unknown posture, so no model/view diff was required. With the earlier row-43 check refresh and VM prerelease next-action packet already preserved in root rollups, the only live frontier that remains is the focus-mounted-source-coverage-closure-and-external-wait branch, whose two children are still the single truthful external-proof waits for VM prerelease/shared-identity returns and static-egress VMSS origin/dev send-or-landing proof.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "vmpr-freed-rows-execute-gated-next-action-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a durable VM prerelease packet for rows 25, 40-43, and 50 that reconciles current mounted-source/spec/replay/model evidence after external-wait compression, states the exact remaining execute gate for each row or canonical carrier, and names the next truthful non-blocked local action or owner-approved live-run preflight without recreating missing-source or human-transport blockers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-freed-rows-execute-gated-next-action-packet-20260626.md"
+      ],
+      "acceptance": [
+        "The packet cites the accepted 2026-06-26 mounted-source triage plus current repo-local carrier/model artifacts for rows 25, 40-43, and 50; it shows none of those rows remain in the external-human wait family; and it leaves at least one exact runnable next step (local prep or explicit live-run preflight) that can be reopened without inventing new blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-execute-gated-next-actions"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:28:21.941Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-freed-rows-execute-gated-next-action-packet-20260626_20260626212827",
+        "assigned_at": "2026-06-26T21:28:27.278Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-freed-rows-execute-gated-next-action-packet-20260626",
+        "worker_started_attempt_id": "a_vmpr-freed-rows-execute-gated-next-action-packet-20260626_20260626212827",
+        "worker_started_at": "2026-06-26T21:28:46.655Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable VM prerelease next-action packet at evidence/archive/vmpr-freed-rows-execute-gated-next-action-packet-20260626.md, reconciling rows 25, 40-43, and 50 against mounted-source triage, current carrier artifacts, gate repairs, and path/model posture while naming exact non-blocked next steps or live-run preflights for each row.",
+        "last_worker_completed_at": "2026-06-26T21:30:36.854Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:31:03.039Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-26 packet as durable review evidence: it cites the mounted-source triage plus current carrier/model artifacts, confirms rows 25, 40-43, and 50 are no longer in the external-human wait family, and names exact runnable repo-local next actions without recreating missing-source or human-transport blockers."
+      },
+      "session_id": "s_task_vmpr-freed-rows-execute-gated-next-action-packet-20260626",
+      "session_history": [
+        "s_task_vmpr-freed-rows-execute-gated-next-action-packet-20260626"
+      ],
+      "result": "Produced the durable VM prerelease next-action packet at evidence/archive/vmpr-freed-rows-execute-gated-next-action-packet-20260626.md, reconciling rows 25, 40-43, and 50 against mounted-source triage, current carrier artifacts, gate repairs, and path/model posture while naming exact non-blocked next steps or live-run preflights for each row.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:31:03.039Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-26 packet as durable review evidence: it cites the mounted-source triage plus current carrier/model artifacts, confirms rows 25, 40-43, and 50 are no longer in the external-human wait family, and names exact runnable repo-local next actions without recreating missing-source or human-transport blockers."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row43-secure-tls-network-isolated-check-refresh-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh bounded repo-local check evidence for VM prerelease row 43 on the canonical secure-TLS network-isolated carrier by rerunning the repaired check surface, archiving the result, and reconciling whether the path/model posture should stay source-grounded-check-only or gain stronger local verification wording without inventing any external wait or VM-only sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row43-secure-tls-network-isolated-check-refresh-20260626.md"
+      ],
+      "acceptance": [
+        "The task runs the exact canonical row-43 check command on the repaired secure-tls network-isolated carrier, archives durable evidence with command/outcome, and states the resulting repo-local next action/model implication while preserving that any fresh live observation would still require the unchanged execute gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row43-secure-tls-network-isolated-check-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:31:03.084Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row43-secure-tls-network-isolated-check-refresh-20260626_20260626213103",
+        "assigned_at": "2026-06-26T21:31:03.132Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row43-secure-tls-network-isolated-check-refresh-20260626",
+        "worker_started_attempt_id": "a_vmpr-row43-secure-tls-network-isolated-check-refresh-20260626_20260626213103",
+        "worker_started_at": "2026-06-26T21:31:11.207Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed row-43 secure-TLS network-isolated repo-local check evidence by rerunning the exact canonical --check surface, confirming fresh emitted artifacts, and archiving a durable reconciliation note in evidence/archive/vmpr-row43-secure-tls-network-isolated-check-refresh-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T21:32:22.695Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:33:00.563Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived row-43 refresh evidence reran the exact canonical secure-TLS network-isolated --check command, emitted fresh durable JSON/MD check artifacts, and explicitly preserved the truthful source-grounded / structurally checked / live-behavior-unknown posture with the execute gate unchanged for any future live run."
+      },
+      "session_id": "s_task_vmpr-row43-secure-tls-network-isolated-check-refresh-20260626",
+      "session_history": [
+        "s_task_vmpr-row43-secure-tls-network-isolated-check-refresh-20260626"
+      ],
+      "result": "Refreshed row-43 secure-TLS network-isolated repo-local check evidence by rerunning the exact canonical --check surface, confirming fresh emitted artifacts, and archiving a durable reconciliation note in evidence/archive/vmpr-row43-secure-tls-network-isolated-check-refresh-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:33:00.563Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived row-43 refresh evidence reran the exact canonical secure-TLS network-isolated --check command, emitted fresh durable JSON/MD check artifacts, and explicitly preserved the truthful source-grounded / structurally checked / live-behavior-unknown posture with the execute gate unchanged for any future live run."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secure-tls-network-isolated-model-reconciliation-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained secure-TLS network-isolated capability/model artifacts after the accepted row-43 check refresh: verify whether path.secure-tls-bootstrap.network-isolated already truthfully reflects refreshed source-grounded check evidence, and if not, make the minimal repo-local model/view update or archive exact proof that no model diff is needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secure-tls-network-isolated-model-reconciliation-20260626.md"
+      ],
+      "acceptance": [
+        "The task inspects the maintained model/view source for path.secure-tls-bootstrap.network-isolated, compares it to the accepted 2026-06-26 row-43 check-refresh evidence, and leaves durable repo-local proof of one truthful outcome: either (a) minimal model/view files are updated to reflect refreshed source-grounded structurally checked posture without promoting live behavior, or (b) an archive note proves the current maintained model already matches and no file change is needed.",
+        "The output cites the exact model/view files and command/evidence used, keeps the canonical row-43 attachment on spec.secure-tls-bootstrap.network-isolated, and does not introduce any live-verification claim, VM-only sibling path, or external wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secure-tls-network-isolated-model-reconciliation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:33:22.162Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secure-tls-network-isolated-model-reconciliation-20260626_20260626213328",
+        "assigned_at": "2026-06-26T21:33:28.734Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secure-tls-network-isolated-model-reconciliation-20260626",
+        "worker_started_attempt_id": "a_secure-tls-network-isolated-model-reconciliation-20260626_20260626213328",
+        "worker_started_at": "2026-06-26T21:33:38.229Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a reconciliation note proving that path.secure-tls-bootstrap.network-isolated already truthfully matches the accepted 2026-06-26 row-43 check-refresh evidence, so no model/view diff was needed.",
+        "last_worker_completed_at": "2026-06-26T21:34:47.633Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:35:32.634Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archived reconciliation note: it compared the maintained path/model surfaces for path.secure-tls-bootstrap.network-isolated against the accepted 2026-06-26 row-43 check-refresh evidence and mounted source, proved the canonical attachment and source-grounded/structurally-checked/live-unknown posture already matched, and therefore truthfully recorded that no repo-local model/view diff was needed."
+      },
+      "session_id": "s_task_secure-tls-network-isolated-model-reconciliation-20260626",
+      "session_history": [
+        "s_task_secure-tls-network-isolated-model-reconciliation-20260626"
+      ],
+      "result": "Archived a reconciliation note proving that path.secure-tls-bootstrap.network-isolated already truthfully matches the accepted 2026-06-26 row-43 check-refresh evidence, so no model/view diff was needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:35:32.634Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archived reconciliation note: it compared the maintained path/model surfaces for path.secure-tls-bootstrap.network-isolated against the accepted 2026-06-26 row-43 check-refresh evidence and mounted source, proved the canonical attachment and source-grounded/structurally-checked/live-unknown posture already matched, and therefore truthfully recorded that no repo-local model/view diff was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:09:20.257Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 review/rollup update: accepted the bounded Azure Disk CSI resize carrier landing after verifying the archive note and repo-local carriers preserve the mounted azurediskcsi.go 10Gi→20Gi managed-csi resize contract without model/view or execution widening. That carrier step is now archived; active continuation remains the storage-csi resize model-linkage follow-up, alongside the separate OIDC JWKS retry-contract normalized-linkage leaf, while the only live wait stays the single external-human proof family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-resize-carrier-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the mounted Azure Disk resize branch from azurediskcsi.go into repo-local storage-csi feature/spec carriers and a durable archive note, without yet widening into accepted model/view linkage or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-resize-carrier-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted azurediskcsi.go resize lines inspected plus any supporting constants, and records the exact resize boundary facts carried forward for the Azure Disk CSI branch.",
+        "Repo-local carrier files for the Azure Disk resize slice are created or updated with truthful source-backed content (for example under features/storage-csi/ and specs/), and the note names the exact repo-local files changed.",
+        "Scope stays in the regular-learning/carrier-authoring lane only: no model/view regeneration, no replay authoring, no resize execution, and no widening into clone/raw-block/xfs/file/blob branches in this step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:04:55.300Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-resize-carrier-landing-20260623_20260623060455",
+        "assigned_at": "2026-06-23T06:04:55.350Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-resize-carrier-landing-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-resize-carrier-landing-20260623_20260623060455",
+        "worker_started_at": "2026-06-23T06:05:09.903Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed a bounded Azure Disk CSI resize carrier slice by adding repo-local feature/spec carriers and a durable archive note grounded in mounted azurediskcsi.go resize lines plus supporting ResizeVolume helper semantics.",
+        "last_worker_completed_at": "2026-06-23T06:07:40.248Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:08:27.062Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note at evidence/archive/storage-csi-disk-resize-carrier-landing-20260623.md cites exact mounted azurediskcsi.go resize and helper anchors, records the 10Gi→20Gi managed-csi mounted resize boundary, and the repo now contains the bounded carrier files features/storage-csi/disk-resize.yaml and specs/storage-csi-disk-resize.json with no model/view or execution widening."
+      },
+      "session_id": "s_task_storage-csi-disk-resize-carrier-landing-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-resize-carrier-landing-20260623"
+      ],
+      "result": "Landed a bounded Azure Disk CSI resize carrier slice by adding repo-local feature/spec carriers and a durable archive note grounded in mounted azurediskcsi.go resize lines plus supporting ResizeVolume helper semantics.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:08:27.062Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note at evidence/archive/storage-csi-disk-resize-carrier-landing-20260623.md cites exact mounted azurediskcsi.go resize and helper anchors, records the 10Gi→20Gi managed-csi mounted resize boundary, and the repo now contains the bounded carrier files features/storage-csi/disk-resize.yaml and specs/storage-csi-disk-resize.json with no model/view or execution widening."
+      },
+      "status": "done"
+    }
+  ]
+}

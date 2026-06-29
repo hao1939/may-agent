@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T19:07:51.775Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "This pass accepted a first tranche of durable public-reference collection work: aad-rbac-nonaad-reset, aad-rbac-rbac-disabled-to-aadv2, acccvm, and cloud-provider-credential-provider now have review-backed evidence packets. The lane still has active collection on the remaining cloud-provider family leaves plus a large review backlog, and app-monitoring stays in review until its evidence packet is cleaned up enough for owner acceptance. Archive the two already-safe done leaves so the live tree stays focused on active collection and unreviewed packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-app-routing-default-domain-istio",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for app-routing-default-domain-istio.",
+      "inputs": [
+        "feature:app-routing-default-domain-istio",
+        "packet:features/app-routing/packets/default-domain-istio.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing-default-domain-istio"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "app-routing-default-domain-istio",
+        "packetPath": "features/app-routing/packets/default-domain-istio.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "app-routing",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md: it contains concrete Azure REST API + Microsoft Learn references, branch-specific constraints/unsupported behavior, and explicit packet/model follow-up notes. Output-path consistency is acceptable because the evidence draft lives in the domain evidence/archive/ while the loop state file is tracked under app .state/feature-reference-loop/state.json."
+      },
+      "trace": {
+        "created_at": "2026-06-27T18:59:44.151Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-default-domain-istio_20260627185944",
+        "assigned_at": "2026-06-27T18:59:44.325Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-default-domain-istio",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-default-domain-istio_20260627185944",
+        "worker_started_at": "2026-06-27T19:01:40.859Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for app-routing-default-domain-istio: evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:03:21.172Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T19:04:26.887Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md: it contains concrete Azure REST API + Microsoft Learn references, branch-specific constraints/unsupported behavior, and explicit packet/model follow-up notes. Output-path consistency is acceptable because the evidence draft lives in the domain evidence/archive/ while the loop state file is tracked under app .state/feature-reference-loop/state.json."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-default-domain-istio",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-default-domain-istio"
+      ],
+      "result": "Collected official feature references for app-routing-default-domain-istio: evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T19:04:26.887Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

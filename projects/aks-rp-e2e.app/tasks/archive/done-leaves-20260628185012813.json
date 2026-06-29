@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:50:12.813Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner rollup: this branch currently has one active deployment-safeguards basic rerun on authorized dev/staging and five separate operator waits that remain truthful because each asks for a distinct returned artifact or authorization under durable send proof, all sharing the same next owner review/send-escalation checkpoint of 2026-06-29T16:45:00Z. Archived the two safe done children whose meaning is already preserved in branch evidence/model surfaces; until the active rerun returns or an operator reply lands, do not widen cloud execution from this branch beyond the current rerun.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the operator-wait matrix carve-out into a concrete rerun-ready packet for spec.deployment-safeguards.basic-enable-disable on committed origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb, proving the exact replay/ref/build inputs and why this leaf is independent from the unrepaired five-spec alternate-ref family wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a durable packet that cites the operator-wait matrix plus repo-local/source-backed evidence for origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb, names the exact replay/spec input boundary for spec.deployment-safeguards.basic-enable-disable, states the exact runner/ref prerequisites for a valid rerun, and explains why the remaining deployment-safeguards family wait stays blocked for the other five specs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.deployment-safeguards.basic-enable-disable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:44:56.023Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628_20260628184456",
+        "assigned_at": "2026-06-28T18:44:56.075Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628",
+        "worker_started_attempt_id": "a_prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628_20260628184456",
+        "worker_started_at": "2026-06-28T18:45:14.644Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable rerun-ready packet for `spec.deployment-safeguards.basic-enable-disable` at `evidence/archive/prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628.md`, tying the operator-wait carve-out to exact spec/replay/ref/target/timeout prerequisites and explicitly separating it from the blocked five-spec family wait.",
+        "last_worker_completed_at": "2026-06-28T18:46:40.840Z",
+        "last_worker_evidence": [
+          "evidence/archive/prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:47:09.230Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived packet proves spec.deployment-safeguards.basic-enable-disable can be rerun independently on authorized origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb with .github/workflows/run-single-spec.yaml, target=staging, and timeout_minutes > 20 while the five-spec family wait remains blocked."
+      },
+      "session_id": "s_task_prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628",
+      "session_history": [
+        "s_task_prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628"
+      ],
+      "result": "Created a durable rerun-ready packet for `spec.deployment-safeguards.basic-enable-disable` at `evidence/archive/prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628.md`, tying the operator-wait carve-out to exact spec/replay/ref/target/timeout prerequisites and explicitly separating it from the blocked five-spec family wait.",
+      "evidence": [
+        "evidence/archive/prepare-deployment-safeguards-basic-enable-disable-rerun-on-authorized-dev-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:47:09.230Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived packet proves spec.deployment-safeguards.basic-enable-disable can be rerun independently on authorized origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb with .github/workflows/run-single-spec.yaml, target=staging, and timeout_minutes > 20 while the five-spec family wait remains blocked."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T08:32:43.335Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 problem-unknown wake reconciled as a live-task pass-through, not a new blocker: the prior serverless virtual-nodes wording attempt remains superseded by the active retry leaf, and the accepted witness-contract/source-map plus failed wording stub can now be archived under the root because their durable meaning is preserved in archive evidence and in the retry task acceptance. Keep serverless-virtual-nodes-model-wording-artifact-retry-20260625 as the single repo-local no-cloud active leaf, and preserve the five exact external returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until the first bounded follow-up/escalation window on or after 2026-06-26 or earlier authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-model-wording-boundary-update-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review failed: previous attempt returned error and produced no durable artifact. Treat this leaf as superseded by a concrete rewrite task that recreates the missing wording artifact from the accepted witness-contract source map.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md"
+      ],
+      "acceptance": [
+        "This review leaf is only resolved once a concrete replacement task exists for the missing artifact and the failed attempt is clearly superseded rather than accepted without evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:30:35.502Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-model-wording-boundary-update-20260625_20260625083035",
+        "assigned_at": "2026-06-25T08:30:35.550Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-model-wording-boundary-update-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-model-wording-boundary-update-20260625_20260625083035",
+        "worker_started_at": "2026-06-25T08:30:58.117Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-25T08:31:24.319Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:31:49.590Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Worker returned error with no evidence and the expected output file was absent, so this review leaf is not accepted on merits. It is superseded by serverless-virtual-nodes-model-wording-artifact-retry-20260625, which narrows the work to recreating the missing durable wording artifact from the accepted witness-contract source map."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-model-wording-boundary-update-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-model-wording-boundary-update-20260625"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-25T08:31:49.590Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Worker returned error with no evidence and the expected output file was absent, so this review leaf is not accepted on merits. It is superseded by serverless-virtual-nodes-model-wording-artifact-retry-20260625, which narrows the work to recreating the missing durable wording artifact from the accepted witness-contract source map."
+      },
+      "status": "done"
+    }
+  ]
+}

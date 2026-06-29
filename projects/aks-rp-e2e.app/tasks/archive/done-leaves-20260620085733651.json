@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:57:33.651Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs now carries one accepted CCP underlay VPA contract repair plus the surviving VM prerelease addonv2 ASM source-backed successors. The CCP underlay VPA path is now truthfully narrowed to the mounted Scheduler+KCM control-plane scenarios, Standard-tier plus underlay-access/toggle inputs, and the four exact VPA witnesses, while the only live feature-spec work remains the two VM prerelease ASM landing tasks (CNI rows 69-72 and functionality/BYOCA/Windows-negative rows 66/67/211) plus any already-archived linkage repair already represented on this parent.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the CCP underlay VPA component-lifecycle review contradiction by updating the exact source-backed repo carriers so this path reflects only the mounted Scheduler+KCM control-plane scenarios, the Standard-tier plus underlay-access preconditions, and the specific VPA-object/recommendation/resource-adjustment/health witnesses proven by source, while leaving adjacent generic underlay-VPA and cert-rotation semantics outside this path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted suite/plan/handler files and names every repo-local carrier changed or explicitly confirmed, including specs/ccp-underlay-vpa-component-lifecycle.json and any linked feature/model/view surface touched.",
+        "The resulting local contract no longer overclaims generic CCP components for this path: it narrows to the mounted Scheduler+KCM scenarios, records the Standard-tier plus underlay-access/toggle preconditions, and spells out the exact VPA-object, recommendation, resource-change, and post-adjustment health witnesses or a bounded local reason any surface could not be narrowed.",
+        "No cloud execution, no broad CCP rediscovery, and no expansion into adjacent generic underlay-VPA or cert-rotation semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ccp-vpa:underlay-component-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:47:55.993Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T08:48:07.280Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620_20260620084816",
+        "assigned_at": "2026-06-20T08:48:16.841Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620",
+        "worker_started_attempt_id": "a_ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620_20260620084816",
+        "worker_started_at": "2026-06-20T08:48:28.730Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the CCP underlay VPA component-lifecycle repo-local contract by narrowing feature/spec/model/replay carriers to the mounted Scheduler+KCM control-plane scenarios, adding exact Standard-tier/underlay-access inputs plus four source-backed witnesses, and writing the requested archive note.",
+        "last_worker_completed_at": "2026-06-20T08:57:18.294Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:57:33.597Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the source-backed CCP underlay VPA repair: the archive note cites mounted suite/plan/handler files, names the repo-local carriers updated, and narrows the path contract to Scheduler+KCM control-plane scenarios with exact Standard-tier/underlay-access inputs plus the four VPA witnesses without broad CCP overclaim."
+      },
+      "session_id": "s_task_ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620",
+      "session_history": [
+        "s_task_ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:57:33.597Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the source-backed CCP underlay VPA repair: the archive note cites mounted suite/plan/handler files, names the repo-local carriers updated, and narrows the path contract to Scheduler+KCM control-plane scenarios with exact Standard-tier/underlay-access inputs plus the four VPA witnesses without broad CCP overclaim."
+      },
+      "status": "done"
+    }
+  ]
+}

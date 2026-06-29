@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:46:47.580Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed wake accepted the bounded row-75 AKSConformance core live-verdict run-plan as durable knowledge: the exact VirtualMachines + use_shared_identity + user-kubeconfig + deployment+tunnel+metrics carrier is source/spec/model grounded, but truthful live execution remains blocked until the dedicated replay carrier is promoted beyond check-only. The concrete successor is already active as vmpr-row75-aksconformance-core-replay-promotion-repair-20260621, while other active work remains the row-63 addonv2 rerun and the Windows2022 dual-stack replay promotion repair; the shared external-send family still carries row-33 execute approval and row-76 shared-identity waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded non-cloud live-verdict run-plan packet for path.network-cni-azure-overlay-dual-stack-migration, preserving the exact migration-from-single-stack-to-dual-stack Windows carrier already modeled so the next truthful live step is explicit without changing the source-backed spec/replay contract or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact migration mounted-source/spec/replay/model authorities already landed in repo, including how the migration path composes with the base dual-stack and Windows siblings without collapsing their identities.",
+        "Artifact records the exact local check/preflight commands plus execute/cleanup contract that would bound a future first live verdict for the migration path, including the precise spec id, replay file, path id, and mutation gate.",
+        "Artifact ends with one concrete next follow-up for path.network-cni-azure-overlay-dual-stack-migration only: execute-ready, exact blocker, or one bounded missing-authority repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:40:55.718Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T09:42:57.130Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621_20260621094303",
+        "assigned_at": "2026-06-21T09:43:03.329Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621_20260621094303",
+        "worker_started_at": "2026-06-21T09:43:17.827Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded live-verdict run-plan packet for the overlay dual-stack migration path and saved it under evidence/archive, backed by mounted-source/spec/replay/model authorities plus a fresh local --check evidence run.",
+        "last_worker_completed_at": "2026-06-21T09:44:25.816Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T09:45:54.797Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-21: evidence/archive/network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621.md satisfies all acceptance criteria by grounding the exact mounted migration source/spec/replay/model carrier, documenting the truthful local check plus future execute/cleanup contract, and ending with one bounded next action: promote the migration replay beyond the current runSourceSpecCheck stub before any live verdict run."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621"
+      ],
+      "result": "Authored the bounded live-verdict run-plan packet for the overlay dual-stack migration path and saved it under evidence/archive, backed by mounted-source/spec/replay/model authorities plus a fresh local --check evidence run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T09:45:54.797Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-21: evidence/archive/network-cni-overlay-dualstack-migration-live-verdict-run-plan-20260621.md satisfies all acceptance criteria by grounding the exact mounted migration source/spec/replay/model carrier, documenting the truthful local check plus future execute/cleanup contract, and ending with one bounded next action: promote the migration replay beyond the current runSourceSpecCheck stub before any live verdict run."
+      },
+      "status": "done"
+    }
+  ]
+}

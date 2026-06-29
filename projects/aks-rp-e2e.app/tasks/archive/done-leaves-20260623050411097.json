@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T05:04:11.097Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review: archive the completed private-cluster adjacent-carrier gap-map leaf because its accepted distinction between the first-hop public update carrier and the adjacent second-hop same-cluster toggle is now preserved at the project level. The truthful live frontier remains the active private-cluster second-hop carrier extract, the active ACNS Retina enterprise linkage repair, the unchanged single external-human wait for already-routed asks, and a new repo-local network-CNI mounted-source gap-map refill leaf for continued regular learning without cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-update-adjacent-carrier-gap-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted private-cluster update handwritten-source surface adjacent to update_public.go against current repo-local feature/spec/model/live carriers after the APIVNET wording sync, and determine whether any adjacent lifecycle slice still needs a truthful dedicated carrier or whether the present path boundary is already sufficient.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-update-adjacent-carrier-gap-map-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted private-cluster update source file(s)/scenario definitions it checked, the current maintained feature/spec/model/live carrier(s) for the adjacent update lifecycle slices, and the evidence for each mapping.",
+        "The note names one exact next private-cluster repo-local slice/file to extract if a truthful carrier gap remains, or explicitly records that no further local split is warranted before future live verification.",
+        "Work stays repo-local only: no cloud mutation, no new external-human wait, and no widening into unrelated private-cluster branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster/update-adjacent-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T04:57:06.818Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-update-adjacent-carrier-gap-map-20260623_20260623045714",
+        "assigned_at": "2026-06-23T04:57:14.110Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-update-adjacent-carrier-gap-map-20260623",
+        "worker_started_attempt_id": "a_private-cluster-update-adjacent-carrier-gap-map-20260623_20260623045714",
+        "worker_started_at": "2026-06-23T04:57:37.875Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable repo-local gap map at evidence/archive/private-cluster-update-adjacent-carrier-gap-map-20260623.md that compares mounted update_public.go/update_private.go slices against current feature/spec/model/live carriers and identifies one remaining exact adjacent carrier gap: the public APIVNET → private APIVNET second hop from update_public.go.",
+        "last_worker_completed_at": "2026-06-23T05:02:27.002Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T05:02:44.251Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/private-cluster-update-adjacent-carrier-gap-map-20260623.md cites the exact mounted update_public.go and update_private.go source slices, maps them against current feature/spec/model/live carriers, and truthfully concludes that current wording is sufficient for present verdicts while one exact repo-local gap remains for the update_public.go public-APIVNET -> private-APIVNET second hop."
+      },
+      "session_id": "s_task_private-cluster-update-adjacent-carrier-gap-map-20260623",
+      "session_history": [
+        "s_task_private-cluster-update-adjacent-carrier-gap-map-20260623"
+      ],
+      "result": "Created a durable repo-local gap map at evidence/archive/private-cluster-update-adjacent-carrier-gap-map-20260623.md that compares mounted update_public.go/update_private.go slices against current feature/spec/model/live carriers and identifies one remaining exact adjacent carrier gap: the public APIVNET → private APIVNET second hop from update_public.go.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T05:02:44.251Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/private-cluster-update-adjacent-carrier-gap-map-20260623.md cites the exact mounted update_public.go and update_private.go source slices, maps them against current feature/spec/model/live carriers, and truthfully concludes that current wording is sufficient for present verdicts while one exact repo-local gap remains for the update_public.go public-APIVNET -> private-APIVNET second hop."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T02:24:52.752Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 network-cni overlay mutation family audit history is now compacted at the project root: the archived done slice preserves the accepted source-backed replay-contract audits for path.network-cni-azure-overlay-dual-stack-migration and path.network-cni-azure-overlay-podcidr-expansion, while live local work stays narrowed to one active replay/model repair leaf for dual-stack migration plus the sibling backlog repair leaf for pod-CIDR expansion once concurrency frees. The separate focus-mounted-source-coverage-closure-and-external-wait-20260623 branch remains the single truthful holder for five exact returned-proof waits, including the aad-rbac approval-return wait revalidated against mounted source with no truthful repo-local successor before the 2026-06-26 follow-up window.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-migration-replay-contract-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Compare the mounted Azure CNI overlay dual-stack migration handwritten lifecycle one step at a time against replays/network-cni-azure-overlay-dual-stack-migration.ts and its maintained spec/model carriers, then write the exact no-cloud replay-contract gap list and minimum durable repair targets without running Azure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-migration-replay-contract-audit-20260625.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact mounted source anchors for Scenario_Azure_CNI_Overlay_DualStack_Migration_Windows2022 and Windows2025, enumerates each intended lifecycle step/boundary, and records whether each step is preserved, partially preserved, or missing in the maintained replay/spec/model carriers.",
+        "The artifact names the exact durable file paths and contract deltas needed to close the no-cloud replay/model gap for path.network-cni-azure-overlay-dual-stack-migration, while introducing no cloud execution, approval wait, or generic placeholder work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.network-cni-azure-overlay-dual-stack-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T02:14:41.924Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-migration-replay-contract-audit-20260625_20260625021442",
+        "assigned_at": "2026-06-25T02:14:42.020Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-migration-replay-contract-audit-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-migration-replay-contract-audit-20260625_20260625021442",
+        "worker_started_at": "2026-06-25T02:15:02.377Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the no-cloud replay contract audit for path.network-cni-azure-overlay-dual-stack-migration and wrote the requested archive artifact at evidence/archive/network-cni-overlay-migration-replay-contract-audit-20260625.md. The audit compares mounted source, replay, spec, and model/view carriers step-by-step and names the exact durable repair targets without running Azure.",
+        "last_worker_completed_at": "2026-06-25T02:17:34.773Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T02:18:15.958Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-cni-overlay-migration-replay-contract-audit-20260625.md: it cites the exact mounted Windows2022/Windows2025 source anchors, audits each intended lifecycle step against replay/spec/model/view, and names concrete replay/model/view repair deltas for path.network-cni-azure-overlay-dual-stack-migration without any cloud execution or placeholder work."
+      },
+      "session_id": "s_task_network-cni-overlay-migration-replay-contract-audit-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-migration-replay-contract-audit-20260625"
+      ],
+      "result": "Completed the no-cloud replay contract audit for path.network-cni-azure-overlay-dual-stack-migration and wrote the requested archive artifact at evidence/archive/network-cni-overlay-migration-replay-contract-audit-20260625.md. The audit compares mounted source, replay, spec, and model/view carriers step-by-step and names the exact durable repair targets without running Azure.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T02:18:15.958Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-cni-overlay-migration-replay-contract-audit-20260625.md: it cites the exact mounted Windows2022/Windows2025 source anchors, audits each intended lifecycle step against replay/spec/model/view, and names concrete replay/model/view repair deltas for path.network-cni-azure-overlay-dual-stack-migration without any cloud execution or placeholder work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Compare the mounted Azure CNI overlay pod-CIDR-expansion handwritten lifecycle one step at a time against replays/network-cni-azure-overlay-podcidr-expansion.ts and its maintained spec/model carriers, then write the exact no-cloud replay-contract gap list and minimum durable repair targets without running Azure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact mounted source anchors for Scenario_CNI_Overlay_PodCIDRExpansion, enumerates each intended lifecycle step and boundary (/24 create, /16 update, CNS restart, nodepool2 add, NNC verification, multi-node connectivity), and records whether each step is preserved, partially preserved, or missing in the maintained replay/spec/model carriers.",
+        "The artifact names the exact durable file paths and contract deltas needed to close the no-cloud replay/model gap for path.network-cni-azure-overlay-podcidr-expansion, while introducing no cloud execution, approval wait, or generic placeholder work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.network-cni-azure-overlay-podcidr-expansion"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T02:14:41.970Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-25T02:15:32.695Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625_20260625021738",
+        "assigned_at": "2026-06-25T02:17:38.983Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625_20260625021738",
+        "worker_started_at": "2026-06-25T02:17:41.516Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested no-cloud replay-contract audit at evidence/archive/network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625.md, comparing mounted source, spec, replay, and normalized model/path carriers step by step and naming exact durable repair targets.",
+        "last_worker_completed_at": "2026-06-25T02:19:26.489Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T02:21:00.975Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625.md cites mounted Scenario_CNI_Overlay_PodCIDRExpansion source anchors, enumerates the /24 create -> /16 update -> CNS restart -> nodepool2/NNC/connectivity lifecycle, and names the exact replay/model repair package for path.network-cni-azure-overlay-podcidr-expansion without introducing cloud execution."
+      },
+      "session_id": "s_task_network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625"
+      ],
+      "result": "Wrote the requested no-cloud replay-contract audit at evidence/archive/network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625.md, comparing mounted source, spec, replay, and normalized model/path carriers step by step and naming exact durable repair targets.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T02:21:00.975Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-podcidr-expansion-replay-contract-audit-20260625.md cites mounted Scenario_CNI_Overlay_PodCIDRExpansion source anchors, enumerates the /24 create -> /16 update -> CNS restart -> nodepool2/NNC/connectivity lifecycle, and names the exact replay/model repair package for path.network-cni-azure-overlay-podcidr-expansion without introducing cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

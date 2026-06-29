@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T01:03:38.928Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-29 task-completed owner review accepts the VirtualMachines spot-pool-eviction repo-local closure slice and archives its completed children. The mounted Scenario_Machines_Spot boundary note now records the exact accepted input/expectation edge and adjacent VMSS/autoscaler separations, and the new maintained carrier under features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts preserves the exact eight-step live sequence plus the Machine-backed no-VMSS-spot-taint expectation behind an explicit execute+mutation gate. No truthful runnable successor is created in this wake because the repo-local source/model/carrier gap for path.virtualmachines.spot-pool-eviction is now closed; the live frontier remains intentionally represented only by the two human/operator family waits and the single westus2 cluster-count preflight recovery gate until one of their stated resume conditions changes.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin source to map the exact Scenario_Machines_Spot boundary for path.virtualmachines.spot-pool-eviction, including accepted inputs, persisted spot fields, node label/taint expectations, adjacent VM/VMSS surfaces, and the remaining live-verification gap without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-spot-pool-eviction-mounted-boundary-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source review cites the exact VirtualMachine suite entrypoints and the referenced Scenario_Machines_Spot implementation used by the maintained path.",
+        "The archive note records input path, expectation path, adjacent/superseding surfaces, and the exact reason the current verdict remains source-grounded draft or needs a repo-local carrier/model repair.",
+        "If repo-local spec/replay/model/status linkage for path.virtualmachines.spot-pool-eviction is incomplete or contradictory, the worker updates the affected repo-local artifact(s) or records one exact follow-up leaf; no cloud mutation is performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-path:path.virtualmachines.spot-pool-eviction"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T00:55:55.182Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629_20260629005555",
+        "assigned_at": "2026-06-29T00:55:55.236Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629",
+        "worker_started_attempt_id": "a_map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629_20260629005555",
+        "worker_started_at": "2026-06-29T00:56:10.648Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the exact mounted Scenario_Machines_Spot boundary for path.virtualmachines.spot-pool-eviction, restored the missing evidence note, and repaired repo-local model linkage from a nonexistent replays path to the maintained test carrier under features/virtualmachines-agentpool/tests.",
+        "last_worker_completed_at": "2026-06-29T00:59:11.525Z",
+        "last_worker_evidence": [
+          "evidence/archive/virtualmachines-spot-pool-eviction-mounted-boundary-20260629.md",
+          "evidence/archive/virtualmachines-spot-pool-eviction-mounted-source-model-linkage-20260623.md",
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/graph-view.json"
+        ],
+        "reviewed_at": "2026-06-29T00:59:43.843Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note cites the exact mounted VirtualMachine Scenario_Machines_Spot entrypoints, records the accepted input/expectation boundary and adjacent VMSS/autoscaler separations, restores the missing linkage evidence note, and aligns the maintained model/view linkage to the repo-local carrier under features/virtualmachines-agentpool/tests without cloud mutation."
+      },
+      "session_id": "s_task_map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629",
+      "session_history": [
+        "s_task_map-virtualmachines-spot-pool-eviction-mounted-boundary-20260629"
+      ],
+      "result": "Mapped the exact mounted Scenario_Machines_Spot boundary for path.virtualmachines.spot-pool-eviction, restored the missing evidence note, and repaired repo-local model linkage from a nonexistent replays path to the maintained test carrier under features/virtualmachines-agentpool/tests.",
+      "evidence": [
+        "evidence/archive/virtualmachines-spot-pool-eviction-mounted-boundary-20260629.md",
+        "evidence/archive/virtualmachines-spot-pool-eviction-mounted-source-model-linkage-20260623.md",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/graph-view.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T00:59:43.843Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note cites the exact mounted VirtualMachine Scenario_Machines_Spot entrypoints, records the accepted input/expectation boundary and adjacent VMSS/autoscaler separations, restores the missing linkage evidence note, and aligns the maintained model/view linkage to the repo-local carrier under features/virtualmachines-agentpool/tests without cloud mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a dedicated live replay carrier for path.virtualmachines.spot-pool-eviction that mirrors mounted Scenario_Machines_Spot exactly: cluster create with system VMSS + Machines-mode VirtualMachines pool, create one regular machine and one Spot machine, verify persisted spot fields, then verify node labels and absence of the VMSS-style spot NoSchedule taint on both Machine-backed nodes without borrowing nativerp VMSS or autoscaler semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts"
+      ],
+      "acceptance": [
+        "The planned replay carrier and supporting note cite the exact mounted Scenario_Machines_Spot source entrypoints and enumerate the eight-step live sequence the replay must perform.",
+        "The task produces a repo-local carrier design or scaffold that keeps Machine-backed spot semantics separate from nativerp VMSS spot-pool and autoscaler spot families, including the no-VMSS-spot-taint expectation.",
+        "If execution remains gated, the task still leaves a durable repo-local replay artifact or design note that narrows the live-verification gap for path.virtualmachines.spot-pool-eviction without cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-path:path.virtualmachines.spot-pool-eviction"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T00:59:43.893Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629_20260629005943",
+        "assigned_at": "2026-06-29T00:59:43.942Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629",
+        "worker_started_attempt_id": "a_author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629_20260629005943",
+        "worker_started_at": "2026-06-29T00:59:59.193Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new execution-gated live replay carrier at features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts that mirrors mounted Scenario_Machines_Spot with the exact eight-step sequence and preserves the Machine-backed no-VMSS-spot-taint boundary. Verified the carrier runs in non-mutating check mode and documents the precise mounted source entrypoints and live assertions.",
+        "last_worker_completed_at": "2026-06-29T01:02:28.148Z",
+        "last_worker_evidence": [
+          "features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts"
+        ],
+        "reviewed_at": "2026-06-29T01:03:22.425Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the new execution-gated live replay carrier as satisfying the mounted-source eight-step contract for path.virtualmachines.spot-pool-eviction: the file cites the exact Scenario_Machines_Spot entrypoints, preserves the Machine-backed no-VMSS-spot-taint boundary, and remains non-mutating by default while documenting the explicit execute+mutation gate needed for future cloud verification."
+      },
+      "session_id": "s_task_author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629",
+      "session_history": [
+        "s_task_author-virtualmachines-spot-pool-eviction-live-replay-carrier-20260629"
+      ],
+      "result": "Authored a new execution-gated live replay carrier at features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts that mirrors mounted Scenario_Machines_Spot with the exact eight-step sequence and preserves the Machine-backed no-VMSS-spot-taint boundary. Verified the carrier runs in non-mutating check mode and documents the precise mounted source entrypoints and live assertions.",
+      "evidence": [
+        "features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction-live.ts"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T01:03:22.425Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the new execution-gated live replay carrier as satisfying the mounted-source eight-step contract for path.virtualmachines.spot-pool-eviction: the file cites the exact Scenario_Machines_Spot entrypoints, preserves the Machine-backed no-VMSS-spot-taint boundary, and remains non-mutating by default while documenting the explicit execute+mutation gate needed for future cloud verification."
+      },
+      "status": "done"
+    }
+  ]
+}

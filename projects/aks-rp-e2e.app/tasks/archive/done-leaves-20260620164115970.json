@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:41:15.970Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review closed the ManagedSystem create-time maintenance slice. The boundary-map authority plus evidence/archive/managedsystem-create-time-model-reconcile-20260620.md and evidence/archive/managedsystem-create-time-review-proof-and-slice-validate-20260620.md now preserve that path.managedsystem.create-time-initial-pool stays distinct from the passing add-existing control path, keeps the minimal caller-owned name+mode contract, and remains a final RP ARM64/x64 provisioning product-gap whose retest trigger is unchanged. The local replay check passed, view regeneration reran, and whole-model validation failure was recorded as broad unrelated repo debt rather than a ManagedSystem regression. Remaining live work in this lane is the single MachinesPreview external handoff wait; no new ManagedSystem rerun or adjacent-surface follow-up is needed from this branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-model-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted ManagedSystem create-time initial/default-pool product-gap model/linkage with the 2026-06-20 boundary map so path.managedsystem.create-time-initial-pool cites the current create-time-vs-add-existing distinction, the minimal name+mode contract, and the exact retest condition without reopening mutation work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-model-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Worker updates the accepted model or equivalent durable linkage for path.managedsystem.create-time-initial-pool so the current product-gap diagnosis cites the 2026-06-20 boundary map, preserves the create-time-versus-add-existing distinction, and records the minimal name+mode contract plus RP architecture-mismatch retest trigger.",
+        "Worker regenerates any touched derived knowledge-map views and records repo-local validation/check evidence showing the model/views remain consistent after the reconciliation.",
+        "Artifact states whether any further ManagedSystem adjacent-surface follow-up remains, and if not, closes this branch as model-maintenance only without proposing a new cloud rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:34:03.819Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-model-reconcile-20260620_20260620163403",
+        "assigned_at": "2026-06-20T16:34:03.865Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-model-reconcile-20260620",
+        "worker_started_attempt_id": "a_managedsystem-create-time-model-reconcile-20260620_20260620163403",
+        "worker_started_at": "2026-06-20T16:34:19.112Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled ManagedSystem create-time model linkage in model/knowledge-map/model.json, regenerated knowledge-map views, and added evidence/archive/managedsystem-create-time-model-reconcile-20260620.md to preserve the create-time vs add-existing split, minimal name+mode contract, and unchanged retest trigger.",
+        "last_worker_completed_at": "2026-06-20T16:36:58.292Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:40:50.913Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review found the model linkage update and branch-closure reasoning useful, but the evidence artifact only listed planned validate/generate commands instead of exact repo-local validation outcomes. Review is therefore replaced by managedsystem-create-time-review-proof-and-slice-validate-20260620, which must capture the concrete validation/regeneration/check outputs before this ManagedSystem slice can be accepted."
+      },
+      "session_id": "s_task_managedsystem-create-time-model-reconcile-20260620",
+      "session_history": [
+        "s_task_managedsystem-create-time-model-reconcile-20260620"
+      ],
+      "result": "Reconciled ManagedSystem create-time model linkage in model/knowledge-map/model.json, regenerated knowledge-map views, and added evidence/archive/managedsystem-create-time-model-reconcile-20260620.md to preserve the create-time vs add-existing split, minimal name+mode contract, and unchanged retest trigger.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T16:40:50.913Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review found the model linkage update and branch-closure reasoning useful, but the evidence artifact only listed planned validate/generate commands instead of exact repo-local validation outcomes. Review is therefore replaced by managedsystem-create-time-review-proof-and-slice-validate-20260620, which must capture the concrete validation/regeneration/check outputs before this ManagedSystem slice can be accepted."
+      },
+      "status": "done"
+    }
+  ]
+}

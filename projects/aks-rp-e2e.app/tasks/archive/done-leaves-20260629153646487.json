@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:36:46.487Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two repo-local evidence/model updates without widening cloud execution: (1) verify-spec-network-cni-azure-default-mode is archived only as non-terminal SIGTERM/error evidence from run 28379808047, with triage-spec-network-cni-azure-default-mode-sigterm-run-28379808047-and-decide-rerun-20260629 owning the rerun-vs-runner decision; (2) retry-network-cni-acns-observability-base-contract-evidence-note-20260629 is accepted as the missing archive note that preserves the generic/base ACNS observability contract boundary and keeps adjacent Cilium/Retina runtime surfaces separate from the base carrier. The lane remains intentionally split between the active single-spec verifier wave, the runner/evidence repair leaves, and exact family waits for remote artifact publication or westus2 preflight response rather than blind reruns.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-network-cni-azure-default-mode",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.azure-default-mode through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.azure-default-mode",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.azure-default-mode"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.azure-default-mode",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the worker review as an error-classified non-terminal verifier outcome: run 28379808047 ended in SIGTERM before the scenario completed, so no domain verdict was taken. Follow-up triage task triage-spec-network-cni-azure-default-mode-sigterm-run-28379808047-and-decide-rerun-20260629 now owns deciding rerun vs shared runner/workflow handling."
+      },
+      "trace": {
+        "created_at": "2026-06-29T14:33:33.992Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-azure-default-mode_20260629143334",
+        "assigned_at": "2026-06-29T14:33:34.011Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-azure-default-mode",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-azure-default-mode_20260629143334",
+        "worker_started_at": "2026-06-29T14:33:49.403Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-cni.azure-default-mode workflow run 28379808047 classified as error. Loop key: verify-spec-network-cni-azure-default-mode-a_verify-spec-network-cni-azure-default-mode_20. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28379808047 Result: runs/test-results/single-network-cni-azure-default-mode_422544/artifacts/network-cni-azure-default-mode/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28379808047/aks-rp-e2e-28379808047-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28379808047/aks-rp-e2e-28379808047-spec-test-results/test-results/single-network-cni-azure-default-mode_422544/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T15:34:31.099Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:35:20.537Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker review as an error-classified non-terminal verifier outcome: run 28379808047 ended in SIGTERM before the scenario completed, so no domain verdict was taken. Follow-up triage task triage-spec-network-cni-azure-default-mode-sigterm-run-28379808047-and-decide-rerun-20260629 now owns deciding rerun vs shared runner/workflow handling."
+      },
+      "session_id": "s_task_verify-spec-network-cni-azure-default-mode",
+      "session_history": [
+        "s_task_verify-spec-network-cni-azure-default-mode"
+      ],
+      "result": "Spec spec.network-cni.azure-default-mode workflow run 28379808047 classified as error. Loop key: verify-spec-network-cni-azure-default-mode-a_verify-spec-network-cni-azure-default-mode_20. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28379808047 Result: runs/test-results/single-network-cni-azure-default-mode_422544/artifacts/network-cni-azure-default-mode/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28379808047/aks-rp-e2e-28379808047-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28379808047/aks-rp-e2e-28379808047-spec-test-results/test-results/single-network-cni-azure-default-mode_422544/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T15:35:20.537Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

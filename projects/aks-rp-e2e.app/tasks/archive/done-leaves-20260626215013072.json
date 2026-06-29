@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T21:50:13.072Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 blocked-frontier refill: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single blocked external-proof family, archive the accepted row25-vs-row26 audit and metadata reconciliation because their durable meaning is now captured in root context, and reopen local capacity only through one bounded VM prerelease next-step packet that picks the first truthful row25-or-row50 live-run candidate, exact gate/preflight predicates, and any remaining repo-local carrier tweak before approval or cloud mutation.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-row25-row26-shared-fixture-feasibility-audit-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit whether VM prerelease row 25 should remain a permanent direct-spec carrier or can truthfully share a future fixture/compaction lane with row 26, using mounted source plus existing repo-local evidence only and without reopening cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row25-row26-shared-fixture-feasibility-audit-20260626.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted AKS RP row-25/row-26 capacity-based-surge source surfaces and the existing repo-local dry-run/compaction packet rather than treating the question as missing source.",
+        "Artifact makes a concrete owner-ready decision: either preserve row 25 as direct-spec permanently for truthful execution planning, or document exact bounded conditions that would justify later shared-fixture compaction with row 26.",
+        "Artifact records any repo-local spec/replay/model/task-tree follow-up implied by that decision, while explicitly avoiding cloud execution authority or changes to the existing external-proof waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:42:14.022Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row25-row26-shared-fixture-feasibility-audit-20260626_20260626214214",
+        "assigned_at": "2026-06-26T21:42:14.066Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row25-row26-shared-fixture-feasibility-audit-20260626",
+        "worker_started_attempt_id": "a_vmpr-row25-row26-shared-fixture-feasibility-audit-20260626_20260626214214",
+        "worker_started_at": "2026-06-26T21:42:29.226Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote an owner-ready feasibility audit at evidence/archive/vmpr-row25-row26-shared-fixture-feasibility-audit-20260626.md concluding row 25 should remain the truthful direct-spec carrier unless specific route/model/fixture conditions are later repaired.",
+        "last_worker_completed_at": "2026-06-26T21:43:43.040Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:44:34.964Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source feasibility audit: it cites the authoritative row-25/row-26 source files plus existing dry-run/plan evidence, makes the owner-ready decision to preserve row 25 as the truthful direct-spec carrier, and bounds any future shared-fixture reconsideration to explicit route/model/fixture proof without touching the external-proof waits."
+      },
+      "session_id": "s_task_vmpr-row25-row26-shared-fixture-feasibility-audit-20260626",
+      "session_history": [
+        "s_task_vmpr-row25-row26-shared-fixture-feasibility-audit-20260626"
+      ],
+      "result": "Wrote an owner-ready feasibility audit at evidence/archive/vmpr-row25-row26-shared-fixture-feasibility-audit-20260626.md concluding row 25 should remain the truthful direct-spec carrier unless specific route/model/fixture conditions are later repaired.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:44:34.964Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source feasibility audit: it cites the authoritative row-25/row-26 source files plus existing dry-run/plan evidence, makes the owner-ready decision to preserve row 25 as the truthful direct-spec carrier, and bounds any future shared-fixture reconsideration to explicit route/model/fixture proof without touching the external-proof waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row25-row26-carrier-metadata-reconciliation-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the VM prerelease capacity-surge carrier metadata and durable repo-local notes so row 25 remains the maintained direct-spec carrier and row 26 stays a separate adjacent carrier until the accepted shared-fixture preconditions are actually proven, using repo-local source/spec/plan evidence only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row25-row26-carrier-metadata-reconciliation-20260626.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row25-vs-row26 feasibility audit and identifies which repo-local spec/packet/design surfaces still imply candidate sharing or otherwise need clarification.",
+        "If a bounded repo-local metadata/doc update is warranted, the task lands the exact change set plus bounded check output; otherwise it records a precise no-change decision with evidence.",
+        "Result explicitly keeps the two existing external-proof waits unchanged and does not reopen cloud mutation or schedule a live shared-fixture run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:44:35.010Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row25-row26-carrier-metadata-reconciliation-20260626_20260626214435",
+        "assigned_at": "2026-06-26T21:44:35.055Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row25-row26-carrier-metadata-reconciliation-20260626",
+        "worker_started_attempt_id": "a_vmpr-row25-row26-carrier-metadata-reconciliation-20260626_20260626214435",
+        "worker_started_at": "2026-06-26T21:44:53.163Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease row 25/26 carrier metadata by tightening the row-26 durable YAML note to preserve row 25 as the maintained direct-spec carrier and row 26 as a separate adjacent carrier, and wrote the requested evidence artifact documenting the no-broader-change decision and supporting repo-local proof.",
+        "last_worker_completed_at": "2026-06-26T21:47:03.916Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:47:33.711Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row25-row26-carrier-metadata-reconciliation-20260626.md cites the accepted row25-vs-row26 feasibility audit, lands the bounded row-26 YAML wording repair, preserves row 25 as the maintained direct-spec carrier and row 26 as a separate adjacent carrier, records that no broader spec/model/design change was needed, and explicitly leaves both external-proof waits unchanged with no cloud mutation or live shared-fixture run."
+      },
+      "session_id": "s_task_vmpr-row25-row26-carrier-metadata-reconciliation-20260626",
+      "session_history": [
+        "s_task_vmpr-row25-row26-carrier-metadata-reconciliation-20260626"
+      ],
+      "result": "Reconciled VM prerelease row 25/26 carrier metadata by tightening the row-26 durable YAML note to preserve row 25 as the maintained direct-spec carrier and row 26 as a separate adjacent carrier, and wrote the requested evidence artifact documenting the no-broader-change decision and supporting repo-local proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:47:33.711Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row25-row26-carrier-metadata-reconciliation-20260626.md cites the accepted row25-vs-row26 feasibility audit, lands the bounded row-26 YAML wording repair, preserves row 25 as the maintained direct-spec carrier and row 26 as a separate adjacent carrier, records that no broader spec/model/design change was needed, and explicitly leaves both external-proof waits unchanged with no cloud mutation or live shared-fixture run."
+      },
+      "status": "done"
+    }
+  ]
+}

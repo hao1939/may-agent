@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:03:23.743Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 stale review wake reconciled: the requested VM prerelease rows 46-49 carrier audit is already owner-accepted and its durable meaning now lives at the project root. Rows 47-49 already have accepted exact repo-local carrier coverage, while row 46 is intentionally narrowed to one active repo-local execute-body authoring slice against mounted cluster-autoscaler min_count.go so a later gated live probe can be designed without cloud execution in this pass. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful shared external-human wait for covered out-of-runtime asks; do not reopen duplicate review or wait leaves from this watchdog drift.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin source plus current repo-local cluster-autoscaler artifacts to map rows 46-49 to exact current spec/replay/model carriers or one bounded missing local authoring/model gap, keeping repo-local source/spec/model work separate from later live/external waits and without running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the referenced scenario definitions for rows 46-49, and maps each row to its exact current local feature/spec/replay/model carriers or one bounded missing local authoring/model gap with enough detail for a concrete follow-up task.",
+        "The result states which row-46/47/48/49 uncertainties remain only later live/external-proof work versus which repo-local source/spec/model tasks stay actionable, and it introduces no duplicate blocked waits or cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source-carrier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:58:46.368Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622_20260622185846",
+        "assigned_at": "2026-06-22T18:58:46.420Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622_20260622185846",
+        "worker_started_at": "2026-06-22T18:59:06.852Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive audit at evidence/archive/vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622.md, mapping mounted-source VM prerelease CAS rows 46-49 to exact current repo-local feature/spec/replay/model carriers and separating remaining live-proof work from any local carrier gap.",
+        "last_worker_completed_at": "2026-06-22T19:01:46.997Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:02:21.604Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622.md: it cites mounted prerelease/checkin plus row-specific cluster-autoscaler plans, maps rows 46-49 to exact current spec/replay/model carriers, and shows no remaining repo-local source/spec/model gap beyond a bounded row-46 execute-body authoring opportunity."
+      },
+      "session_id": "s_task_vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622"
+      ],
+      "result": "Created the requested archive audit at evidence/archive/vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622.md, mapping mounted-source VM prerelease CAS rows 46-49 to exact current repo-local feature/spec/replay/model carriers and separating remaining live-proof work from any local carrier gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:02:21.604Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/vm-prerelease-source-carrier-audit-rows-46-47-48-49-20260622.md: it cites mounted prerelease/checkin plus row-specific cluster-autoscaler plans, maps rows 46-49 to exact current spec/replay/model carriers, and shows no remaining repo-local source/spec/model gap beyond a bounded row-46 execute-body authoring opportunity."
+      },
+      "status": "done"
+    }
+  ]
+}

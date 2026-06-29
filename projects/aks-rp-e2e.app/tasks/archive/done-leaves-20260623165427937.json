@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:54:27.937Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review accepted virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623: the archive note proves the branch is now a truthful repo-local draft/non-mounted authority carrier with exact mounted source-equivalent helpers cited and repaired spec/replay/model/index/path-summary wording, so the earlier matrix note's remaining local gap is resolved without claiming an exact mounted prerelease scenario or reopening cloud execution. That leaves this focus branch with no runnable repo-local successor from the bounded VM source-linkage slice; only external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains as the single truthful family-level blocked wait until returned external proof arrives or the first owner blocked-frontier review after 2026-06-26. Optional stale row-36 prose cleanup was not opened from this wake because no fresh targeted evidence was gathered for a durable mismatch, and no new wait, duplicate source-holder work, or live execution is justified from this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the draft path.virtualmachines.manual-scale-policy branch against mounted VirtualMachine prerelease source and the current feature/spec/replay/model carriers so the maintained branch has explicit normalized feature/scenario/DAG/path linkage and a truthful source-versus-replay authority note without reopening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted VirtualMachine prerelease source or source-equivalent carriers for the manual-scale-policy branch plus the current maintained feature/spec/replay/model anchors, then states the exact normalized-linkage gap and the narrowest truthful authority for the branch.",
+        "If the maintained carriers are missing or stale, the task updates the minimum truthful repo-local surfaces so path.virtualmachines.manual-scale-policy has explicit feature/scenario/DAG/path linkage and claim-safe status; otherwise it records an exact no-change justification. No live execution or cloud mutation is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-manual-scale-policy-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:40:40.495Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623_20260623164040",
+        "assigned_at": "2026-06-23T16:40:40.587Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623_20260623164040",
+        "worker_started_at": "2026-06-23T16:41:40.481Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the VirtualMachines manual-scale-policy branch into a truthful draft linkage carrier by updating its spec/replay/model/index/view surfaces and archiving a mounted-source authority note under evidence/archive/virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T16:53:05.303Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:54:27.892Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive repair note: it truthfully downgrades path.virtualmachines.manual-scale-policy to a repo-local draft/non-mounted authority carrier, cites the exact mounted source-equivalent files searched and found, and records the repaired spec/replay/model/index/path-summary surfaces without reopening cloud execution or inventing stronger mounted authority than the evidence supports."
+      },
+      "session_id": "s_task_virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623",
+      "session_history": [
+        "s_task_virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623"
+      ],
+      "result": "Repaired the VirtualMachines manual-scale-policy branch into a truthful draft linkage carrier by updating its spec/replay/model/index/view surfaces and archiving a mounted-source authority note under evidence/archive/virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:54:27.892Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archive repair note: it truthfully downgrades path.virtualmachines.manual-scale-policy to a repo-local draft/non-mounted authority carrier, cites the exact mounted source-equivalent files searched and found, and records the repaired spec/replay/model/index/path-summary surfaces without reopening cloud execution or inventing stronger mounted authority than the evidence supports."
+      },
+      "status": "done"
+    }
+  ]
+}

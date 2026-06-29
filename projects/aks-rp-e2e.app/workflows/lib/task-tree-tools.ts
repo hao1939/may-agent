@@ -1,37 +1,48 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { extname, join, resolve } from "node:path";
 import {
   appendToolJournal,
+  completeTask as sdkCompleteTask,
   isLeaf,
+  markTaskDone as sdkMarkTaskDone,
   planningPacket as sdkPlanningPacket,
   normalizeStringArray,
+  pruneMissingChildren,
+  readTask,
   readTaskTree,
+  rollupParent as sdkRollupParent,
   saveTaskTreeWithKanbanSnapshot,
   withTreeLock,
+  type RollupParentInput,
   type TaskNode,
   type TaskPlanningPacket,
   type TaskTree,
   type TaskTreeConfig,
+  type TaskTreeCompactResult,
 } from "@may-agent/sdk";
+import { compactDoneLeaves as sdkCompactDoneLeaves } from "@may-agent/sdk";
 
 export {
   appendPlannerRun,
   appendToolJournal,
   assignRunnableBacklogTasks,
   assignTask,
-  compactDoneLeaves,
-  completeTask,
   confirmRunnableBacklogLeaves,
   createTask,
   drainTaskAssignments,
   kanbanTaskTreeState,
   listRunnableBacklogTaskIds,
-  markTaskDone,
   peekTaskAssignments,
+  pruneMissingChildren,
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
-  rollupParent,
   updateTaskOutputs,
   updateTaskText,
   repairTaskTreeRollups,
@@ -55,6 +66,7 @@ export type {
   RejectTaskReviewInput,
   RollupParentInput,
   TaskPlanningPacket,
+  TaskTreePruneMissingChildrenResult,
   TaskPlanningSnapshot,
   TaskTreeCompactionCandidate,
   TaskTreeHygieneSummary,
@@ -68,10 +80,234 @@ export type {
   UpdateTaskTextInput,
 } from "@may-agent/sdk";
 
+export const completeTask = sdkCompleteTask;
+
+function taskContext(task: TaskNode): Record<string, unknown> {
+  return task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+    ? (task.context as Record<string, unknown>)
+    : {};
+}
+
+function workflowProgress(task: TaskNode): Record<string, unknown> | null {
+  const progress = taskContext(task).workflowProgress;
+  return progress && typeof progress === "object" && !Array.isArray(progress)
+    ? (progress as Record<string, unknown>)
+    : null;
+}
+
+function workflowProgressBlocksCompletion(task: TaskNode): string | null {
+  const progress = workflowProgress(task);
+  if (!progress || progress.completionReady !== false) return null;
+  const reason =
+    typeof progress.reason === "string" && progress.reason.trim()
+      ? progress.reason.trim()
+      : "workflow progress reports that task acceptance is not complete";
+  const pending =
+    typeof progress.pending === "number" ? ` pending=${progress.pending}` : "";
+  const running =
+    typeof progress.running === "number" ? ` running=${progress.running}` : "";
+  const blocked =
+    typeof progress.blocked === "number" ? ` blocked=${progress.blocked}` : "";
+  return `${reason}.${pending}${running}${blocked}`.trim();
+}
+
+const durableLoopTaskIds = new Set([
+  "aks-spec-verification-loop",
+  "aks-feature-reference-loop",
+  "aks-feature-compact-loop",
+]);
+
+function nodeState(task: TaskNode | undefined): string {
+  return String(task?.status ?? task?.state ?? "");
+}
+
+function dependencyReferences(tree: TaskTree): Set<string> {
+  const refs = new Set<string>();
+  for (const task of Object.values(tree.tasks)) {
+    for (const dependencyId of normalizeStringArray(task.depends_on)) {
+      refs.add(dependencyId);
+    }
+  }
+  return refs;
+}
+
+function taskDepth(tree: TaskTree, task: TaskNode): number {
+  let depth = 0;
+  let cursor = task;
+  const seen = new Set<string>();
+  while (cursor.parent_id && !seen.has(cursor.id)) {
+    seen.add(cursor.id);
+    const parent = tree.tasks[cursor.parent_id];
+    if (!parent) break;
+    depth++;
+    cursor = parent;
+  }
+  return depth;
+}
+
+function doneLeafCompactionCandidates(tree: TaskTree): TaskNode[] {
+  const dependencyRefs = dependencyReferences(tree);
+  return Object.values(tree.tasks)
+    .filter((task) => {
+      if (task.id === tree.root_task_id) return false;
+      if (durableLoopTaskIds.has(task.id)) return false;
+      if (!isLeaf(task)) return false;
+      if (nodeState(task) !== "done") return false;
+      if (dependencyRefs.has(task.id)) return false;
+      return !workflowProgressBlocksCompletion(task);
+    })
+    .sort(
+      (a, b) =>
+        taskDepth(tree, b) - taskDepth(tree, a) || a.id.localeCompare(b.id),
+    );
+}
+
+function doneLeafCompactionProtectedCount(tree: TaskTree): number {
+  const dependencyRefs = dependencyReferences(tree);
+  return Object.values(tree.tasks).filter((task) => {
+    if (task.id === tree.root_task_id) return false;
+    if (!isLeaf(task)) return false;
+    if (nodeState(task) !== "done") return false;
+    return dependencyRefs.has(task.id) || durableLoopTaskIds.has(task.id);
+  }).length;
+}
+
+export function compactDoneLeaves(
+  config: TaskTreeConfig,
+  input: { limit?: number; reason?: string } = {},
+): TaskTreeCompactResult {
+  const limit = Math.max(0, input.limit ?? 200);
+  if (limit === 0) return sdkCompactDoneLeaves(config, { ...input, limit });
+
+  const archivedTaskIds: string[] = [];
+  const archivePaths: string[] = [];
+  let latestTree = readTaskTree(config);
+  let remainingTotal = Object.keys(latestTree.tasks).length;
+  let protectedCount = doneLeafCompactionProtectedCount(latestTree);
+
+  while (archivedTaskIds.length < limit) {
+    const tree = readTaskTree(config);
+    protectedCount = doneLeafCompactionProtectedCount(tree);
+    const candidates = doneLeafCompactionCandidates(tree);
+    if (candidates.length === 0) break;
+
+    const chosen = candidates[0];
+    if (!chosen.parent_id) break;
+    const chosenDepth = taskDepth(tree, chosen);
+    const selectedIds = candidates
+      .filter(
+        (task) =>
+          task.parent_id === chosen.parent_id &&
+          taskDepth(tree, task) === chosenDepth,
+      )
+      .slice(0, limit - archivedTaskIds.length)
+      .map((task) => task.id);
+
+    const result = rollupParent(config, {
+      parentId: chosen.parent_id,
+      taskIds: selectedIds,
+      summary:
+        "Compact accepted done leaves; preserve durable loop controllers even when their current frontier is complete or held.",
+      reason: input.reason ?? "compact done task leaves",
+      limit: selectedIds.length,
+    });
+    if (!result.archivedTaskIds?.length) break;
+    archivedTaskIds.push(...result.archivedTaskIds);
+    if (result.archivePath) archivePaths.push(result.archivePath);
+    remainingTotal = result.remainingTotal;
+  }
+
+  latestTree = readTaskTree(config);
+  protectedCount = doneLeafCompactionProtectedCount(latestTree);
+
+  return {
+    changed: archivedTaskIds.length > 0,
+    archived: archivedTaskIds.length,
+    protected: protectedCount,
+    archivedTaskIds,
+    archivePath: archivePaths[archivePaths.length - 1],
+    archivePaths,
+    remainingTotal,
+  };
+}
+
+export function markTaskDone(
+  config: TaskTreeConfig,
+  input: { taskId: string; summary: string; resolution?: string },
+): TaskNode {
+  const task = readTask(config, input.taskId);
+  if (!task) throw new Error(`Task not found: ${input.taskId}`);
+  const resolution = input.resolution ?? task.resolution ?? "completed";
+  if (resolution !== "replaced" && resolution !== "cancelled") {
+    const blocked = workflowProgressBlocksCompletion(task);
+    if (blocked) {
+      throw new Error(
+        `Task ${task.id} cannot be marked done because ${blocked}. Use --resolution replaced/cancelled only when intentionally closing or replacing the task.`,
+      );
+    }
+  }
+  return sdkMarkTaskDone(config, input);
+}
+
+export function rollupParent(
+  config: TaskTreeConfig,
+  input: RollupParentInput,
+): TaskTreeCompactResult {
+  const tree = readTaskTree(config);
+  const parent = tree.tasks[input.parentId];
+  if (!parent) throw new Error(`Parent task not found: ${input.parentId}`);
+
+  const childIds = normalizeStringArray(parent.children);
+  const requestedIds = [...new Set(input.taskIds ?? [])];
+  const selectedIds = requestedIds.length
+    ? requestedIds
+    : childIds
+        .filter((childId) => {
+          const task = tree.tasks[childId];
+          return task && isLeaf(task) && task.status === "done";
+        })
+        .slice(0, Math.max(0, input.limit ?? 200));
+
+  for (const taskId of selectedIds) {
+    const task = tree.tasks[taskId];
+    if (!task) continue;
+    if (durableLoopTaskIds.has(task.id)) {
+      throw new Error(
+        `Task ${task.id} is a durable loop root and cannot be archived by parent rollup. Keep it in tasks/tree.json until an explicit retirement operation is implemented.`,
+      );
+    }
+    const blocked = workflowProgressBlocksCompletion(task);
+    if (blocked) {
+      throw new Error(
+        `Task ${task.id} cannot be archived by parent rollup because ${blocked}. Use an intentional replacement/cancellation task instead of archiving an incomplete workflow controller.`,
+      );
+    }
+  }
+
+  return sdkRollupParent(config, input);
+}
+
 export type UpdateAcceptedReviewMetadataInput = {
   taskId: string;
   reviewSummary?: string;
   acceptanceNote?: string;
+};
+
+export type UpdateArchivedTaskOutputsInput = {
+  taskId: string;
+  outputs: string[];
+  archiveFile?: string;
+};
+
+export type UpdateArchivedTaskOutputsResult = {
+  taskId: string;
+  archiveFile: string;
+  beforeOutputs: string[];
+  afterOutputs: string[];
+  changed: boolean;
+  task: TaskNode;
 };
 
 export type ModelGapBacklogSeedResult = {
@@ -308,12 +544,36 @@ function isExactBlockedPrerequisiteHolder(
   return holderTextMatchesResumeContract(text, path);
 }
 
+function isExplicitSubpathRefinementTask(
+  text: string,
+  terminalPathId: string,
+  allPaths: KnowledgeFeaturePath[],
+): boolean {
+  const lowerTerminalPathId = terminalPathId.toLowerCase();
+  const hasRefinementSignal =
+    (text.includes("sibling") && /\bpreserv(?:e|ed|ing)\b/i.test(text)) ||
+    text.includes("distinct subpath") ||
+    text.includes("narrower subpath") ||
+    text.includes("narrower lifecycle") ||
+    text.includes("exact subpath refinement") ||
+    text.includes("preservedsiblingpath");
+  if (!hasRefinementSignal) return false;
+
+  return allPaths.some((path) => {
+    const candidateId = path.id?.toLowerCase();
+    if (!candidateId || candidateId === lowerTerminalPathId) return false;
+    if (!candidateId.startsWith(`${lowerTerminalPathId}-`)) return false;
+    return text.includes(candidateId);
+  });
+}
+
 function projectHygieneWarnings(
   config: TaskTreeConfig,
 ): ProjectHygieneWarning[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
-    const terminalPaths = loadModelPaths(config).filter(
+    const modelPaths = loadModelPaths(config);
+    const terminalPaths = modelPaths.filter(
       (path) => path.terminal === true || path.verdictFinal === true,
     );
     const warnings: ProjectHygieneWarning[] = [];
@@ -326,6 +586,8 @@ function projectHygieneWarnings(
       for (const path of terminalPaths) {
         if (!text.includes(path.id.toLowerCase())) continue;
         if (isExactBlockedPrerequisiteHolder(task, text, path)) continue;
+        if (isExplicitSubpathRefinementTask(text, path.id, modelPaths))
+          continue;
         warnings.push({
           kind: "stale-terminal-retry",
           taskId: task.id,
@@ -649,6 +911,116 @@ export function updateAcceptedReviewMetadata(
       acceptance_note_updated: hasAcceptanceNote,
     });
     return task;
+  });
+}
+
+function archivedDoneLeafFiles(config: TaskTreeConfig): string[] {
+  const archiveDir = join(config.appDir, "tasks", "archive");
+  if (!existsSync(archiveDir)) return [];
+  return readdirSync(archiveDir)
+    .filter((name) => name.startsWith("done-leaves-") && name.endsWith(".json"))
+    .sort()
+    .map((name) => join(archiveDir, name));
+}
+
+function archiveTaskBundlePath(
+  taskId: string,
+  config: TaskTreeConfig,
+  archiveFile?: string,
+): {
+  path: string;
+  bundle: { [key: string]: unknown; tasks?: TaskNode[] };
+  task: TaskNode;
+} {
+  const requestedArchivePath = archiveFile
+    ? resolve(config.appDir, archiveFile)
+    : null;
+  const archiveFiles = requestedArchivePath
+    ? [requestedArchivePath]
+    : archivedDoneLeafFiles(config);
+  const matches: Array<{
+    path: string;
+    bundle: { [key: string]: unknown; tasks?: TaskNode[] };
+    task: TaskNode;
+  }> = [];
+  for (const path of archiveFiles) {
+    if (!existsSync(path)) {
+      if (requestedArchivePath) {
+        throw new Error(`Archive bundle not found: ${archiveFile}`);
+      }
+      continue;
+    }
+    const bundle = readJsonFile<{ [key: string]: unknown; tasks?: TaskNode[] }>(
+      path,
+      {},
+    );
+    const tasks = Array.isArray(bundle.tasks) ? bundle.tasks : [];
+    const task = tasks.find((candidate) => candidate.id === taskId);
+    if (task) matches.push({ path, bundle, task });
+  }
+  if (matches.length === 0) {
+    if (requestedArchivePath) {
+      throw new Error(
+        `Archived task not found in requested archive bundle: ${taskId} (${archiveFile})`,
+      );
+    }
+    throw new Error(`Archived task not found: ${taskId}`);
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Archived task appears in more than one archive bundle: ${taskId} (${matches
+        .map((match) => match.path)
+        .join(", ")})`,
+    );
+  }
+  return matches[0];
+}
+
+export function updateArchivedTaskOutputs(
+  config: TaskTreeConfig,
+  input: UpdateArchivedTaskOutputsInput,
+): UpdateArchivedTaskOutputsResult {
+  return withTreeLock(config, () => {
+    const outputs = input.outputs.map((value) => value.trim()).filter(Boolean);
+    if (outputs.length === 0) throw new Error("Provide at least one output");
+
+    const { path, bundle, task } = archiveTaskBundlePath(
+      input.taskId,
+      config,
+      input.archiveFile,
+    );
+    if (task.state !== "done" && task.status !== "done") {
+      throw new Error(`Archived task is not done: ${input.taskId}`);
+    }
+    const tasks = Array.isArray(bundle.tasks) ? bundle.tasks : [];
+    const index = tasks.findIndex((candidate) => candidate.id === input.taskId);
+    if (index < 0) throw new Error(`Archived task not found: ${input.taskId}`);
+
+    const beforeOutputs = normalizeStringArray(task.outputs);
+    const afterOutputs = outputs;
+    const changed =
+      JSON.stringify(beforeOutputs) !== JSON.stringify(afterOutputs);
+    task.outputs = afterOutputs;
+    tasks[index] = task;
+    bundle.tasks = tasks;
+    writeFileSync(path, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+
+    appendToolJournal(config, {
+      kind: "archived_task_outputs_updated",
+      task_id: task.id,
+      archive_file: path,
+      before_outputs: beforeOutputs,
+      outputs: afterOutputs,
+      changed,
+    });
+    return {
+      taskId: task.id,
+      archiveFile: path,
+      beforeOutputs,
+      afterOutputs,
+      changed,
+      task,
+    };
   });
 }
 

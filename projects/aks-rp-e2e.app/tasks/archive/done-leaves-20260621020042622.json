@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T02:00:42.622Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the remaining completed June 21 repo-local prep slice now that its durable meaning is captured in project context: managedsystem-field-rejection-wording-reconcile-20260621 closed the ManagedSystem negative count/type wording parity loop, and source-private-cluster-scenario-coverage-map-20260621 recorded the mounted-source private-cluster scenario inventory needed for bounded follow-on landings. The live frontier is intentionally two-leaf only: private-cluster-shared-apiserver-subnet-model-landing-20260621 remains the single active repo-local next step to land the shared API server subnet success branch into maintained model/view surfaces, while external-send-proof-dispatch-family-20260620 remains the single truthful external-human transport ceiling until durable send/escalation proof or an authoritative reply exists for one of the prepared packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-field-rejection-wording-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the maintained ManagedSystem field-rejection packet/spec wording with the now-accepted count/type negative evidence so repo-local packet/spec/model/view surfaces consistently state that count and type rejection are closed, execution-backed paths rather than still queued for staging proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current wording mismatch across specs/managedsystem-field-rejection-matrix.json, the accepted 2026-06-20 reroute evidence, and the maintained model/view surfaces for path.managedsystem.count-mutation-negative and path.managedsystem.type-mutation-negative.",
+        "Artifact records the exact repo-local wording/source edits needed so packet/spec/model/view surfaces consistently describe count/type rejection as closed by accepted evidence, without changing any product verdicts or creating a cloud probe ask.",
+        "Outcome is repo-local only and leaves the external-send-proof-dispatch-family-20260620 wait as the single live external-human transport blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:53:49.546Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-field-rejection-wording-reconcile-20260621_20260621015349",
+        "assigned_at": "2026-06-21T01:53:49.593Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-field-rejection-wording-reconcile-20260621",
+        "worker_started_attempt_id": "a_managedsystem-field-rejection-wording-reconcile-20260621_20260621015349",
+        "worker_started_at": "2026-06-21T01:53:55.942Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a repo-local reconcile packet at evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md documenting the stale spec wording for ManagedSystem count/type rejection and the exact source edits needed to align spec/mirror surfaces with the accepted 2026-06-20 pass evidence while preserving the single external send-proof blocker.",
+        "last_worker_completed_at": "2026-06-21T01:55:32.458Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:56:22.259Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local reconcile packet as sufficient review evidence: evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md names the stale ManagedSystem count/type wording surfaces, cites the accepted 2026-06-20 closure evidence and aligned maintained model/view packets, and records the exact source edits needed. The artifact is documentation-only rather than a spec-state fix, so a concrete follow-up leaf managedsystem-field-rejection-spec-refresh-20260621 now carries the actual spec/index refresh work while the single external send-proof blocker remains unchanged."
+      },
+      "session_id": "s_task_managedsystem-field-rejection-wording-reconcile-20260621",
+      "session_history": [
+        "s_task_managedsystem-field-rejection-wording-reconcile-20260621"
+      ],
+      "result": "Created a repo-local reconcile packet at evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md documenting the stale spec wording for ManagedSystem count/type rejection and the exact source edits needed to align spec/mirror surfaces with the accepted 2026-06-20 pass evidence while preserving the single external send-proof blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:56:22.259Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local reconcile packet as sufficient review evidence: evidence/archive/managedsystem-field-rejection-wording-reconcile-20260621.md names the stale ManagedSystem count/type wording surfaces, cites the accepted 2026-06-20 closure evidence and aligned maintained model/view packets, and records the exact source edits needed. The artifact is documentation-only rather than a spec-state fix, so a concrete follow-up leaf managedsystem-field-rejection-spec-refresh-20260621 now carries the actual spec/index refresh work while the single external send-proof blocker remains unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

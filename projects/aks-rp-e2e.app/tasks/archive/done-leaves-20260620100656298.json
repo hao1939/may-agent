@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:06:56.298Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "blocked-source-equivalent-spec-burndown-20260620",
+  "summary": "Blocked source-equivalent spec burndown now serves as completed provenance only: the accepted ASM frontier conversion established the owner-side rule for replacing vague source-equivalent waits with bounded mounted-source or repo-local evidence work where truthful progress exists. No open burndown work remains under this family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "source-equivalent-vm-prerelease-asm-frontier-convert-20260620",
+      "parent_id": "blocked-source-equivalent-spec-burndown-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted /app/sources/aks-rp VirtualMachine prerelease suites as the first authority for the remaining VM prerelease addonv2 ASM exact-source/source-equivalent waits, then convert each wait into either an existing row-scoped local successor, a bounded source-backed spec/model update, or an explicit no-more-local-progress evidence ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/source-equivalent-vm-prerelease-asm-frontier-convert-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted source files inspected first (including /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and/or checkin.go plus any referenced scenarios) for every remaining ASM wait examined, alongside any repo-local supporting artifacts, and records the resulting successor/ceiling decision.",
+        "At least one examined wait lands as a concrete local successor, linkage repair, or source-backed bounded model/spec update when the mounted source supports it; do not only restate a shared blocker.",
+        "No owner-send, reply-await, or new broad ASM rediscovery task is created; any unresolved edge is recorded as a bounded evidence ceiling with the exact missing semantic after mounted-source inspection."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:addonv2-asm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:40:12.552Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T08:48:07.280Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_source-equivalent-vm-prerelease-asm-frontier-convert-20260620_20260620084828",
+        "assigned_at": "2026-06-20T08:48:28.647Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-equivalent-vm-prerelease-asm-frontier-convert-20260620",
+        "worker_started_attempt_id": "a_source-equivalent-vm-prerelease-asm-frontier-convert-20260620_20260620084828",
+        "worker_started_at": "2026-06-20T08:48:28.838Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable frontier-conversion note at evidence/archive/source-equivalent-vm-prerelease-asm-frontier-convert-20260620.md that audits every remaining VM prerelease ASM exact-source/source-proof wait and converts each into bounded local successors, linkage repairs, or eliminates the old source ceiling using mounted /app/sources/aks-rp evidence.",
+        "last_worker_completed_at": "2026-06-20T08:52:03.316Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:54:16.003Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note uses mounted /app/sources/aks-rp as first authority, audits every remaining VM prerelease ASM exact-source wait in scope, and converts the stale waits into concrete row-scoped source-backed successors or linkage repairs instead of preserving the old source-absence ceiling."
+      },
+      "session_id": "s_task_source-equivalent-vm-prerelease-asm-frontier-convert-20260620",
+      "session_history": [
+        "s_task_source-equivalent-vm-prerelease-asm-frontier-convert-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:54:16.003Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note uses mounted /app/sources/aks-rp as first authority, audits every remaining VM prerelease ASM exact-source wait in scope, and converts the stale waits into concrete row-scoped source-backed successors or linkage repairs instead of preserving the old source-absence ceiling."
+      },
+      "status": "done"
+    }
+  ]
+}

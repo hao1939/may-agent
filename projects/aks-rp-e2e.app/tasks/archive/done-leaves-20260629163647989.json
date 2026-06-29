@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:36:47.989Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning review repaired the OIDC/OSM verifier branch after two worker completions and one mis-accepted terminal review. verify-spec-open-service-mesh-addon-lifecycle is accepted only as carrier evidence that single-spec live execution is not truthful for this path, with osmmaybe created to map the exact source/check-only or shared-cluster carrier before any requeue. verify-spec-oidc-issuer-v133-explicit-enable-runtime is accepted only as nonterminal runtime-failure evidence; oidcv133rt404 must inspect run 28387483218 to classify the GET-cluster 404 as missing carrier, access scope, runner drift, or artifact ceiling. verify-spec-oidc-issuer-default-by-version had been auto-accepted to done despite a blocked/error outcome from run 28387129302, so oidcdefrev now carries the required owner review of the four failed version-gate assertions to decide product behavior vs spec drift vs runner/artifact gap. The active single-spec frontier remains saturated at 10, so these repo-local evidence/carrier leaves stay as the next truthful runnable backlog rather than blind live reruns.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-open-service-mesh-addon-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.open-service-mesh-addon.lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.open-service-mesh-addon.lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.open-service-mesh-addon.lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.open-service-mesh-addon.lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the worker result only as verifier-carrier evidence: run 28387509660 shows spec.open-service-mesh-addon.lifecycle is not a truthful single-spec live-execution target. Replaced blind live verification with a backlog carrier-mapping leaf that must ground the source/check-only or shared-cluster path before this spec is queued again."
+      },
+      "trace": {
+        "created_at": "2026-06-29T16:33:35.202Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-open-service-mesh-addon-lifecycle_20260629163335",
+        "assigned_at": "2026-06-29T16:33:35.231Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-open-service-mesh-addon-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-open-service-mesh-addon-lifecycle_20260629163335",
+        "worker_started_at": "2026-06-29T16:34:11.932Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.open-service-mesh-addon.lifecycle workflow run 28387509660 classified as done. Loop key: verify-spec-open-service-mesh-addon-lifecycle-a_verify-spec-open-service-mesh-addon-lifecy. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387509660 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/test-results/single-open-service-mesh-addon-lifecycle_436138/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/test-results/single-open-service-mesh-addon-lifecycle_436138/result.json",
+        "last_worker_completed_at": "2026-06-29T16:34:53.417Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T16:35:50.397Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker result only as verifier-carrier evidence: run 28387509660 shows spec.open-service-mesh-addon.lifecycle is not a truthful single-spec live-execution target. Replaced blind live verification with a backlog carrier-mapping leaf that must ground the source/check-only or shared-cluster path before this spec is queued again."
+      },
+      "session_id": "s_task_verify-spec-open-service-mesh-addon-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-open-service-mesh-addon-lifecycle"
+      ],
+      "result": "Spec spec.open-service-mesh-addon.lifecycle workflow run 28387509660 classified as done. Loop key: verify-spec-open-service-mesh-addon-lifecycle-a_verify-spec-open-service-mesh-addon-lifecy. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387509660 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/test-results/single-open-service-mesh-addon-lifecycle_436138/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387509660/aks-rp-e2e-28387509660-spec-test-results/test-results/single-open-service-mesh-addon-lifecycle_436138/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:35:50.397Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

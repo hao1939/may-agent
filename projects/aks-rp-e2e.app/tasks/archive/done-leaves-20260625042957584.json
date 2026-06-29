@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T04:29:57.584Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-25 owner reconciliation: xfs mounted-source and xfs replay-check repair are accepted durable history only and should now be archived under this focus branch. The single live repo-local no-cloud work item is storage-csi-disk-raw-block-live-carrier-gap-packet-20260625, which maps the exact spec/replay/helper seam preventing a truthful execute-capable raw-block carrier today without running cloud mutation. Keep the same five exact external returned-proof waits unchanged and compressed here; do not reopen xfs local work or widen the blocked families before returned proof or the 2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-xfs-mounted-source-packet-20260625",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded non-cloud knowledge packet for path.storage-csi-disk-xfs that confirms the mounted handwritten source boundary, exact spec/replay/model linkage, expected behavior points, and the next safe action without claiming a live verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-mounted-source-packet-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the exact mounted source files or scenario/helper names, current spec/replay/model/view references, and the selected input/behavior boundary for path.storage-csi-disk-xfs.",
+        "The packet states whether repo-local model/view repair is still needed; if so it names one concrete follow-up leaf, and if not it records the exact next safe verification gate without reopening blocked external-wait branches or running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-xfs"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T04:22:03.275Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-25T04:22:09.031Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-xfs-mounted-source-packet-20260625_20260625042346",
+        "assigned_at": "2026-06-25T04:23:46.466Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-xfs-mounted-source-packet-20260625",
+        "worker_started_attempt_id": "a_storage-csi-disk-xfs-mounted-source-packet-20260625_20260625042346",
+        "worker_started_at": "2026-06-25T04:23:50.747Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded non-cloud XFS mounted-source packet at evidence/archive/storage-csi-disk-xfs-mounted-source-packet-20260625.md, confirming exact mounted source/spec/replay/model/view linkage and identifying a repo-local replay-check shape repair as the next safe action instead of cloud verification.",
+        "last_worker_completed_at": "2026-06-25T04:25:21.479Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T04:25:58.441Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/storage-csi-disk-xfs-mounted-source-packet-20260625.md: it cites exact mounted handwritten source files, confirms feature/spec/replay/model/view linkage for path.storage-csi-disk-xfs, preserves a source-grounded-only verdict ceiling, and identifies one concrete next safe action (repair the stale replay behavior-shape assertion and rerun the repo-local check) without claiming a live verdict or reopening blocked waits."
+      },
+      "session_id": "s_task_storage-csi-disk-xfs-mounted-source-packet-20260625",
+      "session_history": [
+        "s_task_storage-csi-disk-xfs-mounted-source-packet-20260625"
+      ],
+      "result": "Produced the bounded non-cloud XFS mounted-source packet at evidence/archive/storage-csi-disk-xfs-mounted-source-packet-20260625.md, confirming exact mounted source/spec/replay/model/view linkage and identifying a repo-local replay-check shape repair as the next safe action instead of cloud verification.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T04:25:58.441Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/storage-csi-disk-xfs-mounted-source-packet-20260625.md: it cites exact mounted handwritten source files, confirms feature/spec/replay/model/view linkage for path.storage-csi-disk-xfs, preserves a source-grounded-only verdict ceiling, and identifies one concrete next safe action (repair the stale replay behavior-shape assertion and rerun the repo-local check) without claiming a live verdict or reopening blocked waits."
+      },
+      "status": "done"
+    }
+  ]
+}

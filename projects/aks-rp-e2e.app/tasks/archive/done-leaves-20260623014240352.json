@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T01:42:40.352Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review: preserved the single truthful family-level external-human wait unchanged because its resume condition is still exact and already-routed send/handoff proof is archived. Archived the remaining safe storage-csi done leaves now that their durable meaning is captured at the project root: blob PVC dynamic carrier checking and csidrivers verify-and-land both feed the live repo-local frontier without needing separate visible children. The next local work is (a) the active csidrivers batch12 split repair, plus fresh runnable source-backed knowledge-map slices that do not touch the external-human wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "replay-path-record-storage-csi-csidrivers-verify-and-land-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane repair after the unverified csidrivers completion claim: directly verify the exact repo-local path.storage-csi-csidrivers replay landing in replays/storage-csi-csidrivers.ts plus its spec/index/model pointers, then repair or bound the slice so the canonical csidrivers replay identity is truthfully landed without cloud work or unrelated model expansion.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/replay-path-record-storage-csi-csidrivers-verify-and-land-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note ../aks-rp-e2e/evidence/archive/replay-path-record-storage-csi-csidrivers-verify-and-land-20260623.md cites the exact repo-local files inspected for path.storage-csi-csidrivers, confirms whether replays/storage-csi-csidrivers.ts exists and whether specs/storage-csi-csidrivers.json, specs/index.json, and model/knowledge-map/model.json truthfully point at it, and records any required bounded repairs.",
+        "If unrelated dirty workspace or slice-mixing prevents immediate acceptance/landing, the note records the exact conflicting files and leaves one bounded next action for csidrivers only; otherwise the canonical csidrivers replay linkage is left locally coherent for this one target without claiming cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay-path-records.storage-csi-csidrivers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:36:02.827Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_replay-path-record-storage-csi-csidrivers-verify-and-land-20260623_20260623013602",
+        "assigned_at": "2026-06-23T01:36:02.874Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_replay-path-record-storage-csi-csidrivers-verify-and-land-20260623",
+        "worker_started_attempt_id": "a_replay-path-record-storage-csi-csidrivers-verify-and-land-20260623_20260623013602",
+        "worker_started_at": "2026-06-23T01:36:15.696Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the repo-local canonical replay landing for path.storage-csi-csidrivers and wrote a bounded archive note documenting the inspected files, current coherent replay/spec/index/model pointers, and the only remaining owner-side cleanliness risk.",
+        "last_worker_completed_at": "2026-06-23T01:37:19.050Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T01:37:56.902Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note verified replays/storage-csi-csidrivers.ts plus specs/storage-csi-csidrivers.json, specs/index.json, and model/knowledge-map/model.json all truthfully point at the canonical csidrivers replay, and it bounded the only remaining issue to unrelated workspace cleanliness with an exact csidrivers-only next action."
+      },
+      "session_id": "s_task_replay-path-record-storage-csi-csidrivers-verify-and-land-20260623",
+      "session_history": [
+        "s_task_replay-path-record-storage-csi-csidrivers-verify-and-land-20260623"
+      ],
+      "result": "Verified the repo-local canonical replay landing for path.storage-csi-csidrivers and wrote a bounded archive note documenting the inspected files, current coherent replay/spec/index/model pointers, and the only remaining owner-side cleanliness risk.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T01:37:56.902Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note verified replays/storage-csi-csidrivers.ts plus specs/storage-csi-csidrivers.json, specs/index.json, and model/knowledge-map/model.json all truthfully point at the canonical csidrivers replay, and it bounded the only remaining issue to unrelated workspace cleanliness with an exact csidrivers-only next action."
+      },
+      "status": "done"
+    },
+    {
+      "id": "runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane bounded successor after validated blob-pvc-dynamic replay authoring: confirm repo-locally that path.storage-csi-blob-pvc-dynamic drops out of pathsNoReplay and that spec.storage-csi.blob-pvc-dynamic-provision resolves through the new replay carrier in dry-run/check mode without cloud mutation or unrelated frontier edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note records the exact local verification commands and outcomes for model-hygiene pathsNoReplay and spec runner dry-run/check against spec.storage-csi.blob-pvc-dynamic-provision, explicitly stating whether the new replay registration resolves cleanly with no cloud execution.",
+        "If verification reveals a local wiring defect, the note cites the exact failing command/output and the bounded file surfaces implicated; otherwise it names the verified replay/spec/index surfaces and the next residual gap as execution evidence only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay-path-records.storage-csi-blob-pvc-dynamic"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:38:51.196Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623_20260623013911",
+        "assigned_at": "2026-06-23T01:39:11.544Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623",
+        "worker_started_attempt_id": "a_runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623_20260623013911",
+        "worker_started_at": "2026-06-23T01:39:13.384Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified repo-locally that the Blob PVC dynamic path no longer appears in model-hygiene pathsNoReplay and that spec.storage-csi.blob-pvc-dynamic-provision resolves through its new replay in dry-run/check mode without cloud mutation; wrote the evidence note under evidence/archive.",
+        "last_worker_completed_at": "2026-06-23T01:39:59.756Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T01:40:32.062Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after evidence/archive/runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623.md recorded the exact bounded local proof: model-hygiene reported pathsNoReplay=0 and spec.storage-csi.blob-pvc-dynamic-provision resolved through replays/storage-csi-blob-pvc-dynamic-provision.ts in dry-run/check mode with 8/8 assertions passing and execution gate closed, so the residual gap is execution evidence only."
+      },
+      "session_id": "s_task_runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623",
+      "session_history": [
+        "s_task_runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623"
+      ],
+      "result": "Verified repo-locally that the Blob PVC dynamic path no longer appears in model-hygiene pathsNoReplay and that spec.storage-csi.blob-pvc-dynamic-provision resolves through its new replay in dry-run/check mode without cloud mutation; wrote the evidence note under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T01:40:32.062Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after evidence/archive/runner-check-storage-csi-blob-pvc-dynamic-carrier-20260623.md recorded the exact bounded local proof: model-hygiene reported pathsNoReplay=0 and spec.storage-csi.blob-pvc-dynamic-provision resolved through replays/storage-csi-blob-pvc-dynamic-provision.ts in dry-run/check mode with 8/8 assertions passing and execution gate closed, so the residual gap is execution evidence only."
+      },
+      "status": "done"
+    }
+  ]
+}

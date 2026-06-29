@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:24:53.133Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the storage-csi disk raw-block mounted-source boundary map after direct artifact validation: the new archive note is exact-source-backed, keeps the raw-block Block+VolumeDevice+/dev/sdx+dd contract distinct from filesystem-mounted and adjacent disk surfaces, records the truthful source-grounded draft ceiling, and confirms no maintained wording edit was needed. Archive the completed storage-csi resize boundary map, file-clone replay drift repair, and raw-block boundary map as durable repo-local storage CSI knowledge; keep storage-csi-disk-xfs-mounted-source-boundary-map-20260624 active, start the dedicated raw-block replay-carrier skeleton as the next no-cloud runner/replay slice, and leave the three exact external returned-proof waits unchanged until authoritative proof arrives or the first same-branch blocked-frontier review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-resize-mounted-source-boundary-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded repo-local boundary map for path.storage-csi-disk-resize from the mounted handwritten source plus maintained spec/replay/model carriers so the knowledge map clearly separates exact resize inputs, expected behavior points, current observed-status ceiling, adjacent storage CSI disk surfaces, and the next live verification packet without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-resize-mounted-source-boundary-map-20260624.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted handwritten source file(s)/scenario, maintained spec/replay/model/view links, and enumerates the disk-resize contract as exact source-backed inputs and expected behaviors without widening into raw-block, xfs, or clone semantics.",
+        "The note records the current observed-status ceiling truthfully (repo-local source-grounded draft only), identifies adjacent same-family surfaces worth keeping distinct, and names the exact future verification packet if live evidence is later pursued.",
+        "If the maintained model/view wording for path.storage-csi-disk-resize needs a bounded sync to stay claim-safe with the boundary map, land that minimal edit plus validation evidence; otherwise record why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:16:57.487Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T02:17:05.922Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-resize-mounted-source-boundary-map-20260624_20260624021815",
+        "assigned_at": "2026-06-24T02:18:15.896Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-resize-mounted-source-boundary-map-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-resize-mounted-source-boundary-map-20260624_20260624021815",
+        "worker_started_at": "2026-06-24T02:18:23.759Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive boundary map at evidence/archive/storage-csi-disk-resize-mounted-source-boundary-map-20260624.md, grounded in mounted azurediskcsi/const/helper source and linked to existing feature/spec/model carriers without widening into sibling storage paths.",
+        "last_worker_completed_at": "2026-06-24T02:19:49.014Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:20:09.389Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of the archive note: it cites the exact mounted Azure Disk resize source/handler files, preserves the bounded 10Gi->20Gi managed-csi mounted-filesystem contract, records the truthful source-grounded-only evidence ceiling, and correctly identifies that a dedicated storage-csi-disk-resize replay would be the next live-verification packet if requested."
+      },
+      "session_id": "s_task_storage-csi-disk-resize-mounted-source-boundary-map-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-resize-mounted-source-boundary-map-20260624"
+      ],
+      "result": "Created the requested archive boundary map at evidence/archive/storage-csi-disk-resize-mounted-source-boundary-map-20260624.md, grounded in mounted azurediskcsi/const/helper source and linked to existing feature/spec/model carriers without widening into sibling storage paths.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:20:09.389Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of the archive note: it cites the exact mounted Azure Disk resize source/handler files, preserves the bounded 10Gi->20Gi managed-csi mounted-filesystem contract, records the truthful source-grounded-only evidence ceiling, and correctly identifies that a dedicated storage-csi-disk-resize replay would be the next live-verification packet if requested."
+      },
+      "status": "done"
+    }
+  ]
+}

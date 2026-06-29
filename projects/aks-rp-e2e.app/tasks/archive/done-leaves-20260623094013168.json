@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:40:13.168Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 task-completed wake review reconciled the stale addonv2 completion signal against durable evidence: the private-cluster addonv2 core-addons contract packet is already accepted and archived at the project root, which explains the task-id grep vs show mismatch as archive visibility rather than unfinished review work. This focus branch now archives the already-reviewed private-cluster authorized-service-tags witness-host attestation packet because its durable meaning lives in archive evidence and parent context. Leave only one active repo-local follow-up (host-selector replay wiring) plus the unchanged single family-level external-human wait; no new private-cluster source/spec rediscovery or cloud mutation is opened.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-witness-host-attestation-packet-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.private-cluster-vnet-integration-auth-service-tags, produce a durable repo-local witness-host attestation packet that maps the already-accepted mounted-source/spec/replay carriers, states the exact trustworthy AzureCloud/private-path witness-host expectations supportable without live execution, and names the narrowest future bounded verification gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-witness-host-attestation-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact accepted repo-local carriers for path.private-cluster-vnet-integration-auth-service-tags, distinguishes settled source-backed witness-host expectations from still-unobserved runtime assertions, and records the trustworthy AzureCloud/private-path witness-host criteria that can be claimed without a live run.",
+        "The packet names the narrowest future bounded verification contract and gating conditions for any later live check, without reopening the family-level external-human wait, source/spec rediscovery, or cloud mutation from this branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T09:37:08.037Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-witness-host-attestation-packet-20260623_20260623093708",
+        "assigned_at": "2026-06-23T09:37:08.150Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-witness-host-attestation-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-witness-host-attestation-packet-20260623_20260623093708",
+        "worker_started_at": "2026-06-23T09:37:46.632Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested durable witness-host attestation packet at evidence/archive/private-cluster-auth-service-tags-witness-host-attestation-packet-20260623.md, reconciling the exact private-cluster authorized-service-tags acceptance criteria against mounted source, dedicated spec/replay, runner-vantage ceiling evidence, and repo-local host-selection reality.",
+        "last_worker_completed_at": "2026-06-23T09:37:46.648Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T09:38:25.692Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-23 witness-host attestation packet: archive evidence now cites the exact mounted source, dedicated spec/replay, and prior runner-vantage ceiling, distinguishes settled same-cluster AzureCloud witness-host expectations from unobserved runtime claims, and narrows the next truthful repo-local step to wiring the replay's existing host-selection surface with host-attestation evidence rather than reopening cloud mutation or duplicate external waits."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-witness-host-attestation-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-witness-host-attestation-packet-20260623"
+      ],
+      "result": "Wrote the requested durable witness-host attestation packet at evidence/archive/private-cluster-auth-service-tags-witness-host-attestation-packet-20260623.md, reconciling the exact private-cluster authorized-service-tags acceptance criteria against mounted source, dedicated spec/replay, runner-vantage ceiling evidence, and repo-local host-selection reality.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:38:25.692Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-23 witness-host attestation packet: archive evidence now cites the exact mounted source, dedicated spec/replay, and prior runner-vantage ceiling, distinguishes settled same-cluster AzureCloud witness-host expectations from unobserved runtime claims, and narrows the next truthful repo-local step to wiring the replay's existing host-selection surface with host-attestation evidence rather than reopening cloud mutation or duplicate external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T10:56:17.330Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the ManagedSystem mounted-source boundary sync as no-change completion: evidence/archive/managedsystem-boundary-distinctions-path-summary-sync-20260624.md confirms the accepted packet is already reflected across the durable ManagedSystem model/path-summary/deep-dive surfaces, including add-existing minimal control, separate create-time product-gap framing, rejected generic-field negatives, runtime/reconcile closure, disable-migration separation, and VM+ManagedSystem same-pool rejection. The only live frontier remains the same four exact external waits, with no truthful repo-local source/spec/setup/model work to reopen before the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "managedsystem-boundary-map-mounted-source-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a source-backed ManagedSystem pool boundary packet that maps accepted inputs, rejected inputs, expected behavior, existing handwritten e2ev3 coverage, observed evidence, adjacent surfaces, and missing probes, using mounted AKS RP source plus the current knowledge model as the first worked example for boundary mapping.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive packet identifies the ManagedSystem pool feature/path slice(s), links the mounted AKS RP Go source and handwritten e2ev3 cases inspected, and states the accepted/rejected input boundaries plus expected behavior without guessing beyond cited sources.",
+        "The packet names current model/evidence coverage, highlights at least one adjacent ManagedSystem surface or gap worth testing next, and recommends the next safe no-cloud or gated-cloud action for that boundary."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T10:51:02.701Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-map-mounted-source-packet-20260624_20260624105102",
+        "assigned_at": "2026-06-24T10:51:02.748Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-map-mounted-source-packet-20260624",
+        "worker_started_attempt_id": "a_managedsystem-boundary-map-mounted-source-packet-20260624_20260624105102",
+        "worker_started_at": "2026-06-24T10:51:20.279Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable ManagedSystem mounted-source boundary packet at evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md, reconciling mounted AKS RP source, accepted path-summary/model surfaces, handwritten e2ev3 coverage, observed evidence, adjacent surfaces, and the next safe action.",
+        "last_worker_completed_at": "2026-06-24T10:53:08.420Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T10:53:54.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md exists and satisfies the source-backed boundary-packet acceptance by mapping ManagedSystem accepted/rejected inputs, handwritten e2ev3/source coverage, observed model status, adjacent surfaces, and the next safe no-cloud/gated-cloud actions without widening beyond cited source."
+      },
+      "session_id": "s_task_managedsystem-boundary-map-mounted-source-packet-20260624",
+      "session_history": [
+        "s_task_managedsystem-boundary-map-mounted-source-packet-20260624"
+      ],
+      "result": "Created a durable ManagedSystem mounted-source boundary packet at evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md, reconciling mounted AKS RP source, accepted path-summary/model surfaces, handwritten e2ev3 coverage, observed evidence, adjacent surfaces, and the next safe action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T10:53:54.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md exists and satisfies the source-backed boundary-packet acceptance by mapping ManagedSystem accepted/rejected inputs, handwritten e2ev3/source coverage, observed model status, adjacent surfaces, and the next safe no-cloud/gated-cloud actions without widening beyond cited source."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-boundary-distinctions-path-summary-sync-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync the ManagedSystem mounted-source boundary distinctions from the accepted 2026-06-24 packet into the durable knowledge-model/path-summary surfaces so future ManagedSystem work reuses the same accepted input contract, rejected generic-field family, create-time product-gap framing, adjacent runtime/reconcile closure, and explicit VM+ManagedSystem same-pool separation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-distinctions-path-summary-sync-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites evidence/archive/managedsystem-boundary-map-mounted-source-packet-20260624.md and records any needed repo-local wording/model-summary updates or confirms none are needed, with exact affected path ids/surfaces listed.",
+        "If any durable model/view text is changed, the task records the specific files/surfaces touched and verifies the resulting ManagedSystem distinctions remain consistent across add-existing, create-time, negative-mutation, runtime-isolation/reconcile, disable-migration, and VM+ManagedSystem combined paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T10:53:55.000Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-distinctions-path-summary-sync-20260624_20260624105355",
+        "assigned_at": "2026-06-24T10:53:55.058Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-distinctions-path-summary-sync-20260624",
+        "worker_started_attempt_id": "a_managedsystem-boundary-distinctions-path-summary-sync-20260624_20260624105355",
+        "worker_started_at": "2026-06-24T10:54:20.524Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the accepted 2026-06-24 ManagedSystem mounted-source packet against durable model/path-summary/deep-dive surfaces and added an archive sync note confirming no repo-local wording/model updates were needed.",
+        "last_worker_completed_at": "2026-06-24T10:55:34.278Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T10:56:11.473Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-boundary-distinctions-path-summary-sync-20260624.md cites the 2026-06-24 mounted-source packet, lists exact ManagedSystem model/path-summary/deep-dive surfaces reviewed, and truthfully confirms no repo-local wording/model updates were needed."
+      },
+      "session_id": "s_task_managedsystem-boundary-distinctions-path-summary-sync-20260624",
+      "session_history": [
+        "s_task_managedsystem-boundary-distinctions-path-summary-sync-20260624"
+      ],
+      "result": "Reviewed the accepted 2026-06-24 ManagedSystem mounted-source packet against durable model/path-summary/deep-dive surfaces and added an archive sync note confirming no repo-local wording/model updates were needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T10:56:11.473Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-boundary-distinctions-path-summary-sync-20260624.md cites the 2026-06-24 mounted-source packet, lists exact ManagedSystem model/path-summary/deep-dive surfaces reviewed, and truthfully confirms no repo-local wording/model updates were needed."
+      },
+      "status": "done"
+    }
+  ]
+}

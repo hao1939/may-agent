@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:53:14.957Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner blocked-frontier review accepted the serverless scheduler-controller naming reconcile and archived that done leaf because its durable meaning is now represented here. The lane now keeps machinespreview-external-send-proof-or-reply-wait-20260620 as the single truthful external-human wait, promotes serverless-schedulerctrl-lifecycle-model-landing-20260620 as the active next no-cloud source-backed landing for the scheduler-controller lifecycle quartet, and retains vm-prerelease-row49-dedicated-carrier-authoring-20260620 as the next VM prerelease backlog slice after row48-related overlap is cleared.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted scheduler-controller lifecycle quartet into dedicated repo-local feature/model identifiers and relationship notes so the project preserves a truthful non-cloud carrier distinct from both mounted sigs/virtualnodes and the historical ACI-focused features/serverless.yaml branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "The note cites evidence/archive/serverless-schedulerctrl-lifecycle-source-packet-20260620.md plus the mounted source anchors needed to name the lifecycle quartet's dedicated repo-local feature/model surfaces without running cloud mutation.",
+        "The note proposes or confirms the exact repo-local feature/model identifiers, records how they relate to existing historical serverless-virtual-nodes carriers and mounted sigs/virtualnodes, and states whether any existing feature/model files should stay untouched, be amended, or be split later.",
+        "The note names the smallest truthful next durable follow-on after reconciliation, including whether packet-backed model landing is sufficient for now or whether a later spec/replay/model update branch should be opened, with lane and expected outputs stated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:serverless-schedulerctrl"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:48:23.482Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620_20260620154823",
+        "assigned_at": "2026-06-20T15:48:23.531Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620_20260620154823",
+        "worker_started_at": "2026-06-20T15:49:03.770Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the reconciliation note `evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md`, proposing a new `serverless-schedulerctrl` repo-local namespace with four lifecycle leaves while explicitly preserving existing `serverless-virtual-nodes-*` carriers untouched.",
+        "last_worker_completed_at": "2026-06-20T15:52:16.608Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:53:14.827Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md: it cites the mounted scheduler-controller lifecycle authorities, cleanly separates scheduler-controller from existing serverless-virtual-nodes carriers, proposes exact serverless-schedulerctrl feature/model identifiers, and names packet-backed model landing as the smallest truthful next durable follow-on."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620"
+      ],
+      "result": "Wrote the reconciliation note `evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md`, proposing a new `serverless-schedulerctrl` repo-local namespace with four lifecycle leaves while explicitly preserving existing `serverless-virtual-nodes-*` carriers untouched.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:53:14.827Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md: it cites the mounted scheduler-controller lifecycle authorities, cleanly separates scheduler-controller from existing serverless-virtual-nodes carriers, proposes exact serverless-schedulerctrl feature/model identifiers, and names packet-backed model landing as the smallest truthful next durable follow-on."
+      },
+      "status": "done"
+    }
+  ]
+}

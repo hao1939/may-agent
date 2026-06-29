@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:01:40.456Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier owner review accepted the source-backed serverless scheduler-controller lifecycle model landing and archived that finished leaf because its durable meaning is now represented at the lane level. MachinesPreview was also repaired from a misleading passive reply-wait shape into one explicit unsent external-human gate, now represented by machinespreview-human-send-or-authoritative-reply-gate-20260620: repo-local packet/proof-capture materials are send-ready, but no durable proof of actual send/escalation or authoritative registration-state reply exists yet, so no local setup/source rediscovery work is truthful. The remaining local movement in this lane is vm-prerelease-row49-dedicated-carrier-authoring-20260620, which stays bounded to source-backed row49 prerequisite/delta clarification until the overlapping row48 shared-file landing is complete.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-lifecycle-model-landing-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the mounted scheduler-controller lifecycle quartet into repo-local source-backed capability/model coverage by adding a new serverless-schedulerctrl capability packet plus four lifecycle leaves, while leaving existing serverless-virtual-nodes carriers untouched and avoiding replay/spec or cloud execution work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-lifecycle-model-landing-20260620.md"
+      ],
+      "acceptance": [
+        "The branch lands features/serverless-schedulerctrl.yaml plus the exact serverless-schedulerctrl lifecycle identifiers justified by evidence/archive/serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620.md, preserving the four-leaf lifecycle split instead of collapsing the quartet.",
+        "The branch updates model/knowledge-map/model.json and regenerated model/knowledge-map/views/* for the new serverless-schedulerctrl capability and leaves, while keeping historical serverless-virtual-nodes carriers unchanged.",
+        "The evidence note records the exact mounted-source anchors, the files changed, and repo-local validation/check output proving the landing is source-backed only and does not claim live cloud verdicts or validating-webhook-octet coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:serverless-schedulerctrl"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:53:14.870Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-lifecycle-model-landing-20260620_20260620155314",
+        "assigned_at": "2026-06-20T15:53:14.913Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-lifecycle-model-landing-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-lifecycle-model-landing-20260620_20260620155314",
+        "worker_started_at": "2026-06-20T15:53:30.785Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the new serverless-schedulerctrl capability packet plus four lifecycle leaves in the accepted knowledge model, regenerated views, and archived a source-backed landing note documenting exact mounted-source anchors and local validation outcomes.",
+        "last_worker_completed_at": "2026-06-20T16:00:11.262Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:01:05.035Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/serverless-schedulerctrl-lifecycle-model-landing-20260620.md documents mounted source anchors, the landing note claims features/serverless-schedulerctrl.yaml plus model/knowledge-map/model.json and regenerated views, and the repo dirty set includes those exact files with no replay/cloud-execution claim."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-lifecycle-model-landing-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-lifecycle-model-landing-20260620"
+      ],
+      "result": "Landed the new serverless-schedulerctrl capability packet plus four lifecycle leaves in the accepted knowledge model, regenerated views, and archived a source-backed landing note documenting exact mounted-source anchors and local validation outcomes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:01:05.035Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/serverless-schedulerctrl-lifecycle-model-landing-20260620.md documents mounted source anchors, the landing note claims features/serverless-schedulerctrl.yaml plus model/knowledge-map/model.json and regenerated views, and the repo dirty set includes those exact files with no replay/cloud-execution claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "machinespreview-send-proof-or-authoritative-reply-wait-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the single truthful MachinesPreview family-level external-human gate: repo-local packet/routing work is complete, but the unchanged rerun path stays blocked until a human owner/operator sends or escalates the existing packet outside runtime and preserves durable send proof or the authoritative registration-state reply.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-owner-send-handoff-request-20260620.md"
+      ],
+      "acceptance": [
+        "The carrier cites evidence/archive/machinespreview-owner-send-handoff-request-20260620.md plus evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md as send-ready-only evidence for path.machines-agentpool-api-crud.machine-crud-blocked; it does not claim that any external send/handoff already occurred.",
+        "The only live resume trigger is exact: reopen only after durable repo-local proof records a real human send/handoff/escalation of evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md with timestamp, channel, recipient or escalation path, or after the authoritative MachinesPreview registration-state/equivalent-environment reply itself is preserved.",
+        "Until that proof or reply exists, keep machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619 and path.machines-agentpool-api-crud.machine-crud-blocked blocked, and do not treat this branch as response-await or reopen local setup/source rediscovery work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:57:49.610Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T16:01:16.201Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by machinespreview-human-send-or-authoritative-reply-gate-20260620 so the tree no longer uses a passive reply-wait carrier for an ask that is only send-ready. The new blocked carrier preserves the exact resume condition and evidence links while making the external-human gate explicit."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T16:01:16.201Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by machinespreview-human-send-or-authoritative-reply-gate-20260620 so the tree no longer uses a passive reply-wait carrier for an ask that is only send-ready. The new blocked carrier preserves the exact resume condition and evidence links while making the external-human gate explicit."
+      },
+      "status": "done"
+    }
+  ]
+}

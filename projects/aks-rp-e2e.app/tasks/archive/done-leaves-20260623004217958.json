@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T00:42:17.958Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update: reconciled the stale watchdog review request because the cited acceptance-rerun leaf was already accepted and archived into project history. Archived the remaining safe done leaves so the live tree reflects the real frontier only: spec-path-record-batch8-post-batch7-authoring-20260623 remains the single active bounded next-10 spec-path bridge slice, while external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single exact external-human family wait pending later out-of-runtime proof. No repo-local replay, source rediscovery, or blocker reopening is warranted from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-root-check-ppg-formatting-unblock-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: sole live shared repo-check problem. Investigate and resolve the newly observed repo-root check blocker in replays/ppg-cluster-and-agentpool-placement.ts that invalidates the prior runner-three-file 'bun run check passes' claim, without reopening the accepted spec-path batch7 or egress-readiness packet content and without retrying those held review leaves early. Produce the exact ownership/disposition for this formatting residue and restore repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit 0 so the held review leaves have a truthful resume trigger.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-root-check-ppg-formatting-unblock-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/repo-root-check-ppg-formatting-unblock-20260623.md records the exact failure observed after the runner-three-file review claim, the ownership/disposition for replays/ppg-cluster-and-agentpool-placement.ts, and whether the residue is landed, reverted, or otherwise repaired with exact git/checkpoint evidence.",
+        "The work captures fresh repo-root proof that cd /app/projects/aks-rp-e2e && bun run check exits 0 after addressing the ppg formatting residue, giving spec-path-record-batch7-post-batch6-authoring-20260623 and egress-lockdown-vm-prerelease-vhd-matrix-live-run-readiness-packet-20260623 a truthful rerun trigger without reopening their authored evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner.checkpoint-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:31:42.776Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-root-check-ppg-formatting-unblock-20260623_20260623003142",
+        "assigned_at": "2026-06-23T00:31:42.827Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-root-check-ppg-formatting-unblock-20260623",
+        "worker_started_attempt_id": "a_repo-root-check-ppg-formatting-unblock-20260623_20260623003142",
+        "worker_started_at": "2026-06-23T00:32:05.111Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Investigated the repo-root check regression, identified replays/ppg-cluster-and-agentpool-placement.ts as the new formatting owner/blocker rather than the runner slice, repaired its Prettier residue, and recorded fresh repo-root bun run check exit-0 proof in evidence/archive/repo-root-check-ppg-formatting-unblock-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T00:34:22.345Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:34:59.212Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted archive evidence: the task isolated replays/ppg-cluster-and-agentpool-placement.ts as the later repo-root formatting owner, repaired it in place, and restored truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof for the held review leaves."
+      },
+      "session_id": "s_task_repo-root-check-ppg-formatting-unblock-20260623",
+      "session_history": [
+        "s_task_repo-root-check-ppg-formatting-unblock-20260623"
+      ],
+      "result": "Investigated the repo-root check regression, identified replays/ppg-cluster-and-agentpool-placement.ts as the new formatting owner/blocker rather than the runner slice, repaired its Prettier residue, and recorded fresh repo-root bun run check exit-0 proof in evidence/archive/repo-root-check-ppg-formatting-unblock-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:34:59.212Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted archive evidence: the task isolated replays/ppg-cluster-and-agentpool-placement.ts as the later repo-root formatting owner, repaired it in place, and restored truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof for the held review leaves."
+      },
+      "status": "done"
+    }
+  ]
+}

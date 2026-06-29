@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:22:57.617Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 follow-up hygiene pass finishes the parent-level private-cluster rollup: the shared-subnet mounted-source reconcile slice is now archived alongside the shared API-server subnet slice, because both are already captured in the project rollup as established mounted/source-backed provenance. The live frontier remains intentionally unchanged: dns-zone-system and dns-zone-none stay the only active regular-learning leaves, and external-send-proof-dispatch-family-20260620 stays the only truthful blocked carrier for the VM/MachinesPreview external-human transport ceiling until durable send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-shared-subnet-mounted-source-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile mounted Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 against the current repo-local shared-subnet landing and determine the truthful maintained shape: either a new exact shared-API-server-subnet success landing or repaired provenance/scope for the existing negative branch, staying repo-local and source-backed only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-shared-subnet-mounted-source-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/shared_subnet.go plus the current repo-local shared-subnet spec/model surfaces, and states exactly how the mounted success boundary differs from the current negative landing.",
+        "Artifact concludes one truthful next maintained direction only: either keep the current negative branch with repaired source ownership or propose a new exact landing for the shared API-server subnet success scenario, naming the concrete target files required for that direction (leading candidate: specs/private-cluster-vnet-integration-shared-apiserver-subnet.json if a new landing is warranted).",
+        "Work stays in regular-learning/source-reconcile only: no cloud execution, no accepted-model edits, and no reopening of unrelated blockers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-shared-subnet-mounted-source-reconcile"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:11:40.299Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T19:11:45.178Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-shared-subnet-mounted-source-reconcile-20260620_20260620191145",
+        "assigned_at": "2026-06-20T19:11:45.228Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-shared-subnet-mounted-source-reconcile-20260620",
+        "worker_started_attempt_id": "a_private-cluster-shared-subnet-mounted-source-reconcile-20260620_20260620191145",
+        "worker_started_at": "2026-06-20T19:12:01.579Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested source-reconcile artifact at `evidence/archive/private-cluster-shared-subnet-mounted-source-reconcile-20260620.md`, proving mounted `shared_subnet.go` is a multi-cluster shared-API-server-subnet success scenario and not equivalent to the current repo-local negative same-subnet branch.",
+        "last_worker_completed_at": "2026-06-20T19:13:44.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:14:20.749Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/private-cluster-shared-subnet-mounted-source-reconcile-20260620.md: mounted shared_subnet.go is a two-cluster shared-API-server-subnet success scenario, not the current same-subnet negative branch, so the truthful next step is a new exact private-cluster-vnet-integration-shared-apiserver-subnet landing."
+      },
+      "session_id": "s_task_private-cluster-shared-subnet-mounted-source-reconcile-20260620",
+      "session_history": [
+        "s_task_private-cluster-shared-subnet-mounted-source-reconcile-20260620"
+      ],
+      "result": "Authored the requested source-reconcile artifact at `evidence/archive/private-cluster-shared-subnet-mounted-source-reconcile-20260620.md`, proving mounted `shared_subnet.go` is a multi-cluster shared-API-server-subnet success scenario and not equivalent to the current repo-local negative same-subnet branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:14:20.749Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/private-cluster-shared-subnet-mounted-source-reconcile-20260620.md: mounted shared_subnet.go is a two-cluster shared-API-server-subnet success scenario, not the current same-subnet negative branch, so the truthful next step is a new exact private-cluster-vnet-integration-shared-apiserver-subnet landing."
+      },
+      "status": "done"
+    }
+  ]
+}

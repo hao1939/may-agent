@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:35:57.221Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog owner update: the VM prerelease CAS rows-46/47 linkage repair review is accepted and its repo-local evidence/model updates now stand as completed knowledge. The only live local knowledge-map work is the two mounted-source authoring leaves network-acns-cilium-observability-authoring-from-mounted-source-20260620 and vm-prerelease-securetls-exact-carrier-authoring-batch-20260620, both already assigned for source-backed repo-local artifact work. The single truthful external wait remains external-send-proof-dispatch-family-20260620 under the VM prerelease replacement focus; do not recreate duplicate send, response-await, or source-holder blockers. Next owner action is to review the two active authoring leaves when they produce evidence, while reopening the blocked VM transport family only when durable repo-local send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-accounting-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile mounted private-cluster suite and plan-registry accounting drift for shared-subnet, private-endpoint-connections, and private-cluster-runner so repo-local all-scenarios coverage matches what the mounted AKS RP source actually enumerates without requiring cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-accounting-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted private-cluster suite and plan-registry files inspected for shared-subnet, private-endpoint-connections, and private-cluster-runner.",
+        "The artifact states for each scenario whether repo-local accounting should treat it as suite-backed, plan-only, registry-only variant metadata, or a deliberate omission, with file references.",
+        "The artifact names the precise repo-local follow-up edits or model notes needed next, if any, without running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:29:19.477Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T17:29:22.651Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-accounting-reconcile-20260620_20260620172924",
+        "assigned_at": "2026-06-20T17:29:24.456Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-accounting-reconcile-20260620",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-accounting-reconcile-20260620_20260620172924",
+        "worker_started_at": "2026-06-20T17:29:36.799Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source accounting reconcile artifact at evidence/archive/private-cluster-mounted-source-accounting-reconcile-20260620.md, classifying shared-subnet as suite-backed, private-endpoint-connections as plan-only, and private-cluster-runner as registry-only variant metadata with exact mounted file references and repo-local follow-up notes.",
+        "last_worker_completed_at": "2026-06-20T17:31:10.511Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T17:32:08.491Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after artifact review: evidence/archive/private-cluster-mounted-source-accounting-reconcile-20260620.md cites the exact mounted suite/plan files and reconciles shared-subnet as suite-backed, private-endpoint-connections as plan-only, and private-cluster-runner as registry-only variant metadata with precise repo-local follow-up note edits."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-accounting-reconcile-20260620",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-accounting-reconcile-20260620"
+      ],
+      "result": "Created the requested mounted-source accounting reconcile artifact at evidence/archive/private-cluster-mounted-source-accounting-reconcile-20260620.md, classifying shared-subnet as suite-backed, private-endpoint-connections as plan-only, and private-cluster-runner as registry-only variant metadata with exact mounted file references and repo-local follow-up notes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T17:32:08.491Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after artifact review: evidence/archive/private-cluster-mounted-source-accounting-reconcile-20260620.md cites the exact mounted suite/plan files and reconciles shared-subnet as suite-backed, private-endpoint-connections as plan-only, and private-cluster-runner as registry-only variant metadata with precise repo-local follow-up note edits."
+      },
+      "status": "done"
+    }
+  ]
+}

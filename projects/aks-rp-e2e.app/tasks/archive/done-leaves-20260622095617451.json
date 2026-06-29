@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T09:56:17.451Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted and rolled up the current VM prerelease repo-local mounted-source/model landings. Completed work now includes: (1) the row 33 accelerated-networking reconcile precursor that was review-rejected and replaced by the active retry leaf, (2) row 36 Azure Monitor AAD auth maintained-model landing, (3) rows 39-40 SSH maintained-model landing, and (4) rows 46-49 cluster-autoscaler maintained canonical model/view landing with exact mounted-source lineage. The live frontier is now one active repo-local row-33 retry to close the missing accelerated-networking archive/model-status reconciliation, plus one family-level external human transport wait that remains compressed as the sole truthful blocker for out-of-runtime asks.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row33-accelerated-networking-status-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the mounted row-33 scenario sources and existing repo-local proof artifacts, reconcile VirtualMachine prerelease row 33 accelerated networking into truthful maintained model/view status/evidence carriers or record a bounded no-gap verdict if the maintained surfaces are already current.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row33-accelerated-networking-status-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact row 33 scenario anchors, records maintained feature/spec/replay/model/view state before and after, and either (a) updates the maintained model/view status/evidence carriers to match current repo-local proof or (b) records a bounded no-gap verdict tied to the exact maintained surfaces.",
+        "The work stays repo-local only: no cloud mutation, no duplicate external-human waits, and no unrelated row/carrier edits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease:row33-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:49:48.929Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row33-accelerated-networking-status-reconcile-20260622_20260622094950",
+        "assigned_at": "2026-06-22T09:49:50.990Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row33-accelerated-networking-status-reconcile-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row33-accelerated-networking-status-reconcile-20260622_20260622094950",
+        "worker_started_at": "2026-06-22T09:50:09.397Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-22T09:51:57.179Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:52:50.587Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review rejected and replaced: the worker reported blocked/error with no evidence and did not create ../aks-rp-e2e/evidence/archive/vm-prerelease-row33-accelerated-networking-status-reconcile-20260622.md, so acceptance was not met. Follow-up work moved to vm-prerelease-row33-accelerated-networking-status-retry-20260622."
+      },
+      "session_id": "s_task_vm-prerelease-row33-accelerated-networking-status-reconcile-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row33-accelerated-networking-status-reconcile-20260622"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:52:50.587Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review rejected and replaced: the worker reported blocked/error with no evidence and did not create ../aks-rp-e2e/evidence/archive/vm-prerelease-row33-accelerated-networking-status-reconcile-20260622.md, so acceptance was not met. Follow-up work moved to vm-prerelease-row33-accelerated-networking-status-retry-20260622."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the accepted mounted-source carrier crosswalk, reconcile mounted row 36 MSI Azure Monitor AAD auth into the maintained model/view carriers or record a bounded no-gap verdict with exact row evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact mounted row 36 scenario, records maintained feature/spec/replay/model/view state before and after, and either lands the missing maintained model/view path or records a bounded no-gap verdict with exact scenario evidence.",
+        "The work stays repo-local only: no cloud mutation, no duplicate external-human waits, and no unrelated carrier edits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease:row36-model-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:48:15.079Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T09:48:18.914Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622_20260622094844",
+        "assigned_at": "2026-06-22T09:48:44.338Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622_20260622094844",
+        "worker_started_at": "2026-06-22T09:48:47.430Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the missing maintained row-36 Azure Monitor AAD-auth model/view carriers in model/knowledge-map/model.json, regenerated views, and wrote the requested archive artifact documenting the exact mounted row evidence and before/after maintained state.",
+        "last_worker_completed_at": "2026-06-22T09:53:24.922Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:53:42.465Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622.md cites the exact mounted row 36 scenario, records the prior missing maintained model/view carriers, and documents the landed feature/scenario/DAG/path plus regenerated path-summary entry for path.app-monitoring.msi-azure-monitor-aad-auth-vm-prerelease."
+      },
+      "session_id": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622"
+      ],
+      "result": "Landed the missing maintained row-36 Azure Monitor AAD-auth model/view carriers in model/knowledge-map/model.json, regenerated views, and wrote the requested archive artifact documenting the exact mounted row evidence and before/after maintained state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:53:42.465Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-model-landing-20260622.md cites the exact mounted row 36 scenario, records the prior missing maintained model/view carriers, and documents the landed feature/scenario/DAG/path plus regenerated path-summary entry for path.app-monitoring.msi-azure-monitor-aad-auth-vm-prerelease."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows39-40-ssh-model-landing-batch-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the accepted mounted-source carrier crosswalk, reconcile mounted row 39 disable-SSH and row 40 SSH public-key update variants into maintained model/view carriers or record bounded no-gap verdicts with exact row evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows39-40-ssh-model-landing-batch-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites exact mounted row 39 and row 40 scenario identifiers, records maintained feature/spec/replay/model/view state before and after for each covered SSH branch, and either lands the missing maintained model/view paths or records bounded no-gap verdicts with exact evidence.",
+        "The work stays repo-local only: no cloud mutation, no duplicate external-human waits, and no unrelated carrier edits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease:ssh-model-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:48:15.128Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T09:48:18.914Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows39-40-ssh-model-landing-batch-20260622_20260622094844",
+        "assigned_at": "2026-06-22T09:48:44.338Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows39-40-ssh-model-landing-batch-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-rows39-40-ssh-model-landing-batch-20260622_20260622094844",
+        "worker_started_at": "2026-06-22T09:48:47.218Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the missing maintained SSH carriers for VM prerelease row 39 and row 40 Linux/Windows into model/knowledge-map/model.json, regenerated views, and wrote the archive evidence note at evidence/archive/vm-prerelease-rows39-40-ssh-model-landing-batch-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T09:53:37.435Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:54:48.854Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local rows 39-40 SSH landing after reviewing evidence/archive/vm-prerelease-rows39-40-ssh-model-landing-batch-20260622.md: it cites the exact mounted row 39 disable-SSH and row 40 Linux/Windows SSH-key scenarios, records pre/post maintained model-view state, and confirms the exact feature/scenario/DAG/path ids now exist in model.json plus regenerated views. Validator output remains globally noisy, but the artifact limits acceptance to this narrow SSH slice and does not claim broader model health."
+      },
+      "session_id": "s_task_vm-prerelease-rows39-40-ssh-model-landing-batch-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-rows39-40-ssh-model-landing-batch-20260622"
+      ],
+      "result": "Landed the missing maintained SSH carriers for VM prerelease row 39 and row 40 Linux/Windows into model/knowledge-map/model.json, regenerated views, and wrote the archive evidence note at evidence/archive/vm-prerelease-rows39-40-ssh-model-landing-batch-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:54:48.854Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local rows 39-40 SSH landing after reviewing evidence/archive/vm-prerelease-rows39-40-ssh-model-landing-batch-20260622.md: it cites the exact mounted row 39 disable-SSH and row 40 Linux/Windows SSH-key scenarios, records pre/post maintained model-view state, and confirms the exact feature/scenario/DAG/path ids now exist in model.json plus regenerated views. Validator output remains globally noisy, but the artifact limits acceptance to this narrow SSH slice and does not claim broader model health."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-cas-rows46-49-model-landing-batch-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the accepted mounted-source carrier crosswalk, land the remaining VirtualMachine prerelease cluster-autoscaler mounted rows 46-49 into maintained model/view carriers or record a bounded no-gap verdict for any row that is already fully represented.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-cas-rows46-49-model-landing-batch-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites exact mounted rows 46-49 scenario identifiers, records maintained feature/spec/replay/model/view state before and after for each row, and either lands the missing maintained model/view paths or records a bounded no-gap verdict with exact evidence for every covered row.",
+        "The work stays repo-local only: no cloud mutation, no duplicate external-human waits, and no unrelated carrier edits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease:cas-model-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:48:15.021Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-cas-rows46-49-model-landing-batch-20260622_20260622094815",
+        "assigned_at": "2026-06-22T09:48:15.180Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-cas-rows46-49-model-landing-batch-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-cas-rows46-49-model-landing-batch-20260622_20260622094815",
+        "worker_started_at": "2026-06-22T09:48:44.497Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed canonical maintained model/view carriers for VM prerelease CAS rows 46-49 by updating model/knowledge-map/model.json with new userScenarios/inputDags/featurePaths and regenerating views; wrote the archive artifact evidence/archive/vm-prerelease-cas-rows46-49-model-landing-batch-20260622.md documenting before/after state and exact row-local evidence.",
+        "last_worker_completed_at": "2026-06-22T09:54:59.754Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:56:06.900Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact records exact rows 46-49 mounted-source anchors, before/after maintained carrier state, and the canonical model/view landing, while the bounded diff within model/knowledge-map shows only the intended model/view regeneration for this slice."
+      },
+      "session_id": "s_task_vm-prerelease-cas-rows46-49-model-landing-batch-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-cas-rows46-49-model-landing-batch-20260622"
+      ],
+      "result": "Landed canonical maintained model/view carriers for VM prerelease CAS rows 46-49 by updating model/knowledge-map/model.json with new userScenarios/inputDags/featurePaths and regenerating views; wrote the archive artifact evidence/archive/vm-prerelease-cas-rows46-49-model-landing-batch-20260622.md documenting before/after state and exact row-local evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:56:06.900Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact records exact rows 46-49 mounted-source anchors, before/after maintained carrier state, and the canonical model/view landing, while the bounded diff within model/knowledge-map shows only the intended model/view regeneration for this slice."
+      },
+      "status": "done"
+    }
+  ]
+}

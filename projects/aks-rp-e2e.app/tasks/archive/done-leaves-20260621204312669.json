@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:43:12.670Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 metric-recovered planning pass: capacity underfill is resolved by the already-active repo-local VM prerelease row-60 Scenario_Addon maintained knowledge-map landing. Durable project truth remains intentionally narrow: keep vmpr-row60-addon-maintained-knowledge-map-landing-20260621 as the only active runnable work, keep external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single compressed external-human-transport wait, and archive the two accepted done siblings whose meaning is already carried in the parent summary and linked evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: produce a bounded repo-local frontier-proof packet for the next exact VM prerelease adjacent branch after the accepted secure-TLS basic alias packet by proving source-order row 43 / maintained pipeline row 42 secure-TLS VNet integration identity against mounted source and already-landed canonical secure-tls VNet carriers, without model/spec/replay edits or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Cite /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, and the directly referenced securetlsbootstrapping VNet plan/common source needed to prove that the exact next adjacent branch after source-order row 42 is the secure-TLS VNet integration branch and that maintained pipeline row 42 is the matching canonical identifier.",
+        "Compare that adjacent branch against existing repo-local secure-TLS VNet feature/spec/replay/evidence surfaces and produce one durable frontier-proof packet that records exact alias/numbering truth plus why evidence reuse is sufficient, without creating or editing model/spec/replay files.",
+        "List exact repo/source files inspected and validation commands run, and confirm this pass performed no cloud execution, no external-human transport work, and no model edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/vmpr"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:36:04.663Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621_20260621203604",
+        "assigned_at": "2026-06-21T20:36:04.711Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621_20260621203604",
+        "worker_started_at": "2026-06-21T20:36:27.502Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested frontier-proof packet at evidence/archive/vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621.md, proving source-order row 43 maps to maintained pipeline row 42 secure-TLS VNet integration and that existing canonical carriers are sufficient without model/spec/replay edits or cloud execution.",
+        "last_worker_completed_at": "2026-06-21T20:38:08.803Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:38:54.419Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621.md cites mounted VM checkin/prerelease plus securetlsbootstrapping VNet plan/common source, preserves source-order row43 ↔ maintained row42 alias truth, and proves existing canonical secure-TLS VNet carriers are sufficient with no model/spec/replay edits or cloud execution."
+      },
+      "session_id": "s_task_vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621"
+      ],
+      "result": "Produced the requested frontier-proof packet at evidence/archive/vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621.md, proving source-order row 43 maps to maintained pipeline row 42 secure-TLS VNet integration and that existing canonical carriers are sufficient without model/spec/replay edits or cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:38:54.419Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621.md cites mounted VM checkin/prerelease plus securetlsbootstrapping VNet plan/common source, preserves source-order row43 ↔ maintained row42 alias truth, and proves existing canonical secure-TLS VNet carriers are sufficient with no model/spec/replay edits or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

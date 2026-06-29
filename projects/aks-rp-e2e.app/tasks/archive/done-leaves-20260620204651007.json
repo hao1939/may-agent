@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:46:51.007Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog review reconciliation: confirmed the prior scheduler-controller disable-after-enable local-wiring review was already adjudicated as diagnosis-only and replaced by the active index-registration-plus-rerun leaf. Archived the two newly safe done leaves so the live frontier now truthfully carries two active repo-local tasks: (1) add the missing specs/index.json registration and rerun the two bounded local validations for scheduler-controller disable-after-enable, and (2) repair the VM mixed-SKU upgrade model/path status so it cites the mounted-source runner-disable note and explicit live replay resume condition. The only blocked work remains the single family-level external send-proof transport ceiling for the send-ready MachinesPreview and VM prerelease packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Register the disable-after-enable scheduler-controller carrier in specs/index.json by mirroring the existing sibling scheduler-controller entry shape, then rerun the same two bounded local validations so the spec/replay pair proves it loads cleanly without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620.md"
+      ],
+      "acceptance": [
+        "Update specs/index.json so spec.serverless-schedulerctrl.disable-after-enable is registered with file serverless-schedulerctrl-disable-after-enable.json, probeRef replays/serverless-schedulerctrl-disable-after-enable.ts, and the matching feature/path metadata; record the exact registration change in ../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620.md.",
+        "Rerun the same two bounded repo-local checks used in the failed review (the replay-local validation and bun runner/spec-runner.ts spec.serverless-schedulerctrl.disable-after-enable --dry-run), capture the exact commands and outcomes in the evidence artifact, and confirm whether the pair now loads cleanly.",
+        "If either rerun still fails, capture the exact failing output and name the next bounded culprit inside the same evidence artifact without widening into other scheduler-controller leaves, model edits, or remote execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-disable-after-enable-carrier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:40:09.758Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T20:44:02.487Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620_20260620204402",
+        "worker_started_at": "2026-06-20T20:44:20.232Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Ran the bounded local wiring validation for the disable-after-enable scheduler-controller carrier and wrote evidence showing the spec/replay pair is source-aligned but fails repo-local validation because `specs/index.json` lacks the new spec registration.",
+        "last_worker_completed_at": "2026-06-20T20:44:20.244Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-20T20:44:02.385Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Review not accepted: the evidence proves the spec/replay pair is still incomplete because specs/index.json lacks the disable-after-enable registration and the required reruns were not successful. Reopen as bounded repo-local repair-and-rerun work rather than leaving a non-terminal review leaf.",
+        "review_reject_fresh_session": false,
+        "previous_attempt_id": "a_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620_20260620204259",
+        "current_attempt_id": "a_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620_20260620204402",
+        "reviewed_at": "2026-06-20T20:46:03.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis-only review evidence as non-terminal: the worker proved the spec/replay pair is source-aligned but still fails local wiring because specs/index.json lacks the disable-after-enable registration. Replaced this review leaf with serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620 so the next work is the bounded repo-local fix and rerun."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620"
+      ],
+      "result": "Ran the bounded local wiring validation for the disable-after-enable scheduler-controller carrier and wrote evidence showing the spec/replay pair is source-aligned but fails repo-local validation because `specs/index.json` lacks the new spec registration.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T20:46:03.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis-only review evidence as non-terminal: the worker proved the spec/replay pair is source-aligned but still fails local wiring because specs/index.json lacks the disable-after-enable registration. Replaced this review leaf with serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620 so the next work is the bounded repo-local fix and rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:25:07.615Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner reconciliation (2026-06-20T10:28Z): the mounted-source serverless witness-authority review is accepted and archived as durable provenance showing the current subnet-validation witness contract is internally coherent but not backed by the mounted handwritten virtualnodes authority reviewed here. Live work in this lane is now vm-prerelease-row45-mounted-source-linkage-repair-20260620 plus one new serverless local follow-up, serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620, to convert that authority finding into exact repo-local wording/metadata repairs or the smallest truthful pending delta without touching helper-gated knowledge-map files or running cloud execution.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-suite-gap-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted AKS RP Go source for VirtualMachine prerelease/checkin suites plus current repo-local VM prerelease specs/replays, build a bounded source-backed gap packet that maps which prerelease/checkin scenario surfaces are already covered, which remain spec/replay gaps, and whether the current feature set can be planned locally without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-suite-gap-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted source files reviewed, including /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, plus the repo-local VM prerelease specs/replays or index files consulted.",
+        "Archive note maps the prerelease/checkin scenario inventory to current repo-local coverage by naming at least the covered surfaces, the uncovered or stale spec/replay gaps, and any prior source-holder/external-source blocker rationale that is now invalid because the mounted source answers the question.",
+        "Archive note states whether a bounded next step should be spec authoring, replay metadata repair, or local planability validation (for example via bun run plan --features ...), and names the exact next non-cloud leaf that should follow without touching helper-gated knowledge-map files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:vm-prerelease-mounted-source-gap"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:16:36.770Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-suite-gap-reconcile-20260620_20260620101636",
+        "assigned_at": "2026-06-20T10:16:36.814Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-suite-gap-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-suite-gap-reconcile-20260620_20260620101636",
+        "worker_started_at": "2026-06-20T10:16:48.081Z",
+        "reviewed_at": "2026-06-20T10:24:24.272Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted stale-active mounted-source reconcile note: it cites prerelease.go/checkin.go plus exact repo-local VM coverage inputs, maps covered vs missing/candidate suite rows, explicitly invalidates prior external-source/source-holder blocker rationale for mounted suite rows, proves local planability for the covered selector set, and recommends the bounded next non-cloud follow-up leaf vm-prerelease-row45-mounted-source-linkage-repair-20260620."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-suite-gap-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-suite-gap-reconcile-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:24:24.272Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted stale-active mounted-source reconcile note: it cites prerelease.go/checkin.go plus exact repo-local VM coverage inputs, maps covered vs missing/candidate suite rows, explicitly invalidates prior external-source/source-holder blocker rationale for mounted suite rows, proves local planability for the covered selector set, and recommends the bounded next non-cloud follow-up leaf vm-prerelease-row45-mounted-source-linkage-repair-20260620."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtual-nodes-witness-targeting-authority-note-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted AKS RP virtual-nodes source plus current repo-local serverless spec/replay files, write a bounded authority note that reconciles the witness-targeting mismatch for path.serverless-virtual-nodes.subnet-validation and states whether the current repo-local replay contract is intentionally ACI-connector-specific or still lacks source-backed justification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-witness-targeting-authority-note-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites /app/sources/aks-rp/test/e2ev3/sigs/virtualnodes/plans/standard_virtualnodes.go plus the exact repo-local files/features consulted, including features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts.",
+        "Archive note names the concrete witness-targeting/config differences (for example selector, expected node name, toleration/provider shape, and subnet config surface) between mounted source and repo-local replay/spec behavior without running cloud probes.",
+        "Archive note concludes with one bounded owner-useful verdict: either the current repo-local subnet-validation witness contract is source-backed/intentionally distinct, or it remains an unresolved authority gap and should drive a later replay/spec diagnostic delta before any rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:serverless-virtual-nodes-witness-authority"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:21:43.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-witness-targeting-authority-note-20260620_20260620102143",
+        "assigned_at": "2026-06-20T10:21:43.580Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-witness-targeting-authority-note-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-witness-targeting-authority-note-20260620_20260620102143",
+        "worker_started_at": "2026-06-20T10:21:57.570Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded authority note at evidence/archive/serverless-virtual-nodes-witness-targeting-authority-note-20260620.md, reconciling mounted virtualnodes handwritten source against repo-local serverless subnet-validation/spec/replay surfaces and concluding the current witness-targeting contract remains an unresolved authority gap.",
+        "last_worker_completed_at": "2026-06-20T10:24:44.935Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T10:25:07.477Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the required mounted and repo-local files, names the exact selector/toleration/node-name/subnet-surface mismatches, and concludes the current subnet-validation witness contract is an unresolved mounted-source authority gap rather than source-backed."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-witness-targeting-authority-note-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-witness-targeting-authority-note-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:25:07.477Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the required mounted and repo-local files, names the exact selector/toleration/node-name/subnet-surface mismatches, and concludes the current subnet-validation witness contract is an unresolved mounted-source authority gap rather than source-backed."
+      },
+      "status": "done"
+    }
+  ]
+}

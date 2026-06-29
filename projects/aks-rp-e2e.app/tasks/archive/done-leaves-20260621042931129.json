@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:29:31.129Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill accepts the completed VM prerelease residue triage and records the new execution order at the root: evidence/archive/vmpr-shared-carrier-residue-family-batch2-20260621.md reduced the prior 12-file residue to one 8-file maintained-surface blocker family for VM prerelease rows 27/29/30/31/32/33/34 and cleanly separated unrelated run-ledger residue, so vmpr-maintained-surface-residue-repair-batch3-20260621 is now the exact next VM repair pass when the repo workspace is free. For the current repo-workspace slot, keep network-cni-cilium-enterprise-addon-lifecycle-canonical-sibling-20260621 active because it is already assigned and started as the bounded non-cloud mounted-source authoring follow-up for Scenario_Cilium_Dataplane_Enterprise. The only cross-branch blocked wait remains external-send-proof-dispatch-family-20260620 until durable send or authoritative-reply proof is captured; no new escalation evidence arrived in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-enterprise-mounted-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a bounded mounted-source packet for Scenario_Cilium_Dataplane_Enterprise that preserves its exact addon lifecycle contract, proves why current network-acns-enterprise-tier coverage is not exact, and proposes the smallest truthful future repo-local feature/spec/replay/path ids without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-enterprise-mounted-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites /app/sources/aks-rp/test/e2ev3/sigs/network/plans/ciliumdataplane/enterprise.go plus the current repo-local comparison carriers features/network-acns-enterprise-tier.yaml, specs/network-acns-enterprise-tier.json, replays/network-acns-enterprise-tier.ts, and evidence/archive/network-cni-source-gap-batch1-20260621.md.",
+        "The note extracts the exact mounted contract boundaries for Scenario_Cilium_Dataplane_Enterprise, including EnableCiliumNodeSubnet gating and addon enable/delete plus helmrelease suspend/unsuspend expectations, and shows why those behaviors are not already captured exactly by network-acns-enterprise-tier.",
+        "The note proposes the smallest truthful next repo-local artifact shape (feature/spec/replay/path ids or equivalent bounded decomposition) and does not run cloud execution or claim verdicts beyond mounted-source/spec comparison."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:25:51.055Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-enterprise-mounted-source-packet-20260621_20260621042551",
+        "assigned_at": "2026-06-21T04:25:51.099Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-enterprise-mounted-source-packet-20260621",
+        "worker_started_attempt_id": "a_network-cni-cilium-enterprise-mounted-source-packet-20260621_20260621042551",
+        "worker_started_at": "2026-06-21T04:26:03.990Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the mounted-source comparison packet at evidence/archive/network-cni-cilium-enterprise-mounted-source-packet-20260621.md, extracting the exact Scenario_Cilium_Dataplane_Enterprise addon lifecycle contract and proving why current network-acns-enterprise-tier coverage is not an exact carrier.",
+        "last_worker_completed_at": "2026-06-21T04:27:20.718Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:27:42.802Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-cilium-enterprise-mounted-source-packet-20260621.md cites the mounted source authority plus current repo-local carriers, extracts the exact Scenario_Cilium_Dataplane_Enterprise addon lifecycle contract including EnableCiliumNodeSubnet gating, addon PUT/DELETE, deployment/CRD presence checks, and helmrelease suspend/unsuspend expectations, and proposes the smallest truthful sibling feature/spec/path/replay shape without cloud execution or overclaiming exact coverage."
+      },
+      "session_id": "s_task_network-cni-cilium-enterprise-mounted-source-packet-20260621",
+      "session_history": [
+        "s_task_network-cni-cilium-enterprise-mounted-source-packet-20260621"
+      ],
+      "result": "Authored the mounted-source comparison packet at evidence/archive/network-cni-cilium-enterprise-mounted-source-packet-20260621.md, extracting the exact Scenario_Cilium_Dataplane_Enterprise addon lifecycle contract and proving why current network-acns-enterprise-tier coverage is not an exact carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:27:42.802Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-cilium-enterprise-mounted-source-packet-20260621.md cites the mounted source authority plus current repo-local carriers, extracts the exact Scenario_Cilium_Dataplane_Enterprise addon lifecycle contract including EnableCiliumNodeSubnet gating, addon PUT/DELETE, deployment/CRD presence checks, and helmrelease suspend/unsuspend expectations, and proposes the smallest truthful sibling feature/spec/path/replay shape without cloud execution or overclaiming exact coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:56:34.238Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier planning update: accepted the refreshed dirty-repo checkpoint-slicing review and the VM row-45 autoscaled-vms-crud feature-crosswalk repair, leaving two live repo-local active leaves (app-routing selector/body-lineage audit and blocked-path-count delta audit) plus the single family-level external-human proof wait. Refilled capacity with one concrete user-review leaf to triage the large run-id-prefixed archive spill families for later checkpoint safety instead of leaving the frontier underfilled or reopening blocked external work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-dirty-repo-checkpoint-slicing-refresh-20260622c",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "User review workspace lane: refresh the dirty aks-rp-e2e repo checkpoint-slice audit against the current live frontier after app-routing selector-lineage and VM row45 autoscaled-vms-crud crosswalk replaced the earlier active leaves, so any next planner checkpoint uses a truthful active-work exclusion set rather than the stale leaf references from user-review-dirty-repo-checkpoint-slicing-20260622b.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md re-audits current git status/diff against the current active frontier, explicitly separating files attributable to accepted/done outputs, files attributable to the current active leaves app-routing-vm-prerelease-selector-lineage-audit-20260622 and virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622, and mixed/shared residue that is still unsafe for checkpointing.",
+        "The artifact states whether the prior evidence-only checkpoint slice from user-review-dirty-repo-checkpoint-slicing-20260622b remains truthful under the current frontier, and if not, replaces it with one exact updated slice or an exact no-checkpoint-yet decision naming the blocking active/shared files.",
+        "No commit, no cloud mutation, and no reopening of external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review.dirty-repo.checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:52:28.372Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-dirty-repo-checkpoint-slicing-refresh-20260622c_20260622225228",
+        "assigned_at": "2026-06-22T22:52:28.431Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-dirty-repo-checkpoint-slicing-refresh-20260622c",
+        "worker_started_attempt_id": "a_user-review-dirty-repo-checkpoint-slicing-refresh-20260622c_20260622225228",
+        "worker_started_at": "2026-06-22T22:52:42.201Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the refreshed dirty-repo checkpoint audit at evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md, reclassifying the current active frontier and replacing the old 18-file evidence-only checkpoint slice with an updated 20-file slice that safely includes the two now-done artifacts.",
+        "last_worker_completed_at": "2026-06-22T22:54:48.958Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:55:51.911Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md re-audits the current dirty repo against the updated live frontier, replaces the stale 20260622b checkpoint guidance with a truthful 20-file evidence-only slice, and keeps the current app-routing selector-lineage and VM row45 crosswalk active-work exclusions plus the single external-human wait unchanged."
+      },
+      "session_id": "s_task_user-review-dirty-repo-checkpoint-slicing-refresh-20260622c",
+      "session_history": [
+        "s_task_user-review-dirty-repo-checkpoint-slicing-refresh-20260622c"
+      ],
+      "result": "Wrote the refreshed dirty-repo checkpoint audit at evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md, reclassifying the current active frontier and replacing the old 18-file evidence-only checkpoint slice with an updated 20-file slice that safely includes the two now-done artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:55:51.911Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/user-review-dirty-repo-checkpoint-slicing-refresh-20260622c.md re-audits the current dirty repo against the updated live frontier, replaces the stale 20260622b checkpoint guidance with a truthful 20-file evidence-only slice, and keeps the current app-routing selector-lineage and VM row45 crosswalk active-work exclusions plus the single external-human wait unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

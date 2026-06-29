@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:28:12.399Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog-review-pending reconciliation confirmed the referenced privatecluster-privatelink-public-fqdn-narrow-model-landing review leaf was already owner-rejected and replaced, so no duplicate review/retry work was warranted. Archive the five completed private-cluster maintenance leaves whose durable meaning is already preserved in linked evidence: mounted-suite/source inventory reconciliation is complete, the rejected broad/non-narrow public-FQDN landing remains historical only, and the single live repair branch is now privatecluster-privatelink-public-fqdn-reland-narrow-diff-20260621. The only live waits remain the exact external-human transport proof family and the explicit execute-approval ceiling for the shared API-server subnet replay; otherwise the frontier is intentionally narrow and readable.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Maintain lineage metadata only for the mounted suite /app/sources/aks-rp/test/e2e/suites/privatelinkbyodnsserver/main.go by attaching it explicitly to the exact private-cluster BYO-DNS topology branch, landing only the smallest truthful non-cloud carrier note or metadata update needed so readers can see that the mounted two-cluster suite aligns to the topology-exact branch rather than the broader single-cluster BYO-DNS pass path, without reopening the final pass verdict on path.private-cluster-byo-dns-server.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites exact mounted-suite anchors plus the current broad BYO-DNS and topology-exact feature/spec/replay/model carriers, and explains why the mounted suite's shared-VNet DNS-host cluster + DHCP mutation + private-cluster consumer lifecycle matches the topology-exact branch more closely than the broad sibling path.",
+        "Repo-local output makes the mounted-suite lineage explicit in the narrowest truthful way, including an explicit note that path.private-cluster-byo-dns-server remains the broader observed pass surface and is not the suite-exact mounted carrier, without broad model reserialization, unrelated carrier churn, or cloud execution.",
+        "Validation records exact local commands or diffs proving the result stayed in the regular learning/model-maintenance lane only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-byo-dns-server-topology-exact"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:22:52.179Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621_20260621112252",
+        "assigned_at": "2026-06-21T11:22:52.228Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621",
+        "worker_started_attempt_id": "a_privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621_20260621112252",
+        "worker_started_at": "2026-06-21T11:22:59.782Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Attached the mounted privatelinkbyodnsserver suite explicitly to the topology-exact BYO-DNS carrier in the feature/spec files and wrote a new evidence note documenting why it aligns to path.private-cluster-byo-dns-server-topology-exact rather than the broader single-cluster pass sibling.",
+        "last_worker_completed_at": "2026-06-21T11:24:26.447Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:25:06.596Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: artifact and repo-local carrier lines show the mounted privatelinkbyodnsserver suite is now explicitly attached to the topology-exact BYO-DNS branch while preserving path.private-cluster-byo-dns-server as the broader final pass sibling, satisfying the stale-terminal hygiene concern without reopening that verdict."
+      },
+      "session_id": "s_task_privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621",
+      "session_history": [
+        "s_task_privatecluster-byo-dns-mounted-suite-lineage-clarification-20260621"
+      ],
+      "result": "Attached the mounted privatelinkbyodnsserver suite explicitly to the topology-exact BYO-DNS carrier in the feature/spec files and wrote a new evidence note documenting why it aligns to path.private-cluster-byo-dns-server-topology-exact rather than the broader single-cluster pass sibling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:25:06.596Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: artifact and repo-local carrier lines show the mounted privatelinkbyodnsserver suite is now explicitly attached to the topology-exact BYO-DNS branch while preserving path.private-cluster-byo-dns-server as the broader final pass sibling, satisfying the stale-terminal hygiene concern without reopening that verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:20:32.872Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update ignored a stale watchdog review for privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621 after confirming the leaf was already accepted with repo-local approval-dispatch proof and the only remaining external wait centralized in external-send-proof-dispatch-family-human-transport-proof-wait-20260621. The current live frontier stays intentionally narrow: privatecluster-private-endpoint-connections-lifecycle-maintained-surface-repair-20260621 remains the sole repo-local active task and must reconcile whether the final passing carrier path.private-cluster-private-endpoint-connections already truthfully covers lifecycle semantics or whether only repo-local spec/index repair is needed while preserving the separate list-only sibling. One family-level external-human-transport blocker remains valid and no branch-local approval waits should be reopened until real human send/escalation proof or authoritative replies arrive.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted shared-apiserver-subnet run-ready packet to produce or confirm the exact owner/reviewer execution-approval ask/handoff for path.private-cluster-vnet-integration-shared-apiserver-subnet, so this branch has a truthful local send step instead of a passive approval wait before any cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md and evidence/archive/privatecluster-shared-apiserver-subnet-model-wording-repair-20260621.md, restates the exact bounded replay command/gate and the approval being requested, and names the intended reviewer/owner path if one exists.",
+        "Artifact records durable local proof of the approval ask or handoff (for example linked message/event/request metadata captured within runtime) OR truthfully proves that no bounded local send/handoff path exists inside runtime, with the exact next external owner action needed before a response-wait can be truthful.",
+        "Work stays repo-local and review-lane scoped: no cloud execution, no mutation gate enablement, no reopening of source/spec/model authoring, and no broadening into adjacent private-cluster paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-integration-shared-apiserver-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:15:16.450Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T12:15:19.832Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621_20260621121522",
+        "assigned_at": "2026-06-21T12:15:22.502Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621",
+        "worker_started_attempt_id": "a_privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621_20260621121522",
+        "worker_started_at": "2026-06-21T12:15:34.349Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the private-cluster execution-approval ask/handoff artifact and captured durable repo-local approval-dispatch proof for path.private-cluster-vnet-integration-shared-apiserver-subnet, including the exact bounded replay ask, human-facing message payload, and approval-dispatch run-log row.",
+        "last_worker_completed_at": "2026-06-21T12:18:11.035Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:19:15.957Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621.md truthfully cites the accepted run-ready and wording-repair authorities, records durable repo-local approval-dispatch proof via packet-linked message.created payload capture plus .state/approval-dispatch-runs.jsonl for path.private-cluster-vnet-integration-shared-apiserver-subnet, and leaves the remaining wait centralized in external-send-proof-dispatch-family-human-transport-proof-wait-20260621 rather than as a branch-local passive approval wait."
+      },
+      "session_id": "s_task_privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621",
+      "session_history": [
+        "s_task_privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621"
+      ],
+      "result": "Produced the private-cluster execution-approval ask/handoff artifact and captured durable repo-local approval-dispatch proof for path.private-cluster-vnet-integration-shared-apiserver-subnet, including the exact bounded replay ask, human-facing message payload, and approval-dispatch run-log row.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:19:15.957Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621.md truthfully cites the accepted run-ready and wording-repair authorities, records durable repo-local approval-dispatch proof via packet-linked message.created payload capture plus .state/approval-dispatch-runs.jsonl for path.private-cluster-vnet-integration-shared-apiserver-subnet, and leaves the remaining wait centralized in external-send-proof-dispatch-family-human-transport-proof-wait-20260621 rather than as a branch-local passive approval wait."
+      },
+      "status": "done"
+    }
+  ]
+}

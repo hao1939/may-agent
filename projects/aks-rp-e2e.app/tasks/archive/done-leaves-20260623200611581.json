@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:06:11.581Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning cleanup completion: archived the final remaining safe completed repo-local reconciliation leaf under project. The tree for this wake is now reduced to only live work: one active repo-local ASM ingress-internal mounted-source reconciliation plus the two exact blocked waits (external proof family and selected-host SSH environment). This stale watchdog review event required no new review, refill, or blocker decomposition beyond preserving those truthful live leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the VirtualMachines manual-scale-policy carrier lineage so the archive, accepted model, and maintained path view truthfully represent this terminal superseded branch: either restore only the manual-scale-policy path/scenario/DAG entries that actually belong in the accepted model, or rewrite the archive/view/spec references to the exact maintained successor/historical placeholder with final posture and no retry, rerun, or reopen semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "The repair resolves the stale-terminal/superseded hygiene risk by making the accepted model and maintained path view truthfully represent path.virtualmachines.manual-scale-policy as a final superseded placeholder or historical branch with its exact successor/adjacent maintained carrier, not as a candidate for retry or fresh execution.",
+        "Every manual-scale-policy carrier id named in the new archive exists in model.json and aligns with specs/replays/path-summary; no archive claim may cite missing model IDs or leave the branch looking like an active retry candidate.",
+        "The work stays repo-local and bounded to path.virtualmachines.manual-scale-policy plus its exact mounted successor/adjacent maintained carriers only: no cloud mutation, no external-human follow-up, and no widening into unrelated VirtualMachines families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-manual-scale-policy-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:57:22.623Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623_20260623195722",
+        "assigned_at": "2026-06-23T19:57:22.830Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623_20260623195722",
+        "worker_started_at": "2026-06-23T19:57:51.129Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that the VirtualMachines manual-scale-policy branch is already truthfully repaired as a superseded historical placeholder across model, maintained view, spec, and replay surfaces, and wrote a bounded archive note documenting the exact mounted successor and verification evidence.",
+        "last_worker_completed_at": "2026-06-23T19:59:56.448Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:00:27.198Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note verifies path.virtualmachines.manual-scale-policy is represented only as a terminal superseded historical placeholder, names only carrier IDs that exist in model.json, aligns maintained path/spec/replay surfaces to path/spec.virtualmachines.mixed-sku-deallocate, and removes any retryable posture."
+      },
+      "session_id": "s_task_virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623",
+      "session_history": [
+        "s_task_virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623"
+      ],
+      "result": "Verified that the VirtualMachines manual-scale-policy branch is already truthfully repaired as a superseded historical placeholder across model, maintained view, spec, and replay surfaces, and wrote a bounded archive note documenting the exact mounted successor and verification evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:00:27.198Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note verifies path.virtualmachines.manual-scale-policy is represented only as a terminal superseded historical placeholder, names only carrier IDs that exist in model.json, aligns maintained path/spec/replay surfaces to path/spec.virtualmachines.mixed-sku-deallocate, and removes any retryable posture."
+      },
+      "status": "done"
+    }
+  ]
+}

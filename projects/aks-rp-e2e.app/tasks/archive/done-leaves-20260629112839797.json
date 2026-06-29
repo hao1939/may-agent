@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:28:39.797Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update keeps the spec-verification lane focused on 12 in-flight single-spec leaves, with no review or runnable backlog to refill. Accepted completed work now includes bootstrap-profile direct-to-cache transition, CCP Mariner V2 security-patch verification, and managed-ACR run-28368168658 reconciliation; both empty-turn reconciliation leaves were explicitly rejected as non-reviewable and replaced by repair-empty-turn-spec-review-family-20260629, which is the single live recovery carrier for the missing bootstrap and mariner-v2 review artifacts/verdicts.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.direct-to-cache-transition through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.direct-to-cache-transition",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28367956111 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Direct-to-Cache transition test: 3/4 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367956111 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:12:01.237Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:13:34.506Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629111358",
+        "assigned_at": "2026-06-29T11:13:58.796Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629111358",
+        "worker_started_at": "2026-06-29T11:13:59.607Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28367956111 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Direct-to-Cache transition test: 3/4 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367956111 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:23:34.390Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:23:39.225Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28367956111 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Direct-to-Cache transition test: 3/4 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367956111 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition"
+      ],
+      "result": "Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28367956111 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Direct-to-Cache transition test: 3/4 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367956111 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367956111/aks-rp-e2e-28367956111-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_424195/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:23:39.225Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

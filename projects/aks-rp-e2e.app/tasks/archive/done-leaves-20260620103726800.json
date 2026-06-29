@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:37:26.800Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Blocked-frontier owner review (2026-06-20T10:36Z): completed feature-knowledge synthesis for this slice is now represented on the lane rather than as separate frontier leaves. The ManagedSystem create-time initial/default pool boundary is already finalized as a terminal product-gap judgment, and the mounted-source VM prerelease coverage review narrowed the next repo-local question to row 27 Scenario_Mixed_SKU_Upgrade. The only live work in this lane is virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620, which should use mounted source plus existing repo-local spec/replay/model landing to decide whether the runner disable constitutes explicit source-backed blocked/known-risk classification or should remain a generic source-grounded draft. Keep the shared seven-file knowledge-map checkpoint wait represented only by its separate blocked carrier under evidence-feedback-and-model-update.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-source-coverage-packet-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a mounted-source-backed VirtualMachine prerelease coverage packet that maps what prerelease.go and checkin.go already cover, the referenced scenario or plan surfaces, current repo-local spec or replay linkage, and the next concrete non-cloud follow-up leaf needed for VM prerelease knowledge coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-source-coverage-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive packet cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus any directly referenced scenario or plan files actually inspected.",
+        "Packet maps the covered VirtualMachine prerelease input paths, expected behavior assertions, and existing repo-local spec/replay/model linkage or gaps without running cloud execution.",
+        "Packet ends with one concrete recommended next task-tree action for the highest-value uncovered or under-modeled prerelease slice, and any follow-up that would touch shared model/view files is left for a later evidence-feedback task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachine-prerelease-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:32:37.882Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-source-coverage-packet-20260620_20260620103237",
+        "assigned_at": "2026-06-20T10:32:37.925Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-source-coverage-packet-20260620",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-source-coverage-packet-20260620_20260620103237",
+        "worker_started_at": "2026-06-20T10:32:53.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested VirtualMachine prerelease source coverage packet at evidence/archive/virtualmachine-prerelease-source-coverage-packet-20260620.md, mapping prerelease/checkin source coverage, inspected plan files, repo-local spec/replay/model linkage, and a concrete next owner action focused on mixed-SKU upgrade blocker classification.",
+        "last_worker_completed_at": "2026-06-20T10:35:12.503Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T10:36:12.221Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/virtualmachine-prerelease-source-coverage-packet-20260620.md: the packet cites prerelease.go, checkin.go, referenced plan files, and repo-local spec/replay/model linkage; it maps covered prerelease input and expectation paths without cloud execution and ends with a concrete next action focused on mixed-SKU upgrade blocker classification."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-source-coverage-packet-20260620",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-source-coverage-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:36:12.221Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/virtualmachine-prerelease-source-coverage-packet-20260620.md: the packet cites prerelease.go, checkin.go, referenced plan files, and repo-local spec/replay/model linkage; it maps covered prerelease input and expectation paths without cloud execution and ends with a concrete next action focused on mixed-SKU upgrade blocker classification."
+      },
+      "status": "done"
+    }
+  ]
+}

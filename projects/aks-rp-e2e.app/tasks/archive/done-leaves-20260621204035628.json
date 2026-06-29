@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:40:35.629Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 planning-update: accepted the stale review wake as already reconciled, preserved the single active VM prerelease adjacent-source frontier task as the next runnable repo-local learning step, and kept the single external-human transport wait as the only truthful blocker family. Archived the four completed frontier/source leaves now that their durable meaning is already captured in project rollup context/evidence; remaining open work is one active mounted-source VM frontier packet plus one shared external send-proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-csidrivers-source-landing-split-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: land the truthful repo-local source/carrier repair for Scenario_CSI_Drivers_VMSS_Ubuntu by introducing a mounted-source-backed multi-CSI csidrivers canonical landing, demoting storage-csi-disk-driver-enable from canonical source-row ownership to a narrower runnable disk-only surface, and documenting which adjacent file/snapshot/upgrade carriers remain the homes for the broader sub-behaviors without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/csidrivers.yaml",
+        "../aks-rp-e2e/specs/storage-csi-csidrivers.json",
+        "../aks-rp-e2e/evidence/archive/storage-csi-csidrivers-source-landing-split-20260621.md"
+      ],
+      "acceptance": [
+        "Create or update a dedicated repo-local canonical source landing for Scenario_CSI_Drivers_VMSS_Ubuntu that cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/csidrivers.go and truthfully captures the joint diskCSIDriver/fileCSIDriver/snapshotController enable-disable lifecycle plus addon-validation boundary, without falsely claiming blob coverage or collapsing every downstream integration into one oversized runnable spec.",
+        "Update the repo-local storage-csi source/canonical mapping so features/storage-csi/disk-driver-enable.yaml and its current spec/replay are clearly demoted to a narrower disk-only runnable surface rather than the canonical source-row owner, and explicitly record which existing adjacent repo-local carriers keep ownership of file-driver enablement, snapshot controller, file PVC, snapshot restore, and upgrade-survival sub-behaviors.",
+        "Produce a durable evidence note listing the exact repo files changed and local validation commands run, and confirm no cloud execution, no external-human transport work, and no model edits occurred in this source-landing repair pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:29:07.961Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T20:29:12.219Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-csidrivers-source-landing-split-20260621_20260621202942",
+        "assigned_at": "2026-06-21T20:29:42.073Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-csidrivers-source-landing-split-20260621",
+        "worker_started_attempt_id": "a_storage-csi-csidrivers-source-landing-split-20260621_20260621202942",
+        "worker_started_at": "2026-06-21T20:30:09.519Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed a new mounted-source-backed canonical storage CSI csidrivers source packet/spec, demoted disk-driver-enable to a narrower disk-only runnable surface, and wrote a durable evidence note documenting the exact file changes and local validation.",
+        "last_worker_completed_at": "2026-06-21T20:32:56.875Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:33:25.861Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the storage CSI mounted-source landing after owner review: the new canonical carrier files and demotion edits exist, the evidence note cites the mounted csidrivers.go source and preserved the joint disk/file/snapshot-controller boundary plus adjacent carrier ownership, and the recorded local JSON validation succeeded with no cloud execution, external-human transport work, or model edits."
+      },
+      "session_id": "s_task_storage-csi-csidrivers-source-landing-split-20260621",
+      "session_history": [
+        "s_task_storage-csi-csidrivers-source-landing-split-20260621"
+      ],
+      "result": "Landed a new mounted-source-backed canonical storage CSI csidrivers source packet/spec, demoted disk-driver-enable to a narrower disk-only runnable surface, and wrote a durable evidence note documenting the exact file changes and local validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:33:25.861Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the storage CSI mounted-source landing after owner review: the new canonical carrier files and demotion edits exist, the evidence note cites the mounted csidrivers.go source and preserved the joint disk/file/snapshot-controller boundary plus adjacent carrier ownership, and the recorded local JSON validation succeeded with no cloud execution, external-human transport work, or model edits."
+      },
+      "status": "done"
+    }
+  ]
+}

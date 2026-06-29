@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:57:54.680Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review: accepted the mounted-source contract leaf because the new archive artifact proves the exact private-cluster none-dns-zone V3 contract is a one-cluster create(system)->update(none) lifecycle and that current repo-local feature/spec/replay carriers are already exact with no bounded wording gap left. Preserve the single external human/operator transport wait as the only true blocked sibling, and move the runnable frontier to one repo-local model-status reconciliation leaf that decides whether path.private-cluster-none-dns-zone-v3 should remain unknown or be reclassified as blocked/runtime-gated based on accepted source-contract plus existing runtime-wait evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-contract-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP private-cluster source plus current repo-local carriers to pin down the exact System→None private DNS zone V3 lifecycle contract for path.private-cluster-none-dns-zone-v3, then write a durable archive artifact that separates repo-local knowledge from the existing external-human runtime wait and names any one bounded repo-local carrier gap if the maintained wording is not yet sufficient.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md"
+      ],
+      "acceptance": [
+        "Produce the durable archive artifact at ../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md citing the mounted AKS RP source files and directly referenced scenario/spec carriers needed to explain the exact System→None private DNS zone V3 lifecycle, ordered mutations, and expected behavior for path.private-cluster-none-dns-zone-v3.",
+        "The artifact inventories the current repo-local carriers reviewed, states whether they already support tight maintained wording now, and if not names one bounded repo-local carrier gap with exact repo-local file/path context; do not run cloud mutation and do not create any new external-human/source-holder wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:55:15.447Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-contract-20260622_20260622145517",
+        "assigned_at": "2026-06-22T14:55:17.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-contract-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-contract-20260622_20260622145517",
+        "worker_started_at": "2026-06-22T14:55:39.120Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable archive artifact at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md, pinning the exact mounted System→None V3 lifecycle and explicitly concluding current repo-local carriers are already sufficient with no remaining bounded repo-local wording gap.",
+        "last_worker_completed_at": "2026-06-22T14:57:24.278Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:57:54.542Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md cites mounted e2ev3/e2ev2/private DNS zone carriers, pins the exact one-cluster system->none lifecycle, inventories repo-local feature/spec/replay/evidence carriers, and explicitly concludes there is no remaining bounded repo-local wording gap."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-contract-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-contract-20260622"
+      ],
+      "result": "Produced the requested durable archive artifact at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md, pinning the exact mounted System→None V3 lifecycle and explicitly concluding current repo-local carriers are already sufficient with no remaining bounded repo-local wording gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:57:54.542Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-contract-20260622.md cites mounted e2ev3/e2ev2/private DNS zone carriers, pins the exact one-cluster system->none lifecycle, inventories repo-local feature/spec/replay/evidence carriers, and explicitly concludes there is no remaining bounded repo-local wording gap."
+      },
+      "status": "done"
+    }
+  ]
+}

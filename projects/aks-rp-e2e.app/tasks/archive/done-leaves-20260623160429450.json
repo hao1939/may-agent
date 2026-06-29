@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:04:29.450Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Owner review 2026-06-23T16:05Z: accepted outbound-natgw-spec-index-entry-refresh-20260623 after verifying specs/index.json now cites the mounted managed_natgateway.go lineage and keeps Automatic SKU attached as execution-variant metadata in the statusReason, matching the canonical spec/model carriers without reopening execution. The blocked-frontier review still keeps external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external wait because this review is before the post-2026-06-26 follow-up trigger and no returned proof artifact is present. The branch now has one active repo-local successor, managedsystem-pool-boundary-map-20260623, to continue mounted-source-backed boundary mapping on ManagedSystem Pool while live execution remains closed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "outbound-natgw-spec-index-entry-refresh-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the existing specs/index.json entry for spec.net-integration.outbound-nat-gateway so it matches the mounted managed_natgateway.go canonical lineage plus the attached Automatic SKU checkin.go execution-variant metadata already accepted in the canonical spec/model carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/index.json"
+      ],
+      "acceptance": [
+        "The specs/index.json entry for spec.net-integration.outbound-nat-gateway cites the mounted managed_natgateway.go canonical lineage and automaticcluster checkin.go attachment lineage, replacing the stale devbox nat_gateway.go/file-carrier wording.",
+        "The refreshed index entry matches the current canonical title/statusReason already represented by specs/net-integration-outbound-nat-gateway.json and preserves Automatic SKU as attached execution metadata only, without creating a new spec/replay/path or reopening execution/external wait work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "archive-canonicalization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:02:42.590Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_outbound-natgw-spec-index-entry-refresh-20260623_20260623160242",
+        "assigned_at": "2026-06-23T16:02:42.645Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_outbound-natgw-spec-index-entry-refresh-20260623",
+        "worker_started_attempt_id": "a_outbound-natgw-spec-index-entry-refresh-20260623_20260623160242",
+        "worker_started_at": "2026-06-23T16:03:03.959Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the specs/index.json entry for spec.net-integration.outbound-nat-gateway so it now matches the canonical mounted-source lineage and attached Automatic SKU execution-variant metadata already present in the canonical spec file.",
+        "last_worker_completed_at": "2026-06-23T16:03:45.395Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:04:26.065Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: specs/index.json now points spec.net-integration.outbound-nat-gateway at the mounted managed_natgateway.go lineage and keeps Automatic SKU attached as execution-variant metadata in the statusReason, matching the canonical spec/model carriers without creating a new runnable branch or reopening execution."
+      },
+      "session_id": "s_task_outbound-natgw-spec-index-entry-refresh-20260623",
+      "session_history": [
+        "s_task_outbound-natgw-spec-index-entry-refresh-20260623"
+      ],
+      "result": "Refreshed the specs/index.json entry for spec.net-integration.outbound-nat-gateway so it now matches the canonical mounted-source lineage and attached Automatic SKU execution-variant metadata already present in the canonical spec file.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:04:26.065Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: specs/index.json now points spec.net-integration.outbound-nat-gateway at the mounted managed_natgateway.go lineage and keeps Automatic SKU attached as execution-variant metadata in the statusReason, matching the canonical spec/model carriers without creating a new runnable branch or reopening execution."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:04:32.059Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning update reconciled the stale watchdog-runnable-backlog snapshot without creating duplicate work: verify-spec-aad-rbac-nonaad-reset and verify-spec-aad-rbac-rbac-disabled-to-aadv2 are already active, verify-spec-aad-rbac-nonaad-to-aadv2-migration is already completed/rolled forward, and the spec-verification lane remains saturated with active single-spec verifier leaves so no new runnable assignments were added. The managed-v2 dispatch-500 worker claim remains treated as transient runner evidence because the task was already reactivated at 2026-06-29T09:59:10Z, and the truthful next action is to let that retry continue. Owner also rechecked the westus2 Automatic/ManagedSystem capacity warning and kept await-westus2-managedsystem-capacity-recovery-20260629 as the single exact family-level environment wait because the branch already has one consolidated blocker, no stronger repo-local setup/reroute/escalation action is evidenced, and unrelated active verifier work continues in parallel.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-aad-rbac-nonaad-to-aadv2-migration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.aad-rbac.nonaad-to-aadv2-migration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.nonaad-to-aadv2-migration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.nonaad-to-aadv2-migration workflow run 28364156662 classified as error. Loop key: verify-spec-aad-rbac-nonaad-to-aadv2-migration-a_verify-spec-aad-rbac-nonaad-to-aadv2-migr. Missing AKS_RP_E2E_AAD_ADMIN_GROUP_OID for the mounted first-migration payload. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364156662 Result: runs/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/artifacts/aad-rbac-nonaad-to-aadv2-migration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:59:15.134Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:59:38.776Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-nonaad-to-aadv2-migration_20260629100114",
+        "assigned_at": "2026-06-29T10:01:14.116Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-nonaad-to-aadv2-migration",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-nonaad-to-aadv2-migration_20260629100114",
+        "worker_started_at": "2026-06-29T10:02:47.811Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.aad-rbac.nonaad-to-aadv2-migration workflow run 28364156662 classified as error. Loop key: verify-spec-aad-rbac-nonaad-to-aadv2-migration-a_verify-spec-aad-rbac-nonaad-to-aadv2-migr. Missing AKS_RP_E2E_AAD_ADMIN_GROUP_OID for the mounted first-migration payload. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364156662 Result: runs/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/artifacts/aad-rbac-nonaad-to-aadv2-migration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:03:54.877Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:03:59.256Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.nonaad-to-aadv2-migration workflow run 28364156662 classified as error. Loop key: verify-spec-aad-rbac-nonaad-to-aadv2-migration-a_verify-spec-aad-rbac-nonaad-to-aadv2-migr. Missing AKS_RP_E2E_AAD_ADMIN_GROUP_OID for the mounted first-migration payload. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364156662 Result: runs/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/artifacts/aad-rbac-nonaad-to-aadv2-migration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-nonaad-to-aadv2-migration",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-nonaad-to-aadv2-migration"
+      ],
+      "result": "Spec spec.aad-rbac.nonaad-to-aadv2-migration workflow run 28364156662 classified as error. Loop key: verify-spec-aad-rbac-nonaad-to-aadv2-migration-a_verify-spec-aad-rbac-nonaad-to-aadv2-migr. Missing AKS_RP_E2E_AAD_ADMIN_GROUP_OID for the mounted first-migration payload. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364156662 Result: runs/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/artifacts/aad-rbac-nonaad-to-aadv2-migration/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364156662/aks-rp-e2e-28364156662-spec-test-results/test-results/single-aad-rbac-nonaad-to-aadv2-migration_316334/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:03:59.256Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

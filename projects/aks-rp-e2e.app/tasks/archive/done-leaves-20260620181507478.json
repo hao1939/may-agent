@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:15:07.478Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 stale watchdog-review-pending wake reconciled again: the cited review leaf vm-prerelease-draft-promotion-owner-linkage-repair-20260620 is already accepted and now archived into project rollup context, so no review frontier remains from the trigger. The live repo-local next step is vm-prerelease-archived-owner-output-repair-20260620, which must use the accepted owner-linkage diagnosis packet to attach archived accepted-owner outputs for the 19 unresolved VM draft-promotion files plus the shared batch note and then rerun the bounded 20-file domain:checkpoint manifest without reopening MachinesPreview or the excluded shared-model slices. focus-vm-prerelease-pipeline-replacement-20260620 continues to carry the single truthful blocked external-send family external-send-proof-dispatch-family-20260620; no duplicate waits, retries, or outbound-send claims should be created until durable human send/escalation proof or an authoritative reply is recorded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-draft-promotion-owner-linkage-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair repo-local owner linkage for the 20-file VM prerelease draft-promotion evidence subpartition identified by the accepted checkpoint packet so bounded domain:checkpoint review can attach the row 25/26/27/29/30/31/32/33/34 draft-promotion artifacts and batch note to accepted VM prerelease owners without reopening the excluded MachinesPreview blocked slice or the 7-file shared-model hold surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-draft-promotion-owner-linkage-repair-20260620.md"
+      ],
+      "acceptance": [
+        "An evidence artifact lists the exact 20-file VM evidence subpartition from evidence/archive/vm-prerelease-shared-model-checkpoint-partition-20260620.md, records the accepted owner task linkage for each row 25/26/27/29/30/31/32/33/34 draft-promotion JSON+MD pair plus the batch note, and makes clear that the 5-file MachinesPreview blocked slice and the 7-file shared-model hold carrier remain out of scope.",
+        "Repo-local metadata or evidence ownership linkage is repaired so a bounded rerun of bun run domain:checkpoint -- --json --paths-file <20-file manifest> no longer reports the same unattached-owner condition for those draft-promotion files; the artifact quotes the rerun outcome and names any exact residual file(s) still preventing a checkpointable VM-only packet.",
+        "No cloud mutation, outbound send, or blocked-wait duplication occurs; this task is strictly repo-local evidence/ownership repair and checkpointability verification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-draft-promotion-owner-linkage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:09:57.747Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-draft-promotion-owner-linkage-repair-20260620_20260620180957",
+        "assigned_at": "2026-06-20T18:09:57.795Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-draft-promotion-owner-linkage-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-draft-promotion-owner-linkage-repair-20260620_20260620180957",
+        "worker_started_at": "2026-06-20T18:10:08.394Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded owner-linkage evidence packet at evidence/archive/vm-prerelease-draft-promotion-owner-linkage-repair-20260620.md, mapping the exact 20-file VM subpartition, canonical accepted owner linkage for the unresolved draft-promotion files, and the bounded rerun outcome showing 19 files still unresolved due to archived-owner output visibility limits.",
+        "last_worker_completed_at": "2026-06-20T18:13:47.157Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:14:30.847Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejects this task as a terminal linkage repair because evidence/archive/vm-prerelease-draft-promotion-owner-linkage-repair-20260620.md proves the 20-file VM packet is correctly isolated and the truthful archived owners are known, but the bounded checkpoint rerun still leaves 19 draft-promotion files unattached due to archived accepted-owner output tooling limits. The investigation output is kept as durable diagnosis provenance and replaced by vm-prerelease-archived-owner-output-repair-20260620, the single concrete repo-local next step to add/use a supported archived-owner output repair path and rerun the same bounded checkpoint verification."
+      },
+      "session_id": "s_task_vm-prerelease-draft-promotion-owner-linkage-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-draft-promotion-owner-linkage-repair-20260620"
+      ],
+      "result": "Authored the bounded owner-linkage evidence packet at evidence/archive/vm-prerelease-draft-promotion-owner-linkage-repair-20260620.md, mapping the exact 20-file VM subpartition, canonical accepted owner linkage for the unresolved draft-promotion files, and the bounded rerun outcome showing 19 files still unresolved due to archived-owner output visibility limits.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T18:14:30.847Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejects this task as a terminal linkage repair because evidence/archive/vm-prerelease-draft-promotion-owner-linkage-repair-20260620.md proves the 20-file VM packet is correctly isolated and the truthful archived owners are known, but the bounded checkpoint rerun still leaves 19 draft-promotion files unattached due to archived accepted-owner output tooling limits. The investigation output is kept as durable diagnosis provenance and replaced by vm-prerelease-archived-owner-output-repair-20260620, the single concrete repo-local next step to add/use a supported archived-owner output repair path and rerun the same bounded checkpoint verification."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:24:11.727Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "2026-06-20 owner blocked-frontier reconciliation: the accepted row-35 linkage repair and candidate-only row-closure artifacts cleared the old seven-file checkpoint wait as a live blocker. Archive the completed row-35 repair, candidate-only closure, and superseded checkpoint-wait carrier here; the only open child in this lane is shared-knowledge-map-seven-file-post-row35-reassessment-20260620, which must now restate whether the prior checkpoint blocker text drifted from current truth and either leave a concrete checkpoint-ready follow-up or one exact remaining blocker for the helper-held/shared slice state.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one precise blocked wait carrier for the shared seven-file knowledge-map checkpoint batch, including the deferred mixed-SKU upgrade model-classification follow-up, while preserving the exact helper-clear plus sibling-slice-clear resume trigger instead of duplicate waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites the accepted seven-file checkpoint unblock-decision, slice-partition, and maintained-overlap evidence and names model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json as the current helper-held gate files.",
+        "The living resume trigger is exact: revisit only after the helper no longer holds the shared project/model gate on the seven-file batch and the named sibling slices no longer cohabit that maintained batch.",
+        "This task remains the single truthful live representation of that checkpoint wait; it does not re-route through environment/runtime burndown or spawn duplicate checkpoint blockers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:17:06.194Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T13:23:27.357Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced because the watchdog packet's row-35 dependency is now resolved and the older helper-held seven-file wait text no longer matches the next truthful owner action. The branch now needs a concrete post-row35 reassessment task instead of a misleading passive carrier."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T13:23:27.357Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced because the watchdog packet's row-35 dependency is now resolved and the older helper-held seven-file wait text no longer matches the next truthful owner action. The branch now needs a concrete post-row35 reassessment task instead of a misleading passive carrier."
+      },
+      "replaced_by": [
+        "shared-knowledge-map-seven-file-post-row35-reassessment-20260620"
+      ],
+      "supersededBy": [
+        "shared-knowledge-map-seven-file-post-row35-reassessment-20260620"
+      ],
+      "summary": "Replaced after row-35 linkage repair landed; the next truthful action is the active post-row35 shared-checkpoint reassessment task.",
+      "status": "done"
+    }
+  ]
+}

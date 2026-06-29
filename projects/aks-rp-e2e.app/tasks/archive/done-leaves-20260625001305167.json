@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T00:13:05.167Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 blocked-frontier owner review confirms the standalone blocked-frontier-follow-up-20260626 leaf is durable duplicate history only: the existing five exact blocked waits and their parent focus branch already encode the first owner follow-up window on or after 2026-06-26. Archive that replaced leaf so the live tree contains only the single blocked focus branch until returned proof arrives or the date gate actually opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "blocked-frontier-follow-up-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "If the five exact returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 remain silent on or after 2026-06-26, perform one bounded owner review that checks for authoritative replies and lands either a single follow-up/escalation proof artifact or precise per-wait unblock/replacement decisions without reopening repo-local source/spec/setup work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/blocked-frontier-follow-up-20260626.md"
+      ],
+      "acceptance": [
+        "An archive artifact records the 2026-06-26-or-later owner review timestamp, names the five covered wait leaves, and for each leaf captures either returned authoritative proof, a single bounded follow-up/escalation action with channel/owner/recipient, or an exact reason the wait remains unchanged.",
+        "The review preserves the compressed blocked family shape: no duplicate wait leaves, no reopening of repo-local packet/source/setup closure already accepted under the family, and any changed blocker state is reflected by replacing or unblocking the affected exact wait leaves rather than widening scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "blocked-frontier.external-returned-proof-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T00:03:59.490Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-25T00:04:35.282Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-25T00:06:35.296Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_blocked-frontier-follow-up-20260626",
+        "worker_started_attempt_id": "a_blocked-frontier-follow-up-20260626_20260625000635",
+        "worker_started_at": "2026-06-25T00:06:39.193Z",
+        "stale_active_requeued_at": "2026-06-25T00:08:24.526Z",
+        "stale_active_requeue_reason": "Date gate not open: this owner follow-up is explicitly for the first review on or after 2026-06-26, so keeping it active on 2026-06-25 is misleading. Requeue it until the gate opens or returned authoritative proof arrives earlier.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_blocked-frontier-follow-up-20260626_20260625000635",
+        "reviewed_at": "2026-06-25T00:08:32.453Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced as premature duplicate: the five exact blocked waits and their parent focus branch already encode the first owner follow-up window on or after 2026-06-26, so keeping a standalone backlog leaf before that date creates fake runnable work. Resume from the existing blocked family when returned proof arrives or when the date gate actually opens."
+      },
+      "session_id": "s_task_blocked-frontier-follow-up-20260626",
+      "session_history": [
+        "s_task_blocked-frontier-follow-up-20260626"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-25T00:08:32.453Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced as premature duplicate: the five exact blocked waits and their parent focus branch already encode the first owner follow-up window on or after 2026-06-26, so keeping a standalone backlog leaf before that date creates fake runnable work. Resume from the existing blocked family when returned proof arrives or when the date gate actually opens."
+      },
+      "status": "done"
+    }
+  ]
+}

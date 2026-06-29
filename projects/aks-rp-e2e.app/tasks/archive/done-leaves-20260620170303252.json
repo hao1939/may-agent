@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:03:03.253Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 blocked-frontier reconciliation removed the redundant VM prerelease path-level wait from this lane. Durable runner meaning remains in evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md and the combined rows-25-and-50 send-ready bundle, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local replay backlog for the current slice; reopen runner work only if a human records send or escalation proof for the operator bundle, an authoritative operator reply arrives, or new steering changes the replay contract.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one truthful path-level blocked carrier for the combined VM prerelease rows-25-and-50 live-operator bundle, explicitly subordinate to external-send-proof-dispatch-family-20260620 until real human send/handoff proof or an authoritative reply exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md"
+      ],
+      "acceptance": [
+        "Carrier cites evidence/archive/vm-prerelease-live-operator-handoff-proof-capture-20260620.md as the accepted proof-capture authority for the combined rows-25-and-50 live-operator bundle and preserves the shared family unless returned evidence proves the rows diverge.",
+        "The live resume trigger is exact: reopen only after a human owner/operator actually sends or escalates evidence/archive/vm-prerelease-live-operator-request-bundle-20260620.md through a real external channel and records durable repo-local send/handoff proof, or when the authoritative reply itself arrives and is linked back to the proof-capture artifact.",
+        "This leaf remains only the path-level carrier. It does not claim passive response-await truth before send/handoff proof exists, and it does not create duplicate row-specific waits because shared owner-side follow-up lives in external-send-proof-dispatch-family-20260620 unless returned evidence proves the family must split."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:45:14.167Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T17:02:54.302Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the single shared external-send blocker family external-send-proof-dispatch-family-20260620, which now carries the exact send-proof-or-authoritative-reply resume condition for the combined VM prerelease rows-25-and-50 live-operator bundle without duplicating a passive path-level wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T17:02:54.302Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the single shared external-send blocker family external-send-proof-dispatch-family-20260620, which now carries the exact send-proof-or-authoritative-reply resume condition for the combined VM prerelease rows-25-and-50 live-operator bundle without duplicating a passive path-level wait."
+      },
+      "status": "done"
+    }
+  ]
+}

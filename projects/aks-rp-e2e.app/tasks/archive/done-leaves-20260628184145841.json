@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:41:45.841Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 regular-learning owner update: archive the two completed defender-profile precursor leaves because their durable meaning now lives in the active reconciliation successor plus branch context. The live repo-local frontier stays centered on reconcile-spec-defender-profile-vm-prerelease-matrix-live-fail-into-model-20260628, which must land the persisted-request-vs-runtime interpretation or replace itself with a more exact blocker/retest condition. The other live children remain truthful external waits only: CostAnalysis underlay kubeconfig, deployment-safeguards authorized alternate ref, egress-lockdown fallback promotion, App Routing existing-cluster, and CCP connected-cluster-proxy auth.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the stalled spec.defender-profile.vm-prerelease-matrix rerun session and either recover a durable terminal verdict from existing run artifacts or produce the exact runner/runtime blocker evidence needed before any retry.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect the assigned session/run state for rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628 and record exact identifiers, timestamps, and whether any durable workflow/spec-runner artifacts exist beyond worker-start evidence.",
+        "If a terminal run artifact already exists, archive it with the exact verdict and enough evidence to let owner review accept or replace the stale rerun leaf truthfully without another blind rerun.",
+        "If the run is hung or artifactless, archive the precise local root cause or evidence ceiling (for example stale worker session, missing workflow progress, or runner/runtime fault) plus the concrete next action or replacement blocker needed before retrying the defender-profile spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:39:28.912Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628_20260628183931",
+        "assigned_at": "2026-06-28T18:39:31.074Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628",
+        "worker_started_attempt_id": "a_diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628_20260628183931",
+        "worker_started_at": "2026-06-28T18:39:55.730Z",
+        "reviewed_at": "2026-06-28T18:40:37.576Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md plus prior runner-progress diagnostics: the stale rerun session was superseded by confirmed artifact inspection showing the old run never emitted a terminal result while rerun single-defender-profile-vm-prerelease-matrix_734848 did. The exact terminal verdict is now recoverable from durable artifacts, so no separate stale-session diagnosis leaf remains live."
+      },
+      "session_id": "s_task_diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628",
+      "session_history": [
+        "s_task_diagnose-stale-defender-profile-vm-prerelease-rerun-session-20260628"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:40:37.576Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md plus prior runner-progress diagnostics: the stale rerun session was superseded by confirmed artifact inspection showing the old run never emitted a terminal result while rerun single-defender-profile-vm-prerelease-matrix_734848 did. The exact terminal verdict is now recoverable from durable artifacts, so no separate stale-session diagnosis leaf remains live."
+      },
+      "status": "done"
+    }
+  ]
+}

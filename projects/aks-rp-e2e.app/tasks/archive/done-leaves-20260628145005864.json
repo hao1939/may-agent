@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T14:50:05.864Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner refill checkpoint: runtime sessions check confirmed the active repair task has a live running session row, while the four active single-spec verifier leaves exposed by this wake do not currently have matching sessions rows and therefore remain non-credible liveness claims pending the shared repair. No new verifier leaves were assigned because the active frontier is already at maxConcurrent=5 and the next useful action is the runtime-contract repair deciding whether these leaves should be retried, requeued, or kept gated. Archived done children capture accepted replay-shape cleanup and prior verifier-diagnosis progress; open work remains the shared verifier-runtime repair, the current active verifier family under that gate, and the existing backlog once credible capacity returns.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-cluster-autoscaler-soft-taint-removal",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cluster-autoscaler.soft-taint-removal through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cluster-autoscaler.soft-taint-removal",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.soft-taint-removal"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cluster-autoscaler.soft-taint-removal",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: worker summary and top-level result artifact for GitHub run 28325621957 both show status=passed with spec.cluster-autoscaler.soft-taint-removal -> pass and counts.pass=1, satisfying the single-spec verification acceptance for this leaf."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:39:18.042Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:23:26.684Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T14:36:41.413Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cluster-autoscaler-soft-taint-removal_retry_20260628143641",
+        "worker_started_attempt_id": "a_verify-spec-cluster-autoscaler-soft-taint-removal_20260628143641",
+        "worker_started_at": "2026-06-28T14:37:26.242Z",
+        "stale_active_requeued_at": "2026-06-28T14:36:41.201Z",
+        "stale_active_requeue_reason": "watchdog stale active: session not running",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_verify-spec-cluster-autoscaler-soft-taint-removal_20260628142933",
+        "current_attempt_id": "a_verify-spec-cluster-autoscaler-soft-taint-removal_20260628143641",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.cluster-autoscaler.soft-taint-removal workflow run 28325621957 classified as pass. Loop key: verify-spec-cluster-autoscaler-soft-taint-removal-a_verify-spec-cluster-autoscaler-soft-ta. Soft taint removal passed. 2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28325621957 Result: runs/test-results/single-cluster-autoscaler-soft-taint-removal_751598/artifacts/cluster-autoscaler-soft-taint-removal/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28325621957/aks-rp-e2e-28325621957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28325621957/aks-rp-e2e-28325621957-spec-test-results/test-results/single-cluster-autoscaler-soft-taint-removal_751598/result.json",
+        "last_worker_completed_at": "2026-06-28T14:45:25.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T14:45:53.948Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: worker summary and top-level result artifact for GitHub run 28325621957 both show status=passed with spec.cluster-autoscaler.soft-taint-removal -> pass and counts.pass=1, satisfying the single-spec verification acceptance for this leaf."
+      },
+      "session_history": [
+        "s_task_verify-spec-cluster-autoscaler-soft-taint-removal",
+        "s_task_verify-spec-cluster-autoscaler-soft-taint-removal_retry_20260628142933",
+        "s_task_verify-spec-cluster-autoscaler-soft-taint-removal_retry_20260628143641"
+      ],
+      "session_id": "s_task_verify-spec-cluster-autoscaler-soft-taint-removal_retry_20260628143641",
+      "result": "Spec spec.cluster-autoscaler.soft-taint-removal workflow run 28325621957 classified as pass. Loop key: verify-spec-cluster-autoscaler-soft-taint-removal-a_verify-spec-cluster-autoscaler-soft-ta. Soft taint removal passed. 2 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28325621957 Result: runs/test-results/single-cluster-autoscaler-soft-taint-removal_751598/artifacts/cluster-autoscaler-soft-taint-removal/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28325621957/aks-rp-e2e-28325621957-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28325621957/aks-rp-e2e-28325621957-spec-test-results/test-results/single-cluster-autoscaler-soft-taint-removal_751598/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:45:53.948Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the vm-prerelease overscale-node-stability replay/spec packet so it preserves the modeled exact row-47 carrier before any retry: VirtualMachines, VMsAgentPoolAutoscalePreview, Kubernetes 1.33, and effective systempool autoscaling envelope 2/4/2.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-overscale-node-stability.ts",
+        "../aks-rp-e2e/features/cluster-autoscaler/specs/cluster-autoscaler-vm-prerelease-overscale-node-stability.json"
+      ],
+      "acceptance": [
+        "The repaired replay/spec packet cites the exact row-47 carrier and removes the current min=1/max=3 drift identified in evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md.",
+        "The task leaves a bounded review note or code/spec diff path showing where VirtualMachines, preview gate, and the effective 2/4/2 autoscaling envelope are preserved for the next rerun.",
+        "If the mounted/source-equivalent artifacts show the maintained row-47 packet is wrong, the task records that exact contradiction instead of forcing a code change."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-overscale-node-stability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:40:11.404Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape_20260628144011",
+        "assigned_at": "2026-06-28T14:40:11.459Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape",
+        "worker_started_attempt_id": "a_repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape_20260628144011",
+        "worker_started_at": "2026-06-28T14:40:19.986Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-47 VM prerelease overscale replay to preserve VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + effective 2/4/2 at cluster-create time, added clusterShapeKey to the spec, and wrote an owner-ready repair note under evidence/archive.",
+        "last_worker_completed_at": "2026-06-28T14:42:39.832Z",
+        "last_worker_evidence": [
+          "features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-overscale-node-stability.ts",
+          "features/cluster-autoscaler/specs/cluster-autoscaler-vm-prerelease-overscale-node-stability.json",
+          "evidence/archive/repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T14:44:09.651Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted review: the repaired probe now preserves the exact row-47 carrier in code and spec evidence (VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + effective systempool 2/4/2), and the repair note explicitly bounds the next step to a future rerun rather than overclaiming execution."
+      },
+      "session_id": "s_task_repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape",
+      "session_history": [
+        "s_task_repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape"
+      ],
+      "result": "Repaired the row-47 VM prerelease overscale replay to preserve VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + effective 2/4/2 at cluster-create time, added clusterShapeKey to the spec, and wrote an owner-ready repair note under evidence/archive.",
+      "evidence": [
+        "features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-overscale-node-stability.ts",
+        "features/cluster-autoscaler/specs/cluster-autoscaler-vm-prerelease-overscale-node-stability.json",
+        "evidence/archive/repair-spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-replay-shape-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:44:09.651Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted review: the repaired probe now preserves the exact row-47 carrier in code and spec evidence (VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + effective systempool 2/4/2), and the repair note explicitly bounds the next step to a future rerun rather than overclaiming execution."
+      },
+      "status": "done"
+    }
+  ]
+}

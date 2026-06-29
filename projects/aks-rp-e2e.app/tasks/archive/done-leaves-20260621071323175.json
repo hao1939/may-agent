@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:13:23.175Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update accepted evidence/archive/live-idle-metric-false-positive-diagnosis-20260621.md: the live-idle breach was a narrow false positive from a sequenced row-63 rerun being treated as runnable without a machine-readable dependency edge, not a reason to widen cloud work or reopen unrelated branches. The truthful frontier remains unchanged: keep addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621 as the sole active row-63 follow-up, keep external-send-proof-dispatch-family-20260620 as the single external-human wait, and defer any broader metric-helper hardening unless a new execution leaf needs the same dependency truth encoded again.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "live-idle-metric-false-positive-diagnosis-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the false-positive aks-rp-e2e.run.live-idle-with-runnable-work breach against the current row-63 frontier by capturing the exact task-tree state, identifying whether the metric is counting a conflict-gated waiting leaf as runnable or lagging recent requeue state, and recording the narrowest truthful repair path without changing the bounded addonv2 execution plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/live-idle-metric-false-positive-diagnosis-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the triggering metric breach plus current task-tree packet/frontier evidence showing no runnable leaves, one active row-63 source-boundary note, one conflict-gated waiting rerun, and the unchanged external-send family blocker.",
+        "Artifact identifies the smallest truthful cause class for the breach (for example metric lag, stale frontier snapshot, or waiting-leaf misclassification) and names the exact evidence that supports that diagnosis rather than restating generic planner suspicion.",
+        "Artifact recommends the narrowest next repair action or owner escalation for the metric/tooling issue while preserving the live row-63 execution decomposition and without inventing unrelated cloud-mutation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "project-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:08:25.241Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_live-idle-metric-false-positive-diagnosis-20260621_20260621070829",
+        "assigned_at": "2026-06-21T07:08:29.066Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_live-idle-metric-false-positive-diagnosis-20260621",
+        "worker_started_attempt_id": "a_live-idle-metric-false-positive-diagnosis-20260621_20260621070829",
+        "worker_started_at": "2026-06-21T07:08:43.283Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the false-positive live-idle metric and wrote a durable evidence note showing the breach is caused by a conflict-gated backlog rerun being misclassified as runnable because it lacks a machine-readable depends_on edge.",
+        "last_worker_completed_at": "2026-06-21T07:09:59.345Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:10:48.380Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/live-idle-metric-false-positive-diagnosis-20260621.md narrowly explains the earlier live-idle breach as a historical waiting-leaf misclassification caused by missing machine-readable gating on the row-63 rerun, while the current packet already shows no runnable backlog, one active rerun frontier, and the unchanged truthful external-send family wait. No refill or blocker rewrite is warranted from this wake."
+      },
+      "session_id": "s_task_live-idle-metric-false-positive-diagnosis-20260621",
+      "session_history": [
+        "s_task_live-idle-metric-false-positive-diagnosis-20260621"
+      ],
+      "result": "Diagnosed the false-positive live-idle metric and wrote a durable evidence note showing the breach is caused by a conflict-gated backlog rerun being misclassified as runnable because it lacks a machine-readable depends_on edge.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:10:48.380Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/live-idle-metric-false-positive-diagnosis-20260621.md narrowly explains the earlier live-idle breach as a historical waiting-leaf misclassification caused by missing machine-readable gating on the row-63 rerun, while the current packet already shows no runnable backlog, one active rerun frontier, and the unchanged truthful external-send family wait. No refill or blocker rewrite is warranted from this wake."
+      },
+      "status": "done"
+    }
+  ]
+}

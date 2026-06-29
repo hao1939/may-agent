@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:49:30.285Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner review (2026-06-20T09:50Z): accepted the row60 HTTPApplicationRouting spec/replay authoring output because its archive note lands the dedicated repo-local feature/spec/replay slice with exact mounted addon anchors and updates the VM prerelease coverage ledger without cloud execution. Also accepted the row63 addonv2 Azure Monitor metrics mounted-source-equivalent audit as a truthful narrowing step: it improves the request-shape candidate to azureMonitorProfile.metrics.enabled using mounted matrix/addon/API/runtime-adjacent anchors, but intentionally leaves one exact verdict-bearing runtime fact unresolved. The live feature-spec frontier is now a single active row63 e2ev3 verdict-trace leaf aimed at prerelease.go/checkin.go and directly referenced scenario definitions so the remaining runtime contract is either recovered from mounted sources or preserved as one exact external clarification gap, with no duplicate blocker spawn and no new cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the dedicated repo-local row-60 VM prerelease spec/replay slice from mounted addon source so Scenario_Addon is represented as its own contract instead of generic addon-umbrella missing-spec prose.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites exact mounted anchors from /app/sources/aks-rp/test/e2e/suites/addon/main.go, const.go, and suggestion.go and explains the row-60 contract: create Azure CNI + SLB cluster with no addons, validate CoreDNS/CPA scaling through scale-up, then disable httpApplicationRouting.",
+        "The task lands one dedicated repo-local spec JSON plus replay TS for row 60, updates the VM prerelease coverage ledger or adjacent feature linkage so row 60 no longer depends only on packet prose, and names the exact repo files changed.",
+        "No cloud execution is introduced; this is mounted-source-backed spec/replay authoring only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:virtualmachine-prerelease-row60-addon-disable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:38:41.771Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620_20260620093841",
+        "assigned_at": "2026-06-20T09:38:41.822Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620_20260620093841",
+        "worker_started_at": "2026-06-20T09:38:51.660Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a dedicated row-60 source-grounded spec/replay slice for Scenario_Addon, wired it into specs/index.json, and updated the VM prerelease coverage ledger/planner selector so row 60 is now represented by an exact repo-local carrier instead of generic addon-umbrella prose. Verified the new replay in check mode with mounted-source assertions only; no cloud execution was introduced.",
+        "last_worker_completed_at": "2026-06-20T09:47:34.459Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:48:46.579Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence cites the exact mounted addon source anchors, names the landed spec/replay plus coverage ledger updates, and records local check-only verification so row 60 now has a dedicated repo-local carrier instead of generic addon-umbrella prose."
+      },
+      "session_id": "s_task_vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row60-httpapplicationrouting-spec-replay-authoring-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:48:46.579Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence cites the exact mounted addon source anchors, names the landed spec/replay plus coverage ledger updates, and records local check-only verification so row 60 now has a dedicated repo-local carrier instead of generic addon-umbrella prose."
+      },
+      "status": "done"
+    }
+  ]
+}

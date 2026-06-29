@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T23:41:15.880Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-27 metric-breach refill pass preserves the active App Routing spec retry as the only in-flight worker leaf while preventing the frontier from collapsing again: the repaired feature-reference queue already produced accepted bounded packets for net-integration.cross-subscription-vnet and net-integration.custom-route-table-user-assigned-msi, so archive those completed children and keep one concrete successor queued at collect-feature-reference-net-integration-ipmasq-dualstack-20260627. This lane is the truthful refill buffer behind the current spec retry: do not reopen duplicate archived collectors, but if worker capacity frees before any higher-priority review appears, resume feature-reference collection from the repaired reseed slice starting with ipmasq-dualstack.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-net-integration-cross-subscription-vnet-20260627",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect the bounded official-reference/evidence packet for path.net-integration.cross-subscription-vnet using repo-local feature packets, public AKS/API references, and mounted source where needed, then archive a truthful capability note that explains the current environment-blocked verdict and exact evidence basis without reopening any archived duplicate collector work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260627.md"
+      ],
+      "acceptance": [
+        "Archive bounded evidence that maps the feature path to current official/public/source-equivalent references and explains whether cross-subscription VNet remains a live capability, an environment-blocked path, or a different terminal surface.",
+        "Cite the specific repo-local feature/model location that this collector updates or validates, and distinguish any historical archived collector evidence from the new repaired-queue collector so the lane stays truthful after the state repair.",
+        "If the path is already terminal or environment-blocked, record the exact source/reference basis and any retest condition instead of inventing new live-run follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-cross-subscription-vnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T23:30:45.988Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-cross-subscription-vnet-20260627_20260627233400",
+        "assigned_at": "2026-06-27T23:34:00.512Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-cross-subscription-vnet-20260627",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-cross-subscription-vnet-20260627_20260627233400",
+        "worker_started_at": "2026-06-27T23:34:02.651Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a new bounded reference packet at evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260627.md that validates the existing environment-blocked verdict for path.net-integration.cross-subscription-vnet using mounted source, repo-local packet/spec/probe, and accepted model/view surfaces.",
+        "last_worker_completed_at": "2026-06-27T23:36:16.266Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T23:36:45.209Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence packet truthfully validates the existing environment-blocked verdict for path.net-integration.cross-subscription-vnet with mounted handwritten source, swagger input shape, repo-local packet/spec/probe, and explicit distinction that older referenced run artifacts were not re-opened because they are absent on disk."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-cross-subscription-vnet-20260627",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-cross-subscription-vnet-20260627"
+      ],
+      "result": "Archived a new bounded reference packet at evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260627.md that validates the existing environment-blocked verdict for path.net-integration.cross-subscription-vnet using mounted source, repo-local packet/spec/probe, and accepted model/view surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T23:36:45.209Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence packet truthfully validates the existing environment-blocked verdict for path.net-integration.cross-subscription-vnet with mounted handwritten source, swagger input shape, repo-local packet/spec/probe, and explicit distinction that older referenced run artifacts were not re-opened because they are absent on disk."
+      },
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect the bounded official-reference/evidence packet for path.net-integration.custom-route-table-user-assigned-msi using repo-local feature packets, public AKS/API references, and mounted source where needed, then archive a truthful capability note that explains the current capability verdict and exact evidence basis without reopening archived duplicate collector work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627.md"
+      ],
+      "acceptance": [
+        "Archive bounded evidence that maps the feature path to current official/public/source-equivalent references and explains the current capability verdict for custom route table + user-assigned MSI.",
+        "Cite the specific repo-local feature/model location that this collector updates or validates, and distinguish any historical archived collector evidence from the new repaired-queue collector so the lane stays truthful after the state repair.",
+        "If the path is terminal or blocked by environment/product constraints, record the exact source/reference basis and retest condition instead of inventing new live-run follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-custom-route-table-user-assigned-msi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T23:35:09.003Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627_20260627233618",
+        "assigned_at": "2026-06-27T23:36:18.474Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627_20260627233618",
+        "worker_started_at": "2026-06-27T23:36:19.769Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a new bounded feature-reference note at evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627.md, grounding the path’s current draft verdict in mounted source, packet/spec/model state, swagger mirrors, and dry-run evidence without reopening missing historical artifacts.",
+        "last_worker_completed_at": "2026-06-27T23:38:09.243Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T23:38:45.447Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived note cites the exact packet/spec/probe/model locations, mounted handwritten source plus matrix/swaggger evidence, and keeps path.net-integration.custom-route-table-user-assigned-msi as a source-grounded draft with an explicit no-live-verdict retest boundary."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627"
+      ],
+      "result": "Archived a new bounded feature-reference note at evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260627.md, grounding the path’s current draft verdict in mounted source, packet/spec/model state, swagger mirrors, and dry-run evidence without reopening missing historical artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T23:38:45.447Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived note cites the exact packet/spec/probe/model locations, mounted handwritten source plus matrix/swaggger evidence, and keeps path.net-integration.custom-route-table-user-assigned-msi as a source-grounded draft with an explicit no-live-verdict retest boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

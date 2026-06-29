@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:41:44.920Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 stale-active hygiene review closes the misleading nonaad→aadv2 same-session requeue and records the truthful replacement: retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629 is now archived as replaced because its 2026-06-29T11:39Z requeue reused the old session, while retry-spec-aad-rbac-nonaad-to-aadv2-migration-fresh-session-retry-20260629 has a new attempt/session with worker_started_at=2026-06-29T11:40:19Z and remains the only valid fresh retry for that spec. Keep reconcile-spec-ccp-security-patch-ubuntu2204-prod-mtc-single-spec-nonlive-verdict-20260629 active as repo-local truth repair only; do not treat run 28368973170 as a pass. Controller pulse has created verify-spec-ccp-security-patch-windows2022-prod-mtc as backlog, but with workflowProgress still showing running=9 above targetRunning=5 the truthful next owner action is to let active verifiers drain and not assign more work from this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-run and review spec.aad-rbac.nonaad-to-aadv2-migration through the single-spec workflow after the stale-active oversubscription diagnosis records a fresh retry decision and supersedes the stalled 2026-06-29 active session.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "A fresh single-spec workflow attempt is launched only after the prior stale-active attempt has been explicitly superseded by the oversubscription diagnosis or equivalent owner review.",
+        "Workflow result artifacts are reviewed and the spec is classified pass, fail, or blocker with explicit note on whether migration assertions were reached.",
+        "If cluster create fails again, the evidence distinguishes same-lane staging create health from spec-local carrier/product behavior."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:19:29.736Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:19:38.722Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-29T11:39:14.750Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629",
+        "worker_started_attempt_id": "a_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629_20260629113914",
+        "worker_started_at": "2026-06-29T11:39:16.052Z",
+        "stale_active_requeued_at": "2026-06-29T11:37:37.745Z",
+        "stale_active_requeue_reason": "metric-alert stale-active-with-gaps triage: active retry leaf session has >10m stale activity",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629_20260629112018",
+        "current_attempt_id": "a_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629_20260629113914",
+        "reviewed_at": "2026-06-29T11:39:53.042Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after watchdog stale-active review found the 2026-06-29T11:39Z requeue reused the same session_id/session_history with stale_active_fresh_session=false and produced no new result evidence, so keeping this leaf active would misrepresent a fresh retry."
+      },
+      "session_id": "s_task_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629",
+      "session_history": [
+        "s_task_retry-spec-aad-rbac-nonaad-to-aadv2-migration-after-stale-active-diagnosis-20260629"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T11:39:53.042Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after watchdog stale-active review found the 2026-06-29T11:39Z requeue reused the same session_id/session_history with stale_active_fresh_session=false and produced no new result evidence, so keeping this leaf active would misrepresent a fresh retry."
+      },
+      "status": "done"
+    }
+  ]
+}

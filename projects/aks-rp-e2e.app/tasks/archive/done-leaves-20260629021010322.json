@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T02:10:10.322Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed owner review accepts the repo-local packet-promotion landing notes under this lane and archives their completed children. The workload-autoscaler VPA profile-state packet and workload-identity public-api-create promotion pair now have durable landing carriers/evidence, while the only live spec-loop blocker remains the shared westus2 cluster-count preflight family recovery wait pending same-surface recovery proof, a durably proven alternate endpoint, or authoritative reroute/decline.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Own the single-file features/workload-autoscaler/packets/vpa-profile-state.yaml packet promotion so the accepted citation-boundary repair has an exact repo-local landing carrier, while leaving any future normalized model/view narrowing as separate follow-up work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629.md"
+      ],
+      "acceptance": [
+        "Archive note cites features/workload-autoscaler/packets/vpa-profile-state.yaml as the exact landing slice and links the accepted 2026-06-28 packet-promotion evidence.",
+        "Archive note states the truthful checkpoint disposition for this one-file packet slice and explicitly keeps any later model/view narrowing out of scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-workload-autoscaler-vpa-profile-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T02:07:05.027Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629_20260629020705",
+        "assigned_at": "2026-06-29T02:07:05.181Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629",
+        "worker_started_attempt_id": "a_workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629_20260629020705",
+        "worker_started_at": "2026-06-29T02:07:28.552Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable archive note `evidence/archive/workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629.md` to own the exact single-file landing slice for `features/workload-autoscaler/packets/vpa-profile-state.yaml`, linking the accepted 2026-06-28 packet-promotion evidence and explicitly keeping later model/view narrowing out of scope.",
+        "last_worker_completed_at": "2026-06-29T02:08:16.828Z",
+        "last_worker_evidence": [
+          "evidence/archive/workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T02:08:55.665Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the archive note explicitly names features/workload-autoscaler/packets/vpa-profile-state.yaml as the exact single-file landing slice, links the accepted 2026-06-28 packet-promotion evidence, records the truthful keep-and-land checkpoint disposition, and keeps later model/view narrowing out of scope."
+      },
+      "session_id": "s_task_workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629",
+      "session_history": [
+        "s_task_workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629"
+      ],
+      "result": "Created the durable archive note `evidence/archive/workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629.md` to own the exact single-file landing slice for `features/workload-autoscaler/packets/vpa-profile-state.yaml`, linking the accepted 2026-06-28 packet-promotion evidence and explicitly keeping later model/view narrowing out of scope.",
+      "evidence": [
+        "evidence/archive/workload-autoscaler-vpa-profile-state-packet-promotion-landing-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T02:08:55.665Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the archive note explicitly names features/workload-autoscaler/packets/vpa-profile-state.yaml as the exact single-file landing slice, links the accepted 2026-06-28 packet-promotion evidence, records the truthful keep-and-land checkpoint disposition, and keeps later model/view narrowing out of scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "workload-identity-public-api-create-packet-promotion-landing-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Own the two-file workload-identity public-contract promotion pair in features/workload-identity.yaml and features/workload-identity/packets/public-api-create.yaml so the accepted packet/model wording repair has a truthful repo-local landing carrier without reopening sibling negative-path semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/workload-identity-public-api-create-packet-promotion-landing-20260629.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact two-file workload-identity slice and links the accepted 2026-06-28 packet/model promotion evidence.",
+        "Archive note states the truthful landing/checkpoint disposition for this pair while keeping sibling negative-path semantics out of scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-workload-identity-public-api-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T02:07:05.078Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_workload-identity-public-api-create-packet-promotion-landing-20260629_20260629020705",
+        "assigned_at": "2026-06-29T02:07:05.232Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_workload-identity-public-api-create-packet-promotion-landing-20260629",
+        "worker_started_attempt_id": "a_workload-identity-public-api-create-packet-promotion-landing-20260629_20260629020705",
+        "worker_started_at": "2026-06-29T02:07:28.516Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive landing note at evidence/archive/workload-identity-public-api-create-packet-promotion-landing-20260629.md, tying the exact two-file workload-identity slice to the accepted 2026-06-28 promotion evidence and recording the truthful keep-together checkpoint disposition without reopening sibling negative-path semantics.",
+        "last_worker_completed_at": "2026-06-29T02:08:30.808Z",
+        "last_worker_evidence": [
+          "evidence/archive/workload-identity-public-api-create-packet-promotion-landing-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T02:09:19.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the landing note keeps features/workload-identity.yaml plus features/workload-identity/packets/public-api-create.yaml as the exact two-file promotion pair, links the accepted 2026-06-28 evidence, and preserves the boundary that sibling negative-path semantics stay out of scope."
+      },
+      "session_id": "s_task_workload-identity-public-api-create-packet-promotion-landing-20260629",
+      "session_history": [
+        "s_task_workload-identity-public-api-create-packet-promotion-landing-20260629"
+      ],
+      "result": "Wrote the requested archive landing note at evidence/archive/workload-identity-public-api-create-packet-promotion-landing-20260629.md, tying the exact two-file workload-identity slice to the accepted 2026-06-28 promotion evidence and recording the truthful keep-together checkpoint disposition without reopening sibling negative-path semantics.",
+      "evidence": [
+        "evidence/archive/workload-identity-public-api-create-packet-promotion-landing-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T02:09:19.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the landing note keeps features/workload-identity.yaml plus features/workload-identity/packets/public-api-create.yaml as the exact two-file promotion pair, links the accepted 2026-06-28 evidence, and preserves the boundary that sibling negative-path semantics stay out of scope."
+      },
+      "status": "done"
+    }
+  ]
+}

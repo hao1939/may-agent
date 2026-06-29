@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:53:13.606Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after watchdog review: the row33 duplicate-archive provenance review is accepted as closed provenance maintenance; the row30 mixed-sku-deallocate ownership-linkage audit plus archived-output metadata repair are accepted as closed app-workspace maintenance for their exact replay/spec pair; and the rows31-32 auto-zone family review is accepted as the bounded family-level evidence baseline for the exact single-sku and mixed-sku auto-zone replay/spec quartet. Open work is now intentionally reduced to two items only: one active bounded ownership-linkage audit for the auto-zone quartet to determine truthful archived-task ownership and apply any smallest supported metadata repair, and one family-level blocked external-human send-proof ceiling that remains the sole live carrier for outbound transport/runtime limits across the send-ready MachinesPreview and VM prerelease packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from evidence/archive/vmpr-rows27-29-30-mixed-sku-family-review-20260621.md, do one bounded app-workspace ownership-linkage audit for replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json to determine which accepted archived row-30 task, if any, is intended to own the exact pair; if a supported owner exists, apply the smallest supported archived-output metadata repair and rerun bounded domain:checkpoint on the exact pair, otherwise capture the exact absence evidence and the owner decision still required. Do not edit replay/spec/model contents, commit, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-rows27-29-30-mixed-sku-family-review-20260621.md, the exact row-30 replay/spec pair, and the bounded archive/task-tree evidence showing which accepted row-30 task(s) could own the pair.",
+        "If a supported metadata repair is possible, archive note records the exact repair command plus bounded post-repair domain:checkpoint output for the exact pair; if not, it records the exact absence evidence and the precise owner decision still required.",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:42:34.027Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621_20260621054552",
+        "assigned_at": "2026-06-21T05:45:52.646Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621",
+        "worker_started_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621_20260621054552",
+        "worker_started_at": "2026-06-21T05:45:53.445Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded row-30 ownership-linkage audit and wrote evidence/archive/vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621.md, identifying the smallest truthful archived owner for the exact replay/spec pair and the exact supported metadata-repair command the owner must authorize.",
+        "last_worker_completed_at": "2026-06-21T05:46:56.111Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:47:31.793Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the audit note truthfully identifies virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json as the smallest exact accepted owner for replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json, and it records the supported set-archived-outputs repair plus bounded checkpoint evidence showing the pair still lacks helper-visible ownership."
+      },
+      "session_id": "s_task_vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621",
+      "session_history": [
+        "s_task_vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621"
+      ],
+      "result": "Completed the bounded row-30 ownership-linkage audit and wrote evidence/archive/vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621.md, identifying the smallest truthful archived owner for the exact replay/spec pair and the exact supported metadata-repair command the owner must authorize.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:47:31.793Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the audit note truthfully identifies virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json as the smallest exact accepted owner for replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json, and it records the supported set-archived-outputs repair plus bounded checkpoint evidence showing the pair still lacks helper-visible ownership."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T23:24:12.866Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the private-cluster public FQDN toggle family as a completed checkpoint-safe slice. The bounded output-linkage repair proved the canonical check JSON is now owned by accepted task private-cluster-public-fqdn-toggle-replay-validation-evidence-20260620, and fresh domain:checkpoint reruns show the full six-file private-cluster public-FQDN-toggle neighborhood resolves to candidate/checkpoint-safe ownership without reopening adjacent families. Keep external-send-proof-dispatch-family-20260620 as the only live external-human wait, and keep private-cluster-mounted-source-next-gap-20260620 as the sole active regular-learning refill to inspect the next mounted-source private-cluster gap outside the completed public-FQDN-toggle slice.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "focus-private-cluster-public-fqdn-toggle-family-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the bounded private-cluster public FQDN toggle family to a fully explained checkpoint-safe artifact set, preserving the already accepted five-file packet and repairing any remaining ownership/linkage gap without mixing adjacent private-cluster churn or the external-send family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-public-fqdn-toggle-family-summary-20260620.md"
+      ],
+      "acceptance": [
+        "Branch records the accepted five-file checkpoint-safe packet for private-cluster public FQDN toggle, names any remaining excluded artifacts and why they are excluded, and leaves at most one bounded next repair for this family.",
+        "Branch does not absorb addonv2, byo-dns topology, dns-zone, model/view churn, or external-send wait state into this family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "domain-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T23:17:05.976Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T23:23:27.551Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "result": "Child review pending: private-cluster-public-fqdn-toggle-check-linkage-reconcile-20260620.",
+      "context": {
+        "rollup_summary": "2026-06-20 owner hygiene pass confirms the private-cluster public FQDN toggle checkpoint-safe family is fully closed. evidence/archive/domain-first-checkpoint-safe-slice-land-20260620.md established the truthful five-file checkpoint-safe packet and excluded the nearby non-canonical check JSON; evidence/archive/private-cluster-public-fqdn-toggle-output-linkage-repair-20260620.md then repaired the remaining accepted-task output ownership so the canonical check JSON stays attached to private-cluster-public-fqdn-toggle-replay-validation-evidence-20260620, and fresh domain/checkpoint reruns already recorded in that repair artifact left no remaining repo-local follow-up unless checkpoint-helper evidence regresses.",
+        "archived_done_leaf_count": 2,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620232327550.json",
+            "archived": 1,
+            "at": "2026-06-20T23:23:27.551Z",
+            "summary": "2026-06-20 owner hygiene pass confirms the private-cluster public FQDN toggle checkpoint-safe family is fully closed. evidence/archive/domain-first-checkpoint-safe-slice-land-20260620.md established the truthful five-file checkpoint-safe packet and excluded the nearby non-canonical check JSON; evidence/archive/private-cluster-public-fqdn-toggle-output-linkage-repair-20260620.md then repaired the remaining accepted-task output ownership so the canonical check JSON stays attached to private-cluster-public-fqdn-toggle-replay-validation-evidence-20260620, and fresh domain/checkpoint reruns already recorded in that repair artifact left no remaining repo-local follow-up unless checkpoint-helper evidence regresses.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "private-cluster-public-fqdn-toggle-output-linkage-repair-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620232152365.json",
+            "archived": 1,
+            "at": "2026-06-20T23:21:52.366Z",
+            "summary": "2026-06-20 owner review closed the bounded private-cluster public FQDN toggle checkpoint-safety family. evidence/archive/domain-first-checkpoint-safe-slice-land-20260620.md established the truthful five-file checkpoint-safe packet and the nearby excluded check JSON; evidence/archive/private-cluster-public-fqdn-toggle-output-linkage-repair-20260620.md then repaired the archived accepted-task outputs so the canonical check JSON is now owned by private-cluster-public-fqdn-toggle-replay-validation-evidence-20260620, and fresh domain:checkpoint reruns for the single JSON file plus the six-file neighborhood now both resolve as candidate/checkpoint-safe. No additional repo-local follow-up remains for this family unless new checkpoint-helper evidence regresses this slice.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "private-cluster-public-fqdn-toggle-check-linkage-reconcile-20260620"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

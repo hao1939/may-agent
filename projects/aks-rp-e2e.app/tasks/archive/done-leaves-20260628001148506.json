@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T00:11:48.506Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 blocked-frontier review accepted the App Routing default-domain readiness contract-alignment note as the third completed bounded reference in this slice. The feature-reference branch now preserves three durable conclusions: the official public/default-domain readback contract centers on ingressProfile.webAppRouting.defaultDomain, domainName is the generated/stable default-domain witness, and using dnsZoneResourceIds as the configured/readiness proof is only a weaker adjacent local shortcut. The next useful work moves to spec/probe repair under the spec-verification loop: switch the public-api-default-domain-enable readiness assertion to defaultDomain.enabled plus non-empty domainName, while leaving request-syntax claims at the existing documentation ceiling until stronger first-party command evidence exists.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect a bounded official-reference packet for the App Routing default-domain hello-world contract adjacent to the current default-domain reference slice, using Microsoft Learn, mounted swagger/schema comments, and any mounted RP/e2ev3 source that clarifies the expected hello-world deployment/readiness/TLS behavior behind path.app-routing.default-domain-istio.hello-world.gated-unknown.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628.md"
+      ],
+      "acceptance": [
+        "The packet cites exact official and/or mounted source-equivalent references for the hello-world default-domain scenario inputs and expected behavior.",
+        "The packet states the documentation/spec/source ceiling when the public references stop short of proving runtime behavior.",
+        "The packet names how the cited contract should inform the capability-model boundary for path.app-routing.default-domain-istio.hello-world.gated-unknown without requiring a cloud run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing-default-domain-hello-world-doc-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:07:06.303Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628_20260628000745",
+        "assigned_at": "2026-06-28T00:07:45.866Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628_20260628000745",
+        "worker_started_at": "2026-06-28T00:07:47.892Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected the bounded official/source reference packet for the App Routing default-domain Istio hello-world contract and wrote it to evidence/archive/feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628.md. The packet distinguishes the official public shell from mounted handwritten-source-only hello-world/TLS mechanics and states the documentation ceiling plus capability-model implications for path.app-routing.default-domain-istio.hello-world.gated-unknown.",
+        "last_worker_completed_at": "2026-06-28T00:09:36.824Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:10:16.304Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628.md cites exact mounted model comments, validation code, and handwritten e2ev3 scenario/step sources; it clearly separates the public-doc shell from source-only hello-world/TLS mechanics, states the documentation/spec ceiling, and records the capability-model implication that the Istio hello-world path stays gated behind DefaultDomainCertificate -> default-domain-tls without requiring a cloud run."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628"
+      ],
+      "result": "Collected the bounded official/source reference packet for the App Routing default-domain Istio hello-world contract and wrote it to evidence/archive/feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628.md. The packet distinguishes the official public shell from mounted handwritten-source-only hello-world/TLS mechanics and states the documentation ceiling plus capability-model implications for path.app-routing.default-domain-istio.hello-world.gated-unknown.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:10:16.304Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/feature-reference-app-routing-default-domain-hello-world-doc-contract-20260628.md cites exact mounted model comments, validation code, and handwritten e2ev3 scenario/step sources; it clearly separates the public-doc shell from source-only hello-world/TLS mechanics, states the documentation/spec ceiling, and records the capability-model implication that the Istio hello-world path stays gated behind DefaultDomainCertificate -> default-domain-tls without requiring a cloud run."
+      },
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect a bounded official-reference packet for the adjacent app-routing public API surface that the local default-domain enable probe currently treats as readiness evidence: ingressProfile.webAppRouting.dnsZoneResourceIds. Use inspectable mounted schema/model comments, mounted RP validation/tests or handwritten source when available, and local spec/probe anchors to record whether dnsZoneResourceIds is a documented user input, readback surface, or merely a local implementation detail for App Routing default-domain workflows.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a repo-local note under evidence/archive/feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628.md with exact citations for the public/API status of ingressProfile.webAppRouting.dnsZoneResourceIds in the App Routing default-domain feature family.",
+        "The note distinguishes whether dnsZoneResourceIds is caller input, readback-only, both, or outside the official default-domain contract, and it explicitly compares that result to the current local probe assertion instead of guessing.",
+        "No cloud execution is performed; all claims are backed by inspectable source/schema/doc anchors and any documentation ceiling is preserved."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing-public-api-default-domain-dnszoneresourceids-surface"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:05:39.849Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628_20260628000539",
+        "assigned_at": "2026-06-28T00:05:39.898Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628_20260628000539",
+        "worker_started_at": "2026-06-28T00:05:55.116Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested bounded reference note at evidence/archive/feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628.md, concluding that dnsZoneResourceIds is an official public API input+readback field but not the strongest official default-domain readiness contract compared with webAppRouting.defaultDomain.",
+        "last_worker_completed_at": "2026-06-28T00:07:44.265Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:08:32.135Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived note cites mounted TypeSpec/swagger, RP datamodel+validation tests, handwritten e2ev3 source, and local evidence to show dnsZoneResourceIds is an official input+readback field but a weaker default-domain readiness anchor than webAppRouting.defaultDomain; this satisfies the bounded reference packet acceptance without cloud execution."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260"
+      ],
+      "result": "Authored the requested bounded reference note at evidence/archive/feature-reference-app-routing-public-api-default-domain-dnszoneresourceids-surface-20260628.md, concluding that dnsZoneResourceIds is an official public API input+readback field but not the strongest official default-domain readiness contract compared with webAppRouting.defaultDomain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:08:32.135Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived note cites mounted TypeSpec/swagger, RP datamodel+validation tests, handwritten e2ev3 source, and local evidence to show dnsZoneResourceIds is an official input+readback field but a weaker default-domain readiness anchor than webAppRouting.defaultDomain; this satisfies the bounded reference packet acceptance without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect a bounded repo-local contract-alignment packet for the App Routing public-api default-domain enable/readiness slice: compare the current local spec+probe assertion that infers readiness from ingressProfile.webAppRouting.dnsZoneResourceIds with the stronger mounted public/source-backed defaultDomain surfaces, and record the exact next model/spec/probe adjustment implied by the evidence ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a repo-local note under evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md that cites the current local spec/test assertion files plus the accepted defaultDomain/dnsZoneResourceIds reference artifacts and states which surface is the strongest bounded readiness contract.",
+        "The note names the concrete downstream adjustment needed in repo-local spec/probe/model wording (or preserves an exact documentation ceiling if no truthful adjustment can yet be chosen), instead of stopping at abstract comparison.",
+        "No cloud execution is performed; all claims are backed by inspectable repo-local docs/spec/source/evidence anchors."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:08:32.184Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628_20260628000852",
+        "assigned_at": "2026-06-28T00:08:52.657Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628_20260628000852",
+        "worker_started_at": "2026-06-28T00:08:54.515Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a bounded contract-alignment note at evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md comparing the current local dnsZoneResourceIds-based readiness assertion against stronger mounted/defaultDomain-backed surfaces and naming the exact next spec/probe/model adjustment.",
+        "last_worker_completed_at": "2026-06-28T00:11:06.552Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:11:48.348Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md satisfies the bounded contract-alignment acceptance by citing the current local spec/probe assertion, the stronger defaultDomain-backed reference artifacts and mounted source anchors, and naming the exact downstream repair to switch readiness wording/assertion from dnsZoneResourceIds presence to defaultDomain.enabled plus non-empty domainName without overclaiming request-syntax changes."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628"
+      ],
+      "result": "Archived a bounded contract-alignment note at evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md comparing the current local dnsZoneResourceIds-based readiness assertion against stronger mounted/defaultDomain-backed surfaces and naming the exact next spec/probe/model adjustment.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:11:48.348Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence/archive/feature-reference-app-routing-default-domain-readiness-contract-alignment-20260628.md satisfies the bounded contract-alignment acceptance by citing the current local spec/probe assertion, the stronger defaultDomain-backed reference artifacts and mounted source anchors, and naming the exact downstream repair to switch readiness wording/assertion from dnsZoneResourceIds presence to defaultDomain.enabled plus non-empty domainName without overclaiming request-syntax changes."
+      },
+      "status": "done"
+    }
+  ]
+}

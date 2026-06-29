@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T23:28:20.917Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-27 owner review accepted the feature-reference loop state repair: .state/feature-reference-loop/state.json now truthfully reflects done 97 / pending 207 / running 0 after normalizing 52 stale archived-complete entries and clearing stale archived task pointers. The lane is not exhausted: true remaining backlog is 207 pending features, with the next bounded reseed slice starting at net-integration-basiclb-migration-natgw, net-integration-cross-subscription-vnet, net-integration-custom-route-table-user-assigned-msi, net-integration-ipmasq-dualstack, and net-integration-multinic-dualstack. Replace the earlier misleading no-open-children implication with this repaired truth; do not reopen duplicate archived collectors, but do resume the lane through fresh bounded collector leaves sourced from the repaired queue.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-loop-state-and-bounded-reseed-20260627",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the feature-reference loop's stale controller/task-tree projection using the archived accepted collector tranche, then archive bounded evidence that distinguishes stale archived-complete entries from the remaining true pending backlog and records the exact next reseed action needed to make the lane truthful again without reopening duplicate collector work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-loop-state-repair-and-bounded-reseed-20260627.md"
+      ],
+      "acceptance": [
+        "Produce bounded evidence showing which current .state/feature-reference-loop/state.json entries already correspond to archived accepted collector tasks and therefore should be treated as stale-complete rather than reopened work.",
+        "Record the exact repaired backlog slice or reseed plan needed to expose at least one truthful bounded next collector frontier from the remaining pending queue, citing the current loop state and parent lane context.",
+        "Update task/tree-visible context truthfully enough that aks-feature-reference-loop no longer claims 'no open children' while hidden actionable backlog remains, or document the exact app-tooling limitation if that context cannot be refreshed from within the project lane."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T23:20:31.377Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-loop-state-and-bounded-reseed-20260627_20260627232327",
+        "assigned_at": "2026-06-27T23:23:27.126Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-loop-state-and-bounded-reseed-20260627",
+        "worker_started_attempt_id": "a_repair-feature-reference-loop-state-and-bounded-reseed-20260627_20260627232327",
+        "worker_started_at": "2026-06-27T23:23:28.995Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the feature-reference loop state file to normalize 52 stale archived-complete entries and wrote bounded reseed evidence at evidence/archive/feature-reference-loop-state-repair-and-bounded-reseed-20260627.md, including the exact five-item truthful next frontier and the remaining tree-refresh limitation.",
+        "last_worker_completed_at": "2026-06-27T23:27:44.470Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T23:28:20.868Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded evidence: the authoritative feature-reference loop state file now truthfully normalizes 52 stale archived-complete entries, separating repaired done 97 / pending 207 / running 0 from the remaining true backlog, while explicitly documenting that parent workflowProgress and rollup text still need owner-side refresh before the lane is treated as fully reconciled."
+      },
+      "session_id": "s_task_repair-feature-reference-loop-state-and-bounded-reseed-20260627",
+      "session_history": [
+        "s_task_repair-feature-reference-loop-state-and-bounded-reseed-20260627"
+      ],
+      "result": "Repaired the feature-reference loop state file to normalize 52 stale archived-complete entries and wrote bounded reseed evidence at evidence/archive/feature-reference-loop-state-repair-and-bounded-reseed-20260627.md, including the exact five-item truthful next frontier and the remaining tree-refresh limitation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T23:28:20.868Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded evidence: the authoritative feature-reference loop state file now truthfully normalizes 52 stale archived-complete entries, separating repaired done 97 / pending 207 / running 0 from the remaining true backlog, while explicitly documenting that parent workflowProgress and rollup text still need owner-side refresh before the lane is treated as fully reconciled."
+      },
+      "status": "done"
+    }
+  ]
+}

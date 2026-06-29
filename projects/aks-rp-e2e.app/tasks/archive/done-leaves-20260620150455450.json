@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:04:55.450Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 owner review accepted the dedicated VM prerelease row-47 overscale carrier: evidence/archive/vm-prerelease-row47-overscale-dedicated-authoring-20260620.md and the paired check-mode JSON prove the new spec/replay landing preserves the exact mounted VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 substrate, systempool min/max/count 2/4/2 shape, 3-replica 1.1 CPU/256M anti-affined workload, and exact 3-ready-node / 10-minute stability contract while truthfully leaving coverage candidate-only until the accepted model/path layer can land a row-local surface. Live runner work is now narrowed to vm-prerelease-row46-mincount-dedicated-authoring-20260620 for the remaining exact-source authoring gap, plus the unchanged blocked operator-gated cloud execute wait vm-prerelease-row25-live-execute-operator-gate-wait-20260620 for path.virtualmachines.capacity-based-surge.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row47-overscale-dedicated-authoring-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact VM-prerelease row-47 overscale carrier by adding a dedicated spec/replay landing for Scenario_CAS_Overscale_NodeStability_VirtualMachine using the mounted AKS RP source contract rather than the generic CAS overscale artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row47-overscale-dedicated-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "The task adds or updates repo-local spec/replay artifacts for row 47 that preserve the mounted row contract: agentPool.type=VirtualMachines, feature VMsAgentPoolAutoscalePreview, kubernetesVersion=1.33, pool name systempool, and agentPool min/max/count=2/4/2.",
+        "The replay/input contract models the row-47 behavior truthfully: deploy a 3-replica workload with 1.1 CPU and 256M requests, hostname anti-affinity, and node selector agentpool=systempool, then assert the VM-backed pool reaches exactly 3 ready nodes and holds that exact count for 10 minutes rather than the current generic 2-5 / 60s envelope.",
+        "The task updates the VM prerelease coverage ledger only if the new artifacts now satisfy exact row-47 coverage truthfully; otherwise it leaves the ledger candidate-only and records the remaining exactness ceiling in the evidence note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec.cluster-autoscaler.vm-prerelease-overscale-node-stability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:57:15.308Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row47-overscale-dedicated-authoring-20260620_20260620145716",
+        "assigned_at": "2026-06-20T14:57:16.838Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row47-overscale-dedicated-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row47-overscale-dedicated-authoring-20260620_20260620145716",
+        "worker_started_at": "2026-06-20T14:57:25.894Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a dedicated row-47 VM-prerelease overscale spec/replay pair, registered it in specs/index.json, and wrote an evidence note plus check-mode proof showing the new artifacts preserve the mounted VirtualMachines/preview/1.33/systempool/3-replica/10-minute contract while intentionally leaving the coverage ledger candidate-only.",
+        "last_worker_completed_at": "2026-06-20T15:03:52.298Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:04:55.406Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row47-overscale-dedicated-authoring-20260620.md plus check-vmpr-row47-overscale-dedicated-authoring-20260620-cluster-autoscaler-vm-prerelease-overscale-node-stability.json prove the dedicated row-47 spec/replay landing preserves the mounted VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + systempool + 3-replica/1.1 CPU/256M + 10-minute hold contract. Keeping the coverage ledger candidate-only is truthful until an accepted model/path surface can represent this row-local carrier without overclaiming the generic CAS overscale path."
+      },
+      "session_id": "s_task_vm-prerelease-row47-overscale-dedicated-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row47-overscale-dedicated-authoring-20260620"
+      ],
+      "result": "Authored a dedicated row-47 VM-prerelease overscale spec/replay pair, registered it in specs/index.json, and wrote an evidence note plus check-mode proof showing the new artifacts preserve the mounted VirtualMachines/preview/1.33/systempool/3-replica/10-minute contract while intentionally leaving the coverage ledger candidate-only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:04:55.406Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row47-overscale-dedicated-authoring-20260620.md plus check-vmpr-row47-overscale-dedicated-authoring-20260620-cluster-autoscaler-vm-prerelease-overscale-node-stability.json prove the dedicated row-47 spec/replay landing preserves the mounted VirtualMachines + VMsAgentPoolAutoscalePreview + Kubernetes 1.33 + systempool + 3-replica/1.1 CPU/256M + 10-minute hold contract. Keeping the coverage ledger candidate-only is truthful until an accepted model/path surface can represent this row-local carrier without overclaiming the generic CAS overscale path."
+      },
+      "status": "done"
+    }
+  ]
+}

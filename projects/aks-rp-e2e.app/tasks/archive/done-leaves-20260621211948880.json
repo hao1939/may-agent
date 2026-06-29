@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:19:48.880Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier maintenance kept the single external-send-proof family wait unchanged because its next re-review threshold remains 2026-06-22T10:08:46Z and no newer external send/handoff/escalation proof or authoritative reply exists. The remaining repo-local ManagedSystem work stays narrowly scoped to reconcile-preservation carrier metadata repair only; archive the accepted adjacent-boundary done leaf because its durable meaning is preserved here and in the active metadata-repair leaf, with no reopening of the terminal ManagedSystem create-time product-gap branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: using mounted AKS RP handwritten ManagedSystem source plus current repo-local ManagedSystem carriers only, map the next truthful adjacent boundary after path.managedsystem.runtime-isolation to the scenario's reconcile/update step, and write a durable archive note that states whether existing maintained carriers already cover that boundary or what exact repo-local carrier gap remains, without cloud execution and without reopening path.managedsystem.create-time-initial-pool.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted ManagedSystem handwritten source ordering after the runtime validator block and identify the next scenario boundary after path.managedsystem.runtime-isolation, citing exact source lines and any existing repo-local feature/spec/model/evidence carriers that already represent it.",
+        "Write a durable archive note that classifies the boundary as already-covered, needs-carrier-authoring, or terminally not-worth-modeling-yet, with the exact rationale grounded in current repo-local carriers and without claiming cloud evidence.",
+        "Confirm no cloud execution, no external-human transport, and no reopening or retry planning for terminal path.managedsystem.create-time-initial-pool."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T21:15:49.252Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621_20260621211549",
+        "assigned_at": "2026-06-21T21:15:49.314Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621",
+        "worker_started_attempt_id": "a_managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621_20260621211549",
+        "worker_started_at": "2026-06-21T21:16:10.536Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable archive note at evidence/archive/managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621.md mapping the next adjacent ManagedSystem boundary after runtime-isolation to reconcile-preservation, proving it from mounted source ordering and current repo-local carriers, and identifying the remaining gap as stale dedicated carrier metadata only.",
+        "last_worker_completed_at": "2026-06-21T21:18:27.856Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:19:09.147Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621.md as a source-backed adjacent-boundary map: it proves the next truthful boundary after path.managedsystem.runtime-isolation is path.managedsystem.reconcile-preservation, identifies only stale dedicated carrier metadata as the remaining repo-local gap, and explicitly avoids reopening terminal path.managedsystem.create-time-initial-pool."
+      },
+      "session_id": "s_task_managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621",
+      "session_history": [
+        "s_task_managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621"
+      ],
+      "result": "Wrote a durable archive note at evidence/archive/managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621.md mapping the next adjacent ManagedSystem boundary after runtime-isolation to reconcile-preservation, proving it from mounted source ordering and current repo-local carriers, and identifying the remaining gap as stale dedicated carrier metadata only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:19:09.147Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/managedsystem-runtime-to-reconcile-adjacent-boundary-map-20260621.md as a source-backed adjacent-boundary map: it proves the next truthful boundary after path.managedsystem.runtime-isolation is path.managedsystem.reconcile-preservation, identifies only stale dedicated carrier metadata as the remaining repo-local gap, and explicitly avoids reopening terminal path.managedsystem.create-time-initial-pool."
+      },
+      "status": "done"
+    }
+  ]
+}

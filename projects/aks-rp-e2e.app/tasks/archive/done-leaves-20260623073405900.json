@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:34:05.900Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning-update confirmed this watchdog-review-pending wake was stale: storage-csi-file-resize-mounted-source-landing-20260623 had already been reviewed done with accepted archive/carrier checks, so no review leaf was reopened. This root rollup archives the remaining safe done leaves for the accepted storage-csi disk-clone variable-catalog closure and the accepted Azure File resize mounted-source landing while preserving their durable repo-local knowledge at the project level. The live frontier is now maximally clear and unchanged in substance: storage-csi-file-clone-mounted-source-landing-20260623 remains the single active repo-local source-backed next action, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single exact family-level external-human blocked wait pending later out-of-runtime proof.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-clone-variable-catalog-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add the exact Storage CSI disk-clone variable catalog entries now referenced by the accepted repo-local clone feature/path so the clone-specific unknown-variable validator debt is removed without widening into general storage-model cleanup or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-variable-catalog-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact clone-path variables currently missing from the shared/maintained variable catalog, cites the validator or model references inspected, and names the exact repo-local files updated.",
+        "The repo-local variable/model surfaces are reconciled so the clone-specific unknown-variable findings introduced by path.storage-csi-disk-clone no longer remain unexplained, or the exact residual non-clone validation debt is explicitly separated from this clone-path fix with evidence.",
+        "Scope stays repo-local and bounded to variable-catalog/model hygiene for path.storage-csi-disk-clone only: no cloud mutation, no reopening of Azure File/Blob branches, and no widening into general storage-model cleanup."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:11:30.256Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:21:40.605Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-clone-variable-catalog-reconcile-20260623_20260623072337",
+        "assigned_at": "2026-06-23T07:23:37.700Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-clone-variable-catalog-reconcile-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-clone-variable-catalog-reconcile-20260623_20260623072337",
+        "worker_started_at": "2026-06-23T07:23:40.902Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the storage CSI disk-clone variable catalog by adding 8 missing input variables and 6 missing expectation variables to model/knowledge-map/model.json, regenerated maintained views, and wrote a durable archive note documenting the exact clone-path validator debt and its resolution.",
+        "last_worker_completed_at": "2026-06-23T07:27:17.503Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:27:33.306Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the storage-csi disk-clone variable-catalog reconcile: ../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-variable-catalog-reconcile-20260623.md names the exact 8 missing input variables and 6 missing expectation variables, cites the validator/model references inspected, records model/knowledge-map/model.json plus regenerated view updates, and explicitly separates residual project-wide validator debt from the now-cleared clone-specific unknown-variable findings."
+      },
+      "session_id": "s_task_storage-csi-disk-clone-variable-catalog-reconcile-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-clone-variable-catalog-reconcile-20260623"
+      ],
+      "result": "Reconciled the storage CSI disk-clone variable catalog by adding 8 missing input variables and 6 missing expectation variables to model/knowledge-map/model.json, regenerated maintained views, and wrote a durable archive note documenting the exact clone-path validator debt and its resolution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:27:33.306Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the storage-csi disk-clone variable-catalog reconcile: ../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-variable-catalog-reconcile-20260623.md names the exact 8 missing input variables and 6 missing expectation variables, cites the validator/model references inspected, records model/knowledge-map/model.json plus regenerated view updates, and explicitly separates residual project-wide validator debt from the now-cleared clone-specific unknown-variable findings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-mounted-source-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted Azure File resize handwritten branch into repo-local carriers so the currently uncovered resize path from azurefilecsi.go is represented as a distinct source-backed feature/spec slice without reopening already-carried file-private-endpoint or verifyNFS work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-mounted-source-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurefilecsi.go lines 178-215 and states the exact resize request/expectation contract for the Azure File CSI row.",
+        "Relevant repo-local carrier surfaces are added or updated so this exact resize branch is visible without widening scope, at minimum naming the exact feature/spec files added or updated and any bounded replay/model follow-up still remaining after inspection.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of private-endpoint or unmount branches, and no external-send/escalation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:59:32.935Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:21:40.605Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-23T07:27:33.368Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-mounted-source-landing-20260623_retry_20260623072733",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-mounted-source-landing-20260623_20260623072733",
+        "worker_started_at": "2026-06-23T07:28:00.414Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the bounded repo-local Azure File resize source slice by adding feature/spec/replay carriers and a durable archive note grounded in mounted azurefilecsi.go:178-215, while keeping scope away from private-endpoint and verifyNFS/unmount branches.",
+        "last_worker_completed_at": "2026-06-23T07:31:03.474Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-23T07:24:19.221Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Reject review: worker returned blocked/error with no evidence entries and no archive artifact at ../aks-rp-e2e/evidence/archive/storage-csi-file-resize-mounted-source-landing-20260623.md, so acceptance is not satisfied and the task must be retried rather than treated as a blocker.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_storage-csi-file-resize-mounted-source-landing-20260623_20260623072140",
+        "current_attempt_id": "a_storage-csi-file-resize-mounted-source-landing-20260623_20260623072733",
+        "reviewed_at": "2026-06-23T07:32:09.404Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the resize mounted-source landing: evidence/archive/storage-csi-file-resize-mounted-source-landing-20260623.md cites azurefilecsi.go:178-215 and the repo-local carriers exist as claimed (features/storage-csi/file-resize.yaml, specs/storage-csi-file-resize.json, replays/storage-csi-file-resize.ts, plus features/storage-csi.yaml listing storage-csi-file-resize). Acceptance is satisfied as a repo-local/source-backed slice; model/spec-index/runtime follow-up remains explicitly bounded for later work."
+      },
+      "session_history": [
+        "s_task_storage-csi-file-resize-mounted-source-landing-20260623",
+        "s_task_storage-csi-file-resize-mounted-source-landing-20260623_retry_20260623072733"
+      ],
+      "result": "Landed the bounded repo-local Azure File resize source slice by adding feature/spec/replay carriers and a durable archive note grounded in mounted azurefilecsi.go:178-215, while keeping scope away from private-endpoint and verifyNFS/unmount branches.",
+      "evidence": [],
+      "session_id": "s_task_storage-csi-file-resize-mounted-source-landing-20260623_retry_20260623072733",
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:32:09.404Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the resize mounted-source landing: evidence/archive/storage-csi-file-resize-mounted-source-landing-20260623.md cites azurefilecsi.go:178-215 and the repo-local carriers exist as claimed (features/storage-csi/file-resize.yaml, specs/storage-csi-file-resize.json, replays/storage-csi-file-resize.ts, plus features/storage-csi.yaml listing storage-csi-file-resize). Acceptance is satisfied as a repo-local/source-backed slice; model/spec-index/runtime follow-up remains explicitly bounded for later work."
+      },
+      "status": "done"
+    }
+  ]
+}

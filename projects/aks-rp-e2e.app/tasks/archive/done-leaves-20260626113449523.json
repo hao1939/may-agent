@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T11:34:49.524Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner planning update reconciled a stale problem-unknown wake for legacy leaf verify-spec-net-integration-outbound-lb-custom-ip against the current tree. The old gh-missing diagnosis is no longer the controlling blocker; the shared live frontier is now intentionally truthful and minimal: diagnose-single-spec-gh-dispatch-loop-key-contract-mismatch-20260626 is the one active execution branch capturing durable proof for the newer HTTP 422 unexpected input loop_key mismatch on the GitHub REST fallback launcher surface, and verify-later-net-integration-single-spec-siblings-after-retry-queue-20260626 remains the single blocked successor until that diagnosis yields a reviewed repair, escalation, or exact resume condition. No legacy outbound-lb-custom-ip leaf is reopened from this stale problem event, and no newer net-integration sibling should launch before the shared launcher contract is repaired or reclassified.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the verified single-spec launcher surface on the current runtime (GitHub REST API fallback; gh remains optional), rerun the earlier blocked net-integration single-spec tasks in preserved order: spec.net-integration.outbound-lb-custom-ip, spec.net-integration.authorized-ip-ranges, then spec.net-integration.authorized-service-tags, and review each result before consuming newer net-integration backlog siblings. This leaf is the canonical recovery owner for the formerly separate verify-spec-net-integration-authorized-service-tags launcher diagnosis; do not recreate that standalone task unless this preserved-order retry queue produces a new concrete blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "The three preserved-order specs were relaunched in order on the verified current launcher surface, or each produced a new concrete blocker on that same surface.",
+        "No newer net-integration backlog sibling is consumed before outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags are retried or reclassified.",
+        "Spec-loop state and any evidence/model updates are recorded for each retried spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:25:05.418Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626_20260626112822",
+        "assigned_at": "2026-06-26T11:28:22.400Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626",
+        "worker_started_attempt_id": "a_retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626_20260626112822",
+        "worker_started_at": "2026-06-26T11:28:23.051Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Retried the preserved-order single-spec queue via the current REST fallback launcher and confirmed all three specs now fail at GitHub workflow dispatch with the same new blocker: HTTP 422 unexpected input `loop_key`, proving a remote workflow/verifier contract mismatch rather than missing `gh`.",
+        "last_worker_completed_at": "2026-06-26T11:32:36.677Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:33:40.948Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a reviewed reclassification of the preserved-order retry queue: the worker proved the three earlier net-integration specs no longer differ at launcher availability and instead all stop at the same newer single-spec GitHub dispatch blocker (HTTP 422 unexpected input ) on the current REST fallback surface. This completes the queue leaf only as blocker discovery; per-spec verification remains deferred until the shared dispatch-contract task is resolved."
+      },
+      "session_id": "s_task_retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626",
+      "session_history": [
+        "s_task_retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626"
+      ],
+      "result": "Retried the preserved-order single-spec queue via the current REST fallback launcher and confirmed all three specs now fail at GitHub workflow dispatch with the same new blocker: HTTP 422 unexpected input `loop_key`, proving a remote workflow/verifier contract mismatch rather than missing `gh`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:33:40.948Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a reviewed reclassification of the preserved-order retry queue: the worker proved the three earlier net-integration specs no longer differ at launcher availability and instead all stop at the same newer single-spec GitHub dispatch blocker (HTTP 422 unexpected input ) on the current REST fallback surface. This completes the queue leaf only as blocker discovery; per-spec verification remains deferred until the shared dispatch-contract task is resolved."
+      },
+      "status": "done"
+    }
+  ]
+}

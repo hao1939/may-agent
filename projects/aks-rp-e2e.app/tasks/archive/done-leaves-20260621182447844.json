@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T18:24:47.844Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier watchdog review leaves the single external-send family wait unchanged because the first re-review threshold remains 2026-06-22T10:08:46Z and no newer human send/handoff/escalation proof or authoritative reply exists. Archive the accepted ManagedSystem source-lineage tightening leaf because its durable meaning now lives in evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md and the maintained model metadata. The only live repo-local lane is vmpr-privatecluster-row26-checkpoint-separate-20260621, which should finish separating the private-cluster public-FQDN carrier from the mixed maintained checkpoint surface so the remaining row-26-only slice can be judged for later checkpoint coherence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-source-lineage-tighten-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular evidence/model-update lane: reconcile the final product-gap ManagedSystem create-time path metadata to the exact mounted handwritten source lineage already established by the accepted boundary map, so path.managedsystem.create-time-initial-pool preserves its final runtime verdict while gaining explicit scenario/validator anchors and a clean source-backed-vs-evidence-backed split.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md"
+      ],
+      "acceptance": [
+        "Use the accepted boundary artifact plus mounted source already cited there to write repo-local evidence that pinpoints the exact Scenario_ManagedSystem_AgentPool and validator lineage for path.managedsystem.create-time-initial-pool, including reconcile coverage, without reopening runtime verdicts or running cloud work.",
+        "Update the maintained model/feature metadata needed so the create-time ManagedSystem path clearly distinguishes source-backed post-create expectations from the separately evidence-backed provisioning failure and preserves the current final product-gap verdict/retest condition unless a direct inconsistency is cited.",
+        "Stay repo-local only: no cloud execution, no checkpoint commit, no external-send/escalation work, and no retry planning unless a direct model/source inconsistency is found and cited."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T18:17:34.133Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T18:18:42.911Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-source-lineage-tighten-20260621_20260621181850",
+        "assigned_at": "2026-06-21T18:18:50.893Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-source-lineage-tighten-20260621",
+        "worker_started_attempt_id": "a_managedsystem-create-time-source-lineage-tighten-20260621_20260621181850",
+        "worker_started_at": "2026-06-21T18:19:10.745Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened ManagedSystem create-time source lineage metadata and wrote durable evidence under evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md, preserving the existing final product-gap verdict while adding explicit scenario/validator anchors and source-vs-evidence split notes in the model and feature packet.",
+        "last_worker_completed_at": "2026-06-21T18:23:29.297Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T18:23:54.970Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md cites the mounted Scenario_ManagedSystem_AgentPool plus validator/reconcile chain, records the source-backed vs evidence-backed split, and preserves the final product-gap verdict/retest condition for path.managedsystem.create-time-initial-pool without cloud work."
+      },
+      "session_id": "s_task_managedsystem-create-time-source-lineage-tighten-20260621",
+      "session_history": [
+        "s_task_managedsystem-create-time-source-lineage-tighten-20260621"
+      ],
+      "result": "Tightened ManagedSystem create-time source lineage metadata and wrote durable evidence under evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md, preserving the existing final product-gap verdict while adding explicit scenario/validator anchors and source-vs-evidence split notes in the model and feature packet.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T18:23:54.970Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-create-time-source-lineage-tighten-20260621.md cites the mounted Scenario_ManagedSystem_AgentPool plus validator/reconcile chain, records the source-backed vs evidence-backed split, and preserves the final product-gap verdict/retest condition for path.managedsystem.create-time-initial-pool without cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

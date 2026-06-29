@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:06:39.307Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Preserved the single truthful external-human transport blocker at external-send-proof-dispatch-family-20260620 without duplicating waits, and refilled underused worker capacity with two concrete mounted-source implementation leaves for the next VM prerelease replay surfaces: row 26 capacity-based-surge-maxUnavailable and row 31 auto-zone single-SKU. Accepted work already landed for row 30 mixed-SKU deallocate and row 33 accelerated-networking is now summarized here and archived as parent knowledge rather than left as low-value done leaves.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "virtualmachines-accelerated-networking-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-33 VirtualMachines accelerated-networking live-body replay surface from mounted AKS RP source so the maintained branch can move beyond a check-only source/spec wrapper and become an execute-gated product probe without broadening beyond the unchanged mixed-SKU per-SKU NIC accelerated-networking contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-accelerated-networking-live-body-implementation-20260621.md"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-accelerated-networking.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-33 live-body implementation for the unchanged VirtualMachines mixed-SKU plus per-SKU NIC accelerated-networking contract from mounted source, without claiming a fresh cloud verdict",
+        "The implementation preserves the row-33 assertions already modeled for mixed-SKU create, NIC resource fetch, accelerated SKU NIC=true, and non-accelerated SKU NIC=false, records the exact mounted source anchors used, and keeps explicit execute-gate / Azure-auth prerequisites for any later live run",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note"
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-accelerated-networking"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T02:56:54.230Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-accelerated-networking-live-body-implementation-20260621_20260621025654",
+        "assigned_at": "2026-06-21T02:56:54.277Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-accelerated-networking-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-accelerated-networking-live-body-implementation-20260621_20260621025654",
+        "worker_started_at": "2026-06-21T02:57:08.558Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a bounded execute-gated live body in replays/virtualmachines-accelerated-networking.ts, aligned the row-33 spec/model/view wording with the new execute-capable-but-non-verdict status, and archived the exact source anchors plus validation results in evidence/archive/virtualmachines-accelerated-networking-live-body-implementation-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T03:02:53.824Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:04:25.368Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-21 archive evidence: row-33 replay body now exists in replays/virtualmachines-accelerated-networking.ts, local --check passed for the unchanged mixed-SKU NIC accelerated-networking contract, and ungated --execute still stops at the probe-specific mutation gate, so the task is complete without claiming a fresh cloud verdict."
+      },
+      "session_id": "s_task_virtualmachines-accelerated-networking-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-accelerated-networking-live-body-implementation-20260621"
+      ],
+      "result": "Implemented a bounded execute-gated live body in replays/virtualmachines-accelerated-networking.ts, aligned the row-33 spec/model/view wording with the new execute-capable-but-non-verdict status, and archived the exact source anchors plus validation results in evidence/archive/virtualmachines-accelerated-networking-live-body-implementation-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:04:25.368Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-21 archive evidence: row-33 replay body now exists in replays/virtualmachines-accelerated-networking.ts, local --check passed for the unchanged mixed-SKU NIC accelerated-networking contract, and ungated --execute still stops at the probe-specific mutation gate, so the task is complete without claiming a fresh cloud verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-30 VirtualMachines mixed-SKU deallocate live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged mixed-manual-profile plus ScaleDownMode=Deallocate contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-mixed-sku-deallocate.ts",
+        "../aks-rp-e2e/specs/virtualmachines-mixed-sku-deallocate.json"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-mixed-sku-deallocate.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-30 live-body implementation for the unchanged VirtualMachines mixed-manual-profile plus ScaleDownMode=Deallocate contract from mounted source, without claiming a fresh cloud verdict",
+        "The implementation preserves the row-30 assertions already modeled for create, stop, scale-down, and scale-up/deallocated-VM reuse, records the exact mounted source anchors used, and keeps explicit execute-gate / Azure-auth prerequisites for any later live run",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note"
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-deallocate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T02:56:24.517Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621_20260621025626",
+        "assigned_at": "2026-06-21T02:56:26.424Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621_20260621025626",
+        "worker_started_at": "2026-06-21T02:57:08.534Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an execute-gated live replay body for row-30 VirtualMachines mixed-SKU deallocate in replays/virtualmachines-mixed-sku-deallocate.ts, updated row-30 spec/index/coverage/model truthfulness surfaces to reflect execute-capable-but-gated state, and recorded validation/results in evidence/archive/virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T03:02:40.497Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:03:36.639Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from archive-backed review: the row-30 maintained replay now has a bounded execute-gated live body sourced from mounted AKS RP code, preserves the unchanged deallocate contract, records exact source anchors, and passed row-local check plus file-local Prettier without claiming any new cloud verdict."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621"
+      ],
+      "result": "Implemented an execute-gated live replay body for row-30 VirtualMachines mixed-SKU deallocate in replays/virtualmachines-mixed-sku-deallocate.ts, updated row-30 spec/index/coverage/model truthfulness surfaces to reflect execute-capable-but-gated state, and recorded validation/results in evidence/archive/virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:03:36.639Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from archive-backed review: the row-30 maintained replay now has a bounded execute-gated live body sourced from mounted AKS RP code, preserves the unchanged deallocate contract, records exact source anchors, and passed row-local check plus file-local Prettier without claiming any new cloud verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

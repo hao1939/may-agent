@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T12:27:26.117Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning update accepts and archives the completed repo-local no-cloud audits finished today, including the serverless virtual-nodes multi-pod-burst disposition review that keeps path.serverless-virtual-nodes.multi-pod-burst at unknown with no carrier repair needed. The blocked frontier remains the same single family of five exact external returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 through the 2026-06-26 follow-up window, and the only new runnable leaf is a bounded no-cloud disposition audit for path.serverless-virtual-nodes.subnet-validation to verify whether its current blocked/runtime framing still matches the strongest repo-local evidence ceiling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-plan-list-drift-source-inventory-note-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the bounded private-cluster source-inventory hygiene note identified by the accepted remainder matrix: verify which mounted private-cluster carriers are omitted from local plans.go/GetTestScenarios() enumerations, map each omitted carrier to its already-landed repo-local exact path/spec owner, and record the durable rule that mounted file inventory outranks plan-list enumeration for future private-cluster source scans without reopening cloud execution or the external wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-plan-list-drift-source-inventory-note-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note names each mounted private-cluster carrier inspected for plan-list drift, records whether local plans.go/GetTestScenarios() enumeration includes or omits it, and cites the already-landed repo-local exact owner path/spec/model surface for every omitted carrier.",
+        "The artifact states the bounded owner conclusion that mounted file inventory is authoritative over plan-list enumeration for private-cluster source accounting, and either names one concrete repo-local follow-up update location or records that the note itself is sufficient.",
+        "No cloud mutation run occurs, no new blocked wait is created, and the task does not reopen path.private-cluster-none-dns-zone-v3 live validation or duplicate the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.private-cluster.source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T11:58:10.649Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-plan-list-drift-source-inventory-note-20260625_20260625115810",
+        "assigned_at": "2026-06-25T11:58:10.706Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-plan-list-drift-source-inventory-note-20260625",
+        "worker_started_attempt_id": "a_private-cluster-plan-list-drift-source-inventory-note-20260625_20260625115810",
+        "worker_started_at": "2026-06-25T11:58:34.004Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable private-cluster source-inventory hygiene note at evidence/archive/private-cluster-plan-list-drift-source-inventory-note-20260625.md, identifying the exact mounted carriers omitted from local plan-list enumeration and mapping each to its already-landed repo-local owner surfaces.",
+        "last_worker_completed_at": "2026-06-25T12:01:20.599Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T12:02:26.761Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-25 archive note: it inventories the exact mounted private-cluster carriers omitted from plans.go/GetTestScenarios(), maps each omitted carrier to already-landed repo-local spec/path/model owners, and records the durable rule that mounted file inventory outranks plan-list enumeration for private-cluster source accounting without reopening cloud execution or the external wait family."
+      },
+      "session_id": "s_task_private-cluster-plan-list-drift-source-inventory-note-20260625",
+      "session_history": [
+        "s_task_private-cluster-plan-list-drift-source-inventory-note-20260625"
+      ],
+      "result": "Wrote a durable private-cluster source-inventory hygiene note at evidence/archive/private-cluster-plan-list-drift-source-inventory-note-20260625.md, identifying the exact mounted carriers omitted from local plan-list enumeration and mapping each to its already-landed repo-local owner surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T12:02:26.761Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-25 archive note: it inventories the exact mounted private-cluster carriers omitted from plans.go/GetTestScenarios(), maps each omitted carrier to already-landed repo-local spec/path/model owners, and records the durable rule that mounted file inventory outranks plan-list enumeration for private-cluster source accounting without reopening cloud execution or the external wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

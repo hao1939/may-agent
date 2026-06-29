@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:29:22.054Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner blocked-frontier refill (2026-06-20T10:20Z): archive the accepted serverless authority-gap wording repair as durable provenance because its meaning is already captured here. This lane now carries one active repo-local consistency slice, serverless-virtual-nodes-aci-witness-adjacent-consistency-20260620, to propagate or intentionally differentiate the truthful ACI witness-authority wording across adjacent pod-scheduling and DNS-external surfaces, plus one new runnable non-cloud boundary packet, managedsystem-create-time-initial-pool-boundary-packet-20260620, to map the accepted/rejected create-time ManagedSystem initial/default pool contract and next unknown edges from existing repo-local artifacts without touching helper-gated knowledge-map files or running cloud probes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted serverless virtual-nodes witness-authority note plus current repo-local serverless feature/spec/replay files, turn the unresolved mounted-source authority gap into one concrete local follow-up: either tighten repo-local text/metadata so the ACI witness contract is explicitly recorded as a repo-local convention rather than handwritten-source authority, or produce a bounded delta note naming the exact files and wording that should change next, without touching helper-gated knowledge-map files or running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/serverless-virtual-nodes-witness-targeting-authority-note-20260620.md plus the exact repo-local files reviewed or edited, including features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts.",
+        "Work either updates the affected repo-local feature/spec/replay surfaces to describe the current witness-targeting envelope as a repo-local ACI-family convention with truthful authority wording, or records the smallest exact wording/file delta still needed if direct edits should wait.",
+        "The result preserves the current delegated-subnet replay intent, makes the authority gap explicit for future owner decisions, and does not touch helper-gated checkpoint/model files or trigger cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:serverless-virtual-nodes-witness-authority"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:25:07.525Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620_20260620102507",
+        "assigned_at": "2026-06-20T10:25:07.571Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620_20260620102507",
+        "worker_started_at": "2026-06-20T10:25:23.056Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened the serverless subnet-validation repo-local authority wording across features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts, and wrote the follow-up archive note documenting the mounted-source gap and exact local changes.",
+        "last_worker_completed_at": "2026-06-20T10:27:48.047Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T10:28:25.030Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the accepted witness-authority note plus the exact repo-local feature/spec/replay files, records the mounted-source recheck, and truthfully tightens local authority wording/metadata so the ACI witness envelope is explicit as a repo-local convention without touching helper-gated knowledge-map files or running cloud probes."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-authority-gap-spec-replay-followup-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:28:25.030Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the accepted witness-authority note plus the exact repo-local feature/spec/replay files, records the mounted-source recheck, and truthfully tightens local authority wording/metadata so the ACI witness envelope is explicit as a repo-local convention without touching helper-gated knowledge-map files or running cloud probes."
+      },
+      "status": "done"
+    }
+  ]
+}

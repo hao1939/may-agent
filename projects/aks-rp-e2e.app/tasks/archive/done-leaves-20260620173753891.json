@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:37:53.891Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog planning update: remaining mounted-source completion leaves are provenance only. VM prerelease mounted-source coverage inventory, CAS rows-46/47 linkage repair, and the secureTLS exact-carrier authoring batch are already absorbed into the parent rollup and no longer need separate root visibility. The root should stay focused on one active local source-backed authoring leaf network-acns-cilium-observability-authoring-from-mounted-source-20260620 plus the single external blocked family under the VM prerelease focus. Reopen these archived slices only if later review finds a contradiction in their accepted evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-coverage-inventory-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP Go e2ev3 VirtualMachine prerelease/checkin scenario set to current feature/spec/replay/model coverage so the reopened all-scenarios project has a concrete non-cloud source/spec expansion lane that can progress independently of the external send-proof transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-coverage-inventory-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted Go VirtualMachine prerelease/checkin suite or scenario files inspected and inventories the scenarios they define.",
+        "Each inventoried scenario is mapped to existing feature/spec/replay/model coverage or an explicit uncovered/weak-coverage gap with file references.",
+        "The artifact names the highest-value follow-up authoring or replay leaves needed next for this family without running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:26:15.979Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-inventory-20260620_20260620172616",
+        "assigned_at": "2026-06-20T17:26:16.027Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-coverage-inventory-20260620",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-inventory-20260620_20260620172616",
+        "worker_started_at": "2026-06-20T17:26:23.169Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a new mounted-source inventory at evidence/archive/virtualmachine-prerelease-mounted-source-coverage-inventory-20260620.md that maps all 57 VirtualMachine prerelease/checkin scenarios to current feature/spec/replay/model coverage and identifies the highest-value non-cloud follow-up authoring/linkage leaves.",
+        "last_worker_completed_at": "2026-06-20T17:31:26.697Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T17:32:08.538Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after artifact review: evidence/archive/virtualmachine-prerelease-mounted-source-coverage-inventory-20260620.md cites the mounted VirtualMachine checkin/prerelease suite files, inventories the shared 57-scenario set, maps each row to current repo-local coverage/gaps, and names concrete non-cloud follow-up leaves for secure-TLS authoring, CAS linkage repair, and VM-core feature-root linkage."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-coverage-inventory-20260620",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-coverage-inventory-20260620"
+      ],
+      "result": "Produced a new mounted-source inventory at evidence/archive/virtualmachine-prerelease-mounted-source-coverage-inventory-20260620.md that maps all 57 VirtualMachine prerelease/checkin scenarios to current feature/spec/replay/model coverage and identifies the highest-value non-cloud follow-up authoring/linkage leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T17:32:08.538Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after artifact review: evidence/archive/virtualmachine-prerelease-mounted-source-coverage-inventory-20260620.md cites the mounted VirtualMachine checkin/prerelease suite files, inventories the shared 57-scenario set, maps each row to current repo-local coverage/gaps, and names concrete non-cloud follow-up leaves for secure-TLS authoring, CAS linkage repair, and VM-core feature-root linkage."
+      },
+      "status": "done"
+    }
+  ]
+}

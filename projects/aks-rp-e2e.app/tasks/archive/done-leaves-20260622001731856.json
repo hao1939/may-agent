@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:17:31.856Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review keeps the frontier compressed and truthful: external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single live blocked family because accepted 2026-06-21 audit plus local-dispatch artifacts already prove packet preparation and repo-local dispatch proof for MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity asks, leaving only real human transport or authoritative reply outside runtime as the resume condition. Near-term project execution stays focused on the active row-40 VM prerelease Linux SSH public-key maintained-source landing; row 41 secure-TLS basic remains the next bounded follow-on and should stay waiting behind row 40 rather than widening scope or reopening the external-send family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-next-single-row-source-packet-post-row39-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted AKS RP VM prerelease source and current repo-local VM prerelease artifacts, identify the exact next unreconciled VM prerelease row after the active row-39 Disable SSH landing, and write a bounded follow-on packet that captures the next row's scenario alias, handwritten-source anchors, existing repo-local artifact links, likely maintained surfaces to touch, and whether it is safe for a single-row non-cloud landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-next-single-row-source-packet-post-row39-20260622.md"
+      ],
+      "acceptance": [
+        "Write one evidence note that cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and/or prerelease.go to name the exact next unreconciled row after the active row-39 Disable SSH landing, with the scenario alias and exact handwritten-source anchors.",
+        "The note inventories any existing repo-local row-specific artifacts, current coverage/model status, and the bounded gap for that row without editing maintained knowledge-map/model/view files in this packet-prep slice.",
+        "The note ends with one recommended next single-row landing slice or one exact blocker for that row, and does not run cloud execution or reopen the external-human-transport blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:11:27.073Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-next-single-row-source-packet-post-row39-20260622_20260622001248",
+        "assigned_at": "2026-06-22T00:12:48.051Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-next-single-row-source-packet-post-row39-20260622",
+        "worker_started_attempt_id": "a_vmpr-next-single-row-source-packet-post-row39-20260622_20260622001248",
+        "worker_started_at": "2026-06-22T00:12:49.450Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested evidence packet at evidence/archive/vmpr-next-single-row-source-packet-post-row39-20260622.md identifying row 40 Linux SSH public-key update as the exact next unreconciled VM prerelease row after row 39, with mounted-source anchors, repo-local artifact inventory, maintained-surface gap analysis, and a bounded next-slice recommendation.",
+        "last_worker_completed_at": "2026-06-22T00:14:21.237Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:14:48.884Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence packet cites mounted source and existing repo-local carriers to prove row 40  is the exact next unreconciled VM prerelease row after row 39, and the remaining gap is a safe single-row maintained model/view landing only."
+      },
+      "session_id": "s_task_vmpr-next-single-row-source-packet-post-row39-20260622",
+      "session_history": [
+        "s_task_vmpr-next-single-row-source-packet-post-row39-20260622"
+      ],
+      "result": "Wrote the requested evidence packet at evidence/archive/vmpr-next-single-row-source-packet-post-row39-20260622.md identifying row 40 Linux SSH public-key update as the exact next unreconciled VM prerelease row after row 39, with mounted-source anchors, repo-local artifact inventory, maintained-surface gap analysis, and a bounded next-slice recommendation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:14:48.884Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence packet cites mounted source and existing repo-local carriers to prove row 40  is the exact next unreconciled VM prerelease row after row 39, and the remaining gap is a safe single-row maintained model/view landing only."
+      },
+      "status": "done"
+    }
+  ]
+}

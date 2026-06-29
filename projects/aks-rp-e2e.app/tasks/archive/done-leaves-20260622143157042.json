@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:31:57.042Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner reconciliation: accepted and archived the private-cluster none-dns-zone-v3 exact replay-contract refresh. Durable project knowledge now says mounted AKS RP source fully answers the exact system->none lifecycle, repo-local replay/spec automation preflights pass, and the only remaining path.private-cluster-none-dns-zone-v3 repo-local frontier is runtime-prereq owner-send/escalation proof capture for a future gated live run. Keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human wait; no duplicate source/spec/runtime blocker leaves should be recreated for the covered VM family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the exact repo-local execution contract for path.private-cluster-none-dns-zone-v3 from mounted AKS RP source plus current replay/spec automation so the runtime-prereq branch has a bounded source-backed carrier and does not stall on stale assumptions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the mounted private-cluster handwritten/source-equivalent scenario(s), replay asset(s), and automation entrypoints that carry the exact system->none private DNS zone V3 path, including exact check and dry-run commands plus required env vars and mutation gate.",
+        "The artifact names any remaining repo-local ambiguity as a bounded evidence ceiling or exact follow-up input, and explicitly rules out source-holder/exact-source blocking when /app/sources/aks-rp answers the contract."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3-spec"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:28:35.290Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T14:28:41.660Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622_20260622142849",
+        "assigned_at": "2026-06-22T14:28:49.135Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622_20260622142849",
+        "worker_started_at": "2026-06-22T14:29:14.483Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the exact replay-contract refresh artifact for private-cluster none DNS zone V3 under evidence/archive, using mounted AKS RP source plus repo-local spec/replay/runner evidence, and verified it with fresh replay check and spec dry-run outputs.",
+        "last_worker_completed_at": "2026-06-22T14:31:20.727Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:31:50.899Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact cites the mounted e2ev3 privatecluster none_private_dns_zone handwritten plan plus checkin/prerelease suite carriers, identifies runner.go as the bounded execution-carrier ceiling, records exact replay/spec-runner check and dry-run commands with passing evidence paths, and explicitly rules out source-holder/exact-source blocking because /app/sources/aks-rp fully answers the system->none contract for path.private-cluster-none-dns-zone-v3."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-exact-replay-contract-refresh-20260622"
+      ],
+      "result": "Produced the exact replay-contract refresh artifact for private-cluster none DNS zone V3 under evidence/archive, using mounted AKS RP source plus repo-local spec/replay/runner evidence, and verified it with fresh replay check and spec dry-run outputs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:31:50.899Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact cites the mounted e2ev3 privatecluster none_private_dns_zone handwritten plan plus checkin/prerelease suite carriers, identifies runner.go as the bounded execution-carrier ceiling, records exact replay/spec-runner check and dry-run commands with passing evidence paths, and explicitly rules out source-holder/exact-source blocking because /app/sources/aks-rp fully answers the system->none contract for path.private-cluster-none-dns-zone-v3."
+      },
+      "status": "done"
+    }
+  ]
+}

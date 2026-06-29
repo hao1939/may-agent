@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:24:45.464Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepts the hostports timeout classification note as durable evidence only: run 28372252901 reached westus2 managed-cluster create, timed out before any feature assertion, and preserved audit pointers plus an evidence gap, so it stays a shared create-time diagnosis candidate rather than a model downgrade, exact blocker, or blind rerun trigger. The archived verifier leaf for spec.net-integration.cross-tenant-auxiliary-token is not treated as an accepted blocker classification; a new active follow-up now owns bounded artifact review of run 28372347208 against the same pre-assertion timeout family before any further model or execution decision. Remaining open work stays on the active single-spec verification drain, this new cross-tenant timeout-classification follow-up, the KMS trust-service reconciliation leaf, and the existing truthful waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the create-time ARM timeout from staging run 28372252901 for spec.net-integration.auto-assign-hostports using the preserved workflow/spec-runner artifacts and audit pointers before any rerun, blocker, or model decision.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact review captures the exact preserved failure surface for run 28372252901, including whether any ARM body, activity-log clue, or evidence-file gap exists beyond the timeout summary.",
+        "The note classifies the outcome as spec-local retry/evidence-gap, shared create-time diagnosis candidate, model update, or exact external blocker with resume condition, and explains why stronger conclusions are or are not justified.",
+        "The follow-up recommendation names the next bounded repo-local or audit-ingestion action for this exact path/run without launching a blind rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.auto-assign-hostports"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:19:47.210Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629_20260629131947",
+        "assigned_at": "2026-06-29T13:19:47.264Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629",
+        "worker_started_attempt_id": "a_classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629_20260629131947",
+        "worker_started_at": "2026-06-29T13:20:21.065Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed workflow run 28372252901’s preserved artifacts and wrote a durable classification note at evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md. The note concludes the run is a pre-assertion westus2 create-time timeout with missing ARM/activity-log evidence, best treated as a shared diagnosis candidate plus evidence gap rather than a model downgrade or blind rerun trigger.",
+        "last_worker_completed_at": "2026-06-29T13:22:50.947Z",
+        "last_worker_evidence": [
+          "evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:24:45.304Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md proves run 28372252901 died during westus2 managed-cluster create before any host-port assertion, preserved only audit pointers plus an evidence gap, and therefore supports a shared create-time diagnosis candidate rather than a model downgrade, exact blocker, or blind rerun."
+      },
+      "session_id": "s_task_classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629",
+      "session_history": [
+        "s_task_classify-spec-net-integration-auto-assign-hostports-timeout-run-28372252901-20260629"
+      ],
+      "result": "Reviewed workflow run 28372252901’s preserved artifacts and wrote a durable classification note at evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md. The note concludes the run is a pre-assertion westus2 create-time timeout with missing ARM/activity-log evidence, best treated as a shared diagnosis candidate plus evidence gap rather than a model downgrade or blind rerun trigger.",
+      "evidence": [
+        "evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:24:45.304Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: evidence/archive/net-integration-auto-assign-hostports-run-28372252901-timeout-classification-20260629.md proves run 28372252901 died during westus2 managed-cluster create before any host-port assertion, preserved only audit pointers plus an evidence gap, and therefore supports a shared create-time diagnosis candidate rather than a model downgrade, exact blocker, or blind rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

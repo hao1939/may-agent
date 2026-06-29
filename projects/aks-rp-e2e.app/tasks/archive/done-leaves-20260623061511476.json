@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:15:11.476Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog review-pending cleanup: accepted storage-csi-disk-resize-model-linkage-followup-20260623 as already reviewed/done and archived it so the live frontier stays truthful. Repo-local focus now remains the single active storage-csi Azure Disk clone carrier landing while the only blocked branch is the unchanged family-level external-human approval/send-proof wait pending later out-of-runtime proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-resize-model-linkage-followup-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the Azure Disk resize carrier note and land the next bounded repo-local linkage update for the same storage-csi resize branch (feature/spec/replay/model/view or exact evidence-ceiling classification), using the mounted azurediskcsi.go resize facts extracted by the active carrier-landing task without widening into clone/raw-block/xfs/file/blob or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-resize-model-linkage-followup-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact active carrier artifact and any repo-local files reviewed, then records the precise storage-csi Azure Disk resize linkage action taken or the exact evidence ceiling reached for this branch.",
+        "If a truthful repo-local linkage update is possible, the relevant repo-local feature/spec/replay/model/view files are created or updated and the note cites the exact files plus non-mutating validation/check commands run; otherwise the note records the exact remaining gap and why no broader branch or execution should open yet.",
+        "Scope stays bounded to the mounted Azure Disk resize branch and regular learning/model-feedback only: no cloud mutation, no reopening of the external-human wait family, and no widening into unrelated storage-csi sub-branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:05:51.890Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-resize-model-linkage-followup-20260623_20260623060827",
+        "assigned_at": "2026-06-23T06:08:27.114Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-resize-model-linkage-followup-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-resize-model-linkage-followup-20260623_20260623060827",
+        "worker_started_at": "2026-06-23T06:08:40.070Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the bounded Azure Disk resize model/view linkage by updating model/knowledge-map/model.json with a new normalized resize scenario/DAG/path/evidence bridge, regenerating maintained views, and writing the durable archive note evidence/archive/storage-csi-disk-resize-model-linkage-followup-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T06:12:47.654Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:14:19.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable archive note records the active resize carrier, mounted source anchors, exact model/view linkage ids, regenerated maintained views, and non-mutating generator/validator checks for bounded Azure Disk resize model closure."
+      },
+      "session_id": "s_task_storage-csi-disk-resize-model-linkage-followup-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-resize-model-linkage-followup-20260623"
+      ],
+      "result": "Landed the bounded Azure Disk resize model/view linkage by updating model/knowledge-map/model.json with a new normalized resize scenario/DAG/path/evidence bridge, regenerating maintained views, and writing the durable archive note evidence/archive/storage-csi-disk-resize-model-linkage-followup-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:14:19.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable archive note records the active resize carrier, mounted source anchors, exact model/view linkage ids, regenerated maintained views, and non-mutating generator/validator checks for bounded Azure Disk resize model closure."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T02:20:39.487Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Rolled up the completed VM prerelease row25-34 coverage matrix slice into parent context, closed the empty-evidence row-30 review attempt as replaced by a concrete mounted-source repair task, and kept the frontier truthful: one active repo-local row-30 repair leaf plus the single family-level external send-proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows25-34-coverage-matrix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a durable mounted-source coverage matrix for VirtualMachine prerelease rows 25-34 that maps each row's exact input/expectation contract to current maintained feature/path/spec/replay surfaces, identifies any repo-local coverage gap or duplication, and names the next safe non-cloud or execute-gated action without claiming new live verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows25-34-coverage-matrix-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact covers mounted VirtualMachine prerelease rows 25-34 and, for each row, cites the mounted source anchor, the maintained feature/path id (or explicit absence), the current spec/replay/evidence carrier, and the current model status or execution gate.",
+        "Artifact distinguishes source-grounded modeled coverage from live execution evidence, does not promote any unrun row to pass/fail, and calls out any duplicate, missing, or misleading maintained surfaces that should be repaired next.",
+        "If the matrix finds one bounded repo-local gap or truthfulness repair that is not blocked by the shared external-send family, it names that exact follow-on surface and why it is the next safe worker task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T02:15:17.242Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows25-34-coverage-matrix-20260621_20260621021517",
+        "assigned_at": "2026-06-21T02:15:17.287Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows25-34-coverage-matrix-20260621",
+        "worker_started_attempt_id": "a_vm-prerelease-rows25-34-coverage-matrix-20260621_20260621021517",
+        "worker_started_at": "2026-06-21T02:15:37.188Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable coverage matrix artifact `evidence/archive/vm-prerelease-rows25-34-coverage-matrix-20260621.md`, grounded in mounted source and maintained repo-local surfaces, covering rows 25-34 with exact contracts, current carriers, evidence, truthfulness gaps, and a bounded next safe task recommendation.",
+        "last_worker_completed_at": "2026-06-21T02:18:48.954Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T02:19:18.464Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the artifact covers rows 25-34 with mounted-source anchors, maintained carriers, truthfulness drift, and a bounded next safe repo-local follow-on; it truthfully keeps live verdict boundaries and identifies row 30 as the clearest maintained-surface repair."
+      },
+      "session_id": "s_task_vm-prerelease-rows25-34-coverage-matrix-20260621",
+      "session_history": [
+        "s_task_vm-prerelease-rows25-34-coverage-matrix-20260621"
+      ],
+      "result": "Produced the durable coverage matrix artifact `evidence/archive/vm-prerelease-rows25-34-coverage-matrix-20260621.md`, grounded in mounted source and maintained repo-local surfaces, covering rows 25-34 with exact contracts, current carriers, evidence, truthfulness gaps, and a bounded next safe task recommendation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T02:19:18.464Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the artifact covers rows 25-34 with mounted-source anchors, maintained carriers, truthfulness drift, and a bounded next safe repo-local follow-on; it truthfully keeps live verdict boundaries and identifies row 30 as the clearest maintained-surface repair."
+      },
+      "status": "done"
+    }
+  ]
+}

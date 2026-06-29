@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:42:38.885Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 watchdog blocked-frontier review accepted two review leaves as done and repaired waiting/blocker truth in the spec-verification lane. spec.node-pool-config.ephemeral-disk now has one explicit external-evidence wait plus one active send/handoff leaf for the exact portal/export ask from run 28363747313, so the spec is no longer left as a blind rerun or mere review-conflict wait. Automatic/ManagedSystem capacity is again represented by one signal-based blocked family wait backed by accepted westus2/eastus2 same-contract AKSCapacityHeavyUsage evidence, with the finished probe recorded as the diagnosis that proved no new escalation or timer checkpoint is warranted. This pass also addressed the remaining environment-overblock warning by creating one bounded active diagnosis leaf for spec.aad-rbac.nonaad-to-aadv2-migration so that family can either discover a sharper move or preserve a stronger bounded wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the passive spec.node-pool-config.ephemeral-disk timeout wait into a worked evidence-recovery path by deciding whether exact post-timeout Azure state for run 28363747313 can be obtained from an auth-capable az runtime, a portal export ask, or a bounded repo-local ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md"
+      ],
+      "acceptance": [
+        "Review the accepted timeout audit and preserve the exact subscription, resource group, cluster ids, and saved az/activity-log hooks for run 28363747313.",
+        "Choose one truthful next path: concrete auth-capable az runtime/setup handoff, exact portal/export ask text, or a bounded repo-local ceiling proving neither local path is available today.",
+        "Record the exact next owner action and the precise resume condition that should govern any replacement blocked wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:37:04.063Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629_20260629103716",
+        "assigned_at": "2026-06-29T10:37:16.662Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629",
+        "worker_started_attempt_id": "a_recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629_20260629103716",
+        "worker_started_at": "2026-06-29T10:37:31.489Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable evidence-recovery note at evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md that preserves the exact run 28363747313 identifiers/hooks, rejects the unavailable local az-runtime path, and selects a concrete portal/export ask with explicit owner action and resume condition.",
+        "last_worker_completed_at": "2026-06-29T10:38:53.564Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:41:29.466Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md preserves exact run 28363747313 identifiers and saved portal hooks, proves this runtime lacks local az/credential recovery, and selects one exact portal/export ask plus resume condition for post-timeout Azure-state classification."
+      },
+      "session_id": "s_task_recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629",
+      "session_history": [
+        "s_task_recover-spec-node-pool-config-ephemeral-disk-post-timeout-evidence-path-20260629"
+      ],
+      "result": "Created a durable evidence-recovery note at evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md that preserves the exact run 28363747313 identifiers/hooks, rejects the unavailable local az-runtime path, and selects a concrete portal/export ask with explicit owner action and resume condition.",
+      "evidence": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:41:29.466Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md preserves exact run 28363747313 identifiers and saved portal hooks, proves this runtime lacks local az/credential recovery, and selects one exact portal/export ask plus resume condition for post-timeout Azure-state classification."
+      },
+      "status": "done"
+    },
+    {
+      "id": "probe-managedsystem-capacity-recovery-signal-or-escalation-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the current Automatic/ManagedSystem capacity family wait and produce the one concrete next move: either an exact external escalation/checkpoint ask for recovery proof or a bounded evidence note explaining why no sharper reroute than westus2/eastus2 exists today.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md"
+      ],
+      "acceptance": [
+        "Re-state the accepted westus2 and eastus2 same-contract capacity evidence and verify whether any exact owner/operator escalation or recovery-checkpoint action is still missing.",
+        "If an external ask/checkpoint is needed, draft the exact request/resume condition; otherwise record the bounded evidence ceiling that justifies keeping one family-level wait.",
+        "Update the family branch so future planner reviews can distinguish active follow-up work from the passive wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-managedsystem-capacity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:37:07.574Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_probe-managedsystem-capacity-recovery-signal-or-escalation-20260629_20260629103716",
+        "assigned_at": "2026-06-29T10:37:16.716Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_probe-managedsystem-capacity-recovery-signal-or-escalation-20260629",
+        "worker_started_attempt_id": "a_probe-managedsystem-capacity-recovery-signal-or-escalation-20260629_20260629103716",
+        "worker_started_at": "2026-06-29T10:37:31.430Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested Automatic/ManagedSystem capacity recovery probe note under evidence/archive, restating accepted westus2/eastus2 same-contract capacity evidence and concluding that no sharper reroute, escalation ask, or timer checkpoint is justified today beyond one blocked family wait.",
+        "last_worker_completed_at": "2026-06-29T10:39:00.724Z",
+        "last_worker_evidence": [
+          "evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:42:38.616Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md re-states the accepted westus2/eastus2 same-contract AKSCapacityHeavyUsage evidence and proves no sharper reroute, external escalation, or timer-only checkpoint is justified today beyond one signal-based family wait."
+      },
+      "session_id": "s_task_probe-managedsystem-capacity-recovery-signal-or-escalation-20260629",
+      "session_history": [
+        "s_task_probe-managedsystem-capacity-recovery-signal-or-escalation-20260629"
+      ],
+      "result": "Produced the requested Automatic/ManagedSystem capacity recovery probe note under evidence/archive, restating accepted westus2/eastus2 same-contract capacity evidence and concluding that no sharper reroute, escalation ask, or timer checkpoint is justified today beyond one blocked family wait.",
+      "evidence": [
+        "evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:42:38.616Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md re-states the accepted westus2/eastus2 same-contract AKSCapacityHeavyUsage evidence and proves no sharper reroute, external escalation, or timer-only checkpoint is justified today beyond one signal-based family wait."
+      },
+      "status": "done"
+    }
+  ]
+}

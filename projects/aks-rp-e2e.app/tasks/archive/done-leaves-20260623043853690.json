@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T04:38:53.690Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed review remains satisfied: oidc-jwks-retry-contract-normalized-linkage-repair-20260623 is accepted and archived as completed canonical JWKS retry-contract normalization, cloudprovider-ccm-mounted-source-contract-review-20260623 remains the sole live repo-local lane for mounted-source contract cleanup, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful external-human wait family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-jwks-retry-contract-normalized-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Now that the private-cluster addonv2 linkage reconcile is no longer the live shared-model edit lane, normalize the maintained feature/spec/model linkage for path.oidc.jwks-endpoint-validation.retry-contract so the accepted source-backed packet conclusions land in the canonical repo surfaces without widening scope beyond the exact JWKS retry-contract boundary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-jwks-retry-contract-normalized-linkage-repair-20260623.md"
+      ],
+      "acceptance": [
+        "The task updates or confirms the canonical repo-local feature/spec/model linkage for path.oidc.jwks-endpoint-validation.retry-contract using the accepted source packet, keeping source-backed expectations, unknowns, and adjacent OIDC paths separated.",
+        "Because the conflicting private-cluster shared-model edit lane is already cleared, the resulting artifact cites exactly what canonical repo surface changed or why no canonical edit was needed for this exact JWKS retry-contract slice.",
+        "Work stays repo-local: no cloud mutation, no new external-human wait, and no reopening of already accepted packet work except to reference it as source authority."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.oidc.jwks-endpoint-validation.retry-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T04:31:46.215Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-jwks-retry-contract-normalized-linkage-repair-20260623_20260623043204",
+        "assigned_at": "2026-06-23T04:32:04.071Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-jwks-retry-contract-normalized-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_oidc-jwks-retry-contract-normalized-linkage-repair-20260623_20260623043204",
+        "worker_started_at": "2026-06-23T04:32:28.357Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the canonical JWKS retry-contract linkage in model/knowledge-map/model.json and regenerated maintained views, plus wrote evidence/archive/oidc-jwks-retry-contract-normalized-linkage-repair-20260623.md documenting the exact source-backed boundary and why observed retry behavior remains unknown.",
+        "last_worker_completed_at": "2026-06-23T04:36:48.412Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T04:38:00.804Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted in owner review: the worker summary plus repo dirty-state evidence show the canonical JWKS retry-contract linkage landed in model/knowledge-map/model.json with regenerated maintained views and a dedicated archive note, while keeping the exact retry-contract boundary repo-local and leaving observed retry behavior explicitly unknown."
+      },
+      "session_id": "s_task_oidc-jwks-retry-contract-normalized-linkage-repair-20260623",
+      "session_history": [
+        "s_task_oidc-jwks-retry-contract-normalized-linkage-repair-20260623"
+      ],
+      "result": "Normalized the canonical JWKS retry-contract linkage in model/knowledge-map/model.json and regenerated maintained views, plus wrote evidence/archive/oidc-jwks-retry-contract-normalized-linkage-repair-20260623.md documenting the exact source-backed boundary and why observed retry behavior remains unknown.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T04:38:00.804Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted in owner review: the worker summary plus repo dirty-state evidence show the canonical JWKS retry-contract linkage landed in model/knowledge-map/model.json with regenerated maintained views and a dedicated archive note, while keeping the exact retry-contract boundary repo-local and leaving observed retry behavior explicitly unknown."
+      },
+      "status": "done"
+    }
+  ]
+}

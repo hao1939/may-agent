@@ -1,0 +1,353 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:20:38.202Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Archived the accepted VM prerelease maintained-surface done leaves for rows 25/26/27/29/32/34-equivalent surfaces now represented at parent level: capacity-based-surge, capacity-based-surge-maxUnavailable, mixed-SKU upgrade, mixed-SKU lifecycle implementation plus bounded model-evidence repair, and VMAS-to-VMS migration SLB all carry mounted-source/live-body evidence in their archive notes. The stale watchdog review request is satisfied by the already-accepted virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621 leaf, so the live frontier remains narrow and unchanged: virtualmachines-capacity-surge-model-status-reconciliation-20260621 stays the primary active truth-maintenance leaf for rows 25 and 26, vmpr-maintained-slice-checkpoint-isolation-20260621 stays the bounded repo-local checkpoint-slice mapping follow-up, and external-send-proof-dispatch-family-20260620 remains the single external-human transport blocker.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "virtualmachines-capacity-based-surge-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-25 VirtualMachines capacity-based-surge live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged initial-count plus bounded-surge upgrade contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-capacity-based-surge-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-capacity-based-surge.ts",
+        "../aks-rp-e2e/specs/virtualmachines-capacity-based-surge.json"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-capacity-based-surge.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-25 live-body implementation for the unchanged VirtualMachines capacity-based-surge contract from mounted source, without claiming a fresh cloud verdict",
+        "The implementation preserves the row-25 assertions already modeled for initial node count, observed surge during the validation window, the bounded surge ceiling despite maxSurge=4, and successful upgrade completion; it records the exact mounted source anchors used and keeps explicit execute-gate / Azure-auth prerequisites for any later live run",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-based-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:11:09.166Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-capacity-based-surge-live-body-implementation-20260621_20260621031109",
+        "assigned_at": "2026-06-21T03:11:09.215Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-capacity-based-surge-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-capacity-based-surge-live-body-implementation-20260621_20260621031109",
+        "worker_started_at": "2026-06-21T03:11:24.022Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the row-25 VirtualMachines capacity-based-surge replay is already an execute-gated live-body implementation, ran bounded local validation/gate checks, and wrote a durable archive note at evidence/archive/virtualmachines-capacity-based-surge-live-body-implementation-20260621.md documenting exact mounted-source anchors, commands, and resume conditions.",
+        "last_worker_completed_at": "2026-06-21T03:12:55.833Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:14:16.967Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/virtualmachines-capacity-based-surge-live-body-implementation-20260621.md: the row-25 replay was already truthfully execute-gated, check/build/gate validations were run locally, exact mounted source anchors were recorded, and no out-of-scope broadening or unsupported product verdict was claimed."
+      },
+      "session_id": "s_task_virtualmachines-capacity-based-surge-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-capacity-based-surge-live-body-implementation-20260621"
+      ],
+      "result": "Verified the row-25 VirtualMachines capacity-based-surge replay is already an execute-gated live-body implementation, ran bounded local validation/gate checks, and wrote a durable archive note at evidence/archive/virtualmachines-capacity-based-surge-live-body-implementation-20260621.md documenting exact mounted-source anchors, commands, and resume conditions.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:14:16.967Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/virtualmachines-capacity-based-surge-live-body-implementation-20260621.md: the row-25 replay was already truthfully execute-gated, check/build/gate validations were run locally, exact mounted source anchors were recorded, and no out-of-scope broadening or unsupported product verdict was claimed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-26 VirtualMachines capacity-based-surge-maxUnUnavailable live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged dual-pool maxUnavailable versus surge contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-capacity-based-surge-maxunavailable.ts",
+        "../aks-rp-e2e/specs/virtualmachines-capacity-based-surge-maxunavailable.json"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-capacity-based-surge-maxunavailable.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-26 live-body implementation for the unchanged VirtualMachines dual-pool surge/maxUnavailable contract.",
+        "The implementation preserves the row-26 assertions already modeled for initial userpool1/userpool2 counts, no-surge fallback on the first pool, partial surge on the second pool, maxUnavailable-disabled-with-surge semantics, and successful upgrades; it records the exact mounted source anchors used and keeps explicit execute-gate / Azure-auth prerequisites for any later live run.",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-based-surge-maxunavailable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:06:39.112Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621_20260621030639",
+        "assigned_at": "2026-06-21T03:06:39.210Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621_20260621030639",
+        "worker_started_at": "2026-06-21T03:07:02.515Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated row-26 maintained metadata/views to reflect the existing execute-capable replay for virtualmachines-capacity-based-surge-maxunavailable, and wrote a durable archive note with mounted-source anchors plus exact validation/gate results.",
+        "last_worker_completed_at": "2026-06-21T03:10:46.937Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:11:55.588Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621.md: mounted-source anchors, maintained-surface updates, row-26 check/build/gate results, and regenerated views prove the execute-gated live-body surface is already implemented locally; the knowledge-map validator failure is documented as pre-existing project-wide noise, not a row-26 regression."
+      },
+      "session_id": "s_task_virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621"
+      ],
+      "result": "Updated row-26 maintained metadata/views to reflect the existing execute-capable replay for virtualmachines-capacity-based-surge-maxunavailable, and wrote a durable archive note with mounted-source anchors plus exact validation/gate results.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:11:55.588Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-live-body-implementation-20260621.md: mounted-source anchors, maintained-surface updates, row-26 check/build/gate results, and regenerated views prove the execute-gated live-body surface is already implemented locally; the knowledge-map validator failure is documented as pre-existing project-wide noise, not a row-26 regression."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-29 VirtualMachines mixed-SKU lifecycle live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged mixed-SKU create-scale lifecycle contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b.md"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-mixed-sku-lifecycle.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-29 live-body implementation for the unchanged VirtualMachines mixed-SKU lifecycle contract.",
+        "The implementation preserves the row-29 assertions already modeled for the mixed-SKU create and scale lifecycle path, records the exact mounted source anchors used, and keeps explicit execute-gate / Azure-auth prerequisites for any later live run without broadening into row-27 upgrade or row-30 deallocate surfaces.",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:12:06.829Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b_20260621031206",
+        "assigned_at": "2026-06-21T03:12:06.879Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b_20260621031206",
+        "worker_started_at": "2026-06-21T03:12:20.780Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the row-29 VirtualMachines mixed-SKU lifecycle live-body implementation against mounted AKS RP source and wrote a durable follow-up archive note documenting source anchors, bounded replay behavior, validation results, and the separate model-evidence inconsistency still outside this leaf’s scope.",
+        "last_worker_completed_at": "2026-06-21T03:13:44.955Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:14:17.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b.md: the row-29 replay/spec/model surfaces remain source-grounded and execute-gated, the row-30 boundary was rechecked locally, and the separate unknown-evidence validator defect is explicitly noted as out-of-scope for this implementation leaf."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b"
+      ],
+      "result": "Verified the row-29 VirtualMachines mixed-SKU lifecycle live-body implementation against mounted AKS RP source and wrote a durable follow-up archive note documenting source anchors, bounded replay behavior, validation results, and the separate model-evidence inconsistency still outside this leaf’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:14:17.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/virtualmachines-mixed-sku-lifecycle-live-body-implementation-20260621b.md: the row-29 replay/spec/model surfaces remain source-grounded and execute-gated, the row-30 boundary was rechecked locally, and the separate unknown-evidence validator defect is explicitly noted as out-of-scope for this implementation leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the accepted knowledge-model/evidence inventory inconsistency for path.virtualmachines.mixed-sku-lifecycle so the row-29 branch no longer references unknown evidence id vm-prerelease-draft-promotion-r29-20260620-virtualmachines-mixed-sku-lifecycle, using the current accepted model/evidence inventory to either add the missing durable evidence entry or retarget the path to the correct existing evidence without changing row-29 product scope.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621.md"
+      ],
+      "acceptance": [
+        "The worker identifies the exact model location(s) and evidence inventory mismatch causing validate.ts to report unknown-evidence for path.virtualmachines.mixed-sku-lifecycle, cites the current accepted source/model anchors used, and applies the minimal bounded repo-local repair.",
+        "After the repair, the worker runs the relevant bounded validation commands (at minimum validate.ts and any directly affected view generation or row-local checks) and records exact commands/results, clearly separating any remaining unrelated global validator failures from the repaired row-29 evidence issue.",
+        "The archive note states the final evidence id/linkage chosen, why it is the truthful row-29 durable reference, and any remaining nextAction/resumeCondition that stays outside this repair leaf's scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:14:17.120Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621_20260621031417",
+        "assigned_at": "2026-06-21T03:14:17.168Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621_20260621031417",
+        "worker_started_at": "2026-06-21T03:14:34.672Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-29 VirtualMachines mixed-SKU lifecycle model/evidence mismatch by adding the missing evidence inventory entry in model/knowledge-map/model.json, regenerated derived views, and documented the bounded repair in evidence/archive/virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T03:16:13.811Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:17:07.997Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621.md: the worker identified the exact unknown-evidence inventory gap for path.virtualmachines.mixed-sku-lifecycle, added the missing truthful evidence entry without changing row-29 scope, regenerated the directly affected views, and showed the row-29 validator/replay wiring issue is cleared while separating unrelated global validator failures."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621"
+      ],
+      "result": "Repaired the row-29 VirtualMachines mixed-SKU lifecycle model/evidence mismatch by adding the missing evidence inventory entry in model/knowledge-map/model.json, regenerated derived views, and documented the bounded repair in evidence/archive/virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:17:07.997Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/virtualmachines-mixed-sku-lifecycle-model-evidence-repair-20260621.md: the worker identified the exact unknown-evidence inventory gap for path.virtualmachines.mixed-sku-lifecycle, added the missing truthful evidence entry without changing row-29 scope, regenerated the directly affected views, and showed the row-29 validator/replay wiring issue is cleared while separating unrelated global validator failures."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-27 VirtualMachines mixed-SKU upgrade live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged two-manual-profile maxSurge upgrade contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-mixed-sku-upgrade.ts",
+        "../aks-rp-e2e/specs/virtualmachines-mixed-sku-upgrade.json"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-mixed-sku-upgrade.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-27 live-body implementation for the unchanged VirtualMachines mixed-manual-profile maxSurge upgrade contract from mounted source, without claiming a fresh cloud verdict",
+        "The implementation preserves the row-27 assertions already modeled for two manual profiles before upgrade, maxSurge persistence, upgrade success, and post-upgrade profile/count preservation; it records the exact mounted source anchors used and keeps explicit execute-gate / Azure-auth prerequisites for any later live run",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note"
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:04:25.415Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621_20260621030425",
+        "assigned_at": "2026-06-21T03:04:25.464Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621_20260621030425",
+        "worker_started_at": "2026-06-21T03:04:43.944Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an execute-gated live-body replay for row-27 VirtualMachines mixed-SKU upgrade, updated row-27 maintained spec/model/view wording to reflect execute-capable-but-gated status, and wrote the requested archive note with exact source anchors and validation results.",
+        "last_worker_completed_at": "2026-06-21T03:09:44.767Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:11:09.119Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence shows the row-27 replay moved from source/spec wrapper to an execute-gated live-body implementation, updated the tightly coupled spec/model/view surfaces, recorded exact mounted-source anchors, and captured repo-local check/gate/formatting outcomes while preserving explicit no-fresh-cloud-verdict and resume-condition wording for the unchanged mixed-manual-profile maxSurge=2 contract."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-upgrade-live-body-implementation-20260621"
+      ],
+      "result": "Implemented an execute-gated live-body replay for row-27 VirtualMachines mixed-SKU upgrade, updated row-27 maintained spec/model/view wording to reflect execute-capable-but-gated status, and wrote the requested archive note with exact source anchors and validation results.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:11:09.119Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence shows the row-27 replay moved from source/spec wrapper to an execute-gated live-body implementation, updated the tightly coupled spec/model/view surfaces, recorded exact mounted-source anchors, and captured repo-local check/gate/formatting outcomes while preserving explicit no-fresh-cloud-verdict and resume-condition wording for the unchanged mixed-manual-profile maxSurge=2 contract."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-34 VirtualMachines VMAS-to-VMS migration SLB live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged Standard Load Balancer migration contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-vmas-to-vms-migration-slb.ts"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-vmas-to-vms-migration-slb.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-34 live-body implementation for the unchanged VirtualMachines VMAS-to-VMS Standard Load Balancer migration contract from mounted source, without claiming a fresh cloud verdict",
+        "The implementation preserves the row-34 assertions already modeled for the VMAS-to-VMS migration branch, records the exact mounted source anchors used, and keeps explicit execute-gate / Azure-auth prerequisites for any later live run",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note"
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-vmas-to-vms-migration-slb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:03:36.737Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621_20260621030336",
+        "assigned_at": "2026-06-21T03:03:36.789Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621_20260621030336",
+        "worker_started_at": "2026-06-21T03:03:46.622Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded row-34 VMAS→VMS Standard Load Balancer live-body implementation slice by updating `replays/virtualmachines-vmas-to-vms-migration-slb.ts` check-mode to validate the execute-capable body and reconciling the tightly coupled spec/coverage/model wording surfaces. Recorded exact mounted-source anchors, commands, gate/env outcomes, and remaining truthful next-action language in `evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md`.",
+        "last_worker_completed_at": "2026-06-21T03:09:10.609Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:09:55.384Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md: the row-34 replay now has row-local check coverage for the execute-gated live body, preserves the unchanged five-assertion Standard-LB migration contract from mounted source, updates tightly coupled wording surfaces truthfully, and records check/gate/env proof without claiming a live Azure verdict."
+      },
+      "session_id": "s_task_virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621"
+      ],
+      "result": "Completed the bounded row-34 VMAS→VMS Standard Load Balancer live-body implementation slice by updating `replays/virtualmachines-vmas-to-vms-migration-slb.ts` check-mode to validate the execute-capable body and reconciling the tightly coupled spec/coverage/model wording surfaces. Recorded exact mounted-source anchors, commands, gate/env outcomes, and remaining truthful next-action language in `evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:09:55.384Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md: the row-34 replay now has row-local check coverage for the execute-gated live body, preserves the unchanged five-assertion Standard-LB migration contract from mounted source, updates tightly coupled wording surfaces truthfully, and records check/gate/env proof without claiming a live Azure verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

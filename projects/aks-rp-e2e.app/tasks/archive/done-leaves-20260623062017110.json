@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:20:17.110Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 stale watchdog-review cleanup: the review request for storage-csi-disk-clone-carrier-landing-20260623 was already satisfied by its accepted review summary, so archive that done leaf to keep the live frontier truthful. The only active repo-local work remains storage-csi-disk-xfs-mounted-source-carrier-20260623, and the only blocked branch remains the single family-level external-human out-of-runtime proof wait with no new advancement evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-clone-carrier-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the mounted Azure Disk clone branch into bounded repo-local storage-csi carriers by authoring the exact feature/spec pair and archive note for the same Azure Disk handwritten family, using mounted azurediskcsi.go clone facts only and without widening into resize/raw-block/xfs/file/blob/model-view linkage or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-carrier-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact mounted Azure Disk clone source lines and any repo-local comparison files reviewed, then records the precise clone contract carried forward or the exact source-equivalent evidence ceiling reached.",
+        "If a truthful carrier landing is possible, the bounded repo-local feature/spec files for the Azure Disk clone branch are created or updated and the note cites the exact file paths plus non-mutating validation/check commands run; otherwise the note records the exact remaining repo-local gap and why broader branches or execution should not open yet.",
+        "Scope stays bounded to the mounted Azure Disk clone branch and regular learning only: no cloud mutation, no model/view regeneration, no reopening of the external-human wait family, and no widening into resize/raw-block/xfs/Azure File/Blob siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:14:19.851Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-clone-carrier-landing-20260623_20260623061425",
+        "assigned_at": "2026-06-23T06:14:25.627Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-clone-carrier-landing-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-clone-carrier-landing-20260623_20260623061425",
+        "worker_started_at": "2026-06-23T06:14:47.347Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed bounded repo-local Azure Disk clone carriers by authoring features/storage-csi/disk-clone.yaml, specs/storage-csi-disk-clone.json, and an archive note grounded only in mounted azurediskcsi.go clone lines plus helper/adjacent-carrier review.",
+        "last_worker_completed_at": "2026-06-23T06:18:34.387Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:19:24.209Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a bounded repo-local carrier landing: the archive note records exact mounted Azure Disk clone source anchors, created features/storage-csi/disk-clone.yaml and specs/storage-csi-disk-clone.json, names the non-mutating validation commands run, and explicitly limits scope to repo-local source-grounded learning with no execution or product verdict claims."
+      },
+      "session_id": "s_task_storage-csi-disk-clone-carrier-landing-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-clone-carrier-landing-20260623"
+      ],
+      "result": "Landed bounded repo-local Azure Disk clone carriers by authoring features/storage-csi/disk-clone.yaml, specs/storage-csi-disk-clone.json, and an archive note grounded only in mounted azurediskcsi.go clone lines plus helper/adjacent-carrier review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:19:24.209Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a bounded repo-local carrier landing: the archive note records exact mounted Azure Disk clone source anchors, created features/storage-csi/disk-clone.yaml and specs/storage-csi-disk-clone.json, names the non-mutating validation commands run, and explicitly limits scope to repo-local source-grounded learning with no execution or product verdict claims."
+      },
+      "status": "done"
+    }
+  ]
+}

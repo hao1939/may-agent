@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T18:32:41.319Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner accepted the westus2 cluster-count family post-checkpoint review: no new durable same-surface recovery proof, reviewed alternate live-surface proof, or authoritative reroute/decline landed, so wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the single truthful family blocker. The spec-verification lane therefore stays intentionally narrow: three assigned single-spec verifiers continue draining the active wave, the four GitHub run publication waits still stand until same-run artifacts or terminal status appear, and the exact external tuple wait remains unchanged until the routed reply changes bounded next action.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "review-westus2-cluster-count-preflight-family-post-checkpoint-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the already-dispatched westus2 cluster-count preflight recovery/reroute family at the next durable checkpoint and either accept returned same-surface recovery/reroute evidence or record why the shared family wait remains the single truthful blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md"
+      ],
+      "acceptance": [
+        "The review checks durable reply/proof surfaces tied to runner:staging-westus2-cluster-count-preflight without launching a duplicate rerun.",
+        "If new proof or an authoritative reroute/decline exists, the evidence names the resulting tree successor; otherwise it records why wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the only truthful live blocker.",
+        "The note references the affected family wait and any impacted spec branches such as spec.net-integration.multinic-dualstack."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-cluster-count-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T18:29:26.198Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-westus2-cluster-count-preflight-family-post-checkpoint-20260629_20260629182935",
+        "assigned_at": "2026-06-29T18:29:35.103Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-westus2-cluster-count-preflight-family-post-checkpoint-20260629",
+        "worker_started_attempt_id": "a_review-westus2-cluster-count-preflight-family-post-checkpoint-20260629_20260629182935",
+        "worker_started_at": "2026-06-29T18:29:53.686Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the post-checkpoint westus2 cluster-count family reply/proof surfaces without rerunning anything and wrote evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md concluding that wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the only truthful live blocker.",
+        "last_worker_completed_at": "2026-06-29T18:31:29.819Z",
+        "last_worker_evidence": [
+          "evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T18:32:41.264Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-29 checkpoint rereview: evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md rechecked durable reply/proof surfaces and found no same-surface recovery proof, reviewed alternate live-surface proof, or authoritative reroute/decline, so wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the single truthful blocker for the westus2 cluster-count family."
+      },
+      "session_id": "s_task_review-westus2-cluster-count-preflight-family-post-checkpoint-20260629",
+      "session_history": [
+        "s_task_review-westus2-cluster-count-preflight-family-post-checkpoint-20260629"
+      ],
+      "result": "Reviewed the post-checkpoint westus2 cluster-count family reply/proof surfaces without rerunning anything and wrote evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md concluding that wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the only truthful live blocker.",
+      "evidence": [
+        "evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:32:41.264Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-29 checkpoint rereview: evidence/archive/review-westus2-cluster-count-preflight-family-post-checkpoint-20260629.md rechecked durable reply/proof surfaces and found no same-surface recovery proof, reviewed alternate live-surface proof, or authoritative reroute/decline, so wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 remains the single truthful blocker for the westus2 cluster-count family."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:04:59.708Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update cleared the stale watchdog review residue for the SecOps FIPS root-config preservation landing: the narrow mounted-source-backed carrier/model slice is already owner-reviewed and remains represented by its archive note plus repo-local carrier/spec/model/view edits, while the visible frontier stays unchanged with the active Network Swift v2 mounted-source authority reconcile leaf and the single external-human family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-root-config-preservation-model-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract one mounted-source-backed SecOps FIPS root-config preservation delta packet for the remaining Phase 6 tag-only preview-header no-op, Phase 7 managed-cluster omit-EnableFIPS preservation, and Phase 9 delete/recreate-pool inheritance residue, naming the exact cluster_fips.go plus suite/plan anchors and the narrowest repo-local carriers/spec/path ids that should absorb each residue without broad duplicate wrappers or cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-root-config-preservation-model-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note at ../aks-rp-e2e/evidence/archive/secops-fips-root-config-preservation-model-landing-20260623.md cites the exact mounted source anchors for the Phase 6/7/9 residue and maps each residue item to the narrowest truthful repo-local carrier/spec/path ids or gaps still needing edits.",
+        "The note explicitly explains why the prior broad landing leaf was decomposed, confirms no repo-local model/view edits or cloud mutation were attempted in this slice, and leaves a concrete follow-up landing target for the next worker task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T08:48:34.355Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-23T08:54:32.024Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-root-config-preservation-model-landing-20260623_retry_20260623085432",
+        "worker_started_attempt_id": "a_secops-fips-root-config-preservation-model-landing-20260623_20260623085432",
+        "worker_started_at": "2026-06-23T08:54:58.868Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the narrow SecOps FIPS root-config preservation carrier/model slice by adding the source-spec replay, registering the spec in specs/index.json, adding normalized scenario/DAG/feature/path/evidence records in model/knowledge-map/model.json, regenerating path-summary, and writing the requested archive note with exact mounted-source anchors and no-cloud confirmation.",
+        "last_worker_completed_at": "2026-06-23T08:58:53.643Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-23T08:54:31.974Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Rejected owner review: worker reported blocked/error with no evidence, and expected artifact ../aks-rp-e2e/evidence/archive/secops-fips-root-config-preservation-model-landing-20260623.md is missing, so acceptance is unverified and this cannot stay review-ready.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_secops-fips-root-config-preservation-model-landing-20260623_20260623084834",
+        "current_attempt_id": "a_secops-fips-root-config-preservation-model-landing-20260623_20260623085432",
+        "reviewed_at": "2026-06-23T09:00:13.556Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the landing note and repo-local check evidence show the narrow SecOps FIPS root-config preservation carrier was already landed across replay/spec/model/view surfaces with exact Phase 6/7/9 mounted-source lineage and no cloud mutation."
+      },
+      "session_history": [
+        "s_task_secops-fips-root-config-preservation-model-landing-20260623",
+        "s_task_secops-fips-root-config-preservation-model-landing-20260623_retry_20260623085432"
+      ],
+      "result": "Landed the narrow SecOps FIPS root-config preservation carrier/model slice by adding the source-spec replay, registering the spec in specs/index.json, adding normalized scenario/DAG/feature/path/evidence records in model/knowledge-map/model.json, regenerating path-summary, and writing the requested archive note with exact mounted-source anchors and no-cloud confirmation.",
+      "evidence": [],
+      "session_id": "s_task_secops-fips-root-config-preservation-model-landing-20260623_retry_20260623085432",
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:00:13.556Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the landing note and repo-local check evidence show the narrow SecOps FIPS root-config preservation carrier was already landed across replay/spec/model/view surfaces with exact Phase 6/7/9 mounted-source lineage and no cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:49:42.964Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease repo-local frontier follow-through is now absorbed through source-order row 50 / maintained row 49: the accepted CAS scale-from-zero taints CriticalAddonsOnly frontier-proof packet preserves exact row-numbering truth, cites mounted prerelease/checkin adjacency, and proves dedicated row-49 carriers already cover the branch without new model/spec/replay authoring or cloud execution. The only live regular-learning frontier is now vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621, which should stay bounded to source-order row 51 adjacency plus canonical carrier/alias reuse only and must name the next truthful sibling or stop line before any successor is created. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621, which stays as the single truthful external-human-transport wait because no newer real send/handoff/escalation proof or authoritative reply exists and the blocker already carries the 2026-06-22T10:08:46Z re-review threshold.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/evidence-feedback lane: produce a bounded source-order row-50 CAS scale-from-zero taints CriticalAddonsOnly frontier-proof packet that ties the exact next adjacent VM prerelease branch after the accepted CAS scale-from-zero labels FIPS frontier packet to its already-landed canonical repo-local carriers by source/evidence reuse only, without reopening CAS model/spec/replay authoring or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing the exact mounted checkin/prerelease source-order adjacency for source-order row 50 and the CAS scale-from-zero taints CriticalAddonsOnly plan, with exact row-numbering truth preserved (source-order row 50 versus maintained pipeline row 49).",
+        "Reuse and cite the existing canonical CAS scale-from-zero taints CriticalAddonsOnly feature/spec/replay/model/evidence carriers to prove no new CAS model/spec/replay authoring is needed, and explicitly bound this task to evidence/alias reuse only.",
+        "Name the next truthful follow-up boundary after this packet (the exact adjacent sibling or a source-backed stop line), while making no model/knowledge-map edits and no cloud mutation claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:47:13.313Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621_20260621194713",
+        "assigned_at": "2026-06-21T19:47:13.366Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621_20260621194713",
+        "worker_started_at": "2026-06-21T19:47:23.174Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded frontier-proof packet at evidence/archive/vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621.md, proving source-order row 50 vs maintained pipeline row 49 adjacency and reusing the existing canonical row-49 carriers without model/spec/replay/cloud changes.",
+        "last_worker_completed_at": "2026-06-21T19:49:24.378Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:49:37.103Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived packet proves the exact mounted checkin/prerelease source-order adjacency for source-order row 50 CAS scale-from-zero taints CriticalAddonsOnly, preserves the row-50 versus maintained-pipeline-row-49 numbering truth, reuses already-landed canonical spec/replay/model/evidence carriers without reopening authoring or cloud execution, and names CAS StatefulSet as the next truthful adjacent follow-up boundary."
+      },
+      "session_id": "s_task_vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621"
+      ],
+      "result": "Produced the bounded frontier-proof packet at evidence/archive/vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621.md, proving source-order row 50 vs maintained pipeline row 49 adjacency and reusing the existing canonical row-49 carriers without model/spec/replay/cloud changes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:49:37.103Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived packet proves the exact mounted checkin/prerelease source-order adjacency for source-order row 50 CAS scale-from-zero taints CriticalAddonsOnly, preserves the row-50 versus maintained-pipeline-row-49 numbering truth, reuses already-landed canonical spec/replay/model/evidence carriers without reopening authoring or cloud execution, and names CAS StatefulSet as the next truthful adjacent follow-up boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

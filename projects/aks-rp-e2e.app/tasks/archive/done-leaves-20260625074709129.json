@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T07:47:09.129Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner post-completion review accepts the serverless virtual-nodes multi-pod burst model reconciliation as durable path-local evidence: the archive artifact and maintained model/path-summary now truthfully preserve the exact 3-pod execute-capable witness boundary, explicit mutation gate, and strong one-container-group-per-pod expectation while keeping the path unknown/non-live. Archive that completed child under the project root, leave natgw-v2-migration-v2-to-block-model-reconciliation-20260625 as the single active regular-learning leaf, and keep the five exact external returned-proof waits unchanged under focus-mounted-source-coverage-closure-and-external-wait-20260623 until returned evidence arrives or the on/after-2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the source/spec/replay/model contract for path.serverless-virtual-nodes.multi-pod-burst after the bounded replay-shell implementation: verify that the knowledge map and path-summary truthfully express the exact 3-pod ACI burst boundary, the one-container-group-per-pod expectation, the execute gate, and the remaining live-only unknowns; update model text only where the current wording is incomplete or misleading.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the implemented replay shell, spec, and current model/path-summary wording; it records the accepted inputs, exact expectations, future execute gate, and the remaining live-only unknown edges for path.serverless-virtual-nodes.multi-pod-burst without performing cloud execution.",
+        "If model/knowledge-map/model.json or model/knowledge-map/views/path-summary.json understate or misstate the bounded 3-pod burst contract, they are updated consistently and the artifact names the exact changed fields; otherwise the artifact explicitly proves the existing wording is already sufficient."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.multi-pod-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T07:38:44.798Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625_20260625073847",
+        "assigned_at": "2026-06-25T07:38:47.354Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625_20260625073847",
+        "worker_started_at": "2026-06-25T07:39:09.021Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the serverless multi-pod burst model contract by updating model/knowledge-map/model.json and regenerating model/knowledge-map/views/path-summary.json so path.serverless-virtual-nodes.multi-pod-burst now explicitly reflects the exact 3-pod execute-capable replay boundary, probe gate, and strong one-container-group-per-pod expectation; also wrote the requested archive artifact documenting the reconciliation and evidence.",
+        "last_worker_completed_at": "2026-06-25T07:44:33.222Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T07:45:43.689Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive artifact documents the mounted source/spec/replay/model reconciliation for path.serverless-virtual-nodes.multi-pod-burst, and the worker updated model/knowledge-map/model.json plus regenerated model/knowledge-map/views/path-summary.json so the maintained wording now explicitly carries the exact 3-pod execute-capable witness boundary, strong one-container-group-per-pod expectation, and explicit mutation gate while preserving the path as unknown/non-live."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625"
+      ],
+      "result": "Reconciled the serverless multi-pod burst model contract by updating model/knowledge-map/model.json and regenerating model/knowledge-map/views/path-summary.json so path.serverless-virtual-nodes.multi-pod-burst now explicitly reflects the exact 3-pod execute-capable replay boundary, probe gate, and strong one-container-group-per-pod expectation; also wrote the requested archive artifact documenting the reconciliation and evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T07:45:43.689Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive artifact documents the mounted source/spec/replay/model reconciliation for path.serverless-virtual-nodes.multi-pod-burst, and the worker updated model/knowledge-map/model.json plus regenerated model/knowledge-map/views/path-summary.json so the maintained wording now explicitly carries the exact 3-pod execute-capable witness boundary, strong one-container-group-per-pod expectation, and explicit mutation gate while preserving the path as unknown/non-live."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:47:30.388Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Evidence-feedback/model-update rollup: accepted 2026-06-20 repairs now leave one active runtime-diagnosis thread, one precise shared checkpoint wait, and the App Routing custom-domain ingress verdict correction durably closed. The new accepted reclassify successor consumed explicit-VM-size rerun evidence plus the runner-verdict repair so path.app-routing.custom-domain-ingress is treated as pass rather than stale environment-blocked parser drift, with no new cloud rerun. Planner-timeout follow-up remains the live bounded diagnosis thread for the newer 240000ms timeout cluster, while shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620 remains the single truthful wait for the helper-held model/view gate on the maintained seven-file batch. Archive completed repair leaves whose durable meaning is now carried by this lane summary and linked evidence/model surfaces.",
+  "archived": 8,
+  "tasks": [
+    {
+      "id": "managedsystem-day2-count-type-post-live-path-promotion-20260617",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After accepted live ManagedSystem day-2 count/type replay evidence exists, add dedicated capability-model path IDs and spec/model/view linkage for the direct existing-pool count and type mutation-negative branches so the live verdict has a precise durable home instead of being forced onto vmSize or reconcile-preservation paths. Do not run a cloud probe in this task.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/managedsystem-day2-count-type-post-live-path-promotion-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/managedsystem-day2-count-type-live-execute-gated-20260617.md plus the accepted path-gap reconcile note, then adds path.managedsystem.count-mutation-negative and path.managedsystem.type-mutation-negative (or records one exact repo-local blocker), updates the relevant spec/model/view linkage, and verifies the result does not relabel existing vmSize or reconcile-preservation paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T19:06:42.134Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:20.677Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:20.677Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "planner-timeout-24h-validation-window-note-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the accepted waiting-with-evidence judgment for aks-rp-e2e.planner.timeout-24h as a bounded validation note so the uncommitted metric-alert archive artifact is tied to one explicit task and its exact decay-based resume condition stays visible until the 24h window expires.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/metric-alert-planner-timeout-24h-waiting-with-evidence-20260619b.md"
+      ],
+      "acceptance": [
+        "Task context cites the accepted waiting-with-evidence archive artifact for aks-rp-e2e.planner.timeout-24h and records that the current breach is explained by the three in-window timeout samples already documented rather than a newly identified unfixed planner family.",
+        "Task states the exact validation resume condition from the artifact: review the next metrics snapshot after 2026-06-20T14:32:27.146Z, and if the metric remains nonzero or a newer planner wake times out, create a new root-cause repair leaf instead of continuing to wait.",
+        "Task remains evidence-tracking only: no speculative code edits, no duplicate repair task for the already accepted stale focus-plan-review fix, and no cloud/domain execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "metric:aks-rp-e2e.planner.timeout-24h"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:17:22.353Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.661Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-model-evidence-signal-burndown-20260620. Passive checkpoint/aging waits are no longer valid live work; the active burndown branch must reconcile the current state and create concrete update/repair work if still needed."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.661Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-model-evidence-signal-burndown-20260620. Passive checkpoint/aging waits are no longer valid live work; the active burndown branch must reconcile the current state and create concrete update/repair work if still needed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-knowledge-map-seven-file-checkpoint-shared-hold-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one shared root-cause task open for the repeated done-slice checkpoint blockage on the seven-file knowledge-map/model batch. Using the accepted unblock-decision note, the exact partition note, and the maintained-overlap owner matrix, track the single shared hold that currently prevents both aad-rbac-cli-crash-done-slice-checkpoint-retry-gated-20260620 and app-routing-shared-model-done-slice-checkpoint-retry-gated-20260620 from truthfully checkpointing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-checkpoint-shared-hold-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/shared-knowledge-map-done-slice-checkpoint-unblock-decision-20260620.md, evidence/archive/domain-checkpoint-shared-knowledge-map-slice-partition-20260620.md, and evidence/archive/domain-checkpoint-maintained-overlap-owner-matrix-20260620.md, and names the exact shared seven-file batch plus the current helper-reported model/project hold as the single blocker root cause.",
+        "Resume condition is precise: reopen checkpoint retries only after the helper no longer holds model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json under the shared model/project gate and the named sibling slices no longer cohabit the seven-file batch; until then this task remains the canonical shared hold for the two retry leaves.",
+        "Task stays bounded to blocker consolidation for already-accepted checkpoint work only: no cloud execution, no mixed-slice commit attempt, and no new feature/spec modeling."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:46:06.513Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:21.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:21.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "localdns-autodefault-upgrade-canonical-tuple-signal-watch-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep path.localdns.autodefault-on-upgrade visible as a bounded wait/model-watch branch now that the seeded execute frontier was superseded and the accepted canonical westus2/local 1.35.5->1.36.1 evidence already drives the current product-gap verdict. Track only the next truthful resume trigger: a later successful post-upgrade observation on the same canonical tuple through pool-version convergence, or another materially new signal that changes the bounded no-visibility reading.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-autodefault-upgrade-canonical-tuple-signal-watch-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites evidence/archive/localdns-auto-default-frontier-retarget-audit-20260620.md plus the current path.localdns.autodefault-on-upgrade model resumeCondition/nextAction, and records that no repo-local runner or contract repair frontier remains live.",
+        "Resume condition is precise: reactivate only when a later successful post-upgrade observation can hold the same westus2/local 1.35.5->1.36.1 tuple through pool-version convergence, or another materially new signal changes the current bounded no-visibility/product-gap reading.",
+        "Task remains a blocked wait/model-watch node only: no cloud execution, no replay/spec edits, and no broad LocalDNS-family rediscovery until one of those signals arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:localdns-auto-default",
+        "path:path.localdns.autodefault-on-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T04:22:04.905Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:21.986Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:21.986Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "blocked-model-evidence-signal-burndown-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace stale model/evidence/checkpoint waits with active reconciliation: inspect model status, knowledge-map outputs, stale terminal/verdict flags, checkpoint holds, and signal-watch leaves; update or regenerate the model/evidence views where safe and collapse duplicate stale waits into one current fact per issue.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/blocked-model-evidence-signal-burndown-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note lists every model/evidence wait it replaces, what was regenerated or intentionally left unchanged, and the exact current model status after the pass.",
+        "Stale checkpoint/signal waits are either closed, converted into concrete model update work, or linked to one precise living carrier.",
+        "No passive aging-only wait remains unless it has a concrete timestamped review trigger."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:35:44.499Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_blocked-model-evidence-signal-burndown-20260620_20260620083641",
+        "assigned_at": "2026-06-20T08:36:41.373Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_blocked-model-evidence-signal-burndown-20260620",
+        "worker_started_attempt_id": "a_blocked-model-evidence-signal-burndown-20260620_20260620083641",
+        "worker_started_at": "2026-06-20T08:39:05.839Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the owner-facing archive note `evidence/archive/blocked-model-evidence-signal-burndown-20260620.md` after reconciling stale model/evidence/checkpoint/signal waits, refreshed maintained knowledge-map views, and documented the exact current model status plus the remaining planner-timeout and checkpoint-specific follow-up needs.",
+        "last_worker_completed_at": "2026-06-20T08:41:33.703Z",
+        "last_worker_evidence": [],
+        "rolled_up_at": "2026-06-20T08:45:24.115Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_blocked-model-evidence-signal-burndown-20260620",
+      "session_history": [
+        "s_task_blocked-model-evidence-signal-burndown-20260620"
+      ],
+      "context": {
+        "rollup_summary": "Owner review accepted the current-fact reconciliation. The duplicate LocalDNS watch is now treated as living only on path.localdns.autodefault-on-upgrade, the stale planner 24h validation-window wait has been replaced by planner-timeout-current-runtime-family-repair-20260620, and the shared knowledge-map helper hold now survives only as blocked shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620 with an exact helper-clear resume trigger.",
+        "archived_done_leaf_count": 1,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620084524115.json",
+            "archived": 1,
+            "at": "2026-06-20T08:45:24.115Z",
+            "summary": "Owner review accepted the current-fact reconciliation. The duplicate LocalDNS watch is now treated as living only on path.localdns.autodefault-on-upgrade, the stale planner 24h validation-window wait has been replaced by planner-timeout-current-runtime-family-repair-20260620, and the shared knowledge-map helper hold now survives only as blocked shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620 with an exact helper-clear resume trigger.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "model-evidence-living-waits-current-fact-reconcile-20260620"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume the accepted explicit-VM-size devbox rerun plus runner-verdict repair into durable model/view truth so path.app-routing.custom-domain-ingress stops presenting as environment-blocked when accepted cloud evidence already supports pass.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620.md"
+      ],
+      "acceptance": [
+        "Task updates the durable model/view/task surfaces for path.app-routing.custom-domain-ingress using the accepted explicit-VM-size rerun evidence plus the accepted runner-verdict repair, without another cloud rerun.",
+        "The pass runs local knowledge-map validation and view regeneration after the model/view update and records the exact files/statuses changed.",
+        "Resulting tree/model truth clearly treats the old blocked runner summary as stale parser drift or superseded evidence when supported, not as the current product verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:app-routing.custom-domain-ingress"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:44:49.744Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620_20260620084500",
+        "assigned_at": "2026-06-20T08:45:00.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620",
+        "worker_started_attempt_id": "a_app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620_20260620084500",
+        "worker_started_at": "2026-06-20T08:46:00.741Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reclassified App Routing custom-domain ingress durable truth from environment-blocked to pass by adding the explicit-VM-size rerun and runner-verdict repair evidence into model/knowledge-map/model.json, regenerating knowledge-map views, and writing the successor evidence note.",
+        "last_worker_completed_at": "2026-06-20T08:46:00.769Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:46:32.773Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620.md explains why the accepted explicit-VM-size rerun and runner-verdict repair supersede the stale environment-blocked parser result, and the packet now shows path.app-routing.custom-domain-ingress as final pass so no further rerun is needed for this canonical path."
+      },
+      "session_id": "s_task_app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620",
+      "session_history": [
+        "s_task_app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:46:32.773Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker output: evidence/archive/app-routing-custom-domain-ingress-explicit-vm-size-evidence-reclassify-successor-20260620.md explains why the accepted explicit-VM-size rerun and runner-verdict repair supersede the stale environment-blocked parser result, and the packet now shows path.app-routing.custom-domain-ingress as final pass so no further rerun is needed for this canonical path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "planner-timeout-current-runtime-family-repair-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Investigate the current planner-timeout runtime family behind metric aks-rp-e2e.planner.timeout-24h=7 using current planner-runs timeout rows and classify the still-failing wake family into one concrete local repair, retry contract, or exact escalation target instead of continuing the stale decay-only wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/planner-timeout-current-runtime-family-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current metric row, the newer planner-runs timeout evidence, and the concrete wake family or code path implicated by the post-fix regressions.",
+        "The pass produces one exact successor action: a local repair task, a bounded retry contract, or one precise external escalation with the missing owner-capability named.",
+        "It does not restate the old 24h validation-window wait and does not rely on aging-only rationale."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "planner:timeout-24h"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:45:04.126Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_planner-timeout-current-runtime-family-repair-20260620_20260620084524",
+        "assigned_at": "2026-06-20T08:45:24.167Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_planner-timeout-current-runtime-family-repair-20260620",
+        "reviewed_at": "2026-06-20T08:45:36.518Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the already-active planner-timeout-post-validation-regression-root-cause-repair-20260620, which already carries the same current metric/planner-runs regression diagnosis with narrower acceptance and should remain the single live planner-timeout repair leaf."
+      },
+      "session_id": "s_task_planner-timeout-current-runtime-family-repair-20260620",
+      "session_history": [
+        "s_task_planner-timeout-current-runtime-family-repair-20260620"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:45:36.518Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the already-active planner-timeout-post-validation-regression-root-cause-repair-20260620, which already carries the same current metric/planner-runs regression diagnosis with narrower acceptance and should remain the single live planner-timeout repair leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the remaining shared seven-file knowledge-map checkpoint hold as one exact model-hygiene wait keyed to the helper hold on model.json/path-summary and the overlapping sibling slices, so the issue stays visible without pretending repo-check drift or generic environment blocking.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620.md"
+      ],
+      "acceptance": [
+        "The task records the exact seven-file maintained batch still cohabited, the helper-held files, and the named sibling slices sharing the batch.",
+        "The live blocker text names one exact resume trigger: helper clears model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json under the shared project/model gate and the sibling slices no longer cohabit the maintained batch.",
+        "No aging-only rationale or environment-runtime phrasing remains on the surviving carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:45:12.729Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:45:36.468Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the already-blocked shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620, which already carries the same exact helper-clear plus sibling-slice-clear resume trigger and should remain the single live checkpoint wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:45:36.468Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the already-blocked shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620, which already carries the same exact helper-clear plus sibling-slice-clear resume trigger and should remain the single live checkpoint wait."
+      },
+      "status": "done"
+    }
+  ]
+}

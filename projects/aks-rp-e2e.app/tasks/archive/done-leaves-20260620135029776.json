@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:50:29.776Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 owner stale-active repair + Windows decomposition: accepted the bounded Windows batch result as a row-190 terminal-exclusion landing plus a source-grounded split of remaining Windows rows into exact successor leaves. Active authoring remains fleet, small-misc, row-137 FIPS egress lockdown, and the checkpoint-helper task, while the TLS/credential/upgrade batch was explicitly requeued and freshly reassigned after a session-not-running watchdog event so its active state again reflects a live owner decision. Backlog now includes row-190 ledger attachment plus exact Windows row 206, 212/213, and 216 successor leaves.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "vm-prerelease-gap-batch-autoscale-fips-conformance-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the mixed-family closure packet for VM prerelease rows 75, 76, 125, 131, 137, 138, 172, and 173 by recording row-level source/matrix dispositions, preserving the AKSConformance/AutoScaling/FIPS/RawUbuntu distinctions, and isolating any remaining exact authoring work into a concrete successor instead of leaving a broad unresolved batch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-autoscale-fips-conformance-20260620.md"
+      ],
+      "acceptance": [
+        "The artifact records a row-level disposition for rows 75, 76, 125, 131, 137, 138, 172, and 173 with exact source/matrix evidence and preserves the core-vs-tunnel, service-principal-vs-spot, FIPS egress-lockdown-vs-no-image-pull, and RawUbuntu base-vs-servicetags distinctions.",
+        "Any row that is not actually closed to strict covered or terminal exclusion is isolated into one concrete successor task with an exact next authoring goal rather than being left as a vague missing-spec remainder.",
+        "The artifact confirms whether virtualmachine-prerelease coverage/features surfaces already overclaim any of these rows and leaves shared files unchanged when no truthful selector change is yet warranted."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:56.440Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:40:44.579Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-autoscale-fips-conformance-20260620_20260620134128",
+        "assigned_at": "2026-06-20T13:41:28.888Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-autoscale-fips-conformance-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-autoscale-fips-conformance-20260620_20260620134128",
+        "worker_started_at": "2026-06-20T13:41:59.439Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a new durable closure packet at evidence/archive/vm-prerelease-gap-batch-autoscale-fips-conformance-20260620.md that classifies rows 75, 76, 125, 131, 138, 172, and 173 as terminal-excluded for this pass, keeps row 137 as exact authoring work, and verifies the shared selector surface is already non-overclaiming for this batch.",
+        "last_worker_completed_at": "2026-06-20T13:44:54.527Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:46:52.774Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the closure packet in ../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-autoscale-fips-conformance-20260620.md: rows 75, 76, 125, 131, 138, 172, and 173 are truthfully terminal-excluded for this pass with row-specific source evidence, and row 137 is correctly split into the already-active bounded follow-on vm-prerelease-row137-fips-egress-lockdown-authoring-20260620 rather than left unresolved in this batch."
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-autoscale-fips-conformance-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-autoscale-fips-conformance-20260620"
+      ],
+      "result": "Wrote a new durable closure packet at evidence/archive/vm-prerelease-gap-batch-autoscale-fips-conformance-20260620.md that classifies rows 75, 76, 125, 131, 138, 172, and 173 as terminal-excluded for this pass, keeps row 137 as exact authoring work, and verifies the shared selector surface is already non-overclaiming for this batch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:46:52.774Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the closure packet in ../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-autoscale-fips-conformance-20260620.md: rows 75, 76, 125, 131, 138, 172, and 173 are truthfully terminal-excluded for this pass with row-specific source evidence, and row 137 is correctly split into the already-active bounded follow-on vm-prerelease-row137-fips-egress-lockdown-authoring-20260620 rather than left unresolved in this batch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-gap-batch-network-policy-uninstall-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec coverage for network-policy migration and uninstall rows 191-201 by extracting exact matrix/source intent, authoring grouped specs/replays where rows share one lifecycle, updating coverage/features selectors, and writing a source-grounded evidence packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-network-policy-uninstall-20260620.md",
+        "../aks-rp-e2e/specs/network-cni-vm-prerelease-calico-eno-migration-matrix.json",
+        "../aks-rp-e2e/specs/network-cni-vm-prerelease-npm-uninstall-matrix.json",
+        "../aks-rp-e2e/replays/network-cni-vm-prerelease-eno-uninstall-matrix.ts"
+      ],
+      "acceptance": [
+        "Rows 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, and 201 are each strict covered or terminal-excluded with row-level justification.",
+        "Grouped specs preserve the addonv1/addonv2, NodeSubnet/Kubenet/AzureCNIOverlay, Calico/NPM/Cilium, and uninstall/migration distinctions instead of broad family handwaving.",
+        "Updated coverage/features files include only proven rows and all new replays pass non-mutating check when runnable."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:56.296Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:40:44.579Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-network-policy-uninstall-20260620_20260620134149",
+        "assigned_at": "2026-06-20T13:41:49.696Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-network-policy-uninstall-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-network-policy-uninstall-20260620_20260620134149",
+        "worker_started_at": "2026-06-20T13:41:59.492Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Closed VM prerelease rows 191-201: added source-grounded Calico ENO migration and NPM uninstall matrix specs, shared non-mutating replay check, updated coverage/features/index, and verified replay/schema/wiring/plan selection.",
+        "last_worker_completed_at": "2026-06-20T13:46:00.404Z",
+        "last_worker_evidence": [],
+        "review_summary": "Accepted and closed: rows 191-201 strict covered with source-grounded specs/replay and updated pipeline coverage.",
+        "reviewed_at": "2026-06-20T13:46:17.466Z",
+        "reviewed_by": "task-tree-tool"
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-network-policy-uninstall-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-network-policy-uninstall-20260620"
+      ],
+      "result": "Closed VM prerelease rows 191-201: added source-grounded Calico ENO migration and NPM uninstall matrix specs, shared non-mutating replay check, updated coverage/features/index, and verified replay/schema/wiring/plan selection.",
+      "evidence": [],
+      "context": {
+        "acceptance_note": "Accepted and closed: rows 191-201 strict covered with source-grounded specs/replay and updated pipeline coverage."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:46:17.466Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-gap-batch-windows-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the bounded row-190 Windows runner harness gap and produce a source-grounded decomposition packet for the remaining Windows rows 206, 212, 213, and 216 so the oversized batch becomes exact successor work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-windows-20260620.md"
+      ],
+      "acceptance": [
+        "Row 190 is backed by exact mounted-source evidence and a terminal-exclusion spec/replay pair.",
+        "The artifact explains why rows 206, 212, 213, and 216 remain unresolved and groups them into concrete successor authoring slices.",
+        "Any unlanded coverage/index attachment or validation follow-up is named exactly rather than implied."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:37.592Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:39:37.650Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-windows-20260620_20260620133953",
+        "assigned_at": "2026-06-20T13:39:53.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-windows-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-windows-20260620_20260620133953",
+        "worker_started_at": "2026-06-20T13:39:54.243Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Authored a new row-190 terminal-exclusion spec/replay pair (`specs/windows-runner-pipeline-harness-virtualmachines.json`, `replays/windows-runner-pipeline-harness-virtualmachines.ts`) and wrote `evidence/archive/vm-prerelease-gap-batch-windows-20260620.md` documenting exact mounted-source findings for rows 190/206/212/213/216 plus the precise ledger/index follow-up the owner should apply.",
+        "last_worker_completed_at": "2026-06-20T13:49:13.184Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:50:15.921Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded batch repair: the worker landed a source-backed row-190 terminal-exclusion spec/replay pair and the artifact decomposes rows 206, 212/213, and 216 plus row-190 ledger attachment into exact follow-up leaves."
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-windows-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-windows-20260620"
+      ],
+      "result": "Authored a new row-190 terminal-exclusion spec/replay pair (`specs/windows-runner-pipeline-harness-virtualmachines.json`, `replays/windows-runner-pipeline-harness-virtualmachines.ts`) and wrote `evidence/archive/vm-prerelease-gap-batch-windows-20260620.md` documenting exact mounted-source findings for rows 190/206/212/213/216 plus the precise ledger/index follow-up the owner should apply.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:50:15.921Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded batch repair: the worker landed a source-backed row-190 terminal-exclusion spec/replay pair and the artifact decomposes rows 206, 212/213, and 216 plus row-190 ledger attachment into exact follow-up leaves."
+      },
+      "status": "done"
+    }
+  ]
+}

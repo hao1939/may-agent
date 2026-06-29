@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:46:26.420Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner blocked-frontier refill keeps the single truthful external-human-transport family wait unchanged and adds one new repo-local/source-grounded runnable leaf so free capacity is not treated as idle. Active work is now three bounded authoring branches: VM prerelease row-39 disable-SSH live replay authoring, speculor/netintegration MultiNIC DualStack carrier authoring, and VM prerelease row-25 capacity-based-surge live replay authoring. Each stays execute-gated and repo-local until separate cloud evidence exists; no duplicate blocker leaves were created because external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the only truthful wait for covered human-transport asks. The earlier same-goal row-25 leaf was replaced immediately because its conflict scope was too broad to assign safely in parallel.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row25-capacity-based-surge-live-replay-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the execute-gated repo-local live replay carrier for VM prerelease row 25 capacity-based surge, grounded in mounted AKS RP source and preserving the exact initial node count, observed-surge window, maxSurge capacity bound, and upgrade-success assertions without attempting cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row25-capacity-based-surge-live-replay-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus any directly referenced row-25 helper definitions, preserving the exact source-backed create/upgrade/validation contract for the capacity-based surge scenario.",
+        "The existing row-25 source-grounded spec/replay pair is upgraded into an execute-gated live replay carrier that keeps repo-local validation truthful: it may pass local check-mode and name the exact execute gate, but it must not claim live surge evidence or product verdicts without cloud execution evidence.",
+        "Artifact distinguishes what was authored locally from still-unexecuted surge behavior, and ends with the exact next review or execution-readiness follow-up needed after repo-local authoring is complete."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:46:12.819Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T05:46:26.274Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during the same owner refill pass because the initial leaf used an overbroad conflict scope (evidence/archive), which falsely conflicted with unrelated active authoring work and prevented assignment. A corrected sibling leaf with a single-artifact conflict scope carries the same row-25 capacity-based-surge authoring goal."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-22T05:46:26.274Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during the same owner refill pass because the initial leaf used an overbroad conflict scope (evidence/archive), which falsely conflicted with unrelated active authoring work and prevented assignment. A corrected sibling leaf with a single-artifact conflict scope carries the same row-25 capacity-based-surge authoring goal."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:08:47.532Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner blocked-frontier review confirms the spec loop is not underfilled: the mounted-source external-wait-family triage is already accepted and its durable meaning is preserved in prior evidence/rollups, while verify-spec-net-integration-nsg-control-single-spec-workflow-refill-20260626 remains the single truthful live child for this lane. Archive the completed VM prerelease triage child so the visible lane frontier stays aligned to the current single-spec verification attempt rather than carrying stale done clutter.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-triage-external-wait-family-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted /app/sources/aks-rp virtualmachine prerelease/checkin suites and referenced scenario definitions to classify the external-wait family's VM prerelease rows 25, 33, 40-43, 50, 75, and 76 into source-answerable local facts versus true operator-proof dependencies, then record whether the family-level wait can be narrowed without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-triage-external-wait-family-20260626.md"
+      ],
+      "acceptance": [
+        "Durable repo-local evidence cites exact anchors from prerelease.go, checkin.go, and any referenced mounted scenario definitions for each targeted row group, showing what inputs/expectations the source already answers and what remains unanswered locally.",
+        "The task leaves a concrete tree-ready conclusion for the external wait family: either narrow the rows that still truly need operator proof or explicitly confirm why the shared wait still truthfully covers them all, with no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:virtualmachines-prerelease-external-wait-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:54:20.346Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-triage-external-wait-family-20260626_20260626185420",
+        "assigned_at": "2026-06-26T18:54:20.391Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-triage-external-wait-family-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-triage-external-wait-family-20260626_20260626185420",
+        "worker_started_at": "2026-06-26T18:54:28.506Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable mounted-source triage artifact at evidence/archive/vm-prerelease-mounted-source-triage-external-wait-family-20260626.md classifying VM prerelease rows 25, 33, 40-43, 50, 75, and 76 into repo-local facts versus true external-proof dependencies, and concluded the family-level external wait can be narrowed to rows 33, 75, and 76 only.",
+        "last_worker_completed_at": "2026-06-26T18:58:59.561Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:59:37.748Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source triage artifact because it cites exact prerelease/checkin/scenario anchors for rows 25, 33, 40-43, 50, 75, and 76 and supports a concrete owner action: narrow the family-level external wait to VM prerelease row 33 plus shared-identity rows 75-76, removing rows 25, 40-43, and 50 from operator-proof scope without cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-triage-external-wait-family-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-triage-external-wait-family-20260626"
+      ],
+      "result": "Produced a durable mounted-source triage artifact at evidence/archive/vm-prerelease-mounted-source-triage-external-wait-family-20260626.md classifying VM prerelease rows 25, 33, 40-43, 50, 75, and 76 into repo-local facts versus true external-proof dependencies, and concluded the family-level external wait can be narrowed to rows 33, 75, and 76 only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:59:37.748Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source triage artifact because it cites exact prerelease/checkin/scenario anchors for rows 25, 33, 40-43, 50, 75, and 76 and supports a concrete owner action: narrow the family-level external wait to VM prerelease row 33 plus shared-identity rows 75-76, removing rows 25, 40-43, and 50 from operator-proof scope without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -8,6 +8,10 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
+import {
+  defaultSpecLoopStatePath,
+  type SpecLoopState,
+} from "./lib/spec-loop-store.ts";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   normalizeTaskTreeInPlace,
@@ -30,6 +34,7 @@ type WatchdogConfig = {
   projectDir: string;
   treePath: string;
   stateDbPath: string;
+  specLoopStatePath: string;
   agent: string;
   maxConcurrent: number;
   staleNoActivityMs: number;
@@ -38,9 +43,18 @@ type WatchdogConfig = {
 
 type ActiveTaskSnapshot = {
   taskId: string;
+  currentAttemptId?: string;
   sessionId?: string;
   assignedAt?: string;
   workerStartedAt?: string;
+  workflow?: string;
+  verifierLiveness?: {
+    specId?: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  };
 };
 
 type OpenTaskSnapshot = {
@@ -72,6 +86,8 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
     projectDir,
     treePath: join(appDir, "tasks", "tree.json"),
     stateDbPath: field(raw, "stateDb") ?? "/app/.state/may.db",
+    specLoopStatePath:
+      field(raw, "specLoopState") ?? defaultSpecLoopStatePath(appDir),
     agent: field(raw, "agent") ?? defaultAgent,
     maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
     staleNoActivityMs: Number(field(raw, "staleNoActivityMs") ?? 600_000),
@@ -155,10 +171,26 @@ function waitingBacklogSnapshots(tree: TaskTree): OpenTaskSnapshot[] {
     .sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
 
-function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
+function activeTaskSnapshots(
+  tree: TaskTree,
+  verifierByTaskId: Map<
+    string,
+    {
+      specId: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >,
+): ActiveTaskSnapshot[] {
   return activeLeaves(tree)
     .map((task) => ({
       taskId: task.id,
+      currentAttemptId:
+        task.trace && typeof task.trace.current_attempt_id === "string"
+          ? task.trace.current_attempt_id
+          : undefined,
       sessionId:
         typeof task.session_id === "string" && task.session_id.trim()
           ? task.session_id.trim()
@@ -171,8 +203,58 @@ function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
         task.trace && typeof task.trace.worker_started_at === "string"
           ? task.trace.worker_started_at
           : undefined,
+      workflow:
+        typeof task.workflow === "string" && task.workflow.trim()
+          ? task.workflow.trim()
+          : undefined,
+      verifierLiveness: verifierByTaskId.get(task.id),
     }))
     .sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
+function loadVerifierLivenessByTaskId(path: string): Map<
+  string,
+  {
+    specId: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  }
+> {
+  const state = readJson<SpecLoopState | null>(path, null);
+  const byTaskId = new Map<
+    string,
+    {
+      specId: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >();
+  const specs = state?.specs ?? {};
+  for (const [specId, spec] of Object.entries(specs)) {
+    if (!spec || typeof spec !== "object") continue;
+    if (spec.status !== "running") continue;
+    if (!spec.taskId || typeof spec.taskId !== "string") continue;
+    byTaskId.set(spec.taskId, {
+      specId,
+      activeAttemptId:
+        typeof spec.activeAttemptId === "string" ? spec.activeAttemptId : null,
+      activeTaskSessionId:
+        typeof spec.activeTaskSessionId === "string"
+          ? spec.activeTaskSessionId
+          : null,
+      activeWorkflowRunId:
+        typeof spec.activeWorkflowRunId === "string"
+          ? spec.activeWorkflowRunId
+          : null,
+      heartbeatAt:
+        typeof spec.heartbeatAt === "string" ? spec.heartbeatAt : null,
+    });
+  }
+  return byTaskId;
 }
 
 function hasOpenWork(tree: TaskTree): boolean {
@@ -280,6 +362,26 @@ function activeTaskRestartReason(
   config: WatchdogConfig,
   task: ActiveTaskSnapshot,
 ): string | null {
+  if (task.workflow === "single-spec-verifier" && task.verifierLiveness) {
+    const sameSession =
+      task.verifierLiveness.activeTaskSessionId === task.sessionId;
+    const sameAttempt =
+      !!task.currentAttemptId &&
+      task.verifierLiveness.activeAttemptId === task.currentAttemptId;
+    if (sameSession && sameAttempt) {
+      const heartbeatMs = task.verifierLiveness.heartbeatAt
+        ? Date.parse(task.verifierLiveness.heartbeatAt)
+        : Number.NaN;
+      if (
+        Number.isFinite(heartbeatMs) &&
+        Date.now() - heartbeatMs <= config.staleNoActivityMs
+      ) {
+        return null;
+      }
+      return "verifier-no-heartbeat";
+    }
+  }
+
   if (!task.sessionId) {
     return activeTaskIsWithinStartGrace(config, task)
       ? null
@@ -319,6 +421,7 @@ function emitOwnerRequested(
 ): void {
   try {
     ctx.dispatchEvent("project.owner.requested", {
+      target: { project: "aks-rp-e2e" },
       project: "aks-rp-e2e",
       reason,
       maxConcurrent: config.maxConcurrent,
@@ -342,7 +445,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     () => {
       const tree = readTree(config.treePath);
       if (!tree) return null;
-      const activeTasks = activeTaskSnapshots(tree);
+      const verifierByTaskId = loadVerifierLivenessByTaskId(
+        config.specLoopStatePath,
+      );
+      const activeTasks = activeTaskSnapshots(tree, verifierByTaskId);
       const reviewTasks = openTaskSnapshots(tree, "review");
       const blockedTasks = openTaskSnapshots(tree, "blocked");
       const waitingBacklogTasks = waitingBacklogSnapshots(tree);

@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:04:25.005Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed wake accepted the private-cluster authorized-service-tags carrier reconciliation as durable knowledge: the path is now truthfully modeled as the mounted deny-all -> AzureCloud lifecycle and the immediate continuation remains the active exact-live-run packet. Archived low-value completed children for this slice: network-acns-retina basic authoring from mounted source, vmpr-row38 Azure RBAC replay source reconciliation, and private-cluster authorized-service-tags carrier reconciliation. Live frontier remains intentionally focused on three assigned repo-local leaves: repair the root AAD summary from mounted source, author the private-cluster exact live run packet, and turn vmpr row 37 managed AAD into the exact live executor; keep the single external human-transport send-proof wait compressed unchanged until real off-runtime transport evidence arrives.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "network-acns-retina-basic-authoring-from-mounted-source-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs + evidence feedback/model-update lane: author the exact repo-local carrier for mounted ACNS Scenario_Retina_Basic from /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/basic_retina.go and k8s_versions.go, preserving the distinct Azure Monitor metrics + Linux/AzureLinux/Windows topology contract without cloud execution or enterprise-family broadening.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md"
+      ],
+      "acceptance": [
+        "Create or update the exact repo-local Retina Basic carriers from mounted source: bounded feature/spec/replay surfaces that preserve the Scenario_Retina_Basic input contract (azure overlay, Azure Monitor metrics enabled, Linux/AzureLinux/Windows pools, no forced cilium/advancedNetworking enterprise semantics).",
+        "Update the affected model/knowledge-map surfaces and path/view artifacts to state the truthful current Retina Basic carrier decision, including whether the mounted K8s-minor matrix is represented canonically or via explicit variants, without inventing unsupported expectations.",
+        "Write evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md summarizing the exact mounted source files/symbols used, the maintained carriers created or repaired, any remaining bounded gap, and the repo-local validation performed; no cloud execution and no enterprise migration/update expansion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T13:57:50.777Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-basic-authoring-from-mounted-source-20260621_20260621135750",
+        "assigned_at": "2026-06-21T13:57:50.824Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-basic-authoring-from-mounted-source-20260621",
+        "worker_started_attempt_id": "a_network-acns-retina-basic-authoring-from-mounted-source-20260621_20260621135750",
+        "worker_started_at": "2026-06-21T13:58:04.081Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the exact mounted-source Retina Basic carrier set across feature/spec/replay/model surfaces, registered it in specs/index.json, regenerated maintained views, and wrote evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md with validation details and remaining live-execution gap.",
+        "last_worker_completed_at": "2026-06-21T14:02:13.415Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:02:45.747Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted based on evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md: mounted Scenario_Retina_Basic carriers were authored across feature/spec/replay/model/index surfaces, views regenerated, and validation stayed bounded to repo-local source-grounded checks with the remaining live-execution gap recorded."
+      },
+      "session_id": "s_task_network-acns-retina-basic-authoring-from-mounted-source-20260621",
+      "session_history": [
+        "s_task_network-acns-retina-basic-authoring-from-mounted-source-20260621"
+      ],
+      "result": "Authored the exact mounted-source Retina Basic carrier set across feature/spec/replay/model surfaces, registered it in specs/index.json, regenerated maintained views, and wrote evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md with validation details and remaining live-execution gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:02:45.747Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted based on evidence/archive/network-acns-retina-basic-authoring-from-mounted-source-20260621.md: mounted Scenario_Retina_Basic carriers were authored across feature/spec/replay/model/index surfaces, views regenerated, and validation stayed bounded to repo-local source-grounded checks with the remaining live-execution gap recorded."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-authorized-service-tags-carrier-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs + evidence feedback/model-update lane: repo-locally reconcile the maintained carriers for path.private-cluster-vnet-integration-auth-service-tags to the exact mounted Scenario_APIServer_Vnet_Integration_Authorized_Service_Tags contract by adding the dedicated feature packet and updating the existing spec/replay/model surfaces from the current create-only persisted-ranges approximation to the mounted deny-all -> AzureCloud access-transition lifecycle, with no cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-authorized-service-tags-carrier-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Create or update the dedicated repo-local feature/spec carriers for path.private-cluster-vnet-integration-auth-service-tags so they preserve the exact mounted source contract from /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/authorized_service_tags.go: create with authorizedIPRanges=[\"0.0.0.0/32\"], verify access blocked, update to authorizedIPRanges=[\"AzureCloud\"], verify access allowed, and cite the exact maintained files changed.",
+        "Update replays/private-cluster-vnet-integration-auth-service-tags.ts plus the affected model/knowledge-map/model.json and derived views/indexes so the maintained repo-local path/spec/replay/model surfaces no longer claim only persisted create-time CIDR checks, and record repo-local validation commands/searches proving the mounted source markers now appear correctly.",
+        "Write evidence/archive/private-cluster-authorized-service-tags-carrier-reconciliation-20260621.md summarizing the mounted source packet, the exact maintained-carrier drift repaired across feature/spec/replay/model/path surfaces, and the repo-local validation performed, with no cloud execution and no new external ask work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T13:53:34.332Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-authorized-service-tags-carrier-reconciliation-20260621_20260621135334",
+        "assigned_at": "2026-06-21T13:53:34.378Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-authorized-service-tags-carrier-reconciliation-20260621",
+        "worker_started_attempt_id": "a_private-cluster-authorized-service-tags-carrier-reconciliation-20260621_20260621135334",
+        "worker_started_at": "2026-06-21T13:53:52.107Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the private-cluster authorized-service-tags branch to the exact mounted deny-all → AzureCloud lifecycle by adding a dedicated feature packet, rewriting the spec/replay, updating model/spec-index surfaces, regenerating views, and writing a durable evidence report with repo-local validation.",
+        "last_worker_completed_at": "2026-06-21T14:02:54.112Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:03:50.784Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-authorized-service-tags-carrier-reconciliation-20260621.md and repo-local JSON checks confirm the maintained carriers were intentionally repaired to the exact mounted deny-all -> AzureCloud lifecycle, and model/spec surfaces now truthfully downgrade path.private-cluster-vnet-integration-auth-service-tags from stale approximate pass framing to source-grounded unknown pending an exact live rerun."
+      },
+      "session_id": "s_task_private-cluster-authorized-service-tags-carrier-reconciliation-20260621",
+      "session_history": [
+        "s_task_private-cluster-authorized-service-tags-carrier-reconciliation-20260621"
+      ],
+      "result": "Reconciled the private-cluster authorized-service-tags branch to the exact mounted deny-all → AzureCloud lifecycle by adding a dedicated feature packet, rewriting the spec/replay, updating model/spec-index surfaces, regenerating views, and writing a durable evidence report with repo-local validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:03:50.784Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-authorized-service-tags-carrier-reconciliation-20260621.md and repo-local JSON checks confirm the maintained carriers were intentionally repaired to the exact mounted deny-all -> AzureCloud lifecycle, and model/spec surfaces now truthfully downgrade path.private-cluster-vnet-integration-auth-service-tags from stale approximate pass framing to source-grounded unknown pending an exact live rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row38-azure-rbac-replay-source-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning / runner-replays lane: repo-locally reconcile the maintained row-38 AAD Azure RBAC carrier to the exact mounted Scenario_AAD_Azure_RBAC contract from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, repairing the dedicated replay/spec/model surfaces while keeping row 38 distinct from row 37 managed AAD lifecycle and row 36 Azure Monitor AAD auth, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Create or update the exact repo-local row-38 replay/spec carriers so they preserve the mounted Scenario_AAD_Azure_RBAC contract, including managed AAD + Azure RBAC create semantics, nil adminGroupObjectIDs after create, the mounted enable/disable lifecycle, login-VM-backed auth assertions, and bounded positive/negative Azure RBAC authorization expectations rather than generic source-fidelity placeholders.",
+        "Update the affected repo-local model/knowledge-map/path surfaces so path.aad-rbac.azure-rbac-authorization stays truthfully source-backed and clearly separated from row 37 managed-v2 lifecycle and row 36 Azure Monitor AAD auth, with no unsupported live-pass claim introduced.",
+        "Write evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md summarizing the exact mounted source files/symbols used, the maintained carriers repaired, any remaining bounded gap, and the repo-local validation performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row38-replay"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:00:08.642Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T14:00:08.685Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row38-azure-rbac-replay-source-reconciliation-20260621_20260621140011",
+        "assigned_at": "2026-06-21T14:00:11.756Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row38-azure-rbac-replay-source-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-row38-azure-rbac-replay-source-reconciliation-20260621_20260621140011",
+        "worker_started_at": "2026-06-21T14:00:30.619Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-38 reconciliation evidence at evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md and validated that the dedicated row-38 spec/replay/feature/model carriers already match the mounted Scenario_Azure_RBAC contract. Also recorded the remaining bounded drift in the broader root feature summary surface (features/aad-rbac.yaml).",
+        "last_worker_completed_at": "2026-06-21T14:02:12.966Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:02:45.799Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted for the scoped dedicated row-38 lane based on evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md: the row-38 replay/spec/feature/model/path carriers already match mounted Scenario_Azure_RBAC and remain separated from rows 36/37, while the broader root features/aad-rbac.yaml drift is tracked separately."
+      },
+      "session_id": "s_task_vmpr-row38-azure-rbac-replay-source-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-row38-azure-rbac-replay-source-reconciliation-20260621"
+      ],
+      "result": "Wrote the requested row-38 reconciliation evidence at evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md and validated that the dedicated row-38 spec/replay/feature/model carriers already match the mounted Scenario_Azure_RBAC contract. Also recorded the remaining bounded drift in the broader root feature summary surface (features/aad-rbac.yaml).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:02:45.799Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted for the scoped dedicated row-38 lane based on evidence/archive/vmpr-row38-azure-rbac-replay-source-reconciliation-20260621.md: the row-38 replay/spec/feature/model/path carriers already match mounted Scenario_Azure_RBAC and remain separated from rows 36/37, while the broader root features/aad-rbac.yaml drift is tracked separately."
+      },
+      "status": "done"
+    }
+  ]
+}

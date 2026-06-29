@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T01:21:19.515Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 blocked-frontier owner repair converted the stale workflowProgress refresh review into an explicit controller-pulse follow-up. The archived evidence proved the parent still advertises stale counters (tree 211 pending / 21 running / 72 done / openChildren 25 vs authoritative state 207 pending / 0 running / 97 done), but owner review rejected the prior leaf because no supported metadata-only worker primitive can truthfully update workflowProgress. Keep the earlier accepted App Routing default-domain reference conclusions intact, and make the new active controller-pulse leaf the single concrete next action so this lane refreshes parent counters via the real loop mechanism and truthfully reseeds collector children if the pulse succeeds.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "refresh-feature-reference-loop-workflow-progress-from-state-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh aks-feature-reference-loop.context.workflowProgress from .state/feature-reference-loop/state.json so the tree stops advertising stale 211/21/72/openChildren=25 counters, then record whether one bounded collector child was materially pulsed or whether the lane remains controller-only with the repaired pending queue.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-loop-workflow-progress-refresh-20260628.md"
+      ],
+      "acceptance": [
+        "Update the parent loop metadata so workflowProgress truthfully reflects the current state.json counts (or newer truthful counts observed during the task), including running/openChildren status and completionReady=false while pending work remains.",
+        "Archive a short before/after note citing the stale tree counters, the state-file counters used for refresh, and whether the refresh also materialized one bounded collector child or left the lane controller-only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T01:17:51.879Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_refresh-feature-reference-loop-workflow-progress-from-state-20260628_20260628011751",
+        "assigned_at": "2026-06-28T01:17:51.983Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_refresh-feature-reference-loop-workflow-progress-from-state-20260628",
+        "worker_started_attempt_id": "a_refresh-feature-reference-loop-workflow-progress-from-state-20260628_20260628011751",
+        "worker_started_at": "2026-06-28T01:18:14.771Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/feature-reference-loop-workflow-progress-refresh-20260628.md, confirming the parent loop still advertises stale 211/21/72/openChildren=25 counters while the authoritative app state file is 97 done / 207 pending / 0 running. I did not mutate the live parent metadata because this worker task was not explicitly authorized to run a supported task-tree command for workflowProgress, and the only repo-local refresh path is the controller pulse.",
+        "last_worker_completed_at": "2026-06-28T01:20:32.243Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T01:21:13.545Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected acceptance: the archive note proved the parent counters are stale (tree 211/21/72/openChildren=25 vs state 207/0/97) but also showed this leaf was a decomposition/authority mismatch because no supported metadata-only worker primitive can update workflowProgress. Replace it with an explicit controller-pulse follow-up that can truthfully refresh parent workflowProgress and reseed the bounded collector frontier."
+      },
+      "session_id": "s_task_refresh-feature-reference-loop-workflow-progress-from-state-20260628",
+      "session_history": [
+        "s_task_refresh-feature-reference-loop-workflow-progress-from-state-20260628"
+      ],
+      "result": "Wrote the requested archive note at evidence/archive/feature-reference-loop-workflow-progress-refresh-20260628.md, confirming the parent loop still advertises stale 211/21/72/openChildren=25 counters while the authoritative app state file is 97 done / 207 pending / 0 running. I did not mutate the live parent metadata because this worker task was not explicitly authorized to run a supported task-tree command for workflowProgress, and the only repo-local refresh path is the controller pulse.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T01:21:13.545Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejected acceptance: the archive note proved the parent counters are stale (tree 211/21/72/openChildren=25 vs state 207/0/97) but also showed this leaf was a decomposition/authority mismatch because no supported metadata-only worker primitive can update workflowProgress. Replace it with an explicit controller-pulse follow-up that can truthfully refresh parent workflowProgress and reseed the bounded collector frontier."
+      },
+      "status": "done"
+    }
+  ]
+}

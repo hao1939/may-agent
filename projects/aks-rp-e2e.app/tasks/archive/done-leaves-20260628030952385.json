@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T03:09:52.385Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 watchdog review pass keeps this branch focused on the three active family-level review-normalization batches (net-integration, ACNS, and CNI/Swift/custom-CA) and does not refill new collector work while they are in flight. Owner review accepted two standalone repair/retry leaves: node-autoprovision-create-auto now has a normalized branch-safe public-contract summary grounded in generated AKS model fields plus Learn NAP docs, and node-confidential-vm now has a durable retry packet that rechecks public docs/API and mounted source while surfacing the TDX contradiction plus stale handwritten-source anchors. Remaining next action outside the three active batches is queued as one follow-up packet-repair leaf for node-confidential-vm scope/source-anchor cleanup after the current review-normalization wave finishes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the node-autoprovision-create-auto feature-reference artifact so its top-level summary sections match the cited AKS swagger and Learn evidence already collected, removing contradictory 'No matching reference found yet' boilerplate and preserving the concrete public-contract findings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-node-autoprovision-create-auto-20260628.md"
+      ],
+      "acceptance": [
+        "The existing artifact header and summary sections no longer claim no API/docs references were found when citations are present below.",
+        "Top-level Official API References and Official Documentation References summarize the checked swagger/Learn sources consistently with the evidence sections already captured in the artifact.",
+        "Any remaining uncertainty is expressed as a scoped gap rather than contradictory boilerplate.",
+        "The repair note explains whether the original collector result is now reviewable for promotion without redoing the source search."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-autoprovision-create-auto"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T03:04:40.228Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T03:04:51.320Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628_20260628030517",
+        "assigned_at": "2026-06-28T03:05:17.907Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628_20260628030517",
+        "worker_started_at": "2026-06-28T03:05:22.251Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the top-level summary sections in evidence/archive/feature-reference-node-autoprovision-create-auto-20260628.md so they now reflect the already-collected NAP Learn and generated public-model evidence, remove contradictory placeholder boilerplate, and add a repair note confirming the artifact is reviewable without redoing source search.",
+        "last_worker_completed_at": "2026-06-28T03:06:18.003Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T03:09:52.163Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-node-autoprovision-create-auto-20260628.md: the repaired top-level API/doc sections now match the cited generated AKS model and Learn references, remove contradictory no-reference boilerplate, and preserve a narrow public-contract boundary without needing a new source search."
+      },
+      "session_id": "s_task_repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-node-autoprovision-create-auto-boilerplate-normalization-20260628"
+      ],
+      "result": "Normalized the top-level summary sections in evidence/archive/feature-reference-node-autoprovision-create-auto-20260628.md so they now reflect the already-collected NAP Learn and generated public-model evidence, remove contradictory placeholder boilerplate, and add a repair note confirming the artifact is reviewable without redoing source search.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T03:09:52.163Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-node-autoprovision-create-auto-20260628.md: the repaired top-level API/doc sections now match the cited generated AKS model and Learn references, remove contradictory no-reference boilerplate, and preserve a narrow public-contract boundary without needing a new source search."
+      },
+      "status": "done"
+    }
+  ]
+}

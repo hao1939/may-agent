@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T08:34:17.016Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 task-completed review accepted the final serverless virtual-nodes wording artifact: the project root now preserves three durable repo-local serverless closures only through archive evidence and parent summary — the witness-contract source map, the bounded wording update, and the earlier failed wording stub superseded by the retry. No runnable repo-local no-cloud leaf remains after this acceptance. Keep the five exact external returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until the first bounded owner follow-up/escalation window on or after 2026-06-26 or earlier authoritative replies; do not reopen local source/spec/setup/model work before that window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-model-wording-artifact-retry-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write the missing durable wording artifact for path.serverless-virtual-nodes.subnet-validation and path.serverless-virtual-nodes.multi-pod-burst using the accepted witness-contract source map so the model states exactly which tuple parts are source-backed, which are only source-equivalent, which remain repo-local convention, and what concrete rerun/source-closure triggers remain without reopening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md"
+      ],
+      "acceptance": [
+        "A durable repo-local artifact exists at evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md and proposes exact wording for both serverless virtual-nodes paths, explicitly citing evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md.",
+        "The wording keeps delegated ACI-subnet wiring and the one-pod virtual-node witness family as source-backed, keeps kubernetes.io/role=virtual-kubelet, virtual-kubelet.io/provider=azure:NoSchedule, virtual-node-aci-linux, addonProfiles.aciConnectorLinux.config.SubnetName, and burst cardinality as repo-local convention or unresolved gap unless stronger source/runtime evidence is cited, and leaves concrete rerun/source-closure triggers for subnet-validation and multi-pod-burst.",
+        "The task does not reopen the blocked external-wait family or run live/cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:31:49.498Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-model-wording-artifact-retry-20260625_20260625083149",
+        "assigned_at": "2026-06-25T08:31:49.641Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-model-wording-artifact-retry-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-model-wording-artifact-retry-20260625_20260625083149",
+        "worker_started_at": "2026-06-25T08:32:05.763Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested durable wording artifact at evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md, proposing exact wording for both serverless virtual-nodes paths grounded in the accepted witness-contract source map and preserving rerun/source-closure triggers without any cloud execution.",
+        "last_worker_completed_at": "2026-06-25T08:33:19.489Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:34:13.462Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md exists and truthfully proposes exact wording for subnet-validation and multi-pod-burst, cites the accepted witness-contract source map, keeps delegated ACI-subnet wiring and the one-pod witness family source-backed, keeps kubernetes.io/role=virtual-kubelet, virtual-kubelet.io/provider=azure:NoSchedule, virtual-node-aci-linux, addonProfiles.aciConnectorLinux.config.SubnetName, and burst cardinality out of the source-backed bucket, and leaves rerun/source-closure triggers without reopening cloud execution or the blocked external-wait family."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-model-wording-artifact-retry-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-model-wording-artifact-retry-20260625"
+      ],
+      "result": "Wrote the requested durable wording artifact at evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md, proposing exact wording for both serverless virtual-nodes paths grounded in the accepted witness-contract source map and preserving rerun/source-closure triggers without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T08:34:13.462Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/serverless-virtual-nodes-model-wording-boundary-update-20260625.md exists and truthfully proposes exact wording for subnet-validation and multi-pod-burst, cites the accepted witness-contract source map, keeps delegated ACI-subnet wiring and the one-pod witness family source-backed, keeps kubernetes.io/role=virtual-kubelet, virtual-kubelet.io/provider=azure:NoSchedule, virtual-node-aci-linux, addonProfiles.aciConnectorLinux.config.SubnetName, and burst cardinality out of the source-backed bucket, and leaves rerun/source-closure triggers without reopening cloud execution or the blocked external-wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:39:18.396Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed wake: accepted the bounded repo-local VirtualNodes standard replay verification as durable evidence that specs/serverless-virtualnodes-standard.json and replays/serverless-virtualnodes-standard.ts still wire cleanly to Scenario_Standard_VirtualNodes and preserve the extension-vs-addon boundary. Archived the completed mounted-source scheduler-controller packet and VirtualNodes local-check leaves so the live project frontier stays focused on the single active scheduler-controller disable-after-enable authoring leaf plus the separate VM prerelease family-level external-send-proof wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-mounted-source-packet-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact mounted scheduler-controller source packet so the serverless schedulerctrl family has one repo-local source-backed carrier that maps the create/enable/disable lifecycle paths, captures the canonical overlay/underlay reconciliation contract, and states exact reuse/non-reuse boundaries against any current repo-local serverless artifacts without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-mounted-source-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted AKS RP source files/scenario definitions that cover the scheduler-controller lifecycle and capture the handwritten contract precisely for enable-on-create, enable-on-existing, disable-after-create, and disable-after-enable, including the overlay resources, underlay managedByCrd/default behavior, and schedulerConfiguration reconciliation surfaces.",
+        "Map which existing repo-local specs/replays/evidence can be reused as source-equivalent support versus which surfaces still need new exact carriers, with exact file/path references and no guessed semantics.",
+        "Leave a durable repo-local packet that proposes the concrete next carrier ids/files for exact landing, records any bounded deferrals, stays in the regular learning lane, and makes no shared-model edits or cloud probes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:35:01.119Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-mounted-source-packet-20260620_20260620203501",
+        "assigned_at": "2026-06-20T20:35:01.170Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-mounted-source-packet-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-mounted-source-packet-20260620_20260620203501",
+        "worker_started_at": "2026-06-20T20:35:21.298Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the durable mounted-source packet at evidence/archive/serverless-schedulerctrl-mounted-source-packet-20260620.md, mapping the scheduler-controller lifecycle quartet to exact mounted source anchors, documenting canonical overlay/underlay/reconciliation contracts, and inventorying reusable vs missing repo-local carriers.",
+        "last_worker_completed_at": "2026-06-20T20:37:16.414Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:37:33.212Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-schedulerctrl-mounted-source-packet-20260620.md cites the mounted serverless/schedulerctrl source anchors, maps the four lifecycle scenarios and overlay/underlay/reconciliation contract, inventories reusable repo-local carriers, and names the exact missing disable-after-enable spec/replay carrier without any cloud or model changes."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-mounted-source-packet-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-mounted-source-packet-20260620"
+      ],
+      "result": "Authored the durable mounted-source packet at evidence/archive/serverless-schedulerctrl-mounted-source-packet-20260620.md, mapping the scheduler-controller lifecycle quartet to exact mounted source anchors, documenting canonical overlay/underlay/reconciliation contracts, and inventorying reusable vs missing repo-local carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:37:33.212Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-schedulerctrl-mounted-source-packet-20260620.md cites the mounted serverless/schedulerctrl source anchors, maps the four lifecycle scenarios and overlay/underlay/reconciliation contract, inventories reusable repo-local carriers, and names the exact missing disable-after-enable spec/replay carrier without any cloud or model changes."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtualnodes-standard-local-replay-check-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run a bounded repo-local non-cloud verification of the exact serverless virtualnodes standard carrier so the project has durable proof that specs/serverless-virtualnodes-standard.json and replays/serverless-virtualnodes-standard.ts wire cleanly to the mounted Scenario_Standard_VirtualNodes contract and keep the extension-vs-addon boundary truthful.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-local-replay-check-20260620.md"
+      ],
+      "acceptance": [
+        "Capture the exact local command(s) and outcomes used to verify the repo-local spec/replay wiring for specs/serverless-virtualnodes-standard.json and replays/serverless-virtualnodes-standard.ts without any cloud execution or model edits.",
+        "Confirm in the durable note that the spec/replay still point at Scenario_Standard_VirtualNodes / path.serverless-virtualnodes.standard and preserve the exact mounted exclusions against addonProfiles, virtual-node-aci-linux, and virtual-kubelet witness semantics, with exact file/path citations.",
+        "Leave a durable pass/fail note under evidence/archive that records any bounded repair follow-up needed for local wiring, stays in the runner/replays lane, and makes no shared-model or cloud changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtualnodes-standard-local-check"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:36:33.362Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-local-replay-check-20260620_20260620203633",
+        "assigned_at": "2026-06-20T20:36:33.409Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-local-replay-check-20260620",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-local-replay-check-20260620_20260620203633",
+        "worker_started_at": "2026-06-20T20:36:52.267Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded repo-local VirtualNodes standard replay verification, ran the non-cloud check probe successfully, and wrote a durable evidence note at evidence/archive/serverless-virtualnodes-standard-local-replay-check-20260620.md plus generated JSON/MD probe artifacts.",
+        "last_worker_completed_at": "2026-06-20T20:37:55.664Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:38:35.538Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/serverless-virtualnodes-standard-local-replay-check-20260620.md: bun replays/serverless-virtualnodes-standard.ts --check passed, wrote durable JSON/MD probe artifacts, and confirmed specs/serverless-virtualnodes-standard.json plus replays/serverless-virtualnodes-standard.ts remain exactly wired to Scenario_Standard_VirtualNodes / path.serverless-virtualnodes.standard with the extension-vs-addon exclusions preserved."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-local-replay-check-20260620",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-local-replay-check-20260620"
+      ],
+      "result": "Completed the bounded repo-local VirtualNodes standard replay verification, ran the non-cloud check probe successfully, and wrote a durable evidence note at evidence/archive/serverless-virtualnodes-standard-local-replay-check-20260620.md plus generated JSON/MD probe artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:38:35.538Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/serverless-virtualnodes-standard-local-replay-check-20260620.md: bun replays/serverless-virtualnodes-standard.ts --check passed, wrote durable JSON/MD probe artifacts, and confirmed specs/serverless-virtualnodes-standard.json plus replays/serverless-virtualnodes-standard.ts remain exactly wired to Scenario_Standard_VirtualNodes / path.serverless-virtualnodes.standard with the extension-vs-addon exclusions preserved."
+      },
+      "status": "done"
+    }
+  ]
+}

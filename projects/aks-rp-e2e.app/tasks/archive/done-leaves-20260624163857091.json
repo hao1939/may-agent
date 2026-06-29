@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:38:57.091Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the root fully reconciled: the four exact external waits remain compressed under the focus branch until returned proof or the first bounded follow-up window on or after 2026-06-26, and the separate VirtualMachine prerelease coverage ledger branch remains only the repo-wide bun run check landing gate. The remaining owner-finalize and landing-decision leaves are already summarized in the accepted ledger checkpoint history, so they can archive cleanly without losing meaning; the visible frontier should now contain only the focus wait family and the single checkpoint-gate wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Finalize the already-reviewed 2026-06-24 VirtualMachine prerelease coverage ledger checkpoint as the sole active focus: revalidate the exact four-file bounded slice against current repo state, decide whether the unrelated repo-wide red bun run check blocks landing this slice, and if policy allows, stage only that slice, create one coherent commit, and record the resulting hash in durable evidence without reopening the completed checkpoint task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md"
+      ],
+      "acceptance": [
+        "Durable evidence updates the checkpoint packet with the final owner decision on the unrelated repo-wide check debt, the exact staged four-file slice, HEAD before/after, and the created commit hash if the checkpoint lands; if it does not land, the evidence records the exact policy/blocker and resume condition.",
+        "The owner action stays confined to evidence/pipelines/virtualmachine-prerelease-coverage.{json,md} plus evidence/archive/virtualmachine-prerelease-checkin-network-isolated-ledger-reconcile-20260624.md and evidence/archive/virtualmachine-prerelease-coverage-metadata-refresh-20260624.md, with no new feature authoring, cloud execution, blocked-wait changes, or unrelated files mixed into the checkpoint decision."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ledger.virtualmachine-prerelease.coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:28:22.900Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624_20260624162822",
+        "assigned_at": "2026-06-24T16:28:22.946Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624_20260624162822",
+        "worker_started_at": "2026-06-24T16:28:49.334Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Revalidated the exact four-file VirtualMachine prerelease coverage ledger slice, reran bounded domain:checkpoint plus repo-wide bun run check, and updated the checkpoint packet with the final owner-policy decision: no checkpoint commit can land yet because workers cannot commit and current owner policy also requires a green repo-wide bun run check, which is still red on unrelated formatting drift.",
+        "last_worker_completed_at": "2026-06-24T16:31:10.401Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:32:00.685Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner-finalize review: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md revalidated the exact four-file bounded slice, recorded the repo-wide unrelated red bun run check as the truthful non-landing blocker, and satisfied acceptance by capturing the exact policy/resume condition even without a new commit hash."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-ledger-owner-finalize-20260624"
+      ],
+      "result": "Revalidated the exact four-file VirtualMachine prerelease coverage ledger slice, reran bounded domain:checkpoint plus repo-wide bun run check, and updated the checkpoint packet with the final owner-policy decision: no checkpoint commit can land yet because workers cannot commit and current owner policy also requires a green repo-wide bun run check, which is still red on unrelated formatting drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:32:00.685Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner-finalize review: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md revalidated the exact four-file bounded slice, recorded the repo-wide unrelated red bun run check as the truthful non-landing blocker, and satisfied acceptance by capturing the exact policy/resume condition even without a new commit hash."
+      },
+      "status": "done"
+    }
+  ]
+}

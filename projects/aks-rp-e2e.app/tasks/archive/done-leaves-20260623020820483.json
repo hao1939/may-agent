@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T02:08:20.483Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 planner update: accepted the network-cni-cilium-stop-start evidence-view contract repair as a bounded repo-local documentation fix; the maintained review contract now points path evidence checks at model/knowledge-map/model.json, views/path-summary.json, and views/evidence-index.md instead of legacy evidence-view/status-view diagnostics. One exact external-human wait remains blocked with a precise resume condition, while active repo-local source/model work continues for the SecOps FIPS Kata-blocked slice and the serverless virtual-nodes subnet-validation source-coverage audit.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the remaining repo-local maintained-surface drift for path.network-cni.cilium-stop-start by choosing exactly one bounded truthfulness repair: either extend view generation so evidence-view.json carries the 2026-06-23 execute-boundary evidence, or tighten the maintained-surface contract so reviews no longer rely on evidence-view.json for this slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "Either (a) the exact repo-local generator/docs/views are updated so model/knowledge-map/views/evidence-view.json truthfully includes network-cni-cilium-stop-start-execute-boundary-note-20260623 after regeneration, or (b) the exact maintained-surface contract/docs are tightened so this slice no longer claims evidence-view.json as a maintained review surface; in either case cite the exact changed or checked files and commands.",
+        "A durable archive note at the declared path explains the chosen repair, cites the exact repo-local files and regeneration/check commands, confirms path.network-cni.cilium-stop-start remains execute-gated/unknown/non-verdict, and does not run cloud mutation or widen beyond this evidence-view contract slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.network-cni.cilium-stop-start"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T02:05:46.030Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623_20260623020546",
+        "assigned_at": "2026-06-23T02:05:46.078Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623_20260623020546",
+        "worker_started_at": "2026-06-23T02:05:58.264Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened the knowledge-map maintained-surface contract in model/knowledge-map/README.md so legacy evidence-view/status-view diagnostics files are no longer treated as maintained review surfaces, and wrote a durable archive note documenting the bounded repair for path.network-cni.cilium-stop-start.",
+        "last_worker_completed_at": "2026-06-23T02:07:35.544Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T02:08:20.432Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the durable archive note documents a bounded contract-tightening repair for path.network-cni.cilium-stop-start, cites maintained accepted surfaces (model.json, path-summary.json, evidence-index.md), and records that legacy evidence-view.json is no longer a maintained review dependency for this slice while execute-gated unknown status remains unchanged."
+      },
+      "session_id": "s_task_network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-stop-start-evidence-view-contract-reconcile-20260623"
+      ],
+      "result": "Tightened the knowledge-map maintained-surface contract in model/knowledge-map/README.md so legacy evidence-view/status-view diagnostics files are no longer treated as maintained review surfaces, and wrote a durable archive note documenting the bounded repair for path.network-cni.cilium-stop-start.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T02:08:20.432Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the durable archive note documents a bounded contract-tightening repair for path.network-cni.cilium-stop-start, cites maintained accepted surfaces (model.json, path-summary.json, evidence-index.md), and records that legacy evidence-view.json is no longer a maintained review dependency for this slice while execute-gated unknown status remains unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

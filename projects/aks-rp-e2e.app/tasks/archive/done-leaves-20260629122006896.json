@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:20:06.896Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review tightened the spec-loop record around execution-host truth. The direct-to-cache transition branch is no longer an empty-review ambiguity: archived workflow run 28367956111 already proves the live bootstrapProfile artifactSource transition to Cache and persisted containerRegistryId, while final kube-system validation was blocked only by the shared Azure CLI execution-host failure. Combined with the earlier managed-acr lifecycle reconciliation, bootstrap-profile spec-loop knowledge now preserves partial product success plus a shared runner/environment blocker rather than rerun pressure. The active spec-loop frontier remains the assigned single-spec verification/retry leaves plus the shared Azure CLI preflight diagnosis task and the two in-flight review/follow-up leaves for aad-rbac and KMS classification.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.direct-to-cache-transition through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.direct-to-cache-transition",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Cleared stale active state: no session row was found for the assigned active leaf, so the old execution leaf is superseded by retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629 to prove whether artifacts exist and relaunch only if the attempt was truly orphaned."
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:31:14.222Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629113134",
+        "assigned_at": "2026-06-29T11:31:34.716Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629113134",
+        "worker_started_at": "2026-06-29T11:31:35.673Z",
+        "reviewed_at": "2026-06-29T12:12:11.918Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Cleared stale active state: no session row was found for the assigned active leaf, so the old execution leaf is superseded by retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629 to prove whether artifacts exist and relaunch only if the attempt was truly orphaned."
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:12:11.918Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the empty-worker review for spec.bootstrap-profile.direct-to-cache-transition with a concrete owner follow-up: inspect the stale active/session evidence, classify from exact existing artifacts if they exist, or relaunch the single-spec workflow and capture the dispatch/blocker evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the exact stale-attempt/session/run evidence proving whether durable artifacts already exist for the orphaned direct-to-cache transition attempt.",
+        "If existing artifacts are sufficient, the spec is classified truthfully from them; otherwise the rerun launch succeeds with exact run identity or records the exact launch blocker.",
+        "The empty worker turn is explicitly superseded so the tree no longer depends on the weak review result."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:14:56.953Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629_20260629121511",
+        "assigned_at": "2026-06-29T12:15:11.747Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629",
+        "worker_started_attempt_id": "a_reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629_20260629121511",
+        "worker_started_at": "2026-06-29T12:15:39.540Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable reconciliation note for spec.bootstrap-profile.direct-to-cache-transition showing the empty worker review is superseded, exact archived artifacts already exist for workflow run 28367956111, and the truthful classification is partial product success with a final runner/environment blocker rather than a rerun candidate.",
+        "last_worker_completed_at": "2026-06-29T12:17:52.364Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:19:37.790Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the reconciliation note: archived workflow run 28367956111 and its reviewed evidence already prove spec.bootstrap-profile.direct-to-cache-transition reached the live Cache mutation and persisted bootstrapProfile state, while final kube-system health closure was blocked only by the Azure CLI execution-host failure, so a rerun would be a blind duplicate."
+      },
+      "session_id": "s_task_reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629",
+      "session_history": [
+        "s_task_reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629"
+      ],
+      "result": "Wrote a durable reconciliation note for spec.bootstrap-profile.direct-to-cache-transition showing the empty worker review is superseded, exact archived artifacts already exist for workflow run 28367956111, and the truthful classification is partial product success with a final runner/environment blocker rather than a rerun candidate.",
+      "evidence": [
+        "evidence/archive/reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:19:37.790Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the reconciliation note: archived workflow run 28367956111 and its reviewed evidence already prove spec.bootstrap-profile.direct-to-cache-transition reached the live Cache mutation and persisted bootstrapProfile state, while final kube-system health closure was blocked only by the Azure CLI execution-host failure, so a rerun would be a blind duplicate."
+      },
+      "status": "done"
+    }
+  ]
+}

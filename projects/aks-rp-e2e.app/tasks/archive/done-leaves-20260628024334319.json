@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:43:34.319Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 owner review accepts the NATGW→none model-verdict reconciliation and archives that safe done root leaf because its durable meaning is already preserved in accepted reconciliation evidence plus project context. The maintained truth for path.net-integration.outbound-migration-natgw-to-none is now a shape-gated nonfinal unknown: mounted source, repaired repo-local carrier, and normalized model surfaces agree that prior failures only prove the invalid-target-shape rejection subcase, while the remaining exact gap is accepted live evidence for the compliant network-isolated target shape. With that review closed, the project frontier is truthfully blocked-only on the same three exact external waits already recorded under the spec loop and focus branch; do not invent runnable refill until a returned operator reply/proof or other recorded resume signal changes one of those carriers.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.net-integration.outbound-migration-natgw-to-none across the repaired maintained replay, mounted-source contract, and current model surfaces so the project carries one truthful verdict/retest posture instead of the current stale warning/unknown-final contradiction.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/evidence/archive/net-integration-outbound-migration-natgw-to-none-model-verdict-reconciliation-20260628.md"
+      ],
+      "acceptance": [
+        "The task compares the repaired replay carrier, mounted-source outbound_type_migration contract, and current model/feature/spec status for path.net-integration.outbound-migration-natgw-to-none and records the exact contradiction or alignment in durable evidence.",
+        "If the current model verdict/retest posture is stale, contradictory, or unsupported, the task updates the owning model surface(s) to one truthful status/root-cause/retest condition; otherwise it records why the existing posture remains correct after the carrier repair.",
+        "The result leaves one explicit next state for this path: either a grounded repo-local model verdict or one exact remaining execution/evidence gap, without preserving unknown/final-warning drift by inertia."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:path.net-integration.outbound-migration-natgw-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:37:45.937Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20260628_20260628023745",
+        "assigned_at": "2026-06-28T02:37:45.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20",
+        "worker_started_attempt_id": "a_reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20260628_20260628023745",
+        "worker_started_at": "2026-06-28T02:38:10.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale net-integration NATGW→none verdict by updating model/knowledge-map/model.json’s legacy paths[] entry to match the accepted shape-gated unknown posture, added durable reconciliation evidence, and regenerated maintained views.",
+        "last_worker_completed_at": "2026-06-28T02:42:38.654Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:43:18.328Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived reconciliation evidence shows mounted source, repaired repo-local carrier, and normalized model surfaces all support a shape-gated nonfinal unknown posture for path.net-integration.outbound-migration-natgw-to-none, and the current model status summary now reflects status=unknown instead of the stale terminal product-constraint verdict."
+      },
+      "session_id": "s_task_reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20",
+      "session_history": [
+        "s_task_reconcile-model-verdict-net-integration-outbound-migration-natgw-to-none-after-carrier-repair-20"
+      ],
+      "result": "Reconciled the stale net-integration NATGW→none verdict by updating model/knowledge-map/model.json’s legacy paths[] entry to match the accepted shape-gated unknown posture, added durable reconciliation evidence, and regenerated maintained views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:43:18.328Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived reconciliation evidence shows mounted source, repaired repo-local carrier, and normalized model surfaces all support a shape-gated nonfinal unknown posture for path.net-integration.outbound-migration-natgw-to-none, and the current model status summary now reflects status=unknown instead of the stale terminal product-constraint verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:25:53.262Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 task-completed wake accepted two bounded repo-local completions and preserved a truthful blocked-only frontier. evidence/archive/serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624.md confirms the private validating-webhook replay now matches mounted source topology/executor expectations without widening into live execution, and evidence/archive/private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624.md confirms path.private-cluster-none-dns-zone-v3 is already source-backed as the exact one-cluster System→None lifecycle with canonical repo-local feature/spec/replay/model carriers aligned while the accepted model correctly stays unknown pending exact live lifecycle evidence. No new runnable local leaf is truthful today: the remaining frontier is the same four exact external waits only—AAD RBAC row-37 approval return, family-level external dispatch return, private-cluster auth-service-tags devbox endpoint return, and serverless schedulerctrl validating-webhook public approval return—each already has send/handoff proof and should stay unchanged until returned proof arrives or the 2026-06-26 follow-up window reuses the same branch for one bounded escalation/follow-up artifact.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted handwritten e2ev3 source plus existing repo-local artifacts to classify path.private-cluster-none-dns-zone-v3 from unknown into a source-backed boundary decision: identify the exact input/expectation contract for the System→None private DNS zone V3 lifecycle, map any existing spec/replay/model coverage, and record the next truthful repo-local follow-up or blocker without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624.md"
+      ],
+      "acceptance": [
+        "The artifact cites the mounted private-cluster V3 scenario/workflow source files actually covering the System→None private DNS zone transition, extracts the accepted/rejected inputs and expected behavior boundary, and states whether existing repo-local spec/replay/model entries already cover the path or what exact gap remains.",
+        "If repo-local updates are needed, the worker updates only tightly-coupled spec/index/model/replay metadata or records the exact missing piece; local non-cloud validation is captured, and the task does not widen into live execution or duplicate external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:22:19.835Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624_20260624072219",
+        "assigned_at": "2026-06-24T07:22:19.885Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624_20260624072219",
+        "worker_started_at": "2026-06-24T07:22:38.120Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable reconciliation note at evidence/archive/private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624.md confirming path.private-cluster-none-dns-zone-v3 is already source-backed as the exact System→None lifecycle, and validated the canonical replay/spec locally with check-mode and dry-run evidence.",
+        "last_worker_completed_at": "2026-06-24T07:24:53.753Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:25:35.743Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites mounted handwritten V3 source anchors plus local replay/spec validation proving path.private-cluster-none-dns-zone-v3 is already the exact System→None lifecycle, repo-local carriers are aligned, the accepted model should remain unknown pending exact live lifecycle evidence, and any future execution follow-up stays covered by the existing family-level external wait rather than a new local leaf."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624"
+      ],
+      "result": "Produced a durable reconciliation note at evidence/archive/private-cluster-none-dns-zone-v3-source-spec-reconciliation-20260624.md confirming path.private-cluster-none-dns-zone-v3 is already source-backed as the exact System→None lifecycle, and validated the canonical replay/spec locally with check-mode and dry-run evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:25:35.743Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites mounted handwritten V3 source anchors plus local replay/spec validation proving path.private-cluster-none-dns-zone-v3 is already the exact System→None lifecycle, repo-local carriers are aligned, the accepted model should remain unknown pending exact live lifecycle evidence, and any future execution follow-up stays covered by the existing family-level external wait rather than a new local leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the repo-local execute carrier for the serverless schedulerctrl validating-webhook private topology by upgrading the private replay from linkage-only/check-only behavior to a bounded execute-capable invalid-then-valid witness flow aligned to the mounted private scenarios; this live parity branch supersedes the stale private-execute-contract-gap review pointer for the same private slice, without opening any private approval wait or widening into public/APIServerVNetIntegration siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624.md"
+      ],
+      "acceptance": [
+        "The worker updates the private validating-webhook replay and any tightly-coupled spec/test metadata needed so --execute no longer self-blocks once AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-private is supplied, while preserving the exact private topology (EnablePrivateCluster=true, EnableVnetIntegration=false), ManagedByCRD cluster create shape, and invalid-then-valid SchedulerConfiguration witness sequence grounded in the mounted private scenarios.",
+        "The archive artifact cites the mounted private scenario/workflow files plus the exact repo-local replay/test paths changed, records local non-cloud validation (for example check/test/build results), explains any remaining live-execution gate or preflight limits without claiming a cloud verdict, and does not create or widen any private approval wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:15:29.507Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T07:17:32.328Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624_20260624071816",
+        "assigned_at": "2026-06-24T07:18:16.154Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624_20260624071816",
+        "worker_started_at": "2026-06-24T07:18:36.623Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Upgraded the private validating-webhook replay into an execute-capable carrier in `replays/serverless-schedulerctrl-validating-webhook-private.ts` and wrote the requested archive artifact documenting mounted-source grounding, local validation, and remaining live preflight blockers.",
+        "last_worker_completed_at": "2026-06-24T07:21:29.442Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:22:19.784Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-24 repo-local parity repair: archive evidence and replay source show the private validating-webhook carrier now reaches execute-mode preflight instead of unconditional self-blocking, preserves the exact private topology and invalid-then-valid ManagedByCRD contract, and does not introduce any private approval wait or cloud verdict claim."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624"
+      ],
+      "result": "Upgraded the private validating-webhook replay into an execute-capable carrier in `replays/serverless-schedulerctrl-validating-webhook-private.ts` and wrote the requested archive artifact documenting mounted-source grounding, local validation, and remaining live preflight blockers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:22:19.784Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-24 repo-local parity repair: archive evidence and replay source show the private validating-webhook carrier now reaches execute-mode preflight instead of unconditional self-blocking, preserves the exact private topology and invalid-then-valid ManagedByCRD contract, and does not introduce any private approval wait or cloud verdict claim."
+      },
+      "status": "done"
+    }
+  ]
+}

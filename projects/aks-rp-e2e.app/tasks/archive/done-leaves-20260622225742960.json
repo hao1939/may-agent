@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:57:42.960Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review kept the single external-human proof wait unchanged because the resume condition remains exact and purely out-of-runtime. Repo-local capacity now stays focused on four bounded leaves: app-routing selector/body-lineage for default/internal branches, a new paired OSM external-lineage audit for rows 84/89, blocked-path-count delta classification, and run-id archive-spill triage. The two completed 2026-06-22 VM prerelease carrier/model repairs are summarized here and archived as prior accepted hardening input rather than left as standalone done leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: reconcile the dedicated maintained feature-packet/crosswalk surface for VM prerelease row 45 autoscaled-vms-crud using the mounted AKS RP VirtualMachine autoscale suite/plan sources and current maintained carriers, so the scenario has an explicit feature-level carrier shape comparable to neighboring VM-native rows without cloud execution or external waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/autoscale.go, and the current maintained row-45 path/spec/replay/evidence carriers, and explains the exact dedicated feature-level gap being repaired.",
+        "Maintained repo-local feature/spec/index/model surfaces are updated only as needed so row 45 autoscaled-vms-crud gains an explicit dedicated feature-packet or equivalent crosswalk carrier with truthful links to its maintained path/spec/replay/evidence surfaces, bun run check passes after the bounded repair, and app-routing VM-prerelease active work is left untouched.",
+        "No cloud mutation, no new external-human wait, and no reopening of the existing external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 blocker are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine.autoscaled-vms-crud.feature-crosswalk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:49:42.873Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622_20260622224942",
+        "assigned_at": "2026-06-22T22:49:42.931Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622",
+        "worker_started_attempt_id": "a_virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622_20260622224942",
+        "worker_started_at": "2026-06-22T22:50:06.464Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added a dedicated row-45 feature packet at features/virtualmachines-autoscaled-vms-crud.yaml, updated spec/source-ref crosswalks in specs/virtualmachines-autoscaled-vms-crud.json and specs/index.json, and wrote the archive artifact evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md. bun run check passed after the bounded repair.",
+        "last_worker_completed_at": "2026-06-22T22:55:28.337Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:56:08.745Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md cites the mounted VM prerelease suite and autoscale plan sources, adds the dedicated row-45 feature packet/crosswalk carrier, retargets the maintained spec/index source refs to that packet, and reports bun run check passing without touching app-routing active work or the shared external-human wait."
+      },
+      "session_id": "s_task_virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622",
+      "session_history": [
+        "s_task_virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622"
+      ],
+      "result": "Added a dedicated row-45 feature packet at features/virtualmachines-autoscaled-vms-crud.yaml, updated spec/source-ref crosswalks in specs/virtualmachines-autoscaled-vms-crud.json and specs/index.json, and wrote the archive artifact evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md. bun run check passed after the bounded repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:56:08.745Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/virtualmachine-autoscaled-vms-crud-feature-crosswalk-reconcile-20260622.md cites the mounted VM prerelease suite and autoscale plan sources, adds the dedicated row-45 feature packet/crosswalk carrier, retargets the maintained spec/index source refs to that packet, and reports bun run check passing without touching app-routing active work or the shared external-human wait."
+      },
+      "status": "done"
+    }
+  ]
+}

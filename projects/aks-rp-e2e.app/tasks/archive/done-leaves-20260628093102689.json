@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:31:02.689Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review reconciliation: the earlier feature-reference owner-state repair proof and the follow-on owner-authorized reconciliation review now serve only as historical evidence that the original done-vs-active contradiction was already superseded. Under the current truthful contract, this lane stays open because the preserved 77 pending entries still count as active backlog; the concrete next work is the new state-sync repair leaf that must clear stale archived-running residue and recompute workflowProgress to match live state before any broader latent-backlog/tooling redesign is considered.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "apply-feature-reference-loop-owner-state-reconciliation-proof-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recreate the feature-reference-loop apply work as an owner-side or explicitly authorized metadata/state repair: reconcile .state/feature-reference-loop/state.json with tasks/tree.json and tasks/kanban.json, preserve the 77-item latent backlog, and archive exact before/after state rather than retrying the prior worker-shaped leaf unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/apply-feature-reference-loop-owner-state-reconciliation-proof-20260628.md"
+      ],
+      "acceptance": [
+        "Records before/after values from .state/feature-reference-loop/state.json, tasks/tree.json, and tasks/kanban.json; cites the preserved 77-item latent backlog source from repair-feature-reference-loop-owner-state-reconciliation-20260628.md; archives exact state snapshots instead of a summary-only worker claim; and only accepts success if the loop is left in a truthful terminal/latent state without relying on the untrusted prior worker completion shape."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:25:11.141Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_apply-feature-reference-loop-owner-state-reconciliation-proof-20260628_20260628092554",
+        "assigned_at": "2026-06-28T09:25:54.842Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_apply-feature-reference-loop-owner-state-reconciliation-proof-20260628",
+        "worker_started_attempt_id": "a_apply-feature-reference-loop-owner-state-reconciliation-proof-20260628_20260628092554",
+        "worker_started_at": "2026-06-28T09:25:56.225Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested proof packet at evidence/archive/apply-feature-reference-loop-owner-state-reconciliation-proof-20260628.md, documenting before/after state across .state/feature-reference-loop/state.json, tasks/tree.json, and tasks/kanban.json; confirmed the 77-item latent backlog is preserved exactly and that no owner-side reconciliation was actually applied from this worker session.",
+        "last_worker_completed_at": "2026-06-28T09:27:48.939Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:28:35.772Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as an evidence-only review packet, not as successful reconciliation: the archived proof confirms the 77-item latent backlog is preserved exactly and that no owner-side feature-reference-loop state repair was applied, so this leaf closes as diagnostic evidence feeding the owner-authorized repair successor."
+      },
+      "session_id": "s_task_apply-feature-reference-loop-owner-state-reconciliation-proof-20260628",
+      "session_history": [
+        "s_task_apply-feature-reference-loop-owner-state-reconciliation-proof-20260628"
+      ],
+      "result": "Wrote the requested proof packet at evidence/archive/apply-feature-reference-loop-owner-state-reconciliation-proof-20260628.md, documenting before/after state across .state/feature-reference-loop/state.json, tasks/tree.json, and tasks/kanban.json; confirmed the 77-item latent backlog is preserved exactly and that no owner-side reconciliation was actually applied from this worker session.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:28:35.772Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as an evidence-only review packet, not as successful reconciliation: the archived proof confirms the 77-item latent backlog is preserved exactly and that no owner-side feature-reference-loop state repair was applied, so this leaf closes as diagnostic evidence feeding the owner-authorized repair successor."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the actual owner-authorized feature-reference-loop state repair proved missing by the review packet: use the preserved 77-item latent backlog source to separate latent backlog from active controller progress, clear the stale running/task-bound residue in .state/feature-reference-loop/state.json, reconcile aks-feature-reference-loop workflowProgress plus kanban to a truthful post-repair state, and archive exact before/after mutation evidence with integrity results.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628.md"
+      ],
+      "acceptance": [
+        "Uses evidence/archive/repair-feature-reference-loop-owner-state-reconciliation-20260628.md as the preserved 77-item latent backlog source; records exact before/after values from .state/feature-reference-loop/state.json, tasks/tree.json, and tasks/kanban.json; removes the stale active/running contradiction without losing the latent backlog; and archives the post-repair integrity/check outcome proving the loop surfaces are truthful again."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:28:35.820Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628_20260628092835",
+        "assigned_at": "2026-06-28T09:28:35.867Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628_20260628092835",
+        "worker_started_at": "2026-06-28T09:28:49.916Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote a durable blocker/evidence packet at evidence/archive/repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628.md showing the live feature-reference-loop state has already changed from the prior proof packet and that the requested reconciliation remains owner/tooling work, not a worker-safe mutation.",
+        "last_worker_completed_at": "2026-06-28T09:30:15.764Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:31:02.536Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a decomposition/reality check, not as the originally requested repair: the worker proved the earlier done-vs-active contradiction is stale, the live issue is now a narrower feature-reference loop state/workflowProgress sync mismatch under the current active-pending contract, and this broad owner-authorized leaf should be replaced by a concrete app-local sync task."
+      },
+      "session_id": "s_task_repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628"
+      ],
+      "result": "Wrote a durable blocker/evidence packet at evidence/archive/repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628.md showing the live feature-reference-loop state has already changed from the prior proof packet and that the requested reconciliation remains owner/tooling work, not a worker-safe mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:31:02.536Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a decomposition/reality check, not as the originally requested repair: the worker proved the earlier done-vs-active contradiction is stale, the live issue is now a narrower feature-reference loop state/workflowProgress sync mismatch under the current active-pending contract, and this broad owner-authorized leaf should be replaced by a concrete app-local sync task."
+      },
+      "status": "done"
+    }
+  ]
+}

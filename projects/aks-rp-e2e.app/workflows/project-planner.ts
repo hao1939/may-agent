@@ -6,6 +6,9 @@
  * assignments or already-clear backlog dispatch.
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
@@ -53,9 +56,183 @@ type RuntimeEventRow = {
   timestamp?: unknown;
 };
 
+function truncateText(value: string, max = 280): string {
+  return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
+}
+
+function projectPushMode(appDir: string): string {
+  try {
+    const raw = JSON.parse(
+      readFileSync(join(appDir, "project.json"), "utf8"),
+    ) as { policy?: { mode?: unknown } };
+    return typeof raw.policy?.mode === "string" ? raw.policy.mode : "";
+  } catch {
+    return "";
+  }
+}
+
+function compactTaskDetailForPrompt(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const compact: Record<string, unknown> = {};
+  for (const key of [
+    "id",
+    "parent_id",
+    "state",
+    "status",
+    "kind",
+    "priority",
+    "owner",
+    "workflow",
+    "session_id",
+    "goal",
+    "blocker",
+    "conflict_scope",
+    "depends_on",
+    "outputs",
+    "trace",
+  ]) {
+    if (value[key] !== undefined) compact[key] = value[key];
+  }
+
+  if (typeof compact.goal === "string") {
+    compact.goal = truncateText(compact.goal, 360);
+  }
+  if (typeof compact.blocker === "string") {
+    compact.blocker = truncateText(compact.blocker, 360);
+  }
+  if (Array.isArray(compact.outputs)) {
+    compact.outputs = compact.outputs.slice(0, 3);
+  }
+  if (Array.isArray(compact.depends_on)) {
+    compact.depends_on = compact.depends_on.slice(0, 3);
+  }
+  if (Array.isArray(compact.conflict_scope)) {
+    compact.conflict_scope = compact.conflict_scope.slice(0, 4);
+  }
+  const trace =
+    compact.trace &&
+    typeof compact.trace === "object" &&
+    !Array.isArray(compact.trace)
+      ? (compact.trace as Record<string, unknown>)
+      : null;
+  if (trace) {
+    const compactTrace: Record<string, unknown> = {};
+    for (const key of [
+      "assigned_at",
+      "assigned_by",
+      "assigned_worker",
+      "current_attempt_id",
+      "last_session",
+      "last_worker_result",
+      "last_worker_claim",
+      "last_worker_completed_at",
+      "last_worker_summary",
+    ]) {
+      if (trace[key] !== undefined) compactTrace[key] = trace[key];
+    }
+    if (typeof compactTrace.last_worker_summary === "string") {
+      compactTrace.last_worker_summary = truncateText(
+        compactTrace.last_worker_summary,
+        360,
+      );
+    }
+    compact.trace = compactTrace;
+  }
+
+  return compact;
+}
+
+function compactPlannerPacketForPrompt(packet: unknown): unknown {
+  if (!packet || typeof packet !== "object" || Array.isArray(packet)) {
+    return packet;
+  }
+
+  const compact = JSON.parse(JSON.stringify(packet)) as Record<string, unknown>;
+
+  const frontierDetails =
+    compact.frontier_details &&
+    typeof compact.frontier_details === "object" &&
+    !Array.isArray(compact.frontier_details)
+      ? (compact.frontier_details as Record<string, unknown>)
+      : null;
+  if (frontierDetails) {
+    for (const key of ["runnable", "waiting", "active", "review", "blocked"]) {
+      const entries = frontierDetails[key];
+      if (!Array.isArray(entries)) continue;
+      const limit = key === "review" ? 5 : 3;
+      frontierDetails[key] = entries
+        .slice(0, limit)
+        .map((entry) =>
+          entry && typeof entry === "object" && !Array.isArray(entry)
+            ? compactTaskDetailForPrompt(entry as Record<string, unknown>)
+            : entry,
+        );
+      if (entries.length > limit) {
+        frontierDetails[`${key}_omitted_count`] = entries.length - limit;
+      }
+    }
+  }
+
+  const modelStatusSummary =
+    compact.model_status_summary &&
+    typeof compact.model_status_summary === "object" &&
+    !Array.isArray(compact.model_status_summary)
+      ? (compact.model_status_summary as Record<string, unknown>)
+      : null;
+  if (modelStatusSummary) {
+    const nonPassingPaths = modelStatusSummary.non_passing_paths;
+    if (Array.isArray(nonPassingPaths)) {
+      const limit = 40;
+      modelStatusSummary.non_passing_paths = nonPassingPaths.slice(0, limit);
+      if (nonPassingPaths.length > limit) {
+        modelStatusSummary.omitted_non_passing_paths =
+          nonPassingPaths.length - limit;
+      }
+    }
+  }
+
+  return compact;
+}
+
 function timeoutFromEnv(name: string, fallbackMs: number): number {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value > 0 ? value : fallbackMs;
+}
+
+function plannerStateDbPath(appDir: string): string {
+  return process.env.MAY_DB_PATH ?? join(appDir, ".state", "may.db");
+}
+
+function hasRunningPlannerSession(
+  appDir: string,
+  agent: string,
+  excludeSessionId: string,
+): boolean {
+  const dbPath = plannerStateDbPath(appDir);
+  if (!existsSync(dbPath)) return false;
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const row = db
+      .query(
+        `
+          select sessionId
+          from sessions
+          where source = 'workflow:project-planner'
+            and agent = ?
+            and status = 'running'
+            and sessionId != ?
+          order by startedAt desc
+          limit 1
+        `,
+      )
+      .get(agent, excludeSessionId) as { sessionId?: string } | null;
+    return typeof row?.sessionId === "string" && row.sessionId.length > 0;
+  } catch {
+    return false;
+  } finally {
+    db.close();
+  }
 }
 
 function plannerSessionId(step: "event_review" | "planning_update"): string {
@@ -160,13 +337,17 @@ function buildPlannerPrompt(input: {
   packet: unknown;
   humanSteering: Record<string, unknown>[];
   wakeReason: string | null;
+  aggressivePush: boolean;
 }): string {
   const singleAssignmentWakeGuidance = [
     "task-completed",
     "watchdog-capacity-underfilled",
     "planner-timeout-underfilled-frontier",
   ].includes(input.wakeReason ?? "")
-    ? `
+    ? input.aggressivePush
+      ? `
+- This wake is in aggressive-push mode (${input.wakeReason}). Do not short-circuit after one refill. If safe runnable work, review work, drained non-pass loop results, or locally actionable blocked families remain, push the tree toward a full useful frontier before stopping.`
+      : `
 - This wake is in the bounded single-assignment short-circuit family (${input.wakeReason}). If you create or assign one truthful deterministic refill or bounded successor and no human-steering or review frontier remains, stop immediately. Do not keep scanning unrelated blocked families or try to saturate all remaining capacity in this same wake.`
     : "";
   return `Planning Update Step
@@ -257,6 +438,13 @@ Core operating model:
   blocker group and make the tree more readable: consolidate, close replaced
   leaves, or create the one missing owner/problem follow-up that lets future
   reviews finish that family.
+- Spec-loop follow-up leaves with context.specLoopFollowup=true are not
+  live reruns and are not duplicate per-spec blocker churn. They are repo-local
+  grouped reconciliation work for drained fail, blocked, or error loop
+  results. Preserve or assign them unless they duplicate the same
+  status/family key, lack clear acceptance, or have already produced an
+  accepted classification. Do not replace them solely because a shared westus2
+  live-execution wait still blocks fresh cloud runs.
 - If blocked_action_warnings is non-empty, handle at least one warning family
   before routine refill. Prefer batch repair: convert no-send-proof waits into
   one active send/escalation task, and convert source-exactness waits into
@@ -348,7 +536,7 @@ ${input.eventReview}
 
 Current compact task-tree packet:
 \`\`\`json
-${JSON.stringify(input.packet, null, 2)}
+${JSON.stringify(compactPlannerPacketForPrompt(input.packet), null, 2)}
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
@@ -389,6 +577,9 @@ Focus:
   group from blocked_frontier_summary should the owner burn down first?
 - Did blocked_action_warnings flag passive response-await or source-exactness
   overblocking? If yes, which warning family should planning repair first?
+- Are any active/runnable tasks marked context.specLoopFollowup=true? Treat
+  those as valid repo-local non-pass reconciliation work, not as live cloud
+  reruns or duplicate blocked waits.
 - What specific task-tree updates should the next step consider?
 - If pending high-priority human steering identifies a missing root task/lane,
   call that out as a required planning decision.
@@ -415,7 +606,7 @@ Agent: ${input.agent}
 
 Compact task-tree packet:
 \`\`\`json
-${JSON.stringify(input.packet, null, 2)}
+${JSON.stringify(compactPlannerPacketForPrompt(input.packet), null, 2)}
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
@@ -448,6 +639,7 @@ function dispatchAssignedTasks(
   for (const assignment of assignments) {
     try {
       ctx.dispatchEvent("project.task.assigned", {
+        target: { project: "aks-rp-e2e", taskId: assignment.taskId },
         project: "aks-rp-e2e",
         ...assignment,
         requested_by: "project-planner",
@@ -525,6 +717,11 @@ function settledActiveNoopResult(input: {
     noHumanSteering &&
     hasOnlyActiveFrontier &&
     input.packet.frontier.blocked.length === 0;
+  const routineLearningTickCoveredByActiveWork =
+    reason === "regular-learning-tick" &&
+    input.quickAssignments.length === 0 &&
+    noHumanSteering &&
+    hasOnlyActiveFrontier;
   if (
     reason === "watchdog-stale-active-review" &&
     citedStaleActiveIds.length > 0 &&
@@ -536,6 +733,9 @@ function settledActiveNoopResult(input: {
   }
   if (settledAfterCompletion) {
     return "Task-completed wake is already settled in the task tree: the completed task no longer exists in the live tree, no review task remains, and no runnable frontier needs owner judgment.";
+  }
+  if (routineLearningTickCoveredByActiveWork) {
+    return "Regular-learning tick is already covered by active work: no runnable/review frontier needs owner planning, and the current frontier is active-only plus any already-truthful blocked waits.";
   }
   if (!settledWithActiveWork) return null;
   if (reason === "task-completed") {
@@ -634,6 +834,85 @@ function staleRunnableBacklogNoopResult(input: {
   return `Watchdog runnable-backlog wake is stale: trigger IDs ${JSON.stringify(triggerIds)} are no longer confirm-runnable in the live frontier. ${freshnessParts.join("; ")}.`;
 }
 
+type TriggerReviewTask = {
+  taskId: string;
+  updatedAt?: string;
+};
+
+function triggerReviewTasks(rawTask: string): TriggerReviewTask[] {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "reviewTasks");
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry): TriggerReviewTask | null => {
+      if (!entry || typeof entry !== "object") return null;
+      const taskId =
+        (entry as { taskId?: unknown; task_id?: unknown }).taskId ??
+        (entry as { task_id?: unknown }).task_id;
+      if (typeof taskId !== "string" || !taskId.trim()) return null;
+      const updatedAt =
+        typeof (entry as { updatedAt?: unknown; updated_at?: unknown })
+          .updatedAt === "string"
+          ? ((entry as { updatedAt?: string }).updatedAt ?? undefined)
+          : typeof (entry as { updated_at?: unknown }).updated_at === "string"
+            ? ((entry as { updated_at?: string }).updated_at ?? undefined)
+            : undefined;
+      return { taskId, updatedAt };
+    })
+    .filter((entry): entry is TriggerReviewTask => Boolean(entry));
+}
+
+function staleReviewPendingNoopResult(input: {
+  config: TaskTreeConfig;
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  quickAssignments: TaskAssignment[];
+}): string | null {
+  const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
+  if (reason !== "watchdog-review-pending") return null;
+  if (input.humanSteering.length > 0) return null;
+  if (input.quickAssignments.length > 0) return null;
+  if (input.packet.frontier.review.length > 0) return null;
+
+  const triggerTasks = triggerReviewTasks(input.rawTask);
+  if (triggerTasks.length === 0) return null;
+
+  const liveReview = new Set(input.packet.frontier.review);
+  if (triggerTasks.some((task) => liveReview.has(task.taskId))) return null;
+
+  const states = triggerTasks.map((task) => {
+    const liveTask = readTask(input.config, task.taskId);
+    return {
+      taskId: task.taskId,
+      state:
+        liveTask == null
+          ? "missing"
+          : typeof liveTask.state === "string"
+            ? liveTask.state
+            : typeof liveTask.status === "string"
+              ? liveTask.status
+              : "present",
+      updatedAt: task.updatedAt,
+    };
+  });
+  if (states.some((task) => task.state === "review")) return null;
+
+  const activeIds = input.packet.active_task_ids;
+  const blockedIds = input.packet.frontier.blocked;
+  const contextParts = [
+    `trigger review IDs=${JSON.stringify(triggerTasks.map((task) => task.taskId))}`,
+    `live review frontier=${JSON.stringify(input.packet.frontier.review)}`,
+    `live states=${JSON.stringify(states)}`,
+    activeIds.length ? `active=${JSON.stringify(activeIds)}` : "",
+    blockedIds.length
+      ? `blocked=${JSON.stringify(blockedIds.slice(0, 8))}`
+      : "",
+  ].filter(Boolean);
+
+  return `Watchdog review-pending wake is stale: the cited review task(s) are no longer live review items. ${contextParts.join("; ")}.`;
+}
+
 type TriggerBlockedTask = {
   taskId: string;
   blocker: string;
@@ -716,7 +995,9 @@ function singleAssignmentShortCircuitResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  aggressivePush: boolean;
 }): string | null {
+  if (input.aggressivePush) return null;
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   if (
     ![
@@ -764,6 +1045,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const sourceRoot = sourceDir(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, null);
+  const aggressivePush = projectPushMode(appDir) === "aggressive-push";
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
   const worker =
@@ -817,11 +1099,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(staleRunnableNoop);
   }
 
+  const staleReviewNoop = staleReviewPendingNoopResult({
+    config,
+    rawTask: ctx.task,
+    packet,
+    humanSteering,
+    quickAssignments,
+  });
+  if (staleReviewNoop) {
+    appendNoopPlannerRun({
+      appDir,
+      result: staleReviewNoop,
+      steps: ["stale-review-pending-noop"],
+      packet,
+      initialRepair,
+    });
+    return ctx.done(staleReviewNoop);
+  }
+
   const singleAssignmentNoop = singleAssignmentShortCircuitResult({
     rawTask: ctx.task,
     packet,
     humanSteering,
     quickAssignments,
+    aggressivePush,
   });
   if (singleAssignmentNoop) {
     appendNoopPlannerRun({
@@ -879,6 +1180,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
+  if (hasRunningPlannerSession(appDir, agent, "")) {
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status: quickAssignments.length ? "assigned" : "idle",
+      ran_agent: false,
+      steps: ["planner-session-dedupe-noop"],
+      assigned_task_ids: quickAssignments.map(
+        (assignment) => assignment.taskId,
+      ),
+      repaired_rollups: initialRepair.repaired,
+      active_task_ids: packet.active_task_ids,
+      result:
+        "Skipped owner-agent planning because another workflow:project-planner session is already running for this owner; rely on the in-flight planner wake instead of starting an overlapping owner session.",
+    });
+    return ctx.done(
+      quickAssignments.length
+        ? `Planner dedupe assigned ${quickAssignments.length} task(s) while another owner-planner session is already running: ${quickAssignments
+            .map((assignment) => assignment.taskId)
+            .slice(0, 8)
+            .join(", ")}.`
+        : "Planner dedupe skipped owner-agent planning because another workflow:project-planner session is already running for this owner.",
+    );
+  }
+
   let eventReviewResult: unknown;
   let plannerResult: unknown;
   const eventReviewSessionId = plannerSessionId("event_review");
@@ -922,8 +1247,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         packet,
         humanSteering,
         wakeReason: triggerValue(parseTriggerEvent(ctx.task), "reason") as
-          | string
-          | null,
+          string | null,
+        aggressivePush,
       }),
     });
   } catch (err) {

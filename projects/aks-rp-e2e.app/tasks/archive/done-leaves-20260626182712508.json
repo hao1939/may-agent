@@ -1,0 +1,398 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T18:27:12.508Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-26 owner planning-update hygiene rollup: the feature-reference loop's current visible slice is fully accepted. Archive the six done child leaves because their durable meaning is now captured at the parent: repo-local official-reference evidence exists for aad-rbac, aad-rbac-azure-rbac-authorization, aad-rbac-nonaad-reset, aad-rbac-rbac-disabled-to-aadv2, acccvm, and airlock, plus the earlier accepted aad-rbac-managed-v2-lifecycle slice already archived. Future work should consume these references rather than reopening collection tasks unless upstream source/docs materially change.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-aad-rbac-azure-rbac-authorization",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for aad-rbac-azure-rbac-authorization.",
+      "inputs": [
+        "feature:aad-rbac-azure-rbac-authorization",
+        "packet:features/aad-rbac/packets/azure-rbac-authorization.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:aad-rbac-azure-rbac-authorization"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "aad-rbac-azure-rbac-authorization",
+        "packetPath": "features/aad-rbac/packets/azure-rbac-authorization.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "aad-rbac",
+        "coveredFeatureIds": [
+          "azure-rbac-authorization"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted worker output: evidence/archive/feature-reference-aad-rbac-azure-rbac-authorization-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:24:09.728Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-26T16:57:35.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-aad-rbac-azure-rbac-authorization_retry_20260626165735",
+        "stale_active_requeued_at": "2026-06-26T16:57:29.732Z",
+        "stale_active_requeue_reason": "watchdog stale active: session not running and no reviewed artifact evidence yet",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_collect-feature-reference-aad-rbac-azure-rbac-authorization_20260626162409",
+        "current_attempt_id": "a_collect-feature-reference-aad-rbac-azure-rbac-authorization_20260626165735",
+        "worker_started_attempt_id": "a_collect-feature-reference-aad-rbac-azure-rbac-authorization_20260626165735",
+        "worker_started_at": "2026-06-26T16:58:27.312Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for aad-rbac-azure-rbac-authorization: evidence/archive/feature-reference-aad-rbac-azure-rbac-authorization-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T17:39:15.299Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:08:54.647Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/feature-reference-aad-rbac-azure-rbac-authorization-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "session_history": [
+        "s_task_collect-feature-reference-aad-rbac-azure-rbac-authorization",
+        "s_task_collect-feature-reference-aad-rbac-azure-rbac-authorization_retry_20260626165735"
+      ],
+      "session_id": "s_task_collect-feature-reference-aad-rbac-azure-rbac-authorization_retry_20260626165735",
+      "result": "Collected official feature references for aad-rbac-azure-rbac-authorization: evidence/archive/feature-reference-aad-rbac-azure-rbac-authorization-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.647Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-aad-rbac-nonaad-reset",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for aad-rbac-nonaad-reset.",
+      "inputs": [
+        "feature:aad-rbac-nonaad-reset",
+        "packet:features/aad-rbac/packets/nonaad-reset.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:aad-rbac-nonaad-reset"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "aad-rbac-nonaad-reset",
+        "packetPath": "features/aad-rbac/packets/nonaad-reset.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "aad-rbac",
+        "coveredFeatureIds": [
+          "aad-rbac-nonaad-reset",
+          "nonaad-reset-aad-profile"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted worker output: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:24:09.746Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-26T16:57:35.571Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-aad-rbac-nonaad-reset_retry_20260626165735",
+        "worker_started_attempt_id": "a_collect-feature-reference-aad-rbac-nonaad-reset_20260626165735",
+        "worker_started_at": "2026-06-26T16:58:27.110Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for aad-rbac-nonaad-reset: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T17:39:15.176Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-26T16:57:29.954Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner review found the archive packet still placeholder-level: official API/doc reference sections remain unresolved, so acceptance is not yet met.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_collect-feature-reference-aad-rbac-nonaad-reset_20260626162409",
+        "current_attempt_id": "a_collect-feature-reference-aad-rbac-nonaad-reset_20260626165735",
+        "reviewed_at": "2026-06-26T18:08:54.701Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "session_history": [
+        "s_task_collect-feature-reference-aad-rbac-nonaad-reset",
+        "s_task_collect-feature-reference-aad-rbac-nonaad-reset_retry_20260626165735"
+      ],
+      "result": "Collected official feature references for aad-rbac-nonaad-reset: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260626.md.",
+      "evidence": [],
+      "session_id": "s_task_collect-feature-reference-aad-rbac-nonaad-reset_retry_20260626165735",
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.701Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for aad-rbac-rbac-disabled-to-aadv2.",
+      "inputs": [
+        "feature:aad-rbac-rbac-disabled-to-aadv2",
+        "packet:features/aad-rbac/packets/rbac-disabled-to-aadv2-migration.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:aad-rbac-rbac-disabled-to-aadv2"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "aad-rbac-rbac-disabled-to-aadv2",
+        "packetPath": "features/aad-rbac/packets/rbac-disabled-to-aadv2-migration.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "aad-rbac",
+        "coveredFeatureIds": [
+          "rbac-disabled-to-aadv2-migration"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive packet: it cites stable and preview managedClusters specs plus Learn docs proving the RBAC-disabled to managed AAD v2 migration boundary, deprecation notes, and public prerequisite language."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:24:09.752Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2_20260626162409",
+        "assigned_at": "2026-06-26T16:24:09.800Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+        "worker_started_attempt_id": "a_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2_20260626162409",
+        "worker_started_at": "2026-06-26T16:54:47.561Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for aad-rbac-rbac-disabled-to-aadv2: evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T16:55:57.394Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T16:57:29.905Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive packet: it cites stable and preview managedClusters specs plus Learn docs proving the RBAC-disabled to managed AAD v2 migration boundary, deprecation notes, and public prerequisite language."
+      },
+      "session_id": "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+      "session_history": [
+        "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2"
+      ],
+      "result": "Collected official feature references for aad-rbac-rbac-disabled-to-aadv2: evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T16:57:29.905Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-acccvm",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for acccvm.",
+      "inputs": [
+        "feature:acccvm",
+        "packet:features/acccvm.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:acccvm"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "acccvm",
+        "packetPath": "features/acccvm.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "acccvm-confidential-node-pool"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted worker output: evidence/archive/feature-reference-acccvm-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:57:35.527Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-acccvm_20260626174039",
+        "assigned_at": "2026-06-26T17:40:39.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_1782495677385_550",
+        "worker_started_attempt_id": "a_collect-feature-reference-acccvm_20260626174039",
+        "worker_started_at": "2026-06-26T17:41:17.301Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for acccvm: evidence/archive/feature-reference-acccvm-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T18:01:13.816Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:08:54.763Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/feature-reference-acccvm-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "session_id": "s_task_collect-feature-reference-acccvm",
+      "session_history": [
+        "s_task_collect-feature-reference-acccvm"
+      ],
+      "result": "Collected official feature references for acccvm: evidence/archive/feature-reference-acccvm-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.763Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-airlock",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for airlock.",
+      "inputs": [
+        "feature:airlock",
+        "packet:features/airlock.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:airlock"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "airlock",
+        "packetPath": "features/airlock.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "airlock-vmagent-pod-status",
+          "airlock-agent-lifecycle",
+          "airlock-compliance-check"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted worker output: evidence/archive/feature-reference-airlock-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:57:35.539Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-airlock_20260626175930",
+        "assigned_at": "2026-06-26T17:59:30.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-airlock",
+        "worker_started_attempt_id": "a_collect-feature-reference-airlock_20260626175930",
+        "worker_started_at": "2026-06-26T17:59:32.589Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for airlock: evidence/archive/feature-reference-airlock-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T18:02:07.273Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:08:54.830Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/feature-reference-airlock-20260626.md exists and the review claim is a bounded official-reference collection with no conflicting signals."
+      },
+      "session_id": "s_task_collect-feature-reference-airlock",
+      "session_history": [
+        "s_task_collect-feature-reference-airlock"
+      ],
+      "result": "Collected official feature references for airlock: evidence/archive/feature-reference-airlock-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.830Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T12:50:33.049Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner accepted the VM prerelease mounted-source next-branch audit: the row-54 ManagedSystem checkpoint has no truthful repo-local successor branch in the current mounted prerelease/checkin neighborhood because rows 51-56 and nearby rows 60-63 are already represented in maintained source/spec/replay/model carriers. Leave the tree with one exact external-human family wait as the only live residue; do not reopen duplicate repo-local VM successor leaves until a different lane/problem type is intentionally chosen.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the current dirty repo-local VirtualMachines prerelease ManagedSystem agent-pool slice and produce a bounded checkpoint-readiness verdict for the maintained row-54/create-time branch, reconciling the modified feature/spec/replay/model files plus row-54 evidence artifacts into one truthful slice without widening into cloud execution or unrelated VM prerelease families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the exact dirty slice inputs now present in the repo-local worktree for the ManagedSystem agent-pool prerelease branch (at minimum the feature/spec/replay carriers, relevant row-54 evidence artifacts, and any touched model/view files), and explains whether each belongs to this branch, another branch, or should stay out of a checkpoint candidate.",
+        "Conclude with exactly one bounded checkpoint-readiness outcome for this slice only: either the slice is coherent and ready for an owner checkpoint with the required file set and repo-local checks listed, or the artifact records the exact missing reconciliation still needed before any checkpoint. Do not run cloud mutation, reopen the private-cluster BYO-DNS exact no-run decision, or duplicate the external-human-transport wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row54-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T12:45:13.062Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622_20260622124515",
+        "assigned_at": "2026-06-22T12:45:15.159Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622",
+        "worker_started_attempt_id": "a_vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622_20260622124515",
+        "worker_started_at": "2026-06-22T12:45:30.415Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Produced a bounded checkpoint-review artifact at evidence/archive/vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622.md concluding the row-54 carrier is coherent but the current dirty repo-local slice is not yet truthful for a row-54-only checkpoint because shared index/coverage/model/view files remain mixed with unrelated branches.",
+        "last_worker_completed_at": "2026-06-22T12:47:42.954Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T12:48:35.651Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review artifact: it cites the exact row-54 carrier files, shared mixed surfaces, and adjacent non-row-54 artifacts, then truthfully concludes the dedicated row-54 branch is coherent but the current dirty repo-local slice is not checkpoint-ready until shared index/coverage/model/view files are isolated or reconciled."
+      },
+      "session_id": "s_task_vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622",
+      "session_history": [
+        "s_task_vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622"
+      ],
+      "result": "Produced a bounded checkpoint-review artifact at evidence/archive/vmpr-row54-managedsystem-agentpool-checkpoint-review-20260622.md concluding the row-54 carrier is coherent but the current dirty repo-local slice is not yet truthful for a row-54-only checkpoint because shared index/coverage/model/view files remain mixed with unrelated branches.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T12:48:35.651Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review artifact: it cites the exact row-54 carrier files, shared mixed surfaces, and adjacent non-row-54 artifacts, then truthfully concludes the dedicated row-54 branch is coherent but the current dirty repo-local slice is not checkpoint-ready until shared index/coverage/model/view files are isolated or reconciled."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-mounted-source-next-branch-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin source plus the accepted row-54 checkpoint-review findings to determine the next bounded repo-local branch after the row-54 review verdict: either isolate/regenerate the shared row-54 index/coverage/model/view surfaces into a truthful checkpointable slice, or recommend a different source-backed VM prerelease branch if that yields higher repo-local value first, without widening into cloud execution or external-human waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-mounted-source-next-branch-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted source carriers reviewed (at minimum /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, plus any directly referenced scenario/plan carriers) and the accepted row-54 checkpoint-review artifact as inputs.",
+        "Conclude with exactly one bounded next-step recommendation grounded in the current repo-local truth: either a shared-surface isolation/reconcile branch for the row-54 checkpoint slice with the exact files to touch, or a different source-backed VM prerelease branch with the exact feature/spec/replay/model carriers to pursue first; do not run cloud mutations or create new passive external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-mounted-source-next-branch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T12:46:18.281Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-mounted-source-next-branch-audit-20260622_20260622124621",
+        "assigned_at": "2026-06-22T12:46:21.919Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mounted-source-next-branch-audit-20260622",
+        "worker_started_attempt_id": "a_vmpr-mounted-source-next-branch-audit-20260622_20260622124621",
+        "worker_started_at": "2026-06-22T12:46:34.472Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local audit at evidence/archive/vmpr-mounted-source-next-branch-audit-20260622.md, showing the mounted VM prerelease/checkin neighborhood around row 54 is already represented in current repo-local source/spec/model carriers and concluding no new repo-local next branch is justified yet.",
+        "last_worker_completed_at": "2026-06-22T12:49:52.858Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T12:50:33.002Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 mounted-source audit: evidence/archive/vmpr-mounted-source-next-branch-audit-20260622.md cites prerelease.go, checkin.go, and adjacent mounted carriers plus the accepted row-54 checkpoint review, then concludes truthfully that rows 51-56 and nearby rows 60-63 are already represented in current repo-local source/spec/model carriers, so no new repo-local successor branch should be added from this audit."
+      },
+      "session_id": "s_task_vmpr-mounted-source-next-branch-audit-20260622",
+      "session_history": [
+        "s_task_vmpr-mounted-source-next-branch-audit-20260622"
+      ],
+      "result": "Produced the requested repo-local audit at evidence/archive/vmpr-mounted-source-next-branch-audit-20260622.md, showing the mounted VM prerelease/checkin neighborhood around row 54 is already represented in current repo-local source/spec/model carriers and concluding no new repo-local next branch is justified yet.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T12:50:33.002Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 mounted-source audit: evidence/archive/vmpr-mounted-source-next-branch-audit-20260622.md cites prerelease.go, checkin.go, and adjacent mounted carriers plus the accepted row-54 checkpoint review, then concludes truthfully that rows 51-56 and nearby rows 60-63 are already represented in current repo-local source/spec/model carriers, so no new repo-local successor branch should be added from this audit."
+      },
+      "status": "done"
+    }
+  ]
+}

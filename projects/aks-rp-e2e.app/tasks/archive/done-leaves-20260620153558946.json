@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:35:58.946Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog blocked-frontier review: keep machinespreview-external-send-proof-or-reply-wait-20260620 as the single truthful external-human wait for path.machines-agentpool-api-crud.machine-crud-blocked because the narrowed handoff packet is already send-ready and no additional repo-local drafting, response-await, or runtime send leaf would be truthful until durable repo-local proof of a real external send/escalation or an authoritative reply exists. Archive the completed row46/row47 accepted-slice checkpoint reconcile and next-slice inventory leaves because their durable meaning is now represented by the unchanged MachinesPreview wait boundary plus the single active repo-local follow-up vm-prerelease-row48-scale-from-zero-labels-fips-exactness-audit-20260620, which is the only current feature/spec action needed to decide the smallest truthful VirtualMachine prerelease follow-up without cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted VM prerelease rows 46 and 47 dirty repo slice into a checkpoint-ready done batch so the planner can later commit a coherent reviewed change set instead of mixing it with unrelated in-flight diffs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "The evidence note maps the current dirty files for the accepted row-46/row-47 landings to their task-tree leaves and separates them from unrelated in-flight diffs, with exact path lists for the candidate checkpoint slice.",
+        "The note records whether a coherent planner checkpoint is already possible; if not, it names the exact conflicting dirty paths and the minimum next isolate-or-review action needed before domain:checkpoint would be truthful.",
+        "The work stays repo-local, cites the accepted row46/row47 landing evidence plus current git status/diff evidence, and does not run cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:30:05.115Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620_20260620153007",
+        "assigned_at": "2026-06-20T15:30:07.432Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620_20260620153007",
+        "worker_started_at": "2026-06-20T15:30:16.718Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested checkpoint-reconcile evidence note at projects/aks-rp-e2e/evidence/archive/vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620.md, mapping the accepted row-46/row-47 dirty app-side metadata slice, separating unrelated in-flight diffs, and concluding a narrow truthful checkpoint is not yet possible without further isolation.",
+        "last_worker_completed_at": "2026-06-20T15:32:57.074Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:33:28.892Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the evidence note truthfully maps the row46/row47 app-side candidate checkpoint slice, separates unrelated in-flight diffs, and concludes no narrow rows46-47-only checkpoint is yet truthful until row46 metadata is isolated from shared live tree/kanban state or the later checkpoint is explicitly broadened."
+      },
+      "session_id": "s_task_vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620"
+      ],
+      "result": "Wrote the requested checkpoint-reconcile evidence note at projects/aks-rp-e2e/evidence/archive/vm-prerelease-rows46-47-accepted-slice-checkpoint-reconcile-20260620.md, mapping the accepted row-46/row-47 dirty app-side metadata slice, separating unrelated in-flight diffs, and concluding a narrow truthful checkpoint is not yet possible without further isolation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:33:28.892Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the evidence note truthfully maps the row46/row47 app-side candidate checkpoint slice, separates unrelated in-flight diffs, and concludes no narrow rows46-47-only checkpoint is yet truthful until row46 metadata is isolated from shared live tree/kanban state or the later checkpoint is explicitly broadened."
+      },
+      "status": "done"
+    }
+  ]
+}

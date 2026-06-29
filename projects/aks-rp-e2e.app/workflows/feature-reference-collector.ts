@@ -1,0 +1,473 @@
+/**
+ * feature-reference-collector — collect official references for one feature packet.
+ */
+
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, relative } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  buildTaskTreeConfig,
+  completeStartedAttempt,
+  emitTaskCompleted,
+  markAttemptStartedOnce,
+} from "./default-task-worker.ts";
+import {
+  field,
+  maxConcurrent,
+  parseTriggerEvent,
+  resolveAppDir,
+  resultText,
+  sourceDir,
+  triggerString,
+} from "./lib/workflow-input.ts";
+import {
+  defaultFeatureReferenceDraftDir,
+  defaultFeatureReferenceLoopStatePath,
+  loadFeatureReferenceLoopState,
+  safeFeatureReferenceFileKey,
+  saveFeatureReferenceLoopState,
+  updateFeatureReferenceItem,
+} from "./lib/feature-reference-loop-store.ts";
+import type { TaskNode } from "./lib/task-tree-store.ts";
+
+export const name = "feature-reference-collector";
+export const description =
+  "Collect Microsoft Learn and Azure REST API spec references for one AKS feature.";
+
+type ReferenceHit = {
+  source: "learn" | "api";
+  path: string;
+  title: string;
+  claim: string;
+};
+
+function taskContext(task: TaskNode): Record<string, unknown> {
+  return task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+    ? (task.context as Record<string, unknown>)
+    : {};
+}
+
+function contextString(task: TaskNode, key: string, fallback = ""): string {
+  const value = taskContext(task)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function contextStringArray(task: TaskNode, key: string): string[] {
+  const value = taskContext(task)[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function listFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  const files: string[] = [];
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    const stat = statSync(path);
+    if (stat.isDirectory()) {
+      files.push(...listFiles(path));
+    } else if (stat.isFile()) {
+      files.push(path);
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b));
+}
+
+function tokenSet(values: string[]): string[] {
+  const ignored = new Set([
+    "feature",
+    "features",
+    "packet",
+    "source",
+    "azure",
+    "microsoft",
+    "learn",
+  ]);
+  const tokens = values
+    .join(" ")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3 && !ignored.has(token));
+  return [...new Set(tokens)];
+}
+
+function matchScore(text: string, tokens: string[]): number {
+  const lower = text.toLowerCase();
+  return tokens.filter((token) => lower.includes(token)).length;
+}
+
+function titleFromContent(path: string, raw: string): string {
+  const markdownTitle = raw.match(/^#\s+(.+)$/m)?.[1]?.trim();
+  if (markdownTitle) return markdownTitle;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const info = parsed.info as Record<string, unknown> | undefined;
+    if (typeof info?.title === "string" && info.title.trim())
+      return info.title.trim();
+    if (typeof parsed.title === "string" && parsed.title.trim())
+      return parsed.title.trim();
+  } catch {
+    // Not JSON.
+  }
+  return path.replace(/^.*\//, "");
+}
+
+function firstUsefulLine(raw: string): string {
+  return (
+    raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(
+        (line) =>
+          line &&
+          !line.startsWith("#") &&
+          !line.startsWith("{") &&
+          !line.startsWith("}") &&
+          !line.startsWith("[") &&
+          !line.startsWith("]"),
+      ) || "Reference matched the feature search terms."
+  );
+}
+
+function collectFixtureReferences(input: {
+  fixtureDir: string;
+  featureKey: string;
+  packetPath: string;
+  coveredFeatureIds: string[];
+}): ReferenceHit[] {
+  const tokens = tokenSet([
+    input.featureKey,
+    input.packetPath,
+    ...input.coveredFeatureIds,
+  ]);
+  const roots: Array<{ source: "learn" | "api"; dir: string }> = [
+    { source: "learn", dir: join(input.fixtureDir, "learn") },
+    { source: "api", dir: join(input.fixtureDir, "azure-rest-api-specs") },
+  ];
+  const hits: Array<ReferenceHit & { score: number }> = [];
+  for (const root of roots) {
+    for (const file of listFiles(root.dir)) {
+      const raw = readFileSync(file, "utf-8");
+      const rel = relative(input.fixtureDir, file);
+      const score = matchScore(`${rel}\n${raw}`, tokens);
+      if (score <= 0) continue;
+      hits.push({
+        source: root.source,
+        path: rel,
+        title: titleFromContent(rel, raw),
+        claim: firstUsefulLine(raw).slice(0, 240),
+        score,
+      });
+    }
+  }
+  return hits
+    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
+    .slice(0, 16)
+    .map(({ score: _score, ...hit }) => hit);
+}
+
+function renderReferenceList(hits: ReferenceHit[], source: "learn" | "api") {
+  const scoped = hits.filter((hit) => hit.source === source);
+  if (scoped.length === 0) return "- No matching reference found yet.";
+  return scoped
+    .map((hit) => `- ${hit.path}: ${hit.title}. Claim: ${hit.claim}`)
+    .join("\n");
+}
+
+function renderDraft(input: {
+  featureKey: string;
+  packetPath: string;
+  packetKind: string;
+  layout: string;
+  capabilityId: string;
+  coveredFeatureIds: string[];
+  hits: ReferenceHit[];
+  agentNotes?: string;
+}): string {
+  const covered = input.coveredFeatureIds.length
+    ? input.coveredFeatureIds.map((id) => `- ${id}`).join("\n")
+    : "- No covered feature ids declared in the packet.";
+  const agentNotes = input.agentNotes?.trim()
+    ? `\n## Collector Agent Notes\n\n${input.agentNotes.trim()}\n`
+    : "";
+  return `# Feature Reference: ${input.featureKey}
+
+## Feature
+
+- Key: ${input.featureKey}
+- Packet kind: ${input.packetKind}
+- Feature folder layout: ${input.layout}
+- Capability id: ${input.capabilityId || "not declared"}
+- Covered feature ids:
+${covered}
+
+## Existing Packet
+
+- ${input.packetPath}
+
+## Official API References
+
+${renderReferenceList(input.hits, "api")}
+
+## Official Documentation References
+
+${renderReferenceList(input.hits, "learn")}
+
+## Behavior Expectations
+
+- Review the API and documentation references above and convert stable behavior into feature packet ground truth.
+
+## Supported Inputs And Constraints
+
+- Draft collector output. Confirm exact supported inputs during packet promotion.
+
+## Unsupported Or Deprecated Behavior
+
+- Draft collector output. Confirm unsupported or deprecated behavior during packet promotion.
+
+## Usage Scenarios
+
+- Draft collector output. Confirm documented usage scenarios during packet promotion.
+
+## Gaps And Contradictions
+
+- Compare these official references with existing specs, scenario tests, and feature packets before promotion.
+
+## Recommended Model Or Spec Updates
+
+- Add stable API references under groundTruth.api.
+- Add stable Microsoft Learn references under groundTruth.userDocs.
+- Promote branch-specific stable references into features/<capability>/packets/ when the source packet is branch-scoped.
+- Add judgment rules where official behavior distinguishes implementation issues, test issues, and environment issues.
+${agentNotes}`;
+}
+
+function completion(
+  ctx: WorkflowContext,
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    task: TaskNode;
+    attemptId: string;
+    claim: "done" | "blocked";
+    summary: string;
+  },
+): WorkflowResult {
+  const completed = completeStartedAttempt(config, {
+    taskId: input.task.id,
+    attemptId: input.attemptId,
+    claim: input.claim,
+    summary: input.summary,
+  });
+  if (completed.ok) {
+    emitTaskCompleted(ctx, completed.task, {
+      attemptId: input.attemptId,
+      result: input.claim,
+      summary: input.summary,
+    });
+  }
+  return ctx.done(input.summary);
+}
+
+function collectorPrompt(input: {
+  featureKey: string;
+  packetPath: string;
+  coveredFeatureIds: string[];
+}): string {
+  return `Collect public official AKS references for feature ${input.featureKey}.
+
+Use only these authorities for public behavior:
+- Microsoft Learn documentation under learn.microsoft.com
+- Azure REST API specs in Azure/azure-rest-api-specs
+
+Use the local packet ${input.packetPath} only as context. Covered feature ids: ${input.coveredFeatureIds.join(", ") || "none"}.
+
+Return concise Markdown with:
+- API references and the claim each reference proves
+- Microsoft Learn references and the claim each reference proves
+- behavior expectations
+- supported inputs and constraints
+- unsupported or deprecated behavior
+- usage scenarios
+- gaps or contradictions against current local knowledge
+- recommended model or spec updates`;
+}
+
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+  const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
+  const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  sourceDir(ctx.task);
+  const trigger = parseTriggerEvent(ctx.task);
+  const config = buildTaskTreeConfig(
+    ctx,
+    appDir,
+    projectDir,
+    maxConcurrent(ctx.task, trigger),
+  );
+
+  if (trigger?.type !== "project.task.assigned") {
+    return ctx.done(
+      `Feature reference collector ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.assigned.`,
+    );
+  }
+
+  const taskId =
+    triggerString(trigger, "taskId") ||
+    triggerString(trigger, "task_id") ||
+    field(ctx.task, "taskId");
+  const attemptId =
+    triggerString(trigger, "attemptId") || triggerString(trigger, "attempt_id");
+  if (!taskId || !attemptId) {
+    return ctx.done(
+      "Feature reference collector requires taskId and attemptId.",
+    );
+  }
+
+  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  if (start.ok === false) return ctx.done(start.reason);
+  const task = start.task;
+  const featureKey = contextString(task, "featureKey");
+  const packetPath = contextString(task, "packetPath");
+  const packetKind = contextString(task, "packetKind", "feature");
+  const layout = contextString(task, "layout", "migration-root-feature");
+  const capabilityId = contextString(task, "capabilityId");
+  const coveredFeatureIds = contextStringArray(task, "coveredFeatureIds");
+  const stateRef = contextString(
+    task,
+    "stateRef",
+    defaultFeatureReferenceLoopStatePath(appDir),
+  );
+  const loopTaskId = contextString(
+    task,
+    "loopTaskId",
+    "aks-feature-reference-loop",
+  );
+  const draftDir = contextString(
+    task,
+    "draftDir",
+    defaultFeatureReferenceDraftDir(projectDir),
+  );
+  const referenceFixtureDir = contextString(task, "referenceFixtureDir");
+  const runDate =
+    contextString(task, "runDate") ||
+    new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
+  const statePath = stateRef.startsWith("/")
+    ? stateRef
+    : join(appDir, stateRef);
+  const { state } = loadFeatureReferenceLoopState({
+    appDir,
+    projectDir,
+    loopTaskId,
+    windowSize: 5,
+    statePath,
+  });
+
+  if (!featureKey || !packetPath) {
+    const summary = `Task ${task.id} is missing featureKey or packetPath.`;
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "blocked",
+      summary,
+    });
+  }
+
+  updateFeatureReferenceItem(state, featureKey, {
+    status: "running",
+    attempts: (state.features[featureKey]?.attempts ?? 0) + 1,
+  });
+  saveFeatureReferenceLoopState(statePath, state);
+
+  let hits: ReferenceHit[] = [];
+  let agentNotes = "";
+  if (referenceFixtureDir) {
+    hits = collectFixtureReferences({
+      fixtureDir: referenceFixtureDir,
+      featureKey,
+      packetPath,
+      coveredFeatureIds,
+    });
+    if (hits.length === 0) {
+      const summary = `No fixture references matched ${featureKey}.`;
+      updateFeatureReferenceItem(state, featureKey, {
+        status: "blocked",
+        lastSummary: summary,
+      });
+      saveFeatureReferenceLoopState(statePath, state);
+      return completion(ctx, config, {
+        task,
+        attemptId,
+        claim: "blocked",
+        summary,
+      });
+    }
+  } else {
+    const result = await ctx.runAgent(
+      ctx.agent,
+      collectorPrompt({ featureKey, packetPath, coveredFeatureIds }),
+      { timeoutMs: 1_800_000 },
+    );
+    agentNotes = resultText(result);
+    if (!agentNotes.trim()) {
+      const summary = `Official reference collection for ${featureKey} produced no usable notes.`;
+      updateFeatureReferenceItem(state, featureKey, {
+        status: "blocked",
+        lastSummary: summary,
+      });
+      saveFeatureReferenceLoopState(statePath, state);
+      return completion(ctx, config, {
+        task,
+        attemptId,
+        claim: "blocked",
+        summary,
+      });
+    }
+  }
+
+  const absoluteDraftDir = draftDir.startsWith("/")
+    ? draftDir
+    : join(projectDir, draftDir);
+  const outputPath = join(
+    absoluteDraftDir,
+    `feature-reference-${safeFeatureReferenceFileKey(featureKey)}-${runDate}.md`,
+  );
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(
+    outputPath,
+    renderDraft({
+      featureKey,
+      packetPath,
+      packetKind,
+      layout,
+      capabilityId,
+      coveredFeatureIds,
+      hits,
+      agentNotes,
+    }),
+    "utf-8",
+  );
+  const relativeOutput = relative(projectDir, outputPath);
+  const summary = `Collected official feature references for ${featureKey}: ${relativeOutput}.`;
+  updateFeatureReferenceItem(state, featureKey, {
+    status: "done",
+    lastOutputPath: relativeOutput,
+    lastSummary: summary,
+  });
+  saveFeatureReferenceLoopState(statePath, state);
+  return completion(ctx, config, {
+    task,
+    attemptId,
+    claim: "done",
+    summary,
+  });
+}

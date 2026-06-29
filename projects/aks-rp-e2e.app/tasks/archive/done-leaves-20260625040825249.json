@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T04:08:25.249Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 root hygiene is fully compacted: the duplicate-canonicalization history now lives only in archived root rollups preserving the homogeneous VM-prerelease survivor-selection/rebucket evidence and the measured duplicate-group reduction from 659 to 655. The only live project branch remains focus-mounted-source-coverage-closure-and-external-wait-20260623 with five exact external returned-proof waits, and the aad-rbac environment-overblock warning remains a false positive until the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "matrix-duplicate-canonicalization-batch-b-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retire or rebucket the non-canonical wrapper/timestamp archive copies for the already-homogeneous VM-prerelease matrix families windows-vm-prerelease-matrix and cluster-autoscaler-vm-prerelease-profile-matrix, preserving one canonical md/json pair per family plus any minimal review-supporting survivors without touching the five exact external waits or mixed-result probe families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/matrix-duplicate-canonicalization-batch-b-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the canonical survivor md/json pair for each of the two target families, lists the exact retired/rebucketed duplicate files or equivalent repo-local changes, cites the prior canonicalization evidence used, and confirms the five exact external waits and mixed-result probe families were left untouched.",
+        "The worker records a post-change duplicate-group recount or metric-refresh evidence justifying whether this two-family cleanup reduced the duplicate-group count by the expected ceiling of 4 groups; if measured reduction differs, the note explains why without claiming unverified improvement."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "artifact-duplicate-groups"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T03:59:53.675Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_matrix-duplicate-canonicalization-batch-b-20260625_20260625035953",
+        "assigned_at": "2026-06-25T03:59:53.724Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_matrix-duplicate-canonicalization-batch-b-20260625",
+        "worker_started_attempt_id": "a_matrix-duplicate-canonicalization-batch-b-20260625_20260625035953",
+        "worker_started_at": "2026-06-25T04:00:14.446Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed matrix duplicate canonicalization batch B by rebucketing timestamped archive duplicates for windows-vm-prerelease-matrix and cluster-autoscaler-vm-prerelease-profile-matrix into evidence/pipelines/duplicate-canonicalization-batch-b-20260625/, and wrote archive evidence showing canonical survivors plus a recount drop from 659 to 655.",
+        "last_worker_completed_at": "2026-06-25T04:03:04.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T04:03:39.357Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/matrix-duplicate-canonicalization-batch-b-20260625.md: the note names canonical survivor md/json pairs for both target families, lists the exact rebucketed files, confirms the five exact external waits and mixed-result probe families were untouched, and records the duplicate-group recount drop 659 -> 655 matching the expected ceiling reduction of 4."
+      },
+      "session_id": "s_task_matrix-duplicate-canonicalization-batch-b-20260625",
+      "session_history": [
+        "s_task_matrix-duplicate-canonicalization-batch-b-20260625"
+      ],
+      "result": "Completed matrix duplicate canonicalization batch B by rebucketing timestamped archive duplicates for windows-vm-prerelease-matrix and cluster-autoscaler-vm-prerelease-profile-matrix into evidence/pipelines/duplicate-canonicalization-batch-b-20260625/, and wrote archive evidence showing canonical survivors plus a recount drop from 659 to 655.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T04:03:39.357Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/matrix-duplicate-canonicalization-batch-b-20260625.md: the note names canonical survivor md/json pairs for both target families, lists the exact rebucketed files, confirms the five exact external waits and mixed-result probe families were untouched, and records the duplicate-group recount drop 659 -> 655 matching the expected ceiling reduction of 4."
+      },
+      "status": "done"
+    }
+  ]
+}

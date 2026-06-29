@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:19:56.822Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner stale-active review accepted the ccp-coredns custom-config reconciliation and removed one nonproductive stale verifier from the active frontier. Workflow run 28367212159 is now durably reflected as staging-pass for spec.ccp-coredns.custom-config via archived reconciliation evidence/model updates. The prior active retry for spec.aad-rbac.nonaad-to-aadv2-migration had no durable worker result after a second no-activity stall, so it was superseded: the stale-active oversubscription diagnosis remains the live review item and a fresh retry leaf exists for rerun only after that diagnosis is accepted.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the passed spec.ccp-coredns.custom-config run 28367212159 into durable spec-loop/model state so the accepted execution evidence is reflected beyond the auto-closed verifier leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629.md"
+      ],
+      "acceptance": [
+        "Workflow run 28367212159 pass is rechecked against durable result artifacts, spec-loop state for spec.ccp-coredns.custom-config is present or repaired with exact evidence, model feature/path status moves from draft to the accepted pass or staging-pass disposition (or the exact reason it cannot yet move is documented), and the task-tree rollup no longer implies owner reconciliation already happened when it did not."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.custom-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:11:05.435Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:11:13.583Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629_20260629111200",
+        "assigned_at": "2026-06-29T11:12:00.687Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629_20260629111200",
+        "worker_started_at": "2026-06-29T11:12:02.666Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rechecked workflow run 28367212159 for spec.ccp-coredns.custom-config, confirmed spec-loop state already held the correct pass entry, and reconciled the accepted knowledge model from draft to staging-pass for both the feature and feature path. Wrote a durable reconciliation archive and regenerated knowledge-map views so the accepted pass now appears beyond the auto-closed verifier leaf.",
+        "last_worker_completed_at": "2026-06-29T11:17:35.677Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629.md",
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json"
+        ],
+        "reviewed_at": "2026-06-29T11:18:47.480Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker reconciliation: task trace cites durable archive evidence for workflow run 28367212159, confirms spec-loop state already carried the pass, and updates the knowledge model/views to staging-pass for spec.ccp-coredns.custom-config so the pass is no longer stranded behind the auto-closed verifier leaf."
+      },
+      "session_id": "s_task_reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629"
+      ],
+      "result": "Rechecked workflow run 28367212159 for spec.ccp-coredns.custom-config, confirmed spec-loop state already held the correct pass entry, and reconciled the accepted knowledge model from draft to staging-pass for both the feature and feature path. Wrote a durable reconciliation archive and regenerated knowledge-map views so the accepted pass now appears beyond the auto-closed verifier leaf.",
+      "evidence": [
+        "evidence/archive/reconcile-spec-ccp-coredns-custom-config-pass-into-state-model-20260629.md",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:18:47.480Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker reconciliation: task trace cites durable archive evidence for workflow run 28367212159, confirms spec-loop state already carried the pass, and updates the knowledge model/views to staging-pass for spec.ccp-coredns.custom-config so the pass is no longer stranded behind the auto-closed verifier leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

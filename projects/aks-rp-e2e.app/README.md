@@ -62,10 +62,34 @@ history. This app does not keep a parallel `events/` or `runs/` directory.
 This app also does not own a `runner/` directory or domain test scripts;
 runnable test logic belongs to the portable domain project.
 
-The project owner is inferred by convention from the app-local `agents/`
-folder. Because this app has a single local agent, `agents/aks-explorer/`,
-workflow handlers and tasks do not need to repeat `aks-explorer` as their
-default owner/agent.
+The project is the owner for project-scoped events. Event handlers normally use
+`target: { project: "aks-rp-e2e" }`; the runtime should infer
+`owner: "project:aks-rp-e2e"` and then delegate execution to the app-local
+project-owner agent. Because this app has a single local agent,
+`agents/aks-explorer/`, workflow handlers and tasks do not need to repeat
+`aks-explorer` as their default executor.
+
+The event envelope terms are:
+
+- `source`: who emitted the event, such as `agent:aks-explorer` or
+  `runtime:metrics`.
+- `target`: the concrete subject and first delivery point, such as
+  `{ project, taskId }`.
+- `owner`: who is accountable when the target does not handle it, normally
+  `project:aks-rp-e2e` for project events.
+
+Anything with a durable identity and responsibility boundary can be an owner:
+project, human, agent, or a long-lived controller task. A workflow or event
+handler is normally just implementation; it should not become the owner unless
+it also owns durable state, authority, and a close/escalate rule. A task id in
+`target` is not automatically a task owner; most tasks are targets that roll up
+to the project owner.
+
+Task-targeted events start at the concrete task and roll up by containment:
+`{ project, taskId }` is first available to exact task handlers, then loop or
+parent-task handlers, then the project owner. A project selector still matches
+task-targeted events for the same project, but a task selector only matches that
+task.
 
 The active execution model is deliberately small:
 
@@ -75,8 +99,8 @@ The active execution model is deliberately small:
 - `focus-plan` handles `project.focus.plan.requested` and
   `project.focus.review.requested`.
   It runs the slower mid-term planning cadence: propose or refresh the current
-  focus branch, review progress every six hours, and emit a human escalation
-  when direction/risk needs approval or the focus is off track.
+  focus branch, review progress every six hours, and emit a human-targeted
+  message when direction/risk needs approval or the focus is off track.
 - `task-worker` handles `project.task.assigned`.
 - `project-execution-watchdog` observes task/session liveness and wakes the
   project owner when review is needed.
@@ -149,9 +173,11 @@ human owner does not need to poll status and steer repeatedly.
 - The durable focus state belongs in `tasks/tree.json` as a visible
   `focus_plan` branch. `project.json.currentFocus` is only a compact summary of
   that branch, not an independent live status authority.
-- If approval or steering is needed, the workflow emits `escalation.created`
-  for `human:operator`; the normal planner then folds the reply into the task
-  tree and continues assigning work.
+- If approval or steering is needed, the workflow emits a human-targeted
+  `message.created` record. Runtime or SDK escalation paths may still emit
+  `escalation.created` for confirmed ownership-boundary blockers, but that is
+  not the normal focus-plan approval output. The normal planner folds replies
+  into the task tree and continues assigning work.
 
 ### Live status authority order
 
@@ -194,8 +220,8 @@ Spec-loop operator commands:
 The app has separate reload surfaces:
 
 - Editing `workflows/*.ts` is picked up on the next workflow dispatch.
-- Editing an existing named platform handler is picked up on that handler's next
-  fire.
+- Editing an existing named May-agent handler is picked up on that handler's
+  next fire.
 - Editing `app.ts` changes schedules, `onEvent` generated handlers, actions,
   and event selectors. The platform re-installs project app manifests via the
   project-app manifest watcher; `/reload` or `runtime.reload.requested` is the

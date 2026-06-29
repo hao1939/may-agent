@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T07:16:16.442Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review reconfirmed the tree is already in its truthful compressed state: one live focus branch only, and that branch is itself just the single family-level blocked external-human approval/reply wait. All covered repo-local mounted-source/spec/model closure remains accepted archived context, so do not recreate runnable review work, duplicate waits, or local rediscovery unless returned durable external proof arrives or new human steering changes the escalation path.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit whether the current repo-local dirty workspace can yield a coherent row-61 checkpoint candidate using the accepted minimal inventory only: compare the live git dirty/untracked set against evidence/archive/virtualmachine-prerelease-row61-minimal-checkpoint-slice-20260626.md, confirm which canonical include files are actually present in the dirty slice, and identify the exact unrelated/conflicting files that would have to stay out of any later row-61 checkpoint decision.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites evidence/archive/virtualmachine-prerelease-row61-minimal-checkpoint-slice-20260626.md and records the current git dirty/untracked row-61-relevant files versus the canonical include/exclude lists, including whether a coherent row-61-only checkpoint candidate is currently separable from unrelated dirty work.",
+        "No commit, no cloud probe, no source/model redesign, and no unrelated row60/addonv2/ASM cleanup is introduced; the outcome is only an owner-usable checkpoint-candidate audit with exact file-level scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row61-checkpoint-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T07:10:51.963Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626_20260626071052",
+        "assigned_at": "2026-06-26T07:10:52.018Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626_20260626071052",
+        "worker_started_at": "2026-06-26T07:11:01.739Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-61 checkpoint-candidate audit artifact at evidence/archive/virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626.md, comparing live git dirty/untracked files against the accepted minimal include/exclude slice and concluding the current workspace is not a clean row-61-only checkpoint candidate because shared include files are mixed with unrelated edits.",
+        "last_worker_completed_at": "2026-06-26T07:12:39.281Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T07:13:08.457Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive audit cites the accepted minimal row-61 checkpoint slice, enumerates the current dirty/untracked canonical include and exclude files, and truthfully concludes the live workspace is not a coherent row-61-only checkpoint candidate because shared files (specs/index.json, model/knowledge-map/model.json, and maintained views) are mixed with unrelated row60/addonv2/ManagedSystem/cluster-autoscaler/cloud-provider edits."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626"
+      ],
+      "result": "Created the row-61 checkpoint-candidate audit artifact at evidence/archive/virtualmachine-prerelease-row61-checkpoint-candidate-audit-20260626.md, comparing live git dirty/untracked files against the accepted minimal include/exclude slice and concluding the current workspace is not a clean row-61-only checkpoint candidate because shared include files are mixed with unrelated edits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T07:13:08.457Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive audit cites the accepted minimal row-61 checkpoint slice, enumerates the current dirty/untracked canonical include and exclude files, and truthfully concludes the live workspace is not a coherent row-61-only checkpoint candidate because shared files (specs/index.json, model/knowledge-map/model.json, and maintained views) are mixed with unrelated row60/addonv2/ManagedSystem/cluster-autoscaler/cloud-provider edits."
+      },
+      "status": "done"
+    }
+  ]
+}

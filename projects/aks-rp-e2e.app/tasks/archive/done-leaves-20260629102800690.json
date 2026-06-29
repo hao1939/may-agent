@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:28:00.690Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two boundary-setting notes for the spec-verification lane: spec.node-pool-config.ephemeral-disk run 28363747313 is a post-timeout-audit unresolved retry candidate rather than a blind rerun, product verdict, or shared capacity blocker; and the Automatic/ManagedSystem capacity wait remains narrowly scoped to reviewed same-contract AKSCapacityHeavyUsage evidence in westus2/eastus2, with adjacent generic create-stage timeouts kept outside the family. Remaining open work stays focused on active single-spec verification, the post-timeout audit leaf, runner dispatch diagnosis, and the app-routing carrier-truthfulness repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the reviewed cluster-create ARM timeout from run 28363747313 for spec.node-pool-config.ephemeral-disk, explicitly compare it against the existing westus2 Automatic/ManagedSystem capacity family, and decide whether the outcome belongs to a shared environment ceiling, a spec-specific/product behavior branch, or a bounded unresolved retry path without a blind immediate rerun.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-arm-timeout-classification-20260629.md"
+      ],
+      "acceptance": [
+        "The note quotes the reviewed run 28363747313 result/summary evidence for the create-stage timeout boundary and names whether the failure is best treated as environment, product, or unresolved retry candidate.",
+        "Spec-loop state or linked evidence records the exact next action or retest condition derived from that classification.",
+        "The follow-up does not queue an unchanged blind rerun unless the evidence explicitly supports that decision."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:23:15.661Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629_20260629102323",
+        "assigned_at": "2026-06-29T10:23:23.377Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629",
+        "worker_started_attempt_id": "a_classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629_20260629102323",
+        "worker_started_at": "2026-06-29T10:23:46.192Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested timeout-classification note for spec.node-pool-config.ephemeral-disk run 28363747313, classifying it as an unresolved retry candidate with explicit post-timeout audit steps instead of a blind rerun.",
+        "last_worker_completed_at": "2026-06-29T10:25:57.242Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-node-pool-config-ephemeral-disk-arm-timeout-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:26:53.029Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted with evidence/archive/spec-node-pool-config-ephemeral-disk-arm-timeout-classification-20260629.md: run 28363747313 reached live PUT ManagedCluster after the VM-size carrier repair but only preserved a 25-minute ARM timeout, so the truthful disposition is unresolved retry candidate with required post-timeout audit rather than blind rerun, product verdict, or shared capacity-family blocker."
+      },
+      "session_id": "s_task_classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629",
+      "session_history": [
+        "s_task_classify-spec-node-pool-config-ephemeral-disk-arm-timeout-20260629"
+      ],
+      "result": "Wrote the requested timeout-classification note for spec.node-pool-config.ephemeral-disk run 28363747313, classifying it as an unresolved retry candidate with explicit post-timeout audit steps instead of a blind rerun.",
+      "evidence": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-arm-timeout-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:26:53.029Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted with evidence/archive/spec-node-pool-config-ephemeral-disk-arm-timeout-classification-20260629.md: run 28363747313 reached live PUT ManagedCluster after the VM-size carrier repair but only preserved a 25-minute ARM timeout, so the truthful disposition is unresolved retry candidate with required post-timeout audit rather than blind rerun, product verdict, or shared capacity-family blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

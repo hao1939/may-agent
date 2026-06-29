@@ -1,0 +1,953 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:56:12.197Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs rollup: accepted 2026-06-20 bounded source-backed repairs now archive prior exact-source unblock and row-correction leaves on this parent. Live work is narrowed to four concrete successors only: ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620 plus the three VM prerelease addonv2 ASM source-backed landing/linkage repairs (cni boundary rows 69-72, functionality/BYOCA/Windows-negative rows 66/67/211, and lifecycle/coreaddon linkage rows 64/65/68 plus reroute of 73/74). These active leaves preserve the current next actions without reopening cloud execution or broad feature rediscovery.",
+  "archived": 23,
+  "tasks": [
+    {
+      "id": "ccp-tunnelfront-konnectivity-migration-source-unblock-20260617",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the true CCP tunnelfront→konnectivity migration branch on the exact missing handwritten-source dependency: obtain the Scenario_CCP_TunnelfrontKonnectivityMigration handwritten snippet or archived equivalent that pins the legacy pre-state, upgrade hop, and success criteria before any migration replay is treated as runnable.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/ccp-tunnelfront-konnectivity-migration-source-unblock-20260617.md"
+      ],
+      "acceptance": [
+        "Blocked leaf records the exact inaccessible source path/devbox evidence already established, restates the still-unpinned migration fields (legacy version/build or cluster shape, exact transition step, post-upgrade success criteria), and names the precise resume condition: the handwritten scenario snippet or archived equivalent becomes available for import."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:ccp-agent"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T11:46:10.942Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:04.449Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:04.449Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "traffic-alb-controller-handwritten-source-packet-unblock-20260617",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold feature:traffic-alb-controller on the exact remaining source dependency identified by the accepted archived-source-equivalent decision: obtain the original sigs/traffic/plans/alb packet or an archive-equivalent substitute that preserves original Go filenames, referenced fixtures/manifests, and scenario step/assert/wait structure before any file-level ALB verification resumes.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/traffic-alb-controller-handwritten-source-packet-unblock-20260617.md"
+      ],
+      "acceptance": [
+        "Blocked note cites evidence/archive/traffic-alb-controller-archived-source-equivalent-decision-20260617.md, records the exact still-missing handwritten fields (Go filename mapping, referenced fixtures/manifests, and scenario body fidelity for enable-lifecycle, ingress-routing, and upgrade-survival), and states the precise resume condition: runtime access to sigs/traffic/plans/alb/ or a directory-preserving archive-equivalent source packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-alb-controller"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T14:30:58.862Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:04.502Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:04.502Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "ccp-connected-cluster-proxy-auth-source-semantics-unblock-20260617",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Make the remaining CCP connected-cluster proxy-auth ambiguity explicit in the tree by capturing the exact missing handwritten/public source needed to decide whether the current AKS RunCommand replay can ever be promoted from surrogate coverage to final path closure.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/ccp-connected-cluster-proxy-auth-source-semantics-unblock-20260617.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites the accepted contract-scope reconcile note plus the current execute-gated replay contract, states that repo-accessible evidence still does not pin whether Scenario_CCP_ConnectedClusterProxyAuth canonically targets managedClusters/runCommand, managedClusters/.../proxy, or Microsoft.Kubernetes/connectedClusters/HybridConnectivity, and records the precise resume input: a handwritten scenario snippet or archived/public doc excerpt that pins endpoint surface, token audience, and auth-negative expectations."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:ccp-agent"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T15:58:51.002Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:04.560Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:04.560Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-policy-addon-large-scale-audit-handwritten-source-blocker-20260617",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold path.policy-addon.large-scale-audit on the exact missing handwritten-source dependency by recording that Scenario_PolicyAddonLargeScaleAudit is currently grounded only by row-167 matrix metadata and must not be treated as source-backed semantic closure until an exact handwritten body or exact reachable source path is supplied.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-policy-addon-large-scale-audit-source-body-extraction-20260617.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-policy-addon-large-scale-audit-source-body-extraction-20260617.md plus the row-167 canonical packet, states that current durable evidence proves only scenario identity, VirtualMachines substrate, large_scale_audit_enabled=true, and the 1.26.0 gate signal, and records that no checked-in handwritten body or exact durable devbox path for Scenario_PolicyAddonLargeScaleAudit is currently preserved.",
+        "The blocker records the precise resume condition: archive or provide an exact reachable source location for Scenario_PolicyAddonLargeScaleAudit with enough surrounding lines to prove the large-scale-audit input shape and row-167-specific assertions before final semantic closure or promotion beyond source-safe canonical landing.",
+        "This branch remains blocked for semantic closure without preventing the separate source-safe canonical landing replay/spec task from proceeding."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-policy-addon-large-scale-audit",
+        "path:path.policy-addon.large-scale-audit",
+        "artifact:vm-prerelease-policy-addon-large-scale-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T21:51:29.454Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:06.600Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:06.600Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-blocker-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold row 103 on the exact missing handwritten-source dependency now that the repo-local boundary packet proves Azure Key Vault Secrets Provider is a distinct addonProfiles family but cannot extract the exact scenario-local create/update/assertion contract without the authoritative Scenario_Azure_KeyVault_Secrets_Provider body.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-extraction-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites the accepted row-103 boundary packet, states the exact addon-family surfaces already proven repo-locally, and records that the remaining missing proof is the authoritative Go/handwritten body (or durable quoted excerpt) for Scenario_Azure_KeyVault_Secrets_Provider.",
+        "The blocker states the precise resume condition: resume family extraction only when the actual scenario body, a durable quoted excerpt, or a mounted devbox export is attached to the workspace so exact create/update/assertion semantics can be extracted without guesswork."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:keyvault",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:22:00.906Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:06.659Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:06.659Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold path.traffic-azure-service-mesh.addonv2-overlay on the exact missing handwritten or authoritative-equivalent source dependency until Scenario_Addonv2_ASM_Azure_CNI_Overlay proves which ASM assertion bundle actually applies to the overlay/non-Cilium substrate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618.md and evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md, recording that row 69 substrate is grounded but no repo-local handwritten or authoritative-equivalent body yet proves which ASM behavior bundle applies.",
+        "Resume condition is precise: provide one exact handwritten or authoritative-equivalent source excerpt for Scenario_Addonv2_ASM_Azure_CNI_Overlay (or its exact implementation body) that proves the row-69 assertion flow closely enough to attach one already-modeled ASM behavior bundle truthfully.",
+        "Task remains a blocker only; no cloud execution, no non-overlay ASM broadening, and no duplicate feature/spec/replay edits until the source gap closes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-azure-service-mesh",
+        "path:path.traffic-azure-service-mesh.addonv2-overlay"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:24:03.700Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.129Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.129Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the VM prerelease row-44 backendPoolType branch on the one missing durable repo-local source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool before promoting the reconstructed backendPoolType -> nodeIPConfiguration contract to a truthful source-backed landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618.md and evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md, recording that the reconstructed row-44 contract is stable but still lacks a direct source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool.",
+        "Resume condition is precise: recover or import one durable repo-local handwritten, imported, or authoritative-equivalent source/body attachment proving or correcting the row-44 field/value pair without rerouting the branch into LocalDNS, multiple-SLB, or outbound-custom-IP coverage.",
+        "Task remains a blocker only; repo-local only, no cloud execution, and no new feature/spec/replay landing claims until the source/body gap closes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cloud-provider",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:24:03.906Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.187Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.187Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold VM prerelease AutoScaling row 125 on the one exact remaining source-equivalent dependency by recording the precise resume condition for Scenario_AutoScaling_Service_Principal until handwritten or authoritative-equivalent row-local body evidence explains whether the service-principal label is real semantics or stale naming despite use_shared_identity=true.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618.md plus the exact row-125 matrix/coverage surfaces and states the contradiction in evidence-backed terms: Scenario_AutoScaling_Service_Principal and cluster autoscaling service principal versus preserved extraArgs use_shared_identity=true.",
+        "Blocker names one precise resume condition only: provide handwritten Go, accepted archived exact request body, or authoritative-equivalent row-125 packet proving whether service-principal semantics survive in the request/verdict contract or whether row 125 can truthfully collapse into row 124; do not reopen broad autoscaling family rediscovery.",
+        "Task remains a source-blocker holder only, with no cloud execution and no unsupported product claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:20:45.046Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.246Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.246Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold VM prerelease AutoScaling row 131 on the single remaining handwritten/source-equivalent dependency by capturing the exact authoritative packet needed for Scenario_AutoScaling_Spot before any attempt to collapse it into row 124 autoscaling or the VMSS spot-pool-eviction draft.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites the accepted row-131 scout and source-recovery notes, states that repo-local evidence preserves only separate fragments (row-local matrix anchor, VM autoscaling substrate, adjacent VMSS spot semantics), and records that no current repo-local packet truthfully joins VirtualMachines substrate + autoscaling + spot semantics for Scenario_AutoScaling_Spot.",
+        "The blocker states the precise resume condition: resume only when handwritten e2ev3 source or an accepted authoritative repo-local equivalent proves Scenario_AutoScaling_Spot with VirtualMachines substrate plus spot-specific autoscaling request/expectation semantics; do not reuse row 124 base autoscaling or spec.virtualmachines.spot-pool-eviction without explicit equivalence proof.",
+        "Task remains repo-local/source-oriented only; no cloud execution, and any future unblocking packet must route back to this branch rather than broadening into the whole autoscaling family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:31:27.743Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.302Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.302Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-acns-observability-source-contract-unblock-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the ACNS observability branch on the exact missing authoritative request-contract proof for Scenario_Network_ACNS_Observability so the project does not schedule a blind westus2/local rerun until observability.go or an accepted equivalent explicitly pins the base create payload.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/network-acns-observability-source-contract-unblock-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/network-acns-observability-request-contract-source-check-20260619.md and the accepted 400 diagnosis note, states that repo-local ACNS family evidence suggests cilium plus top-level advancedNetworking.enabled but does not override the current base observability packet without direct observability.go proof.",
+        "Resume condition is precise: obtain one authoritative handwritten/source-equivalent excerpt for Scenario_Network_ACNS_Observability that explicitly confirms or rejects networkDataplane=cilium and advancedNetworking.enabled=true in the base request, then either create the corrected westus2/local rerun leaf or keep the 400 path blocked as a product/source-contract issue."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:network-cni-acns-observability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T14:40:03.048Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.295Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.295Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture and unblock the one remaining authoritative source-semantic gap for path.app-monitoring-addonv2-azure-monitor-metrics after the accepted row-63 contract repair. Using the blocked staging execute artifact and the accepted 2026-06-20 row-63 repair note, pin exactly what handwritten/source-equivalent proof is still missing for Scenario_Addonv2_Azure_Monitor_Metrics request-body semantics and runtime assertion truth so a future staging rerun can carry a truthful product verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the blocked staging frontier artifact plus the accepted row-63 contract-repair note and names the exact remaining request-body/runtime-assertion semantic ambiguity in source-backed terms.",
+        "The task ends with one precise resume condition: either authoritative handwritten/source-equivalent proof arrives and unlocks a bounded repo-local contract update, or the note records why no further repo-local progress is possible without that proof.",
+        "No cloud execution and no unrelated addon-family rediscovery occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T00:37:58.720Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.535Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.535Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row36-msi-azure-monitor-aad-auth-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease row 36 Scenario_MSI_AzureMonitorAADAuth_VirtualMachine, decide whether the proof is an exact alias to an existing identity/monitoring branch or requires one dedicated row-36 branch, and record only the exact request/expectation delta proven by the packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-msi-azure-monitor-aad-auth-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md plus the returned authoritative proof packet for row 36, and records the exact request/mutator surface, asserted object/field/helper path, and verdict-bearing Azure Monitor + AAD-auth expectation proven by that packet.",
+        "Task ends with one exact routing verdict only: attach row 36 truthfully to an existing identity/monitoring branch if the proof is exact, or isolate one dedicated row-36 branch with the exact proven delta; no broad family rediscovery or speculative reuse.",
+        "Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof for Scenario_MSI_AzureMonitorAADAuth_VirtualMachine arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:21:05.184Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.599Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.599Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row152-spn-to-msi-migration-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease row 152 Scenario_MigrateFromSPNToMSI, compare the proven pre-state, migration mutation, and post-state against existing managed-identity-binding surfaces, and either attach truthfully or isolate one exact SPN-to-MSI migration branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row152-spn-to-msi-migration-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md plus the returned authoritative proof packet for row 152, and records the exact service-principal baseline, migration mutation step, and post-migration identity/assertion surface proven by that packet.",
+        "Task ends with one exact routing verdict only: attach row 152 to an existing branch if proof shows exact equivalence, or isolate one dedicated SPN-to-MSI migration branch; no generic managed-identity reuse without exact migration proof.",
+        "Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof for Scenario_MigrateFromSPNToMSI arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:21:05.244Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.663Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.663Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row153-user-assigned-msi-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease row 153 Scenario_MSIUserAssigned, decide whether the proof establishes exact alias to the accepted kubelet-identity path or a different user-assigned identity contract, and preserve only the exact proven identity fields/assertions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row153-user-assigned-msi-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md plus the returned authoritative proof packet for row 153, and records the exact user-assigned identity request surface and verdict-bearing identity fields/assertions or the exact alias proof to the accepted kubelet-identity path.",
+        "Task ends with one exact routing verdict only: exact alias to the accepted kubelet-identity path versus a distinct user-assigned identity branch; no speculative aliasing from row naming alone.",
+        "Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof for Scenario_MSIUserAssigned arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:21:05.305Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.725Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.725Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row174-reset-sp-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease row 174 Scenario_Reset_SP, compare the returned operation and assertion surface against existing reset-shaped repo-local families, and either attach only on exact operation match or isolate one dedicated reset-service-principal branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row174-reset-sp-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md plus the returned authoritative proof packet for row 174, and records the exact reset-service-principal operation/route, request-body or parameter surface, and verdict-bearing assertion bundle proven by that packet.",
+        "Task ends with one exact routing verdict only: attach row 174 to an existing reset family only on exact operation match, or isolate one dedicated reset-service-principal branch; no generic ResetAADProfile reuse.",
+        "Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof for Scenario_Reset_SP arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:21:05.368Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.799Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.799Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-vnet-privatecluster-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease rows 161 Scenario_New_VNET, 162 Scenario_New_VNET_Runner, and 168 Scenario_Private_Cluster_With_K8S_Validation; decide whether each packet proves exact attachment to the maintained custom-VNET or private-cluster branches/variants or requires one distinct row-local branch; and preserve only the exact request/expectation delta proven by the packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-vnet-privatecluster-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-vnet-privatecluster-consume-proof-successor-map-20260620.md plus any returned authoritative proof packet(s), and records the exact request/mutator surface and verdict-bearing assertions proven for rows 161/162/168.",
+        "Task ends with exact routing only: row 161 attaches to the canonical new-VNET path or isolates a distinct row-161 branch; row 162 attaches as execution-only lineage of row 161's canonical branch or isolates a distinct row-162 branch; row 168 attaches to path.private-cluster-privatelink-create, attaches to variant.private-cluster.runner-v3, or isolates a distinct row-168 branch.",
+        "Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof for rows 161, 162, and/or 168 arrives; no broad VNET/private-cluster rediscovery or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:25:08.627Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.859Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.859Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for VM prerelease row 154 Scenario_Multi_AgentPool_Runner; decide whether the proof establishes exact attachment to the maintained Azure overlay multi-subnet, Swift multi-pool subnet, RP multi-nodepool lifecycle, or another already-modeled multi-pool branch, whether it establishes only an execution-variant relationship, or whether it requires one distinct row-154 branch; and preserve only the exact request/operation/assertion delta proven by the packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Work cites evidence/archive/vm-prerelease-multi-agentpool-runner-consume-proof-successor-map-20260620.md plus the returned authoritative proof packet for row 154 and records the exact request/mutator surface, topology inputs, and verdict-bearing assertions proven for Scenario_Multi_AgentPool_Runner.",
+        "The note ends with exactly one truthful routing result for row 154: attach to the maintained Azure overlay multi-subnet branch, attach to the maintained Swift multi-pool subnet branch, attach to a maintained RP multi-nodepool lifecycle branch, attach only as a proven runner/execution variant of another already-modeled multi-pool branch, or isolate one distinct row-154 branch, with no broad multi-agent-pool rediscovery.",
+        "Task stays repo-local and bounded to proof consumption only: no cloud execution, no new outbound asks, and no readiness/model promotion beyond the exact routing decision supported by the returned proof packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:29:26.515Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.919Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.919Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-aksconformance-row75-proof-routing-gated-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Preserve only the residual VM prerelease AKSConformance row-75 proof-consumption gap after the broad 75/76 family leaf was superseded. When authoritative proof for Scenario_AKSConformance_Core arrives, decide whether row 75 is an exact alias of path.workload-health-system-components-readiness or whether one distinct row-75 branch must be isolated, without reopening row-76 tunnel routing that is already covered by final maintained pass paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-aksconformance-row75-proof-routing-20260620.md"
+      ],
+      "acceptance": [
+        "Work cites evidence/archive/vm-prerelease-aksconformance-terminal-path-reconcile-20260620.md plus the returned authoritative proof packet(s) for row 75 and records the exact validation/assertion bundle proven for Scenario_AKSConformance_Core only.",
+        "The note ends with exact routing only: row 75 attaches to path.workload-health-system-components-readiness or isolates one distinct row-75 branch, with no row-76 tunnel rerouting and no broad AKSConformance rediscovery.",
+        "Task stays repo-local and proof-consumption-only: no cloud execution, no new outbound asks, and no reopening unrelated VM prerelease families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:37:07.543Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.984Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.984Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-binding-removal-source-semantics-unblock-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the one remaining authoritative source-semantic gap for path.secops-identity-binding-removal now that the row-scoped ask packet is accepted. Using evidence/archive/secops-identity-binding-removal-source-packet-20260620.md, evidence/archive/secops-identity-binding-removal-authoritative-source-ask-packet-20260620.md, features/secops.yaml, and the adjacent landed SecOps identity branches, pin exactly what handwritten/source-equivalent proof is still missing to decide whether identity removal means control-plane transition, kubelet-identity unbind, RP rejection on a no-identity shape, or a split contract for Scenario_SecOps_Identity_Binding_Removal.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-binding-removal-source-semantics-unblock-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites the accepted removal source packet plus the accepted authoritative-source ask packet and names the exact remaining ambiguity in source-backed terms: control-plane identity removal vs kubelet-identity unbind vs rejection/split-contract outcomes for Scenario_SecOps_Identity_Binding_Removal.",
+        "The task ends with one precise resume condition: handwritten, archived-exact, or accepted source-equivalent proof returns with the exact request/update shape and success-vs-rejection assertion lines, after which planning routes that proof into a bounded maintained landing or replay/spec authoring successor instead of reopening broad SecOps rediscovery.",
+        "No cloud execution and no unrelated SecOps-family rediscovery occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:secops-identity-binding-removal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:54:26.747Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:09.232Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:09.232Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From the accepted ALB bounded-slice review only, write the durable public/source-equivalent contract note for path.traffic-alb-controller.enable-lifecycle that separates the repo-local ALB addon lifecycle surface already supportable now from the still-missing handwritten-file-exact ALB fields.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/traffic-alb-controller-bounded-source-equivalent-slice-20260620.md, the current enable-lifecycle spec/replay/check evidence, and the archived ALB public command-surface authorities already preserved in repo.",
+        "The note records exactly what repo-local public/source-equivalent evidence can already support for enable-lifecycle and exactly which file-exact ALB fields remain blocked on sigs/traffic/plans/alb source recovery, without broadening into ingress-routing or upgrade-survival.",
+        "No cloud execution and no handwritten-source equivalence overclaim occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-alb-controller"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:09:33.306Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620_20260620080933",
+        "assigned_at": "2026-06-20T08:09:33.624Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620",
+        "worker_started_attempt_id": "a_traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620_20260620080933",
+        "worker_started_at": "2026-06-20T08:10:02.006Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded archive contract note `evidence/archive/traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620.md`, grounding `path.traffic-alb-controller.enable-lifecycle` in accepted ALB lineage, current spec/replay/check evidence, and archived public ALB command-surface authority while explicitly preserving the handwritten-file-exact blocker.",
+        "last_worker_completed_at": "2026-06-20T08:10:46.334Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:13:58.691Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620.md cleanly captures the repo-local public/source-equivalent ALB enable-lifecycle contract from accepted lineage, current spec/replay/check evidence, and archived public command-surface authority without claiming handwritten-source equivalence or a live verdict."
+      },
+      "session_id": "s_task_traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620",
+      "session_history": [
+        "s_task_traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:13:58.691Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/traffic-alb-controller-enable-lifecycle-public-surface-contract-20260620.md cleanly captures the repo-local public/source-equivalent ALB enable-lifecycle contract from accepted lineage, current spec/replay/check evidence, and archived public command-surface authority without claiming handwritten-source equivalence or a live verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Probe the row-125 VirtualMachine prerelease autoscaling service-principal contradiction as one bounded source-equivalent slice to test whether the exact-source blocker still hides truthful repo-local progress. Starting from vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619 and the already accepted contradiction reconcile note, determine whether one concrete bounded consumer/landing successor can proceed now or prove the exact evidence ceiling that leaves row 125 externally blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619 plus evidence/archive/vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618.md and the current row-124/125 matrix or feature surfaces, then tests one bounded slice for truthful repo-local progress without exact handwritten source.",
+        "The note ends with exactly one planner-usable result: one bounded successor to create now, or an explicit evidence ceiling that justifies keeping row 125 externally blocked on authoritative source-equivalent proof.",
+        "No cloud execution and no broad autoscaling-family rediscovery beyond the sampled row-125 contradiction occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling-row125"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:11:59.211Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620_20260620081159",
+        "assigned_at": "2026-06-20T08:11:59.277Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620_20260620081159",
+        "worker_started_at": "2026-06-20T08:12:20.697Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded row-125 autoscaling source-equivalent slice note at evidence/archive/vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620.md. The note re-tested the only two honest repo-local consumers (row 124 base and rows 126-130 profile matrix) and concluded there is an exact evidence ceiling, so row 125 should remain externally blocked until authoritative source-equivalent proof arrives.",
+        "last_worker_completed_at": "2026-06-20T08:13:25.423Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:16:25.381Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded row-125 autoscaling note: it re-tested the only truthful repo-local consumers (row 124 base and rows 126-130 profile matrix) and proved neither can absorb row 125, so the branch stays externally blocked until authoritative row-125 source-equivalent proof resolves the service-principal versus use_shared_identity contradiction."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row125-bounded-source-equivalent-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:16:25.381Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded row-125 autoscaling note: it re-tested the only truthful repo-local consumers (row 124 base and rows 126-130 profile matrix) and proved neither can absorb row 125, so the branch stays externally blocked until authoritative row-125 source-equivalent proof resolves the service-principal versus use_shared_identity contradiction."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Probe VM prerelease autoscaling row 131 (Scenario_AutoScaling_Spot) as one bounded source-equivalent slice to test whether the handwritten-source blocker still hides truthful repo-local progress. Starting from vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619 and the nearest autoscaling/spot/local authorities already preserved in repo, determine whether one concrete bounded consumer or landing successor can proceed now, or prove the exact evidence ceiling that leaves row 131 externally blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites blocked leaf vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619 plus the nearest row-124/125 autoscaling and spot-pool authorities already linked from that branch, then tests one bounded slice for truthful repo-local progress without exact handwritten source.",
+        "The note ends with exactly one planner-usable result: one bounded successor to create now, or an explicit evidence ceiling that justifies keeping row 131 externally blocked on authoritative source-equivalent proof.",
+        "No cloud execution and no broad autoscaling-family rediscovery beyond the sampled row-131 spot contradiction occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling-row131"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:14:53.491Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620_20260620081456",
+        "assigned_at": "2026-06-20T08:14:56.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620_20260620081456",
+        "worker_started_at": "2026-06-20T08:15:19.860Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note `evidence/archive/vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620.md`, testing the bounded row-131 landing against the existing spot-pool spec and concluding with an evidence ceiling: keep row 131 externally blocked because `spec.virtualmachines.spot-pool-eviction` remains non-equivalent on substrate, scenario, and behavior family.",
+        "last_worker_completed_at": "2026-06-20T08:16:31.061Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:17:48.956Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded row-131 spot note: the nearest repo-local landing spec.virtualmachines.spot-pool-eviction remains non-equivalent on substrate, scenario anchor, and behavior family, so there is no truthful bounded successor and the existing row-131 handwritten/source blocker remains the live carrier."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row131-spot-bounded-source-equivalent-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:17:48.956Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded row-131 spot note: the nearest repo-local landing spec.virtualmachines.spot-pool-eviction remains non-equivalent on substrate, scenario anchor, and behavior family, so there is no truthful bounded successor and the existing row-131 handwritten/source blocker remains the live carrier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review rejected: the boundary note found the correct mounted Scheduler+KCM scenario split, but the linked repo-local carriers still need exact source-backed witness alignment before this branch can close.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620.md"
+      ],
+      "acceptance": [
+        "Review only after the source-backed contradiction is resolved or explicitly bounded: the linked spec/feature/model surfaces for path.ccp-underlay-vpa.component-lifecycle must no longer overclaim generic components or underspecified witnesses relative to the mounted Scheduler+KCM control-plane scenarios.",
+        "If any carrier remains intentionally broader than the exact mounted path, the review note must state the bounded reason and the durable sibling/adjacent surface that owns the broader semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ccp-vpa:underlay-component-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:41:36.659Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T08:41:41.891Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T08:44:31.602Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_retry_20260620084431",
+        "worker_started_attempt_id": "a_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_20260620084431",
+        "worker_started_at": "2026-06-20T08:46:00.554Z",
+        "stale_active_requeued_at": "2026-06-20T08:44:21.164Z",
+        "stale_active_requeue_reason": "may-agent restarted after mounted-source workflow update; restore worker pickup with current prompt context",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_20260620084141",
+        "current_attempt_id": "a_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_20260620084431",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested boundary-map note at evidence/archive/ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620.md and tightened spec metadata in specs/ccp-underlay-vpa-component-lifecycle.json to reflect the exact mounted handwritten control-plane scenarios and adjacent-family split.",
+        "last_worker_completed_at": "2026-06-20T08:47:23.960Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:48:16.787Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Boundary-map review produced a useful source-backed note, but closure is replaced by ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620 because the linked spec/local carriers still overclaim generic components and underspecified witnesses relative to the exact mounted Scheduler+KCM control-plane scenarios."
+      },
+      "session_history": [
+        "s_task_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620",
+        "s_task_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_retry_20260620084431"
+      ],
+      "session_id": "s_task_ccp-vpa-underlay-component-lifecycle-boundary-map-from-existing-evidence-20260620_retry_20260620084431",
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:48:16.787Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Boundary-map review produced a useful source-backed note, but closure is replaced by ccp-vpa-underlay-component-lifecycle-spec-witness-alignment-repair-20260620 because the linked spec/local carriers still overclaim generic components and underspecified witnesses relative to the exact mounted Scheduler+KCM control-plane scenarios."
+      },
+      "status": "done"
+    }
+  ]
+}

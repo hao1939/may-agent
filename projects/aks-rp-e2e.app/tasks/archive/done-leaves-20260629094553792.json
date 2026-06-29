@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:45:53.792Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed planning update accepts the eastus2 Automatic/ManagedSystem reroute and both review leaves, then refills the frontier with concrete next work. The branch now records four truths: (1) westus2 Automatic/ManagedSystem remains a region-specific capacity wait from run 28361930300 and is preserved as await-westus2-managedsystem-capacity-recovery-20260629; (2) the accepted eastus2 reroute proved the same contract can get past preflight and RG create in eastus2 but still fails cluster create with a distinct HTTP 400 variant, so diagnosis stays active in diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629 before any further rerun; (3) verify-spec-aad-rbac-managed-v2-lifecycle and verify-spec-runtime-container-kscr-rotation-matrix produced runner/infra-only nonterminal evidence, so the former is replaced by a timeout60 rerun leaf and the latter is governed by the shared aggregation-repair family; and (4) additional runnable postfix verification leaves remain ready for assignment without changing the blocked families.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reverify spec.aad-rbac.azure-rbac-automatic-sku on the same Automatic/ManagedSystem contract using the existing eastus2-capable carrier, because run 28361930300 only proved westus2 ManagedSystem capacity exhaustion and the reviewed reroute packet identified eastus2 as the truthful next live surface.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The single-spec workflow is run against the same Automatic/ManagedSystem product contract on an eastus2-capable carrier, or it produces a concrete blocker before cloud mutation.",
+        "The resulting result.json/summary artifacts are reviewed to distinguish product behavior from region-specific environment capacity, preserving that eastus2 evidence does not prove westus2 recovery.",
+        "Spec-loop/model follow-up is updated or proposed so the westus2 blocker family and alternate-region evidence are both represented truthfully."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:38:38.359Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629_20260629093858",
+        "assigned_at": "2026-06-29T09:38:58.145Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629_20260629093858",
+        "worker_started_at": "2026-06-29T09:39:39.232Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the assigned eastus2 reroute for spec.aad-rbac.azure-rbac-automatic-sku using a bounded eastus2 target override, captured a real live nonpassing result under runs/test-results/single-aad-rbac-azure-rbac-automatic-sku_122409, and wrote a durable evidence review explaining that westus2 remains a capacity blocker variant while eastus2 now shows a distinct HTTP 400 create-failure variant needing better raw ARM error capture.",
+        "last_worker_completed_at": "2026-06-29T09:43:05.576Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-run-20260629.md",
+          "/app/agents/aks-explorer/workspace/eastus2-staging-target-aad-rbac-automatic-sku-20260629.json"
+        ],
+        "reviewed_at": "2026-06-29T09:43:26.511Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: eastus2 reroute truthfully proved the westus2 ManagedSystem blocker is region-specific capacity only, while the same Automatic/ManagedSystem contract still failed on eastus2 with an early HTTP 400 create rejection lacking raw ARM error text. Keep the westus2 wait as-is and follow up with bounded raw-error capture rather than path-level verdict replacement."
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629"
+      ],
+      "result": "Ran the assigned eastus2 reroute for spec.aad-rbac.azure-rbac-automatic-sku using a bounded eastus2 target override, captured a real live nonpassing result under runs/test-results/single-aad-rbac-azure-rbac-automatic-sku_122409, and wrote a durable evidence review explaining that westus2 remains a capacity blocker variant while eastus2 now shows a distinct HTTP 400 create-failure variant needing better raw ARM error capture.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-run-20260629.md",
+        "/app/agents/aks-explorer/workspace/eastus2-staging-target-aad-rbac-automatic-sku-20260629.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:43:26.511Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: eastus2 reroute truthfully proved the westus2 ManagedSystem blocker is region-specific capacity only, while the same Automatic/ManagedSystem contract still failed on eastus2 with an early HTTP 400 create rejection lacking raw ARM error text. Keep the westus2 wait as-is and follow up with bounded raw-error capture rather than path-level verdict replacement."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-managed-v2-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.aad-rbac.managed-v2-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.managed-v2-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: workflow run 28361955065 ended with SIGTERM before spec.aad-rbac.managed-v2-lifecycle completed, so the result is a non-terminal runner timeout/interruption rather than a product verdict. Replaced this review leaf with a concrete timeout60 rerun task to test the same spec under a longer execution window."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:22:00.946Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:22:05.871Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle_20260629092300",
+        "assigned_at": "2026-06-29T09:23:00.068Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle_20260629092300",
+        "worker_started_at": "2026-06-29T09:23:32.083Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28361955065 classified as error. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361955065 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_358157/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361955065/aks-rp-e2e-28361955065-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361955065/aks-rp-e2e-28361955065-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_358157/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:44:18.606Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:45:15.513Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: workflow run 28361955065 ended with SIGTERM before spec.aad-rbac.managed-v2-lifecycle completed, so the result is a non-terminal runner timeout/interruption rather than a product verdict. Replaced this review leaf with a concrete timeout60 rerun task to test the same spec under a longer execution window."
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-managed-v2-lifecycle"
+      ],
+      "result": "Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28361955065 classified as error. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361955065 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_358157/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361955065/aks-rp-e2e-28361955065-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361955065/aks-rp-e2e-28361955065-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_358157/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:45:15.513Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-runtime-container-kscr-rotation-matrix",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.runtime-container.kscr-rotation-matrix through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.runtime-container.kscr-rotation-matrix",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.runtime-container.kscr-rotation-matrix"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.runtime-container.kscr-rotation-matrix",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: workflow run 28361934541 did not produce a trustworthy spec verdict because the bundle had an artifact-routing mismatch (top-level result.json missing specResults[0].specId). This is runner/reporting infra evidence, not product behavior, and the live repair-single-spec-empty-result-aggregation-family-20260629 task remains the concrete follow-up."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:22:00.904Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:22:05.871Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix_20260629092300",
+        "assigned_at": "2026-06-29T09:23:00.069Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-runtime-container-kscr-rotation-matrix",
+        "worker_started_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix_20260629092300",
+        "worker_started_at": "2026-06-29T09:23:11.516Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28361934541 classified as error. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-a_verify-spec-runtime-container-kscr-ro. artifact-routing-mismatch for spec.runtime-container.kscr-rotation-matrix; run=28361934541; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361934541 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_337512/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_337512/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:43:51.580Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:45:15.566Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: workflow run 28361934541 did not produce a trustworthy spec verdict because the bundle had an artifact-routing mismatch (top-level result.json missing specResults[0].specId). This is runner/reporting infra evidence, not product behavior, and the live repair-single-spec-empty-result-aggregation-family-20260629 task remains the concrete follow-up."
+      },
+      "session_id": "s_task_verify-spec-runtime-container-kscr-rotation-matrix",
+      "session_history": [
+        "s_task_verify-spec-runtime-container-kscr-rotation-matrix"
+      ],
+      "result": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28361934541 classified as error. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-a_verify-spec-runtime-container-kscr-ro. artifact-routing-mismatch for spec.runtime-container.kscr-rotation-matrix; run=28361934541; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results; top-level result.json missing specResults[0].specId Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361934541 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_337512/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361934541/aks-rp-e2e-28361934541-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_337512/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:45:15.566Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "diagnose-westus2-managedsystem-capacity-reroute-options-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the westus2 Automatic/ManagedSystem capacity failure from run 28361930300 and determine the next truthful owner action: same-surface recovery proof, alternate-region reroute path for the same contract, or exact external escalation/wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-managedsystem-capacity-reroute-options-20260629.md"
+      ],
+      "acceptance": [
+        "The task records the exact failure evidence for run 28361930300, including AKSCapacityHeavyUsage and nested SkuNotAvailable on aksmanagedap standard_d4lds_v5, with the artifact path used.",
+        "The task checks whether a reviewed alternate-region or same-contract reroute path exists for Automatic/ManagedSystem execution without changing the feature contract, and records the decision with evidence.",
+        "The task ends with one concrete owner outcome for this blocker family: retry conditions, escalation target, or confirmation that the existing family wait remains the only truthful representation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-managedsystem-capacity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:33:43.549Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-westus2-managedsystem-capacity-reroute-options-20260629_20260629093343",
+        "assigned_at": "2026-06-29T09:33:43.600Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-westus2-managedsystem-capacity-reroute-options-20260629",
+        "worker_started_attempt_id": "a_diagnose-westus2-managedsystem-capacity-reroute-options-20260629_20260629093343",
+        "worker_started_at": "2026-06-29T09:34:07.963Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28361930300 as a westus2 Automatic/ManagedSystem capacity family blocker and wrote a durable owner-facing review concluding the truthful next action is same-contract alternate-region reroute (eastus2), not a blind westus2 retry.",
+        "last_worker_completed_at": "2026-06-29T09:37:29.125Z",
+        "last_worker_evidence": [
+          "evidence/archive/westus2-managedsystem-capacity-reroute-options-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:38:51.832Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable reroute review in evidence/archive/westus2-managedsystem-capacity-reroute-options-20260629.md: run 28361930300 only proved westus2 Automatic/ManagedSystem capacity failure (AKSCapacityHeavyUsage with nested SkuNotAvailable on aksmanagedap standard_d4lds_v5), and the truthful next owner action is same-contract eastus2 reroute rather than blind westus2 retry or permanent wait-only handling."
+      },
+      "session_id": "s_task_diagnose-westus2-managedsystem-capacity-reroute-options-20260629",
+      "session_history": [
+        "s_task_diagnose-westus2-managedsystem-capacity-reroute-options-20260629"
+      ],
+      "result": "Diagnosed run 28361930300 as a westus2 Automatic/ManagedSystem capacity family blocker and wrote a durable owner-facing review concluding the truthful next action is same-contract alternate-region reroute (eastus2), not a blind westus2 retry.",
+      "evidence": [
+        "evidence/archive/westus2-managedsystem-capacity-reroute-options-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:38:51.832Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable reroute review in evidence/archive/westus2-managedsystem-capacity-reroute-options-20260629.md: run 28361930300 only proved westus2 Automatic/ManagedSystem capacity failure (AKSCapacityHeavyUsage with nested SkuNotAvailable on aksmanagedap standard_d4lds_v5), and the truthful next owner action is same-contract eastus2 reroute rather than blind westus2 retry or permanent wait-only handling."
+      },
+      "status": "done"
+    }
+  ]
+}

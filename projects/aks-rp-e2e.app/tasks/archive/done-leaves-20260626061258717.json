@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T06:12:58.717Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review accepted the external-send family scope reconciliation: the repo-local wait artifact and reconciliation note now consistently preserve one truthful blocked human/operator reply family covering MachinesPreview, VM prerelease rows 25+50+75+76, rows 40-43, row 33, and path.private-cluster-none-dns-zone-v3. The earlier cluster-autoscaler VM prerelease spot repo-local carrier audit remains durable as archived completed context. The only live frontier item is the family-level external wait under focus-mounted-source-coverage-closure-and-external-wait-20260623; no runnable repo-local successor exists until returned external proof or new human steering arrives.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the repo-local carrier for path.cluster-autoscaler.vm-prerelease-spot against mounted AKS source and truthfully repair any spec/replay/model mismatch without cloud execution or widening into adjacent autoscaler siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626.md"
+      ],
+      "acceptance": [
+        "Mounted source refs for the VM prerelease spot path are identified and the archive artifact records the exact scenario-defining inputs, row-selector metadata, expected behavior, and any checked-in carrier thinness or contradiction.",
+        "If the checked-in repo-local carrier is inaccurate or incomplete, the bounded spec/replay/model files for path.cluster-autoscaler.vm-prerelease-spot are repaired so they match the mounted source distinction truthfully, and any local validation run is limited to no-cloud replay/model checks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-spot"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:59:11.109Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626_20260626055911",
+        "assigned_at": "2026-06-26T05:59:11.164Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626_20260626055911",
+        "worker_started_at": "2026-06-26T05:59:30.910Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited and truth-repaired the repo-local carrier for path.cluster-autoscaler.vm-prerelease-spot against mounted AKS source, updating the bounded spec/replay/model surfaces and writing a durable archive artifact. Local no-cloud validation now passes for the repaired replay, while model validate still reports unrelated pre-existing project-wide errors.",
+        "last_worker_completed_at": "2026-06-26T06:10:49.332Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T06:11:25.238Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact cites mounted source, preserves the exact VM row selector and spotpool eviction/scale contract, and records bounded repo-local repairs across spec/replay/model surfaces; local no-cloud replay check passed while broader model-validate noise is explicitly unrelated."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626"
+      ],
+      "result": "Audited and truth-repaired the repo-local carrier for path.cluster-autoscaler.vm-prerelease-spot against mounted AKS source, updating the bounded spec/replay/model surfaces and writing a durable archive artifact. Local no-cloud validation now passes for the repaired replay, while model validate still reports unrelated pre-existing project-wide errors.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T06:11:25.238Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact cites mounted source, preserves the exact VM row selector and spotpool eviction/scale contract, and records bounded repo-local repairs across spec/replay/model surfaces; local no-cloud replay check passed while broader model-validate noise is explicitly unrelated."
+      },
+      "status": "done"
+    },
+    {
+      "id": "external-send-proof-family-scope-reconcile-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repo-local external-wait carrier scope for the already-routed human/operator family by comparing the blocked task, archive wait artifact, and covered packet evidence, then truthfully repair any row/path coverage mismatch without reopening local source/spec/model work or inventing a new external ask.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-family-scope-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note states the exact covered asks consistently with the surviving blocked family leaf (including whether row 75 is covered, excluded, or split to another branch), with citations to the existing covered-packet evidence.",
+        "If the current blocked leaf wording is inaccurate, the task tree is updated so one family-level wait remains truthful and no duplicate blocked waits are created; if the archive artifact is the inaccurate piece, it is repaired instead."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T06:00:22.096Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T06:01:34.360Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-family-scope-reconcile-20260626_20260626061049",
+        "assigned_at": "2026-06-26T06:10:49.605Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-family-scope-reconcile-20260626",
+        "worker_started_attempt_id": "a_external-send-proof-family-scope-reconcile-20260626_20260626061049",
+        "worker_started_at": "2026-06-26T06:10:49.991Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the external-send family scope mismatch by authoring a reconciliation note and repairing the archive wait artifact so it now truthfully matches the surviving blocked family leaf, including row 75 via shared-identity reuse and path.private-cluster-none-dns-zone-v3 via its already-sent prerequisite ask.",
+        "last_worker_completed_at": "2026-06-26T06:12:26.813Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T06:12:58.655Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the reconciliation note and repaired family wait artifact now match the single truthful blocked external-human reply family, explicitly covering row 75 via shared-identity ask reuse and path.private-cluster-none-dns-zone-v3 via its already-sent prerequisite ask."
+      },
+      "session_id": "s_task_external-send-proof-family-scope-reconcile-20260626",
+      "session_history": [
+        "s_task_external-send-proof-family-scope-reconcile-20260626"
+      ],
+      "result": "Reconciled the external-send family scope mismatch by authoring a reconciliation note and repairing the archive wait artifact so it now truthfully matches the surviving blocked family leaf, including row 75 via shared-identity reuse and path.private-cluster-none-dns-zone-v3 via its already-sent prerequisite ask.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T06:12:58.655Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the reconciliation note and repaired family wait artifact now match the single truthful blocked external-human reply family, explicitly covering row 75 via shared-identity ask reuse and path.private-cluster-none-dns-zone-v3 via its already-sent prerequisite ask."
+      },
+      "status": "done"
+    }
+  ]
+}

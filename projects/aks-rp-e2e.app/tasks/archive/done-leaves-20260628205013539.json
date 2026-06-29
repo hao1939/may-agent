@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T20:50:13.539Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier refill: archived two accepted repo-local/source-ceiling leaves whose durable meaning is now carried by this branch summary. Six operator-response waits under this branch remain truthful external-response holds with durable send proof and a shared next owner checkpoint of 2026-06-29T16:45:00Z. Keep the active burn-down on repair-private-cluster-privatelink-public-fqdn-toggle-carrier-truth-to-mounted-source-20260628, and refill repo-local capacity with bounded authoring/normalization work for NATGW V2->block execute-carrier coverage and overlay ILPIP dual-stack carrier separation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP private-cluster source plus maintained spec/replay/model surfaces to determine whether path.private-cluster-privatelink-public-fqdn-toggle still has any truthful repo-local/source-equivalent successor before its live-run authorization wait, and capture one exact next action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites mounted source plus maintained spec/replay/model surfaces for path.private-cluster-privatelink-public-fqdn-toggle and records the exact input path and expected witness set.",
+        "Evidence ends with exactly one truthful next-step decision: either name one concrete repo-local successor with exact file targets, or prove the current live-run authorization wait is the remaining ceiling with an explicit resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-map:path.private-cluster-privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T20:42:41.718Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628_20260628204243",
+        "assigned_at": "2026-06-28T20:42:43.489Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628",
+        "worker_started_attempt_id": "a_audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628_20260628204243",
+        "worker_started_at": "2026-06-28T20:43:26.539Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested audit evidence for path.private-cluster-privatelink-public-fqdn-toggle, using mounted source plus maintained spec/probe/model surfaces to conclude there is still one truthful repo-local successor before the live-run authorization wait: repair probe parity with mounted source.",
+        "last_worker_completed_at": "2026-06-28T20:45:35.220Z",
+        "last_worker_evidence": [
+          "evidence/archive/audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T20:46:46.658Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived mounted-source audit credibly proves the current private-cluster PrivateLink public-FQDN live-auth wait is premature because the maintained feature-local carrier still needs repo-local truth repair before that wait becomes the ceiling; the remaining implementation fork is converted into a concrete successor leaf."
+      },
+      "session_id": "s_task_audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628",
+      "session_history": [
+        "s_task_audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628"
+      ],
+      "result": "Produced the requested audit evidence for path.private-cluster-privatelink-public-fqdn-toggle, using mounted source plus maintained spec/probe/model surfaces to conclude there is still one truthful repo-local successor before the live-run authorization wait: repair probe parity with mounted source.",
+      "evidence": [
+        "evidence/archive/audit-private-cluster-privatelink-public-fqdn-toggle-mounted-source-ceiling-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T20:46:46.658Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived mounted-source audit credibly proves the current private-cluster PrivateLink public-FQDN live-auth wait is premature because the maintained feature-local carrier still needs repo-local truth repair before that wait becomes the ceiling; the remaining implementation fork is converted into a concrete successor leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

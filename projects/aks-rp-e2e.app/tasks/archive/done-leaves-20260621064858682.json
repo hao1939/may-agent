@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:48:58.682Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review confirmed the single blocked family external-send-proof-dispatch-family-20260620 remains the only truthful live representation of the shared external-human transport ceiling: both MachinesPreview and VM prerelease packets are already send-ready, no repo-local send proof or authoritative reply exists yet, and the exact resume trigger remains a durable proof artifact or linked reply. The live frontier stays anchored on app-monitoring-addonv2-azure-monitor-metrics-live-execute-next-verdict-20260621, which follows the accepted body repair and should next either capture the row-63 authorized execute command with explicit subscription plus AKS_RP_E2E_KUBERNETES_GOAL_VERSION inputs or stop at the first precise preflight/runtime blocker. Archive the accepted body-repair leaf because its durable outcome is now represented by this rollup and the active successor.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For Scenario_Addonv2_Azure_Monitor_Metrics row 63, replace the replay's current execute-mode execution-gated stub with one row-scoped authorized live-body implementation plan in replays/app-monitoring-addonv2-azure-monitor-metrics.ts that preserves the pinned properties.azureMonitorProfile.metrics.enabled contract, the exact create/upgrade runtime verdict hooks, explicit Azure auth/subscription preflight, and cleanup-result recording without broadening into generic appMonitoring or controlPlane metrics surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621.md"
+      ],
+      "acceptance": [
+        "The evidence artifact cites the exact replay/spec/source-plan files changed or inspected and explains the new execute-path shape, including the required --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-monitoring-addonv2-azure-monitor-metrics gate, explicit Azure auth/subscription preflight expectations, create/upgrade verdict hooks, and cleanup-result recording behavior.",
+        "Repo-local durable carriers are updated as warranted so row 63 no longer depends on a generic execute-mode blocker stub: replays/app-monitoring-addonv2-azure-monitor-metrics.ts truthfully enters a bounded row-scoped live-body path after authorization checks, while preserved check-mode behavior and row-local contract boundaries remain intact.",
+        "Validation commands and outcomes are recorded, including at minimum a non-mutating local check that still passes and an execute-path validation showing any remaining blocker is now a precise implementation or environment gate rather than generic source ambiguity."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:38:24.762Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621_20260621063824",
+        "assigned_at": "2026-06-21T06:38:24.810Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621_20260621063824",
+        "worker_started_at": "2026-06-21T06:38:42.792Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired replays/app-monitoring-addonv2-azure-monitor-metrics.ts from a generic execute stub into a bounded row-63 live-body implementation with explicit Azure preflight, create/upgrade runtime hooks, and cleanup recording, and documented the change in a new evidence artifact.",
+        "last_worker_completed_at": "2026-06-21T06:45:32.729Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:46:16.158Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the new evidence artifact and replay source show row 63 now has a bounded authorized live-body path with explicit Azure preflight, preserved properties.azureMonitorProfile.metrics.enabled create/upgrade verdict hooks, cleanup-result recording, a passing non-mutating check run, and a precise env-gated execute validation instead of the prior generic execute stub."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621"
+      ],
+      "result": "Repaired replays/app-monitoring-addonv2-azure-monitor-metrics.ts from a generic execute stub into a bounded row-63 live-body implementation with explicit Azure preflight, create/upgrade runtime hooks, and cleanup recording, and documented the change in a new evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:46:16.158Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the new evidence artifact and replay source show row 63 now has a bounded authorized live-body path with explicit Azure preflight, preserved properties.azureMonitorProfile.metrics.enabled create/upgrade verdict hooks, cleanup-result recording, a passing non-mutating check run, and a precise env-gated execute validation instead of the prior generic execute stub."
+      },
+      "status": "done"
+    }
+  ]
+}

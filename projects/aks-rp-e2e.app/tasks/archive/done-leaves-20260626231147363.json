@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T23:11:47.363Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review follow-through: keep both blocked leaves unchanged as truthful compressed external waits. The private-cluster none-dns-zone-v3 wait remains intentionally passive only because the approval packet is already routed with durable proof and there is still no bounded repo-local, source-local, setup, alternate-environment, or duplicate-escalation action that would add value before operator reply. The external-send-proof family wait remains the single truthful representation of the separate VM prerelease row 33 plus shared-identity rows 75-76 dependency family. Archive the remaining completed private-cluster wait/dispatch leaves because their durable meaning is fully represented in project rollup context and the only live private-cluster frontier item is the routed operator response wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-human-authorization-wait-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the exact external human approval/runtime-input wait for the bounded same-cluster system->none live probe of path.private-cluster-none-dns-zone-v3 until a human explicitly approves or declines the mutation and, if approved, supplies the named subscription, location, execution owner/runtime, and ARM auth carrier needed to run the settled replay unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mutation-authorization-review-packet-20260626.md"
+      ],
+      "acceptance": [
+        "Either receive an explicit human decline that leaves path.private-cluster-none-dns-zone-v3 unknown with no live run, or receive explicit mutation approval plus the concrete subscription, location, execution owner/runtime, and ARM auth carrier needed to hand off the unchanged bounded replay for execution.",
+        "Do not reopen source/spec/replay reconciliation from this wait. Resume only on returned human decision or durable repo-local proof that the approval ask was answered with the exact runtime details needed for the settled live probe."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:56:31.174Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T23:00:55.155Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive authorization wait with an active dispatch/handoff task because the tree had a repo-local approval packet but no durable proof that the ask was actually sent to a human decision-maker or execution owner yet."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T23:00:55.155Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive authorization wait with an active dispatch/handoff task because the tree had a repo-local approval packet but no durable proof that the ask was actually sent to a human decision-maker or execution owner yet."
+      },
+      "status": "done"
+    }
+  ]
+}

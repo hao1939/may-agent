@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:09:06.449Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner planning-update treated the aks-rp-e2e.spec.unverified-without-work recovery as already resolved (current=0) with no missing verification leaf to add. This focus branch now truthfully centers on addonv2-azure-monitor-metrics-row63-source-boundary-note-20260621 as the active bounded source/spec step, followed by app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-refresh-20260621 as the single conflict-gated live rerun once the note is accepted. Keep live-idle-metric-false-positive-diagnosis-20260621 as a separate project-level active diagnosis because the frontier still has no runnable leaves even though the rerun is only waiting on the row-63 note. Archive the older completed rerun/model-tightening children because their durable meaning is already represented by this branch summary and the current source-note → rerun decomposition; do not spawn recovery work for the recovered spec metric or duplicate external-send waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For Scenario_Addonv2_Azure_Monitor_Metrics row 63, rerun the bounded authorized live replay with explicit eastus2-allowed Linux and Windows VM size overrides so the create path can advance past the Standard_D4s_v3 subscription/location rejection, then capture the next truthful boundary without widening beyond properties.azureMonitorProfile.metrics.enabled and the mounted-source create/upgrade runtime bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621.md"
+      ],
+      "acceptance": [
+        "Evidence records the exact execute command, the chosen AKS_RP_E2E_NODE_VM_SIZE and AKS_RP_E2E_WINDOWS_NODE_VM_SIZE overrides, and the durable replay artifacts from the rerun.",
+        "If execution still cannot proceed, the artifact names the first exact blocker after replacing Standard_D4s_v3 (for example a different VM-size rejection, quota/capacity/auth error, pool-create failure, or later runtime hook failure) rather than restating the previous rejected size.",
+        "If execution proceeds, the artifact preserves the row-local boundary by reporting only properties.azureMonitorProfile.metrics.enabled plus create/upgrade readback, runtime bundle verdicts, and cleanup outcome."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:49:09.086Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T07:04:30.300Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_retry_20260621070430",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_20260621070430",
+        "worker_started_at": "2026-06-21T07:04:30.893Z",
+        "stale_active_requeued_at": "2026-06-21T07:04:10.602Z",
+        "stale_active_requeue_reason": "Session is stale for planning purposes: DB session remains running but last activity stopped at 2026-06-21T07:03Z and the required evidence artifact was never written, so return this bounded row-63 live rerun to backlog for a clean retry instead of treating it as trustworthy active progress.",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_20260621064909",
+        "promoted_at": "2026-06-21T07:04:10.780Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_20260621070430",
+        "reviewed_at": "2026-06-21T07:07:26.809Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced stale 2026-06-21 live rerun attempt after owner review found no durable output artifact at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621.md and no trustworthy progress. Row-63 should return to the bounded source-boundary note prerequisite before any fresh cloud rerun is assigned."
+      },
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621",
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_retry_20260621070430"
+      ],
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621_retry_20260621070430",
+      "resolution": "replaced",
+      "done_at": "2026-06-21T07:07:26.809Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced stale 2026-06-21 live rerun attempt after owner review found no durable output artifact at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621.md and no trustworthy progress. Row-63 should return to the bounded source-boundary note prerequisite before any fresh cloud rerun is assigned."
+      },
+      "status": "done"
+    }
+  ]
+}

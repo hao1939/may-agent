@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:23:04.287Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 worker-completion planning review confirms the trust-service private-KV source-alignment apply work is already archived in this lane and is credible repo-local repair evidence: the repaired spec/replay cite the bounded repair plan, restore the AllowEnalbeKMSPrivateKeyVaultKonnectivityTunnel flag, add replace-all-secrets-before-first-rotation, and tighten the second-rotation guard to require both RotateAzureKeyVaultKmsKeyError and the secrets-replaced message fragment. The concrete next step is reconcile-path-kms-v2-trust-service-public-cluster-private-kv-post-repair-evidence-20260629, an active repo-local/model reconciliation leaf that must refresh the durable path.kms.v2-trust-service-public-cluster-private-kv boundary from accepted evidence only, while the existing single-spec verification frontier and truthful blocked waits remain unchanged.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-auto-assign-hostports",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.auto-assign-hostports through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.auto-assign-hostports",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.auto-assign-hostports"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.auto-assign-hostports",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.auto-assign-hostports workflow run 28372252901 classified as error. Loop key: verify-spec-net-integration-auto-assign-hostports-a_verify-spec-net-integration-auto-assig. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372252901 Result: runs/test-results/single-net-integration-auto-assign-hostports_319440/artifacts/net-integration-auto-assign-hostports/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/test-results/single-net-integration-auto-assign-hostports_319440/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:32:50.062Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-auto-assign-hostports_20260629123250",
+        "assigned_at": "2026-06-29T12:32:50.104Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-auto-assign-hostports",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-auto-assign-hostports_20260629123250",
+        "worker_started_at": "2026-06-29T12:32:54.819Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.net-integration.auto-assign-hostports workflow run 28372252901 classified as error. Loop key: verify-spec-net-integration-auto-assign-hostports-a_verify-spec-net-integration-auto-assig. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372252901 Result: runs/test-results/single-net-integration-auto-assign-hostports_319440/artifacts/net-integration-auto-assign-hostports/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/test-results/single-net-integration-auto-assign-hostports_319440/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T13:19:01.094Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:19:04.227Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.auto-assign-hostports workflow run 28372252901 classified as error. Loop key: verify-spec-net-integration-auto-assign-hostports-a_verify-spec-net-integration-auto-assig. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372252901 Result: runs/test-results/single-net-integration-auto-assign-hostports_319440/artifacts/net-integration-auto-assign-hostports/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/test-results/single-net-integration-auto-assign-hostports_319440/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-net-integration-auto-assign-hostports",
+      "session_history": [
+        "s_task_verify-spec-net-integration-auto-assign-hostports"
+      ],
+      "result": "Spec spec.net-integration.auto-assign-hostports workflow run 28372252901 classified as error. Loop key: verify-spec-net-integration-auto-assign-hostports-a_verify-spec-net-integration-auto-assig. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372252901 Result: runs/test-results/single-net-integration-auto-assign-hostports_319440/artifacts/net-integration-auto-assign-hostports/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372252901/aks-rp-e2e-28372252901-spec-test-results/test-results/single-net-integration-auto-assign-hostports_319440/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T13:19:04.227Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-cross-tenant-auxiliary-token",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.cross-tenant-auxiliary-token through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.cross-tenant-auxiliary-token",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.cross-tenant-auxiliary-token"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.cross-tenant-auxiliary-token",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.cross-tenant-auxiliary-token workflow run 28372347208 classified as error. Loop key: verify-spec-net-integration-cross-tenant-auxiliary-token-a_verify-spec-net-integration-cro. Cross-tenant proxy cluster failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372347208 Result: runs/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/artifacts/net-integration-cross-tenant-auxiliary-token/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:34:27.389Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-cross-tenant-auxiliary-token_20260629123427",
+        "assigned_at": "2026-06-29T12:34:27.420Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-cross-tenant-auxiliary-token",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-cross-tenant-auxiliary-token_20260629123427",
+        "worker_started_at": "2026-06-29T12:34:29.426Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.net-integration.cross-tenant-auxiliary-token workflow run 28372347208 classified as error. Loop key: verify-spec-net-integration-cross-tenant-auxiliary-token-a_verify-spec-net-integration-cro. Cross-tenant proxy cluster failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372347208 Result: runs/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/artifacts/net-integration-cross-tenant-auxiliary-token/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T13:20:45.523Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:20:46.947Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.cross-tenant-auxiliary-token workflow run 28372347208 classified as error. Loop key: verify-spec-net-integration-cross-tenant-auxiliary-token-a_verify-spec-net-integration-cro. Cross-tenant proxy cluster failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372347208 Result: runs/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/artifacts/net-integration-cross-tenant-auxiliary-token/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-net-integration-cross-tenant-auxiliary-token",
+      "session_history": [
+        "s_task_verify-spec-net-integration-cross-tenant-auxiliary-token"
+      ],
+      "result": "Spec spec.net-integration.cross-tenant-auxiliary-token workflow run 28372347208 classified as error. Loop key: verify-spec-net-integration-cross-tenant-auxiliary-token-a_verify-spec-net-integration-cro. Cross-tenant proxy cluster failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28372347208 Result: runs/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/artifacts/net-integration-cross-tenant-auxiliary-token/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28372347208/aks-rp-e2e-28372347208-spec-test-results/test-results/single-net-integration-cross-tenant-auxiliary-token_455728/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T13:20:46.947Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-disabled-public through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-disabled-public",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-disabled-public"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-disabled-public",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28373752160 classified as pass. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable. KMS v2-disabled→v2+ CMK migration lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373752160 Result: runs/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/artifacts/kms-v2plus-enable-cmk-from-v2-disabled-public/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:58:39.692Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public_20260629125839",
+        "assigned_at": "2026-06-29T12:58:39.712Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public_20260629125839",
+        "worker_started_at": "2026-06-29T12:58:46.484Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28373752160 classified as pass. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable. KMS v2-disabled→v2+ CMK migration lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373752160 Result: runs/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/artifacts/kms-v2plus-enable-cmk-from-v2-disabled-public/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/result.json",
+        "last_worker_completed_at": "2026-06-29T13:17:53.050Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:17:55.204Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28373752160 classified as pass. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable. KMS v2-disabled→v2+ CMK migration lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373752160 Result: runs/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/artifacts/kms-v2plus-enable-cmk-from-v2-disabled-public/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/result.json"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28373752160 classified as pass. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable. KMS v2-disabled→v2+ CMK migration lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28373752160 Result: runs/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/artifacts/kms-v2plus-enable-cmk-from-v2-disabled-public/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28373752160/aks-rp-e2e-28373752160-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_910533/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:17:55.204Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

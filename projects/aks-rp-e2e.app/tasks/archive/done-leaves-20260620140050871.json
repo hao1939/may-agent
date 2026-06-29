@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:00:50.872Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 owner review accepted the Fleet gap batch as mounted-source-backed closure for VM prerelease rows 139-142: one exact Fleet matrix spec/replay now covers rows 139/140/141/142, selector and coverage ledgers were updated, and replay/schema/wiring/planner checks passed in the archived evidence packet. The durable focus truth is now: feature/spec closure has accepted row-exact outcomes for rows 122, 136, 143, 164, and 165 as the current active authoring frontier; MachinesPreview remains the single truthful external-send wait; and row-25 live execution remains the single truthful cloud-environment wait with no planner-local unblock action. Backlog stays row-exact and source-authoring shaped (rows 166, 187, 203, 204, 220, 221, 77, 78) for the next slot that actually frees.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-gap-batch-fleet-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec coverage for Fleet rows 139-142 by extracting matrix/source intent, landing exact feature/spec/replay or terminal exclusion records, updating pipeline coverage/selectors, and writing a source-grounded evidence packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-fleet-20260620.md"
+      ],
+      "acceptance": [
+        "Rows 139, 140, 141, and 142 are each strict covered or terminal-excluded with exact matrix/source evidence.",
+        "Fleet autoupgrade/update-run variants are not collapsed unless the artifact proves they share one runnable contract.",
+        "Coverage and feature selector files are updated for every accepted row."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:56.343Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:40:44.579Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-fleet-20260620_20260620134159",
+        "assigned_at": "2026-06-20T13:41:59.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-fleet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-fleet-20260620_20260620134159",
+        "worker_started_at": "2026-06-20T13:41:59.663Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Closed VM prerelease Fleet rows 139-142 by authoring mounted-source-backed Fleet feature/spec/replay surfaces, promoting all four rows into selector and coverage ledgers, and validating the new landings with check-mode replays plus wiring/schema/planner proof.",
+        "last_worker_completed_at": "2026-06-20T13:58:51.262Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:59:10.407Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-gap-batch-fleet-20260620.md shows mounted Fleet suite source was translated into four exact row-local feature/spec/replay landings for rows 139-142, updated the VM prerelease selector and coverage ledgers for each row, and recorded passing non-mutating replay, wiring/schema, and planner-inclusion validation without collapsing the distinct Fleet contracts."
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-fleet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-fleet-20260620"
+      ],
+      "result": "Closed VM prerelease Fleet rows 139-142 by authoring mounted-source-backed Fleet feature/spec/replay surfaces, promoting all four rows into selector and coverage ledgers, and validating the new landings with check-mode replays plus wiring/schema/planner proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:59:10.407Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-gap-batch-fleet-20260620.md shows mounted Fleet suite source was translated into four exact row-local feature/spec/replay landings for rows 139-142, updated the VM prerelease selector and coverage ledgers for each row, and recorded passing non-mutating replay, wiring/schema, and planner-inclusion validation without collapsing the distinct Fleet contracts."
+      },
+      "status": "done"
+    }
+  ]
+}

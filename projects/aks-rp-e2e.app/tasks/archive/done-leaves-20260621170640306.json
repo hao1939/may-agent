@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:06:40.306Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the VM CheckIn SSH follow-up as repo-local review-complete: the maintained source/spec/model/view surfaces already preserve the S39/S40/S41 split truthfully, so no new SSH normalization leaf is needed; only a future execution-gated Disable SSH evidence leaf may be warranted later. Archived the adjacent accepted row-52 LocalDNS AzureLinux contract leaf because it now feeds the sole live active work, vmpr-row52-model-view-attachment-reconciliation-20260621, while the external human-transport proof family remains the single compressed blocked wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-checkin-suite-model-followup-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: consume the accepted VM CheckIn suite source inventory by proving or precisely repairing the bounded SSH family normalization and coverage-ledger truthfulness for S39 Disable SSH, S40 Linux SSH key update, and S41 Windows SSH key update without expanding into broader checkin or live-verdict work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-checkin-suite-model-followup-20260621.md"
+      ],
+      "acceptance": [
+        "Produce one bounded artifact that cites the exact accepted inventory carrier for this branch (or, if that path was archived/renamed, names the archived source-equivalent evidence explicitly) plus the exact mounted SSH source carriers in checkin.go, disablessh.go, and updatesshkey.go.",
+        "Show the maintained repo-local coverage-ledger/view surfaces that carry the CheckIn SSH split, and either prove they already truthfully represent S39 disable SSH, S40 Linux SSH key update, and S41 Windows SSH key update with the correct 57-source-entry suite ceiling or name the exact repo-local normalization still required.",
+        "Keep scope strictly repo-local and checkin-bounded: no cloud execution, no reopening the external-send-proof blocker family, no VM prerelease adjacent work, and no broad AAD repair sweep in this leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-checkin-followup"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:00:42.258Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T17:04:57.403Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-checkin-suite-model-followup-20260621_retry_20260621170457",
+        "worker_started_attempt_id": "a_vm-checkin-suite-model-followup-20260621_20260621170457",
+        "worker_started_at": "2026-06-21T17:05:12.891Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded follow-up artifact at evidence/archive/vm-checkin-suite-model-followup-20260621.md. It consumes the accepted VM checkin inventory recommendation, shows the SSH slice is already landed across maintained source/spec/replay/model carriers, and recommends only a future execution-gated row-39 Disable SSH evidence leaf rather than another repo-local model/spec task.",
+        "last_worker_completed_at": "2026-06-21T17:04:06.443Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-21T17:04:57.302Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner review found the artifact materially useful but not yet acceptance-complete: it did not cite/prove the exact accepted inventory packet path and did not yet show the maintained coverage-ledger/view surfaces that establish the truthful S39/S40/S41 split with the 57-source-entry suite ceiling.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_vm-checkin-suite-model-followup-20260621_20260621170103",
+        "current_attempt_id": "a_vm-checkin-suite-model-followup-20260621_20260621170457",
+        "reviewed_at": "2026-06-21T17:05:46.215Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/vm-checkin-suite-model-followup-20260621.md: the bounded checkin SSH follow-up proved row 39/40/41 source/spec/replay/model carriers already exist, so no further repo-local SSH normalization leaf remains; only a future execution-gated row-39 evidence leaf could extend this branch."
+      },
+      "session_history": [
+        "s_task_vm-checkin-suite-model-followup-20260621",
+        "s_task_vm-checkin-suite-model-followup-20260621_retry_20260621170457"
+      ],
+      "result": "Wrote the bounded follow-up artifact at evidence/archive/vm-checkin-suite-model-followup-20260621.md. It consumes the accepted VM checkin inventory recommendation, shows the SSH slice is already landed across maintained source/spec/replay/model carriers, and recommends only a future execution-gated row-39 Disable SSH evidence leaf rather than another repo-local model/spec task.",
+      "evidence": [],
+      "session_id": "s_task_vm-checkin-suite-model-followup-20260621_retry_20260621170457",
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:05:46.215Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/vm-checkin-suite-model-followup-20260621.md: the bounded checkin SSH follow-up proved row 39/40/41 source/spec/replay/model carriers already exist, so no further repo-local SSH normalization leaf remains; only a future execution-gated row-39 evidence leaf could extend this branch."
+      },
+      "status": "done"
+    }
+  ]
+}

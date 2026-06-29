@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T11:21:44.306Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning update archives the completed VirtualMachine prerelease source-matrix slice and its first-uncovered-row follow-up as durable history: the accepted mounted-source matrix now captures the maintained prerelease/checkin carrier inventory, and the accepted first-uncovered-row artifact records the immediate no-cloud follow-up choice that led to the current row-44 reconciliation backlog leaf. Keep the freshly assigned private-cluster privatelink deferred-op source-slice task as the only active work because maxConcurrent remains 1, leave vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624 queued behind it, and preserve the four exact external waits unchanged until returned proof arrives or the first bounded follow-up review date.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-first-uncovered-row-followup-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted-source coverage matrix once it lands, close the first bounded repo-local VirtualMachine prerelease/checkin gap that remains after excluding the already-covered external approval waits by producing one source-backed spec/model/replay follow-up for a single concrete uncovered row or scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-first-uncovered-row-followup-20260624.md"
+      ],
+      "acceptance": [
+        "The artifact cites evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md plus the exact mounted source carriers it selects, names one concrete prerelease/checkin row or scenario not already represented by the existing aad-rbac/shared-dispatch/serverless/private-cluster waits, and shows the exact repo-local gap being closed (spec/model/replay repair or evidence-ceiling).",
+        "The chosen slice is bounded to one no-cloud row/scenario, explains why it is the first useful follow-up after the matrix, and does not claim any external approval result or cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T11:18:21.536Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-24T11:20:53.707Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the concrete row-44 stale-history/evidence-ceiling reconciliation leaf. The mounted-source matrix showed there is no remaining first uncovered authoring row in this slice; the next truthful repo-local work is bounded reconciliation for row 44 rather than a generic uncovered-gap search."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-24T11:20:53.707Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the concrete row-44 stale-history/evidence-ceiling reconciliation leaf. The mounted-source matrix showed there is no remaining first uncovered authoring row in this slice; the next truthful repo-local work is bounded reconciliation for row 44 rather than a generic uncovered-gap search."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T17:26:18.712Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planner refill accepted three fresh review leaves and converted them into executable next steps. First, the ssh-public-key mounted-source family is no longer a vague environment wait: the reviewed rerun proves GitHub Actions reaches the repaired head but still fails preflight on missing /app/sources/aks-rp, so repair-ssh-public-key-mounted-source-preflight-for-github-runner-20260629 is now the concrete repo-local runner/carrier task. Second, skip-gpu-driver is not a westus2 shared wait family anymore: the repaired live run reached the first GPU add, and mounted source identifies GPU PreRelease eastus2 as the truthful same-contract alternate carrier, so prepare-skip-gpu-driver-gpu-prerelease-eastus2-carrier-followup-20260629 now owns that relocation/handoff work. Third, oidc default-by-version rerun evidence is accepted as a branch-trust blocker rather than product verdict: the four-assert repair was verified locally and dispatched, but run 28390207492 died at Azure federated login because the repair branch ref is not trusted, so publish-oidc-default-by-version-runtime-carrier-repair-to-trusted-ref-20260629 is the exact next leaf. The explicit-enable OIDC lane remains intentionally narrow with request-real-cluster-tuple-for-spec-oidc-issuer-v133-explicit-enable-runtime-20260629 as the only live same-spec next step; no passive wait or rerun is justified until send/handoff proof exists for that ask. Existing family waits such as westus2 cluster-count and retina live-slot remain singular and unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun and review spec.oidc-issuer.default-by-version through the repaired runtime carrier so the next verdict uses only the accepted four-assert live claim surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629.md"
+      ],
+      "acceptance": [
+        "The rerun uses the repaired runtime carrier/spec surface from the accepted 2026-06-29 repair note, including issuerURL handling and the narrowed four-assert live claim set.",
+        "The review note cites the resulting run/artifacts and records a truthful pass/fail/carrier classification without reviving API-version or projected-token shortcut claims as product verdicts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.oidc-issuer.default-by-version"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:16:11.037Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629_20260629171618",
+        "assigned_at": "2026-06-29T17:16:18.118Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629",
+        "worker_started_attempt_id": "a_verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629_20260629171618",
+        "worker_started_at": "2026-06-29T17:17:11.856Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Attempted the post-repair rerun for spec.oidc-issuer.default-by-version, documented the resulting workflow run 28390207492, and wrote a durable review note showing the repaired four-assert carrier could only be exercised on a branch that then failed Azure federated login before spec execution.",
+        "last_worker_completed_at": "2026-06-29T17:22:29.735Z",
+        "last_worker_evidence": [
+          "evidence/archive/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629.md",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/dispatch-request.json",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/dispatch-response.json",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/run.json",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/jobs.json",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/artifacts.json",
+          "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/run-logs.zip"
+        ],
+        "reviewed_at": "2026-06-29T17:25:55.552Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted rerun review: the four-assert repair was verified locally and dispatched on a bounded repair branch, but run 28390207492 failed at Azure federated login before spec execution because that branch ref is not trusted. Product verdict remains unreached; exact follow-up is publish-oidc-default-by-version-runtime-carrier-repair-to-trusted-ref-20260629 rather than reviving rejected API-version/projected-token claims."
+      },
+      "session_id": "s_task_verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629",
+      "session_history": [
+        "s_task_verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629"
+      ],
+      "result": "Attempted the post-repair rerun for spec.oidc-issuer.default-by-version, documented the resulting workflow run 28390207492, and wrote a durable review note showing the repaired four-assert carrier could only be exercised on a branch that then failed Azure federated login before spec execution.",
+      "evidence": [
+        "evidence/archive/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629.md",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/dispatch-request.json",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/dispatch-response.json",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/run.json",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/jobs.json",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/artifacts.json",
+        "workspace/verify-spec-oidc-issuer-default-by-version-rerun-after-runtime-carrier-repair-20260629/run-logs.zip"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:25:55.552Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted rerun review: the four-assert repair was verified locally and dispatched on a bounded repair branch, but run 28390207492 failed at Azure federated login before spec execution because that branch ref is not trusted. Product verdict remains unreached; exact follow-up is publish-oidc-default-by-version-runtime-carrier-repair-to-trusted-ref-20260629 rather than reviving rejected API-version/projected-token claims."
+      },
+      "status": "done"
+    }
+  ]
+}

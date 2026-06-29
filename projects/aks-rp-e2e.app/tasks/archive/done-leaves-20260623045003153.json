@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T04:50:03.154Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 planner refill/cleanup: cloudprovider-ccm-maintained-wording-sync-20260623 is accepted and archived as completed canonical wording alignment for the CCM verdict-ceiling note, private-cluster-none-dns-zone-v3-maintained-wording-sync-20260623 remains the sole active repo-local model/wording lane for the accepted none-dns-zone-v3 ceiling note, a bounded private-cluster mounted-source coverage matrix follow-up is queued as the next repo-local learning task after that wording sync, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful external-human wait family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloudprovider-ccm-maintained-wording-sync-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync the maintained wording for path.cloud-provider.ccm-lifecycle to the accepted 2026-06-23 CCM verdict-ceiling note by replacing stale replay-widening language with a fresh-live-evidence follow-up in canonical model/path-summary surfaces, without widening scope or opening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json both stop saying the next step is to widen replays/cloud-provider-ccm-lifecycle.ts and instead point to reviewing a future gated fresh live artifact for the exact four CCM lifecycle assertions.",
+        "The change cites the accepted evidence/archive/cloudprovider-ccm-live-verdict-gap-map-20260623.md ceiling note and preserves the current truth that mounted source/spec/replay alignment is already complete while live exact-assertion evidence is still missing.",
+        "Work stays repo-local only: no cloud mutation, no new external-human wait, and no widening into other cloud-provider paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider/ccm-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T04:45:19.710Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloudprovider-ccm-maintained-wording-sync-20260623_20260623044603",
+        "assigned_at": "2026-06-23T04:46:03.183Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloudprovider-ccm-maintained-wording-sync-20260623",
+        "worker_started_attempt_id": "a_cloudprovider-ccm-maintained-wording-sync-20260623_20260623044603",
+        "worker_started_at": "2026-06-23T04:46:04.722Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the canonical CCM lifecycle path wording in model.json and regenerated path-summary.json so the maintained next step now points to reviewing a future gated fresh live artifact for the four exact assertions instead of replay widening; also linked the accepted 2026-06-23 ceiling note into the model evidence index.",
+        "last_worker_completed_at": "2026-06-23T04:47:18.114Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T04:48:45.809Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: task output matches the review claim. model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json now point to a future gated fresh live artifact for the four exact CCM lifecycle assertions, cite evidence/archive/cloudprovider-ccm-live-verdict-gap-map-20260623.md, and no longer ask to widen the replay."
+      },
+      "session_id": "s_task_cloudprovider-ccm-maintained-wording-sync-20260623",
+      "session_history": [
+        "s_task_cloudprovider-ccm-maintained-wording-sync-20260623"
+      ],
+      "result": "Updated the canonical CCM lifecycle path wording in model.json and regenerated path-summary.json so the maintained next step now points to reviewing a future gated fresh live artifact for the four exact assertions instead of replay widening; also linked the accepted 2026-06-23 ceiling note into the model evidence index.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T04:48:45.809Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: task output matches the review claim. model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json now point to a future gated fresh live artifact for the four exact CCM lifecycle assertions, cite evidence/archive/cloudprovider-ccm-live-verdict-gap-map-20260623.md, and no longer ask to widen the replay."
+      },
+      "status": "done"
+    }
+  ]
+}

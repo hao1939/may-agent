@@ -1,0 +1,2314 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:11:05.497Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepts that workflow run 28367212159 for spec.ccp-coredns.custom-config is a credible staging pass (top-level result passed; spec result pass with \"Custom config passed: 3 claims verified\"), but the verifier leaf was auto-closed by the task-tree tool before owner reconciliation landed in durable state. The loop now carries one bounded backlog follow-up to reconcile this exact spec into spec-loop/model surfaces before archiving the execution leaf; no new speculative verifier assignments were added because the active verification/repair frontier is already saturated.",
+  "archived": 35,
+  "tasks": [
+    {
+      "id": "verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.runtime-container.kscr-rotation-matrix with timeout_minutes=60 after the old run hit the 20-minute workflow timeout envelope and produced an empty top-level result.",
+      "inputs": [
+        "spec:spec.runtime-container.kscr-rotation-matrix",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The retry runs through the single-spec workflow on staging with timeout_minutes=60.",
+        "The result reaches a terminal scenario-test verdict or records a stronger non-timeout error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.runtime-container.kscr-rotation-matrix"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.runtime-container.kscr-rotation-matrix",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.runtime-container.kscr-rotation-matrix workflow run 28363929880 classified as pass. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629-a_verify-spec-runtim. Scenario_KSCR_VirtualMachine live execution passed: row-9 KSCR VirtualMachines cluster preserved approved kubelet-serving CSRs plus cluster labels and cluster-signed serving certs through upgrade, then secondpool/winp0/winp1 flipped to self-signed after opt-out tag update plus recycle while nodepool1 stayed cluster-signed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363929880 Result: runs/test-results/single-runtime-container-kscr-rotation-matrix_904851/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_904851/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:48:37.342Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:58:09.235Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-29T09:58:09.521Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_retry_20260629095809",
+        "worker_started_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_20260629095809",
+        "worker_started_at": "2026-06-29T09:58:39.726Z",
+        "stale_active_requeued_at": "2026-06-29T09:58:09.177Z",
+        "stale_active_requeue_reason": "watchdog stale active: session not running",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_20260629094944",
+        "current_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_20260629095809",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28363929880 classified as pass. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629-a_verify-spec-runtim. Scenario_KSCR_VirtualMachine live execution passed: row-9 KSCR VirtualMachines cluster preserved approved kubelet-serving CSRs plus cluster labels and cluster-signed serving certs through upgrade, then secondpool/winp0/winp1 flipped to self-signed after opt-out tag update plus recycle while nodepool1 stayed cluster-signed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363929880 Result: runs/test-results/single-runtime-container-kscr-rotation-matrix_904851/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_904851/result.json",
+        "last_worker_completed_at": "2026-06-29T10:48:27.843Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:48:30.165Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.runtime-container.kscr-rotation-matrix workflow run 28363929880 classified as pass. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629-a_verify-spec-runtim. Scenario_KSCR_VirtualMachine live execution passed: row-9 KSCR VirtualMachines cluster preserved approved kubelet-serving CSRs plus cluster labels and cluster-signed serving certs through upgrade, then secondpool/winp0/winp1 flipped to self-signed after opt-out tag update plus recycle while nodepool1 stayed cluster-signed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363929880 Result: runs/test-results/single-runtime-container-kscr-rotation-matrix_904851/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_904851/result.json"
+      },
+      "session_history": [
+        "s_task_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629",
+        "s_task_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_retry_20260629095809"
+      ],
+      "session_id": "s_task_verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629_retry_20260629095809",
+      "result": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28363929880 classified as pass. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-timeout60-20260629-a_verify-spec-runtim. Scenario_KSCR_VirtualMachine live execution passed: row-9 KSCR VirtualMachines cluster preserved approved kubelet-serving CSRs plus cluster labels and cluster-signed serving certs through upgrade, then secondpool/winp0/winp1 flipped to self-signed after opt-out tag update plus recycle while nodepool1 stayed cluster-signed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363929880 Result: runs/test-results/single-runtime-container-kscr-rotation-matrix_904851/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363929880/aks-rp-e2e-28363929880-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_904851/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:48:30.165Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-app-routing-default-domain-http-reachability",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.app-routing.default-domain-http-reachability through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.app-routing.default-domain-http-reachability",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.app-routing.default-domain-http-reachability",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.default-domain-http-reachability workflow run 28364527719 classified as error. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: ARM operation did not finish within 2400000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364527719 Result: runs/test-results/single-app-routing-default-domain-http-reachability_952050/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_952050/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:08:16.499Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:08:51.274Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-app-routing-default-domain-http-reachability_20260629100851",
+        "assigned_at": "2026-06-29T10:08:51.333Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-app-routing-default-domain-http-reachability",
+        "worker_started_attempt_id": "a_verify-spec-app-routing-default-domain-http-reachability_20260629100851",
+        "worker_started_at": "2026-06-29T10:09:19.593Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.app-routing.default-domain-http-reachability workflow run 28364527719 classified as error. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: ARM operation did not finish within 2400000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364527719 Result: runs/test-results/single-app-routing-default-domain-http-reachability_952050/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_952050/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:05:37.282Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:05:39.422Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.default-domain-http-reachability workflow run 28364527719 classified as error. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: ARM operation did not finish within 2400000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364527719 Result: runs/test-results/single-app-routing-default-domain-http-reachability_952050/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_952050/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-app-routing-default-domain-http-reachability",
+      "session_history": [
+        "s_task_verify-spec-app-routing-default-domain-http-reachability"
+      ],
+      "result": "Spec spec.app-routing.default-domain-http-reachability workflow run 28364527719 classified as error. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: ARM operation did not finish within 2400000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28364527719 Result: runs/test-results/single-app-routing-default-domain-http-reachability_952050/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28364527719/aks-rp-e2e-28364527719-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_952050/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:05:39.422Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-managed-v2-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.aad-rbac.managed-v2-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.managed-v2-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28365489235 classified as fail. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Row-37 exact live executor: 9/10 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365489235 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_754675/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_754675/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:26:17.492Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle_20260629102716",
+        "assigned_at": "2026-06-29T10:27:16.060Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle_20260629102716",
+        "worker_started_at": "2026-06-29T10:27:28.215Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28365489235 classified as fail. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Row-37 exact live executor: 9/10 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365489235 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_754675/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_754675/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:54:01.546Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:54:02.834Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28365489235 classified as fail. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Row-37 exact live executor: 9/10 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365489235 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_754675/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_754675/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-managed-v2-lifecycle"
+      ],
+      "result": "Spec spec.aad-rbac.managed-v2-lifecycle workflow run 28365489235 classified as fail. Loop key: verify-spec-aad-rbac-managed-v2-lifecycle-a_verify-spec-aad-rbac-managed-v2-lifecycle_2026. Row-37 exact live executor: 9/10 claim assertions passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365489235 Result: runs/test-results/single-aad-rbac-managed-v2-lifecycle_754675/artifacts/aad-rbac-managed-v2-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365489235/aks-rp-e2e-28365489235-spec-test-results/test-results/single-aad-rbac-managed-v2-lifecycle_754675/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:54:02.834Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-app-routing-vm-prerelease-osm-external-nginx-external",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.app-routing.vm-prerelease.osm-external-nginx-external through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.app-routing.vm-prerelease.osm-external-nginx-external",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.vm-prerelease.osm-external-nginx-external"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.app-routing.vm-prerelease.osm-external-nginx-external",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.vm-prerelease.osm-external-nginx-external workflow run 28365551721 classified as error. Loop key: verify-spec-app-routing-vm-prerelease-osm-external-nginx-external-a_verify-spec-app-routin. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365551721 Result: runs/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/artifacts/app-routing-vm-prerelease-osm-external-nginx-external/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:28:13.759Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-app-routing-vm-prerelease-osm-external-nginx-external_20260629102835",
+        "assigned_at": "2026-06-29T10:28:35.761Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-app-routing-vm-prerelease-osm-external-nginx-external",
+        "worker_started_attempt_id": "a_verify-spec-app-routing-vm-prerelease-osm-external-nginx-external_20260629102835",
+        "worker_started_at": "2026-06-29T10:28:43.122Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.app-routing.vm-prerelease.osm-external-nginx-external workflow run 28365551721 classified as error. Loop key: verify-spec-app-routing-vm-prerelease-osm-external-nginx-external-a_verify-spec-app-routin. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365551721 Result: runs/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/artifacts/app-routing-vm-prerelease-osm-external-nginx-external/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:49:45.442Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:49:50.925Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.vm-prerelease.osm-external-nginx-external workflow run 28365551721 classified as error. Loop key: verify-spec-app-routing-vm-prerelease-osm-external-nginx-external-a_verify-spec-app-routin. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365551721 Result: runs/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/artifacts/app-routing-vm-prerelease-osm-external-nginx-external/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-app-routing-vm-prerelease-osm-external-nginx-external",
+      "session_history": [
+        "s_task_verify-spec-app-routing-vm-prerelease-osm-external-nginx-external"
+      ],
+      "result": "Spec spec.app-routing.vm-prerelease.osm-external-nginx-external workflow run 28365551721 classified as error. Loop key: verify-spec-app-routing-vm-prerelease-osm-external-nginx-external-a_verify-spec-app-routin. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365551721 Result: runs/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/artifacts/app-routing-vm-prerelease-osm-external-nginx-external/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365551721/aks-rp-e2e-28365551721-spec-test-results/test-results/single-app-routing-vm-prerelease-osm-external-nginx-external_912741/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:49:50.925Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cloud-provider-ccm-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cloud-provider.ccm-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cloud-provider.ccm-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.ccm-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cloud-provider.ccm-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.cloud-provider.ccm-lifecycle workflow run 28365725598 classified as pass. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. CCM load-balancer lifecycle verified: 4/4 claims passed across ServiceNodePort and Shared inspections. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365725598 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_227539/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_227539/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:30:58.916Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-cloud-provider-ccm-lifecycle_20260629103151",
+        "assigned_at": "2026-06-29T10:31:51.619Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cloud-provider-ccm-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-cloud-provider-ccm-lifecycle_20260629103151",
+        "worker_started_at": "2026-06-29T10:31:59.439Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.cloud-provider.ccm-lifecycle workflow run 28365725598 classified as pass. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. CCM load-balancer lifecycle verified: 4/4 claims passed across ServiceNodePort and Shared inspections. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365725598 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_227539/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_227539/result.json",
+        "last_worker_completed_at": "2026-06-29T10:45:30.406Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:45:32.393Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.cloud-provider.ccm-lifecycle workflow run 28365725598 classified as pass. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. CCM load-balancer lifecycle verified: 4/4 claims passed across ServiceNodePort and Shared inspections. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365725598 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_227539/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_227539/result.json"
+      },
+      "session_id": "s_task_verify-spec-cloud-provider-ccm-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-cloud-provider-ccm-lifecycle"
+      ],
+      "result": "Spec spec.cloud-provider.ccm-lifecycle workflow run 28365725598 classified as pass. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. CCM load-balancer lifecycle verified: 4/4 claims passed across ServiceNodePort and Shared inspections. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28365725598 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_227539/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28365725598/aks-rp-e2e-28365725598-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_227539/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:45:32.393Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review workflow run 28364773175 for spec.aad-rbac.nonaad-to-aadv2-migration, classify whether the 20-minute create timeout is truthful product/environment/carrier evidence for the intended non-AAD→AADv2 migration contract, and choose the next bounded retry/blocker/model action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md"
+      ],
+      "acceptance": [
+        "The review note cites the exact workflow/result/spec-runner artifacts for run 28364773175 and states whether the run reached the intended non-AAD create/update assertion surface or failed earlier on a non-verdict-bearing carrier.",
+        "The branch ends with one truthful next action: accept the run as terminal evidence, reopen with a concrete repair/retry task, or replace it with one exact blocker wait carrying the real resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:35:16.356Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629_20260629103516",
+        "assigned_at": "2026-06-29T10:35:16.422Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629",
+        "worker_started_attempt_id": "a_audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629_20260629103516",
+        "worker_started_at": "2026-06-29T10:35:46.000Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed workflow run 28364773175 and wrote a durable evidence note classifying the 20-minute create timeout as a non-verdict-bearing infra/environment carrier failure before any nonAAD→AADv2 migration assertions were reached.",
+        "last_worker_completed_at": "2026-06-29T10:38:07.399Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:38:36.953Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md proves run 28364773175 used the repaired source-aligned carrier but stalled in initial non-AAD cluster create, so it is non-verdict-bearing infra/environment evidence only and is now represented by one exact blocked rerun-signal wait."
+      },
+      "session_id": "s_task_audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629",
+      "session_history": [
+        "s_task_audit-spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-20260629"
+      ],
+      "result": "Reviewed workflow run 28364773175 and wrote a durable evidence note classifying the 20-minute create timeout as a non-verdict-bearing infra/environment carrier failure before any nonAAD→AADv2 migration assertions were reached.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:38:36.953Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md proves run 28364773175 used the repaired source-aligned carrier but stalled in initial non-AAD cluster create, so it is non-verdict-bearing infra/environment evidence only and is now represented by one exact blocked rerun-signal wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wait-spec-aad-rbac-nonaad-to-aadv2-migration-material-rerun-signal-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful wait for spec.aad-rbac.nonaad-to-aadv2-migration under the shared staging managed-cluster create-timeout family after source-aligned run 28364773175 proved only a baseline cluster-create stall before any migration assertions were reached.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-run-28364773175-review-20260629.md"
+      ],
+      "acceptance": [
+        "Task remains blocked only while no material rerun signal exists; resume when a new AKS/RP build, staging target/API/version/region change, explicit owner request, or equivalent external evidence justifies a fresh live retry on the same repaired carrier.",
+        "Branch context preserves that run 28364773175 is non-verdict-bearing for the migration contract: it timed out during initial non-AAD cluster create, never reached first-migration/second-migration/managed=false rejection assertions, and must not be treated as product evidence or blindly retried."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:38:36.895Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T10:54:01.694Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by active retry follow-up verify-spec-aad-rbac-nonaad-to-aadv2-migration-retry-20260629 because evidence/archive/staging-cluster-create-recovery-signals-20260629.md shows fresh same-lane westus2 cluster-create successes after run 28364773175, satisfying this wait's stated resume condition."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T10:54:01.694Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by active retry follow-up verify-spec-aad-rbac-nonaad-to-aadv2-migration-retry-20260629 because evidence/archive/staging-cluster-create-recovery-signals-20260629.md shows fresh same-lane westus2 cluster-create successes after run 28364773175, satisfying this wait's stated resume condition."
+      },
+      "status": "done"
+    },
+    {
+      "id": "await-spec-node-pool-config-ephemeral-disk-portal-export-evidence-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful blocked wait for spec.node-pool-config.ephemeral-disk until exact post-timeout Azure evidence for run 28363747313 returns via the preserved portal activity-log links or equivalent authenticated az output.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-node-pool-config-ephemeral-disk-evidence-recovery-path-20260629.md"
+      ],
+      "acceptance": [
+        "Resume only when Azure Portal activity-log export/copy/screenshot evidence or authenticated az group show / az aks show output for subscription 26fe00f8-9173-4872-9134-bb1d2e00343a, resource group rg-test-001-emeral-disk-540724, and cluster aks-test-001-emeral-disk-540724 is archived.",
+        "Branch context preserves that a blind rerun is not truthful before exact post-timeout state is recovered from the saved portal links or equivalent authenticated az evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:42:38.373Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T10:51:30.374Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive blocker with active reconciliation task reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629 so the owner rechecks whether mounted source, repo-local artifacts, or a sharper alternate path can reduce the external Azure-evidence wait before keeping one final family-level blocker."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T10:51:30.374Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive blocker with active reconciliation task reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629 so the owner rechecks whether mounted source, repo-local artifacts, or a sharper alternate path can reduce the external Azure-evidence wait before keeping one final family-level blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Send or hand off the exact portal/export evidence request for spec.node-pool-config.ephemeral-disk run 28363747313 using the preserved subscription/resource identifiers and record durable send-proof or handoff-proof for the future response wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-node-pool-config-ephemeral-disk-portal-export-ask-dispatch-20260629.md"
+      ],
+      "acceptance": [
+        "Use the accepted recovery note's exact ask text and preserve proof that it was sent or handed off to a human/operator path with Azure Portal or authenticated az access.",
+        "If send/handoff is impossible from this runtime, record the exact blocker, attempted path, and who/what capability is required so the blocked wait is supported by precise owner evidence rather than assumption.",
+        "Do not rerun the cloud spec; this leaf only dispatches the evidence-recovery ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:42:38.464Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629_20260629104238",
+        "assigned_at": "2026-06-29T10:42:38.549Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629",
+        "worker_started_attempt_id": "a_dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629_20260629104238",
+        "worker_started_at": "2026-06-29T10:43:10.568Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Dispatched the exact portal/export evidence request for spec.node-pool-config.ephemeral-disk run 28363747313 through the approval-dispatch workflow and recorded durable send-proof plus runtime event evidence in a new archive note.",
+        "last_worker_completed_at": "2026-06-29T10:45:06.040Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-node-pool-config-ephemeral-disk-portal-export-ask-dispatch-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:46:24.875Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "2026-06-29 owner review accepts the dispatch note: the exact run-28363747313 portal/export ask was routed through approval-dispatch, durable send-proof exists in the archive note and dispatch ledger, and the blocked wait is now supported by proven handoff rather than an unsent request."
+      },
+      "session_id": "s_task_dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629",
+      "session_history": [
+        "s_task_dispatch-spec-node-pool-config-ephemeral-disk-portal-export-ask-20260629"
+      ],
+      "result": "Dispatched the exact portal/export evidence request for spec.node-pool-config.ephemeral-disk run 28363747313 through the approval-dispatch workflow and recorded durable send-proof plus runtime event evidence in a new archive note.",
+      "evidence": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-portal-export-ask-dispatch-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:46:24.875Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "2026-06-29 owner review accepts the dispatch note: the exact run-28363747313 portal/export ask was routed through approval-dispatch, durable send-proof exists in the archive note and dispatch ledger, and the blocked wait is now supported by proven handoff rather than an unsent request."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review mounted source, the accepted run 28364773175 evidence, and available carrier knobs to decide whether spec.aad-rbac.nonaad-to-aadv2-migration has a concrete environment/setup/alternate-region/build next move beyond the current passive rerun-signal wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted source plan/scenario and accepted run review to confirm whether an exact alternate region, API version, staging target, build signal, or shared environment blocker can move the spec.",
+        "If a concrete next move exists, update the wait family to point at it; otherwise record the bounded evidence ceiling and the sharper resume condition that justifies the remaining blocked wait.",
+        "Do not rerun the cloud spec; produce only a repo-local diagnosis note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:42:38.744Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629_20260629104238",
+        "assigned_at": "2026-06-29T10:42:38.817Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629",
+        "worker_started_attempt_id": "a_diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629_20260629104238",
+        "worker_started_at": "2026-06-29T10:43:10.515Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local diagnosis note at evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629.md, concluding there is no justified spec-local alternate region/API/target move and that run 28364773175 should be treated as part of a shared staging cluster-create-timeout blocker family.",
+        "last_worker_completed_at": "2026-06-29T10:45:12.672Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:46:24.779Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "2026-06-29 owner review accepts the repo-local diagnosis: mounted source, repaired carrier, and run 28364773175 evidence show no justified spec-local alternate region/API/target move. The branch now truthfully waits on a shared staging managed-cluster create-timeout recovery signal rather than a blind spec-local rerun."
+      },
+      "session_id": "s_task_diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629",
+      "session_history": [
+        "s_task_diagnose-spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629"
+      ],
+      "result": "Produced the requested repo-local diagnosis note at evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629.md, concluding there is no justified spec-local alternate region/API/target move and that run 28364773175 should be treated as part of a shared staging cluster-create-timeout blocker family.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-nonaad-to-aadv2-migration-environment-next-move-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:46:24.779Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "2026-06-29 owner review accepts the repo-local diagnosis: mounted source, repaired carrier, and run 28364773175 evidence show no justified spec-local alternate region/API/target move. The branch now truthfully waits on a shared staging managed-cluster create-timeout recovery signal rather than a blind spec-local rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-rbac-disabled-to-aadv2",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.aad-rbac.rbac-disabled-to-aadv2 through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.aad-rbac.rbac-disabled-to-aadv2",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.rbac-disabled-to-aadv2"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.rbac-disabled-to-aadv2",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.rbac-disabled-to-aadv2 workflow run 28366520908 classified as pass. Loop key: verify-spec-aad-rbac-rbac-disabled-to-aadv2-a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_. RBAC-disabled negative boundary passed: baseline create verified, managed-AAD enablement rejected, and ResetAADProfile rejected with the mounted-source error contracts. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366520908 Result: runs/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/artifacts/aad-rbac-rbac-disabled-to-aadv2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:45:32.412Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_20260629104702",
+        "assigned_at": "2026-06-29T10:47:02.875Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-rbac-disabled-to-aadv2",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_20260629104702",
+        "worker_started_at": "2026-06-29T10:47:04.491Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.aad-rbac.rbac-disabled-to-aadv2 workflow run 28366520908 classified as pass. Loop key: verify-spec-aad-rbac-rbac-disabled-to-aadv2-a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_. RBAC-disabled negative boundary passed: baseline create verified, managed-AAD enablement rejected, and ResetAADProfile rejected with the mounted-source error contracts. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366520908 Result: runs/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/artifacts/aad-rbac-rbac-disabled-to-aadv2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/result.json",
+        "last_worker_completed_at": "2026-06-29T10:52:13.935Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:52:25.056Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.aad-rbac.rbac-disabled-to-aadv2 workflow run 28366520908 classified as pass. Loop key: verify-spec-aad-rbac-rbac-disabled-to-aadv2-a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_. RBAC-disabled negative boundary passed: baseline create verified, managed-AAD enablement rejected, and ResetAADProfile rejected with the mounted-source error contracts. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366520908 Result: runs/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/artifacts/aad-rbac-rbac-disabled-to-aadv2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/result.json"
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-rbac-disabled-to-aadv2",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-rbac-disabled-to-aadv2"
+      ],
+      "result": "Spec spec.aad-rbac.rbac-disabled-to-aadv2 workflow run 28366520908 classified as pass. Loop key: verify-spec-aad-rbac-rbac-disabled-to-aadv2-a_verify-spec-aad-rbac-rbac-disabled-to-aadv2_. RBAC-disabled negative boundary passed: baseline create verified, managed-AAD enablement rejected, and ResetAADProfile rejected with the mounted-source error contracts. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366520908 Result: runs/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/artifacts/aad-rbac-rbac-disabled-to-aadv2/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366520908/aks-rp-e2e-28366520908-spec-test-results/test-results/single-aad-rbac-rbac-disabled-to-aadv2_728447/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:52:25.056Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-app-monitoring-appmonitoring-vm-prerelease",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.app-monitoring.appmonitoring-vm-prerelease through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.app-monitoring.appmonitoring-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-monitoring.appmonitoring-vm-prerelease"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.app-monitoring.appmonitoring-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-monitoring.appmonitoring-vm-prerelease workflow run 28366626446 classified as pass. Loop key: verify-spec-app-monitoring-appmonitoring-vm-prerelease-a_verify-spec-app-monitoring-appmon. app-monitoring-appmonitoring-vm-prerelease passed: 3 assertions OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366626446 Result: runs/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/artifacts/app-monitoring-appmonitoring-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:47:22.954Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:47:28.089Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-app-monitoring-appmonitoring-vm-prerelease_20260629104841",
+        "assigned_at": "2026-06-29T10:48:41.627Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-app-monitoring-appmonitoring-vm-prerelease",
+        "worker_started_attempt_id": "a_verify-spec-app-monitoring-appmonitoring-vm-prerelease_20260629104841",
+        "worker_started_at": "2026-06-29T10:49:12.278Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.app-monitoring.appmonitoring-vm-prerelease workflow run 28366626446 classified as pass. Loop key: verify-spec-app-monitoring-appmonitoring-vm-prerelease-a_verify-spec-app-monitoring-appmon. app-monitoring-appmonitoring-vm-prerelease passed: 3 assertions OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366626446 Result: runs/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/artifacts/app-monitoring-appmonitoring-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/result.json",
+        "last_worker_completed_at": "2026-06-29T10:54:27.526Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:54:29.633Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-monitoring.appmonitoring-vm-prerelease workflow run 28366626446 classified as pass. Loop key: verify-spec-app-monitoring-appmonitoring-vm-prerelease-a_verify-spec-app-monitoring-appmon. app-monitoring-appmonitoring-vm-prerelease passed: 3 assertions OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366626446 Result: runs/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/artifacts/app-monitoring-appmonitoring-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/result.json"
+      },
+      "session_id": "s_task_verify-spec-app-monitoring-appmonitoring-vm-prerelease",
+      "session_history": [
+        "s_task_verify-spec-app-monitoring-appmonitoring-vm-prerelease"
+      ],
+      "result": "Spec spec.app-monitoring.appmonitoring-vm-prerelease workflow run 28366626446 classified as pass. Loop key: verify-spec-app-monitoring-appmonitoring-vm-prerelease-a_verify-spec-app-monitoring-appmon. app-monitoring-appmonitoring-vm-prerelease passed: 3 assertions OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366626446 Result: runs/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/artifacts/app-monitoring-appmonitoring-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366626446/aks-rp-e2e-28366626446-spec-test-results/test-results/single-app-monitoring-appmonitoring-vm-prerelease_933664/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:54:29.633Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-artifact-streaming-upgrade-survival",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.artifact-streaming.upgrade-survival through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.artifact-streaming.upgrade-survival",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.artifact-streaming.upgrade-survival"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.artifact-streaming.upgrade-survival",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.artifact-streaming.upgrade-survival workflow run 28366623600 classified as pass. Loop key: verify-spec-artifact-streaming-upgrade-survival-a_verify-spec-artifact-streaming-upgrade-s. Artifact streaming upgrade survival validation passed: 3/3 claim assertions OK. Cluster created at k8s 1.33 with streaming enabled, upgraded to 1.34. GET confirmed profile persisted post-upgrade, streaming components running on all nodes, image pull optimization still active after version upgrade. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366623600 Result: runs/test-results/single-artifact-streaming-upgrade-survival_930516/artifacts/artifact-streaming-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/test-results/single-artifact-streaming-upgrade-survival_930516/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:47:22.969Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:47:28.090Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-artifact-streaming-upgrade-survival_20260629104841",
+        "assigned_at": "2026-06-29T10:48:41.688Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-artifact-streaming-upgrade-survival",
+        "worker_started_attempt_id": "a_verify-spec-artifact-streaming-upgrade-survival_20260629104841",
+        "worker_started_at": "2026-06-29T10:49:09.038Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.artifact-streaming.upgrade-survival workflow run 28366623600 classified as pass. Loop key: verify-spec-artifact-streaming-upgrade-survival-a_verify-spec-artifact-streaming-upgrade-s. Artifact streaming upgrade survival validation passed: 3/3 claim assertions OK. Cluster created at k8s 1.33 with streaming enabled, upgraded to 1.34. GET confirmed profile persisted post-upgrade, streaming components running on all nodes, image pull optimization still active after version upgrade. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366623600 Result: runs/test-results/single-artifact-streaming-upgrade-survival_930516/artifacts/artifact-streaming-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/test-results/single-artifact-streaming-upgrade-survival_930516/result.json",
+        "last_worker_completed_at": "2026-06-29T10:57:12.263Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:57:18.960Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.artifact-streaming.upgrade-survival workflow run 28366623600 classified as pass. Loop key: verify-spec-artifact-streaming-upgrade-survival-a_verify-spec-artifact-streaming-upgrade-s. Artifact streaming upgrade survival validation passed: 3/3 claim assertions OK. Cluster created at k8s 1.33 with streaming enabled, upgraded to 1.34. GET confirmed profile persisted post-upgrade, streaming components running on all nodes, image pull optimization still active after version upgrade. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366623600 Result: runs/test-results/single-artifact-streaming-upgrade-survival_930516/artifacts/artifact-streaming-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/test-results/single-artifact-streaming-upgrade-survival_930516/result.json"
+      },
+      "session_id": "s_task_verify-spec-artifact-streaming-upgrade-survival",
+      "session_history": [
+        "s_task_verify-spec-artifact-streaming-upgrade-survival"
+      ],
+      "result": "Spec spec.artifact-streaming.upgrade-survival workflow run 28366623600 classified as pass. Loop key: verify-spec-artifact-streaming-upgrade-survival-a_verify-spec-artifact-streaming-upgrade-s. Artifact streaming upgrade survival validation passed: 3/3 claim assertions OK. Cluster created at k8s 1.33 with streaming enabled, upgraded to 1.34. GET confirmed profile persisted post-upgrade, streaming components running on all nodes, image pull optimization still active after version upgrade. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366623600 Result: runs/test-results/single-artifact-streaming-upgrade-survival_930516/artifacts/artifact-streaming-upgrade-survival/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366623600/aks-rp-e2e-28366623600-spec-test-results/test-results/single-artifact-streaming-upgrade-survival_930516/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:57:18.960Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool workflow run 28366640800 classified as done. Loop key: verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-a_verify-spec-azure-ke. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366640800 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:48:30.214Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_20260629104907",
+        "assigned_at": "2026-06-29T10:49:07.691Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool",
+        "worker_started_attempt_id": "a_verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_20260629104907",
+        "worker_started_at": "2026-06-29T10:49:28.184Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool workflow run 28366640800 classified as done. Loop key: verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-a_verify-spec-azure-ke. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366640800 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json",
+        "last_worker_completed_at": "2026-06-29T10:50:16.657Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:50:18.005Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool workflow run 28366640800 classified as done. Loop key: verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-a_verify-spec-azure-ke. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366640800 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json"
+      },
+      "session_id": "s_task_verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool",
+      "session_history": [
+        "s_task_verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool"
+      ],
+      "result": "Spec spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool workflow run 28366640800 classified as done. Loop key: verify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-a_verify-spec-azure-ke. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366640800 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366640800/aks-rp-e2e-28366640800-spec-test-results/test-results/single-azure-keyvault-secrets-provider-vm-prerelease-dual-pool_957223/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:50:18.005Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile-byo-acr.cache-direct-cache-switch through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile-byo-acr.cache-direct-cache-switch",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile-byo-acr.cache-direct-cache-switch"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile-byo-acr.cache-direct-cache-switch",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile-byo-acr.cache-direct-cache-switch workflow run 28366709234 classified as done. Loop key: verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch-a_verify-spec-bootstrap-pr. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366709234 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:49:50.941Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch_20260629105036",
+        "assigned_at": "2026-06-29T10:50:36.258Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch_20260629105036",
+        "worker_started_at": "2026-06-29T10:50:49.013Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.bootstrap-profile-byo-acr.cache-direct-cache-switch workflow run 28366709234 classified as done. Loop key: verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch-a_verify-spec-bootstrap-pr. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366709234 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json",
+        "last_worker_completed_at": "2026-06-29T10:51:54.794Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:51:57.272Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile-byo-acr.cache-direct-cache-switch workflow run 28366709234 classified as done. Loop key: verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch-a_verify-spec-bootstrap-pr. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366709234 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json"
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch"
+      ],
+      "result": "Spec spec.bootstrap-profile-byo-acr.cache-direct-cache-switch workflow run 28366709234 classified as done. Loop key: verify-spec-bootstrap-profile-byo-acr-cache-direct-cache-switch-a_verify-spec-bootstrap-pr. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366709234 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366709234/aks-rp-e2e-28366709234-spec-test-results/test-results/single-bootstrap-profile-byo-acr-cache-direct-cache-switch_113943/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:51:57.272Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-staging-cluster-create-recovery-signals-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review recent same-lane staging managed-cluster create signals and classify whether any fresh recovery evidence justifies unblocking or retrying the current blocked families for Automatic/ManagedSystem capacity and nonAAD→AADv2 migration, or whether they should remain blocked with one sharper shared signal note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/staging-cluster-create-recovery-signals-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence note cites concrete recent same-lane run results or source/target constraints relevant to managed-cluster create recovery.",
+        "Evidence explicitly distinguishes whether the Automatic/ManagedSystem westus2 capacity wait and the nonAAD→AADv2 create-timeout wait share a retry signal, stay separate, or can be consolidated.",
+        "Outcome leaves the tree with a clearer next action: retry/unblock one family if justified, or preserve the waits with sharper evidence-backed resume conditions."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:staging-managed-cluster-create-recovery"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:50:13.953Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-staging-cluster-create-recovery-signals-20260629_20260629105014",
+        "assigned_at": "2026-06-29T10:50:14.012Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-staging-cluster-create-recovery-signals-20260629",
+        "worker_started_attempt_id": "a_reconcile-staging-cluster-create-recovery-signals-20260629_20260629105014",
+        "worker_started_at": "2026-06-29T10:50:36.406Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested recovery-signal evidence note at evidence/archive/staging-cluster-create-recovery-signals-20260629.md. The note concludes the waits should diverge: keep Automatic/ManagedSystem blocked, but treat nonAAD→AADv2 create-timeout as having a fresh same-lane retry signal from later westus2 cluster-create passes.",
+        "last_worker_completed_at": "2026-06-29T10:52:42.714Z",
+        "last_worker_evidence": [
+          "evidence/archive/staging-cluster-create-recovery-signals-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:54:01.746Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/staging-cluster-create-recovery-signals-20260629.md: later same-lane westus2 cluster-create passes (ccm-lifecycle 28365725598 and ephemeral-disk 28366097333) satisfy the previous create-timeout resume condition for spec.aad-rbac.nonaad-to-aadv2-migration, while they do not clear the narrower Automatic/ManagedSystem AKSCapacityHeavyUsage blocker."
+      },
+      "session_id": "s_task_reconcile-staging-cluster-create-recovery-signals-20260629",
+      "session_history": [
+        "s_task_reconcile-staging-cluster-create-recovery-signals-20260629"
+      ],
+      "result": "Produced the requested recovery-signal evidence note at evidence/archive/staging-cluster-create-recovery-signals-20260629.md. The note concludes the waits should diverge: keep Automatic/ManagedSystem blocked, but treat nonAAD→AADv2 create-timeout as having a fresh same-lane retry signal from later westus2 cluster-create passes.",
+      "evidence": [
+        "evidence/archive/staging-cluster-create-recovery-signals-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:54:01.746Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/staging-cluster-create-recovery-signals-20260629.md: later same-lane westus2 cluster-create passes (ccm-lifecycle 28365725598 and ephemeral-disk 28366097333) satisfy the previous create-timeout resume condition for spec.aad-rbac.nonaad-to-aadv2-migration, while they do not clear the narrower Automatic/ManagedSystem AKSCapacityHeavyUsage blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.direct-to-cache-transition through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.direct-to-cache-transition",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28366706234 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366706234 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:50:18.253Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629105036",
+        "assigned_at": "2026-06-29T10:50:36.259Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-direct-to-cache-transition_20260629105036",
+        "worker_started_at": "2026-06-29T10:50:45.370Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28366706234 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366706234 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:51:47.877Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:51:57.287Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28366706234 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366706234 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-direct-to-cache-transition"
+      ],
+      "result": "Spec spec.bootstrap-profile.direct-to-cache-transition workflow run 28366706234 classified as error. Loop key: verify-spec-bootstrap-profile-direct-to-cache-transition-a_verify-spec-bootstrap-profile-d. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366706234 Result: runs/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/artifacts/bootstrap-profile-direct-to-cache-transition/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366706234/aks-rp-e2e-28366706234-spec-test-results/test-results/single-bootstrap-profile-direct-to-cache-transition_120375/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:51:57.287Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-managed-acr-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.managed-acr-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.managed-acr-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted the review as a non-terminal blocker finding rather than execution progress: run 28366769995 exposed a mounted source/spec wiring inconsistency, and the next truthful work is the new repo-local diagnosis leaf repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-wiring-20260629 instead of leaving this verifier review unresolved."
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:51:57.504Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-managed-acr-lifecycle_20260629105157",
+        "assigned_at": "2026-06-29T10:51:57.824Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-managed-acr-lifecycle_20260629105157",
+        "worker_started_at": "2026-06-29T10:52:01.815Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.bootstrap-profile.managed-acr-lifecycle workflow run 28366769995 classified as error. Loop key: verify-spec-bootstrap-profile-managed-acr-lifecycle-a_verify-spec-bootstrap-profile-manage. Mounted source/spec wiring is inconsistent; fix the repo-local carrier before live execution. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366769995 Result: runs/test-results/single-bootstrap-profile-managed-acr-lifecycle_221878/artifacts/bootstrap-profile-managed-acr-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366769995/aks-rp-e2e-28366769995-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366769995/aks-rp-e2e-28366769995-spec-test-results/test-results/single-bootstrap-profile-managed-acr-lifecycle_221878/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:52:36.647Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:54:01.797Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review as a non-terminal blocker finding rather than execution progress: run 28366769995 exposed a mounted source/spec wiring inconsistency, and the next truthful work is the new repo-local diagnosis leaf repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-wiring-20260629 instead of leaving this verifier review unresolved."
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-managed-acr-lifecycle"
+      ],
+      "result": "Spec spec.bootstrap-profile.managed-acr-lifecycle workflow run 28366769995 classified as error. Loop key: verify-spec-bootstrap-profile-managed-acr-lifecycle-a_verify-spec-bootstrap-profile-manage. Mounted source/spec wiring is inconsistent; fix the repo-local carrier before live execution. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366769995 Result: runs/test-results/single-bootstrap-profile-managed-acr-lifecycle_221878/artifacts/bootstrap-profile-managed-acr-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366769995/aks-rp-e2e-28366769995-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366769995/aks-rp-e2e-28366769995-spec-test-results/test-results/single-bootstrap-profile-managed-acr-lifecycle_221878/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:54:01.797Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.public-api-cache-auto-registry-update through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.public-api-cache-auto-registry-update",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-cache-auto-registry-update"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.public-api-cache-auto-registry-update",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted this as non-pass terminal verifier output only, not durable coverage: run 28366773449 ended with workflow conclusion failure and no parsed artifact summary, so the next truthful work is diagnose-spec-bootstrap-profile-public-api-cache-auto-registry-update-artifact-gap-20260629 to classify the artifact/runner/spec-shape issue."
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:51:57.514Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update_20260629105157",
+        "assigned_at": "2026-06-29T10:51:57.824Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update_20260629105157",
+        "worker_started_at": "2026-06-29T10:52:05.327Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.bootstrap-profile.public-api-cache-auto-registry-update workflow run 28366773449 classified as error. Loop key: verify-spec-bootstrap-profile-public-api-cache-auto-registry-update-a_verify-spec-bootstra. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366773449 Result: runs/test-results/single-bootstrap-profile-public-api-cache-auto-registry-update_224312/artifacts/bootstrap-profile-public-api-cache-auto-registry-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366773449/aks-rp-e2e-28366773449-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366773449/aks-rp-e2e-28366773449-spec-test-results/test-results/single-bootstrap-profile-public-api-cache-auto-registry-update_224312/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T10:52:41.247Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:54:17.163Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted this as non-pass terminal verifier output only, not durable coverage: run 28366773449 ended with workflow conclusion failure and no parsed artifact summary, so the next truthful work is diagnose-spec-bootstrap-profile-public-api-cache-auto-registry-update-artifact-gap-20260629 to classify the artifact/runner/spec-shape issue."
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update"
+      ],
+      "result": "Spec spec.bootstrap-profile.public-api-cache-auto-registry-update workflow run 28366773449 classified as error. Loop key: verify-spec-bootstrap-profile-public-api-cache-auto-registry-update-a_verify-spec-bootstra. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366773449 Result: runs/test-results/single-bootstrap-profile-public-api-cache-auto-registry-update_224312/artifacts/bootstrap-profile-public-api-cache-auto-registry-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366773449/aks-rp-e2e-28366773449-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366773449/aks-rp-e2e-28366773449-spec-test-results/test-results/single-bootstrap-profile-public-api-cache-auto-registry-update_224312/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T10:54:17.163Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-public-api-direct-create",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.public-api-direct-create through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.public-api-direct-create",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-direct-create"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.public-api-direct-create",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.public-api-direct-create workflow run 28366930123 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-create-a_verify-spec-bootstrap-profile-pub. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366930123 Result: runs/test-results/single-bootstrap-profile-public-api-direct-create_523110/artifacts/bootstrap-profile-public-api-direct-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-create_523110/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:52:45.638Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:54:21.250Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-public-api-direct-create_20260629105447",
+        "assigned_at": "2026-06-29T10:54:47.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-public-api-direct-create",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-public-api-direct-create_20260629105447",
+        "worker_started_at": "2026-06-29T10:54:58.780Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.bootstrap-profile.public-api-direct-create workflow run 28366930123 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-create-a_verify-spec-bootstrap-profile-pub. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366930123 Result: runs/test-results/single-bootstrap-profile-public-api-direct-create_523110/artifacts/bootstrap-profile-public-api-direct-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-create_523110/result.json",
+        "last_worker_completed_at": "2026-06-29T11:00:12.030Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:00:17.068Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.public-api-direct-create workflow run 28366930123 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-create-a_verify-spec-bootstrap-profile-pub. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366930123 Result: runs/test-results/single-bootstrap-profile-public-api-direct-create_523110/artifacts/bootstrap-profile-public-api-direct-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-create_523110/result.json"
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-public-api-direct-create",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-public-api-direct-create"
+      ],
+      "result": "Spec spec.bootstrap-profile.public-api-direct-create workflow run 28366930123 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-create-a_verify-spec-bootstrap-profile-pub. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366930123 Result: runs/test-results/single-bootstrap-profile-public-api-direct-create_523110/artifacts/bootstrap-profile-public-api-direct-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366930123/aks-rp-e2e-28366930123-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-create_523110/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:00:17.068Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Document why spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool is not direct live-execution progress in the single-spec runner, map the exact source/check or shared-cluster carrier requirements, and record the next truthful verification surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact handwritten/source/spec paths that show this spec is source-check-only or depends on an existing/shared-cluster carrier.",
+        "The note states whether the current done verifier result should be treated only as queue classification rather than pass coverage.",
+        "The branch records one concrete next verification surface or model update for this capability instead of leaving the spec as ambiguous done work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:53:51.330Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:54:21.250Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629_20260629105447",
+        "assigned_at": "2026-06-29T10:54:47.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629",
+        "worker_started_attempt_id": "a_classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629_20260629105447",
+        "worker_started_at": "2026-06-29T10:54:51.475Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented why spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool is only a non-live queue/check classification today, tied that to the misbound repo-local carrier and mounted AKS RP source requirements, and recorded the next truthful verification surface in a new archive note.",
+        "last_worker_completed_at": "2026-06-29T10:58:42.911Z",
+        "last_worker_evidence": [
+          "evidence/archive/azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:59:40.640Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note classifies spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool as a non-live carrier/source-backed queue item today, ties that status to the mounted-source and carrier requirements, and records the next truthful verification surface instead of leaving the verifier unexplained."
+      },
+      "session_id": "s_task_classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629",
+      "session_history": [
+        "s_task_classify-spec-azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629"
+      ],
+      "result": "Documented why spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool is only a non-live queue/check classification today, tied that to the misbound repo-local carrier and mounted AKS RP source requirements, and recorded the next truthful verification surface in a new archive note.",
+      "evidence": [
+        "evidence/archive/azure-keyvault-secrets-provider-vm-prerelease-dual-pool-nonlive-carrier-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:59:40.640Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note classifies spec.azure-keyvault-secrets-provider.vm-prerelease-dual-pool as a non-live carrier/source-backed queue item today, ties that status to the mounted-source and carrier requirements, and records the next truthful verification surface instead of leaving the verifier unexplained."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-bootstrap-profile-public-api-direct-idempotent-update",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.public-api-direct-idempotent-update through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.public-api-direct-idempotent-update",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-direct-idempotent-update"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.public-api-direct-idempotent-update",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.public-api-direct-idempotent-update workflow run 28366945052 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-idempotent-update-a_verify-spec-bootstrap. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366945052 Result: runs/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/artifacts/bootstrap-profile-public-api-direct-idempotent-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:54:02.852Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:54:21.250Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-public-api-direct-idempotent-update_20260629105447",
+        "assigned_at": "2026-06-29T10:54:47.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-public-api-direct-idempotent-update",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-public-api-direct-idempotent-update_20260629105447",
+        "worker_started_at": "2026-06-29T10:55:16.060Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.bootstrap-profile.public-api-direct-idempotent-update workflow run 28366945052 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-idempotent-update-a_verify-spec-bootstrap. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366945052 Result: runs/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/artifacts/bootstrap-profile-public-api-direct-idempotent-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/result.json",
+        "last_worker_completed_at": "2026-06-29T10:55:57.697Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T10:56:02.455Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.bootstrap-profile.public-api-direct-idempotent-update workflow run 28366945052 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-idempotent-update-a_verify-spec-bootstrap. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366945052 Result: runs/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/artifacts/bootstrap-profile-public-api-direct-idempotent-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/result.json"
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-public-api-direct-idempotent-update",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-public-api-direct-idempotent-update"
+      ],
+      "result": "Spec spec.bootstrap-profile.public-api-direct-idempotent-update workflow run 28366945052 classified as pass. Loop key: verify-spec-bootstrap-profile-public-api-direct-idempotent-update-a_verify-spec-bootstrap. Scenario test completed without parsed artifact summary. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366945052 Result: runs/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/artifacts/bootstrap-profile-public-api-direct-idempotent-update/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366945052/aks-rp-e2e-28366945052-spec-test-results/test-results/single-bootstrap-profile-public-api-direct-idempotent-update_535083/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:56:02.455Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-agent-connectivity-tunnel",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-agent.connectivity-tunnel through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-agent.connectivity-tunnel",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-agent.connectivity-tunnel"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-agent.connectivity-tunnel",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-agent.connectivity-tunnel workflow run 28366941448 classified as pass. Loop key: verify-spec-ccp-agent-connectivity-tunnel-a_verify-spec-ccp-agent-connectivity-tunnel_2026. ccp-agent-connectivity-tunnel passed: 3 claims verified (konnectivity-agent pods Running/Ready, tunnel log markers present, and kubectl get nodes succeeded). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366941448 Result: runs/test-results/single-ccp-agent-connectivity-tunnel_533089/artifacts/ccp-agent-connectivity-tunnel/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/test-results/single-ccp-agent-connectivity-tunnel_533089/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:54:29.671Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-agent-connectivity-tunnel_20260629105447",
+        "assigned_at": "2026-06-29T10:54:47.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-agent-connectivity-tunnel",
+        "worker_started_attempt_id": "a_verify-spec-ccp-agent-connectivity-tunnel_20260629105447",
+        "worker_started_at": "2026-06-29T10:55:10.432Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.ccp-agent.connectivity-tunnel workflow run 28366941448 classified as pass. Loop key: verify-spec-ccp-agent-connectivity-tunnel-a_verify-spec-ccp-agent-connectivity-tunnel_2026. ccp-agent-connectivity-tunnel passed: 3 claims verified (konnectivity-agent pods Running/Ready, tunnel log markers present, and kubectl get nodes succeeded). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366941448 Result: runs/test-results/single-ccp-agent-connectivity-tunnel_533089/artifacts/ccp-agent-connectivity-tunnel/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/test-results/single-ccp-agent-connectivity-tunnel_533089/result.json",
+        "last_worker_completed_at": "2026-06-29T11:01:42.343Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:01:45.331Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-agent.connectivity-tunnel workflow run 28366941448 classified as pass. Loop key: verify-spec-ccp-agent-connectivity-tunnel-a_verify-spec-ccp-agent-connectivity-tunnel_2026. ccp-agent-connectivity-tunnel passed: 3 claims verified (konnectivity-agent pods Running/Ready, tunnel log markers present, and kubectl get nodes succeeded). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366941448 Result: runs/test-results/single-ccp-agent-connectivity-tunnel_533089/artifacts/ccp-agent-connectivity-tunnel/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/test-results/single-ccp-agent-connectivity-tunnel_533089/result.json"
+      },
+      "session_id": "s_task_verify-spec-ccp-agent-connectivity-tunnel",
+      "session_history": [
+        "s_task_verify-spec-ccp-agent-connectivity-tunnel"
+      ],
+      "result": "Spec spec.ccp-agent.connectivity-tunnel workflow run 28366941448 classified as pass. Loop key: verify-spec-ccp-agent-connectivity-tunnel-a_verify-spec-ccp-agent-connectivity-tunnel_2026. ccp-agent-connectivity-tunnel passed: 3 claims verified (konnectivity-agent pods Running/Ready, tunnel log markers present, and kubectl get nodes succeeded). Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366941448 Result: runs/test-results/single-ccp-agent-connectivity-tunnel_533089/artifacts/ccp-agent-connectivity-tunnel/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366941448/aks-rp-e2e-28366941448-spec-test-results/test-results/single-ccp-agent-connectivity-tunnel_533089/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:01:45.331Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-autoupgrader.k8s-rapid-mtc-window through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-autoupgrader.k8s-rapid-mtc-window",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-autoupgrader.k8s-rapid-mtc-window"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-autoupgrader.k8s-rapid-mtc-window",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-autoupgrader.k8s-rapid-mtc-window workflow run 28366937966 classified as pass. Loop key: verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-a_verify-spec-ccp-autoupgrader-k8s-rapid. Autoupgrade K8s MTC window rapid passed: MTC created (future-dated, 7-day, 4h), cluster upgradeChannel set to rapid (no upgrade with closed MTC window), MTC activated via MakeScheduleOpenNow (24h, today, current hour), K8s version upgraded to rapid target (latest available including preview), cluster provisioning Succeeded. All 5 claim assertions verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366937966 Result: runs/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/artifacts/ccp-autoupgrader-k8s-rapid-mtc-window/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:54:29.687Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window_20260629105447",
+        "assigned_at": "2026-06-29T10:54:47.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window",
+        "worker_started_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window_20260629105447",
+        "worker_started_at": "2026-06-29T10:55:06.724Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.ccp-autoupgrader.k8s-rapid-mtc-window workflow run 28366937966 classified as pass. Loop key: verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-a_verify-spec-ccp-autoupgrader-k8s-rapid. Autoupgrade K8s MTC window rapid passed: MTC created (future-dated, 7-day, 4h), cluster upgradeChannel set to rapid (no upgrade with closed MTC window), MTC activated via MakeScheduleOpenNow (24h, today, current hour), K8s version upgraded to rapid target (latest available including preview), cluster provisioning Succeeded. All 5 claim assertions verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366937966 Result: runs/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/artifacts/ccp-autoupgrader-k8s-rapid-mtc-window/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/result.json",
+        "last_worker_completed_at": "2026-06-29T11:10:56.539Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:10:58.051Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-autoupgrader.k8s-rapid-mtc-window workflow run 28366937966 classified as pass. Loop key: verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-a_verify-spec-ccp-autoupgrader-k8s-rapid. Autoupgrade K8s MTC window rapid passed: MTC created (future-dated, 7-day, 4h), cluster upgradeChannel set to rapid (no upgrade with closed MTC window), MTC activated via MakeScheduleOpenNow (24h, today, current hour), K8s version upgraded to rapid target (latest available including preview), cluster provisioning Succeeded. All 5 claim assertions verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366937966 Result: runs/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/artifacts/ccp-autoupgrader-k8s-rapid-mtc-window/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/result.json"
+      },
+      "session_id": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window",
+      "session_history": [
+        "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window"
+      ],
+      "result": "Spec spec.ccp-autoupgrader.k8s-rapid-mtc-window workflow run 28366937966 classified as pass. Loop key: verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-a_verify-spec-ccp-autoupgrader-k8s-rapid. Autoupgrade K8s MTC window rapid passed: MTC created (future-dated, 7-day, 4h), cluster upgradeChannel set to rapid (no upgrade with closed MTC window), MTC activated via MakeScheduleOpenNow (24h, today, current hour), K8s version upgraded to rapid target (latest available including preview), cluster provisioning Succeeded. All 5 claim assertions verified. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28366937966 Result: runs/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/artifacts/ccp-autoupgrader-k8s-rapid-mtc-window/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28366937966/aks-rp-e2e-28366937966-spec-test-results/test-results/single-ccp-autoupgrader-k8s-rapid-mtc-window_535854/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:10:58.051Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Finalize the repo-local branch classification for spec.node-pool-config.ephemeral-disk by treating timed-out run 28363747313 as superseded transient execution evidence after later same-carrier pass run 28366097333, and update the capability/model-facing branch truth accordingly.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-node-pool-config-ephemeral-disk-superseded-timeout-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites both run 28363747313 and later pass 28366097333, showing why the timeout is historical per-run forensics rather than the branch's current evidence ceiling.",
+        "Outcome updates the relevant branch/model-facing status or produces an exact repo-local change proposal that removes any remaining active dependence on operator-returned timeout evidence for this spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:56:14.915Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629_20260629105614",
+        "assigned_at": "2026-06-29T10:56:14.981Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629",
+        "worker_started_attempt_id": "a_classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629_20260629105614",
+        "worker_started_at": "2026-06-29T10:56:53.834Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable classification note concluding that spec.node-pool-config.ephemeral-disk run 28363747313 is superseded by later same-carrier pass run 28366097333, and documented the exact model-facing consequence for the branch.",
+        "last_worker_completed_at": "2026-06-29T11:00:03.619Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-node-pool-config-ephemeral-disk-superseded-timeout-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:01:57.788Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the note proves later same-carrier run 28366097333 passed on westus2/2026-03-02-preview/Standard_D4ds_v5 and therefore supersedes timed-out run 28363747313 for branch truth."
+      },
+      "session_id": "s_task_classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629",
+      "session_history": [
+        "s_task_classify-spec-node-pool-config-ephemeral-disk-superseded-timeout-pass-20260629"
+      ],
+      "result": "Produced a durable classification note concluding that spec.node-pool-config.ephemeral-disk run 28363747313 is superseded by later same-carrier pass run 28366097333, and documented the exact model-facing consequence for the branch.",
+      "evidence": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-superseded-timeout-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:01:57.788Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the note proves later same-carrier run 28366097333 passed on westus2/2026-03-02-preview/Standard_D4ds_v5 and therefore supersedes timed-out run 28363747313 for branch truth."
+      },
+      "status": "done"
+    },
+    {
+      "id": "classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review and classify the row-37 exact live failure for spec.aad-rbac.managed-v2-lifecycle from workflow run 28365489235, identify the single failing claim behind the 9/10 pass summary, compare it against adjacent AAD-RBAC spec siblings when useful, and produce the durable model/evidence update or exact rerun-diagnostic next step.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-managed-v2-lifecycle-row37-fail-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites workflow run 28365489235 artifacts and identifies the exact failing assertion or branch condition behind the fail classification.",
+        "Outcome either records a durable final fail/product-gap/environment diagnosis for path.aad-rbac.managed-v2-lifecycle or defines one sharper bounded follow-up leaf tied to the same row-37 carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:56:15.046Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629_20260629105615",
+        "assigned_at": "2026-06-29T10:56:15.111Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629",
+        "worker_started_attempt_id": "a_classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629_20260629105615",
+        "worker_started_at": "2026-06-29T10:56:53.756Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed workflow run 28365489235 artifacts and wrote a durable classification note showing the single failed claim was row-37 stop/start login preservation, caused by helper-VM `kubelogin` absence rather than the prior admin-group update mismatch.",
+        "last_worker_completed_at": "2026-06-29T10:59:56.303Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-managed-v2-lifecycle-row37-fail-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:01:57.721Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the note identifies assert.aad.stop-start-preserves-profile-and-login as the lone failed claim in run 28365489235 and correctly treats it as helper-VM kubelogin/runtime drift, so row-37 needs a bounded kubelogin-contract diagnostic instead of a durable product-fail rollup."
+      },
+      "session_id": "s_task_classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629",
+      "session_history": [
+        "s_task_classify-spec-aad-rbac-managed-v2-lifecycle-row37-fail-20260629"
+      ],
+      "result": "Reviewed workflow run 28365489235 artifacts and wrote a durable classification note showing the single failed claim was row-37 stop/start login preservation, caused by helper-VM `kubelogin` absence rather than the prior admin-group update mismatch.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-managed-v2-lifecycle-row37-fail-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:01:57.721Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the note identifies assert.aad.stop-start-preserves-profile-and-login as the lone failed claim in run 28365489235 and correctly treats it as helper-VM kubelogin/runtime drift, so row-37 needs a bounded kubelogin-contract diagnostic instead of a durable product-fail rollup."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-automatic-managedsystem-capacity-recovery-options-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recheck whether the Automatic/ManagedSystem create capacity family still needs a passive environment wait, or whether a bounded third-region same-contract retry candidate, alternate environment path, setup/diagnosis move, or exact escalation can sharpen the family beyond the current westus2/eastus2 AKSCapacityHeavyUsage hold.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/automatic-managedsystem-capacity-recovery-options-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites the accepted westus2 and eastus2 same-contract capacity findings and tests at least one sharper next-action hypothesis such as third-region viability, alternate environment, setup/diagnosis, or exact escalation target.",
+        "Outcome either creates the sharper active/escalation/retry path for the family or re-establishes one single truthful blocked wait with an exact reason why no local move remains today."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-managedsystem-capacity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:56:15.171Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-automatic-managedsystem-capacity-recovery-options-20260629_20260629105615",
+        "assigned_at": "2026-06-29T10:56:15.295Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-automatic-managedsystem-capacity-recovery-options-20260629",
+        "worker_started_attempt_id": "a_diagnose-automatic-managedsystem-capacity-recovery-options-20260629_20260629105615",
+        "worker_started_at": "2026-06-29T10:56:53.810Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested diagnosis artifact at evidence/archive/automatic-managedsystem-capacity-recovery-options-20260629.md, concluding the family still lacks a ready third-region retry or exact escalation target, but identifying bounded westus3 carrier preparation as the one sharper local next move.",
+        "last_worker_completed_at": "2026-06-29T10:58:46.577Z",
+        "last_worker_evidence": [
+          "evidence/archive/automatic-managedsystem-capacity-recovery-options-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:59:40.700Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive diagnosis proves westus2 and eastus2 already cover the same-contract AKSCapacityHeavyUsage family, finds no exact escalation target or ready third-region retry, and sharpens the branch to one bounded next move: prepare a reviewed westus3 same-contract carrier before any future live rerun."
+      },
+      "session_id": "s_task_diagnose-automatic-managedsystem-capacity-recovery-options-20260629",
+      "session_history": [
+        "s_task_diagnose-automatic-managedsystem-capacity-recovery-options-20260629"
+      ],
+      "result": "Wrote the requested diagnosis artifact at evidence/archive/automatic-managedsystem-capacity-recovery-options-20260629.md, concluding the family still lacks a ready third-region retry or exact escalation target, but identifying bounded westus3 carrier preparation as the one sharper local next move.",
+      "evidence": [
+        "evidence/archive/automatic-managedsystem-capacity-recovery-options-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:59:40.700Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive diagnosis proves westus2 and eastus2 already cover the same-contract AKSCapacityHeavyUsage family, finds no exact escalation target or ready third-region retry, and sharpens the branch to one bounded next move: prepare a reviewed westus3 same-contract carrier before any future live rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect mounted AKS RP virtualmachine prerelease/checkin source plus run 28366643649 artifacts to classify the autoupgrader VM prerelease umbrella source/matrix drift and decide whether the scenario anchor, maintenance-branch expectation, or VM selector spec wiring is stale.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source under /app/sources/aks-rp is inspected before any external-source blocker is accepted, including the virtualmachine prerelease/checkin suite entrypoints and referenced scenario definitions when relevant.",
+        "The four failed assertions from run 28366643649 are mapped to concrete source/spec/matrix evidence: source-main-preserves-scenario, source-main-has-maintenance-branches, source-newupgrader-preserves-new-suite-anchor, and matrix-preserves-vm-selector.",
+        "A durable evidence note records the diagnosed root cause, whether the spec expectation or source wiring is stale, and the next concrete repair/replay/model action without routing this branch into passive human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.autoupgrader.vm-prerelease-umbrella"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:57:52.461Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:57:58.293Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629_20260629105832",
+        "assigned_at": "2026-06-29T10:58:32.054Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629",
+        "worker_started_attempt_id": "a_diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629_20260629105832",
+        "worker_started_at": "2026-06-29T10:58:50.840Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed autoupgrader VM prerelease umbrella drift as workflow fallback/materialization wiring, not stale mounted source or matrix content, and recorded the evidence in a durable archive note.",
+        "last_worker_completed_at": "2026-06-29T11:00:49.662Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:02:34.153Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: mounted source and local check evidence show the umbrella anchors and VM selector are still valid, while run 28366643649 failed because workflow execution lacked both /app/sources and the checked-in fallback material, so the next step is workflow fallback/materialization repair rather than source-blocking or product verdict."
+      },
+      "session_id": "s_task_diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629",
+      "session_history": [
+        "s_task_diagnose-spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629"
+      ],
+      "result": "Diagnosed autoupgrader VM prerelease umbrella drift as workflow fallback/materialization wiring, not stale mounted source or matrix content, and recorded the evidence in a durable archive note.",
+      "evidence": [
+        "evidence/archive/spec-autoupgrader-vm-prerelease-umbrella-source-matrix-drift-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:02:34.153Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: mounted source and local check evidence show the umbrella anchors and VM selector are still valid, while run 28366643649 failed because workflow execution lacked both /app/sources and the checked-in fallback material, so the next step is workflow fallback/materialization repair rather than source-blocking or product verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the parsed-evidence handoff for spec.bootstrap-profile.public-api-cache-auto-registry-update so the live carrier's blocked verdict from run 28366773449 is preserved as structured summary/classification instead of collapsing to a generic parsed-artifact error.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence compares the scenario JSON/archive path emitted by the live carrier in run 28366773449 with the load path/fallback currently used by runner/spec-runner.ts and runner/vitest-runtime/status.ts.",
+        "The note identifies one concrete repo-local repair surface (artifact ingestion path, stdout summary contract, or equivalent) that would preserve the real blocked precondition summary for this spec family.",
+        "The branch records the next verification step after repair so future review does not treat 28366773449 as an unexplained generic test_error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-cache-auto-registry-update"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:58:28.978Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629_20260629105850",
+        "assigned_at": "2026-06-29T10:58:50.678Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-2026",
+        "worker_started_attempt_id": "a_repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629_20260629105850",
+        "worker_started_at": "2026-06-29T10:58:55.556Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested parsed-evidence handoff note at evidence/archive/bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629.md, comparing run 28366773449’s carrier-emitted archive path and blocked stdout against the current runner/spec-runner.ts and vitest-runtime/status.ts ingestion behavior, and documenting the concrete repair and next verification step.",
+        "last_worker_completed_at": "2026-06-29T11:00:37.195Z",
+        "last_worker_evidence": [
+          "evidence/archive/bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:01:57.925Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the note shows run 28366773449 emitted a real blocked precondition verdict and pinpoints runner/spec-runner ingestion as the repair surface needed to preserve that summary."
+      },
+      "session_id": "s_task_repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-2026",
+      "session_history": [
+        "s_task_repair-spec-bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-2026"
+      ],
+      "result": "Wrote the requested parsed-evidence handoff note at evidence/archive/bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629.md, comparing run 28366773449’s carrier-emitted archive path and blocked stdout against the current runner/spec-runner.ts and vitest-runtime/status.ts ingestion behavior, and documenting the concrete repair and next verification step.",
+      "evidence": [
+        "evidence/archive/bootstrap-profile-public-api-cache-auto-registry-update-parsed-evidence-handoff-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:01:57.925Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the note shows run 28366773449 emitted a real blocked precondition verdict and pinpoints runner/spec-runner ingestion as the repair surface needed to preserve that summary."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align spec.bootstrap-profile.managed-acr-lifecycle with mounted-source authority and execution-host parity by repairing stale source metadata and classifying the exact runtime/source-mount requirement behind run 28366769995 ENOENT.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites the stale devbox/sourceRefs or packet metadata that disagree with the mounted /app/sources authority used by the live carrier.",
+        "The note separates repo-local metadata drift from execution-host mounted-source availability and names the concrete repair surface for each, without demoting the spec out of the live queue.",
+        "The branch records the next verification or runtime-parity check needed before another live single-spec attempt for this spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:58:29.037Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629_20260629105850",
+        "assigned_at": "2026-06-29T10:58:50.677Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629",
+        "worker_started_attempt_id": "a_repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629_20260629105850",
+        "worker_started_at": "2026-06-29T10:58:55.675Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested parity evidence note at evidence/archive/bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629.md, separating stale repo-local source metadata drift from the execution-host /app/sources mount parity failure behind run 28366769995 and recording the next preflight gate before another live attempt.",
+        "last_worker_completed_at": "2026-06-29T11:00:34.017Z",
+        "last_worker_evidence": [
+          "evidence/archive/bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:01:57.856Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the note separates stale source metadata from the real 28366769995 execution-host /app/sources parity miss, preserves the exact rerun gate, and keeps this spec in the live queue rather than misclassifying it as product failure."
+      },
+      "session_id": "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629",
+      "session_history": [
+        "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629"
+      ],
+      "result": "Wrote the requested parity evidence note at evidence/archive/bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629.md, separating stale repo-local source metadata drift from the execution-host /app/sources mount parity failure behind run 28366769995 and recording the next preflight gate before another live attempt.",
+      "evidence": [
+        "evidence/archive/bootstrap-profile-managed-acr-lifecycle-mounted-source-parity-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:01:57.856Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the note separates stale source metadata from the real 28366769995 execution-host /app/sources parity miss, preserves the exact rerun gate, and keeps this spec in the live queue rather than misclassifying it as product failure."
+      },
+      "status": "done"
+    },
+    {
+      "id": "prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare a reviewed westus3 same-contract carrier packet for spec.aad-rbac.azure-rbac-automatic-sku using the accepted eastus2 carrier as the template, so the Automatic/ManagedSystem capacity family has one concrete third-region preparation path before any future live retry.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md"
+      ],
+      "acceptance": [
+        "Archive note identifies the exact westus3 target ingredients needed to preserve the unchanged Automatic/ManagedSystem contract: location, target name, assign identity, and node VM-size assumptions.",
+        "The note cites repo-local evidence that westus3 is a plausible environment candidate (for example the accepted westus3 live execution evidence) and distinguishes candidate-region preparation from a justified live rerun.",
+        "The note names the exact preflight/next retry surface and states whether any missing identity/target bundle keeps the family blocked after preparation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:59:40.762Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:59:40.822Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629_20260629105956",
+        "assigned_at": "2026-06-29T10:59:56.199Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629",
+        "worker_started_attempt_id": "a_prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629_20260629105956",
+        "worker_started_at": "2026-06-29T11:00:23.580Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Prepared the requested westus3 same-contract carrier packet at evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md, grounded in the accepted eastus2 carrier template, mounted AKS RP source, and repo-local westus3 live-success evidence. The note explicitly states the missing westus3 assign-identity/target bundle keeps the Automatic/ManagedSystem family blocked after preparation.",
+        "last_worker_completed_at": "2026-06-29T11:02:35.616Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:04:07.630Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md satisfies the carrier-prep acceptance by preserving the unchanged Automatic Azure RBAC contract, citing repo-local westus3 viability evidence, and explicitly recording that the missing reviewed westus3 assign-identity/target bundle still blocks any truthful live retry."
+      },
+      "session_id": "s_task_prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629",
+      "session_history": [
+        "s_task_prepare-spec-aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629"
+      ],
+      "result": "Prepared the requested westus3 same-contract carrier packet at evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md, grounded in the accepted eastus2 carrier template, mounted AKS RP source, and repo-local westus3 live-success evidence. The note explicitly states the missing westus3 assign-identity/target bundle keeps the Automatic/ManagedSystem family blocked after preparation.",
+      "evidence": [
+        "evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:04:07.630Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/aad-rbac-azure-rbac-automatic-sku-westus3-same-contract-carrier-20260629.md satisfies the carrier-prep acceptance by preserving the unchanged Automatic Azure RBAC contract, citing repo-local westus3 viability evidence, and explicitly recording that the missing reviewed westus3 assign-identity/target bundle still blocks any truthful live retry."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-coredns-custom-config",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-coredns.custom-config through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-coredns.custom-config",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.custom-config"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-coredns.custom-config",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-coredns.custom-config workflow run 28367212159 classified as pass. Loop key: verify-spec-ccp-coredns-custom-config-a_verify-spec-ccp-coredns-custom-config_202606291100. Custom config passed: 3 claims verified Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367212159 Result: runs/test-results/single-ccp-coredns-custom-config_045722/artifacts/ccp-coredns-custom-config/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/test-results/single-ccp-coredns-custom-config_045722/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:00:17.274Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-coredns-custom-config_20260629110023",
+        "assigned_at": "2026-06-29T11:00:23.353Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-coredns-custom-config",
+        "worker_started_attempt_id": "a_verify-spec-ccp-coredns-custom-config_20260629110023",
+        "worker_started_at": "2026-06-29T11:00:25.790Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.ccp-coredns.custom-config workflow run 28367212159 classified as pass. Loop key: verify-spec-ccp-coredns-custom-config-a_verify-spec-ccp-coredns-custom-config_202606291100. Custom config passed: 3 claims verified Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367212159 Result: runs/test-results/single-ccp-coredns-custom-config_045722/artifacts/ccp-coredns-custom-config/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/test-results/single-ccp-coredns-custom-config_045722/result.json",
+        "last_worker_completed_at": "2026-06-29T11:08:06.388Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:08:19.555Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-coredns.custom-config workflow run 28367212159 classified as pass. Loop key: verify-spec-ccp-coredns-custom-config-a_verify-spec-ccp-coredns-custom-config_202606291100. Custom config passed: 3 claims verified Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367212159 Result: runs/test-results/single-ccp-coredns-custom-config_045722/artifacts/ccp-coredns-custom-config/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/test-results/single-ccp-coredns-custom-config_045722/result.json"
+      },
+      "session_id": "s_task_verify-spec-ccp-coredns-custom-config",
+      "session_history": [
+        "s_task_verify-spec-ccp-coredns-custom-config"
+      ],
+      "result": "Spec spec.ccp-coredns.custom-config workflow run 28367212159 classified as pass. Loop key: verify-spec-ccp-coredns-custom-config-a_verify-spec-ccp-coredns-custom-config_202606291100. Custom config passed: 3 claims verified Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367212159 Result: runs/test-results/single-ccp-coredns-custom-config_045722/artifacts/ccp-coredns-custom-config/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367212159/aks-rp-e2e-28367212159-spec-test-results/test-results/single-ccp-coredns-custom-config_045722/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:08:19.555Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the row-37 helper-VM kubelogin install/use contract for spec.aad-rbac.managed-v2-lifecycle, using mounted source and the checked-in replay to prove where binary presence must be established and what exact rerun gate is required before reusing the unchanged carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-managed-v2-lifecycle-helper-vm-kubelogin-contract-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites mounted login_vm.go plus the repo replay install/use steps, explains whether RunCommand HTTP 200 is an insufficient install success signal, and states the exact post-install presence check or carrier change required before rerunning row 37."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:01:57.987Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:02:04.333Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629_20260629110234",
+        "assigned_at": "2026-06-29T11:02:34.349Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629",
+        "worker_started_attempt_id": "a_diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629_20260629110234",
+        "worker_started_at": "2026-06-29T11:03:09.779Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the row-37 helper-VM kubelogin contract using mounted AKS RP source, checked-in replay code, and checked-in run artifacts, then wrote a durable evidence note that states why RunCommand HTTP 200 is insufficient and what explicit post-install gate is required before reusing an unchanged carrier.",
+        "last_worker_completed_at": "2026-06-29T11:05:37.599Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-managed-v2-lifecycle-helper-vm-kubelogin-contract-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:06:11.585Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/spec-aad-rbac-managed-v2-lifecycle-helper-vm-kubelogin-contract-20260629.md cites mounted login_vm.go plus the checked-in replay/install-use steps, proves RunCommand HTTP 200 alone is insufficient, and records the exact KUBELOGIN_READY/command -v kubelogin gate required before reusing an unchanged row-37 helper VM carrier."
+      },
+      "session_id": "s_task_diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629",
+      "session_history": [
+        "s_task_diagnose-spec-aad-rbac-managed-v2-helper-vm-kubelogin-contract-20260629"
+      ],
+      "result": "Audited the row-37 helper-VM kubelogin contract using mounted AKS RP source, checked-in replay code, and checked-in run artifacts, then wrote a durable evidence note that states why RunCommand HTTP 200 is insufficient and what explicit post-install gate is required before reusing an unchanged carrier.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-managed-v2-lifecycle-helper-vm-kubelogin-contract-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:06:11.585Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/spec-aad-rbac-managed-v2-lifecycle-helper-vm-kubelogin-contract-20260629.md cites mounted login_vm.go plus the checked-in replay/install-use steps, proves RunCommand HTTP 200 alone is insufficient, and records the exact KUBELOGIN_READY/command -v kubelogin gate required before reusing an unchanged row-37 helper VM carrier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize spec.bootstrap-profile.managed-acr-lifecycle repo-local sourceRefs and packet authority to the mounted /app/sources/aks-rp paths and current packet location so review surfaces match the checked-in carrier instead of stale devbox/nonexistent references.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629.md"
+      ],
+      "acceptance": [
+        "The spec JSON and packet cite the current packet path plus mounted /app/sources/aks-rp handwritten-source refs, stale devbox/nonexistent refs are removed, and the output note records the exact files changed plus the verification command/result."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:01:58.055Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:02:04.333Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629_20260629110234",
+        "assigned_at": "2026-06-29T11:02:34.459Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629",
+        "worker_started_attempt_id": "a_repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629_20260629110234",
+        "worker_started_at": "2026-06-29T11:03:10.089Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized managed-ACR lifecycle source references to the current packet path and mounted /app/sources/aks-rp authorities in the spec JSON and packet, and wrote a durable evidence note with exact changes and verification results.",
+        "last_worker_completed_at": "2026-06-29T11:05:54.524Z",
+        "last_worker_evidence": [
+          "features/bootstrap-profile/specs/bootstrap-profile-managed-acr-lifecycle.json",
+          "features/bootstrap-profile/packets/managed-acr-lifecycle.yaml",
+          "evidence/archive/bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:07:27.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the source-ref normalization: the evidence note records the spec JSON and packet updates to the current packet path plus mounted /app/sources/aks-rp authorities, removes stale devbox/nonexistent refs, and confirms the repo-local carrier still passes check mode. No further review is needed for this bounded authority-path repair."
+      },
+      "session_id": "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629",
+      "session_history": [
+        "s_task_repair-spec-bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629"
+      ],
+      "result": "Normalized managed-ACR lifecycle source references to the current packet path and mounted /app/sources/aks-rp authorities in the spec JSON and packet, and wrote a durable evidence note with exact changes and verification results.",
+      "evidence": [
+        "features/bootstrap-profile/specs/bootstrap-profile-managed-acr-lifecycle.json",
+        "features/bootstrap-profile/packets/managed-acr-lifecycle.yaml",
+        "evidence/archive/bootstrap-profile-managed-acr-lifecycle-source-ref-normalization-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:07:27.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the source-ref normalization: the evidence note records the spec JSON and packet updates to the current packet path plus mounted /app/sources/aks-rp authorities, removes stale devbox/nonexistent refs, and confirms the repo-local carrier still passes check mode. No further review is needed for this bounded authority-path repair."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-paf-throttling-dedicated-oom-pipeline",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-paf-throttling.dedicated-oom-pipeline through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-paf-throttling.dedicated-oom-pipeline",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-paf-throttling.dedicated-oom-pipeline"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-paf-throttling.dedicated-oom-pipeline",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-paf-throttling.dedicated-oom-pipeline workflow run 28367641087 classified as error. Loop key: verify-spec-ccp-paf-throttling-dedicated-oom-pipeline-a_verify-spec-ccp-paf-throttling-ded. Environment-blocked and execute-unimplemented: dedicated-OOM observation requires HCP/underlay and internal CCP pipeline access not available in project staging, and the scenario test does not implement dedicated-OOM execute support from this workspace. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367641087 Result: runs/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/artifacts/ccp-paf-throttling-dedicated-oom-pipeline/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:06:45.622Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:07:17.959Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-paf-throttling-dedicated-oom-pipeline_20260629110755",
+        "assigned_at": "2026-06-29T11:07:55.471Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-paf-throttling-dedicated-oom-pipeline",
+        "worker_started_attempt_id": "a_verify-spec-ccp-paf-throttling-dedicated-oom-pipeline_20260629110755",
+        "worker_started_at": "2026-06-29T11:08:12.199Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ccp-paf-throttling.dedicated-oom-pipeline workflow run 28367641087 classified as error. Loop key: verify-spec-ccp-paf-throttling-dedicated-oom-pipeline-a_verify-spec-ccp-paf-throttling-ded. Environment-blocked and execute-unimplemented: dedicated-OOM observation requires HCP/underlay and internal CCP pipeline access not available in project staging, and the scenario test does not implement dedicated-OOM execute support from this workspace. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367641087 Result: runs/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/artifacts/ccp-paf-throttling-dedicated-oom-pipeline/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:09:00.482Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:09:04.551Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-paf-throttling.dedicated-oom-pipeline workflow run 28367641087 classified as error. Loop key: verify-spec-ccp-paf-throttling-dedicated-oom-pipeline-a_verify-spec-ccp-paf-throttling-ded. Environment-blocked and execute-unimplemented: dedicated-OOM observation requires HCP/underlay and internal CCP pipeline access not available in project staging, and the scenario test does not implement dedicated-OOM execute support from this workspace. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367641087 Result: runs/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/artifacts/ccp-paf-throttling-dedicated-oom-pipeline/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-ccp-paf-throttling-dedicated-oom-pipeline",
+      "session_history": [
+        "s_task_verify-spec-ccp-paf-throttling-dedicated-oom-pipeline"
+      ],
+      "result": "Spec spec.ccp-paf-throttling.dedicated-oom-pipeline workflow run 28367641087 classified as error. Loop key: verify-spec-ccp-paf-throttling-dedicated-oom-pipeline-a_verify-spec-ccp-paf-throttling-ded. Environment-blocked and execute-unimplemented: dedicated-OOM observation requires HCP/underlay and internal CCP pipeline access not available in project staging, and the scenario test does not implement dedicated-OOM execute support from this workspace. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367641087 Result: runs/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/artifacts/ccp-paf-throttling-dedicated-oom-pipeline/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367641087/aks-rp-e2e-28367641087-spec-test-results/test-results/single-ccp-paf-throttling-dedicated-oom-pipeline_839213/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:09:04.551Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

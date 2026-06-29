@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:35:49.243Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 blocked-frontier watchdog review accepted the bounded selected-host preflight rerun for path.private-cluster-vnet-integration-auth-service-tags and archived its conclusion into this branch: from the current caller environment, devbox still resolves to hayua@20.24.129.235:22 and fails at step-1 SSH reachability, so the path has not advanced to witness-only residue and remains locally blocked on exact selected-host reachability. The branch still carries one single truthful family-level external wait, external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, with the same returned-proof resume condition plus an explicit post-2026-06-26 escalation/follow-up trigger if silence continues. Active no-cloud frontier work is now two leaves: private-cluster-none-dns-zone-v3-live-execution-gate-packet-20260623 for the adjacent future execution gate, and private-cluster-auth-service-tags-post-rerun-status-reconcile-20260623 to reconcile the maintained status/model wording to the sharper post-rerun reachability evidence without reopening completed source/spec closure or introducing cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture a bounded caller-side rerun of the already-defined selected-host preflight sequence for path.private-cluster-vnet-integration-auth-service-tags, starting with SSH reachability to devbox and continuing through Azure auth, kubectl client, and archive-root writability only if each prior step succeeds, then classify whether the remaining gap stays local environment reachability or advances to witness-justification/external proof without any cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive packet reruns the exact ordered preflight commands from the attestation packet (SSH hostname/pwd first, then az account show, kubectl version --client, and archive-root writability only if reachable), recording command lines, caller environment, timestamps, and exact stdout/stderr or timeout results without opening live replay execution.",
+        "The packet classifies the narrowest truthful next state for path.private-cluster-vnet-integration-auth-service-tags: local selected-host reachability resolved and remaining witness-justification/external ask, or local environment still blocked with an exact resume condition; it must preserve the existing family-level external-human wait unchanged and must not reopen completed source/spec/model closure."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:32:51.688Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623_20260623143255",
+        "assigned_at": "2026-06-23T14:32:55.560Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623_20260623143255",
+        "worker_started_at": "2026-06-23T14:33:28.422Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured a durable selected-host preflight rerun packet for the private-cluster auth-service-tags path, showing the ordered caller-side rerun still fails at step 1 SSH reachability to devbox and therefore leaves the existing family-level external wait unchanged.",
+        "last_worker_completed_at": "2026-06-23T14:35:13.031Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:35:49.105Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet reran the exact ordered selected-host preflight from the caller environment, captured timestamps/commands/stdout-stderr, stopped after the first SSH failure as required, and truthfully narrowed the immediate blocker for path.private-cluster-vnet-integration-auth-service-tags to selected-host reachability remaining unresolved while preserving the single external-human family wait unchanged."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-selected-host-preflight-rerun-packet-20260623"
+      ],
+      "result": "Captured a durable selected-host preflight rerun packet for the private-cluster auth-service-tags path, showing the ordered caller-side rerun still fails at step 1 SSH reachability to devbox and therefore leaves the existing family-level external wait unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:35:49.105Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet reran the exact ordered selected-host preflight from the caller environment, captured timestamps/commands/stdout-stderr, stopped after the first SSH failure as required, and truthfully narrowed the immediate blocker for path.private-cluster-vnet-integration-auth-service-tags to selected-host reachability remaining unresolved while preserving the single external-human family wait unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

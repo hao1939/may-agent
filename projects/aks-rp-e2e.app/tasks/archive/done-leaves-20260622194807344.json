@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:48:07.344Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed refresh: accepted the serverless virtual-nodes subnet-validation source-boundary/status landing. Its durable meaning is now carried at the project root: path.serverless-virtual-nodes.subnet-validation remains truthfully blocked at the runtime witness/placement surface after delegated-subnet validation passed, and the only repo-local change landed was the remaining Microsoft.ContainerInstance singular-string repair. Keep the live frontier to one active repo-local VM prerelease mounted-source boundary matrix leaf plus the single family-level external-human transport wait; do not reopen serverless execution or create duplicate blocker leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP handwritten e2ev3 source plus existing repo-local carriers to map the exact input/expectation boundary for path.serverless-virtual-nodes.subnet-validation, confirm whether the current blocked/runtime status wording is truthful, and land any needed repo-local carrier/model/view clarification without claiming a new cloud verdict or creating duplicate environment/runtime blocker leaves.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the canonical feature/spec/replay/path ids for path.serverless-virtual-nodes.subnet-validation, cites the handwritten/mounted source scenario steps and assertions that define the expected delegated-subnet and witness-placement contract, and states the current accepted evidence ceiling plus exact remaining runtime dependency.",
+        "Repo-local carrier/model/view wording for path.serverless-virtual-nodes.subnet-validation is either updated or explicitly confirmed truthful, no cloud mutation is opened, and no duplicate blocked/environment wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes-subnet-validation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:43:34.758Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622_20260622194334",
+        "assigned_at": "2026-06-22T19:43:34.815Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622_20260622194334",
+        "worker_started_at": "2026-06-22T19:43:55.776Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Confirmed the serverless virtual-nodes subnet-validation row’s blocked/runtime wording is still truthful against mounted virtualnodes source and accepted runtime evidence, repaired the last two plural delegation-string drifts in model/knowledge-map/model.json, and added a durable landing note at evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T19:45:44.218Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:46:52.684Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622.md cites mounted virtualnodes plans plus maintained carriers, confirms path.serverless-virtual-nodes.subnet-validation remains truthfully blocked at runtime witness/placement surface, and the only landed repo-local change was the remaining Microsoft.ContainerInstance singular-string repair already reflected in model/knowledge-map/model.json without adding any duplicate blocker."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622"
+      ],
+      "result": "Confirmed the serverless virtual-nodes subnet-validation row’s blocked/runtime wording is still truthful against mounted virtualnodes source and accepted runtime evidence, repaired the last two plural delegation-string drifts in model/knowledge-map/model.json, and added a durable landing note at evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:46:52.684Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-and-status-landing-20260622.md cites mounted virtualnodes plans plus maintained carriers, confirms path.serverless-virtual-nodes.subnet-validation remains truthfully blocked at runtime witness/placement surface, and the only landed repo-local change was the remaining Microsoft.ContainerInstance singular-string repair already reflected in model/knowledge-map/model.json without adding any duplicate blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

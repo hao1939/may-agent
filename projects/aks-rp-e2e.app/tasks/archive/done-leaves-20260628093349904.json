@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:33:49.904Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 owner planning pass after stale problem-unknown wake: absorb the normalized feature-reference-loop problem into active successor repair-feature-reference-loop-state-sync-under-active-contract-20260628 rather than reopening a solver lane. Shared worker-trust state now stands on fix-project-task-completed-evidence-propagation-proof-20260628 as the active proof task; keep both review leaves open until that task demonstrates a named project.task.completed event with non-empty evidence metadata, then re-review the already-archived worker-output and secure-TLS artifacts without rerunning unless the trust repair exposes a content defect.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-worker-missing-evidence-plumbing-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the failed worker/session traces behind apply-feature-reference-loop-state-truth-disposition-20260628, repair-secure-tls-vm-prerelease-matrix-replay-probe-mismatches-20260628, and the first triage attempt itself, then produce one durable archive note that names the shared failure mode and the exact next retry/tooling task each affected branch requires before any domain result is trusted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-worker-missing-evidence-plumbing-20260628.md"
+      ],
+      "acceptance": [
+        "Reviews the available worker/session traces for the two untrustworthy domain tasks plus triage-missing-evidence-worker-failures-20260628 and records the exact common failure point behind blocked/error completion with no archive artifact or evidence attachment.",
+        "Classifies whether the root cause is shared local workflow/tooling failure, task-specific domain failure, or mixed, and names the minimum truthful next action for apply-feature-reference-loop-state-truth-disposition-20260628 and repair-secure-tls-vm-prerelease-matrix-replay-probe-mismatches-20260628 separately.",
+        "Produces an explicit successor contract: recreate the apply leaf, recreate the secure-TLS repair leaf, create one shared tooling/guard fix task, or preserve an exact blocker boundary, with the required archive/evidence expectations for the next attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "worker-output-evidence-failure"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:22:21.031Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-worker-missing-evidence-plumbing-20260628_20260628092223",
+        "assigned_at": "2026-06-28T09:22:23.642Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-worker-missing-evidence-plumbing-20260628",
+        "worker_started_attempt_id": "a_diagnose-worker-missing-evidence-plumbing-20260628_20260628092223",
+        "worker_started_at": "2026-06-28T09:22:44.414Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable diagnosis note at evidence/archive/diagnose-worker-missing-evidence-plumbing-20260628.md, identifying the shared empty-error/no-finish evidence-plumbing failure and separating it from the apply leaf’s worker-mode decomposition mismatch and the secure-TLS leaf’s valid bounded retry path.",
+        "last_worker_completed_at": "2026-06-28T09:24:24.061Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:25:11.042Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis note: the common trustworthy fact is a shared worker-output/evidence plumbing failure, while apply needs a different owner-side state-repair shape and secure-TLS remains a bounded retry only after worker completion proof."
+      },
+      "session_id": "s_task_diagnose-worker-missing-evidence-plumbing-20260628",
+      "session_history": [
+        "s_task_diagnose-worker-missing-evidence-plumbing-20260628"
+      ],
+      "result": "Produced the durable diagnosis note at evidence/archive/diagnose-worker-missing-evidence-plumbing-20260628.md, identifying the shared empty-error/no-finish evidence-plumbing failure and separating it from the apply leaf’s worker-mode decomposition mismatch and the secure-TLS leaf’s valid bounded retry path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:25:11.042Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis note: the common trustworthy fact is a shared worker-output/evidence plumbing failure, while apply needs a different owner-side state-repair shape and secure-TLS remains a bounded retry only after worker completion proof."
+      },
+      "status": "done"
+    }
+  ]
+}

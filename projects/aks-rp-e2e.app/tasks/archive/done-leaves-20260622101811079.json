@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T10:18:11.080Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted and archived the remaining mounted-source VirtualMachines mixed-SKU surface-truth landing leaf: the repo-local mounted-source contract and crosswalk landing work for this branch is now fully rolled up at the project root, with no live repo-local source/spec/model follow-up left from that slice. The only open frontier remains the single exact family-level external-human out-of-runtime proof wait for the already-routed MachinesPreview and VM prerelease asks; keep that wait compressed as the sole blocked leaf until new authoritative proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: after the row-29 mounted-source crosswalk exists, land the required maintained feature/spec/replay/model truth repair for path.virtualmachines.mixed-sku-lifecycle and regenerate derived views if the accepted model changes, keeping the branch distinct from adjacent VM prerelease and CLI multi-SKU negative paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622.md"
+      ],
+      "acceptance": [
+        "The row-29 mounted-source crosswalk artifact is linked and the exact maintained files edited or confirmed-aligned are listed in a durable archive note.",
+        "Canonical maintained surfaces for path.virtualmachines.mixed-sku-lifecycle are brought into truth agreement across the needed feature/spec/replay/model/view paths, and any required derived view regeneration is completed and recorded.",
+        "No cloud probe, no invented verdict, and no collapse of row 29 into adjacent VM prerelease or generic lifecycle branches occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:15:35.036Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622_20260622101619",
+        "assigned_at": "2026-06-22T10:16:19.713Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622_20260622101619",
+        "worker_started_at": "2026-06-22T10:16:37.229Z",
+        "reviewed_at": "2026-06-22T10:17:16.562Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source crosswalk review as a no-diff truth landing: evidence/archive/virtualmachines-mixed-sku-lifecycle-mounted-source-contract-landing-20260622.md already links the row-29 mounted source and durably confirms the maintained feature/spec/replay/model/view carriers are aligned, so no separate repo-local repair or derived-view regeneration task remains."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-lifecycle-surface-truth-landing-from-mounted-crosswalk-20260622"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-22T10:17:16.562Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source crosswalk review as a no-diff truth landing: evidence/archive/virtualmachines-mixed-sku-lifecycle-mounted-source-contract-landing-20260622.md already links the row-29 mounted source and durably confirms the maintained feature/spec/replay/model/view carriers are aligned, so no separate repo-local repair or derived-view regeneration task remains."
+      },
+      "status": "done"
+    }
+  ]
+}

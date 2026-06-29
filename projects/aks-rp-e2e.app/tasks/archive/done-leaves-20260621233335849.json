@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:33:35.849Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner reconciliation confirms the row-29 mixed-SKU lifecycle completion event was already accepted: the maintained VirtualMachines map now carries a dedicated row-29 lifecycle landing with regenerated views and repo-local evidence, while the ManagedSystem create-time initial/default pool boundary and row-46 cluster-autoscaler wording sync remain durably captured in prior accepted evidence. The live frontier stays intentionally narrow: row-30 mixed-SKU deallocate is the single active VirtualMachines model-landing slice, and the only blocked work remains the compressed external-human-transport family wait pending real human send/reply proof outside runtime. No review frontier or additional runnable refill is needed from this stale task-completed wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-rerun-contract-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit and sync the maintained rerun contract for path.aad-rbac.managed-v2-lifecycle using the checked-in replay, spec, current model status, and existing evidence so the environment-blocked frontier stays exact and executable once prerequisites return, without launching cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-rerun-contract-sync-20260621.md"
+      ],
+      "acceptance": [
+        "Use the checked-in AAD managed-v2 replay/spec/model/evidence authorities to write one durable repo-local packet that names the exact preflight command, required environment variables, quota/auth assumptions, and failure boundaries that currently gate path.aad-rbac.managed-v2-lifecycle.",
+        "If the maintained retest metadata is stale or imprecise, update the relevant knowledge-map path/view text so the blocked status and resume condition match the replay-backed contract exactly; otherwise record in evidence why no model edit was needed.",
+        "Keep the task repo-local only: no cloud execution, no new external-human wait handling, and no product pass/fail claim beyond replay/spec/model contract synchronization."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:aad-rbac"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:30:35.930Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-rerun-contract-sync-20260621_20260621233035",
+        "assigned_at": "2026-06-21T23:30:35.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-rerun-contract-sync-20260621",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-rerun-contract-sync-20260621_20260621233035",
+        "worker_started_at": "2026-06-21T23:30:48.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the AAD RBAC managed-v2 row-37 rerun contract, ran a fresh repo-local replay preflight check, and wrote a durable sync packet confirming the maintained model/view surfaces already have the exact blocked execute-gate wording with no further model edit needed.",
+        "last_worker_completed_at": "2026-06-21T23:32:36.271Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:32:54.290Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the repo-local rerun-contract sync: the durable packet confirms the checked-in replay/spec/model/view surfaces already carry the exact row-37 execute-gated blocked contract, includes a fresh passing --check preflight artifact, and shows no maintained model/view edit was needed."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-rerun-contract-sync-20260621",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-rerun-contract-sync-20260621"
+      ],
+      "result": "Audited the AAD RBAC managed-v2 row-37 rerun contract, ran a fresh repo-local replay preflight check, and wrote a durable sync packet confirming the maintained model/view surfaces already have the exact blocked execute-gate wording with no further model edit needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:32:54.290Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the repo-local rerun-contract sync: the durable packet confirms the checked-in replay/spec/model/view surfaces already carry the exact row-37 execute-gated blocked contract, includes a fresh passing --check preflight artifact, and shows no maintained model/view edit was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

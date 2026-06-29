@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:56:24.737Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review accepts the recent CCP/autoupgrader repair slice as durable and keeps this lane focused on two active consumers plus one truthful operator wait. The autoupgrader daily-master source-check ceiling is now established by accepted repo-local/source evidence, the metrics-server upgrade-survival pre-upgrade readiness repair is complete, and the prior identity-gated verification leaves for autoupgrader plus CCP CoreDNS now serve only as historical setup for the current repair/rerun tasks. Archive those completed children so the lane foregrounds the live autoupgrader repair, the live metrics-server rerun, the shared App Routing operator wait, and the next bounded repo-local refill.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Take the trustworthy blocked rerun 28313443977 for spec.ccp-coredns.component-lifecycle and determine whether its cluster-creation timeout is a one-off environment blocker or part of a broader single-spec cluster-create timeout family, then record the exact retest condition or shared-family link before any new rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628.md"
+      ],
+      "acceptance": [
+        "The archive cites trusted run 28313443977 and the exact blocker surface that stopped setup before any CoreDNS assertions.",
+        "The archive compares that timeout against current local evidence for similar single-spec cluster-creation failures or explains that no stronger local family evidence exists yet.",
+        "The archive leaves one exact next action: shared-family link, local diagnosis step, or precise rerun trigger for spec.ccp-coredns.component-lifecycle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.component-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:46:51.424Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:46:51.542Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628_20260628064656",
+        "assigned_at": "2026-06-28T06:46:56.327Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628",
+        "worker_started_attempt_id": "a_classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628_20260628064656",
+        "worker_started_at": "2026-06-28T06:47:07.006Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive classifying trusted run 28313443977 for spec.ccp-coredns.component-lifecycle as a one-off environment blocker, not a proven shared timeout family, and documented the exact retest trigger using same-day pass evidence from run 28312267641.",
+        "last_worker_completed_at": "2026-06-28T06:48:59.350Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:51:19.406Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted archive evidence: it anchors to trusted run 28313443977, proves the timeout happened during setup-cluster/create-cluster before any CoreDNS-specific assertion, uses same-day pass 28312267641 in the same staging lane as anti-family evidence, and sets the exact retest trigger to a second trustworthy reproduction of the same 1200000ms cluster-create timeout surface before reopening a shared-family verdict."
+      },
+      "session_id": "s_task_classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628",
+      "session_history": [
+        "s_task_classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628"
+      ],
+      "result": "Wrote the requested archive classifying trusted run 28313443977 for spec.ccp-coredns.component-lifecycle as a one-off environment blocker, not a proven shared timeout family, and documented the exact retest trigger using same-day pass evidence from run 28312267641.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:51:19.406Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted archive evidence: it anchors to trusted run 28313443977, proves the timeout happened during setup-cluster/create-cluster before any CoreDNS-specific assertion, uses same-day pass 28312267641 in the same staging lane as anti-family evidence, and sets the exact retest trigger to a second trustworthy reproduction of the same 1200000ms cluster-create timeout surface before reopening a shared-family verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:33:40.521Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 blocked-frontier hygiene: fully compress this focus branch to the single truthful external-human wait. The remaining static-egress chase artifact is already summarized in branch evidence as no-proof-yet transport gap, so archive it and leave only the blocked family-level wait visible.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "static-egress-vmss-routed-send-proof-chase-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Pursue the actual out-of-runtime human routing/handoff for the static-egress VMSS three-file origin/dev repair by using evidence/archive/static-egress-vmss-out-of-runtime-send-request-packet-20260626.md and the accepted routing artifact, and capture one truthful returned outcome for the branch: durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/static-egress-vmss-routed-send-proof-chase-20260626.md"
+      ],
+      "acceptance": [
+        "A repo-local archive artifact records the exact static-egress packet/handoff being chased, cites the accepted routing artifact, and captures any durable operator-visible routing evidence returned for this exact ask.",
+        "If the branch obtains durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof, the artifact quotes that proof exactly enough for owner review to convert the tree truthfully.",
+        "If none of those proof shapes can yet be produced from the runtime side, the artifact must identify the exact remaining external-human transport gap and leave the branch explicitly as active send/escalation work rather than passive external wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:16:31.772Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_static-egress-vmss-routed-send-proof-chase-20260626_20260626221631",
+        "assigned_at": "2026-06-26T22:16:31.817Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_static-egress-vmss-routed-send-proof-chase-20260626",
+        "worker_started_attempt_id": "a_static-egress-vmss-routed-send-proof-chase-20260626_20260626221631",
+        "worker_started_at": "2026-06-26T22:16:39.293Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the routed-send chase artifact at evidence/archive/static-egress-vmss-routed-send-proof-chase-20260626.md, citing the accepted routing/send packet and recording that no durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof exists yet; the exact remaining gap is the out-of-runtime human transport step.",
+        "last_worker_completed_at": "2026-06-26T22:17:36.941Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T22:17:57.849Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/static-egress-vmss-routed-send-proof-chase-20260626.md truthfully records that no durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof exists yet, so the worker completion is valid evidence production only and the branch must remain active local send/escalation work."
+      },
+      "session_id": "s_task_static-egress-vmss-routed-send-proof-chase-20260626",
+      "session_history": [
+        "s_task_static-egress-vmss-routed-send-proof-chase-20260626"
+      ],
+      "result": "Wrote the routed-send chase artifact at evidence/archive/static-egress-vmss-routed-send-proof-chase-20260626.md, citing the accepted routing/send packet and recording that no durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof exists yet; the exact remaining gap is the out-of-runtime human transport step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T22:17:57.849Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/static-egress-vmss-routed-send-proof-chase-20260626.md truthfully records that no durable routed-send proof, authoritative refusal/no-route, or landed origin/dev proof exists yet, so the worker completion is valid evidence production only and the branch must remain active local send/escalation work."
+      },
+      "status": "done"
+    }
+  ]
+}

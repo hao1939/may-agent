@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:45:25.974Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 stale-watchdog reconciliation: managedsystem-row54, private-cluster none-dns-zone-v3 maintained landing, and VM prerelease row-9 maintained landing are already reviewed/accepted and their durable meaning is captured at the project root. Keep the live frontier to two active repo-local source-boundary tasks—serverless subnet-validation and VM prerelease mounted-source boundary matrix—plus the single family-level external-human transport wait. Do not reopen the stale watchdog review target; next owner attention is only needed when one of the two active source-boundary tasks lands evidence or when external proof arrives for the compressed wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the completed repo-local source/spec-carrier audits for path.private-cluster-none-dns-zone-v3 into the canonical maintained carriers so feature/spec/model/view surfaces truthfully record the current source-backed unknown-status ceiling, the exact repo-local evidence chain, and the single shared external-human transport wait as the only remaining live-execution gate, without claiming a cloud verdict or creating any duplicate blocked wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the canonical private-cluster-none-dns-zone-v3 feature/spec/path/replay ids plus the accepted repo-local audit artifacts, states exactly what maintained carrier/model/view wording changed or was confirmed, and records the remaining live-verification gate without inventing a new source blocker.",
+        "Repo-local carrier/model/view status is either updated or explicitly confirmed truthful for path.private-cluster-none-dns-zone-v3 only, the shared external-human wait remains the single blocker representation, and no cloud mutation or unrelated frontier rediscovery is performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:42:22.926Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622_20260622194222",
+        "assigned_at": "2026-06-22T19:42:22.978Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622_20260622194222",
+        "worker_started_at": "2026-06-22T19:42:39.754Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the private-cluster none-DNS-zone V3 mounted source, maintained carriers, and prior audit/readiness evidence; confirmed the canonical model/path-summary landing was already truthful and added a durable landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T19:42:39.770Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:43:34.698Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the private-cluster none-dns-zone-v3 maintained-status landing: the archive evidence confirms mounted source and existing carriers already truthfully keep path.private-cluster-none-dns-zone-v3 at unknown, no maintained edits were needed, and the shared external-human transport wait remains the only live execution dependency with no duplicate blocker branch."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622"
+      ],
+      "result": "Reviewed the private-cluster none-DNS-zone V3 mounted source, maintained carriers, and prior audit/readiness evidence; confirmed the canonical model/path-summary landing was already truthful and added a durable landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:43:34.698Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the private-cluster none-dns-zone-v3 maintained-status landing: the archive evidence confirms mounted source and existing carriers already truthfully keep path.private-cluster-none-dns-zone-v3 at unknown, no maintained edits were needed, and the shared external-human transport wait remains the only live execution dependency with no duplicate blocker branch."
+      },
+      "status": "done"
+    }
+  ]
+}

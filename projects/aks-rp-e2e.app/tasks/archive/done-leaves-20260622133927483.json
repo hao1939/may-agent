@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:39:27.483Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 planner review treated the watchdog review request as stale because vmpr-covered-asks-mounted-source-classification-20260622 was already reviewed and accepted. Mounted AKS RP source now narrows the shared external wait to true later human/operator proof only, while the only live repo-local follow-up remains vmpr-row76-model-landing-reconcile-20260622 to land path.virtualmachine-prerelease.row76-aksconformance-tunnel into accepted model/views and explicitly keep the exact cp-<n> AKS_RP_E2E_ASSIGN_IDENTITY value as the sole remaining row-76 external residue.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Finish the private-cluster none-dns-zone-v3 truthfulness repair by reconciling any stale generated view/status surfaces to the already-written source-backed artifact and model change, so no maintained carrier still marks path.private-cluster-none-dns-zone-v3 as a final pass when only terminal none-mode evidence is accepted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "The task confirms whether model/knowledge-map/model.json already carries the mounted system→none lifecycle and, if so, repairs any stale generated surfaces or status carriers that still show pass/final-pass for path.private-cluster-none-dns-zone-v3.",
+        "The archive artifact is updated or supplemented with citations to the stale carrier(s) found and the exact repo-local repair performed or still required, with no cloud mutation or duplicate private-cluster child leaf introduced.",
+        "After the repair, the maintained carriers exposed to planning no longer overstate this path as a full exact-contract pass; if regeneration is locally blocked, the blocker names the exact command/file cause and the next bounded repair step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:28:33.383Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622_20260622132833",
+        "assigned_at": "2026-06-22T13:28:33.431Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622_20260622132833",
+        "worker_started_at": "2026-06-22T13:28:58.553Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the private-cluster none-DNS V3 model/view to the exact mounted system→none lifecycle, added a bounded evidence note, and regenerated path-summary so the maintained path now shows an execution-ceiling unknown instead of overstating the terminal-only live replay.",
+        "last_worker_completed_at": "2026-06-22T13:33:24.329Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T13:34:34.615Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Worker advanced the branch by regenerating path-summary and writing bounded evidence, but review found the maintained carriers are still inconsistent: model/knowledge-map/model.json continues to show path.private-cluster-none-dns-zone-v3 as status=pass with verdictFinal=true while model/knowledge-map/views/path-summary.json shows unknown/non-final. This review leaf is therefore superseded by the exact canonical-status repair task rather than accepted as complete."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622"
+      ],
+      "result": "Reconciled the private-cluster none-DNS V3 model/view to the exact mounted system→none lifecycle, added a bounded evidence note, and regenerated path-summary so the maintained path now shows an execution-ceiling unknown instead of overstating the terminal-only live replay.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T13:34:34.615Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Worker advanced the branch by regenerating path-summary and writing bounded evidence, but review found the maintained carriers are still inconsistent: model/knowledge-map/model.json continues to show path.private-cluster-none-dns-zone-v3 as status=pass with verdictFinal=true while model/knowledge-map/views/path-summary.json shows unknown/non-final. This review leaf is therefore superseded by the exact canonical-status repair task rather than accepted as complete."
+      },
+      "status": "done"
+    }
+  ]
+}

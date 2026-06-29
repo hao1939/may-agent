@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T22:34:33.922Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Accepted the terminal-surface reconciliation for spec.app-routing.default-domain-http-reachability: run 28302955157 remains an unresolved terminal-surface inconsistency because wrapper/result surfaces flattened to pass after spec-runner missed the probe evidence archive path, while the probe-emitted blocked/environment JSON can still reflect a stale setup verdict after the HTTP claim path executed. Keep repair-spec-app-routing-default-domain-http-reachability-ingestion-and-stale-setup-verdict-20260627 as the single active carrier for this spec problem; do not schedule a rerun or model promotion until that repair determines whether ingestion/probe fixes are sufficient and whether a bounded rerun is warranted.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the terminal truth for spec.app-routing.default-domain-http-reachability after rerun 28302955157 by comparing wrapper/result surfaces versus spec-runner/result.json, then record which layer the project should trust and what next action follows (model update, runner bug, or bounded rerun gate).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627.md"
+      ],
+      "acceptance": [
+        "The task cites the exact conflicting artifact files from run 28302955157, explains whether the project should treat the spec as pass, environment-blocked, or unresolved terminal-surface inconsistency, and records one concrete next action or model/evidence update without reintroducing the cleared archive-path ENOENT bug as the claimed blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T22:28:19.388Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T22:28:25.911Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627_20260627222838",
+        "assigned_at": "2026-06-27T22:28:38.591Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627",
+        "worker_started_attempt_id": "a_reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627_20260627222838",
+        "worker_started_at": "2026-06-27T22:29:00.213Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable reconciliation note for spec.app-routing.default-domain-http-reachability run 28302955157, explaining the wrapper-pass vs probe-blocked conflict and concluding the run is an unresolved terminal-surface inconsistency requiring runner/probe repair rather than model promotion or blind rerun.",
+        "last_worker_completed_at": "2026-06-27T22:31:54.862Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T22:34:33.864Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived reconciliation note proves run 28302955157 is neither a trustworthy pass nor a clean environment blocker because spec-runner flattened to pass after failing to ingest the probe evidence path while the probe's own terminal JSON can carry a stale setup verdict after the HTTP claim path ran. The branch's durable next action is the existing active repair leaf for runner ingestion plus stale-setup classification repair, not model promotion or blind rerun."
+      },
+      "session_id": "s_task_reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627",
+      "session_history": [
+        "s_task_reconcile-spec-app-routing-default-domain-http-reachability-terminal-surface-conflict-20260627"
+      ],
+      "result": "Produced a durable reconciliation note for spec.app-routing.default-domain-http-reachability run 28302955157, explaining the wrapper-pass vs probe-blocked conflict and concluding the run is an unresolved terminal-surface inconsistency requiring runner/probe repair rather than model promotion or blind rerun.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T22:34:33.864Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived reconciliation note proves run 28302955157 is neither a trustworthy pass nor a clean environment blocker because spec-runner flattened to pass after failing to ingest the probe evidence path while the probe's own terminal JSON can carry a stale setup verdict after the HTTP claim path ran. The branch's durable next action is the existing active repair leaf for runner ingestion plus stale-setup classification repair, not model promotion or blind rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T02:06:46.777Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: kept external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external wait because its resume condition is already exact and no new repo-local operator proof exists. Archived six safe done repo-local reconciliation leaves now that their durable meaning is represented at the project root: ManagedSystem initial-pool boundary wording is settled as caller-contract vs internal-implementation distinction; network-cni cilium stop/start execute-gated evidence now exists but still needs one live maintained-surface contract repair; ACNS performance cilium-upgrade linkage is closed; secops-fips source coverage audit established the mounted-source next slice; and prior network-cni maintained-surface precursor repairs are accepted. Live work remains the two active repo-local reconciliation leaves plus one new bounded backlog source-coverage slice so spare capacity can resume from repo-local mounted-source work rather than reopening the external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-initial-pool-model-wording-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the repo-local model/view wording for path.managedsystem.create-time-initial-pool to confirm every maintained description preserves the minimal create-time ManagedSystem caller contract as name+mode only, without implying source-internal count=0 or type=nil are required wire inputs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-initial-pool-model-wording-audit-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact repo-local model/view or summary files checked for path.managedsystem.create-time-initial-pool, records whether each description keeps the minimal name+mode caller contract, and calls out any wording that incorrectly implies count=0 or type=nil are required request fields.",
+        "If any repo-local wording is wrong, the task updates only the exact model/view text files needed to restore the minimal name+mode contract description or records the exact follow-up file list/commands for a narrow repair; it must not run cloud mutation or reopen the settled product-gap verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.managedsystem.create-time-initial-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:55:33.560Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-initial-pool-model-wording-audit-20260623_20260623015533",
+        "assigned_at": "2026-06-23T01:55:33.609Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-initial-pool-model-wording-audit-20260623",
+        "worker_started_attempt_id": "a_managedsystem-initial-pool-model-wording-audit-20260623_20260623015533",
+        "worker_started_at": "2026-06-23T01:55:54.291Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited repo-local wording for path.managedsystem.create-time-initial-pool, wrote evidence/archive/managedsystem-initial-pool-model-wording-audit-20260623.md, and repaired the model.json feature description so it now states the minimal repo-local create-time caller contract as name+mode only while preserving count=0/type=nil as internal source detail.",
+        "last_worker_completed_at": "2026-06-23T01:58:40.986Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T02:00:41.851Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the audit note cites the exact repo-local and mounted-source surfaces for path.managedsystem.create-time-initial-pool, the maintained wording now preserves the minimal name+mode caller contract across model/view surfaces, and the terminal product-gap verdict remains unchanged rather than reopening retry planning."
+      },
+      "session_id": "s_task_managedsystem-initial-pool-model-wording-audit-20260623",
+      "session_history": [
+        "s_task_managedsystem-initial-pool-model-wording-audit-20260623"
+      ],
+      "result": "Audited repo-local wording for path.managedsystem.create-time-initial-pool, wrote evidence/archive/managedsystem-initial-pool-model-wording-audit-20260623.md, and repaired the model.json feature description so it now states the minimal repo-local create-time caller contract as name+mode only while preserving count=0/type=nil as internal source detail.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T02:00:41.851Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the audit note cites the exact repo-local and mounted-source surfaces for path.managedsystem.create-time-initial-pool, the maintained wording now preserves the minimal name+mode caller contract across model/view surfaces, and the terminal product-gap verdict remains unchanged rather than reopening retry planning."
+      },
+      "status": "done"
+    }
+  ]
+}

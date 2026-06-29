@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T04:09:38.512Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review leaves the feature-reference lane in a clear bounded state. The maintenance/public-boundary and DNS-variants repair families are durably accepted and archived, and the frontier-window investigation is also accepted as a tooling diagnosis: the earlier 25-leaf repulse came from the loop task windowSize=25 rather than the watchdog review maxConcurrent, and current supported tooling does not safely enforce a durable 5-wide controller window from planner-only actions. The only live feature-reference work now is the private-cluster review set plus the one active public-FQDN-toggle boundary collector; keep the contradictory private-cluster-privatelink draft closed behind its repair authority and do not refill unrelated collectors in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-loop-frontier-window-to-five-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Contain the recreated feature-reference collector frontier to the current owner-bounded working set of 5 without losing truthful pending coverage, by reconciling the loop controller/task-tree state that reopened 25 active collector leaves in one pulse.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-loop-frontier-window-repair-20260628.md"
+      ],
+      "acceptance": [
+        "Explain from current loop/task-tree state why the 2026-06-28 bounded post-repair pulse recreated 25 active collector leaves even though the current planner wake requested maxConcurrent=5.",
+        "Leave one truthful contained next state: either the visible active collector frontier is safely reduced to 5 with remaining pending features preserved as non-active queued work, or durable evidence shows the current app/tooling surface cannot do that safely and names the exact app-tooling change needed.",
+        "Record exact commands, resulting child/frontier counts, and any state/task-tree mutations in durable evidence so future owner review can decide whether to resume collectors or land a tooling repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T03:41:47.365Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T03:43:49.392Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-loop-frontier-window-to-five-20260628_20260628034427",
+        "assigned_at": "2026-06-28T03:44:27.080Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-loop-frontier-window-to-five-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-loop-frontier-window-to-five-20260628_20260628034427",
+        "worker_started_at": "2026-06-28T03:44:28.673Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Analyzed the feature-reference loop repulse and wrote durable evidence showing the 25-leaf recreation came from the loop task’s own windowSize=25, not project maxConcurrent=5; documented that the live tree already has only 3 active collector leaves but the controller/state surfaces cannot be safely reduced to a durable 5-wide window with current supported tooling.",
+        "last_worker_completed_at": "2026-06-28T03:47:20.905Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T04:09:30.792Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable evidence exists at evidence/archive/feature-reference-loop-frontier-window-repair-20260628.md and the result truthfully explains that the 25-leaf repulse came from the loop task windowSize=25, while current supported tooling cannot safely enforce a durable 5-wide controller window from this planner pass."
+      },
+      "session_id": "s_task_repair-feature-reference-loop-frontier-window-to-five-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-loop-frontier-window-to-five-20260628"
+      ],
+      "result": "Analyzed the feature-reference loop repulse and wrote durable evidence showing the 25-leaf recreation came from the loop task’s own windowSize=25, not project maxConcurrent=5; documented that the live tree already has only 3 active collector leaves but the controller/state surfaces cannot be safely reduced to a durable 5-wide window with current supported tooling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T04:09:30.792Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable evidence exists at evidence/archive/feature-reference-loop-frontier-window-repair-20260628.md and the result truthfully explains that the 25-leaf repulse came from the loop task windowSize=25, while current supported tooling cannot safely enforce a durable 5-wide controller window from this planner pass."
+      },
+      "status": "done"
+    }
+  ]
+}

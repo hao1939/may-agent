@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:00:39.191Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner watchdog review is now reconciled. Accepted review confirmed path.open-service-mesh-addon.lifecycle has exact mounted-source lineage plus normalized feature/scenario/DAG/path linkage with runtime observations still explicitly unknown, and confirmed path.virtualmachines.manual-scale-policy remains only a terminal superseded historical placeholder aligned to path/spec.virtualmachines.mixed-sku-deallocate. The parent closure rule remains strict for all mounted-source reconciles: any archive feature/scenario/DAG/path id claimed as accepted must exist in model.json before a leaf can close. Remaining live repo-local work is the OIDC model-id repair plus the remediator and traffic ASM mounted-source reconciles; the two blocked waits stay compressed unchanged because neither has new resume proof yet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.open-service-mesh-addon.lifecycle: restore the exact handwritten/source lineage, normalized feature/scenario/DAG/path linkage, and expected-behavior wording while leaving observed runtime values unchanged unless direct execution evidence already exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted source files plus the touched feature/spec/replay/model carriers for path.open-service-mesh-addon.lifecycle, and records the request/expectation boundary without inventing live behavior.",
+        "Carrier and model updates keep path.open-service-mesh-addon.lifecycle claim-safe: restore normalized linkage and source-backed expected behavior, but preserve observed runtime state unless direct execution evidence is already attached.",
+        "The work stays repo-local and bounded to path.open-service-mesh-addon.lifecycle only: no cloud mutation, no external-human follow-up, and no widening into unrelated mesh or addon families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "open-service-mesh-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:55:36.584Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623_20260623195536",
+        "assigned_at": "2026-06-23T19:55:36.635Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623",
+        "worker_started_attempt_id": "a_open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623_20260623195536",
+        "worker_started_at": "2026-06-23T19:56:19.480Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.open-service-mesh-addon.lifecycle to mounted AKS RP source by updating model/knowledge-map/model.json with explicit scenario/DAG/path/behavior linkage and adding a durable archive note at evidence/archive/open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623.md. Regenerated derived knowledge-map views; validator/generator still report only pre-existing repo-wide issues outside this bounded OSM slice.",
+        "last_worker_completed_at": "2026-06-23T19:59:49.845Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:00:27.146Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note cites exact mounted OSM source files, restores normalized feature/scenario/DAG/path linkage for path.open-service-mesh-addon.lifecycle, and keeps all runtime behavior observations explicitly unknown pending direct execution, which satisfies the bounded repo-local reconcile acceptance."
+      },
+      "session_id": "s_task_open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623",
+      "session_history": [
+        "s_task_open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623"
+      ],
+      "result": "Reconciled path.open-service-mesh-addon.lifecycle to mounted AKS RP source by updating model/knowledge-map/model.json with explicit scenario/DAG/path/behavior linkage and adding a durable archive note at evidence/archive/open-service-mesh-addon-lifecycle-mounted-source-linkage-reconcile-20260623.md. Regenerated derived knowledge-map views; validator/generator still report only pre-existing repo-wide issues outside this bounded OSM slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:00:27.146Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note cites exact mounted OSM source files, restores normalized feature/scenario/DAG/path linkage for path.open-service-mesh-addon.lifecycle, and keeps all runtime behavior observations explicitly unknown pending direct execution, which satisfies the bounded repo-local reconcile acceptance."
+      },
+      "status": "done"
+    }
+  ]
+}

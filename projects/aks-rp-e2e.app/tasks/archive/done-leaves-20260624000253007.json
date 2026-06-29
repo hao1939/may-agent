@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:02:53.007Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the public second-hop checkpoint handoff contract: evidence/archive/private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624.md now pins the inherited same-cluster public-APIVNET packet fields, trusted evidence reference, and bounded second-hop scope to mounted update_public.go, while replays/private-cluster-vnet-integration-update-public-second-hop.ts rejects check mode unless that packet is present and internally consistent. Remaining live frontier stays intentionally narrow: one active mounted-source reconciliation for path.tlsbootstrap.vm-prerelease-upgrade-matrix and three exact external waits pending returned proof on or after 2026-06-26 if silence persists.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the repo-local same-cluster checkpoint handoff contract for path.private-cluster-vnet-integration-update-public-second-hop and wire the replay scaffold to reject check-mode execution unless the inherited public-APIVNET checkpoint packet is present and internally consistent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624.md"
+      ],
+      "acceptance": [
+        "Replay and archive evidence cite the exact maintained second-hop carriers, define the required checkpoint packet fields for the inherited same cluster (subscriptionId, resourceGroup, clusterName, apiVersion, expected enableVnetIntegration=true, expected enablePrivateCluster=false, retained subnetId, and trusted source evidence reference), and keep scope bounded to path.private-cluster-vnet-integration-update-public-second-hop.",
+        "Replay check-mode behavior fails truthfully when the checkpoint packet is absent or internally inconsistent, records the validation path in the archive note, and does not attach live GET/PUT execution or widen into first-hop/private-baseline flows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-vnet-integration-update-public-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T23:57:36.970Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T23:57:42.395Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624_20260623235745",
+        "assigned_at": "2026-06-23T23:57:45.890Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624_20260623235745",
+        "worker_started_at": "2026-06-23T23:57:58.934Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added a repo-local same-cluster checkpoint handoff contract note for the public-second-hop path and updated the dedicated replay so check mode now fails closed unless a valid inherited public-APIVNET checkpoint packet is supplied and internally consistent.",
+        "last_worker_completed_at": "2026-06-24T00:01:49.781Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:02:52.958Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note defines the exact same-cluster public-APIVNET checkpoint packet contract for path.private-cluster-vnet-integration-update-public-second-hop, cites mounted update_public.go plus maintained carriers, and the replay now fails closed in check mode unless a present, internally consistent checkpoint packet is supplied without widening into live execution."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-public-second-hop-checkpoint-handoff-contract-20260624"
+      ],
+      "result": "Added a repo-local same-cluster checkpoint handoff contract note for the public-second-hop path and updated the dedicated replay so check mode now fails closed unless a valid inherited public-APIVNET checkpoint packet is supplied and internally consistent.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:02:52.958Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note defines the exact same-cluster public-APIVNET checkpoint packet contract for path.private-cluster-vnet-integration-update-public-second-hop, cites mounted update_public.go plus maintained carriers, and the replay now fails closed in check mode unless a present, internally consistent checkpoint packet is supplied without widening into live execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-pool-boundary-knowledge-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the repo-local ManagedSystem Pool boundary as the project's first worked example: reconcile mounted handwritten e2ev3 carriers, maintained specs/replays/model/evidence, and any bounded public/source-equivalent references for path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined so accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and remaining unknown edges are explicit without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-boundary-knowledge-map-20260623.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted or source-equivalent carriers plus current maintained spec/replay/model/evidence carriers for path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined, and records the current accepted/rejected/adjacent boundary with no widened product claim beyond the cited evidence.",
+        "Archive note names the current expected-vs-observed posture for the ManagedSystem pool boundary, identifies any remaining missing probe/evidence edge, and ends with one bounded next repo-local consequence or exact retest trigger without cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.managedsystem.create-time-initial-pool",
+        "path.virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T23:56:26.679Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T23:56:29.647Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-boundary-knowledge-map-20260623_20260623235652",
+        "assigned_at": "2026-06-23T23:56:52.431Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-boundary-knowledge-map-20260623",
+        "worker_started_attempt_id": "a_managedsystem-pool-boundary-knowledge-map-20260623_20260623235652",
+        "worker_started_at": "2026-06-23T23:56:54.729Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note at evidence/archive/managedsystem-pool-boundary-knowledge-map-20260623.md, reconciling mounted source, maintained carriers, accepted/rejected boundaries, expected-vs-observed posture, adjacent surfaces, and exact retest triggers for both ManagedSystem create-time and VirtualMachines+ManagedSystem combined paths.",
+        "last_worker_completed_at": "2026-06-23T23:58:33.864Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T23:59:35.900Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/managedsystem-pool-boundary-knowledge-map-20260623.md: it cites the exact mounted ManagedSystem and VirtualMachines carriers, reconciles maintained spec/replay/model/evidence for both bounded paths, makes the accepted-vs-rejected boundary explicit, preserves the current terminal product-gap/product-constraint posture, and ends with exact repo-local retest triggers without widening into cloud mutation."
+      },
+      "session_id": "s_task_managedsystem-pool-boundary-knowledge-map-20260623",
+      "session_history": [
+        "s_task_managedsystem-pool-boundary-knowledge-map-20260623"
+      ],
+      "result": "Created the requested archive note at evidence/archive/managedsystem-pool-boundary-knowledge-map-20260623.md, reconciling mounted source, maintained carriers, accepted/rejected boundaries, expected-vs-observed posture, adjacent surfaces, and exact retest triggers for both ManagedSystem create-time and VirtualMachines+ManagedSystem combined paths.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T23:59:35.900Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/managedsystem-pool-boundary-knowledge-map-20260623.md: it cites the exact mounted ManagedSystem and VirtualMachines carriers, reconciles maintained spec/replay/model/evidence for both bounded paths, makes the accepted-vs-rejected boundary explicit, preserves the current terminal product-gap/product-constraint posture, and ends with exact repo-local retest triggers without widening into cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

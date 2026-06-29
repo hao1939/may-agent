@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:57:26.558Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the ACNS Retina Enterprise scenario-milestone instrumentation as bounded repo-local observability progress only: the direct single-spec carrier now persists durable milestone witness across create, pre-update verification, GET-before-update, update, post-update enterprise checks, terminal states, and cleanup, explicitly closing the run 344585 inner-lifecycle opacity without claiming a new cloud verdict. The earlier ACNS envelope analysis and this instrumentation are now summarized here, and one backlog same-spec rerun leaf preserves the next truthful action only after the current active verifier/rerun wave has drained enough for promotion. The live frontier otherwise stays unchanged: keep draining the current 12 active verifier/rerun leaves while the existing family waits remain the sole truthful passive blockers.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the now-terminal rerun 344585 artifacts to determine the next truthful follow-up for spec.network-acns.basic-retina-update-retina-enterprise: either a bounded longer-envelope rerun or scenario-step instrumentation that identifies which mounted lifecycle step consumes the wall-clock budget before interruption.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-basic-retina-update-retina-enterprise-next-envelope-or-instrumentation-20260629.md"
+      ],
+      "acceptance": [
+        "The follow-up cites the accepted post-terminalization rerun evidence for run 344585 and summarizes the actual elapsed/runtime-progress signals now available because child and parent artifacts are terminal.",
+        "The note chooses one exact next action for this spec path—longer-envelope rerun or scenario-level instrumentation—and records the carrier/knob/evidence needed for that next action.",
+        "The task does not reopen stale-child/no-result runner repair unless the new review finds contradictory artifact evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:47:25.579Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T15:47:25.690Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-20260629_20260629154730",
+        "assigned_at": "2026-06-29T15:47:30.884Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-202606",
+        "worker_started_attempt_id": "a_analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-20260629_20260629154730",
+        "worker_started_at": "2026-06-29T15:47:58.051Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Analyzed terminal rerun 344585 for spec.network-acns.basic-retina-update-retina-enterprise and wrote a durable follow-up note choosing scenario-step instrumentation over a longer-envelope rerun, with exact evidence and owner-facing next-task guidance.",
+        "last_worker_completed_at": "2026-06-29T15:49:43.838Z",
+        "last_worker_evidence": [
+          "evidence/archive/network-acns-basic-retina-update-retina-enterprise-next-envelope-or-instrumentation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:50:12.921Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the owner-facing evidence note: it cites terminal rerun 344585 artifacts, proves the stale-running ambiguity is closed, and makes scenario-step instrumentation the exact next move instead of a blind longer-envelope rerun."
+      },
+      "session_id": "s_task_analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-202606",
+      "session_history": [
+        "s_task_analyze-network-acns-basic-retina-update-retina-enterprise-envelope-after-terminalization-202606"
+      ],
+      "result": "Analyzed terminal rerun 344585 for spec.network-acns.basic-retina-update-retina-enterprise and wrote a durable follow-up note choosing scenario-step instrumentation over a longer-envelope rerun, with exact evidence and owner-facing next-task guidance.",
+      "evidence": [
+        "evidence/archive/network-acns-basic-retina-update-retina-enterprise-next-envelope-or-instrumentation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:50:12.921Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the owner-facing evidence note: it cites terminal rerun 344585 artifacts, proves the stale-running ambiguity is closed, and makes scenario-step instrumentation the exact next move instead of a blind longer-envelope rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Instrument features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts so the single-spec carrier emits durable milestone witness across create, pre-update verification, GET-before-update, update, post-update enterprise checks, and cleanup before any same-spec rerun is attempted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts",
+        "../aks-rp-e2e/evidence/archive/instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629.md"
+      ],
+      "acceptance": [
+        "The scenario file emits stable durable milestone output before/after each mounted lifecycle boundary needed to localize where this spec stalls or is interrupted.",
+        "A durable note records the exact milestone tokens/surfaces added, ties them to accepted run 344585 opacity, and states the next rerun should use the same spec/carrier to capture the last reached milestone.",
+        "The task stays repo-local and does not widen into another runner repair or live rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:50:12.976Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T15:50:13.082Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629_20260629155017",
+        "assigned_at": "2026-06-29T15:50:17.039Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629",
+        "worker_started_attempt_id": "a_instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629_20260629155017",
+        "worker_started_at": "2026-06-29T15:50:44.866Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Instrumented `features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts` with durable child-run milestone writes across create, pre-update verify, GET-before-update, update, post-update enterprise checks, and cleanup, and documented the exact milestone tokens plus their tie to opaque rerun `344585` in a new archive note.",
+        "last_worker_completed_at": "2026-06-29T15:54:16.192Z",
+        "last_worker_evidence": [
+          "features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts",
+          "evidence/archive/instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:54:44.149Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker instrumentation review: the scenario file now persists durable milestone witness to status.json, steps.jsonl, and a dedicated milestones snapshot across create, pre-update verification, GET-before-update, update, post-update enterprise checks, and cleanup, and the new archive note ties those exact milestone tokens to run 344585 opacity while keeping the repair repo-local and rerun-scoped."
+      },
+      "session_id": "s_task_instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629",
+      "session_history": [
+        "s_task_instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629"
+      ],
+      "result": "Instrumented `features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts` with durable child-run milestone writes across create, pre-update verify, GET-before-update, update, post-update enterprise checks, and cleanup, and documented the exact milestone tokens plus their tie to opaque rerun `344585` in a new archive note.",
+      "evidence": [
+        "features/network-cni/tests/network-acns-basic-retina-update-retina-enterprise.ts",
+        "evidence/archive/instrument-spec-network-acns-basic-retina-update-retina-enterprise-scenario-milestones-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:54:44.149Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker instrumentation review: the scenario file now persists durable milestone witness to status.json, steps.jsonl, and a dedicated milestones snapshot across create, pre-update verification, GET-before-update, update, post-update enterprise checks, and cleanup, and the new archive note ties those exact milestone tokens to run 344585 opacity while keeping the repair repo-local and rerun-scoped."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T03:52:50.415Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 scheduled blocked-frontier owner review: preserve the single truthful external-human family wait unchanged because no new returned proof or steering has arrived, keep the active no-cloud row-61 mounted-source boundary map as the live progress lane, and archive completed ManagedSystem, OIDC, and managementplane-addonv2 closure leaves whose durable meaning is already captured in repo-local evidence and the project rollup.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the exact no-cloud replay check for path.virtualmachines.managedsystem-agentpool-vm-prerelease directly from replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts so the row-54 ManagedSystem create-time carrier has fresh repo-local verification evidence without using the execute-oriented test wrapper.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact direct command bun replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts --check --write-evidence --run-id managedsystem-agentpool-vm-prerelease-check-20260626, with timestamped outcome and no cloud mutation.",
+        "The artifact states whether the replay check preserved the row-54 create-time ManagedSystem carrier contract across feature/spec/replay/model linkage, quoting any repo-local mismatches or confirming clean bounded readiness.",
+        "The work stays repo-local, does not use the execute-oriented Vitest wrapper, does not reopen the external-human wait family, and leaves either a clean done artifact or one exact repo-local follow-up blocker/repair action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-managedsystem-agentpool-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T02:50:49.390Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626_20260626025122",
+        "assigned_at": "2026-06-26T02:51:22.541Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626",
+        "worker_started_attempt_id": "a_managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626_20260626025122",
+        "worker_started_at": "2026-06-26T02:51:22.747Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the assigned direct replay check command repo-locally, captured its failure mode, and wrote an archive artifact documenting the no-cloud outcome plus the exact replay-local mismatches (spaced --run-id parsing and stale coverage row assumption).",
+        "last_worker_completed_at": "2026-06-26T02:53:06.288Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T02:53:40.602Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact proves the exact repo-local direct command was run without cloud mutation, captured the spaced --run-id parsing defect plus the stale coverage-row assertion, and leaves one concrete replay-local repair successor rather than reopening the external-human wait family."
+      },
+      "session_id": "s_task_managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626",
+      "session_history": [
+        "s_task_managedsystem-agentpool-vm-prerelease-direct-check-refresh-20260626"
+      ],
+      "result": "Ran the assigned direct replay check command repo-locally, captured its failure mode, and wrote an archive artifact documenting the no-cloud outcome plus the exact replay-local mismatches (spaced --run-id parsing and stale coverage row assumption).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T02:53:40.602Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact proves the exact repo-local direct command was run without cloud mutation, captured the spaced --run-id parsing defect plus the stale coverage-row assertion, and leaves one concrete replay-local repair successor rather than reopening the external-human wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

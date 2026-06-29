@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T23:00:51.126Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog review confirmed vm-prerelease-row34-status-surface-reconcile-20260620 is already accepted as durable repo-local reconciliation: the row-34 VM prerelease status-surface/model-path landing is captured in maintained artifacts, so the completed leaf no longer needs live frontier space. Archive that safe done leaf at the root because its durable meaning now lives in the evidence/model/view updates and in the remaining focus branch context. Keep focus-vm-prerelease-pipeline-replacement-20260620 as the only live child, carrying external-send-proof-dispatch-family-20260620 as the single truthful cross-branch external-human transport wait until durable repo-local send/escalation proof or an authoritative reply is recorded for the send-ready MachinesPreview packet or VM prerelease live-operator bundle.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row34-status-surface-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained row-34 VMAS→VMS migration status surfaces to match already-landed repo-local truth: mounted source, spec, replay, evidence, and coverage all show an execute-capable replay exists locally, so update the model/view wording and produce a bounded non-cloud reconciliation artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row34-status-surface-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted-source boundary plus the current row-34 spec, replay, coverage, and evidence surfaces, and explains exactly which stale model/view claims are being corrected.",
+        "model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json truthfully state that the row-34 replay is execute-capable locally, check-mode is available, and the remaining ceiling is explicit mutation approval plus subscription/auth environment preflight rather than 'implementation remains separate'.",
+        "Work stays repo-local, does not run cloud mutation, and remains independent from the external-send-proof-dispatch-family-20260620 transport blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row34-status-surface"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:55:18.964Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row34-status-surface-reconcile-20260620_20260620225519",
+        "assigned_at": "2026-06-20T22:55:19.013Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row34-status-surface-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row34-status-surface-reconcile-20260620_20260620225519",
+        "worker_started_at": "2026-06-20T22:55:25.198Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled row-34 VMAS→VMS migration status surfaces by updating model/knowledge-map/model.json, regenerating path-summary.json, and adding a row-34 reconciliation artifact documenting the mounted-source/spec/replay/coverage truth and explicit execute-gate+environment ceiling.",
+        "last_worker_completed_at": "2026-06-20T22:59:37.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T23:00:05.959Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted repo-local row-34 reconciliation: the archived artifact documents the mounted-source/spec/replay/coverage chain, the maintained model/path-summary wording was updated to reflect an execute-capable replay with explicit mutation+auth gating, and the work stays independent from the family-level external send-proof wait."
+      },
+      "session_id": "s_task_vm-prerelease-row34-status-surface-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row34-status-surface-reconcile-20260620"
+      ],
+      "result": "Reconciled row-34 VMAS→VMS migration status surfaces by updating model/knowledge-map/model.json, regenerating path-summary.json, and adding a row-34 reconciliation artifact documenting the mounted-source/spec/replay/coverage truth and explicit execute-gate+environment ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T23:00:05.959Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted repo-local row-34 reconciliation: the archived artifact documents the mounted-source/spec/replay/coverage chain, the maintained model/path-summary wording was updated to reflect an execute-capable replay with explicit mutation+auth gating, and the work stays independent from the family-level external send-proof wait."
+      },
+      "status": "done"
+    }
+  ]
+}

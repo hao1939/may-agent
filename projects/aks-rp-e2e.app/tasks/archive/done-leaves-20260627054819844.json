@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:48:19.845Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 blocked-frontier refill review kept the two external waits unchanged after reconfirming they remain the single truthful waits with exact resume triggers, while repo-local VM prerelease Windows follow-up continues on row205 evidence-reference reconciliation as the current active slice. Archive the completed mounted-source coverage matrix and mounted-source gap-follow-up children because their durable meaning is now represented at the project root: the mounted Windows prerelease source coverage surface is normalized, the first concrete repo-local successor is the row205 evidence-reference reconciliation leaf, and no duplicate local setup/source/spec reopen is truthful for the preserved external waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local capability map for the mounted VirtualMachine prerelease Windows rows by tracing prerelease.go/checkin.go and referenced scenario helpers into exact row-to-path/spec/replay/model coverage for rows 205, 206, 216, 217, and 218, then identify the next truthful repo-local follow-up for any missing or ambiguous carrier without using cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted source entrypoints under /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or checkin.go and identifies the scenario/helper files for each targeted Windows VirtualMachines prerelease row.",
+        "Artifact maps each targeted row to current spec, replay, and model path coverage as present, missing, or ambiguous without claiming live product verification beyond repo-local evidence.",
+        "Artifact records at least one concrete repo-local next action for any missing or ambiguous carrier, or explicitly states that the current carrier is exact and no bounded local gap remains for that row set."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-windows-source-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:41:53.366Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627_20260627054156",
+        "assigned_at": "2026-06-27T05:41:56.110Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627_20260627054156",
+        "worker_started_at": "2026-06-27T05:42:16.798Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested repo-local mounted-source coverage matrix at evidence/archive/virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627.md, tracing rows 205/206/216/217/218 from VirtualMachine prerelease/checkin entrypoints into exact handwritten Windows sources, current spec/replay/model carriers, and the remaining evidence-surface gaps. Also generated fresh row-217 and row-218 non-mutating check artifacts to verify current local carriers.",
+        "last_worker_completed_at": "2026-06-27T05:46:13.184Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:46:49.833Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the matrix artifact cites the mounted prerelease/checkin entrypoints plus handwritten Windows scenario/helper files for rows 205/206/216/217/218, maps each row to current spec/replay/model coverage, and truthfully narrows the remaining repo-local gap to evidence-surface reconciliation rather than carrier ambiguity."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627"
+      ],
+      "result": "Built the requested repo-local mounted-source coverage matrix at evidence/archive/virtualmachines-prerelease-windows-mounted-source-coverage-matrix-20260627.md, tracing rows 205/206/216/217/218 from VirtualMachine prerelease/checkin entrypoints into exact handwritten Windows sources, current spec/replay/model carriers, and the remaining evidence-surface gaps. Also generated fresh row-217 and row-218 non-mutating check artifacts to verify current local carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:46:49.833Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the matrix artifact cites the mounted prerelease/checkin entrypoints plus handwritten Windows scenario/helper files for rows 205/206/216/217/218, maps each row to current spec/replay/model coverage, and truthfully narrows the remaining repo-local gap to evidence-surface reconciliation rather than carrier ambiguity."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:56:36.752Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed planning review accepted the latest spec-verification review slice and tightened the frontier. Accepted outcomes now include a terminal staging/westus2 pass for spec.net-integration.authorized-service-tags from workflow run 28363270235 and an eastus2 Automatic SKU diagnostics rerun that preserved bounded createFailure request/response details and classified the alternate-region nonpass as AKSCapacityHeavyUsage at managed-cluster create. Older postfix review leaves for spec.node-pool-config.ephemeral-disk and spec.ppg.cluster-and-agentpool-placement were retired after review because their SIGTERM/error results are already superseded by active timeout60 successor reruns. The live frontier remains the timeout60/spec rerun set plus the active westus2 ManagedSystem capacity family diagnosis task, with await-westus2-managedsystem-capacity-recovery-20260629 kept as the single passive environment wait rather than duplicate per-spec blockers.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-authorized-service-tags-postfix2-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.net-integration.authorized-service-tags with timeout_minutes=60 after fixing the default 20-minute workflow timeout envelope.",
+      "inputs": [
+        "spec:spec.net-integration.authorized-service-tags",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The retry runs through the single-spec workflow on staging with timeout_minutes=60.",
+        "The result reaches a terminal scenario-test verdict or records a stronger non-timeout error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.authorized-service-tags"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.authorized-service-tags",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted worker completion: workflow run 28363270235 reached terminal pass on staging/westus2 with top-level result status=passed and counts pass=1 fail=0 blocked=0 error=0 for spec.net-integration.authorized-service-tags."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:44:23.573Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:45:37.909Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-authorized-service-tags-postfix2-20260629_20260629094553",
+        "assigned_at": "2026-06-29T09:45:53.738Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-authorized-service-tags-postfix2-20260629",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-authorized-service-tags-postfix2-20260629_20260629094553",
+        "worker_started_at": "2026-06-29T09:46:33.219Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.authorized-service-tags workflow run 28363270235 classified as pass. Loop key: verify-spec-net-integration-authorized-service-tags-postfix2-20260629-a_verify-spec-net-in. Authorized service tags/IP ranges passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363270235 Result: runs/test-results/single-net-integration-authorized-service-tags_658832/artifacts/net-integration-authorized-service-tags/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363270235/aks-rp-e2e-28363270235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363270235/aks-rp-e2e-28363270235-spec-test-results/test-results/single-net-integration-authorized-service-tags_658832/result.json",
+        "last_worker_completed_at": "2026-06-29T09:53:56.764Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:56:26.528Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker completion: workflow run 28363270235 reached terminal pass on staging/westus2 with top-level result status=passed and counts pass=1 fail=0 blocked=0 error=0 for spec.net-integration.authorized-service-tags."
+      },
+      "session_id": "s_task_verify-spec-net-integration-authorized-service-tags-postfix2-20260629",
+      "session_history": [
+        "s_task_verify-spec-net-integration-authorized-service-tags-postfix2-20260629"
+      ],
+      "result": "Spec spec.net-integration.authorized-service-tags workflow run 28363270235 classified as pass. Loop key: verify-spec-net-integration-authorized-service-tags-postfix2-20260629-a_verify-spec-net-in. Authorized service tags/IP ranges passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28363270235 Result: runs/test-results/single-net-integration-authorized-service-tags_658832/artifacts/net-integration-authorized-service-tags/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363270235/aks-rp-e2e-28363270235-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28363270235/aks-rp-e2e-28363270235-spec-test-results/test-results/single-net-integration-authorized-service-tags_658832/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:56:26.528Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.aad-rbac.azure-rbac-automatic-sku against the eastus2 alternate-region carrier after the create-failure diagnostics repair, so the next create-stage HTTP 400 preserves bounded raw ARM request/response details for diagnosis without claiming westus2 capacity recovery.",
+      "inputs": [],
+      "outputs": [
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "A clean eastus2 single-spec rerun is launched only after the existing preflight/gating checks pass, or an exact blocker is recorded before mutation.",
+        "The resulting run preserves bounded createFailure request/response diagnostics or records a different terminal outcome truthfully enough to update the archive/model note for this exact eastus2 carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:52:26.721Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629_20260629095226",
+        "assigned_at": "2026-06-29T09:52:26.775Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629_20260629095226",
+        "worker_started_at": "2026-06-29T09:52:54.937Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the assigned eastus2 single-spec rerun for `spec.aad-rbac.azure-rbac-automatic-sku` after the diagnostics repair, captured a nonpassing create-stage HTTP 400 with bounded raw ARM request/response details, and wrote a durable archive note summarizing the exact rerun outcome and preserved diagnostics.",
+        "last_worker_completed_at": "2026-06-29T09:54:58.149Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-with-diagnostics-rerun-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:56:26.586Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as diagnosis progress, not recovery: durable archive note evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-with-diagnostics-rerun-20260629.md shows the eastus2 rerun preserved bounded createFailure request/response diagnostics and classified the nonpass as AKSCapacityHeavyUsage at managed-cluster create."
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-automatic-sku-eastus2-http400-with-diagnostics-20260629"
+      ],
+      "result": "Ran the assigned eastus2 single-spec rerun for `spec.aad-rbac.azure-rbac-automatic-sku` after the diagnostics repair, captured a nonpassing create-stage HTTP 400 with bounded raw ARM request/response details, and wrote a durable archive note summarizing the exact rerun outcome and preserved diagnostics.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-with-diagnostics-rerun-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:56:26.586Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as diagnosis progress, not recovery: durable archive note evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-with-diagnostics-rerun-20260629.md shows the eastus2 rerun preserved bounded createFailure request/response diagnostics and classified the nonpass as AKSCapacityHeavyUsage at managed-cluster create."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-pool-config-ephemeral-disk-postfix-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.node-pool-config.ephemeral-disk after dev commit 8c4deb9e switched to an ephemeral-safe VM size.",
+      "inputs": [
+        "spec:spec.node-pool-config.ephemeral-disk",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run uses dev at or after 8c4deb9e.",
+        "Spec status is classified from post-fix result artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-pool-config.ephemeral-disk",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "retryOf": "verify-spec-node-pool-config-ephemeral-disk",
+        "requiredDomainCommit": "8c4deb9e",
+        "acceptance_note": "Accepted the review as a non-terminal SIGTERM classification and retired it from review because active successor verify-spec-node-pool-config-ephemeral-disk-timeout60-20260629 is already carrying the concrete timeout60 rerun for the same spec."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:29:26.553Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:30:45.351Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk-postfix-20260629_20260629093102",
+        "assigned_at": "2026-06-29T09:31:02.404Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-pool-config-ephemeral-disk-postfix-20260629",
+        "worker_started_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk-postfix-20260629_20260629093102",
+        "worker_started_at": "2026-06-29T09:32:59.786Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-pool-config.ephemeral-disk workflow run 28362512192 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-postfix-20260629-a_verify-spec-node-pool-confi. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362512192 Result: runs/test-results/single-node-pool-config-ephemeral-disk_326579/artifacts/node-pool-config-ephemeral-disk/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362512192/aks-rp-e2e-28362512192-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362512192/aks-rp-e2e-28362512192-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_326579/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:53:59.333Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:56:26.647Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review as a non-terminal SIGTERM classification and retired it from review because active successor verify-spec-node-pool-config-ephemeral-disk-timeout60-20260629 is already carrying the concrete timeout60 rerun for the same spec."
+      },
+      "session_id": "s_task_verify-spec-node-pool-config-ephemeral-disk-postfix-20260629",
+      "session_history": [
+        "s_task_verify-spec-node-pool-config-ephemeral-disk-postfix-20260629"
+      ],
+      "result": "Spec spec.node-pool-config.ephemeral-disk workflow run 28362512192 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-postfix-20260629-a_verify-spec-node-pool-confi. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362512192 Result: runs/test-results/single-node-pool-config-ephemeral-disk_326579/artifacts/node-pool-config-ephemeral-disk/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362512192/aks-rp-e2e-28362512192-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362512192/aks-rp-e2e-28362512192-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_326579/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:56:26.647Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.ppg.cluster-and-agentpool-placement after dev commit 8c4deb9e made live reference fixtures optional in GitHub.",
+      "inputs": [
+        "spec:spec.ppg.cluster-and-agentpool-placement",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run uses dev at or after 8c4deb9e.",
+        "Spec status is classified from post-fix result artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ppg.cluster-and-agentpool-placement"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ppg.cluster-and-agentpool-placement",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "retryOf": "verify-spec-ppg-cluster-and-agentpool-placement",
+        "requiredDomainCommit": "8c4deb9e",
+        "acceptance_note": "Accepted the review as a non-terminal SIGTERM classification and retired it from review because active successor verify-spec-ppg-cluster-and-agentpool-placement-timeout60-20260629 is already carrying the concrete timeout60 rerun for the same spec."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:29:26.501Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:30:45.351Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629_20260629093102",
+        "assigned_at": "2026-06-29T09:31:02.353Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629",
+        "worker_started_attempt_id": "a_verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629_20260629093102",
+        "worker_started_at": "2026-06-29T09:32:56.003Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ppg.cluster-and-agentpool-placement workflow run 28362508693 classified as error. Loop key: verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629-a_verify-spec-ppg-cluster. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362508693 Result: runs/test-results/single-ppg-cluster-and-agentpool-placement_321385/artifacts/ppg-cluster-and-agentpool-placement/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362508693/aks-rp-e2e-28362508693-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362508693/aks-rp-e2e-28362508693-spec-test-results/test-results/single-ppg-cluster-and-agentpool-placement_321385/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:53:35.472Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:56:26.709Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review as a non-terminal SIGTERM classification and retired it from review because active successor verify-spec-ppg-cluster-and-agentpool-placement-timeout60-20260629 is already carrying the concrete timeout60 rerun for the same spec."
+      },
+      "session_id": "s_task_verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629",
+      "session_history": [
+        "s_task_verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629"
+      ],
+      "result": "Spec spec.ppg.cluster-and-agentpool-placement workflow run 28362508693 classified as error. Loop key: verify-spec-ppg-cluster-and-agentpool-placement-postfix-20260629-a_verify-spec-ppg-cluster. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362508693 Result: runs/test-results/single-ppg-cluster-and-agentpool-placement_321385/artifacts/ppg-cluster-and-agentpool-placement/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362508693/aks-rp-e2e-28362508693-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362508693/aks-rp-e2e-28362508693-spec-test-results/test-results/single-ppg-cluster-and-agentpool-placement_321385/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:56:26.709Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

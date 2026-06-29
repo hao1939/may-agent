@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T14:55:15.382Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 planning-update owner rollup: archived the seven completed VM prerelease mounted-source packet leaves already summarized on the project branch (row 39 Disable SSH shared surface plus row 40 Linux/Windows SSH execute-gate packets, row 59 SGX in-proc, row 60 legacy addon, and row 61 core-addon compatibility). The live frontier is now intentionally compressed to one active worked-example boundary task for row 56 ManagedSystem create-time carrier reconciliation and one truthful family-level external human-proof wait covering the already-routed approval/reply bundle; no duplicate blocked leaves or reopened covered local work remain.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ssh-public-key-linux-spec-index-shared-surface-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the shared specs/index.json metadata entry for spec.node-pool-config.ssh-public-key-update-linux so the indexed specState and mutationGate match the canonical Linux SSH-key update spec without broadening into unrelated spec-index churn or reopening live execution work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ssh-public-key-linux-spec-index-shared-surface-repair-20260626.md"
+      ],
+      "acceptance": [
+        "specs/index.json records the canonical Linux SSH-key update entry with specState and mutationGate values that match specs/node-pool-config-ssh-public-key-update-linux.json, and the repair stays bounded to this exact Linux-only SSH-key update carrier.",
+        "The archive note cites the exact pre-repair drift evidence, the exact files touched, and the repo-local validation command(s)/outcomes proving the shared index and canonical spec now agree without reopening live mutation or unrelated SSH branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-spec-index"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:49:06.681Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ssh-public-key-linux-spec-index-shared-surface-repair-20260626_20260626144906",
+        "assigned_at": "2026-06-26T14:49:06.729Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ssh-public-key-linux-spec-index-shared-surface-repair-20260626",
+        "worker_started_attempt_id": "a_ssh-public-key-linux-spec-index-shared-surface-repair-20260626_20260626144906",
+        "worker_started_at": "2026-06-26T14:49:21.718Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the single Linux SSH public-key spec metadata entry in specs/index.json so its specState, statusReason, and mutationGate now match specs/node-pool-config-ssh-public-key-update-linux.json, and archived the bounded drift/validation note.",
+        "last_worker_completed_at": "2026-06-26T14:50:35.807Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:52:37.241Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted using the bounded archive note plus direct repo-local parity verification: evidence/archive/ssh-public-key-linux-spec-index-shared-surface-repair-20260626.md records the pre-repair drift and post-repair checks, and the current file state confirms specs/index.json now matches specs/node-pool-config-ssh-public-key-update-linux.json for status/specState/statusReason/mutationGate without reopening live execution or unrelated SSH branches."
+      },
+      "session_id": "s_task_ssh-public-key-linux-spec-index-shared-surface-repair-20260626",
+      "session_history": [
+        "s_task_ssh-public-key-linux-spec-index-shared-surface-repair-20260626"
+      ],
+      "result": "Repaired the single Linux SSH public-key spec metadata entry in specs/index.json so its specState, statusReason, and mutationGate now match specs/node-pool-config-ssh-public-key-update-linux.json, and archived the bounded drift/validation note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:52:37.241Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted using the bounded archive note plus direct repo-local parity verification: evidence/archive/ssh-public-key-linux-spec-index-shared-surface-repair-20260626.md records the pre-repair drift and post-repair checks, and the current file state confirms specs/index.json now matches specs/node-pool-config-ssh-public-key-update-linux.json for status/specState/statusReason/mutationGate without reopening live execution or unrelated SSH branches."
+      },
+      "status": "done"
+    }
+  ]
+}

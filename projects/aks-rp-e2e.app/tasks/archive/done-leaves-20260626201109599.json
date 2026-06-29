@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:11:09.599Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 owner planning update: the two review leaves are now accepted as durable branch knowledge. Static-egress-vmss is narrowed to branch-state carrier drift on origin/dev, with the truthful next owner action being origin/dev retarget/re-proof before any dispatch retry. The VM prerelease freed-rows packet is also accepted and has been decomposed into four concrete repo-local next leaves: row-25/26 compaction-vs-direct dry-run review, row-40 Linux/Windows sibling dry-run readiness, row-43 secure-TLS network-isolated dry-run readiness, and row-50 dedicated CAS dry-run readiness. Preserve the single external-human proof wait unchanged; the live frontier from this branch is now those bounded local dry-run/readiness leaves, not new workflow queueing or wait expansion.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "dispatch-next-pending-spec-workflow-from-state-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Select the next truthful pending spec from .state/spec-loop/state.json (prefer any remaining dev-infra-core candidate), queue exactly one run-single-spec.yaml workflow on the documented dev/staging path, and capture repo-local evidence with the selection basis plus queued run id/URL or exact queue-time blocker. This refills the empty runnable frontier with one bounded runner/spec action only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-next-single-spec-dispatch-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact names the selected pending spec, the state snapshot/basis used to choose it, the exact workflow ref/target inputs, and the resulting run id/URL or exact queue-time blocker.",
+        "Exactly one single-spec workflow is queued or truthfully blocked; no sibling multi-spec refill, blocked-branch expansion, or unrelated tree mutation is introduced from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:58:58.974Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_dispatch-next-pending-spec-workflow-from-state-20260626_20260626195859",
+        "assigned_at": "2026-06-26T19:58:59.020Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dispatch-next-pending-spec-workflow-from-state-20260626",
+        "worker_started_attempt_id": "a_dispatch-next-pending-spec-workflow-from-state-20260626_20260626195859",
+        "worker_started_at": "2026-06-26T19:59:16.483Z",
+        "reviewed_at": "2026-06-26T20:07:16.441Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from ../aks-rp-e2e/evidence/archive/spec-loop-next-single-spec-dispatch-20260626.md: it truthfully selected spec.net-integration.static-egress-vmss from .state/spec-loop/state.json, captured the exact run-single-spec.yaml dispatch inputs, and proved a queue-time blocker on origin/dev because the replay carrier imports missing replays/lib/arm-rest.ts and replays/lib/azure-resource.ts files. No workflow was queued, which satisfies the task's exact-blocker acceptance path."
+      },
+      "session_id": "s_task_dispatch-next-pending-spec-workflow-from-state-20260626",
+      "session_history": [
+        "s_task_dispatch-next-pending-spec-workflow-from-state-20260626"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:07:16.441Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from ../aks-rp-e2e/evidence/archive/spec-loop-next-single-spec-dispatch-20260626.md: it truthfully selected spec.net-integration.static-egress-vmss from .state/spec-loop/state.json, captured the exact run-single-spec.yaml dispatch inputs, and proved a queue-time blocker on origin/dev because the replay carrier imports missing replays/lib/arm-rest.ts and replays/lib/azure-resource.ts files. No workflow was queued, which satisfies the task's exact-blocker acceptance path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "static-egress-vmss-origin-dev-carrier-blocker-followup-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify and localize the origin/dev single-spec carrier blocker for spec.net-integration.static-egress-vmss: prove whether the branch spec should be retargeted to a maintained carrier, the replay imports should be repaired, or the issue must be escalated as a workflow-branch defect; capture exact source paths, missing-module evidence, and the next truthful owner action without queueing cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/static-egress-vmss-origin-dev-carrier-blocker-followup-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact names the exact origin/dev spec file, replay carrier path, missing imports/files, and any mounted-source or repo-local equivalent carrier that could truthfully replace the broken path.",
+        "The artifact ends with one concrete next step only: either a runnable repo-local repair/escalation recommendation with exact file/owner targets, or a proof-backed statement that no bounded local progress exists beyond the documented branch defect."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:07:16.490Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T20:07:23.423Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_static-egress-vmss-origin-dev-carrier-blocker-followup-20260626_20260626200736",
+        "assigned_at": "2026-06-26T20:07:36.138Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_static-egress-vmss-origin-dev-carrier-blocker-followup-20260626",
+        "worker_started_attempt_id": "a_static-egress-vmss-origin-dev-carrier-blocker-followup-20260626_20260626200736",
+        "worker_started_at": "2026-06-26T20:07:36.377Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a blocker-followup archive for spec.net-integration.static-egress-vmss that proves the exact origin/dev stale replay carrier, missing replays/lib imports, mounted-source canonical scenarios, and the truthful next owner action: retarget origin/dev to the maintained feature-owned carrier and re-prove branch state before dispatch.",
+        "last_worker_completed_at": "2026-06-26T20:09:23.005Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:10:36.924Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/static-egress-vmss-origin-dev-carrier-blocker-followup-20260626.md satisfies acceptance by naming the exact origin/dev spec and stale replay carrier, proving the missing replays/lib imports/files, citing the mounted-source canonical scenarios plus maintained repo-local replacement, and narrowing the truthful next step to origin/dev retarget/re-proof rather than a workflow-engine defect."
+      },
+      "session_id": "s_task_static-egress-vmss-origin-dev-carrier-blocker-followup-20260626",
+      "session_history": [
+        "s_task_static-egress-vmss-origin-dev-carrier-blocker-followup-20260626"
+      ],
+      "result": "Produced a blocker-followup archive for spec.net-integration.static-egress-vmss that proves the exact origin/dev stale replay carrier, missing replays/lib imports, mounted-source canonical scenarios, and the truthful next owner action: retarget origin/dev to the maintained feature-owned carrier and re-prove branch state before dispatch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:10:36.924Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/static-egress-vmss-origin-dev-carrier-blocker-followup-20260626.md satisfies acceptance by naming the exact origin/dev spec and stale replay carrier, proving the missing replays/lib imports/files, citing the mounted-source canonical scenarios plus maintained repo-local replacement, and narrowing the truthful next step to origin/dev retarget/re-proof rather than a workflow-engine defect."
+      },
+      "status": "done"
+    }
+  ]
+}

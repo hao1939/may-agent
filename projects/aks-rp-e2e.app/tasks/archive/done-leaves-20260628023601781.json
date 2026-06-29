@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:36:01.781Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 watchdog blocked-frontier owner pass fully compresses the settled run-28298043331 follow-up out of the visible branch. The accepted recheck already established that all current repo-local and captured surfaces remain non-terminal, so archive that completed child and keep await-operator-response-spec-app-routing-existing-cluster-family-20260627 as the sole live wait for this lane until a returned operator reply or a newer terminal-signal surface change appears.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "recheck-run-28298043331-terminal-signal-surfaces-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recheck the exact local and captured terminal-signal surfaces for GitHub run 28298043331 and convert the stale passive wait into a bounded evidence refresh: either harvest the terminal workflow/spec verdict now available, or record the still-nonterminal facts plus the exact next truthful wait condition without reopening broader App Routing speculation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/recheck-run-28298043331-terminal-signal-surfaces-20260628.md"
+      ],
+      "acceptance": [
+        "The note cites each checked terminal-signal surface for run 28298043331: local .state/spec-loop/artifacts/28298043331, latest captured workflow status, and latest captured artifacts/job evidence.",
+        "If any terminal signal now exists, the note records the final workflow conclusion and the concrete spec/job verdict or successor task that should replace the old wait.",
+        "If the run is still non-terminal, the note records refreshed blocker facts with exact evidence sources/timestamps and recommends the single truthful next wait condition instead of multiplying leaves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-tls-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:30:10.252Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_recheck-run-28298043331-terminal-signal-surfaces-20260628_20260628023010",
+        "assigned_at": "2026-06-28T02:30:10.298Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_recheck-run-28298043331-terminal-signal-surfaces-20260628",
+        "worker_started_attempt_id": "a_recheck-run-28298043331-terminal-signal-surfaces-20260628_20260628023010",
+        "worker_started_at": "2026-06-28T02:30:59.412Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable recheck note at evidence/archive/recheck-run-28298043331-terminal-signal-surfaces-20260628.md confirming run 28298043331 still has no terminal local/workflow/artifact signal and narrowing the next truthful wait to one exact terminal-surface change.",
+        "last_worker_completed_at": "2026-06-28T02:31:53.875Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:32:22.006Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note checks the exact local artifact, captured workflow, captured job/step, and captured artifact surfaces for run 28298043331; all remain non-terminal, so no new App Routing verdict exists and the only truthful successor remains the existing family-level wait for a newer terminal-signal surface change."
+      },
+      "session_id": "s_task_recheck-run-28298043331-terminal-signal-surfaces-20260628",
+      "session_history": [
+        "s_task_recheck-run-28298043331-terminal-signal-surfaces-20260628"
+      ],
+      "result": "Wrote a durable recheck note at evidence/archive/recheck-run-28298043331-terminal-signal-surfaces-20260628.md confirming run 28298043331 still has no terminal local/workflow/artifact signal and narrowing the next truthful wait to one exact terminal-surface change.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:32:22.006Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note checks the exact local artifact, captured workflow, captured job/step, and captured artifact surfaces for run 28298043331; all remain non-terminal, so no new App Routing verdict exists and the only truthful successor remains the existing family-level wait for a newer terminal-signal surface change."
+      },
+      "status": "done"
+    }
+  ]
+}

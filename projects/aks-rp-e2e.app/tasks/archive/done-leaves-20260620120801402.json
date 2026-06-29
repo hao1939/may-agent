@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T12:08:01.402Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier refill: the MachinesPreview owner-send/reply wait remains the only truthful external blocker in this lane, unchanged until durable proof-of-send/handoff or authoritative preview-registration reply exists. VirtualMachine prerelease replacement work is now decomposed into concrete suite-bounded row-accounting leaves for prerelease.go and checkin.go; the older missing-spec and candidate-only batch tasks were requeued as later merge packets, and plan regeneration stays deferred until those row-accounting artifacts land. Archived done leaves already contributed their durable source/evidence groundwork, so the live lane now centers on the two suite leaves, the two merge packets, the deferred plan-regeneration proof, and the single MachinesPreview wait.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "managedsystem-pool-boundary-map-source-pass-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP handwritten/e2ev3 sources plus current model verdict context to map ManagedSystem Pool as the first explicit boundary example: accepted inputs, rejected inputs, expected behavior, adjacent surfaces, and unknown edges for create-time initial/default pool behavior without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-boundary-map-source-pass-20260620.md"
+      ],
+      "acceptance": [
+        "A repo-local boundary map cites the exact mounted source/spec files used and explains how ManagedSystem create-time initial/default pool intent is represented in handwritten/e2ev3 coverage or adjacent source-equivalent artifacts.",
+        "The map enumerates accepted inputs, rejected or unsupported inputs, expected behavior, adjacent surfaces (including any VirtualMachines/ManagedSystem overlap called out by current model verdicts), and the remaining unknown edges worth probing later.",
+        "The result stays within feature/spec learning: no cloud execution, no fake blocker, and no unsupported claim that the broader shared model/view checkpoint is already updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:57:04.446Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-boundary-map-source-pass-20260620_20260620115704",
+        "assigned_at": "2026-06-20T11:57:04.491Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-boundary-map-source-pass-20260620",
+        "worker_started_attempt_id": "a_managedsystem-pool-boundary-map-source-pass-20260620_20260620115704",
+        "worker_started_at": "2026-06-20T11:57:17.966Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new repo-local source-pass boundary map at evidence/archive/managedsystem-pool-boundary-map-source-pass-20260620.md that ties mounted AKS RP handwritten/e2ev3 sources to current ManagedSystem maintained path verdicts, accepted/rejected inputs, adjacent surfaces, and deferred create-time unknowns.",
+        "last_worker_completed_at": "2026-06-20T11:58:52.431Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:59:35.793Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-source-pass-20260620.md is a repo-local mounted-source boundary map that cites exact AKS RP handwritten files, enumerates accepted/rejected inputs plus adjacent ManagedSystem/VirtualMachines surfaces, and stays within feature/spec learning with no cloud execution or unsupported shared-model update claims."
+      },
+      "session_id": "s_task_managedsystem-pool-boundary-map-source-pass-20260620",
+      "session_history": [
+        "s_task_managedsystem-pool-boundary-map-source-pass-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:59:35.793Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-source-pass-20260620.md is a repo-local mounted-source boundary map that cites exact AKS RP handwritten files, enumerates accepted/rejected inputs plus adjacent ManagedSystem/VirtualMachines surfaces, and stays within feature/spec learning with no cloud execution or unsupported shared-model update claims."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-k8s-validation-feature-variant-repair-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the maintained private-cluster feature surface to represent Scenario_Private_Cluster_With_K8S_Validation as an explicit extended-validation variant under the canonical PrivateLink create branch, and record the exact deferred model-view follow-up while the shared seven-file checkpoint gate still holds model.json/path-summary.json.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/private-cluster/privatelink.yaml",
+        "../aks-rp-e2e/evidence/archive/private-cluster-k8s-validation-feature-variant-repair-note-20260620.md"
+      ],
+      "acceptance": [
+        "features/private-cluster/privatelink.yaml gains an explicit Scenario_Private_Cluster_With_K8S_Validation variant attached to the canonical PrivateLink create branch, citing the mounted source path and distinguishing it from the existing runner-v3 metadata row.",
+        "The maintained variant notes enumerate the exact added behavior delta proven by source: private-link resource listing, resolve-private-link-service-id, run-command validation, private kubeconfig/jumpbox validation, upgrade continuity, stop/start continuity, DNS-record deletion on stop, and post-start command execution.",
+        "A repo-local repair note cites the accepted source-consume packet plus the shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 blocker and states that model/path-summary visibility repair remains deferred until that gate clears, without falsely claiming current model coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:55:24.577Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-k8s-validation-feature-variant-repair-20260620_20260620115524",
+        "assigned_at": "2026-06-20T11:55:24.625Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-k8s-validation-feature-variant-repair-20260620",
+        "worker_started_attempt_id": "a_private-cluster-k8s-validation-feature-variant-repair-20260620_20260620115524",
+        "worker_started_at": "2026-06-20T11:55:30.965Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added an explicit extended-validation attached variant for Scenario_Private_Cluster_With_K8S_Validation to features/private-cluster/privatelink.yaml and wrote a repo-local repair note documenting the source-backed delta plus deferred model/view follow-up behind the shared seven-file gate.",
+        "last_worker_completed_at": "2026-06-20T11:56:32.757Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:57:04.403Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/private-cluster/privatelink.yaml now carries the explicit Scenario_Private_Cluster_With_K8S_Validation extended-validation attached variant under canonical path.private-cluster-privatelink-create, and evidence/archive/private-cluster-k8s-validation-feature-variant-repair-note-20260620.md truthfully preserves the shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 gate on model/path-summary visibility."
+      },
+      "session_id": "s_task_private-cluster-k8s-validation-feature-variant-repair-20260620",
+      "session_history": [
+        "s_task_private-cluster-k8s-validation-feature-variant-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:57:04.403Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/private-cluster/privatelink.yaml now carries the explicit Scenario_Private_Cluster_With_K8S_Validation extended-validation attached variant under canonical path.private-cluster-privatelink-create, and evidence/archive/private-cluster-k8s-validation-feature-variant-repair-note-20260620.md truthfully preserves the shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 gate on model/path-summary visibility."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-k8s-validation-source-consume-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume mounted source for Scenario_Private_Cluster_With_K8S_Validation and decide, with exact source/spec/model evidence, whether it belongs as a distinct private-cluster lifecycle branch or as a canonical PrivateLink create path plus an explicit extended-validation variant.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-k8s-validation-source-consume-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence packet cites the exact mounted source files and scenario body elements used for Scenario_Private_Cluster_With_K8S_Validation, including the validation/upgrade/stop-start assertions that go beyond the base private-cluster create path.",
+        "Packet compares that source behavior directly against current maintained surfaces, including spec.private-cluster.privatelink-create, spec.private-cluster.private-endpoint-connections, features/private-cluster*, and the relevant model path IDs, and states exactly what each surface does or does not already own.",
+        "Packet ends with one exact repair proposal: either add/update the concrete spec/model branch needed for this scenario, or record evidence-backed proof that the current maintained branch already covers it truthfully without new surface area."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:52:46.290Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-k8s-validation-source-consume-20260620_20260620115246",
+        "assigned_at": "2026-06-20T11:52:46.336Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-k8s-validation-source-consume-20260620",
+        "worker_started_attempt_id": "a_private-cluster-k8s-validation-source-consume-20260620_20260620115246",
+        "worker_started_at": "2026-06-20T11:52:55.015Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested evidence packet at evidence/archive/private-cluster-k8s-validation-source-consume-20260620.md, using mounted AKS RP source plus maintained feature/spec/model surfaces to decide that Scenario_Private_Cluster_With_K8S_Validation belongs under canonical PrivateLink create as an explicit extended-validation variant rather than a separate topology branch.",
+        "last_worker_completed_at": "2026-06-20T11:54:47.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:55:24.533Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted source-consume evidence: mounted AKS RP scenario body proves this row is canonical PrivateLink create plus an explicit extended-validation variant, not a separate topology branch and not already truthfully covered by current maintained surfaces."
+      },
+      "session_id": "s_task_private-cluster-k8s-validation-source-consume-20260620",
+      "session_history": [
+        "s_task_private-cluster-k8s-validation-source-consume-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:55:24.533Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted source-consume evidence: mounted AKS RP scenario body proves this row is canonical PrivateLink create plus an explicit extended-validation variant, not a separate topology branch and not already truthfully covered by current maintained surfaces."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-mounted-source-coverage-packet-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create one bounded source-backed coverage packet for the VirtualMachine prerelease/checkin surfaces anchored in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, mapping the mixed-SKU, auto-zone, accelerated-networking, and migration scenarios to accepted input/expectation paths and the existing 2026-06-20 draft promotion evidence without touching model/checkpoint files.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-coverage-packet-20260620.md"
+      ],
+      "acceptance": [
+        "The packet cites prerelease.go, checkin.go, and any directly referenced scenario/plan definitions needed to explain the intended VirtualMachine prerelease/checkin scenario boundaries for mixed-SKU, auto-zone, accelerated-networking, and migration coverage.",
+        "The packet maps those mounted-source scenarios to the existing 2026-06-20 repo-local draft promotion artifacts (r27-r34 where applicable), clearly separating source intent from already observed blocked/product-gap outcomes and naming any remaining source-side unknown edges.",
+        "The work stays in source/spec/evidence space only: no cloud execution, no model.json/path-summary.json edits, and no attempt to bypass the blocked shared seven-file checkpoint wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:02:47.384Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-coverage-packet-20260620_20260620120247",
+        "assigned_at": "2026-06-20T12:02:47.429Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-coverage-packet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-coverage-packet-20260620_20260620120247",
+        "worker_started_at": "2026-06-20T12:03:08.385Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source coverage packet at evidence/archive/vm-prerelease-mounted-source-coverage-packet-20260620.md, mapping VM prerelease/checkin rows 27-34 to source intent, accepted input/expectation paths, and the existing 2026-06-20 draft promotion evidence while explicitly separating missing/blocked observed states.",
+        "last_worker_completed_at": "2026-06-20T12:05:05.033Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:05:47.022Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-mounted-source-coverage-packet-20260620.md cites prerelease.go/checkin.go plus referenced plan files, maps rows 27-34 to accepted input/expectation paths and existing 2026-06-20 draft evidence, explicitly records the missing r28 draft packet, and stays in source/spec/evidence space without model or checkpoint edits."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-coverage-packet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-coverage-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:05:47.022Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-mounted-source-coverage-packet-20260620.md cites prerelease.go/checkin.go plus referenced plan files, maps rows 27-34 to accepted input/expectation paths and existing 2026-06-20 draft evidence, explicitly records the missing r28 draft packet, and stays in source/spec/evidence space without model or checkpoint edits."
+      },
+      "status": "done"
+    }
+  ]
+}

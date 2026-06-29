@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:06:04.235Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning final compaction pass: archived another remaining safe completed repo-local reconciliation leaf so the stale watchdog wake leaves an even cleaner frontier. Durable meaning remains preserved by project rollup plus linked evidence; live work is unchanged: the active ASM ingress-internal mounted-source reconciliation and the two exact blocked waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.virtualmachines.manual-scale-policy, including the stale terminal/superseded model verdict: restore the exact handwritten/source linkage and request/expectation boundary for the maintained manual-scale-policy branch, then tighten feature/spec/replay/model wording to the true authority ceiling without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted source files and the touched feature/spec/replay/model carriers for path.virtualmachines.manual-scale-policy, then states whether the branch has exact handwritten/source authority or must remain an explicit draft/source-grounded carrier while documenting any stale terminal/superseded lineage that is corrected.",
+        "Carrier and model updates keep path.virtualmachines.manual-scale-policy claim-safe: strengthen source/path linkage and expected-behavior wording only where the mounted source supports it, reconcile any stale superseded/final model verdict to the truthful current status, and preserve observed behavior unless direct execution evidence exists.",
+        "The work stays repo-local and bounded to path.virtualmachines.manual-scale-policy only: no cloud mutation, no external-human follow-up, and no widening into unrelated VirtualMachines families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-manual-scale-policy-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:51:10.819Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623_20260623195110",
+        "assigned_at": "2026-06-23T19:51:10.875Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623_20260623195110",
+        "worker_started_at": "2026-06-23T19:51:39.331Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the VirtualMachines manual-scale-policy branch against mounted AKS RP source, archived the authority decision, and updated the accepted knowledge model/path summary so the branch is now a superseded historical placeholder pointing to mixed-sku-deallocate as the exact mounted successor.",
+        "last_worker_completed_at": "2026-06-23T19:55:57.482Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:57:22.727Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected closure because the archive claims manual-scale-policy path/scenario/DAG carrier IDs that are missing from the accepted model; replaced by virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623 to reconcile the superseded/final model posture before acceptance."
+      },
+      "session_id": "s_task_virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623",
+      "session_history": [
+        "s_task_virtualmachines-manual-scale-policy-mounted-source-status-reconcile-20260623"
+      ],
+      "result": "Reconciled the VirtualMachines manual-scale-policy branch against mounted AKS RP source, archived the authority decision, and updated the accepted knowledge model/path summary so the branch is now a superseded historical placeholder pointing to mixed-sku-deallocate as the exact mounted successor.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-23T19:57:22.727Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejected closure because the archive claims manual-scale-policy path/scenario/DAG carrier IDs that are missing from the accepted model; replaced by virtualmachines-manual-scale-policy-superseded-carrier-repair-20260623 to reconcile the superseded/final model posture before acceptance."
+      },
+      "status": "done"
+    }
+  ]
+}

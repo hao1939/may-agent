@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:06:23.627Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner rollup archived eight completed verifier leaves as reviewed frontier history while keeping the lane focused on the active verifier wave, exact blocked waits, and bounded repo-local reconciliation follow-ups. The archived slice includes the confidential VM SNP executor publish-proof work, ACNS post-instrumentation retry history, and several reviewed spec attempts; notably, verify-spec-network-datapath-pod-connectivity-basic is archived only as a completed worker attempt, not as durable feature evidence, because run 28381788285 was auto-accepted without evidenceRefs and now has a dedicated artifact-review follow-up to classify whether the failure was runner/watch publication, scenario-level failure, or artifact-inconclusive before any model verdict or rerun decision. Remaining open work stays unchanged: drain the 11 active verifier leaves, preserve the three truthful environment/promotion waits, and use the new pod-connectivity-basic artifact review to decide whether this failure mode stays local or graduates into a shared problem family if repeated.",
+  "archived": 8,
+  "tasks": [
+    {
+      "id": "verify-spec-network-datapath-pod-connectivity-basic",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-datapath.pod-connectivity-basic through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-datapath.pod-connectivity-basic",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-datapath.pod-connectivity-basic"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-datapath.pod-connectivity-basic",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-datapath.pod-connectivity-basic workflow run 28381788285 classified as error. Loop key: verify-spec-network-datapath-pod-connectivity-basic-a_verify-spec-network-datapath-pod-con. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381788285 Result: runs/test-results/single-network-datapath-pod-connectivity-basic_420573/artifacts/network-datapath-pod-connectivity-basic/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/test-results/single-network-datapath-pod-connectivity-basic_420573/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:03:39.824Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-datapath-pod-connectivity-basic_20260629150339",
+        "assigned_at": "2026-06-29T15:03:39.870Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-datapath-pod-connectivity-basic",
+        "worker_started_attempt_id": "a_verify-spec-network-datapath-pod-connectivity-basic_20260629150339",
+        "worker_started_at": "2026-06-29T15:03:54.444Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-datapath.pod-connectivity-basic workflow run 28381788285 classified as error. Loop key: verify-spec-network-datapath-pod-connectivity-basic-a_verify-spec-network-datapath-pod-con. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381788285 Result: runs/test-results/single-network-datapath-pod-connectivity-basic_420573/artifacts/network-datapath-pod-connectivity-basic/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/test-results/single-network-datapath-pod-connectivity-basic_420573/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T16:04:39.049Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T16:04:44.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-datapath.pod-connectivity-basic workflow run 28381788285 classified as error. Loop key: verify-spec-network-datapath-pod-connectivity-basic-a_verify-spec-network-datapath-pod-con. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381788285 Result: runs/test-results/single-network-datapath-pod-connectivity-basic_420573/artifacts/network-datapath-pod-connectivity-basic/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/test-results/single-network-datapath-pod-connectivity-basic_420573/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-network-datapath-pod-connectivity-basic",
+      "session_history": [
+        "s_task_verify-spec-network-datapath-pod-connectivity-basic"
+      ],
+      "result": "Spec spec.network-datapath.pod-connectivity-basic workflow run 28381788285 classified as error. Loop key: verify-spec-network-datapath-pod-connectivity-basic-a_verify-spec-network-datapath-pod-con. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381788285 Result: runs/test-results/single-network-datapath-pod-connectivity-basic_420573/artifacts/network-datapath-pod-connectivity-basic/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381788285/aks-rp-e2e-28381788285-spec-test-results/test-results/single-network-datapath-pod-connectivity-basic_420573/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T16:04:44.239Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-autoprovision-update-mode-manual",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-autoprovision.update-mode-manual through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-autoprovision.update-mode-manual",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-autoprovision.update-mode-manual"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-autoprovision.update-mode-manual",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-autoprovision.update-mode-manual workflow run 28384085324 classified as error. Loop key: verify-spec-node-autoprovision-update-mode-manual-a_verify-spec-node-autoprovision-update. Precondition GET failed HTTP 404; cluster must exist with mode=Auto Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384085324 Result: runs/test-results/single-node-autoprovision-update-mode-manual_008586/artifacts/node-autoprovision-update-mode-manual/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/test-results/single-node-autoprovision-update-mode-manual_008586/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:38:55.871Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-autoprovision-update-mode-manual_20260629153855",
+        "assigned_at": "2026-06-29T15:38:55.888Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-autoprovision-update-mode-manual",
+        "worker_started_attempt_id": "a_verify-spec-node-autoprovision-update-mode-manual_20260629153855",
+        "worker_started_at": "2026-06-29T15:39:03.958Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-autoprovision.update-mode-manual workflow run 28384085324 classified as error. Loop key: verify-spec-node-autoprovision-update-mode-manual-a_verify-spec-node-autoprovision-update. Precondition GET failed HTTP 404; cluster must exist with mode=Auto Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384085324 Result: runs/test-results/single-node-autoprovision-update-mode-manual_008586/artifacts/node-autoprovision-update-mode-manual/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/test-results/single-node-autoprovision-update-mode-manual_008586/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T15:40:25.910Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:40:32.179Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-autoprovision.update-mode-manual workflow run 28384085324 classified as error. Loop key: verify-spec-node-autoprovision-update-mode-manual-a_verify-spec-node-autoprovision-update. Precondition GET failed HTTP 404; cluster must exist with mode=Auto Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384085324 Result: runs/test-results/single-node-autoprovision-update-mode-manual_008586/artifacts/node-autoprovision-update-mode-manual/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/test-results/single-node-autoprovision-update-mode-manual_008586/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-node-autoprovision-update-mode-manual",
+      "session_history": [
+        "s_task_verify-spec-node-autoprovision-update-mode-manual"
+      ],
+      "result": "Spec spec.node-autoprovision.update-mode-manual workflow run 28384085324 classified as error. Loop key: verify-spec-node-autoprovision-update-mode-manual-a_verify-spec-node-autoprovision-update. Precondition GET failed HTTP 404; cluster must exist with mode=Auto Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384085324 Result: runs/test-results/single-node-autoprovision-update-mode-manual_008586/artifacts/node-autoprovision-update-mode-manual/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384085324/aks-rp-e2e-28384085324-spec-test-results/test-results/single-node-autoprovision-update-mode-manual_008586/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T15:40:32.179Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-confidential-vm-kata-snp-runtime",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-confidential-vm.kata-snp-runtime through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-confidential-vm.kata-snp-runtime",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-confidential-vm.kata-snp-runtime"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-confidential-vm.kata-snp-runtime",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-confidential-vm.kata-snp-runtime workflow run 28384190011 classified as error. Loop key: verify-spec-node-confidential-vm-kata-snp-runtime-a_verify-spec-node-confidential-vm-kata. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384190011 Result: runs/test-results/single-node-confidential-vm-kata-snp-runtime_111882/artifacts/node-confidential-vm-kata-snp-runtime/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/test-results/single-node-confidential-vm-kata-snp-runtime_111882/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:40:39.820Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-confidential-vm-kata-snp-runtime_20260629154039",
+        "assigned_at": "2026-06-29T15:40:39.844Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-confidential-vm-kata-snp-runtime",
+        "worker_started_attempt_id": "a_verify-spec-node-confidential-vm-kata-snp-runtime_20260629154039",
+        "worker_started_at": "2026-06-29T15:40:47.423Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-confidential-vm.kata-snp-runtime workflow run 28384190011 classified as error. Loop key: verify-spec-node-confidential-vm-kata-snp-runtime-a_verify-spec-node-confidential-vm-kata. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384190011 Result: runs/test-results/single-node-confidential-vm-kata-snp-runtime_111882/artifacts/node-confidential-vm-kata-snp-runtime/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/test-results/single-node-confidential-vm-kata-snp-runtime_111882/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T15:41:41.216Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:41:52.876Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-confidential-vm.kata-snp-runtime workflow run 28384190011 classified as error. Loop key: verify-spec-node-confidential-vm-kata-snp-runtime-a_verify-spec-node-confidential-vm-kata. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384190011 Result: runs/test-results/single-node-confidential-vm-kata-snp-runtime_111882/artifacts/node-confidential-vm-kata-snp-runtime/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/test-results/single-node-confidential-vm-kata-snp-runtime_111882/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-node-confidential-vm-kata-snp-runtime",
+      "session_history": [
+        "s_task_verify-spec-node-confidential-vm-kata-snp-runtime"
+      ],
+      "result": "Spec spec.node-confidential-vm.kata-snp-runtime workflow run 28384190011 classified as error. Loop key: verify-spec-node-confidential-vm-kata-snp-runtime-a_verify-spec-node-confidential-vm-kata. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384190011 Result: runs/test-results/single-node-confidential-vm-kata-snp-runtime_111882/artifacts/node-confidential-vm-kata-snp-runtime/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384190011/aks-rp-e2e-28384190011-spec-test-results/test-results/single-node-confidential-vm-kata-snp-runtime_111882/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T15:41:52.876Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-custom-ca-trust-create",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-custom-ca-trust.create through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-custom-ca-trust.create",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-custom-ca-trust.create"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-custom-ca-trust.create",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-custom-ca-trust.create workflow run 28384268221 classified as error. Loop key: verify-spec-node-custom-ca-trust-create-a_verify-spec-node-custom-ca-trust-create_20260629. Cluster creation did not succeed: HTTP 400, provisioningState=unknown, error=UnmarshalError: Invalid request body. Converting request body to a managed cluster encountered error: json: unknown field \"enableCustomCATrust\" Check that the field is in the right location, is spelled correctly, and is supported in the API version. Visit aka.ms/aks/apiversions for more API version information.. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384268221 Result: runs/test-results/single-node-custom-ca-trust-create_228377/artifacts/node-custom-ca-trust-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/test-results/single-node-custom-ca-trust-create_228377/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:41:57.400Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-custom-ca-trust-create_20260629154157",
+        "assigned_at": "2026-06-29T15:41:57.422Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-custom-ca-trust-create",
+        "worker_started_attempt_id": "a_verify-spec-node-custom-ca-trust-create_20260629154157",
+        "worker_started_at": "2026-06-29T15:42:02.848Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-custom-ca-trust.create workflow run 28384268221 classified as error. Loop key: verify-spec-node-custom-ca-trust-create-a_verify-spec-node-custom-ca-trust-create_20260629. Cluster creation did not succeed: HTTP 400, provisioningState=unknown, error=UnmarshalError: Invalid request body. Converting request body to a managed cluster encountered error: json: unknown field \"enableCustomCATrust\" Check that the field is in the right location, is spelled correctly, and is supported in the API version. Visit aka.ms/aks/apiversions for more API version information.. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384268221 Result: runs/test-results/single-node-custom-ca-trust-create_228377/artifacts/node-custom-ca-trust-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/test-results/single-node-custom-ca-trust-create_228377/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T15:42:55.176Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:43:21.013Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-custom-ca-trust.create workflow run 28384268221 classified as error. Loop key: verify-spec-node-custom-ca-trust-create-a_verify-spec-node-custom-ca-trust-create_20260629. Cluster creation did not succeed: HTTP 400, provisioningState=unknown, error=UnmarshalError: Invalid request body. Converting request body to a managed cluster encountered error: json: unknown field \"enableCustomCATrust\" Check that the field is in the right location, is spelled correctly, and is supported in the API version. Visit aka.ms/aks/apiversions for more API version information.. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384268221 Result: runs/test-results/single-node-custom-ca-trust-create_228377/artifacts/node-custom-ca-trust-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/test-results/single-node-custom-ca-trust-create_228377/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-node-custom-ca-trust-create",
+      "session_history": [
+        "s_task_verify-spec-node-custom-ca-trust-create"
+      ],
+      "result": "Spec spec.node-custom-ca-trust.create workflow run 28384268221 classified as error. Loop key: verify-spec-node-custom-ca-trust-create-a_verify-spec-node-custom-ca-trust-create_20260629. Cluster creation did not succeed: HTTP 400, provisioningState=unknown, error=UnmarshalError: Invalid request body. Converting request body to a managed cluster encountered error: json: unknown field \"enableCustomCATrust\" Check that the field is in the right location, is spelled correctly, and is supported in the API version. Visit aka.ms/aks/apiversions for more API version information.. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384268221 Result: runs/test-results/single-node-custom-ca-trust-create_228377/artifacts/node-custom-ca-trust-create/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384268221/aks-rp-e2e-28384268221-spec-test-results/test-results/single-node-custom-ca-trust-create_228377/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T15:43:21.013Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-ephemeral-disk-resource-placement",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-ephemeral-disk.resource-placement through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-ephemeral-disk.resource-placement",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-ephemeral-disk.resource-placement"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-ephemeral-disk.resource-placement",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-ephemeral-disk.resource-placement workflow run 28384348972 classified as error. Loop key: verify-spec-node-ephemeral-disk-resource-placement-a_verify-spec-node-ephemeral-disk-resou. Cluster did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384348972 Result: runs/test-results/single-node-ephemeral-disk-resource-placement_344903/artifacts/node-ephemeral-disk-resource-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/test-results/single-node-ephemeral-disk-resource-placement_344903/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:42:42.668Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-ephemeral-disk-resource-placement_20260629154242",
+        "assigned_at": "2026-06-29T15:42:42.721Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-ephemeral-disk-resource-placement",
+        "worker_started_attempt_id": "a_verify-spec-node-ephemeral-disk-resource-placement_20260629154242",
+        "worker_started_at": "2026-06-29T15:43:17.164Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-ephemeral-disk.resource-placement workflow run 28384348972 classified as error. Loop key: verify-spec-node-ephemeral-disk-resource-placement-a_verify-spec-node-ephemeral-disk-resou. Cluster did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384348972 Result: runs/test-results/single-node-ephemeral-disk-resource-placement_344903/artifacts/node-ephemeral-disk-resource-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/test-results/single-node-ephemeral-disk-resource-placement_344903/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T15:43:59.403Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:44:01.300Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-ephemeral-disk.resource-placement workflow run 28384348972 classified as error. Loop key: verify-spec-node-ephemeral-disk-resource-placement-a_verify-spec-node-ephemeral-disk-resou. Cluster did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384348972 Result: runs/test-results/single-node-ephemeral-disk-resource-placement_344903/artifacts/node-ephemeral-disk-resource-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/test-results/single-node-ephemeral-disk-resource-placement_344903/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-node-ephemeral-disk-resource-placement",
+      "session_history": [
+        "s_task_verify-spec-node-ephemeral-disk-resource-placement"
+      ],
+      "result": "Spec spec.node-ephemeral-disk.resource-placement workflow run 28384348972 classified as error. Loop key: verify-spec-node-ephemeral-disk-resource-placement-a_verify-spec-node-ephemeral-disk-resou. Cluster did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28384348972 Result: runs/test-results/single-node-ephemeral-disk-resource-placement_344903/artifacts/node-ephemeral-disk-resource-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28384348972/aks-rp-e2e-28384348972-spec-test-results/test-results/single-node-ephemeral-disk-resource-placement_344903/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T15:44:01.300Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Establish whether spec.node-confidential-vm.snp-pool can now be rerun truthfully from a live executor checkout that includes the repaired Scenario_CVM_SNP carrier, and either produce the exact executor-side proof plus rerun handle or leave the exact publish/revision blocker that still prevents the rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-confidential-vm-snp-pool-executor-surface-gate-20260629.md"
+      ],
+      "acceptance": [
+        "The follow-up proves or disproves that the live executor surface now includes features/node-confidential-vm/tests/node-confidential-vm-snp-pool.ts with the repaired Scenario_CVM_SNP + kubenet + dcpool -> pull-image -> volume-mount -> nondc carrier, citing the exact revision/workflow/checkout evidence rather than only the local dirty file.",
+        "If the repaired carrier is executor-available, the note records the exact same-spec rerun handle or launch-ready carrier details including the explicit live gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=node-confidential-vm-snp-pool so the next leaf can classify product behavior rather than carrier ambiguity.",
+        "If the repaired carrier is still not executor-available, the note records the exact publish/branch/revision blocker, owner surface, and resume condition needed before any truthful rerun can launch; do not relabel the feature itself pass/fail without executor proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-confidential-vm.snp-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:59:25.597Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629_20260629155925",
+        "assigned_at": "2026-06-29T15:59:25.649Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629",
+        "worker_started_attempt_id": "a_prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629_20260629155925",
+        "worker_started_at": "2026-06-29T15:59:59.145Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable executor-surface gate note proving the latest live same-spec workflow still ran a stale node-confidential-vm-snp-pool probe while the repaired carrier remains only a local dirty diff, so truthful rerun classification is still blocked on publish/revision availability.",
+        "last_worker_completed_at": "2026-06-29T16:01:31.956Z",
+        "last_worker_evidence": [
+          "evidence/archive/node-confidential-vm-snp-pool-executor-surface-gate-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:03:21.267Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the executor-surface gate note as truthful blocker classification rather than a repaired rerun: latest same-spec workflow still ran a stale probe while the repaired Scenario_CVM_SNP carrier remains only a local dirty diff, so spec.node-confidential-vm.snp-pool is still blocked on publish/revision availability before any truthful rerun."
+      },
+      "session_id": "s_task_prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629",
+      "session_history": [
+        "s_task_prove-spec-node-confidential-vm-snp-pool-executor-repaired-carrier-20260629"
+      ],
+      "result": "Wrote a durable executor-surface gate note proving the latest live same-spec workflow still ran a stale node-confidential-vm-snp-pool probe while the repaired carrier remains only a local dirty diff, so truthful rerun classification is still blocked on publish/revision availability.",
+      "evidence": [
+        "evidence/archive/node-confidential-vm-snp-pool-executor-surface-gate-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:03:21.267Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the executor-surface gate note as truthful blocker classification rather than a repaired rerun: latest same-spec workflow still ran a stale probe while the repaired Scenario_CVM_SNP carrier remains only a local dirty diff, so spec.node-confidential-vm.snp-pool is still blocked on publish/revision availability before any truthful rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the current active verifier/rerun wave meaningfully drains or the owner explicitly promotes this spec, rerun spec.network-acns.basic-retina-update-retina-enterprise on the same direct single-spec carrier so the new child-run milestone witness can localize the last reached lifecycle boundary beyond opaque run 344585.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md"
+      ],
+      "acceptance": [
+        "The rerun stays same-spec and same direct single-spec carrier, using the repo-local milestone instrumentation only to classify where execution last reached or failed.",
+        "A durable review note cites status.json/steps.jsonl/milestones.json child-run witness (or terminal result) and names the last reached milestone boundary with any resulting model/spec-loop update.",
+        "The follow-up does not overclaim generic runner repair or widen into unrelated live execution; if the verifier wave has not drained enough for truthful promotion, the leaf remains backlog until owner promotion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:57:26.503Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629_20260629155756",
+        "assigned_at": "2026-06-29T15:57:56.184Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20",
+        "worker_started_attempt_id": "a_rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629_20260629155756",
+        "worker_started_at": "2026-06-29T15:57:59.885Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the durable review note `evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md` documenting that no truthful post-instrumentation rerun could be launched yet because the verifier wave remains saturated and this host lacks gh/az live-execution capability, while preserving the exact resume condition and last durable 344585 boundary.",
+        "last_worker_completed_at": "2026-06-29T15:59:32.991Z",
+        "last_worker_evidence": [
+          "evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:00:59.551Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker note as truthful non-terminal blocker evidence rather than a completed rerun: no post-instrumentation same-spec live rerun launched because the verifier wave remained saturated and the session host lacked gh/az live capability. Replaced this review leaf with rerun-spec-network-acns-basic-retina-update-retina-enterprise-post-instrumentation-when-live-slot-truthful, which preserves the exact same-carrier rerun/resume conditions."
+      },
+      "session_id": "s_task_rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20",
+      "session_history": [
+        "s_task_rerun-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20"
+      ],
+      "result": "Wrote the durable review note `evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md` documenting that no truthful post-instrumentation rerun could be launched yet because the verifier wave remains saturated and this host lacks gh/az live-execution capability, while preserving the exact resume condition and last durable 344585 boundary.",
+      "evidence": [
+        "evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-after-milestone-instrumentation-20260629.md"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T16:00:59.551Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker note as truthful non-terminal blocker evidence rather than a completed rerun: no post-instrumentation same-spec live rerun launched because the verifier wave remained saturated and the session host lacked gh/az live capability. Replaced this review leaf with rerun-spec-network-acns-basic-retina-update-retina-enterprise-post-instrumentation-when-live-slot-truthful, which preserves the exact same-carrier rerun/resume conditions."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-network-acns-basic-retina-update-retina-enterprise-post-instrumentation-when-live-slot-truthful",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "When the current verifier wave meaningfully drains or the owner explicitly spends a live slot on this spec from a gh/az-capable host, rerun spec.network-acns.basic-retina-update-retina-enterprise on the same direct single-spec carrier and classify the child-run milestone witness boundary produced by the new instrumentation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reverify-spec-network-acns-basic-retina-update-retina-enterprise-post-instrumentation-live-rerun.md"
+      ],
+      "acceptance": [
+        "The rerun stays same-spec and same direct single-spec carrier, using the repo-local milestone instrumentation only to classify where execution last reached or failed.",
+        "A durable review note cites child status.json, steps.jsonl, and milestones.json (or terminal result) and names the last reached milestone boundary with any resulting model/spec-loop update.",
+        "If the verifier wave is still saturated or the execution host still lacks truthful gh/az live capability, the follow-up records that exact blocker/resume condition instead of claiming a new live verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T16:00:59.493Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T16:01:32.897Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "This backlog leaf incorrectly surfaced as runnable even though the accepted worker evidence proved the exact prerequisites were still absent. Replaced it with blocked wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629 so the tree carries the truthful queue-capacity and host-capability resume condition in one place."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T16:01:32.897Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "This backlog leaf incorrectly surfaced as runnable even though the accepted worker evidence proved the exact prerequisites were still absent. Replaced it with blocked wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629 so the tree carries the truthful queue-capacity and host-capability resume condition in one place."
+      },
+      "status": "done"
+    }
+  ]
+}

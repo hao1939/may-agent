@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:43:45.124Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 bounded refill after accepting the row-25 VM prerelease capacity-based-surge reconciliation: archive the completed mixed-SKU maintenance repair and the newly accepted row-25 capacity-based-surge repair because both now have truthful non-draft maintained posture captured in model plus derived views and linked evidence. The live repo-local frontier remains the already-active row-26 maxUnavailable sibling reconciliation using mounted VM prerelease source plus checked-in spec/replay carriers. Keep the external human-transport proof family compressed as the single blocked wait; no duplicate asks or local source/setup work should be reopened.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-capacity-based-surge-path-status-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/model-repair lane: reconcile the still-draft maintained path path.virtualmachines.capacity-based-surge using the mounted VM prerelease source contract plus checked-in feature/spec/replay artifacts so the row-25 path carries a truthful maintained non-draft posture without opening a live execute lane.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-capacity-based-surge-path-status-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Use the mounted AKS RP VM prerelease source contract for row 25 together with the existing repo-local feature/spec/replay carriers to determine the truthful maintained status/verdict for path.virtualmachines.capacity-based-surge, and document the exact source/spec/replay/evidence chain supporting that decision.",
+        "Update the affected maintained surfaces at minimum model/knowledge-map/model.json and dependent generated views so the row-25 path is no longer left as an unexplained draft while preserving any execute-gate or upstream-runner notes as adjacent context rather than a product verdict.",
+        "Produce a bounded repo-local artifact summarizing the verdict decision, exact files changed, and verification commands/checks used; no cloud execution, no external-send-proof family edits, and no reopening of unrelated VM prerelease branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-based-surge-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:40:06.416Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-capacity-based-surge-path-status-reconciliation-20260621_20260621174006",
+        "assigned_at": "2026-06-21T17:40:06.466Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-capacity-based-surge-path-status-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-capacity-based-surge-path-status-reconciliation-20260621_20260621174006",
+        "worker_started_at": "2026-06-21T17:40:25.712Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled row-25 VirtualMachines capacity-based surge from stale draft to truthful execute-gated blocked in model/knowledge-map/model.json, regenerated maintained views, and wrote a bounded evidence note at evidence/archive/vmpr-capacity-based-surge-path-status-reconciliation-20260621.md documenting the mounted-source/spec/replay/evidence chain.",
+        "last_worker_completed_at": "2026-06-21T17:42:32.222Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:42:48.829Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the worker artifact shows mounted source, checked-in spec/replay, and row-local gate evidence all agree that path.virtualmachines.capacity-based-surge is execute-capable but still mutation-gated, so the maintained model/view surfaces were truthfully repaired from stale draft to blocked without opening a live execute lane."
+      },
+      "session_id": "s_task_vmpr-capacity-based-surge-path-status-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-capacity-based-surge-path-status-reconciliation-20260621"
+      ],
+      "result": "Reconciled row-25 VirtualMachines capacity-based surge from stale draft to truthful execute-gated blocked in model/knowledge-map/model.json, regenerated maintained views, and wrote a bounded evidence note at evidence/archive/vmpr-capacity-based-surge-path-status-reconciliation-20260621.md documenting the mounted-source/spec/replay/evidence chain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:42:48.829Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the worker artifact shows mounted source, checked-in spec/replay, and row-local gate evidence all agree that path.virtualmachines.capacity-based-surge is execute-capable but still mutation-gated, so the maintained model/view surfaces were truthfully repaired from stale draft to blocked without opening a live execute lane."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/model-repair lane: reconcile the still-draft/source-grounded maintained path path.virtualmachines.mixed-sku-upgrade using the existing mounted-source contract plus repo-local feature/spec/replay artifacts so the path carries a truthful maintained status/verdict without opening a live execute lane.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Use the existing mounted-source row-27 contract plus checked-in feature/spec/replay/model carriers to determine the truthful maintained status/verdict for path.virtualmachines.mixed-sku-upgrade, and document the exact source/spec/replay/evidence chain supporting that decision.",
+        "Update the affected maintained model surfaces (at minimum model/knowledge-map/model.json and dependent generated views/ledgers if linkage or status changes) so the mixed-sku-upgrade path is no longer left as an unexplained draft while preserving any separate execution-gate or upstream-runner notes as adjacent context rather than a product verdict.",
+        "Produce a bounded repo-local artifact summarizing the verdict decision, exact files changed, and verification commands/checks used; no cloud execution, no external-send-proof family edits, and no reopening of unrelated VM prerelease branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-mixed-sku-upgrade-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:30:15.331Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T17:30:20.385Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621_20260621173023",
+        "assigned_at": "2026-06-21T17:30:23.528Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621_20260621173023",
+        "worker_started_at": "2026-06-21T17:30:41.241Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled row-27 mixed-SKU upgrade from stale draft to truthful unknown/source-grounded execute-capable status in the maintained knowledge model, added missing evidence registry entries, regenerated maintained views, and wrote the bounded reconciliation note.",
+        "last_worker_completed_at": "2026-06-21T17:34:14.288Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:39:55.143Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via authoritative follow-up: the review blocker was cleared by vmpr-mixed-sku-upgrade-derived-surface-repair-20260621, whose bounded repair and direct verification now show the maintained row-27 surfaces are no longer draft in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json; keep the path at truthful blocked/execute-gated posture rather than the unsupported earlier unknown claim."
+      },
+      "session_id": "s_task_vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-mixed-sku-upgrade-path-status-reconciliation-20260621"
+      ],
+      "result": "Reconciled row-27 mixed-SKU upgrade from stale draft to truthful unknown/source-grounded execute-capable status in the maintained knowledge model, added missing evidence registry entries, regenerated maintained views, and wrote the bounded reconciliation note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:39:55.143Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via authoritative follow-up: the review blocker was cleared by vmpr-mixed-sku-upgrade-derived-surface-repair-20260621, whose bounded repair and direct verification now show the maintained row-27 surfaces are no longer draft in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json; keep the path at truthful blocked/execute-gated posture rather than the unsupported earlier unknown claim."
+      },
+      "status": "done"
+    }
+  ]
+}

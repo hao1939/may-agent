@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:38:46.671Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the project in a truthful blocked-only shape: the four exact external waits stay compressed under the focus branch until returned proof or the first bounded follow-up window on or after 2026-06-26, and the separate VirtualMachine prerelease coverage ledger slice remains blocked only on the unrelated repo-wide bun run check gate. The completed VirtualMachine prerelease no-cloud coverage/landing-decision leaves are now durable history under the root, so the visible frontier should carry only the blocked external-wait family plus the single checkpoint-gate wait without reopening local authoring, creating duplicate waits, or inventing premature repo-check follow-up work before new evidence changes the blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-ledger-checkpoint-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Assemble the owner-ready checkpoint packet for the accepted 2026-06-24 VirtualMachine prerelease coverage ledger slice after the network-isolated reconcile plus metadata refresh: review the repo diff, verify the slice stays confined to the accepted coverage ledger/evidence surfaces, run the bounded checkpoint/domain validation for that exact slice, and record the exact owner-only commit/hash follow-up still required.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence lists the exact accepted files in the checkpoint-ready slice, cites the accepted reconcile/metadata-refresh artifacts that justify them, records target-only git status/diff scope, and states clearly that no commit hash was created because commit creation is an owner-only checkpoint step.",
+        "The packet proves the slice is bounded and candidate-ready via the domain checkpoint flow, records the repo-wide check result without claiming unrelated drift is part of this slice, and introduces no new feature authoring, cloud execution, or blocked-wait changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ledger.virtualmachine-prerelease.coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:22:17.440Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-checkpoint-20260624_20260624162221",
+        "assigned_at": "2026-06-24T16:22:21.488Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-ledger-checkpoint-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-checkpoint-20260624_20260624162221",
+        "worker_started_at": "2026-06-24T16:22:33.881Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Created the durable checkpoint packet at evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md after reviewing the exact four-file VirtualMachine prerelease ledger slice, verifying bounded domain:checkpoint candidate status, and recording the repo-wide check failure plus owner-only commit boundary that prevents a worker-side commit/hash.",
+        "last_worker_completed_at": "2026-06-24T16:25:44.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:28:22.852Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker packet as the completed commit-ready checkpoint preparation step: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md bounds the slice to the exact four accepted ledger/evidence files, cites the upstream reconcile/metadata-refresh artifacts, records target-only git scope plus bounded domain:checkpoint candidate status, and truthfully defers commit/hash capture to a separate owner-owned follow-up."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-ledger-checkpoint-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-ledger-checkpoint-20260624"
+      ],
+      "result": "Created the durable checkpoint packet at evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md after reviewing the exact four-file VirtualMachine prerelease ledger slice, verifying bounded domain:checkpoint candidate status, and recording the repo-wide check failure plus owner-only commit boundary that prevents a worker-side commit/hash.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:28:22.852Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker packet as the completed commit-ready checkpoint preparation step: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md bounds the slice to the exact four accepted ledger/evidence files, cites the upstream reconcile/metadata-refresh artifacts, records target-only git scope plus bounded domain:checkpoint candidate status, and truthfully defers commit/hash capture to a separate owner-owned follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

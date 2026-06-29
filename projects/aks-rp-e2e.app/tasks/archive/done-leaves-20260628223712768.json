@@ -1,0 +1,1204 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T22:37:12.768Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 watchdog blocked-frontier owner review: preserve the seven live leaves as the complete truthful frontier for spec verification while archiving stale done clutter. The accepted prefix-collision verifier repair remains the durable explanation for prior wrong-run routing, so only the current seven blocked waits stay open: CostAnalysis underlay kubeconfig, deployment-safeguards alternate ref, egress-lockdown authorized-dev fallback promotion, private-cluster none-dns live-run authorization, app-routing existing-cluster identifiers, CCP connected-cluster proxy auth admin-group prerequisite, and the shared westus2 cluster-count preflight family recovery wait. No new execution or duplicate escalation leaves are truthful before the shared 2026-06-29T16:45:00Z checkpoint unless a reply/proof/redirect/decline lands sooner.",
+  "archived": 19,
+  "tasks": [
+    {
+      "id": "verify-spec-network-acns-retina-enterprise-update-acns-cilium",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-acns.retina-enterprise-update-acns-cilium through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-acns.retina-enterprise-update-acns-cilium",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.retina-enterprise-update-acns-cilium"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-acns.retina-enterprise-update-acns-cilium",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:07.997Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-acns-retina-enterprise-update-acns-cilium_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.747Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-acns-retina-enterprise-update-acns-cilium",
+        "worker_started_attempt_id": "a_verify-spec-network-acns-retina-enterprise-update-acns-cilium_20260628212608",
+        "worker_started_at": "2026-06-28T21:26:31.091Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-acns.retina-enterprise-update-acns-cilium workflow run 28336522707 classified as blocked. Loop key: verify-spec-network-acns-retina-enterprise-update-acns-cilium-a_verify-spec-network-acns-r. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336522707 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/test-results/single-network-acns-retina-enterprise-update-acns-cilium_653549/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/test-results/single-network-acns-retina-enterprise-update-acns-cilium_653549/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:28:04.539Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.319Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-acns-retina-enterprise-update-acns-cilium",
+      "session_history": [
+        "s_task_verify-spec-network-acns-retina-enterprise-update-acns-cilium"
+      ],
+      "result": "Spec spec.network-acns.retina-enterprise-update-acns-cilium workflow run 28336522707 classified as blocked. Loop key: verify-spec-network-acns-retina-enterprise-update-acns-cilium-a_verify-spec-network-acns-r. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336522707 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/test-results/single-network-acns-retina-enterprise-update-acns-cilium_653549/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336522707/aks-rp-e2e-28336522707-spec-test-results/test-results/single-network-acns-retina-enterprise-update-acns-cilium_653549/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.319Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-acns-retina-enterprise-update-basic-retina",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-acns.retina-enterprise-update-basic-retina through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-acns.retina-enterprise-update-basic-retina",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.retina-enterprise-update-basic-retina"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-acns.retina-enterprise-update-basic-retina",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:08.017Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-acns-retina-enterprise-update-basic-retina_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.781Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-acns-retina-enterprise-update-basic-retina",
+        "worker_started_attempt_id": "a_verify-spec-network-acns-retina-enterprise-update-basic-retina_20260628212608",
+        "worker_started_at": "2026-06-28T21:27:27.152Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-acns.retina-enterprise-update-basic-retina workflow run 28336546751 classified as blocked. Loop key: verify-spec-network-acns-retina-enterprise-update-basic-retina-a_verify-spec-network-acns-. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336546751 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/test-results/single-network-acns-retina-enterprise-update-basic-retina_744469/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/test-results/single-network-acns-retina-enterprise-update-basic-retina_744469/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:29:20.449Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.416Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-acns-retina-enterprise-update-basic-retina",
+      "session_history": [
+        "s_task_verify-spec-network-acns-retina-enterprise-update-basic-retina"
+      ],
+      "result": "Spec spec.network-acns.retina-enterprise-update-basic-retina workflow run 28336546751 classified as blocked. Loop key: verify-spec-network-acns-retina-enterprise-update-basic-retina-a_verify-spec-network-acns-. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336546751 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/test-results/single-network-acns-retina-enterprise-update-basic-retina_744469/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336546751/aks-rp-e2e-28336546751-spec-test-results/test-results/single-network-acns-retina-enterprise-update-basic-retina_744469/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.416Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-acns-security-fqdn-filtering",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-acns.security-fqdn-filtering through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-acns.security-fqdn-filtering",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns.security-fqdn-filtering"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-acns.security-fqdn-filtering",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:08.037Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-acns-security-fqdn-filtering_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.812Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-acns-security-fqdn-filtering",
+        "worker_started_attempt_id": "a_verify-spec-network-acns-security-fqdn-filtering_20260628212608",
+        "worker_started_at": "2026-06-28T21:27:02.192Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-acns.security-fqdn-filtering workflow run 28336536822 classified as blocked. Loop key: verify-spec-network-acns-security-fqdn-filtering-a_verify-spec-network-acns-security-fqdn-. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336536822 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/test-results/single-network-acns-security-fqdn-filtering_724563/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/test-results/single-network-acns-security-fqdn-filtering_724563/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:28:44.355Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.531Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-acns-security-fqdn-filtering",
+      "session_history": [
+        "s_task_verify-spec-network-acns-security-fqdn-filtering"
+      ],
+      "result": "Spec spec.network-acns.security-fqdn-filtering workflow run 28336536822 classified as blocked. Loop key: verify-spec-network-acns-security-fqdn-filtering-a_verify-spec-network-acns-security-fqdn-. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336536822 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/test-results/single-network-acns-security-fqdn-filtering_724563/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336536822/aks-rp-e2e-28336536822-spec-test-results/test-results/single-network-acns-security-fqdn-filtering_724563/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.531Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-cni-acns-observability",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.acns-observability through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.acns-observability",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.acns-observability"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.acns-observability",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:08.068Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-acns-observability_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.844Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-acns-observability",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-acns-observability_20260628212608",
+        "worker_started_at": "2026-06-28T21:27:34.084Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-cni.acns-observability workflow run 28336549586 classified as blocked. Loop key: verify-spec-network-cni-acns-observability-a_verify-spec-network-cni-acns-observability_20. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336549586 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/test-results/single-network-cni-acns-observability_759859/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/test-results/single-network-cni-acns-observability_759859/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:29:29.568Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.635Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-cni-acns-observability",
+      "session_history": [
+        "s_task_verify-spec-network-cni-acns-observability"
+      ],
+      "result": "Spec spec.network-cni.acns-observability workflow run 28336549586 classified as blocked. Loop key: verify-spec-network-cni-acns-observability-a_verify-spec-network-cni-acns-observability_20. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336549586 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/test-results/single-network-cni-acns-observability_759859/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336549586/aks-rp-e2e-28336549586-spec-test-results/test-results/single-network-cni-acns-observability_759859/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.635Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-cni-azure-default-mode",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.azure-default-mode through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.azure-default-mode",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.azure-default-mode"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.azure-default-mode",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:08.091Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-azure-default-mode_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.876Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-azure-default-mode",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-azure-default-mode_20260628212608",
+        "worker_started_at": "2026-06-28T21:26:54.070Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-cni.azure-default-mode workflow run 28336533186 classified as blocked. Loop key: verify-spec-network-cni-azure-default-mode-a_verify-spec-network-cni-azure-default-mode_20. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336533186 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/test-results/single-network-cni-azure-default-mode_714725/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/test-results/single-network-cni-azure-default-mode_714725/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:28:34.884Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.722Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-cni-azure-default-mode",
+      "session_history": [
+        "s_task_verify-spec-network-cni-azure-default-mode"
+      ],
+      "result": "Spec spec.network-cni.azure-default-mode workflow run 28336533186 classified as blocked. Loop key: verify-spec-network-cni-azure-default-mode-a_verify-spec-network-cni-azure-default-mode_20. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336533186 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/test-results/single-network-cni-azure-default-mode_714725/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336533186/aks-rp-e2e-28336533186-spec-test-results/test-results/single-network-cni-azure-default-mode_714725/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.722Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-cni-azure-overlay",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.azure-overlay through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.azure-overlay",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.azure-overlay"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.azure-overlay",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T21:26:08.118Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-azure-overlay_20260628212608",
+        "assigned_at": "2026-06-28T21:26:08.907Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-azure-overlay",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-azure-overlay_20260628212608",
+        "worker_started_at": "2026-06-28T21:27:41.291Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-cni.azure-overlay workflow run 28336552481 classified as blocked. Loop key: verify-spec-network-cni-azure-overlay-a_verify-spec-network-cni-azure-overlay_202606282126. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336552481 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/test-results/single-network-cni-azure-overlay_805379/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/test-results/single-network-cni-azure-overlay_805379/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T21:29:40.083Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:51:05.816Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted this attempt as a non-feature verdict: the worker reached a concrete shared westus2 cluster-count preflight blocker, and the live retry condition is now represented by await-staging-westus2-cluster-count-preflight-family-recovery-20260628 instead of leaving this per-spec review leaf open."
+      },
+      "session_id": "s_task_verify-spec-network-cni-azure-overlay",
+      "session_history": [
+        "s_task_verify-spec-network-cni-azure-overlay"
+      ],
+      "result": "Spec spec.network-cni.azure-overlay workflow run 28336552481 classified as blocked. Loop key: verify-spec-network-cni-azure-overlay-a_verify-spec-network-cni-azure-overlay_202606282126. Live Azure run capacity preflight failed: could not read current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28336552481 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/test-results/single-network-cni-azure-overlay_805379/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28336552481/aks-rp-e2e-28336552481-spec-test-results/test-results/single-network-cni-azure-overlay_805379/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:51:05.816Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the shared westus2 cluster-count preflight family is diagnosed, re-evaluate spec.net-integration.natgw-v2-migration-v2-to-none so the 2026-06-28 auto-done blocked run 28336460394 does not stand as the feature's accepted verdict.",
+      "inputs": [],
+      "outputs": [
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "Review the shared diagnosis outcome for runner:staging-westus2-cluster-count-preflight together with run 28336460394 and decide the truthful next spec action: rerun, mark blocked on the family wait, or record a bounded non-rerun disposition with evidence.",
+        "If the shared preflight issue is resolved, launch or queue the concrete successor verification for spec.net-integration.natgw-v2-migration-v2-to-none; if not resolved, record the exact family blocker link instead of treating run 28336460394 as a reviewed feature verdict.",
+        "Any resulting spec verdict or continued block must cite durable evidence and explicitly supersede the auto-accepted 2026-06-28 blocked classification without owner review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:29:57.914Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T21:41:05.577Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis_20260628214135",
+        "assigned_at": "2026-06-28T21:41:35.539Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis",
+        "worker_started_attempt_id": "a_retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis_20260628214135",
+        "worker_started_at": "2026-06-28T21:41:51.449Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the shared westus2 preflight diagnosis against NATGW V2 run 28336460394 and wrote a durable evidence note concluding the spec should remain blocked on the shared family wait rather than treating the auto-done blocked run as an accepted feature verdict.",
+        "last_worker_completed_at": "2026-06-28T21:42:52.337Z",
+        "last_worker_evidence": [
+          "evidence/archive/retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:46:10.942Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the disposition-correction review: evidence/archive/retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis-20260628.md shows run 28336460394 failed in the shared westus2 cluster-count preflight before any NATGW V2→none feature assertions, so it cannot stand as the spec verdict. The spec now links to the family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 until same-surface recovery proof exists."
+      },
+      "session_id": "s_task_retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis",
+      "session_history": [
+        "s_task_retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis"
+      ],
+      "result": "Reviewed the shared westus2 preflight diagnosis against NATGW V2 run 28336460394 and wrote a durable evidence note concluding the spec should remain blocked on the shared family wait rather than treating the auto-done blocked run as an accepted feature verdict.",
+      "evidence": [
+        "evidence/archive/retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:46:10.942Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the disposition-correction review: evidence/archive/retry-spec-net-integration-natgw-v2-migration-v2-to-none-after-westus2-preflight-diagnosis-20260628.md shows run 28336460394 failed in the shared westus2 cluster-count preflight before any NATGW V2→none feature assertions, so it cannot stand as the spec verdict. The spec now links to the family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 until same-surface recovery proof exists."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared live Azure capacity preflight failure that prevents spec-loop runs from reading current AKS cluster count for subscription 26fe00f8-9173-4872-9134-bb1d2e00343a in westus2, then classify the truthful next move for all affected review leaves.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the exact runner command, API call, or code path that fails when reading current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2, using repo-local evidence rather than speculation.",
+        "Artifact classifies whether the next move is repo-local repair, alternate execution surface, or exact external escalation, and names the concrete retry/resume condition for the affected spec-loop family.",
+        "Artifact lists the currently affected review leaves and representative run ids so future owner review can replace duplicate blocked leaves with the family-level diagnosis instead of retrying each spec unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-env:live-capacity-preflight-westus2-cluster-count"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:33:16.720Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628_20260628213316",
+        "assigned_at": "2026-06-28T21:33:16.795Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628",
+        "worker_started_attempt_id": "a_diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628_20260628213316",
+        "worker_started_at": "2026-06-28T21:33:55.854Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested family-level diagnosis artifact at evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md, tying the failure to runner/execute-vitest-plan.ts cluster-count preflight commands and classifying the next move as one shared external/environment blocker with 15 currently affected review leaves.",
+        "last_worker_completed_at": "2026-06-28T21:36:23.732Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:56:20.672Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md ties the shared blocker to runner/execute-vitest-plan.ts cluster-count preflight commands and gives the family-level external/environment resume condition for affected review leaves."
+      },
+      "session_id": "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628",
+      "session_history": [
+        "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628"
+      ],
+      "result": "Produced the requested family-level diagnosis artifact at evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md, tying the failure to runner/execute-vitest-plan.ts cluster-count preflight commands and classifying the next move as one shared external/environment blocker with 15 currently affected review leaves.",
+      "evidence": [
+        "evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:56:20.672Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/diagnose-shared-live-capacity-preflight-cluster-count-westus2-family-20260628.md ties the shared blocker to runner/execute-vitest-plan.ts cluster-count preflight commands and gives the family-level external/environment resume condition for affected review leaves."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-westus2-cluster-count-preflight-family",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared staging westus2 AKS cluster-count preflight failure now blocking multiple single-spec GitHub runs before product assertions are reached, and record the exact retry/escalation disposition for the affected specs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md"
+      ],
+      "acceptance": [
+        "Review the affected blocked spec runs and identify the shared failing preflight step, exact subscription/region scope, and whether the fault is auth, quota query wiring, or another runner/environment issue.",
+        "Produce durable evidence under evidence/archive with the failing command or API step, the observed error text, and the bounded next action: local fix, alternate environment, or exact external escalation/wait.",
+        "List the affected spec task ids so later owner review can reopen or requeue concrete spec verification only after this family diagnosis changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:staging-westus2-cluster-count-preflight"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:38:06.939Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-westus2-cluster-count-preflight-family_20260628213807",
+        "assigned_at": "2026-06-28T21:38:07.012Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-westus2-cluster-count-preflight-family",
+        "worker_started_attempt_id": "a_diagnose-westus2-cluster-count-preflight-family_20260628213807",
+        "worker_started_at": "2026-06-28T21:38:23.592Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the shared westus2 cluster-count preflight family and wrote a durable owner-ready artifact at evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md. The note identifies the exact runner preflight commands, classifies the issue as a runner/environment capacity-query failure rather than auth/quota/product failure, and lists affected task ids for later owner requeue review.",
+        "last_worker_completed_at": "2026-06-28T21:40:48.308Z",
+        "last_worker_evidence": [
+          "evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:41:35.462Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md identifies the exact runner capacity-query commands in runner/execute-vitest-plan.ts, classifies the shared westus2 failure as a runner/environment cluster-count read problem rather than product verdict or quota-full signal, and records the same-surface recovery proof needed before rerunning affected specs."
+      },
+      "session_id": "s_task_diagnose-westus2-cluster-count-preflight-family",
+      "session_history": [
+        "s_task_diagnose-westus2-cluster-count-preflight-family"
+      ],
+      "result": "Diagnosed the shared westus2 cluster-count preflight family and wrote a durable owner-ready artifact at evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md. The note identifies the exact runner preflight commands, classifies the issue as a runner/environment capacity-query failure rather than auth/quota/product failure, and lists affected task ids for later owner requeue review.",
+      "evidence": [
+        "evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:41:35.462Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md identifies the exact runner capacity-query commands in runner/execute-vitest-plan.ts, classifies the shared westus2 failure as a runner/environment cluster-count read problem rather than product verdict or quota-full signal, and records the same-surface recovery proof needed before rerunning affected specs."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-loop-artifact-routing-mismatch-run-28336797760",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the artifact-routing mismatch around workflow run 28336797760 so spec.kms.v2plus-enable-cmk-from-v2-private gets a truthful result or bounded retry decision instead of reusing the private-vnet-integration artifact bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect workflow metadata, artifact bundle selection, and top-level result routing for run 28336797760 to explain why verify-spec-kms-v2plus-enable-cmk-from-v2-private pointed at the private-vnet-integration result.",
+        "Record durable evidence naming whether the fault is workflow dispatch, artifact publication, or verifier routing, with exact files/paths proving the conclusion.",
+        "State the concrete next action for spec.kms.v2plus-enable-cmk-from-v2-private: safe retry, verifier fix, or exact escalation/wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:spec-loop-artifact-routing-run-28336797760"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:39:13.031Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-loop-artifact-routing-mismatch-run-28336797760_20260628213913",
+        "assigned_at": "2026-06-28T21:39:13.106Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336797760",
+        "worker_started_attempt_id": "a_diagnose-spec-loop-artifact-routing-mismatch-run-28336797760_20260628213913",
+        "worker_started_at": "2026-06-28T21:39:24.597Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28336797760 as a verifier run-selection defect, not an artifact publication problem, and wrote durable evidence at evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md with the bounded next action: fix verifier routing, then safely retry the private spec.",
+        "last_worker_completed_at": "2026-06-28T21:41:27.861Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T22:00:04.725Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md proves run 28336797760 is a truthful vnet-integration bundle and traces the mismatch to single-spec verifier substring-based run selection, leaving verifier repair plus bounded retry as the next action."
+      },
+      "session_id": "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336797760",
+      "session_history": [
+        "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336797760"
+      ],
+      "result": "Diagnosed run 28336797760 as a verifier run-selection defect, not an artifact publication problem, and wrote durable evidence at evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md with the bounded next action: fix verifier routing, then safely retry the private spec.",
+      "evidence": [
+        "evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:00:04.725Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/spec-loop-artifact-routing-mismatch-run-28336797760-20260628.md proves run 28336797760 is a truthful vnet-integration bundle and traces the mismatch to single-spec verifier substring-based run selection, leaving verifier repair plus bounded retry as the next action."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-loop-artifact-routing-mismatch-run-28336838915",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the artifact-routing mismatch around workflow run 28336838915 so verify-spec-kms-v2plus-enable-cmk-from-v2-public gets a truthful result or bounded retry decision instead of reusing the remove-key-version preflight bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-artifact-routing-mismatch-run-28336838915-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect workflow metadata, artifact bundle selection, and top-level result routing for run 28336838915 to explain why verify-spec-kms-v2plus-enable-cmk-from-v2-public pointed at the same run/result bundle as verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version.",
+        "Record durable evidence naming whether the fault is workflow dispatch, artifact publication, or verifier routing, with exact files/paths proving whether the remove-key-version blocked result remains trustworthy and the public-spec review claim is misattributed.",
+        "State the concrete next action for spec.kms.v2plus-enable-cmk-from-v2-public: safe retry, verifier fix, or exact escalation/wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:spec-loop-artifact-routing-run-28336838915"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:40:11.847Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-loop-artifact-routing-mismatch-run-28336838915_20260628214018",
+        "assigned_at": "2026-06-28T21:40:18.790Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336838915",
+        "worker_started_attempt_id": "a_diagnose-spec-loop-artifact-routing-mismatch-run-28336838915_20260628214018",
+        "worker_started_at": "2026-06-28T21:40:25.614Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28336838915 as a verifier run-selection bug, not a bad workflow artifact, and wrote durable evidence showing the remove-key-version blocked result is trustworthy while the public-spec claim was misattributed.",
+        "last_worker_completed_at": "2026-06-28T21:42:20.776Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-loop-artifact-routing-mismatch-run-28336838915-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T22:00:04.801Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/spec-loop-artifact-routing-mismatch-run-28336838915-20260628.md proves run 28336838915 belongs to the remove-key-version spec, keeps that westus2 blocker trustworthy, and identifies the same single-spec verifier substring binding bug for the public base spec."
+      },
+      "session_id": "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336838915",
+      "session_history": [
+        "s_task_diagnose-spec-loop-artifact-routing-mismatch-run-28336838915"
+      ],
+      "result": "Diagnosed run 28336838915 as a verifier run-selection bug, not a bad workflow artifact, and wrote durable evidence showing the remove-key-version blocked result is trustworthy while the public-spec claim was misattributed.",
+      "evidence": [
+        "evidence/archive/spec-loop-artifact-routing-mismatch-run-28336838915-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:00:04.801Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/spec-loop-artifact-routing-mismatch-run-28336838915-20260628.md proves run 28336838915 belongs to the remove-key-version spec, keeps that westus2 blocker trustworthy, and identifies the same single-spec verifier substring binding bug for the public base spec."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-kms-westus2-capacity-preflight-read-failures-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared westus2 AKS cluster-count preflight read failure blocking recent KMS single-spec runs, classify whether the root cause is runner auth, subscription/read API, or environment capacity instrumentation, and produce one retry/escalation gate for the affected KMS family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-kms-westus2-capacity-preflight-read-failures-20260628.md"
+      ],
+      "acceptance": [
+        "Affected KMS runs and exact westus2 preflight failure text are enumerated with run/result paths.",
+        "Root-cause class is narrowed to a concrete local diagnosis, shared environment blocker, or exact external escalation target with evidence.",
+        "One family-level next action is recorded: retry gate, setup fix, or escalation/wait criteria for rerunning the blocked KMS specs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:staging-westus2-aks-cluster-count-preflight"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:42:43.980Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-kms-westus2-capacity-preflight-read-failures-20260628_20260628214258",
+        "assigned_at": "2026-06-28T21:42:58.971Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-kms-westus2-capacity-preflight-read-failures-20260628",
+        "worker_started_attempt_id": "a_diagnose-kms-westus2-capacity-preflight-read-failures-20260628_20260628214258",
+        "worker_started_at": "2026-06-28T21:42:59.386Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable KMS-family diagnosis artifact at evidence/archive/diagnose-kms-westus2-capacity-preflight-read-failures-20260628.md. It enumerates 31 affected KMS westus2 runs with result paths, ties the blocker to runner cluster-count preflight instrumentation rather than auth/quota/product verdicts, and records a single family-level retry/escalation gate.",
+        "last_worker_completed_at": "2026-06-28T21:44:42.143Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-kms-westus2-capacity-preflight-read-failures-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:49:12.610Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis artifact as sufficient: it enumerates the affected westus2 KMS runs, rules out auth/quota/product verdicts, and records one family-level retry/escalation gate for the shared cluster-count preflight read failure."
+      },
+      "session_id": "s_task_diagnose-kms-westus2-capacity-preflight-read-failures-20260628",
+      "session_history": [
+        "s_task_diagnose-kms-westus2-capacity-preflight-read-failures-20260628"
+      ],
+      "result": "Produced a durable KMS-family diagnosis artifact at evidence/archive/diagnose-kms-westus2-capacity-preflight-read-failures-20260628.md. It enumerates 31 affected KMS westus2 runs with result paths, ties the blocker to runner cluster-count preflight instrumentation rather than auth/quota/product verdicts, and records a single family-level retry/escalation gate.",
+      "evidence": [
+        "evidence/archive/diagnose-kms-westus2-capacity-preflight-read-failures-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:49:12.610Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis artifact as sufficient: it enumerates the affected westus2 KMS runs, rules out auth/quota/product verdicts, and records one family-level retry/escalation gate for the shared cluster-count preflight read failure."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-kms-single-spec-artifact-routing-mismatch-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared single-spec artifact-routing-mismatch affecting recent KMS CMK verification runs, identify whether the fault is in workflow artifact layout, run watcher/result-path selection, or spec naming, and produce one retry/repair gate for the affected KMS specs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md"
+      ],
+      "acceptance": [
+        "Affected KMS runs and exact artifact-routing-mismatch evidence are enumerated with run ids and bundle/result paths.",
+        "Root cause is narrowed to a concrete local workflow/watcher/path issue or an exact external blocker with evidence.",
+        "One family-level next action is recorded for the affected KMS specs: local repair target, retry gate, or escalation/wait criteria."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-artifact-routing-mismatch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:44:39.627Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-kms-single-spec-artifact-routing-mismatch-20260628_20260628214442",
+        "assigned_at": "2026-06-28T21:44:42.881Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-kms-single-spec-artifact-routing-mismatch-20260628",
+        "worker_started_attempt_id": "a_diagnose-kms-single-spec-artifact-routing-mismatch-20260628_20260628214442",
+        "worker_started_at": "2026-06-28T21:45:22.007Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the recent KMS single-spec artifact-routing family and wrote a durable evidence note at evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md. The note narrows root cause to local app-side run binding plus stale review classification, distinguishes two true wrong-run leaves from multiple same-spec westus2-preflight blocked runs, and records one owner-facing retry/repair gate.",
+        "last_worker_completed_at": "2026-06-28T21:47:49.437Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:52:15.317Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md: the KMS family is not mainly a workflow artifact-layout or spec-naming bug; only spec.kms.v2plus-enable-cmk-from-v2-public and spec.kms.v2plus-enable-pmk-from-v2-private are true wrong-run bindings, while the sampled sibling KMS v2plus leaves already have matching loop_key + top-level specId and should reconcile to the shared westus2 cluster-count environment blocker rather than stay labeled artifact-routing-mismatch."
+      },
+      "session_id": "s_task_diagnose-kms-single-spec-artifact-routing-mismatch-20260628",
+      "session_history": [
+        "s_task_diagnose-kms-single-spec-artifact-routing-mismatch-20260628"
+      ],
+      "result": "Diagnosed the recent KMS single-spec artifact-routing family and wrote a durable evidence note at evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md. The note narrows root cause to local app-side run binding plus stale review classification, distinguishes two true wrong-run leaves from multiple same-spec westus2-preflight blocked runs, and records one owner-facing retry/repair gate.",
+      "evidence": [
+        "evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:52:15.317Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/diagnose-kms-single-spec-artifact-routing-mismatch-20260628.md: the KMS family is not mainly a workflow artifact-layout or spec-naming bug; only spec.kms.v2plus-enable-cmk-from-v2-public and spec.kms.v2plus-enable-pmk-from-v2-private are true wrong-run bindings, while the sampled sibling KMS v2plus leaves already have matching loop_key + top-level specId and should reconcile to the shared westus2 cluster-count environment blocker rather than stay labeled artifact-routing-mismatch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare and send the exact westus2 AKS cluster-count preflight recovery/escalation packet to the staging runner/operator, quoting the failing az rest / az resource list reads, the affected ACNS/CNI/KMS spec attempts, and the exact recovery proof needed before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628.md"
+      ],
+      "acceptance": [
+        "Durable escalation packet cites the existing diagnosis artifacts plus the exact westus2 subscription/location query surface that failed.",
+        "Packet lists the affected spec verification attempts that should remain non-product verdicts until recovery proof lands.",
+        "Packet states the exact resume proof: successful runner capacity line or direct success of the same az rest / fallback az resource list reads on the intended staging execution surface."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:staging-westus2-cluster-count-preflight-escalation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:51:04.323Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628_20260628215106",
+        "assigned_at": "2026-06-28T21:51:06.225Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628",
+        "worker_started_attempt_id": "a_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628_20260628215106",
+        "worker_started_at": "2026-06-28T21:51:33.379Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Agent ended with an empty assistant turn",
+        "last_worker_completed_at": "2026-06-28T21:52:28.288Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:53:56.168Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after owner review found the review claim untrustworthy: the worker ended with an empty turn, produced no escalation artifact, and left no send/handoff proof. Successor task escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628 now carries the concrete refill needed for the shared westus2 preflight recovery family."
+      },
+      "session_id": "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628",
+      "session_history": [
+        "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-20260628"
+      ],
+      "result": "Agent ended with an empty assistant turn",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T21:53:56.168Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after owner review found the review claim untrustworthy: the worker ended with an empty turn, produced no escalation artifact, and left no send/handoff proof. Successor task escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628 now carries the concrete refill needed for the shared westus2 preflight recovery family."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose why verify-spec-network-acns-retina-enterprise pulled artifacts for spec.network-acns.retina-enterprise-k8s-upgrade in run 28336550980, determine whether the mismatch is in workflow dispatch, artifact routing, or watcher selection, and record the exact retry condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md"
+      ],
+      "acceptance": [
+        "Diagnosis cites the mismatched expected and observed specIds from run 28336550980 and identifies the failing selection/routing hop.",
+        "Diagnosis states whether the owner should retry the same spec, repair routing/tooling, or classify the run under a different spec branch.",
+        "If locally fixable, the note names the exact file/surface to patch; otherwise it records the exact escalation target and proof needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop:artifact-routing-mismatch:28336550980"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:51:05.892Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980_20260628215106",
+        "assigned_at": "2026-06-28T21:51:06.308Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980",
+        "worker_started_attempt_id": "a_diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980_20260628215106",
+        "worker_started_at": "2026-06-28T21:51:33.492Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28336550980 as a local single-spec verifier run-binding bug, not a GitHub artifact routing issue, and wrote durable evidence to evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md with the exact failing hop and retry condition.",
+        "last_worker_completed_at": "2026-06-28T21:53:38.368Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md"
+        ],
+        "reviewed_at": "2026-06-28T22:00:04.882Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md identifies the exact verifier run-binding hop that attached the base retina-enterprise review to the k8s-upgrade run and narrows the fix to single-spec verifier matching rather than workflow artifact publication."
+      },
+      "session_id": "s_task_diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980",
+      "session_history": [
+        "s_task_diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980"
+      ],
+      "result": "Diagnosed run 28336550980 as a local single-spec verifier run-binding bug, not a GitHub artifact routing issue, and wrote durable evidence to evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md with the exact failing hop and retry condition.",
+      "evidence": [
+        "evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:00:04.882Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/diagnose-spec-network-acns-retina-enterprise-artifact-routing-mismatch-run-28336550980.md identifies the exact verifier run-binding hop that attached the base retina-enterprise review to the k8s-upgrade run and narrows the fix to single-spec verifier matching rather than workflow artifact publication."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the KMS v2plus artifact-routing family using the accepted 2026-06-28 diagnosis: separate true wrong-run bindings from same-spec westus2-preflight blocked runs, preserve only the two real wrong-run leaves behind the shared single-spec run-binding repair gate, and move the sampled same-spec leaves onto the truthful shared westus2 cluster-count blocker path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628.md"
+      ],
+      "acceptance": [
+        "The affected KMS leaves are enumerated with exact task/spec/run mapping and split into two buckets: real wrong-run binding vs same-spec westus2-preflight blocker.",
+        "The branch documents which two KMS leaves remain behind the shared single-spec run-binding repair gate and which sampled siblings should no longer be treated as artifact-routing mismatches.",
+        "Any passive KMS artifact-routing wait/review state touched by this reconciliation is either replaced by the shared westus2 family blocker or preserved with an exact reason why it is still a true wrong-run case."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-artifact-routing-mismatch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:52:20.267Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628_20260628215220",
+        "assigned_at": "2026-06-28T21:52:20.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628",
+        "worker_started_attempt_id": "a_reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628_20260628215220",
+        "worker_started_at": "2026-06-28T21:52:30.330Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Agent ended with an empty assistant turn",
+        "last_worker_completed_at": "2026-06-28T21:52:30.420Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T21:53:09.064Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Rejected the review claim because the worker ended with an empty assistant turn and produced no evidence or output artifact; replaced it with reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628, a concrete retry that preserves the same acceptance bar and requires durable reconciliation evidence before any KMS leaves are reclassified."
+      },
+      "session_id": "s_task_reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628",
+      "session_history": [
+        "s_task_reconcile-kms-v2plus-artifact-mismatch-vs-westus2-preflight-family-20260628"
+      ],
+      "result": "Agent ended with an empty assistant turn",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T21:53:09.064Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Rejected the review claim because the worker ended with an empty assistant turn and produced no evidence or output artifact; replaced it with reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628, a concrete retry that preserves the same acceptance bar and requires durable reconciliation evidence before any KMS leaves are reclassified."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-run the KMS v2plus artifact-routing family reconciliation after the empty worker turn: enumerate the affected KMS leaves with exact task/spec/run mappings, separate true wrong-run bindings from same-spec westus2 cluster-count preflight blockers, and record which leaves should stay behind the shared single-spec run-binding repair gate versus move onto the shared westus2 blocker path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md"
+      ],
+      "acceptance": [
+        "A durable artifact lists the affected KMS leaves with exact task/spec/run mappings and splits them into real wrong-run binding versus same-spec westus2-preflight blocker buckets.",
+        "The artifact names which two KMS leaves remain behind the shared single-spec run-binding repair gate and which sampled siblings should no longer be treated as artifact-routing mismatches.",
+        "Any KMS wait/review state touched by the reconciliation is updated or explicitly proposed for replacement so same-spec westus2-preflight siblings point at the truthful shared blocker while true wrong-run cases retain the exact run-binding reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-artifact-routing-mismatch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:53:08.901Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628_20260628215308",
+        "assigned_at": "2026-06-28T21:53:08.975Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628",
+        "worker_started_attempt_id": "a_reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628_20260628215308",
+        "worker_started_at": "2026-06-28T21:53:18.157Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation artifact at evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md. It enumerates the current KMS v2plus leaf/spec/run mappings, keeps only two leaves behind the wrong-run repair gate, and explicitly moves the sampled same-spec siblings—including PMK private base—to the shared westus2 preflight blocker path.",
+        "last_worker_completed_at": "2026-06-28T21:54:44.563Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:56:20.584Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md enumerates the exact current KMS task/spec/run mappings, keeps only the two true wrong-run leaves behind the run-binding repair gate, and moves sampled same-spec siblings onto the shared westus2 preflight blocker path."
+      },
+      "session_id": "s_task_reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628",
+      "session_history": [
+        "s_task_reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628"
+      ],
+      "result": "Wrote the requested reconciliation artifact at evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md. It enumerates the current KMS v2plus leaf/spec/run mappings, keeps only two leaves behind the wrong-run repair gate, and explicitly moves the sampled same-spec siblings—including PMK private base—to the shared westus2 preflight blocker path.",
+      "evidence": [
+        "evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:56:20.584Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/reconcile-kms-v2plus-wrongrun-vs-westus2-preflight-family-retry-20260628.md enumerates the exact current KMS task/spec/run mappings, keeps only the two true wrong-run leaves behind the run-binding repair gate, and moves sampled same-spec siblings onto the shared westus2 preflight blocker path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the westus2 AKS cluster-count preflight escalation packet again after the empty worker turn: cite the exact failing az rest / az resource list reads, list the affected ACNS/CNI/KMS spec attempts that must remain non-product verdicts, and archive the durable packet plus send-proof or exact handoff status.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md"
+      ],
+      "acceptance": [
+        "Durable packet cites the existing westus2 diagnosis artifacts plus the exact subscription/location query surface that failed on the intended staging execution surface.",
+        "Packet enumerates the affected ACNS/CNI/KMS verification attempts that should stay behind the shared westus2 preflight recovery gate instead of being treated as reviewed feature verdicts.",
+        "Artifact records either durable send/handoff proof to the staging runner/operator or an exact bounded reason the send could not yet occur, so the shared family wait has truthful external-state evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:staging-westus2-cluster-count-preflight-escalation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:53:51.870Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628_20260628215351",
+        "assigned_at": "2026-06-28T21:53:51.944Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628",
+        "worker_started_attempt_id": "a_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628_20260628215351",
+        "worker_started_at": "2026-06-28T21:54:04.462Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived the westus2 cluster-count preflight escalation retry packet at evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md with exact failing az read surfaces, affected ACNS/CNI/KMS attempts, and explicit no-send-proof/handoff status.",
+        "last_worker_completed_at": "2026-06-28T21:55:53.070Z",
+        "last_worker_evidence": [
+          "evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T21:57:44.732Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md truthfully archives the exact failing az rest / az resource list surfaces, preserves the affected ACNS/CNI/KMS family as non-product verdicts, and explicitly records no-send-proof status because worker mode lacked dispatch transport."
+      },
+      "session_id": "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628",
+      "session_history": [
+        "s_task_escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628"
+      ],
+      "result": "Archived the westus2 cluster-count preflight escalation retry packet at evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md with exact failing az read surfaces, affected ACNS/CNI/KMS attempts, and explicit no-send-proof/handoff status.",
+      "evidence": [
+        "evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:57:44.732Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md truthfully archives the exact failing az rest / az resource list surfaces, preserves the affected ACNS/CNI/KMS family as non-product verdicts, and explicitly records no-send-proof status because worker mode lacked dispatch transport."
+      },
+      "status": "done"
+    },
+    {
+      "id": "dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Send or hand off the archived westus2 cluster-count preflight escalation packet through the human:operator / runner-owner lane, preserving the exact failing az rest / az resource list surfaces, the affected ACNS/CNI/KMS family scope, and the same-surface recovery proof required before retry.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628.md"
+      ],
+      "acceptance": [
+        "Durable evidence shows the exact escalation packet at evidence/archive/escalate-shared-westus2-cluster-count-preflight-to-runner-operator-retry-20260628.md was sent or handed off to the human:operator / staging runner owner, with concrete send-proof, handoff proof, or returned redirect.",
+        "The dispatch artifact preserves the exact failing subscription/location read surfaces and explicitly names the affected ACNS/CNI/KMS family as blocked on shared westus2 preflight recovery rather than product verdicts.",
+        "If dispatch cannot be completed from the available runtime, the artifact records the exact missing transport/owner constraint and the precise next owner action instead of claiming passive response-await state."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "operator-response:westus2-cluster-count-preflight"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:57:44.804Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628_20260628215744",
+        "assigned_at": "2026-06-28T21:57:44.874Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628",
+        "worker_started_attempt_id": "a_dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628_20260628215744",
+        "worker_started_at": "2026-06-28T21:58:02.795Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Dispatched the archived shared westus2 cluster-count preflight packet through the approval-dispatch/human:operator lane and wrote durable send-proof evidence at evidence/archive/dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628.md, preserving the exact failing az rest/az resource list surfaces and the ACNS/CNI/KMS shared recovery gate.",
+        "last_worker_completed_at": "2026-06-28T21:59:27.790Z",
+        "last_worker_evidence": [
+          "evidence/archive/dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T22:02:41.858Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the westus2 preflight dispatch review: archived evidence proves the exact escalation packet was handed off through approval-dispatch to human:operator with accepted runtime events 2092769/2092770, approval-dispatch ledger message.created proof, and message.created event 2092773, while the family remains truthfully blocked only on await-staging-westus2-cluster-count-preflight-family-recovery-20260628 until same-surface recovery proof or a returned operator reply changes the retry condition."
+      },
+      "session_id": "s_task_dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628",
+      "session_history": [
+        "s_task_dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628"
+      ],
+      "result": "Dispatched the archived shared westus2 cluster-count preflight packet through the approval-dispatch/human:operator lane and wrote durable send-proof evidence at evidence/archive/dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628.md, preserving the exact failing az rest/az resource list surfaces and the ACNS/CNI/KMS shared recovery gate.",
+      "evidence": [
+        "evidence/archive/dispatch-shared-westus2-cluster-count-preflight-packet-to-runner-operator-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:02:41.858Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the westus2 preflight dispatch review: archived evidence proves the exact escalation packet was handed off through approval-dispatch to human:operator with accepted runtime events 2092769/2092770, approval-dispatch ledger message.created proof, and message.created event 2092773, while the family remains truthfully blocked only on await-staging-westus2-cluster-count-preflight-family-recovery-20260628 until same-surface recovery proof or a returned operator reply changes the retry condition."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:11:40.316Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner-heartbeat refill: archived the accepted vm-managedsystem-combined status-boundary reconcile leaf because its durable outcome is already preserved in its archive note and the maintained model surfaces. The live frontier now stays intentionally narrow: one active repo-local stale-terminal reconcile for path.managedsystem.create-time-initial-pool, one queued next-step repo-local row-54 ManagedSystem maintained-landing reconcile for path.virtualmachines.managedsystem-agentpool-vm-prerelease so evidence/model cleanup remains refillable without cloud execution, and the single preserved family-level external-human proof wait for the covered VM/private-cluster asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-managedsystem-combined-status-boundary-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence-feedback/model-update lane: reconcile the maintained status/verdict/root-cause rendering for path.virtualmachines.managedsystem-combined using existing repo-local source/spec/docs/model/evidence carriers only. Confirm whether the current unsupported-combination judgment should render as product-constraint throughout (rather than the current mixed product-gap/product_constraint presentation), and land one archive note plus the smallest repo-local model/view/status wording repair needed without reopening execute planning or cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-managedsystem-combined-status-boundary-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive cites the maintained source/spec/model carriers and any existing API/evidence surface for path.virtualmachines.managedsystem-combined, explains the exact unsupported-combination boundary/evidence ceiling, and states the truthful final status/rootCauseClass/verdict/retest condition.",
+        "If the maintained model path status, rootCauseClass, verdictFinal, retestCondition, or generated status/view wording is inconsistent with the accepted repo-local evidence, the task lands bounded repo-local repairs that make the path render coherently; otherwise the archive explicitly records that no repair was needed.",
+        "No cloud mutation, no new approval wait, and no scope broadening beyond the dedicated path.virtualmachines.managedsystem-combined boundary/status question are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:06:10.727Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-managedsystem-combined-status-boundary-reconcile-20260622_20260622220612",
+        "assigned_at": "2026-06-22T22:06:12.692Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-managedsystem-combined-status-boundary-reconcile-20260622",
+        "worker_started_attempt_id": "a_vm-managedsystem-combined-status-boundary-reconcile-20260622_20260622220612",
+        "worker_started_at": "2026-06-22T22:06:30.229Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote `evidence/archive/vm-managedsystem-combined-status-boundary-reconcile-20260622.md` documenting that `path.virtualmachines.managedsystem-combined` should remain `status=product-gap` with `rootCauseClass/classification=product_constraint`; no repo-local model/view repair was needed.",
+        "last_worker_completed_at": "2026-06-22T22:09:15.970Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:10:10.219Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive reconciles mounted handwritten VM/ManagedSystem source, swagger/spec carriers, prior live staging evidence, and maintained model/view surfaces, confirming the explicit path.virtualmachines.managedsystem-combined branch is terminal with status=product-gap and rootCauseClass/classification=product_constraint. Targeted checks of model.json, path-summary.json, and terminal-classification-report.json show the maintained rendering is already coherent, so no further repo-local repair is needed."
+      },
+      "session_id": "s_task_vm-managedsystem-combined-status-boundary-reconcile-20260622",
+      "session_history": [
+        "s_task_vm-managedsystem-combined-status-boundary-reconcile-20260622"
+      ],
+      "result": "Wrote `evidence/archive/vm-managedsystem-combined-status-boundary-reconcile-20260622.md` documenting that `path.virtualmachines.managedsystem-combined` should remain `status=product-gap` with `rootCauseClass/classification=product_constraint`; no repo-local model/view repair was needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:10:10.219Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive reconciles mounted handwritten VM/ManagedSystem source, swagger/spec carriers, prior live staging evidence, and maintained model/view surfaces, confirming the explicit path.virtualmachines.managedsystem-combined branch is terminal with status=product-gap and rootCauseClass/classification=product_constraint. Targeted checks of model.json, path-summary.json, and terminal-classification-report.json show the maintained rendering is already coherent, so no further repo-local repair is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

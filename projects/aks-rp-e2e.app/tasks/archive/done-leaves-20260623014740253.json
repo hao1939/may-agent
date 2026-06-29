@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T01:47:40.254Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted three repo-local precursor completions without treating them as end-state repairs: network-cni-cilium-stop-start-execute-boundary-note-20260623 captured the execute-gated boundary note; replay-path-record-storage-csi-csidrivers-batch12-split-20260623 established the truthful negative audit that no standalone csidrivers checkpoint slice exists yet; and vmpr-row75-aksconformance-core-source-status-reconcile-20260623 reconciled the row-75 source/spec/replay chain. The live project focus remains the two active maintained-surface repair leaves: storage-csidrivers-model-linkage-status-repair-20260623 must repair the dedicated csidrivers model/linkage/views from that evidence carrier, and vmpr-row75-model-view-status-repair-20260623 must repair the row-75 model/view status to the execute-gated truth. Keep the external human proof wait isolated as the single exact blocked family-level leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "replay-path-record-storage-csi-csidrivers-batch12-split-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Split the storage-csi-csidrivers replay/spec/model landing out of the shared batch12 evidence bundle so the repo can truthfully checkpoint the csidrivers slice on its own. Update the repo-local evidence/model wiring to give path.storage-csi-csidrivers its own dedicated archive note and coupled model/view references, while preserving the rest of the batch12 residual-path work as a separate coherent landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/replay-path-record-storage-csi-csidrivers-batch12-split-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites exact before/after repo evidence for replays/storage-csi-csidrivers.ts, specs/storage-csi-csidrivers.json, specs/index.json, model/knowledge-map/model.json, and any directly regenerated model view files, and explains how path.storage-csi-csidrivers was separated from the shared spec-path-record-batch12-post-batch11-authoring-20260623 evidence bundle without inventing cloud execution claims.",
+        "If the split is feasible, the repo updates leave csidrivers with a dedicated truthful evidence/model path and keep the remaining batch12 paths coherently represented; if infeasible, the note records the exact coupling that still prevents the split and identifies the smallest truthful checkpoint alternative."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay.storage-csi-csidrivers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:41:12.702Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_replay-path-record-storage-csi-csidrivers-batch12-split-20260623_20260623014112",
+        "assigned_at": "2026-06-23T01:41:12.751Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_replay-path-record-storage-csi-csidrivers-batch12-split-20260623",
+        "worker_started_attempt_id": "a_replay-path-record-storage-csi-csidrivers-batch12-split-20260623_20260623014112",
+        "worker_started_at": "2026-06-23T01:41:37.093Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Split path.storage-csi-csidrivers out of the shared batch12 evidence coupling by adding a dedicated archive note, rewiring its accepted model evidence attachment, and regenerating derived views while preserving the other 9 batch12 paths on the original note.",
+        "last_worker_completed_at": "2026-06-23T01:45:33.646Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T01:45:53.710Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the dedicated csidrivers split note: repo-local evidence shows the replay/spec/index were already dedicated, model.json now attaches path.storage-csi-csidrivers and feature storage-csi-csidrivers to replay-path-record-storage-csi-csidrivers-batch12-split-20260623, derived views were regenerated, and the shared batch12 evidence truthfully remains on the other 9 residual paths only."
+      },
+      "session_id": "s_task_replay-path-record-storage-csi-csidrivers-batch12-split-20260623",
+      "session_history": [
+        "s_task_replay-path-record-storage-csi-csidrivers-batch12-split-20260623"
+      ],
+      "result": "Split path.storage-csi-csidrivers out of the shared batch12 evidence coupling by adding a dedicated archive note, rewiring its accepted model evidence attachment, and regenerating derived views while preserving the other 9 batch12 paths on the original note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T01:45:53.710Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the dedicated csidrivers split note: repo-local evidence shows the replay/spec/index were already dedicated, model.json now attaches path.storage-csi-csidrivers and feature storage-csi-csidrivers to replay-path-record-storage-csi-csidrivers-batch12-split-20260623, derived views were regenerated, and the shared batch12 evidence truthfully remains on the other 9 residual paths only."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:52:22.851Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill: accepted and archived the two latest precursor leaves now that their durable meaning is captured in the project rollup. The VM prerelease mounted-source crosscheck proved the send-ready operator packet remains source-consistent for rows 25 and 50 while narrowing the live follow-up to vmpr-rows25-50-mounted-source-model-repair-20260621 for stale row-25 wording and dedicated row-50 path/spec exposure. The maintained-slice checkpoint-hold interpretation likewise remains accepted input to the separate vmpr-maintained-slice-domain-checkpoint-subslice-gap-20260621 tooling/ownership lane. Current open frontier stays intentionally narrow: keep vmpr-rows25-50-mounted-source-model-repair-20260621 as the direct successor from this wake, keep the private-endpoint stale-terminal reconciliation lane no-execute-first, and preserve external-send-proof-dispatch-family-20260620 as the single truthful blocked carrier until repo-local send or escalation proof exists.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From the accepted semantic-ID clean-slice proof and the checkpoint-helper hold output, determine whether the maintained VM prerelease seven-file clean-base set can be advanced by an owner-only bounded checkpoint procedure, or whether an app-tooling/domain-checkpoint follow-up is required because the helper collapses this sub-slice into the broad shared model carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites evidence/archive/vmpr-maintained-slice-semantic-id-proof-checkpoint-preflight-20260621.md and the helper output showing slice=model with recommendation=hold, then explains exactly which helper assumption or project ownership rule is blocking a bounded checkpoint decision for the seven maintained files.",
+        "The note tests one bounded owner-safe path forward: either a documented owner-only checkpoint procedure for this exact seven-file clean-base set, or a narrowly scoped tooling/entrypoint gap demonstration that proves why the current helper cannot truthfully approve it.",
+        "The note ends with one exact disposition only: ready for bounded checkpoint/commit follow-up with the named files and procedure, or a concrete narrower app-tooling/domain-checkpoint task with the missing capability explicitly stated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-maintained-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:48:29.086Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T03:48:29.213Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621_20260621034845",
+        "assigned_at": "2026-06-21T03:48:45.457Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621_20260621034845",
+        "worker_started_at": "2026-06-21T03:48:45.916Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621.md. It ties the accepted semantic-ID proof to fresh bounded helper evidence, identifies the exact domain-checkpoint/model-slice ownership assumption causing the hold, tests the owner-safe seven-file staging path, and concludes a narrower app-tooling follow-up is required rather than a bounded checkpoint now.",
+        "last_worker_completed_at": "2026-06-21T03:50:33.404Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:50:53.402Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the hold-interpretation repair note: it ties the clean semantic-ID proof to fresh helper evidence, isolates the exact root-project plus slice=model rollup assumption in domain-checkpoint.ts, and narrows the next truthful work to a specific domain-checkpoint sub-slice capability gap rather than another checkpoint-preflight loop."
+      },
+      "session_id": "s_task_vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621"
+      ],
+      "result": "Wrote the requested archive note at evidence/archive/vmpr-maintained-slice-checkpoint-hold-interpretation-repair-20260621.md. It ties the accepted semantic-ID proof to fresh bounded helper evidence, identifies the exact domain-checkpoint/model-slice ownership assumption causing the hold, tests the owner-safe seven-file staging path, and concludes a narrower app-tooling follow-up is required rather than a bounded checkpoint now.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:50:53.402Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the hold-interpretation repair note: it ties the clean semantic-ID proof to fresh helper evidence, isolates the exact root-project plus slice=model rollup assumption in domain-checkpoint.ts, and narrows the next truthful work to a specific domain-checkpoint sub-slice capability gap rather than another checkpoint-preflight loop."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-mounted-source-rows25-50-spec-crosscheck-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP source starting from test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go to map the exact source-backed input/expectation coverage behind the VM prerelease live-operator bundle rows 25 and 50, then decide whether the current send-ready operator packet and maintained knowledge-map expectations remain source-consistent or need a narrow text/model follow-up.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-mounted-source-rows25-50-spec-crosscheck-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites the mounted source files /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, then names the exact prerelease/checkin scenarios or referenced helpers that correspond to the current operator bundle rows 25 and 50 or the closest source-backed equivalents.",
+        "The note maps those source-backed scenarios to the relevant feature/input/expectation paths and states whether the current send-ready operator bundle wording plus maintained knowledge-map expectations are still source-consistent, citing any exact mismatch instead of guessing.",
+        "The note ends with one exact follow-up only: no further change needed, narrow packet text repair, narrow knowledge-map/model repair, or a bounded evidence-gap note if the mounted source does not answer the row directly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-source-spec"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:48:11.590Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-mounted-source-rows25-50-spec-crosscheck-20260621_20260621034811",
+        "assigned_at": "2026-06-21T03:48:11.638Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mounted-source-rows25-50-spec-crosscheck-20260621",
+        "worker_started_attempt_id": "a_vmpr-mounted-source-rows25-50-spec-crosscheck-20260621_20260621034811",
+        "worker_started_at": "2026-06-21T03:48:45.538Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source crosscheck for VM prerelease rows 25 and 50 and wrote a durable archive note concluding the send-ready operator packet remains source-consistent, but maintained knowledge-map surfaces need a narrow repair for stale row-25 wording and missing dedicated row-50 path/spec exposure.",
+        "last_worker_completed_at": "2026-06-21T03:50:16.350Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:50:38.132Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source crosscheck: it cites prerelease.go/checkin.go plus row-local plan files, shows the operator handoff bundle remains source-consistent, and narrows the remaining work to a specific maintained-surface repair for stale row-25 wording and missing dedicated row-50 path/spec exposure."
+      },
+      "session_id": "s_task_vmpr-mounted-source-rows25-50-spec-crosscheck-20260621",
+      "session_history": [
+        "s_task_vmpr-mounted-source-rows25-50-spec-crosscheck-20260621"
+      ],
+      "result": "Completed the mounted-source crosscheck for VM prerelease rows 25 and 50 and wrote a durable archive note concluding the send-ready operator packet remains source-consistent, but maintained knowledge-map surfaces need a narrow repair for stale row-25 wording and missing dedicated row-50 path/spec exposure.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:50:38.132Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source crosscheck: it cites prerelease.go/checkin.go plus row-local plan files, shows the operator handoff bundle remains source-consistent, and narrows the remaining work to a specific maintained-surface repair for stale row-25 wording and missing dedicated row-50 path/spec exposure."
+      },
+      "status": "done"
+    }
+  ]
+}

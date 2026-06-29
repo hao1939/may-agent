@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T01:25:38.870Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed refill review keeps the row-53 LocalDNS landing claim rejected as overstated and preserves the single truthful next action. Archived done leaves now summarize: row-44 next-action source packet accepted as durable adjacent-source guidance, and vm-prerelease-row53-localdns-primary-model-view-landing-20260622 closed only as a non-acceptance review outcome because its artifact claimed a primary landing while the planner review found the maintained surfaces still needed explicit repo-state reconciliation. The live repo-local frontier remains exactly one active bounded successor: vm-prerelease-row53-localdns-primary-model-view-reconcile-20260622, which must first prove the current checked-in state of model/knowledge-map/model.json and views/path-summary.json for path.localdns.enable-disable-lifecycle, then either land the bounded primary-spec repair and regenerated views or publish a design-mismatch conclusion with exact maintained-convention evidence and no landing claim. Preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the only blocked family-level human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row44-next-action-source-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Trace the exact VM prerelease row-44 IPBasedLBBackendPool VirtualMachine carrier through mounted prerelease/checkin source plus existing repo-local spec/replay/model artifacts so the project has one concrete next maintained-surface action (feature-packet sync, path landing confirmation, or explicit evidence-ceiling no-op) without reopening cloud execution or the external human-transport blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row44-next-action-source-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Task cites mounted source anchors for the exact row-44 Scenario_IPBasedLBBackendPool_VirtualMachine carrier from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, checkin.go, and the referenced row-local plan/mutator files, confirming the selected inputs and expected NodeIP -> NodeIPConfiguration -> NodeIP backend-pool transition contract.",
+        "Task maps the current repo-local spec/replay/index/model/view carriers for path.cloud-provider.ipbased-lb-backend-pool, identifies any truthfulness gap or confirms no gap, and records the single bounded next follow-up leaf the planner should prefer if more maintained-surface work is still needed.",
+        "Task stays repo-local only: no cloud execution, no human-transport dispatch work, and no broad model/spec rewrite beyond the exact row-44 carrier audit and next-action packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T01:19:09.042Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row44-next-action-source-packet-20260622_20260622011909",
+        "assigned_at": "2026-06-22T01:19:09.091Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row44-next-action-source-packet-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row44-next-action-source-packet-20260622_20260622011909",
+        "worker_started_at": "2026-06-22T01:19:29.493Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a repo-local source packet at evidence/archive/vm-prerelease-row44-next-action-source-packet-20260622.md that traces VM prerelease row 44 through mounted source, feature/spec/replay/index/model/view surfaces and concludes no maintained-surface repair is needed; only a future explicit live-verification leaf would be justified.",
+        "last_worker_completed_at": "2026-06-22T01:20:58.693Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T01:21:22.447Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row44-next-action-source-packet-20260622.md cites mounted VM prerelease/checkin source, row-local plan/validator, and current feature/spec/replay/index/model/view carriers, showing row 44 is already truthful across maintained repo-local surfaces and needs no further maintained-surface repair; only a future explicitly gated live-verification leaf would add new value."
+      },
+      "session_id": "s_task_vm-prerelease-row44-next-action-source-packet-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row44-next-action-source-packet-20260622"
+      ],
+      "result": "Authored a repo-local source packet at evidence/archive/vm-prerelease-row44-next-action-source-packet-20260622.md that traces VM prerelease row 44 through mounted source, feature/spec/replay/index/model/view surfaces and concludes no maintained-surface repair is needed; only a future explicit live-verification leaf would be justified.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T01:21:22.447Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row44-next-action-source-packet-20260622.md cites mounted VM prerelease/checkin source, row-local plan/validator, and current feature/spec/replay/index/model/view carriers, showing row 44 is already truthful across maintained repo-local surfaces and needs no further maintained-surface repair; only a future explicitly gated live-verification leaf would add new value."
+      },
+      "status": "done"
+    }
+  ]
+}

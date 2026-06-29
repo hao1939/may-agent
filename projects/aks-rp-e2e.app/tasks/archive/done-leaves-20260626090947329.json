@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T09:09:47.329Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 regular-learning owner review kept the tree stable because maxConcurrent=1 is fully occupied by metadata-repair-cluster-autoscaler-vm-prerelease-long-unregistered-row-label-drift-20260626, a repo-local evidence/metadata repair for the VM prerelease long-unregistered-nodes carrier with no accepted output yet. The only other live branch remains the single truthful external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622; no repo-local source/spec/replay/model work remains there and it resumes only on returned proof or new steering. Archived done leaves capture the completed VM prerelease cluster-autoscaler source/spec packets that fed the current metadata-repair follow-up.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: turn ready path.cluster-autoscaler.vm-prerelease-spot into one bounded repo-local source-backed packet by mapping the mounted VirtualMachine prerelease spot carrier to exact rows/scenarios, accepted inputs, expected autoscaler behavior, adjacent exclusions, and the concrete spec linkage needed for later replay work without any cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/cluster-autoscaler/vm-prerelease-spot.yaml"
+      ],
+      "acceptance": [
+        "Durable repo-local artifact cites the exact mounted Go source carrier(s) for path.cluster-autoscaler.vm-prerelease-spot and records the selected row/scenario ids plus the exact checked-in files inspected.",
+        "The artifact draws the path boundary: accepted inputs, rejected or adjacent branches, expected behavior assertions, and unknown edges that still require later execution or follow-up authoring.",
+        "The task either links or creates the concrete spec path needed for this feature path, or records a precise repo-local blocker explaining why no bounded spec linkage can yet be authored from checked-in source."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature/cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T08:57:50.993Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626_20260626085751",
+        "assigned_at": "2026-06-26T08:57:51.039Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626",
+        "worker_started_attempt_id": "a_feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626_20260626085751",
+        "worker_started_at": "2026-06-26T08:58:01.191Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the missing feature packet features/cluster-autoscaler/vm-prerelease-spot.yaml, grounding the VM prerelease spot path in mounted AKS RP source, existing spec/replay/model linkage, and explicit row-label drift evidence without changing task-tree state.",
+        "last_worker_completed_at": "2026-06-26T09:00:39.958Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T09:02:25.470Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/cluster-autoscaler/vm-prerelease-spot.yaml now provides the bounded repo-local packet the task asked for, citing exact mounted source carriers, preserving accepted/adjacent/unknown boundary detail, and reusing the existing canonical spec/replay/model linkage without claiming cloud execution."
+      },
+      "session_id": "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626",
+      "session_history": [
+        "s_task_feature-knowledge-cluster-autoscaler-vm-prerelease-spot-source-spec-20260626"
+      ],
+      "result": "Authored the missing feature packet features/cluster-autoscaler/vm-prerelease-spot.yaml, grounding the VM prerelease spot path in mounted AKS RP source, existing spec/replay/model linkage, and explicit row-label drift evidence without changing task-tree state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T09:02:25.470Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/cluster-autoscaler/vm-prerelease-spot.yaml now provides the bounded repo-local packet the task asked for, citing exact mounted source carriers, preserving accepted/adjacent/unknown boundary detail, and reusing the existing canonical spec/replay/model linkage without claiming cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

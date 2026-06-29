@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:37:32.371Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted VM prerelease repo-local follow-through from rows 40-42 is now parent knowledge, not an open branch: Linux and Windows SSH public-key maintained landings plus the secure-TLS basic alias/frontier proof are durably preserved in linked evidence and no longer need their own visible done leaf. The live frontier stays intentionally narrow: keep vmpr-post-row44-row45-cloudprovider-ipbasedlb-frontier-proof-20260621 as the only active adjacent boundary proof by carrier/alias reuse only, and keep external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful external-human blocked family until real send/escalation or authoritative reply evidence appears.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "focus-vmpr-row40-row42-repo-local-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "focus_plan",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep the next 12-24h focus on one repo-local VM prerelease follow-through branch: land the row-40 Linux SSH public-key maintained-model update, then the row-41 Windows sibling, then the dependency-gated row-42 secure-TLS alias/frontier proof by evidence reuse only, while keeping live execution and external-human transport work outside this branch.",
+      "inputs": [
+        "project.json",
+        "tasks/tree.json",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/evidence/archive/vmpr-row39-disable-ssh-maintained-model-view-landing-post-row38-20260621.md",
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md"
+      ],
+      "outputs": [
+        "tasks/tree.json",
+        "project.json",
+        "../aks-rp-e2e/evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260621.md",
+        "../aks-rp-e2e/evidence/archive/vmpr-row41-windows-ssh-public-key-maintained-model-view-landing-post-row40-20260621.md",
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Row 40 Linux SSH public-key lands as the current maintained model/view follow-through with bounded evidence and no cloud execution.",
+        "Row 41 Windows SSH public-key remains the exact next repo-local follow-up after row 40, without widening into unrelated VM prerelease branches.",
+        "Row 42 secure-TLS basic stays dependency-gated behind rows 40 and 41 and is satisfied by canonical carrier/evidence reuse only, not new secure-TLS model/spec authoring or live execution.",
+        "The external send-proof family remains a separate sibling blocker rather than defining the repo-local focus branch."
+      ],
+      "forbidden": [
+        "Do not execute live tests from this focus-review session.",
+        "Do not broaden into new VM prerelease discovery beyond the row40→row41→row42 chain unless accepted evidence materially changes the frontier.",
+        "Do not duplicate the external human send-proof wait inside this focus branch."
+      ],
+      "depends_on": [],
+      "context": {
+        "title": "Repo-local VM prerelease SSH landing chain with gated secure-TLS follow-through",
+        "horizon": "Next 12-24h from 2026-06-21T20:55:00Z",
+        "created_at": "2026-06-21T20:55:00Z",
+        "trigger": "project.focus.review.requested: scheduled-focus-progress-review",
+        "allowed_risk": "Repo-local only: source/model/view/evidence updates and dependency-gated alias proof. No live execution, no cloud mutation, no new external asks from this review.",
+        "success_criteria": [
+          "Accept the row-40 Linux SSH public-key maintained-model/view landing.",
+          "Keep one truthful immediate successor leaf for row-41 Windows SSH public-key after row 40 clears the shared model conflict scope.",
+          "Preserve the row-42 secure-TLS basic proof as the next bounded evidence-reuse follow-up only after both SSH landings are accepted.",
+          "Keep the frontier honest: zero runnable execution leaves and one separate external-human blocked family until new evidence changes that fact."
+        ],
+        "progress_review": {
+          "state": "on_track",
+          "reviewed_at": "2026-06-21T20:55:00Z",
+          "summary": "The prior row-37 adjacent-source focus has progressed rather than failed. Since the last focus review, the row-39 Disable SSH maintained landing was accepted, the post-row41 adjacent-source audit was accepted, and the premature ungated row-42 secure-TLS proof was correctly replaced with a dependency-gated successor. The useful next 12-24h focus remains repo-local model/evidence follow-through, now concretely row40 → row41 → gated row42.",
+          "what_we_learned": [
+            "Mounted VM prerelease source and accepted row-39 evidence narrowed the immediate frontier to two SSH public-key maintained landings before any secure-TLS adjacency proof should run.",
+            "Live verification is still not the current lever: live-started-24h=0 and live-succeeded-24h=0, with no runnable execution leaf in the frontier.",
+            "The stale watchdog snapshot that treated row-42 as runnable was corrected; the task is now truthfully dependency-gated behind the row40/41 landings.",
+            "The only explicit blocker remains external human transport outside runtime, and it is orthogonal to this repo-local focus branch."
+          ],
+          "review_answers": {
+            "since_last_focus_review": "Accepted row-39 Disable SSH maintained landing, accepted post-row41 adjacent-source audit, and a corrected row-42 secure-TLS proof that is now dependency-gated rather than prematurely runnable.",
+            "live_execution_usefulness": "Low for the next 12-24h. No live runs started or succeeded in the last 24h, and the current frontier has zero runnable execution leaves.",
+            "blocker_classification": "Current focus work is gated by local model conflict/dependency ordering. The only true blocked branch is the separate external human transport family.",
+            "parallel_work_quality": "Intentionally narrow rather than broad: one active executable leaf (row 40), one exact waiting successor (row 41), and one dependency-gated evidence-reuse follow-up (row 42 secure-TLS).",
+            "goal_alignment": "Yes. This branch still advances the project goal by tightening AKS RP input/expectation coverage, preserving runnable-carrier truthfulness, and feeding repo-local evidence back into the maintained model before new execution is proposed."
+          }
+        },
+        "metrics_snapshot": {
+          "task_completed_24h": 618,
+          "run_live_started_24h": 0,
+          "run_live_succeeded_24h": 0,
+          "spec_unverified_count": 463,
+          "spec_failed_count": 0,
+          "model_unknown_path_count": 3,
+          "frontier_active_leaf_count": 1,
+          "frontier_waiting_leaf_count": 2,
+          "frontier_blocked_leaf_count": 1,
+          "frontier_runnable_leaf_count": 0
+        },
+        "next_owner_moves": [
+          "Finish and review row40 Linux SSH public-key maintained-model landing.",
+          "Promote row41 Windows SSH public-key as the next repo-local leaf once row40 clears the shared model/knowledge-map conflict scope.",
+          "After rows 40 and 41 are accepted, run the already-bounded row42 secure-TLS alias/frontier proof without reopening secure-TLS authoring or live execution."
+        ],
+        "rollup_summary": "Rows 40, 41, and 42 are now accepted repo-local VM prerelease landings: the Linux and Windows SSH public-key maintained model/view carriers are preserved with durable evidence, and the bounded secure-TLS basic frontier proof is complete by alias/carrier reuse only. This focus branch no longer has open children; the truthful remaining follow-through has moved to project-level adjacent frontier proofs starting with the accepted secure-TLS VNet and network-isolated stop-line packets and now continuing at the active cloud-provider IP-based LB boundary leaf.",
+        "acceptance_note": "Completed the bounded repo-local row40→row41→row42 follow-through branch: rows 40 and 41 landed in the maintained knowledge map and row 42 secure-TLS basic adjacency/canonical-carrier proof is accepted with no cloud execution. The next repo-local frontier is a new sibling leaf for source-order row 43 secure-TLS VNet proof rather than keeping this finished focus branch open.",
+        "archived_done_leaf_count": 3,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260621193643650.json",
+            "archived": 2,
+            "at": "2026-06-21T19:36:43.650Z",
+            "summary": "Rows 40, 41, and 42 are now accepted repo-local VM prerelease landings: the Linux and Windows SSH public-key maintained model/view carriers are preserved with durable evidence, and the bounded secure-TLS basic frontier proof is complete by alias/carrier reuse only. This focus branch no longer has open children; the truthful remaining follow-through has moved to project-level adjacent frontier proofs starting with the accepted secure-TLS VNet and network-isolated stop-line packets and now continuing at the active cloud-provider IP-based LB boundary leaf.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260621",
+              "vmpr-row41-windows-ssh-public-key-maintained-model-view-landing-post-row40-20260621"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260621193300384.json",
+            "archived": 1,
+            "at": "2026-06-21T19:33:00.385Z",
+            "summary": "Rows 40, 41, and 42 are now accepted repo-local VM prerelease landings: the Linux and Windows SSH public-key maintained model/view carriers are preserved with durable evidence, and the bounded secure-TLS basic frontier proof is complete by alias/carrier reuse only. This focus branch no longer has open children; the truthful remaining follow-through has moved to project-level active leaf vmpr-post-row42-row43-securetls-vnet-frontier-proof-20260621, which continues the next adjacent secure-TLS VNet frontier without reopening model authoring or cloud execution.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-post-row41-row42-securetls-basic-frontier-proof-gated-20260621"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-21T20:55:00Z",
+        "created_by": "focus-plan-review",
+        "last_focus_reviewed_at": "2026-06-21T20:55:00Z",
+        "last_focus_review_result": "on_track",
+        "rolled_up_at": "2026-06-21T19:36:43.650Z",
+        "rolled_up_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T19:32:13.881Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Completed the bounded repo-local row40→row41→row42 follow-through branch: rows 40 and 41 landed in the maintained knowledge map and row 42 secure-TLS basic adjacency/canonical-carrier proof is accepted with no cloud execution. The next repo-local frontier is a new sibling leaf for source-order row 43 secure-TLS VNet proof rather than keeping this finished focus branch open."
+      },
+      "updated_at": "2026-06-21T20:55:00Z",
+      "result": "Current focus branch refreshed to the actual repo-local frontier: row40 active, row41 waiting, row42 secure-TLS proof dependency-gated behind both SSH landings.",
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:32:13.881Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

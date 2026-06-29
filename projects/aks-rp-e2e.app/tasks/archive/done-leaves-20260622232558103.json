@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:25:58.103Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-row50-hardening-and-external-wait-separation-20260622",
+  "summary": "2026-06-22 owner review accepted and archived the row-76 family-wait audit: mounted source, replay, live preflight evidence, and maintained model/view surfaces agree that path.virtualmachine-prerelease.row76-aksconformance-tunnel remains row-locally blocked on one exact shared control-plane cp-<n> UAI resource ID exported as AKS_RP_E2E_ASSIGN_IDENTITY, while the single blocked sibling external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 stays as the only external-human transport/reply holder for that already-prepared ask and the other covered asks. This focus branch now has no remaining repo-local VM/private-cluster follow-up; it preserves only the exact family-level external wait and no duplicate blocked leaves or reopened cloud-mutation work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622",
+      "parent_id": "focus-vmpr-row50-hardening-and-external-wait-separation-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: reconcile whether path.virtualmachine-prerelease.row76-aksconformance-tunnel truthfully belongs under the single external-send-proof family wait or should instead remain a separate shared-identity preflight blocker, using only repo-local source/spec/replay/model/task evidence. Bound the work to row 76 plus the family-wait linkage, and do not reopen packet drafting, external messaging, or cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622.md cites the exact mounted-source/replay/model lineage, the accepted row-76 execute/preflight evidence, and the current external-send-proof family-wait artifact to decide whether row 76 should stay covered by that wait or recover its own exact blocker/resume condition.",
+        "If the bounded audit reveals a needed repo-local correction, only row-76 and its directly linked task/model/view surfaces are updated, any blocked-family wording is narrowed rather than duplicated, and bun run check passes with no live execution or new human-send task created."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr.row76-blocker-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T23:21:18.026Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622_20260622232121",
+        "assigned_at": "2026-06-22T23:21:21.902Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622",
+        "worker_started_attempt_id": "a_vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622_20260622232121",
+        "worker_started_at": "2026-06-22T23:22:42.056Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-76 family-wait vs shared-identity blocker audit by writing evidence/archive/vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622.md and narrowing the shared family-wait wording in evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md so row 76 remains covered only as the external transport/reply wrapper around its exact shared-identity prerequisite. bun run check passed with no model/view edits or live execution.",
+        "last_worker_completed_at": "2026-06-22T23:25:13.961Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T23:25:58.052Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted repo-local audit: row 76 keeps its exact shared-identity preflight blocker semantics on model/view surfaces while remaining covered by the single family-level external-human transport wait only for the later out-of-runtime reply/handoff step; wording repair landed in the family-wait artifact and ../aks-rp-e2e bun run check passed."
+      },
+      "session_id": "s_task_vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622",
+      "session_history": [
+        "s_task_vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622"
+      ],
+      "result": "Completed the row-76 family-wait vs shared-identity blocker audit by writing evidence/archive/vmpr-row76-family-wait-vs-shared-identity-blocker-audit-20260622.md and narrowing the shared family-wait wording in evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md so row 76 remains covered only as the external transport/reply wrapper around its exact shared-identity prerequisite. bun run check passed with no model/view edits or live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T23:25:58.052Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted repo-local audit: row 76 keeps its exact shared-identity preflight blocker semantics on model/view surfaces while remaining covered by the single family-level external-human transport wait only for the later out-of-runtime reply/handoff step; wording repair landed in the family-wait artifact and ../aks-rp-e2e bun run check passed."
+      },
+      "status": "done"
+    }
+  ]
+}

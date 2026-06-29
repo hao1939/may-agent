@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:05:17.368Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier refill preserves the single truthful external-human family wait unchanged and refills the empty runnable frontier with one concrete no-cloud model-ready leaf: cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626. Recent repo-local row60/row61/addonv2 packet-sync completions are now archived at the root because their durable meaning is already captured in the project rollup; do not reopen those completed leaves without contradictory source/spec evidence. The next useful owner action is to land the credential-provider upgrade matrix mounted-source packet sync while the external human/operator proof family remains compressed as the sole blocked wait.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "addonv2-create-scale-upgrade-spec-index-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync the derived spec-index mirror for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade so specs/index.json matches the current canonical spec's mounted-source coverage and narrowed status wording.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/index.json"
+      ],
+      "acceptance": [
+        "The spec.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade entry in specs/index.json includes the missing mounted source refs for addonv2/overlayvpa/overlayvpa.go and eno/main.go.",
+        "The same specs/index.json entry's statusReason mirrors the current canonical wording from specs/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade.json, including the row-73/74 VirtualMachines-vs-VMSS tension and the row-219 ENO narrowing.",
+        "The change stays bounded to the derived mirror entry for this path and records no cloud execution or external-wait churn."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-index-sync:managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:56:56.985Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-create-scale-upgrade-spec-index-sync-20260626_20260626125712",
+        "assigned_at": "2026-06-26T12:57:12.434Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-create-scale-upgrade-spec-index-sync-20260626",
+        "worker_started_attempt_id": "a_addonv2-create-scale-upgrade-spec-index-sync-20260626_20260626125712",
+        "worker_started_at": "2026-06-26T12:57:12.937Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced the derived specs/index.json mirror entry for spec.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade to match the canonical spec’s mounted-source refs and narrowed status wording.",
+        "last_worker_completed_at": "2026-06-26T12:57:42.520Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:59:35.608Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: specs/index.json now mirrors the canonical addonv2 create-scale-upgrade spec entry, including the added mounted refs for addonv2/overlayvpa/overlayvpa.go and eno/main.go plus the narrowed statusReason wording covering the rows 73/74 VirtualMachines-vs-suite-body VMSS tension and row 219 ENO narrowing; no cloud execution or external-wait churn was introduced."
+      },
+      "session_id": "s_task_addonv2-create-scale-upgrade-spec-index-sync-20260626",
+      "session_history": [
+        "s_task_addonv2-create-scale-upgrade-spec-index-sync-20260626"
+      ],
+      "result": "Synced the derived specs/index.json mirror entry for spec.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade to match the canonical spec’s mounted-source refs and narrowed status wording.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:59:35.608Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: specs/index.json now mirrors the canonical addonv2 create-scale-upgrade spec entry, including the added mounted refs for addonv2/overlayvpa/overlayvpa.go and eno/main.go plus the narrowed statusReason wording covering the rows 73/74 VirtualMachines-vs-suite-body VMSS tension and row 219 ENO narrowing; no cloud execution or external-wait churn was introduced."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease source plus existing repo-local specs/replays/model artifacts as the primary no-cloud authority for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling: identify the exact handwritten scenario carrier(s) starting from test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, map the accepted legacy addon scaling+disable lifecycle boundary and adjacent excluded surfaces, and record the current repo-local spec/replay/model coverage plus the next bounded local follow-up without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted source files, scenario names, and relevant assertions/steps that carry the row-60 legacy addon scaling+disable contract for VirtualMachines prerelease.",
+        "The note maps accepted inputs, expected behavior, adjacent or excluded surfaces, and current repo-local coverage across specs/replays/model for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling without guessing beyond the cited source and repo-local artifacts.",
+        "The note leaves a truthful landing for the path and names one concrete bounded local follow-up if more repo-local work remains, without reopening the external human wait or requiring cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "mounted-source:vm-prerelease-row60-legacy-addon-disable-scaling"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:56:01.514Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T12:56:05.444Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626_20260626125618",
+        "assigned_at": "2026-06-26T12:56:18.389Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626_20260626125618",
+        "worker_started_at": "2026-06-26T12:56:18.985Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable row-60 mounted-source mapping note at evidence/archive/vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626.md and verified the exact mounted source carrier plus existing spec/replay/model coverage for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling without cloud mutation.",
+        "last_worker_completed_at": "2026-06-26T12:57:49.537Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:58:27.818Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the mounted-source map: evidence/archive/vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626.md cites the exact prerelease.go -> checkin.go -> row-60 Scenario_Addon matrix carrier -> addon/main.go/const.go chain, maps the accepted scaling+disable lifecycle boundary and excluded adjacent surfaces, and truthfully inventories the existing spec/replay/feature/model coverage without cloud mutation or any external-wait churn. Its named local follow-up is bounded repo-local carrier-chain sync work rather than a reopened blocker or execute ask."
+      },
+      "session_id": "s_task_vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626"
+      ],
+      "result": "Created a durable row-60 mounted-source mapping note at evidence/archive/vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626.md and verified the exact mounted source carrier plus existing spec/replay/model coverage for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling without cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:58:27.818Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the mounted-source map: evidence/archive/vm-prerelease-row60-legacy-addon-disable-scaling-mounted-source-map-20260626.md cites the exact prerelease.go -> checkin.go -> row-60 Scenario_Addon matrix carrier -> addon/main.go/const.go chain, maps the accepted scaling+disable lifecycle boundary and excluded adjacent surfaces, and truthfully inventories the existing spec/replay/feature/model coverage without cloud mutation or any external-wait churn. Its named local follow-up is bounded repo-local carrier-chain sync work rather than a reopened blocker or execute ask."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the maintained row-60 feature packet for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling so one repo-local canonical surface explicitly summarizes the mounted carrier chain prerelease.go -> checkin.go -> row-60 Scenario_Addon in e2ev2_virtualmachine.test_matrix.json -> addon/main.go/const.go, while preserving the exact scaling+disable boundary and the VirtualMachines-vs-suite-body default nuance without creating new canonical ids or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachine-prerelease-row60-legacy-addon-disable-scaling.yaml"
+      ],
+      "acceptance": [
+        "The updated feature packet explicitly cites the mounted carrier chain from prerelease.go through checkin.go, the row-60 Scenario_Addon matrix entry, and addon/main.go/const.go in one maintained location.",
+        "The packet preserves the accepted row-60 boundary (no-addons create, CoreDNS/CPA validation, 2->4 scale ladder, disable httpApplicationRouting) and keeps the VirtualMachines selector versus suite-body VirtualMachineScaleSets default as a documented nuance rather than flattening it.",
+        "The change is bounded to the maintained row-60 packet (and only directly necessary linked wording if any), with no new spec/replay/model ids, no cloud mutation, and no external-wait churn."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-packet-sync:vm-prerelease-row60-legacy-addon-disable-scaling"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:58:36.934Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626_20260626125839",
+        "assigned_at": "2026-06-26T12:58:39.964Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626_20260626125839",
+        "worker_started_at": "2026-06-26T12:59:00.538Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the maintained row-60 VM prerelease feature packet to add one explicit repo-local carrierChain summary linking prerelease.go -> checkin.go -> row-60 Scenario_Addon matrix entry -> addon/main.go/const.go, while preserving the exact scaling/disable boundary and the VirtualMachines-vs-VirtualMachineScaleSets nuance.",
+        "last_worker_completed_at": "2026-06-26T12:59:37.294Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:00:27.287Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after file-level verification: features/virtualmachine-prerelease-row60-legacy-addon-disable-scaling.yaml now carries the exact mounted carrierChain prerelease.go -> checkin.go -> row-60 Scenario_Addon -> addon/main.go/const.go while preserving the scaling/disable boundary and the VirtualMachines selector versus suite-body VirtualMachineScaleSets nuance, so the review task is complete despite the empty explicit evidence array."
+      },
+      "session_id": "s_task_vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-row60-feature-packet-carrier-chain-sync-20260626"
+      ],
+      "result": "Updated the maintained row-60 VM prerelease feature packet to add one explicit repo-local carrierChain summary linking prerelease.go -> checkin.go -> row-60 Scenario_Addon matrix entry -> addon/main.go/const.go, while preserving the exact scaling/disable boundary and the VirtualMachines-vs-VirtualMachineScaleSets nuance.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:00:27.287Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted after file-level verification: features/virtualmachine-prerelease-row60-legacy-addon-disable-scaling.yaml now carries the exact mounted carrierChain prerelease.go -> checkin.go -> row-60 Scenario_Addon -> addon/main.go/const.go while preserving the scaling/disable boundary and the VirtualMachines selector versus suite-body VirtualMachineScaleSets nuance, so the review task is complete despite the empty explicit evidence array."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the maintained row-61 feature packet for path.virtualmachine-prerelease.row61-core-addon-compatibility so one repo-local canonical surface explicitly summarizes the mounted carrier chain prerelease.go -> checkin.go -> row-61 Scenario_Core_Addon in e2ev2_virtualmachine.test_matrix.json -> addon/coreaddons/k8s_compatibility.go (and directly necessary linked addon source), while preserving the exact oldest/latest CoreDNS and metrics-server compatibility boundary without creating new canonical ids or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachine-prerelease-row61-core-addon-compatibility.yaml"
+      ],
+      "acceptance": [
+        "The updated feature packet explicitly cites the mounted carrier chain from prerelease.go through checkin.go, the row-61 Scenario_Core_Addon matrix entry, and addon/coreaddons/k8s_compatibility.go in one maintained location.",
+        "The packet preserves the accepted row-61 boundary (oldest/latest Kubernetes compatibility, CoreDNS nslookup validation, metrics-server availability, and replica_num=2) and keeps any VM-matrix-versus-suite-body nuance documented rather than flattened or guessed.",
+        "The change is bounded to the maintained row-61 packet (and only directly necessary linked wording if any), with no new spec/replay/model ids, no cloud mutation, and no external-wait churn."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-packet-sync:vm-prerelease-row61-core-addon-compatibility"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:00:27.341Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626_20260626130027",
+        "assigned_at": "2026-06-26T13:00:27.393Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626_20260626130027",
+        "worker_started_at": "2026-06-26T13:01:49.877Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the maintained row-61 feature packet to explicitly summarize the mounted prerelease.go -> checkin.go -> VM matrix row 61 -> k8s_compatibility.go carrier chain while preserving the oldest/latest CoreDNS and metrics-server compatibility boundary and the suite-vs-matrix agent-pool nuance.",
+        "last_worker_completed_at": "2026-06-26T13:02:35.181Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:03:11.252Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the row-61 packet refresh because features/virtualmachine-prerelease-row61-core-addon-compatibility.yaml now explicitly preserves the mounted prerelease.go -> checkin.go -> VM matrix row 61 -> addon/coreaddons/k8s_compatibility.go carrier chain, keeps the oldest/latest CoreDNS + metrics-server boundary with replica_num=2, documents the suite-vs-matrix nuance, and stays bounded to maintained packet/model wording with no new ids or cloud mutation."
+      },
+      "session_id": "s_task_vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-row61-feature-packet-carrier-chain-sync-20260626"
+      ],
+      "result": "Updated the maintained row-61 feature packet to explicitly summarize the mounted prerelease.go -> checkin.go -> VM matrix row 61 -> k8s_compatibility.go carrier chain while preserving the oldest/latest CoreDNS and metrics-server compatibility boundary and the suite-vs-matrix agent-pool nuance.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:03:11.252Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the row-61 packet refresh because features/virtualmachine-prerelease-row61-core-addon-compatibility.yaml now explicitly preserves the mounted prerelease.go -> checkin.go -> VM matrix row 61 -> addon/coreaddons/k8s_compatibility.go carrier chain, keeps the oldest/latest CoreDNS + metrics-server boundary with replica_num=2, documents the suite-vs-matrix nuance, and stays bounded to maintained packet/model wording with no new ids or cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

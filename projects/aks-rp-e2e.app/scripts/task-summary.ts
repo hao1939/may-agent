@@ -14,7 +14,7 @@ const summary = summarizeTaskTree(
     appDir,
     projectDir,
     worker: process.env.WORKER ?? "aks-explorer",
-    maxConcurrent: Number(process.env.MAX_CONCURRENT ?? 5),
+    maxConcurrent: Number(process.env.MAX_CONCURRENT ?? 1),
   }),
 );
 

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:03:58.597Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner refill review: watchdog backlog signal was stale. The storage-csi lane is correctly serialized under active task storage-csi-disk-clone-carrier-completion-20260623, which remains the only live repo-local mounted-source closure task in that conflict scope. Earlier mounted-source audit and landing work already established the next bounded follow-ons: Blob Fuse2 clone, Blob verifyNFS, Azure File clone, and Azure File resize all stay deferred only by the shared storage-csi scope and should be reconsidered after disk-clone leaves active state. The external-send-proof family remains one truthful human/operator out-of-runtime wait and should not be duplicated.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "speculor-mounted-source-coverage-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit mounted speculor handwritten scenarios against repo-local carriers to identify one exact uncovered or under-carried source-backed slice from the largest remaining uncovered family without reopening execution-blocked branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-mounted-source-coverage-audit-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the mounted speculor suite and plan files inspected and maps a bounded subset of handwritten scenarios to existing repo-local features/specs/replays/model paths.",
+        "The note identifies one exact uncovered or under-carried source-backed scenario slice that should become the next concrete landing leaf, or records a bounded source/evidence ceiling for the audited subset.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no external-send/escalation work, and no reopening of the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:49:44.631Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-mounted-source-coverage-audit-20260623_20260623064944",
+        "assigned_at": "2026-06-23T06:49:44.682Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-mounted-source-coverage-audit-20260623",
+        "worker_started_attempt_id": "a_speculor-mounted-source-coverage-audit-20260623_20260623064944",
+        "worker_started_at": "2026-06-23T06:50:09.491Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed a repo-local mounted-source audit of the speculor MultiNIC family and wrote `evidence/archive/speculor-mounted-source-coverage-audit-20260623.md`, identifying `Scenario_MultiNIC_Mixed` as the exact under-carried source-backed slice and proposing the next concrete owner leaf.",
+        "last_worker_completed_at": "2026-06-23T06:52:26.383Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:54:18.546Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/speculor-mounted-source-coverage-audit-20260623.md. The note cites the mounted speculor MultiNIC plan and suite files, maps the three handwritten siblings to current repo-local carriers, and narrows the remaining exact under-carried slice to Scenario_MultiNIC_Mixed because spec/replay/model exist but the maintained feature carrier and source-present-but-suite-disabled status are still missing."
+      },
+      "session_id": "s_task_speculor-mounted-source-coverage-audit-20260623",
+      "session_history": [
+        "s_task_speculor-mounted-source-coverage-audit-20260623"
+      ],
+      "result": "Completed a repo-local mounted-source audit of the speculor MultiNIC family and wrote `evidence/archive/speculor-mounted-source-coverage-audit-20260623.md`, identifying `Scenario_MultiNIC_Mixed` as the exact under-carried source-backed slice and proposing the next concrete owner leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:54:18.546Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/speculor-mounted-source-coverage-audit-20260623.md. The note cites the mounted speculor MultiNIC plan and suite files, maps the three handwritten siblings to current repo-local carriers, and narrows the remaining exact under-carried slice to Scenario_MultiNIC_Mixed because spec/replay/model exist but the maintained feature carrier and source-present-but-suite-disabled status are still missing."
+      },
+      "status": "done"
+    }
+  ]
+}

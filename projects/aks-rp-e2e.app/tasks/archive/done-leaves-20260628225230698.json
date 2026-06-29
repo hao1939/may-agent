@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T22:52:30.698Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 blocked-frontier owner review: the operator/external waits remain truthfully represented by the two family-level blocked leaves under focus-mounted-source-coverage-closure-and-external-wait-20260623, while aks-spec-verification-loop now carries one active westus2 cluster-count preflight next-action diagnosis plus the single shared westus2 family wait. Archived aks-feature-reference-loop because its durable meaning is already captured in prior evidence/model artifacts; the only live local move is the repo-local westus2 family next-action review that will decide whether to reroute, escalate, or refresh the family blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aks-feature-reference-loop",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the durable feature-reference collection loop over feature packets, using official Microsoft Learn documentation and Azure REST API specs, and keep a bounded high-throughput child frontier until the reopened backlog is exhausted or explicitly held again.",
+      "inputs": [
+        "../aks-rp-e2e/features/",
+        "../aks-rp-e2e/features/README.md",
+        "../aks-rp-e2e/features/SCHEMA.md"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "Controller pulses keep a bounded child frontier filled from pending feature-reference items.",
+        "Dormant no-evidence backlog is reopened by owner request; stale-with-evidence items remain out of active refill unless separately selected.",
+        "Each child collects official Learn/API references or records a concrete blocker, then updates feature-reference loop state.",
+        "The loop remains present in tasks/tree.json until explicitly retired."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop"
+      ],
+      "depends_on": [],
+      "workflow": "feature-reference-loop-controller",
+      "context": {
+        "windowSize": 30,
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "workflowProgress": {
+          "completionReady": true,
+          "reason": "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path",
+          "pending": 0,
+          "running": 0,
+          "done": 280,
+          "blocked": 0,
+          "error": 0,
+          "dormant": 0,
+          "stale": 24,
+          "holdMode": "dormant-backlog-preserved",
+          "noRefillNow": true,
+          "openChildren": 0,
+          "lastPulseCreated": 0,
+          "lastPulseAssigned": 0,
+          "updatedAt": "2026-06-28T22:49:08.274Z"
+        },
+        "rollup_summary": "2026-06-28 owner review accepted the final feature-reference loop retirement repair: archived evidence plus repaired .state/feature-reference-loop/state.json now show zero non-held pending/running work and workflowProgress aligned to dormant-backlog-preserved hold mode. This lane should remain as durable context only; reopen it only on a concrete new feature-reference repair/citation/source-coverage signal rather than blocked-frontier refill.",
+        "archived_done_leaf_count": 122,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260628225041247.json",
+            "archived": 2,
+            "at": "2026-06-28T22:50:41.247Z",
+            "summary": "2026-06-28 owner review accepted the final feature-reference loop retirement repair: archived evidence plus repaired .state/feature-reference-loop/state.json now show zero non-held pending/running work and workflowProgress aligned to dormant-backlog-preserved hold mode. This lane should remain as durable context only; reopen it only on a concrete new feature-reference repair/citation/source-coverage signal rather than blocked-frontier refill.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "reconcile-feature-reference-loop-controller-state-20260628",
+              "apply-feature-reference-loop-final-retirement-state-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628221238588.json",
+            "archived": 3,
+            "at": "2026-06-28T22:12:38.589Z",
+            "summary": "2026-06-28 owner review accepted the final repo-local VPA profile-state narrowing slice: archived evidence proves the maintained path now keeps only the 3 public-contract core behaviors while VPA component/Helm runtime assertions stay on their dedicated runtime paths. This feature-reference lane no longer needs a live child for the VPA repair tail; preserve the loop root as durable context only, and reopen this lane only on a concrete new feature-reference repair/citation/source-coverage signal rather than blocked-frontier refill.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "repair-workload-identity-public-api-create-packet-model-promotion-20260628",
+              "repair-feature-reference-workload-autoscaler-vpa-profile-state-packet-model-promotion-20260628",
+              "narrow-feature-reference-workload-autoscaler-vpa-profile-state-model-view-split-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628220658409.json",
+            "archived": 12,
+            "at": "2026-06-28T22:06:58.410Z",
+            "summary": "2026-06-28 owner rollup after the mixed-SKU completion: the accepted feature-reference collector and repair tail under this lane is now durably represented by archived evidence, including the mixed-SKU provenance split that keeps public-contract-backed pool-shape/deleteMachines claims separate from source-only stop/start lifecycle expectations. Leave only the two repo-local packet/model promotion repairs live here: workload-identity public-api-create and workload-autoscaler VPA profile-state.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-virtualmachines-managedsystem-combined",
+              "collect-feature-reference-virtualmachines-mixed-sku-lifecycle",
+              "collect-feature-reference-windows",
+              "collect-feature-reference-workload-autoscaler-vpa-profile-state",
+              "collect-feature-reference-workload-identity",
+              "collect-feature-reference-workload-identity-public-api-create",
+              "reconcile-virtualmachines-mixed-sku-lifecycle-public-vs-source-contract",
+              "repair-feature-reference-virtualmachines-managedsystem-combined-official-citations-20260628",
+              "repair-feature-reference-virtualmachines-managedsystem-combined-verdict-retry-20260628",
+              "repair-feature-reference-workload-autoscaler-vpa-profile-state-citations-20260628",
+              "repair-feature-reference-workload-identity-public-api-create-citations-20260628",
+              "repair-virtualmachines-mixed-sku-lifecycle-packet-model-provenance-split-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628215630478.json",
+            "archived": 6,
+            "at": "2026-06-28T21:56:30.479Z",
+            "summary": "2026-06-28 owner review accepted another official-reference batch: accelerated-networking, agentpool CLI add multi-SKU, auto-zone single-SKU, autoscaled-vms CRUD, workload-autoscaler KEDA upgrade survival, and the Windows citation repair all now have durable evidence archived under ../aks-rp-e2e/evidence/archive/. The live feature-reference tail is now narrower: keep the remaining workload-identity/VPA review leaves plus the new managedsystem-combined verdict retry and the mixed-SKU contract reconciliation, rather than re-reviewing already accepted collectors.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-virtualmachines-accelerated-networking",
+              "collect-feature-reference-virtualmachines-agentpool-cli-add-multi-sku",
+              "collect-feature-reference-virtualmachines-auto-zone-single-sku",
+              "collect-feature-reference-virtualmachines-autoscaled-vms-crud",
+              "collect-feature-reference-workload-autoscaler-keda-upgrade-survival",
+              "repair-feature-reference-windows-official-citations-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628183456966.json",
+            "archived": 25,
+            "at": "2026-06-28T18:34:56.967Z",
+            "summary": "2026-06-28 watchdog blocked-frontier hygiene: this feature-reference lane is now purely durable completed/supporting work for the current focus. Its accepted collectors and repair leaves already live in archived evidence plus prior parent rollups, and no open child remains under this parent. Archive the remaining safe done children so the live tree stays compact; reopen this lane only on a concrete feature-reference repair, citation, or mounted-source coverage signal that produces new repo-local evidence.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-virtualmachines-auto-zone-single-sku",
+              "collect-feature-reference-virtualmachines-capacity-based-surge",
+              "collect-feature-reference-virtualmachines-capacity-based-surge-maxunavailable",
+              "collect-feature-reference-virtualmachines-managedsystem-agentpool-vm-prerelease",
+              "collect-feature-reference-virtualmachines-mixed-sku-deallocate",
+              "collect-feature-reference-virtualmachines-mixed-sku-upgrade",
+              "collect-feature-reference-workload-autoscaler",
+              "collect-feature-reference-workload-autoscaler-keda-profile-state",
+              "collect-feature-reference-workload-autoscaler-keda-upgrade-survival",
+              "collect-feature-reference-workload-autoscaler-vpa-cert-renewal-runtime",
+              "collect-feature-reference-workload-autoscaler-vpa-upgrade-survival-runtime",
+              "collect-feature-reference-workload-health",
+              "collect-feature-reference-workload-health-core-dns-readiness",
+              "collect-feature-reference-workload-health-konnectivity-readiness",
+              "collect-feature-reference-workload-health-metrics-server-readiness",
+              "collect-feature-reference-workload-identity",
+              "collect-feature-reference-workload-identity-public-api-create",
+              "normalize-feature-reference-virtualmachines-capacity-based-surge-maxunavailable-headings-20260628",
+              "normalize-feature-reference-virtualmachines-review-batch-headings-20260628",
+              "repair-feature-reference-workload-autoscaler-keda-upgrade-survival-headings-20260628",
+              "repair-feature-reference-workload-identity-capability-packet-20260628",
+              "repair-feature-reference-workload-identity-public-api-create-20260628",
+              "repair-feature-packet-workload-identity-public-api-create-contract-cleanup-20260628",
+              "source-back-spec-gpu-multi-gpu-workload-execution-contract-20260628",
+              "source-back-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-carrier-20260628"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:25.929Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T12:38:38.125Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aks-feature-reference-loop",
+        "last_controller_pulse_at": "2026-06-28T22:49:08.260Z",
+        "last_controller_pulse_summary": "Feature reference loop aks-feature-reference-loop controller pulse created 0 child task(s); releasing controller slot before child assignment.",
+        "rolled_up_at": "2026-06-28T22:50:41.247Z",
+        "rolled_up_by": "task-tree-tool",
+        "restored_at": "2026-06-28T21:08:56.408Z",
+        "restored_by": "loop-integrity-repair",
+        "restore_reason": "Loop state still exists; loop roots must remain in tasks/tree.json until explicitly retired."
+      },
+      "session_id": "s_task_aks-feature-reference-loop",
+      "session_history": [
+        "s_task_aks-feature-reference-loop"
+      ],
+      "result": "Child review pending: collect-feature-reference-storage-csi-advanced-disk, collect-feature-reference-storage-csi-blob-driver-enable, collect-feature-reference-storage-csi-blob-fuse2-clone, collect-feature-reference-storage-csi-blob-pvc-dynamic, collect-feature-reference-storage-csi-blob-verify-nfs, collect-feature-reference-storage-csi-byok, collect-feature-reference-storage-csi-byok-ephemeral-os, collect-feature-reference-storage-csi-csidrivers, collect-feature-reference-storage-csi-disk-clone, collect-feature-reference-storage-csi-disk-driver-enable.",
+      "status": "done"
+    }
+  ]
+}

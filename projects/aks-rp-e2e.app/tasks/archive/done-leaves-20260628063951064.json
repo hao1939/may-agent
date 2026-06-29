@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:39:51.064Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner pass accepted the metricsserver HA narrowing repair and keeps the current spec-verification frontier intentionally small: bootstrap-profile direct-create remains accepted from the repaired single-spec carrier, the coredns custom-config identity-gate review and metricsserver upgrade-survival rerun stay active, three sibling CCP/autoupgrader reruns remain truthfully blocked on that one active identity-gate proof, and the App Routing existing-cluster family remains on one external operator-response wait with durable send proof already archived.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "verify-spec-ccp-autoupgrader-pipeline-daily-master-after-routing-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun and review spec.ccp-autoupgrader.pipeline-daily-master only after review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 archives durable proof that the repaired single-spec workflow preserves spec/artifact identity for sibling reruns.",
+      "inputs": [],
+      "outputs": [
+        "test-results/"
+      ],
+      "acceptance": [
+        "The gate-proof review for run 28313632351 explicitly confirms sibling reruns can trust workflow metadata, result.json specId, and artifact family alignment.",
+        "A fresh rerun for spec.ccp-autoupgrader.pipeline-daily-master cites matching result path, result.json specId, and workflow metadata before any verdict is accepted.",
+        "The rerun ends in a pass/fail/blocked/error classification with linked trustworthy artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-autoupgrader.pipeline-daily-master"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:15:54.548Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:34:27.063Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T06:35:00.864Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "This rerun was textually gated on the coredns custom-config artifact-identity review but still surfaced as runnable. Replaced it with blocked leaf verify-spec-ccp-autoupgrader-pipeline-daily-master-after-identity-gate-20260628 so the tree records the exact local resume condition."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T06:35:00.864Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "This rerun was textually gated on the coredns custom-config artifact-identity review but still surfaced as runnable. Replaced it with blocked leaf verify-spec-ccp-autoupgrader-pipeline-daily-master-after-identity-gate-20260628 so the tree records the exact local resume condition."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-coredns-component-lifecycle-after-identity-proof-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun and review spec.ccp-coredns.component-lifecycle only after review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 archives durable proof that the single-spec workflow again preserves spec/artifact identity.",
+      "inputs": [],
+      "outputs": [
+        "test-results/"
+      ],
+      "acceptance": [
+        "The cited gate-proof review explicitly says the single-spec artifact identity gate is trustworthy for sibling reruns.",
+        "A fresh single-spec run for spec.ccp-coredns.component-lifecycle cites matching workflow metadata, result.json specId, and artifact family before any product verdict is accepted.",
+        "The replay is classified as pass, fail, blocked, or error with linked durable evidence rather than a wrong-family artifact claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.component-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:27:54.607Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:34:27.063Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T06:35:00.919Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "This rerun was textually gated on the coredns custom-config artifact-identity review but still surfaced as runnable. Replaced it with blocked leaf verify-spec-ccp-coredns-component-lifecycle-after-identity-gate-20260628 so the tree records the exact local resume condition."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T06:35:00.919Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "This rerun was textually gated on the coredns custom-config artifact-identity review but still surfaced as runnable. Replaced it with blocked leaf verify-spec-ccp-coredns-component-lifecycle-after-identity-gate-20260628 so the tree records the exact local resume condition."
+      },
+      "status": "done"
+    },
+    {
+      "id": "narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Narrow or split spec.ccp-metricsserver.ha-scaling so the repo no longer claims unconditional >=2 ready replicas or mandatory cross-node distribution on a path that does not model enable-metrics-server-ha; preserve a truthful source-backed conditional HA contract with exact citations.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628.md"
+      ],
+      "acceptance": [
+        "The worker updates the relevant spec/model artifacts so the unconditional path no longer requires >=2 ready replicas or mandatory cross-node spread without an explicit HA-enabling input.",
+        "The archive cites mounted handwritten source, implementation/source-equivalent files, and the accepted 2026-06-28 clarification note to explain the chosen narrow-vs-split repair.",
+        "If the worker chooses a split instead of an in-place narrowing, the successor conditional-HA carrier and its exact owning files are created or named explicitly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.ha-scaling"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:31:02.737Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628_20260628063102",
+        "assigned_at": "2026-06-28T06:31:02.796Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628",
+        "worker_started_attempt_id": "a_narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628_20260628063102",
+        "worker_started_at": "2026-06-28T06:31:35.886Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Narrowed `spec.ccp-metricsserver.ha-scaling` from an unconditional HA verdict to a source-backed conditional `enable-metrics-server-ha` carrier, updated the probe and metrics-server packet, refreshed the accepted model/path metadata, and wrote the requested archive evidence note.",
+        "last_worker_completed_at": "2026-06-28T06:39:00.960Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:39:22.325Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence cites mounted handwritten source plus implementation/rendering files, preserves the in-place narrowed conditional enable-metrics-server-ha contract, and removes unsupported unconditional >=2 ready replica/cross-node spread claims from the carrier."
+      },
+      "session_id": "s_task_narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628",
+      "session_history": [
+        "s_task_narrow-spec-ccp-metricsserver-ha-scaling-to-source-backed-conditional-ha-20260628"
+      ],
+      "result": "Narrowed `spec.ccp-metricsserver.ha-scaling` from an unconditional HA verdict to a source-backed conditional `enable-metrics-server-ha` carrier, updated the probe and metrics-server packet, refreshed the accepted model/path metadata, and wrote the requested archive evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:39:22.325Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence cites mounted handwritten source plus implementation/rendering files, preserves the in-place narrowed conditional enable-metrics-server-ha contract, and removes unsupported unconditional >=2 ready replica/cross-node spread claims from the carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

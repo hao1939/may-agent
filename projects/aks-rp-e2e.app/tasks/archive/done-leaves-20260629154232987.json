@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:42:32.987Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner rollup archived three completed node-autoprovision verifier leaves because their durable meaning is now captured at the lane level: create-auto and update-mode-manual remain accepted terminal verifier outcomes, and update-default-pools-none is likewise accepted as a reviewed terminal fail from run 28383821370 with PATCH HTTP 200 but only 3/4 claim assertions satisfied. No new follow-up branch is created from these verifier completions in this bounded pass; the truthful next work in this lane remains the current ten active single-spec verifier children plus the two repo-local follow-up leaves already in flight (network-cni.azure-default-mode timeout-envelope repair/rerun prep and the ACNS basic-retina rerun after terminalization repair), while the only passive waits remain the exact aad-rbac known-run artifact checkpoint and the shared westus2 cluster-count preflight family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-node-autoprovision-create-auto",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-autoprovision.create-auto through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-autoprovision.create-auto",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-autoprovision.create-auto"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-autoprovision.create-auto",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-autoprovision.create-auto workflow run 28383682226 classified as pass. Loop key: verify-spec-node-autoprovision-create-auto-a_verify-spec-node-autoprovision-create-auto_20. NAP create-auto test passed: PUT with nodeProvisioningProfile.mode=Auto succeeded, RP accepted, mode=Auto persisted, network prerequisites (azure/overlay/cilium) configured. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28383682226 Result: runs/test-results/single-node-autoprovision-create-auto_321846/artifacts/node-autoprovision-create-auto/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/test-results/single-node-autoprovision-create-auto_321846/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:32:21.108Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-autoprovision-create-auto_20260629153221",
+        "assigned_at": "2026-06-29T15:32:21.129Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-autoprovision-create-auto",
+        "worker_started_attempt_id": "a_verify-spec-node-autoprovision-create-auto_20260629153221",
+        "worker_started_at": "2026-06-29T15:32:48.510Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.node-autoprovision.create-auto workflow run 28383682226 classified as pass. Loop key: verify-spec-node-autoprovision-create-auto-a_verify-spec-node-autoprovision-create-auto_20. NAP create-auto test passed: PUT with nodeProvisioningProfile.mode=Auto succeeded, RP accepted, mode=Auto persisted, network prerequisites (azure/overlay/cilium) configured. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28383682226 Result: runs/test-results/single-node-autoprovision-create-auto_321846/artifacts/node-autoprovision-create-auto/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/test-results/single-node-autoprovision-create-auto_321846/result.json",
+        "last_worker_completed_at": "2026-06-29T15:38:42.818Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T15:38:48.010Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-autoprovision.create-auto workflow run 28383682226 classified as pass. Loop key: verify-spec-node-autoprovision-create-auto-a_verify-spec-node-autoprovision-create-auto_20. NAP create-auto test passed: PUT with nodeProvisioningProfile.mode=Auto succeeded, RP accepted, mode=Auto persisted, network prerequisites (azure/overlay/cilium) configured. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28383682226 Result: runs/test-results/single-node-autoprovision-create-auto_321846/artifacts/node-autoprovision-create-auto/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/test-results/single-node-autoprovision-create-auto_321846/result.json"
+      },
+      "session_id": "s_task_verify-spec-node-autoprovision-create-auto",
+      "session_history": [
+        "s_task_verify-spec-node-autoprovision-create-auto"
+      ],
+      "result": "Spec spec.node-autoprovision.create-auto workflow run 28383682226 classified as pass. Loop key: verify-spec-node-autoprovision-create-auto-a_verify-spec-node-autoprovision-create-auto_20. NAP create-auto test passed: PUT with nodeProvisioningProfile.mode=Auto succeeded, RP accepted, mode=Auto persisted, network prerequisites (azure/overlay/cilium) configured. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28383682226 Result: runs/test-results/single-node-autoprovision-create-auto_321846/artifacts/node-autoprovision-create-auto/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28383682226/aks-rp-e2e-28383682226-spec-test-results/test-results/single-node-autoprovision-create-auto_321846/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:38:48.010Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

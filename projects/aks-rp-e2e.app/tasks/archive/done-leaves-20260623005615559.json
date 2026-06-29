@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T00:56:15.559Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner stale-watchdog cleanup: the referenced batch10 review leaf was already archived/accepted, so this wake only confirms the live frontier remains unchanged. Archived the safe done batch9 predecessor under the root because its durable meaning is already captured in project rollups and archive history; batch11 stays the sole active repo-local next-10 spec-path bridge slice, and the single external-human family wait remains the only blocked sibling pending later out-of-runtime proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-path-record-batch9-post-batch8-authoring-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: land the exact next 10 missing spec-path bridges named in the accepted batch8 residual frontier without reopening prior batches or doing cloud work. Use evidence/archive/spec-path-record-batch8-post-batch7-authoring-20260623.md as the bounded predecessor note and author only these rows: path.rp-cluster-lifecycle.maintenance-state, path.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease, path.rp-cluster-lifecycle.new-vnet-runner-variant, path.rp-cluster-lifecycle.rotate-certificates, path.rp-cluster-lifecycle.stop-start, path.rp-cluster-lifecycle.update-tags, path.rp-cluster-lifecycle.upgrade-k8s-version, path.rp-nodepool-lifecycle.multi-agentpool-runner, path.rp.available-agent-pool-versions, and path.rp.operation-status-polling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-path-record-batch9-post-batch8-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "The canonical archive note ../aks-rp-e2e/evidence/archive/spec-path-record-batch9-post-batch8-authoring-20260623.md records the exact 10 targeted path ids, the supporting repo-local spec/source surfaces used, and the resulting model/view files updated, with no cloud mutation or unrelated frontier expansion.",
+        "model/knowledge-map/model.json plus the maintained derived views are updated consistently for the exact 10 targeted rows, and the note records the resulting missingSpecPathRecords delta and next residual frontier so the next batch can start without rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-path-records.batch9"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:44:31.854Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-path-record-batch9-post-batch8-authoring-20260623_20260623004431",
+        "assigned_at": "2026-06-23T00:44:31.906Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-path-record-batch9-post-batch8-authoring-20260623",
+        "worker_started_attempt_id": "a_spec-path-record-batch9-post-batch8-authoring-20260623_20260623004431",
+        "worker_started_at": "2026-06-23T00:44:51.182Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed batch9 normalized spec-path bridges for the exact 10 assigned RP/RP-nodepool paths in model/knowledge-map/model.json, regenerated maintained views, and wrote the durable archive note evidence/archive/spec-path-record-batch9-post-batch8-authoring-20260623.md with the post-batch delta and next residual frontier.",
+        "last_worker_completed_at": "2026-06-23T00:51:55.631Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:52:37.965Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from the durable archive note: it records the exact 10 assigned path ids, supporting repo-local spec/source surfaces, model/view files updated, maintained-view regeneration, and a bounded missingSpecPathRecords delta from 71 to 61 with the next 10-row residual frontier named for the successor batch."
+      },
+      "session_id": "s_task_spec-path-record-batch9-post-batch8-authoring-20260623",
+      "session_history": [
+        "s_task_spec-path-record-batch9-post-batch8-authoring-20260623"
+      ],
+      "result": "Landed batch9 normalized spec-path bridges for the exact 10 assigned RP/RP-nodepool paths in model/knowledge-map/model.json, regenerated maintained views, and wrote the durable archive note evidence/archive/spec-path-record-batch9-post-batch8-authoring-20260623.md with the post-batch delta and next residual frontier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:52:37.965Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from the durable archive note: it records the exact 10 assigned path ids, supporting repo-local spec/source surfaces, model/view files updated, maintained-view regeneration, and a bounded missingSpecPathRecords delta from 71 to 61 with the next 10-row residual frontier named for the successor batch."
+      },
+      "status": "done"
+    }
+  ]
+}

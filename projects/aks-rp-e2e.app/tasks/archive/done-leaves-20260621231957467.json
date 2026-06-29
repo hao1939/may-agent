@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:19:57.467Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill is now fully reconciled: the accepted VM prerelease mounted-source frontier map and the accepted AAD managed-v2 execute-contract refresh have both delivered their durable evidence, so they no longer add frontier value as standalone done leaves. Live project action is now intentionally narrow: vmpr-row62-addonv2-aci-connector-model-landing-20260621 remains the single active repo-local follow-up because the accepted frontier packet proved row 62 Addonv2 ACI Connector is the first post-row61 maintained-model gap, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful external-human wait until durable human transport proof or authoritative reply exists for the covered ask family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-managed-v2-execute-contract-evidence-refresh-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Distill the exact repo-local execute contract, failure witness, and retest condition for the AAD managed v2 lifecycle path from existing accepted artifacts so the environment-blocked branch stays actionable without new cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-managed-v2-execute-contract-evidence-refresh-20260621.md"
+      ],
+      "acceptance": [
+        "Use existing repo-local artifacts, accepted evidence, and checked-in replay/config context to capture the exact bounded execute contract for path.aad-rbac.managed-v2-lifecycle: required host/local mode, mutation gate, api-version, core request body/replay identity, and the observed failure signature that currently blocks the path.",
+        "Record the current retest condition in durable evidence with exact artifact references and note any mismatch you find between the evidence and the model wording; if a wording mismatch is proven, update only the exact nearby model/feature text needed to keep the path truthful.",
+        "Stay repo-local only: no cloud execution, no new external-human wait, and no widening beyond the single AAD managed v2 lifecycle path plus exact nearby linkage needed for coherence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:aad-rbac"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:11:35.099Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-managed-v2-execute-contract-evidence-refresh-20260621_20260621231138",
+        "assigned_at": "2026-06-21T23:11:38.835Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-managed-v2-execute-contract-evidence-refresh-20260621",
+        "worker_started_attempt_id": "a_aad-managed-v2-execute-contract-evidence-refresh-20260621_20260621231138",
+        "worker_started_at": "2026-06-21T23:12:21.875Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the AAD managed-v2 execute-contract evidence packet and repaired the nearby model/view wording so path.aad-rbac.managed-v2-lifecycle now distinguishes the repaired row-37 exact replay contract from the older 2026-06-19 westus2/local failure witness.",
+        "last_worker_completed_at": "2026-06-21T23:18:30.844Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:19:05.368Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the new archive packet captures the repaired row-37 execute contract, preserves the 2026-06-19 create-Canceled failure witness as historical environment evidence, and aligns the nearby maintained model/view wording with the exact current replay identity without widening scope."
+      },
+      "session_id": "s_task_aad-managed-v2-execute-contract-evidence-refresh-20260621",
+      "session_history": [
+        "s_task_aad-managed-v2-execute-contract-evidence-refresh-20260621"
+      ],
+      "result": "Refreshed the AAD managed-v2 execute-contract evidence packet and repaired the nearby model/view wording so path.aad-rbac.managed-v2-lifecycle now distinguishes the repaired row-37 exact replay contract from the older 2026-06-19 westus2/local failure witness.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:19:05.368Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the new archive packet captures the repaired row-37 execute contract, preserves the 2026-06-19 create-Canceled failure witness as historical environment evidence, and aligns the nearby maintained model/view wording with the exact current replay identity without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

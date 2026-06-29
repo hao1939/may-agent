@@ -1,0 +1,290 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:45:57.206Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the Ubuntu 2204 security-patch live-contract repair note: the spec remains source-backed live intent but current repo-local replay/runner behavior only yields a non-live skip, so future truthful progress requires replay parity plus live-gate wiring or explicit narrowing. The adjacent Windows 2025 security-patch verifier result was auto-accepted with the same generic source/check-only skip text, so a new mounted-source review leaf now owns whether that terminal classification is truthful or needs the same repo-local repair family. The remaining active spec-verification leaves continue unchanged while security-patch contract truth is repaired via explicit evidence-backed review leaves.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "verify-spec-ccp-coredns-component-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-coredns.component-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-coredns.component-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.component-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-coredns.component-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-coredns.component-lifecycle workflow run 28367133665 classified as error. Loop key: verify-spec-ccp-coredns-component-lifecycle-a_verify-spec-ccp-coredns-component-lifecycle_. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367133665 Result: runs/test-results/single-ccp-coredns-component-lifecycle_931329/artifacts/ccp-coredns-component-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/test-results/single-ccp-coredns-component-lifecycle_931329/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T10:57:18.988Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T10:57:58.293Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-coredns-component-lifecycle_20260629105850",
+        "assigned_at": "2026-06-29T10:58:50.677Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-coredns-component-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-ccp-coredns-component-lifecycle_20260629105850",
+        "worker_started_at": "2026-06-29T10:58:56.077Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ccp-coredns.component-lifecycle workflow run 28367133665 classified as error. Loop key: verify-spec-ccp-coredns-component-lifecycle-a_verify-spec-ccp-coredns-component-lifecycle_. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367133665 Result: runs/test-results/single-ccp-coredns-component-lifecycle_931329/artifacts/ccp-coredns-component-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/test-results/single-ccp-coredns-component-lifecycle_931329/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:45:11.065Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:45:12.117Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-coredns.component-lifecycle workflow run 28367133665 classified as error. Loop key: verify-spec-ccp-coredns-component-lifecycle-a_verify-spec-ccp-coredns-component-lifecycle_. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367133665 Result: runs/test-results/single-ccp-coredns-component-lifecycle_931329/artifacts/ccp-coredns-component-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/test-results/single-ccp-coredns-component-lifecycle_931329/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-ccp-coredns-component-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-ccp-coredns-component-lifecycle"
+      ],
+      "result": "Spec spec.ccp-coredns.component-lifecycle workflow run 28367133665 classified as error. Loop key: verify-spec-ccp-coredns-component-lifecycle-a_verify-spec-ccp-coredns-component-lifecycle_. Cluster creation failed: ARM operation did not finish within 2700000ms Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28367133665 Result: runs/test-results/single-ccp-coredns-component-lifecycle_931329/artifacts/ccp-coredns-component-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28367133665/aks-rp-e2e-28367133665-spec-test-results/test-results/single-ccp-coredns-component-lifecycle_931329/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:45:12.117Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and the reviewed single-spec artifacts to repair the repo-local replay/runner live contract for spec.ccp-security-patch.ubuntu2204-prod-mtc: run 28368973170 was a skipped/non-live classification, not a live pass, so identify and document the missing MTC creation, patch-availability, patch-observation, and post-patch health coverage or the exact runner-eligibility/spec-narrowing change required before any future verifier can truthfully claim live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-ccp-security-patch-ubuntu2204-live-contract-repair-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source and current replay/runner files are compared and the exact missing or excluded live steps are quoted.",
+        "A durable note records whether the truthful fix is replay implementation gap, runner eligibility repair, or explicit spec narrowing, with file-level next edits identified and no residual source/check-only misclassification.",
+        "The follow-up leaves the tree/model unambiguous that verify-spec-ccp-security-patch-ubuntu2204-prod-mtc remains unresolved for live coverage and names the bounded repo-local change required before another verifier claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-security-patch.ubuntu2204-prod-mtc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:42:32.654Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629_20260629114301",
+        "assigned_at": "2026-06-29T11:43:01.468Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629",
+        "worker_started_attempt_id": "a_repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629_20260629114301",
+        "worker_started_at": "2026-06-29T11:43:02.700Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable repair note at evidence/archive/spec-ccp-security-patch-ubuntu2204-live-contract-repair-20260629.md showing that spec.ccp-security-patch.ubuntu2204-prod-mtc is source-backed live intent but currently blocked by incomplete replay implementation, not a truthful live pass.",
+        "last_worker_completed_at": "2026-06-29T11:44:55.659Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-ccp-security-patch-ubuntu2204-live-contract-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:45:57.043Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of the durable repair note: mounted source plus current replay/runner evidence proves spec.ccp-security-patch.ubuntu2204-prod-mtc is source-backed live intent but still lacks repo-local replay implementation parity and live-gate wiring, so the previous non-live single-spec result remains unresolved for live coverage."
+      },
+      "session_id": "s_task_repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629",
+      "session_history": [
+        "s_task_repair-spec-ccp-security-patch-ubuntu2204-single-spec-live-contract-20260629"
+      ],
+      "result": "Produced a durable repair note at evidence/archive/spec-ccp-security-patch-ubuntu2204-live-contract-repair-20260629.md showing that spec.ccp-security-patch.ubuntu2204-prod-mtc is source-backed live intent but currently blocked by incomplete replay implementation, not a truthful live pass.",
+      "evidence": [
+        "evidence/archive/spec-ccp-security-patch-ubuntu2204-live-contract-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:45:57.043Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of the durable repair note: mounted source plus current replay/runner evidence proves spec.ccp-security-patch.ubuntu2204-prod-mtc is source-backed live intent but still lacks repo-local replay implementation parity and live-gate wiring, so the previous non-live single-spec result remains unresolved for live coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-security-patch-windows2025-prod-mtc",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-security-patch.windows2025-prod-mtc through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-security-patch.windows2025-prod-mtc",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-security-patch.windows2025-prod-mtc"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-security-patch.windows2025-prod-mtc",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-security-patch.windows2025-prod-mtc workflow run 28369584674 classified as done. Loop key: verify-spec-ccp-security-patch-windows2025-prod-mtc-a_verify-spec-ccp-security-patch-windo. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369584674 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:43:56.821Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:44:22.651Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-security-patch-windows2025-prod-mtc_20260629114445",
+        "assigned_at": "2026-06-29T11:44:45.421Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-security-patch-windows2025-prod-mtc",
+        "worker_started_attempt_id": "a_verify-spec-ccp-security-patch-windows2025-prod-mtc_20260629114445",
+        "worker_started_at": "2026-06-29T11:44:49.388Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.ccp-security-patch.windows2025-prod-mtc workflow run 28369584674 classified as done. Loop key: verify-spec-ccp-security-patch-windows2025-prod-mtc-a_verify-spec-ccp-security-patch-windo. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369584674 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json",
+        "last_worker_completed_at": "2026-06-29T11:45:22.958Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:45:33.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-security-patch.windows2025-prod-mtc workflow run 28369584674 classified as done. Loop key: verify-spec-ccp-security-patch-windows2025-prod-mtc-a_verify-spec-ccp-security-patch-windo. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369584674 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json"
+      },
+      "session_id": "s_task_verify-spec-ccp-security-patch-windows2025-prod-mtc",
+      "session_history": [
+        "s_task_verify-spec-ccp-security-patch-windows2025-prod-mtc"
+      ],
+      "result": "Spec spec.ccp-security-patch.windows2025-prod-mtc workflow run 28369584674 classified as done. Loop key: verify-spec-ccp-security-patch-windows2025-prod-mtc-a_verify-spec-ccp-security-patch-windo. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369584674 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369584674/aks-rp-e2e-28369584674-spec-test-results/test-results/single-ccp-security-patch-windows2025-prod-mtc_516995/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:45:33.172Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ccp-vpa-os-arch-variant-matrix",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ccp-vpa.os-arch-variant-matrix through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ccp-vpa.os-arch-variant-matrix",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-vpa.os-arch-variant-matrix"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ccp-vpa.os-arch-variant-matrix",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-vpa.os-arch-variant-matrix workflow run 28369607341 classified as error. Loop key: verify-spec-ccp-vpa-os-arch-variant-matrix-a_verify-spec-ccp-vpa-os-arch-variant-matrix_20. CCP VPA OS/arch variant matrix requires internal CCP pipeline infrastructure (pipeline 459172). Multi-arch node pools (AMD64 + ARM64) with K8s >= 1.34 and CCP autoupgrader environment are not available in project staging. Classified as pipeline_only environment blocker. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369607341 Result: runs/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/artifacts/ccp-vpa-os-arch-variant-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:45:12.132Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ccp-vpa-os-arch-variant-matrix_20260629114512",
+        "assigned_at": "2026-06-29T11:45:12.157Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-vpa-os-arch-variant-matrix",
+        "worker_started_attempt_id": "a_verify-spec-ccp-vpa-os-arch-variant-matrix_20260629114512",
+        "worker_started_at": "2026-06-29T11:45:13.731Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ccp-vpa.os-arch-variant-matrix workflow run 28369607341 classified as error. Loop key: verify-spec-ccp-vpa-os-arch-variant-matrix-a_verify-spec-ccp-vpa-os-arch-variant-matrix_20. CCP VPA OS/arch variant matrix requires internal CCP pipeline infrastructure (pipeline 459172). Multi-arch node pools (AMD64 + ARM64) with K8s >= 1.34 and CCP autoupgrader environment are not available in project staging. Classified as pipeline_only environment blocker. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369607341 Result: runs/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/artifacts/ccp-vpa-os-arch-variant-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:45:49.718Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:45:51.351Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.ccp-vpa.os-arch-variant-matrix workflow run 28369607341 classified as error. Loop key: verify-spec-ccp-vpa-os-arch-variant-matrix-a_verify-spec-ccp-vpa-os-arch-variant-matrix_20. CCP VPA OS/arch variant matrix requires internal CCP pipeline infrastructure (pipeline 459172). Multi-arch node pools (AMD64 + ARM64) with K8s >= 1.34 and CCP autoupgrader environment are not available in project staging. Classified as pipeline_only environment blocker. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369607341 Result: runs/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/artifacts/ccp-vpa-os-arch-variant-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-ccp-vpa-os-arch-variant-matrix",
+      "session_history": [
+        "s_task_verify-spec-ccp-vpa-os-arch-variant-matrix"
+      ],
+      "result": "Spec spec.ccp-vpa.os-arch-variant-matrix workflow run 28369607341 classified as error. Loop key: verify-spec-ccp-vpa-os-arch-variant-matrix-a_verify-spec-ccp-vpa-os-arch-variant-matrix_20. CCP VPA OS/arch variant matrix requires internal CCP pipeline infrastructure (pipeline 459172). Multi-arch node pools (AMD64 + ARM64) with K8s >= 1.34 and CCP autoupgrader environment are not available in project staging. Classified as pipeline_only environment blocker. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369607341 Result: runs/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/artifacts/ccp-vpa-os-arch-variant-matrix/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369607341/aks-rp-e2e-28369607341-spec-test-results/test-results/single-ccp-vpa-os-arch-variant-matrix_538315/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:45:51.351Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

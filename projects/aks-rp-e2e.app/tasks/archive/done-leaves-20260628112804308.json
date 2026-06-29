@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T11:28:04.308Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 owner review accepts the completed Windows VirtualMachines prerelease linkage hygiene leaf: rows 205/206/216/217/218 now point at extant accepted carriers, missing row-217/218 archive citations are restored, and the remaining repo-local ceiling is explicitly limited to non-target Windows GPU wrapper debt outside this row set. The truthful live frontier is now blocked-only again, with the same four exact external waits preserved unchanged (App Routing existing-cluster operator response, private-cluster public-FQDN-toggle live-run authorization, LocalDNS VM-prerelease selected-host proof, and the older VM-prerelease/shared-identity proof-return family) until a returned proof/reply or recorded owner checkpoint materially changes one carrier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "windows-virtualmachines-prerelease-linkage-hygiene-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local Windows VirtualMachines prerelease linkage debt surfaced by the accepted boundary matrix for rows 205/206/216/217/218 so accepted carriers point at extant tests/evidence and missing row-217/218 archive citations are restored without inventing new lineage or running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/windows-virtualmachines-prerelease-linkage-hygiene-20260628.md"
+      ],
+      "acceptance": [
+        "Update the accepted repo-local carriers for rows 205/206/216/217/218 so stale probe/test references identified in evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md no longer point at missing replays/... files when an extant features/windows/tests/... carrier already exists.",
+        "Restore or document the missing row-217/218 archive/linkage citations needed by the current accepted surfaces, keeping row 218 pass lineage bounded to already-supported evidence and explicitly recording any ceiling that cannot be repaired repo-locally today.",
+        "Produce a durable archive note that lists each repo-local linkage repair made (or exact ceiling left in place), cites the files changed or checked, and remains repo-local only with no cloud mutation, operator ask, or project.app manifest edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows-vm-prerelease-linkage-hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:21:15.657Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_windows-virtualmachines-prerelease-linkage-hygiene-20260628_20260628112115",
+        "assigned_at": "2026-06-28T11:21:15.708Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_windows-virtualmachines-prerelease-linkage-hygiene-20260628",
+        "worker_started_attempt_id": "a_windows-virtualmachines-prerelease-linkage-hygiene-20260628_20260628112115",
+        "worker_started_at": "2026-06-28T11:21:32.717Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired repo-local Windows VM prerelease linkage for rows 205/206/216/217/218 in the accepted knowledge model/views and restored the missing row-217/218 archive citations, then documented all changes in a durable hygiene note.",
+        "last_worker_completed_at": "2026-06-28T11:27:33.607Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "evidence/archive/windows-node-pool-create-virtualmachines-gen2-mounted-source-model-linkage-20260623.md",
+          "evidence/archive/vmpr-row217-windows-gen2-carrier-extension-20260621.md",
+          "evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md",
+          "evidence/archive/vm-prerelease-windows-base-vm-source-packet-20260619.md",
+          "evidence/archive/vm-prerelease-windows-base-virtualmachines-branch-packet-20260619.md",
+          "evidence/archive/windows-virtualmachines-prerelease-linkage-hygiene-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:28:04.258Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: the archive note and listed evidence show rows 205/206/216/217/218 now point at extant repo-local carriers, row-217/218 archive citations were restored without inventing new lineage, and the task stayed repo-local with no cloud mutation or manifest edits."
+      },
+      "session_id": "s_task_windows-virtualmachines-prerelease-linkage-hygiene-20260628",
+      "session_history": [
+        "s_task_windows-virtualmachines-prerelease-linkage-hygiene-20260628"
+      ],
+      "result": "Repaired repo-local Windows VM prerelease linkage for rows 205/206/216/217/218 in the accepted knowledge model/views and restored the missing row-217/218 archive citations, then documented all changes in a durable hygiene note.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "evidence/archive/windows-node-pool-create-virtualmachines-gen2-mounted-source-model-linkage-20260623.md",
+        "evidence/archive/vmpr-row217-windows-gen2-carrier-extension-20260621.md",
+        "evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md",
+        "evidence/archive/vm-prerelease-windows-base-vm-source-packet-20260619.md",
+        "evidence/archive/vm-prerelease-windows-base-virtualmachines-branch-packet-20260619.md",
+        "evidence/archive/windows-virtualmachines-prerelease-linkage-hygiene-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:28:04.258Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: the archive note and listed evidence show rows 205/206/216/217/218 now point at extant repo-local carriers, row-217/218 archive citations were restored without inventing new lineage, and the task stayed repo-local with no cloud mutation or manifest edits."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:09:52.202Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner hygiene (2026-06-20T10:12Z): the remaining VM prerelease wave1 capacity spec batch leaf is accepted durable provenance and no longer part of the live frontier. This lane now carries exactly one open non-cloud learning slice: serverless-virtual-nodes-mounted-source-family-inventory-20260620, which should inventory the mounted handwritten serverless-virtual-nodes source family, reconcile it against the current blocked subnet-validation model path, and name the next exact repo-local follow-up without touching helper-gated checkpoint files or running cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-wave1-agentpool-ppg-kscr-capacity-spec-batch1-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce VirtualMachine prerelease missingSpec for Wave 1 e2ev3 operational rows 1/3/4/5/9/25/26 by mapping Scenario_PPG_VirtualMachine, Scenario_AgentPool_Operations_VirtualMachine, Scenario_AgentPool_Upgrade_VirtualMachine, Scenario_AgentPool_Rollback_VirtualMachine, Scenario_KSCR_VirtualMachine, Scenario_Capacity_Based_Surge_VMs_VirtualMachine, and Scenario_Capacity_Based_Surge_VMs_MaxUnavailable_VirtualMachine to exact source/spec/replay lineage, landing repo-local specs/replays or exact blockers, and updating the prerelease coverage ledger plus regenerated feature-set plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-agentpool-ppg-kscr-capacity-spec-batch1-20260618.md"
+      ],
+      "acceptance": [
+        "Artifact cites rows 1/3/4/5/9/25/26 from evidence/pipelines/virtualmachine-prerelease-coverage.md and the exact scenario/source anchors, and for each row lands one exact disposition: explicit spec+replay, accepted exact attachment, or precise blocker with resume condition.",
+        "Updates evidence/pipelines/virtualmachine-prerelease-coverage.md and evidence/pipelines/virtualmachine-prerelease-coverage.json for every row in scope, and regenerates the VirtualMachine prerelease feature-set plan/config surface so promoted rows are reflected in downstream planning.",
+        "Work stays repo-local and does not run cloud probes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:agentpool",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T06:18:26.078Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T07:45:57.498Z",
+        "promoted_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T10:08:50.098Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "archived_done_leaf_count": 12,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620100850098.json",
+            "archived": 2,
+            "at": "2026-06-20T10:08:50.098Z",
+            "summary": "VM prerelease wave1 agentpool/PPG/KSCR capacity batch now serves as completed provenance only: its KSCR source-equivalent unblock and PPG native source-holder retirement are fully represented in the parent artifact/context, with no open child work remaining. Current forward motion stays on the active serverless virtual nodes mounted-source family inventory task under feature-knowledge-and-specs.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-wave1-kscr-source-excerpt-unblock-20260618",
+              "vm-prerelease-wave1-ppg-native-source-holder-blocker-20260618"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620090818324.json",
+            "archived": 1,
+            "at": "2026-06-20T09:08:18.325Z",
+            "summary": "VM prerelease wave1 agentpool/PPG/KSCR capacity batch now serves as completed provenance only: its three child decisions already established the durable local truth that KSCR rows can advance through bounded source-equivalent evidence while the prior native source-holder blockers for agentpool operations and PPG were retired into completed history. No open work remains in this batch; current forward motion continues in the mounted-source addonv2 row-family tasks under feature-knowledge-and-specs.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-wave1-agentpool-operations-source-holder-blocker-20260618"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952920.json",
+            "archived": 9,
+            "at": "2026-06-19T19:49:52.920Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "vm-prerelease-wave1-agentpool-operations-child-binding-source-excerpt-20260618",
+              "vm-prerelease-wave1-agentpool-operations-source-packet-20260618",
+              "vm-prerelease-wave1-agentpool-ops-lineage-packet-20260618",
+              "vm-prerelease-wave1-agentpool-upgrade-source-packet-20260618",
+              "vm-prerelease-wave1-capacity-surge-lineage-packet-20260618",
+              "vm-prerelease-wave1-kscr-source-packet-20260618",
+              "vm-prerelease-wave1-ppg-native-proof-recovery-20260618",
+              "vm-prerelease-wave1-ppg-source-packet-20260618",
+              "vm-prerelease-wave1-rollback-coverage-reconcile-20260618"
+            ]
+          }
+        ],
+        "rollup_summary": "VM prerelease wave1 agentpool/PPG/KSCR capacity batch now serves as completed provenance only: its KSCR source-equivalent unblock and PPG native source-holder retirement are fully represented in the parent artifact/context, with no open child work remaining. Current forward motion stays on the active serverless virtual nodes mounted-source family inventory task under feature-knowledge-and-specs."
+      },
+      "status": "done"
+    }
+  ]
+}

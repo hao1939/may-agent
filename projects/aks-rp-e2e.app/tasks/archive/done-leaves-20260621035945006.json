@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:59:45.007Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 stale-review wake reconciliation: the requested private-endpoint review leaf was already archived, so this pass preserves only durable current truth at the root. The VM prerelease maintained-slice helper and rows-25/50 mounted-source model repair are already accepted and summarized in root context, so archive those low-value completed children now. The live frontier becomes simpler and still truthful: vmpr-row26-capacity-based-surge-maxunavailable-replay-packet-20260621 remains the single active knowledge-building leaf, already concrete and assigned to use mounted AKS RP source to confirm row-26 inputs/assertions and repair or add the dedicated execute-gated replay/spec/feature/model linkage for path.virtualmachines.capacity-based-surge-maxunavailable without claiming live cloud observation. external-send-proof-dispatch-family-20260620 remains the only blocked family-level external-human transport ceiling until durable repo-local send/escalation proof or an authoritative reply is captured.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement or precisely prove the narrowest app-local domain-checkpoint helper change needed so a caller-bounded maintained packet like the seven-file VM prerelease slice can be evaluated as its own truthful sub-slice instead of inheriting generic slice=model hold from root-carrier project ownership. The change must stay in projects/aks-rp-e2e.app/scripts/domain-checkpoint.ts unless exact code evidence proves an existing owner-safe mode already supports these semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites evidence/archive/vmpr-maintained-slice-domain-checkpoint-subslice-gap-20260621.md and names the exact domain-checkpoint.ts functions/CLI touchpoints changed or proven sufficient, including how bounded packet selection and bounded slice labeling are expressed.",
+        "The resulting helper semantics preserve visibility of root task project exact-path ownership as a non-blocking carrier for the bounded sub-slice case while keeping non-root active/review or blocked matches as real hold conditions; the note demonstrates this behavior with a concrete before/after bounded invocation result.",
+        "The note ends with the exact bounded command/output that now evaluates the seven-file VM prerelease maintained packet truthfully, or with exact repo-local proof that no app-local helper-only change can provide that behavior and why."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-maintained-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:53:23.353Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621_20260621035323",
+        "assigned_at": "2026-06-21T03:53:23.405Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621",
+        "worker_started_attempt_id": "a_vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621_20260621035323",
+        "worker_started_at": "2026-06-21T03:53:39.982Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the narrow bounded sub-slice helper mode in `aks-rp-e2e.app/scripts/domain-checkpoint.ts`, added focused regression coverage in `scripts/domain-checkpoint.test.ts`, and wrote the required archive note proving the seven-file VM prerelease maintained packet now evaluates truthfully as its own bounded candidate slice with root `project` shown as non-blocking carrier.",
+        "last_worker_completed_at": "2026-06-21T03:56:13.943Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:57:07.336Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the prior gap evidence, names the exact domain-checkpoint.ts and CLI touchpoints changed, shows focused regression tests passing, and demonstrates the before/after bounded command output where the seven-file VM prerelease maintained packet becomes candidate with root project retained only as non-blocking carrier."
+      },
+      "session_id": "s_task_vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621",
+      "session_history": [
+        "s_task_vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621"
+      ],
+      "result": "Implemented the narrow bounded sub-slice helper mode in `aks-rp-e2e.app/scripts/domain-checkpoint.ts`, added focused regression coverage in `scripts/domain-checkpoint.test.ts`, and wrote the required archive note proving the seven-file VM prerelease maintained packet now evaluates truthfully as its own bounded candidate slice with root `project` shown as non-blocking carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:57:07.336Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the prior gap evidence, names the exact domain-checkpoint.ts and CLI touchpoints changed, shows focused regression tests passing, and demonstrates the before/after bounded command output where the seven-file VM prerelease maintained packet becomes candidate with root project retained only as non-blocking carrier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows25-50-mounted-source-model-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From the accepted mounted-source crosscheck for VM prerelease rows 25 and 50, land only the narrow maintained-surface repair needed to restore source consistency: update the row-25 path wording so it reflects the existing execute-gated replay implementation, and prove/land the dedicated row-50 path/spec linkage so the maintained knowledge-map stops using the generic statefulset-pdb carrier as the visible row-50 equivalent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows25-50-mounted-source-model-repair-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites evidence/archive/vmpr-mounted-source-rows25-50-spec-crosscheck-20260621.md and names the exact maintained files/objects changed for row 25 wording and row 50 dedicated path/spec exposure, with mounted-source justification.",
+        "The note shows one of two evidence-backed row-50 outcomes only: either the dedicated path.cluster-autoscaler.vm-prerelease-statefulset-cordon-scale plus spec linkage is landed in the maintained surfaces, or a narrower exact blockage in current maintained-slice ownership/carrier rules is demonstrated without falling back to the generic statefulset-pdb carrier as if it were source-equivalent.",
+        "The note ends with the resulting maintained-surface status for both rows 25 and 50 and names any exact further follow-up only if a bounded repair could not be completed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-source-spec"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:50:38.087Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows25-50-mounted-source-model-repair-20260621_20260621035038",
+        "assigned_at": "2026-06-21T03:50:38.179Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows25-50-mounted-source-model-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows25-50-mounted-source-model-repair-20260621_20260621035038",
+        "worker_started_at": "2026-06-21T03:51:06.658Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the bounded mounted-source model repair for VM prerelease rows 25 and 50: updated row-25 maintained wording in model/view surfaces and landed a dedicated maintained row-50 path/scenario/DAG/feature linkage in model.json, then regenerated knowledge-map views and wrote the archive note.",
+        "last_worker_completed_at": "2026-06-21T03:54:33.026Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:55:03.558Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the mounted-source crosscheck, names the maintained row-25 wording repair plus the dedicated row-50 path/spec/scenario/DAG landing, and records regenerated maintained views with the dedicated row-50 carrier replacing the generic statefulset-pdb equivalent as required."
+      },
+      "session_id": "s_task_vmpr-rows25-50-mounted-source-model-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-rows25-50-mounted-source-model-repair-20260621"
+      ],
+      "result": "Applied the bounded mounted-source model repair for VM prerelease rows 25 and 50: updated row-25 maintained wording in model/view surfaces and landed a dedicated maintained row-50 path/scenario/DAG/feature linkage in model.json, then regenerated knowledge-map views and wrote the archive note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:55:03.558Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the mounted-source crosscheck, names the maintained row-25 wording repair plus the dedicated row-50 path/spec/scenario/DAG landing, and records regenerated maintained views with the dedicated row-50 carrier replacing the generic statefulset-pdb equivalent as required."
+      },
+      "status": "done"
+    }
+  ]
+}

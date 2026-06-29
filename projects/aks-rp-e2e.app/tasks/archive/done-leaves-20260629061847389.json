@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T06:18:47.389Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-29 owner review accepts the repo-local Machines AgentPool CRUD wording refresh: model/view/evidence carriers now preserve path.machines-agentpool-api-crud.machine-crud-blocked as environment-blocked while centering the reviewed add-pool HTTP 400 boundary rather than stale preview-registration-only framing. This lane returns to durable dormant/supporting context only; reopen it only on a new concrete source-coverage or feature-reference repair signal, not for blocked-frontier refill.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "refresh-machines-agentpool-api-crud-blocker-wording-20260629",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the repo-local model/path-summary carriers for path.machines-agentpool-api-crud.machine-crud-blocked so they preserve environment-blocked while replacing the stale preview-registration-only framing with the latest reviewed add-pool HTTP 400 boundary (MachinesPreview registered, cluster create succeeded, Machines-mode VirtualMachines pool add failed before Machine CRUD assertions).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/model/knowledge-map/views/evidence-index.md"
+      ],
+      "acceptance": [
+        "Updated carriers keep path.machines-agentpool-api-crud.machine-crud-blocked as environment-blocked and explicitly describe the current truthful gate as the unexplained HTTP 400 on PUT agentPools/{pool} for mode=Machines,type=VirtualMachines after preview registration and baseline cluster creation.",
+        "Any stale wording that says the path is blocked only by missing preview registration is removed or narrowed, and the updated carriers cite the accepted 2026-06-26/2026-06-29 repo-local evidence lineage.",
+        "No new cloud replay is introduced; the task is bounded to repo-local wording/model/evidence-link maintenance."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:machines-agentpool-api-crud.machine-crud-blocked"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T06:14:50.549Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_refresh-machines-agentpool-api-crud-blocker-wording-20260629_20260629061450",
+        "assigned_at": "2026-06-29T06:14:50.606Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_refresh-machines-agentpool-api-crud-blocker-wording-20260629",
+        "worker_started_attempt_id": "a_refresh-machines-agentpool-api-crud-blocker-wording-20260629_20260629061450",
+        "worker_started_at": "2026-06-29T06:15:13.785Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the Machines AgentPool CRUD carriers in model.json and regenerated path-summary/evidence-index so path.machines-agentpool-api-crud.machine-crud-blocked remains environment-blocked while now truthfully centering the 2026-06-26/2026-06-29 add-pool HTTP 400 boundary instead of preview-registration-only wording.",
+        "last_worker_completed_at": "2026-06-29T06:17:37.931Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/evidence-index.md"
+        ],
+        "reviewed_at": "2026-06-29T06:18:44.727Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-29 repo-local wording refresh: model.json, path-summary.json, and evidence-index.md now keep path.machines-agentpool-api-crud.machine-crud-blocked environment-blocked while replacing stale preview-registration-only framing with the reviewed add-pool HTTP 400 boundary and 2026-06-26/2026-06-29 evidence lineage."
+      },
+      "session_id": "s_task_refresh-machines-agentpool-api-crud-blocker-wording-20260629",
+      "session_history": [
+        "s_task_refresh-machines-agentpool-api-crud-blocker-wording-20260629"
+      ],
+      "result": "Refreshed the Machines AgentPool CRUD carriers in model.json and regenerated path-summary/evidence-index so path.machines-agentpool-api-crud.machine-crud-blocked remains environment-blocked while now truthfully centering the 2026-06-26/2026-06-29 add-pool HTTP 400 boundary instead of preview-registration-only wording.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/evidence-index.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T06:18:44.727Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-29 repo-local wording refresh: model.json, path-summary.json, and evidence-index.md now keep path.machines-agentpool-api-crud.machine-crud-blocked environment-blocked while replacing stale preview-registration-only framing with the reviewed add-pool HTTP 400 boundary and 2026-06-26/2026-06-29 evidence lineage."
+      },
+      "status": "done"
+    }
+  ]
+}

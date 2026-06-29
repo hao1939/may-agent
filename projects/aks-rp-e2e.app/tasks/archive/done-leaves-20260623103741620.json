@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:37:41.620Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed review: accepted and archived the VM prerelease row-37 mounted-source carrier reconciliation. Mounted AKS RP source plus current repo-local carriers already truthfully represent row 37 as environment-gated, the only live VM mounted-source follow-up remains active leaf virtualmachine-prerelease-row35-mounted-source-carrier-reconcile-successor-20260623 under the row35+row37 normalization batch, and the external human/operator proof family stays the single unchanged blocked wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map VM prerelease row 37 onto mounted source and current repo-local carriers: use the local AKS RP virtualmachine prerelease/checkin source anchors to reconcile the row-37 managed AAD lifecycle path with existing feature/spec/replay/model/status artifacts, then leave one truthful repo-local next-step story without cloud mutation or any new external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted source anchors for VM prerelease row 37 plus the current repo-local feature/spec/replay/model/status carriers, and explains whether the row is already truthfully represented or needs bounded repo-local edits.",
+        "If a repo-local mismatch exists, the note identifies the exact files/views/models to update next and keeps the result free of cloud mutation, duplicate waits, and revived source-holder/external-human framing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:32:53.448Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623_20260623103318",
+        "assigned_at": "2026-06-23T10:33:18.300Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623_20260623103318",
+        "worker_started_at": "2026-06-23T10:33:20.373Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable row-37 reconciliation note at evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623.md showing mounted source anchors, current repo-local carriers, and the conclusion that row 37 is already truthfully represented with only an environment-gated next rerun remaining.",
+        "last_worker_completed_at": "2026-06-23T10:35:23.393Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:36:31.314Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623.md: mounted AKS RP source anchors and current repo-local carriers agree that row 37 is already truthfully represented and remains only environment-gated for a future rerun."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623"
+      ],
+      "result": "Created a durable row-37 reconciliation note at evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623.md showing mounted source anchors, current repo-local carriers, and the conclusion that row 37 is already truthfully represented with only an environment-gated next rerun remaining.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:36:31.314Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/virtualmachine-prerelease-row37-mounted-source-carrier-reconcile-20260623.md: mounted AKS RP source anchors and current repo-local carriers agree that row 37 is already truthfully represented and remains only environment-gated for a future rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

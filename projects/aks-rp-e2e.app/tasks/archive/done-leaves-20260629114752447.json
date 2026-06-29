@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:47:52.447Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning keeps the active verifier frontier full while repairing two misleading auto-terminal classifications instead of launching duplicate reruns. Windows2025 prod security-patch remains governed by repair-spec-ccp-security-patch-windows2025-single-spec-live-contract-20260629 because run 28369584674 only produced a skipped/non-live single-spec result. Cloud-provider multiple SLB is no longer trusted solely on the verifier auto-accept text either: verify-spec-cloud-provider-multiple-slb is archived with its current environment-blocked claim preserved in summary, and reconcile-spec-cloud-provider-multiple-slb-terminal-env-verdict-20260629 now owns whether unregistered feature flags on staging are a sufficient terminal explanation or whether the spec/model contract needs narrower follow-up. Other assigned verifier and retry leaves remain unchanged, and no new runnable execution work is assigned because the spec-loop active frontier is already saturated above refill need.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-cloud-provider-multiple-slb",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cloud-provider.multiple-slb through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cloud-provider.multiple-slb",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.multiple-slb"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cloud-provider.multiple-slb",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.cloud-provider.multiple-slb workflow run 28369642819 classified as error. Loop key: verify-spec-cloud-provider-multiple-slb-a_verify-spec-cloud-provider-multiple-slb_20260629. Environment-blocked: ARM rejects multipleStandardLoadBalancerConfigurations (HTTP 400 UnmarshalError). Feature flags EnableMultipleStandardLoadBalancers / MultipleStandardLoadBalancersPreview not registered on subscription 26fe00f8-9173-4872-9134-bb1d2e00343a. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369642819 Result: runs/test-results/single-cloud-provider-multiple-slb_619164/artifacts/cloud-provider-multiple-slb/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/test-results/single-cloud-provider-multiple-slb_619164/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:45:51.365Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-cloud-provider-multiple-slb_20260629114551",
+        "assigned_at": "2026-06-29T11:45:51.385Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cloud-provider-multiple-slb",
+        "worker_started_attempt_id": "a_verify-spec-cloud-provider-multiple-slb_20260629114551",
+        "worker_started_at": "2026-06-29T11:45:53.005Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.cloud-provider.multiple-slb workflow run 28369642819 classified as error. Loop key: verify-spec-cloud-provider-multiple-slb-a_verify-spec-cloud-provider-multiple-slb_20260629. Environment-blocked: ARM rejects multipleStandardLoadBalancerConfigurations (HTTP 400 UnmarshalError). Feature flags EnableMultipleStandardLoadBalancers / MultipleStandardLoadBalancersPreview not registered on subscription 26fe00f8-9173-4872-9134-bb1d2e00343a. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369642819 Result: runs/test-results/single-cloud-provider-multiple-slb_619164/artifacts/cloud-provider-multiple-slb/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/test-results/single-cloud-provider-multiple-slb_619164/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T11:46:43.290Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:46:44.911Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.cloud-provider.multiple-slb workflow run 28369642819 classified as error. Loop key: verify-spec-cloud-provider-multiple-slb-a_verify-spec-cloud-provider-multiple-slb_20260629. Environment-blocked: ARM rejects multipleStandardLoadBalancerConfigurations (HTTP 400 UnmarshalError). Feature flags EnableMultipleStandardLoadBalancers / MultipleStandardLoadBalancersPreview not registered on subscription 26fe00f8-9173-4872-9134-bb1d2e00343a. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369642819 Result: runs/test-results/single-cloud-provider-multiple-slb_619164/artifacts/cloud-provider-multiple-slb/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/test-results/single-cloud-provider-multiple-slb_619164/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-cloud-provider-multiple-slb",
+      "session_history": [
+        "s_task_verify-spec-cloud-provider-multiple-slb"
+      ],
+      "result": "Spec spec.cloud-provider.multiple-slb workflow run 28369642819 classified as error. Loop key: verify-spec-cloud-provider-multiple-slb-a_verify-spec-cloud-provider-multiple-slb_20260629. Environment-blocked: ARM rejects multipleStandardLoadBalancerConfigurations (HTTP 400 UnmarshalError). Feature flags EnableMultipleStandardLoadBalancers / MultipleStandardLoadBalancersPreview not registered on subscription 26fe00f8-9173-4872-9134-bb1d2e00343a. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28369642819 Result: runs/test-results/single-cloud-provider-multiple-slb_619164/artifacts/cloud-provider-multiple-slb/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28369642819/aks-rp-e2e-28369642819-spec-test-results/test-results/single-cloud-provider-multiple-slb_619164/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T11:46:44.911Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

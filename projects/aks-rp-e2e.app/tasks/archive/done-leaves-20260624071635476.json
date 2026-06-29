@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:16:35.476Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog review reconciled the stale private validating-webhook review trigger: serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624 is already accepted and its durable outcome is that mounted private source plus current replay behavior prove the private carrier is still check-only, so the next truthful repo-local follow-up is the bounded serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624 execute-capable replay implementation before any private approval ask. Keep private-cluster-second-hop-private-executor-parity-20260624 as the only active in-flight repo-local worker slice; keep serverless-schedulerctrl-validating-webhook-private-executor-parity-20260624 runnable backlog for the next slot rather than over-assigning past maxConcurrent=1. Preserve the four existing blocked leaves as the single exact external waits for their families until returned proof arrives or the 2026-06-26 follow-up window opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact repo-local execute-path contract for the serverless schedulerctrl validating-webhook private carrier by tracing the mounted private scenarios, current private replay check/execute behavior, and the minimum replay or run-plan delta needed before any private approval ask, without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted private validating-webhook scenario files plus the current private spec/replay execute boundary, states exactly what private-only carrier behavior is already implemented versus intentionally blocked, and identifies the bounded minimum next delta required before a private approval packet would be truthful.",
+        "The artifact compares the private carrier against the already-routed public approval boundary only as needed to explain divergence, and it does not widen the current public wait, create a live-execution ask, or claim any private live verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:09:36.113Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T07:10:47.067Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624_20260624071111",
+        "assigned_at": "2026-06-24T07:11:11.604Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624_20260624071111",
+        "worker_started_at": "2026-06-24T07:11:45.070Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive artifact reconciling the serverless schedulerctrl validating-webhook private execute-path contract gap, grounded in mounted private source, current repo-local private/public replay behavior, and the minimum truthful next delta before any private approval ask.",
+        "last_worker_completed_at": "2026-06-24T07:14:52.661Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:15:29.455Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624.md cites mounted private validating-webhook scenarios, proves the current private replay is check-only/execute-blocked, contrasts the execute-capable public sibling only as needed, and identifies the bounded next delta: implement a real private execute body before any private approval ask."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624"
+      ],
+      "result": "Produced the requested archive artifact reconciling the serverless schedulerctrl validating-webhook private execute-path contract gap, grounded in mounted private source, current repo-local private/public replay behavior, and the minimum truthful next delta before any private approval ask.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:15:29.455Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-private-execute-contract-gap-20260624.md cites mounted private validating-webhook scenarios, proves the current private replay is check-only/execute-blocked, contrasts the execute-capable public sibling only as needed, and identifies the bounded next delta: implement a real private execute body before any private approval ask."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:16:41.474Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 metric-recovered owner hygiene pass confirms this lane still truthfully consists only of the two live blocked waits already summarized on the parent: the shared App Routing existing-cluster operator-response wait and the run-28298043331 terminal-signal wait. The completed follow-up review child added no durable open work beyond that parent summary, so it is archived to keep the blocked frontier readable while preserving the exact resume conditions on the two remaining blocked leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-routing-family-followup-review-and-run-28298043331-recheck-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "At or after 2026-06-28T21:24:48Z, perform one bounded owner follow-up over the App Routing existing-cluster family: recheck whether either dispatched operator ask returned a reply/redirect/decline, and re-harvest whether GitHub run 28298043331 now has a truthful terminal signal (local artifacts, completed workflow status, or captured artifacts). Use the newer evidence to either retire/replace the blocked waits or restate the exact remaining blocker and next truthful trigger.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-family-followup-review-and-run-28298043331-recheck-20260628.md"
+      ],
+      "acceptance": [
+        "Evidence captures the post-2026-06-28T21:24:48Z state of both already-dispatched App Routing operator asks, including whether a reply, redirect, decline, or no-response was observed.",
+        "Evidence captures the newer run-28298043331 terminal surfaces checked (repo-local artifacts, workflow status, and artifact capture) and states whether a truthful terminal signal exists.",
+        "The task tree is updated from that evidence: each affected blocked leaf is either marked done/replaced or left blocked with a refreshed exact blocker and next review trigger, without reopening duplicate local source/spec/send work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:app-routing-existing-cluster-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:04:45.153Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T02:09:22.433Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-family-followup-review-and-run-28298043331-recheck-20260628_20260628020939",
+        "assigned_at": "2026-06-28T02:09:39.832Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-family-followup-review-and-run-28298043331-recheck-20260628",
+        "worker_started_attempt_id": "a_app-routing-family-followup-review-and-run-28298043331-recheck-20260628_20260628020939",
+        "worker_started_at": "2026-06-28T02:09:40.951Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Recorded a blocker artifact explaining that this App Routing follow-up task was dispatched before its own allowed review window (`2026-06-28T21:24:48Z`). Verified pre-trigger surfaces still show no operator reply and no terminal signal for run 28298043331, so the existing waits should remain unchanged until the time gate or a real new signal arrives.",
+        "last_worker_completed_at": "2026-06-28T02:11:23.858Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:12:46.521Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Closed the prematurely dispatched owner follow-up because its own blocker artifact proves the task fired before the allowed review window (2026-06-28T21:24:48Z); the truthful live representations remain the existing blocked App Routing family waits that already carry the resume trigger and terminal-signal conditions."
+      },
+      "session_id": "s_task_app-routing-family-followup-review-and-run-28298043331-recheck-20260628",
+      "session_history": [
+        "s_task_app-routing-family-followup-review-and-run-28298043331-recheck-20260628"
+      ],
+      "result": "Recorded a blocker artifact explaining that this App Routing follow-up task was dispatched before its own allowed review window (`2026-06-28T21:24:48Z`). Verified pre-trigger surfaces still show no operator reply and no terminal signal for run 28298043331, so the existing waits should remain unchanged until the time gate or a real new signal arrives.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:12:46.521Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Closed the prematurely dispatched owner follow-up because its own blocker artifact proves the task fired before the allowed review window (2026-06-28T21:24:48Z); the truthful live representations remain the existing blocked App Routing family waits that already carry the resume trigger and terminal-signal conditions."
+      },
+      "status": "done"
+    }
+  ]
+}

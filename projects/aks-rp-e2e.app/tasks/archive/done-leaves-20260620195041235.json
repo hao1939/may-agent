@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:50:41.235Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier owner review keeps the single truthful external-send-proof family wait unchanged and refills the regular-learning lane with the next bounded non-cloud source-authoring slice. Parent provenance already absorbs the accepted VirtualNodes standard source packet and witness-boundary note; the archived done child now lives in that rollup rather than as a separate frontier leaf. Active work is now split across two concrete authoring lanes: continue scheduler-controller enable-on-create spec/replay authoring, and start exact VirtualNodes standard spec authoring from the mounted Scenario_Standard_VirtualNodes authority with explicit non-reuse boundaries for addon-family semantics. The VM/MachinesPreview branch remains blocked only on real external human send or authoritative reply proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-witness-boundary-note-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write a durable repo-local boundary note that compares the exact mounted Scenario_Standard_VirtualNodes witness contract to the existing repo-local serverless-virtual-nodes witness surfaces, and states strict reuse/non-reuse rules for selectors, tolerations, expected node identity, and extension-vs-addon semantics without editing the model or running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted witness authority from evidence/archive/serverless-virtualnodes-standard-scenario-source-packet-20260620.md and the current repo-local serverless-virtual-nodes feature/spec surfaces, compares selector/toleration/expected-node/extension-vs-addon semantics side by side, and identifies which repo-local assertions are source-equivalent versus family-only expansions.",
+        "Artifact ends with concrete bounded recommendations for the next exact repo-local virtualnodes-standard authoring slice, preserves separation between mounted extension authority and addon-family behavior, and does not edit model/knowledge-map/model.json or run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:43:38.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-witness-boundary-note-20260620_20260620194338",
+        "assigned_at": "2026-06-20T19:43:38.582Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-witness-boundary-note-20260620",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-witness-boundary-note-20260620_20260620194338",
+        "worker_started_at": "2026-06-20T19:43:48.135Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new durable boundary note at evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md comparing the exact mounted VirtualNodes witness contract to current repo-local serverless virtual-nodes witness surfaces, with strict reuse/non-reuse rules and bounded next-slice recommendations. No model files were edited and no cloud execution was run.",
+        "last_worker_completed_at": "2026-06-20T19:44:53.168Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:45:23.739Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md cites the mounted Scenario_Standard_VirtualNodes source packet plus current repo-local serverless-virtual-nodes spec surfaces, compares selector/toleration/expected-node/extension-vs-addon boundaries, and ends with strict reuse/non-reuse rules plus a bounded exact virtualnodes-standard authoring recommendation without model edits or cloud execution."
+      },
+      "session_id": "s_task_serverless-virtualnodes-witness-boundary-note-20260620",
+      "session_history": [
+        "s_task_serverless-virtualnodes-witness-boundary-note-20260620"
+      ],
+      "result": "Authored a new durable boundary note at evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md comparing the exact mounted VirtualNodes witness contract to current repo-local serverless virtual-nodes witness surfaces, with strict reuse/non-reuse rules and bounded next-slice recommendations. No model files were edited and no cloud execution was run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:45:23.739Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md cites the mounted Scenario_Standard_VirtualNodes source packet plus current repo-local serverless-virtual-nodes spec surfaces, compares selector/toleration/expected-node/extension-vs-addon boundaries, and ends with strict reuse/non-reuse rules plus a bounded exact virtualnodes-standard authoring recommendation without model edits or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

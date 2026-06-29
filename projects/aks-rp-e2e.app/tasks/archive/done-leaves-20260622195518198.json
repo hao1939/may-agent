@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:55:18.198Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner refresh: the row-26 VM prerelease capacity-based-surge maxUnavailable boundary/status landing is accepted and its durable meaning now lives at the project root. The live repo-local frontier remains vmpr-mixed-sku-next-unlanded-row-source-frontier-follow-on-20260622, which should use mounted VM prerelease mixed-SKU handwritten source plus current carriers to identify the next uncovered row/path after row 27 and either land its exact boundary/status note or prove the immediate mixed-SKU frontier is locally closed. Keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human-transport wait; do not reopen row-26 work, duplicate blocked waits, or queue cloud execution from this planner pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go handwritten e2ev3 source for VM prerelease row 26 plus existing repo-local carriers to extract the exact input/expectation boundary for path.virtualmachines.capacity-based-surge-maxunavailable, confirm whether the current blocked/live-execute wording is truthful, and land a durable repo-local boundary/status note without cloud mutation or duplicate blocker leaves.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/capacity_based_surge.go and any directly referenced scenario definitions, names the canonical VM prerelease row-26 feature/spec/replay/path ids, and summarizes accepted inputs, expected behavior, adjacent surfaces, and the exact remaining execute gate/resume condition from source plus maintained repo-local evidence.",
+        "Repo-local feature/spec/replay/model/view wording for path.virtualmachines.capacity-based-surge-maxunavailable is either explicitly confirmed truthful or the exact follow-up edits needed are called out without opening cloud mutation, fabricating source blockers, or duplicating the family-level external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-based-surge-maxunavailable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:49:06.775Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622_20260622194906",
+        "assigned_at": "2026-06-22T19:49:06.823Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622",
+        "worker_started_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622_20260622194906",
+        "worker_started_at": "2026-06-22T19:49:35.686Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-26 boundary/status landing note at evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622.md, confirming mounted-source boundaries and that current maintained row-26 blocked/execute-gated wording is truthful with no further repair needed.",
+        "last_worker_completed_at": "2026-06-22T19:52:04.955Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:53:13.527Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622.md: the artifact cites the mounted row-26 source lineage, names the canonical feature/spec/replay/path ids, captures the dual-branch input/expectation boundary, and confirms current repo-local blocked execute-gated wording is already truthful with no new blocker or repair needed."
+      },
+      "session_id": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622",
+      "session_history": [
+        "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622"
+      ],
+      "result": "Created the row-26 boundary/status landing note at evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622.md, confirming mounted-source boundaries and that current maintained row-26 blocked/execute-gated wording is truthful with no further repair needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:53:13.527Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-boundary-and-status-landing-20260622.md: the artifact cites the mounted row-26 source lineage, names the canonical feature/spec/replay/path ids, captures the dual-branch input/expectation boundary, and confirms current repo-local blocked execute-gated wording is already truthful with no new blocker or repair needed."
+      },
+      "status": "done"
+    }
+  ]
+}

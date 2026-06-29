@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T17:45:40.931Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner accepted the bounded repo-wide format-gate reductions through the localdns replay-family slice: network-acns, network-cni-azure-overlay, and localdns are now evidenced with targeted clean verification, and the shared repo-wide bun run check frontier moved from 62 remaining warnings to 47 without widening beyond accepted slices. The single truthful local successor is now the bounded traffic-managed-gateway-api replay-family two-file slice derived from that 47-warning frontier, assigned for repo-local writeback plus rerun; keep the VirtualMachine prerelease coverage-ledger checkpoint blocked until a later repo-wide green bun run check, and preserve the four exact external response waits unchanged until returned proof or the 2026-06-26 follow-up trigger.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact residual network-acns replay-family warning slice from the accepted 62-warning rerun (replays/network-acns-basic-retina-update-retina-enterprise.ts, replays/network-acns-cilium-observability.ts, replays/network-acns-performance-cilium-upgrade.ts, replays/network-acns-retina-basic.ts, replays/network-acns-retina-enterprise-k8s-upgrade.ts, replays/network-acns-retina-enterprise-update-acns-cilium.ts, replays/network-acns-retina-enterprise-update-basic-retina.ts, and replays/network-acns-retina-enterprise.ts), then rerun targeted verification for that same slice and refresh the repo-wide warning count without widening beyond those residual network-acns files, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only the eight residual network-acns replay files, targeted verification output for that same file set, and git diff or equivalent proof showing only the intended network-acns replay formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the network-acns-family writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the named network-acns replay files, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:34:52.706Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624_20260624173507",
+        "assigned_at": "2026-06-24T17:35:07.228Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624_20260624173507",
+        "worker_started_at": "2026-06-24T17:35:36.332Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback to the exact eight-file network-acns replay frontier, verified the slice is clean, reran the repo-wide format gate, and recorded the updated 54-warning frontier in a new evidence artifact.",
+        "last_worker_completed_at": "2026-06-24T17:37:49.021Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:38:29.443Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624.md: the bounded Prettier writeback touched only the exact eight network-acns replay files, the targeted slice rerun came back clean, and the repo-wide bun run check refresh truthfully reduced the remaining format frontier from 62 warnings to 54 without widening scope."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback to the exact eight-file network-acns replay frontier, verified the slice is clean, reran the repo-wide format gate, and recorded the updated 54-warning frontier in a new evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:38:29.443Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/repo-wide-bun-check-replay-frontier-network-acns-family-slice-writeback-20260624.md: the bounded Prettier writeback touched only the exact eight network-acns replay files, the targeted slice rerun came back clean, and the repo-wide bun run check refresh truthfully reduced the remaining format frontier from 62 warnings to 54 without widening scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact five-file network-cni-azure-overlay replay-family warning slice from the accepted 54-warning rerun (replays/network-cni-azure-overlay-dual-stack-migration.ts, replays/network-cni-azure-overlay-dual-stack-windows2022.ts, replays/network-cni-azure-overlay-dual-stack-windows2025.ts, replays/network-cni-azure-overlay-dual-stack.ts, and replays/network-cni-azure-overlay-podcidr-expansion.ts), then rerun targeted verification for that same slice and refresh the repo-wide warning count without widening beyond those residual network-cni-azure-overlay files, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only the five residual network-cni-azure-overlay replay files, targeted verification output for that same file set, and git diff or equivalent proof showing only the intended network-cni-azure-overlay replay formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the network-cni-azure-overlay-family writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the named network-cni-azure-overlay replay files, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:38:29.538Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624_20260624173829",
+        "assigned_at": "2026-06-24T17:38:29.584Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624_20260624173829",
+        "worker_started_at": "2026-06-24T17:38:53.222Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to the five network-cni-azure-overlay replay files, verified that slice is clean, reran repo-wide check, and archived the exact 49-warning frontier evidence.",
+        "last_worker_completed_at": "2026-06-24T17:41:10.376Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:41:52.340Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-24 after reviewing evidence/archive/repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624.md: it proves the bounded five-file network-cni-azure-overlay Prettier writeback, targeted slice verification returned clean, and repo-wide bun run check refreshed the shared format frontier from 54 remaining warnings to 49 without widening scope or attempting checkpoint landing."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback only to the five network-cni-azure-overlay replay files, verified that slice is clean, reran repo-wide check, and archived the exact 49-warning frontier evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:41:52.340Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-24 after reviewing evidence/archive/repo-wide-bun-check-replay-frontier-network-cni-azure-overlay-family-slice-writeback-20260624.md: it proves the bounded five-file network-cni-azure-overlay Prettier writeback, targeted slice verification returned clean, and repo-wide bun run check refreshed the shared format frontier from 54 remaining warnings to 49 without widening scope or attempting checkpoint landing."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact two-file localdns replay-family warning slice from the accepted 49-warning rerun (replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts), then rerun targeted verification for that same slice and refresh the repo-wide warning count without widening beyond those localdns files, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts, targeted verification output for that same file set, and git diff or equivalent proof showing only the intended localdns replay formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the localdns-family writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the named localdns replay files, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:42:08.689Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624_20260624174208",
+        "assigned_at": "2026-06-24T17:42:08.735Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624_20260624174208",
+        "worker_started_at": "2026-06-24T17:42:33.728Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts, verified that pair cleanly, reran repo-wide bun check to refresh the warning frontier from 49 to 47, and archived the evidence in evidence/archive/repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624.md.",
+        "last_worker_completed_at": "2026-06-24T17:44:30.312Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:45:21.425Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: archive evidence proves the bounded Prettier writeback touched only replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts, targeted verification passed for that pair, and the repo-wide bun run check frontier dropped from 49 to 47 remaining warnings without widening beyond the accepted localdns slice."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts, verified that pair cleanly, reran repo-wide bun check to refresh the warning frontier from 49 to 47, and archived the evidence in evidence/archive/repo-wide-bun-check-replay-frontier-localdns-family-slice-writeback-20260624.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:45:21.425Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: archive evidence proves the bounded Prettier writeback touched only replays/localdns-multipool-consistency.ts and replays/localdns-windows-nodepool.ts, targeted verification passed for that pair, and the repo-wide bun run check frontier dropped from 49 to 47 remaining warnings without widening beyond the accepted localdns slice."
+      },
+      "status": "done"
+    }
+  ]
+}

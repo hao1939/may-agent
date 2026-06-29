@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T21:45:37.247Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review accepted the VM prerelease row-25-vs-row-26 feasibility audit: mounted source plus repo-local plan evidence keeps row 25 as the maintained direct-spec carrier and row 26 as a separate adjacent carrier until shared-fixture route, expectation-binding, fixture-ownership, and clean-plan proof all exist together. The earlier freed-rows execute-gate packet is already preserved in root context, so the only live local follow-up now is the active carrier-metadata reconciliation leaf while the two external-proof waits under the focus branch remain unchanged and truthful.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the repo-local VM prerelease execute-gate packet for mounted-source-freed rows 25, 40-43, and 50: map each row to canonical source/spec/replay/model surfaces, record the current execute gate or live-run dependency, and name the safest next non-external leaf(s) so the project is no longer wholly blocked behind human proof waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626.md"
+      ],
+      "acceptance": [
+        "Evidence packet cites mounted AKS RP source and existing repo-local artifacts for rows 25, 40-43, and 50 rather than treating them as missing-source or human-transport blockers.",
+        "For each listed row, the packet records canonical feature/spec/replay/model paths plus the current state: repo-local prep complete, further local repair needed, or execute-gated/live-run/environment-gated.",
+        "The packet proposes at least one concrete next local backlog leaf outside the external-proof wait family, and explicitly identifies any rows that should remain paused until a bounded environment/live-run signal exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-execute-gates"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:39:12.077Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626_20260626213917",
+        "assigned_at": "2026-06-26T21:39:17.122Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626",
+        "worker_started_attempt_id": "a_vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626_20260626213917",
+        "worker_started_at": "2026-06-26T21:39:35.682Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the execute-gate evidence packet at evidence/archive/vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626.md, mapping VM prerelease rows 25, 40-43, and 50 to canonical mounted-source/spec/replay/model surfaces, current local-vs-live state, exact execute gates, and owner-ready optional next local leaves outside the external-proof wait family.",
+        "last_worker_completed_at": "2026-06-26T21:41:44.142Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:42:13.973Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted evidence/archive/vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626.md: mounted-source/spec/replay/model ownership is now source-grounded for rows 25, 40-43, and 50; rows 40-43 and 50 should stay paused behind bounded live-run/environment gates; row 25 retains the only meaningful local ambiguity, so this review reopens local backlog without changing the two existing external proof waits."
+      },
+      "session_id": "s_task_vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626",
+      "session_history": [
+        "s_task_vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626"
+      ],
+      "result": "Produced the execute-gate evidence packet at evidence/archive/vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626.md, mapping VM prerelease rows 25, 40-43, and 50 to canonical mounted-source/spec/replay/model surfaces, current local-vs-live state, exact execute gates, and owner-ready optional next local leaves outside the external-proof wait family.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:42:13.973Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted evidence/archive/vmpr-freed-rows-25-40-43-50-execute-gate-packet-20260626.md: mounted-source/spec/replay/model ownership is now source-grounded for rows 25, 40-43, and 50; rows 40-43 and 50 should stay paused behind bounded live-run/environment gates; row 25 retains the only meaningful local ambiguity, so this review reopens local backlog without changing the two existing external proof waits."
+      },
+      "status": "done"
+    }
+  ]
+}

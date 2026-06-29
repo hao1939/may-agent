@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:03:00.844Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+  "summary": "2026-06-22 owner review accepts the row-41 specs/index metadata repair and archives it as completed groundwork. This focus branch is now reduced to one truthful open repo-local leaf: vm-prerelease-row42-vnet-integration-live-delta-authoring-20260622 remains the single active secure-TLS follow-on, and its prior row-41 relitigation blocker is stale because row-41 landing plus narrow check verification are already accepted in branch evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row41-spec-index-metadata-drift-followup-20260622",
+      "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the specs/index.json metadata drift for spec.secure-tls-bootstrap.basic-lifecycle after the accepted row-41 live-base authoring slice: determine whether the index entry should be regenerated or manually updated so title, sequence order, assertion count, and feature linkage match the current spec/replay/check artifact without overstating execute coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/index.json",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row41-spec-index-metadata-drift-followup-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current stale specs/index.json entry plus the accepted row-41 authoring/check artifacts, explains the true source of the drift, and states whether regeneration or a targeted repo-local edit is the correct repair path.",
+        "If a bounded truthful repair is possible, update the affected specs/index.json entry so the row-41 metadata matches the current spec/replay linkage and rerun the narrow verification needed to prove the entry is coherent; otherwise record the precise non-local/tooling blocker and strongest evidence ceiling.",
+        "Task stays scoped to row-41 metadata drift only and does not reopen the accepted row-41 live-base logic or widen into row-42 implementation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T01:57:06.232Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row41-spec-index-metadata-drift-followup-20260622_20260622015823",
+        "assigned_at": "2026-06-22T01:58:23.684Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row41-spec-index-metadata-drift-followup-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row41-spec-index-metadata-drift-followup-20260622_20260622015823",
+        "worker_started_at": "2026-06-22T01:58:25.594Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the stale row-41 secure-TLS entry in specs/index.json to match the accepted canonical spec packet, and wrote a bounded evidence note proving this was a manual index-drift fix rather than a generator issue. Reran the narrow row-41 check-mode replay, which passed and now reports the corrected index metadata without overstating execution coverage.",
+        "last_worker_completed_at": "2026-06-22T02:00:33.018Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:01:36.990Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the evidence note proves specs/index.json is manually maintained, identifies the stale pre-row-41 entry, records the bounded row-41-only metadata repair, and cites a passing narrow row-41 check-mode rerun that now reports the corrected index entry without overstating execution coverage."
+      },
+      "session_id": "s_task_vm-prerelease-row41-spec-index-metadata-drift-followup-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row41-spec-index-metadata-drift-followup-20260622"
+      ],
+      "result": "Repaired the stale row-41 secure-TLS entry in specs/index.json to match the accepted canonical spec packet, and wrote a bounded evidence note proving this was a manual index-drift fix rather than a generator issue. Reran the narrow row-41 check-mode replay, which passed and now reports the corrected index metadata without overstating execution coverage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:01:36.990Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the evidence note proves specs/index.json is manually maintained, identifies the stale pre-row-41 entry, records the bounded row-41-only metadata repair, and cites a passing narrow row-41 check-mode rerun that now reports the corrected index entry without overstating execution coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

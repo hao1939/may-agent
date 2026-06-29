@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:57:30.647Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner review (2026-06-20T10:08Z): the accepted row63 Azure Monitor Metrics branch-correction packet and the accepted ManagedSystem deep-dive alignment are now durable provenance under this lane rather than live frontier work. Together they settle two owner-review outcomes: (1) VM prerelease row 63 is currently anchored repo-locally to the Azure Monitor Metrics request contract and excluded adjacent App Monitoring/CCP control-plane branches, with any remaining repo-local rename debt narrowed to label-surface inventory; and (2) the ManagedSystem worked-example narrative now matches the accepted boundary-map plus mounted-source lineage, preserving the unchanged sku.DefaultClaim retest trigger without cloud execution. The only live feature/spec frontier under this lane is vm-prerelease-row63-legacy-label-surface-inventory-20260620, whose purpose is to enumerate remaining legacy row63 labels, separate immediately editable repo-local files from helper-held model/view gates, and define the next exact metadata-repair slice.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted row-63 verdict trace and existing repo-local artifacts to write one correction packet that re-anchors row 63 under the Azure Monitor Metrics family, records the bounded request contract and excluded adjacent surfaces, and names the next exact repo-local or external clarification step for the unresolved verdict-bearing runtime surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-63 verdict trace plus exact existing feature/spec/model/evidence anchors and states why row 63 belongs to Azure Monitor Metrics rather than App Monitoring or CCP control-plane metrics branches.",
+        "Archive note records the bounded request contract properties.azureMonitorProfile.metrics.enabled=true, explicitly excludes the adjacent appMonitoring and controlPlanePluginProfiles surfaces unless supported by row-local evidence, and preserves the one remaining verdict-surface uncertainty without broadening it.",
+        "Archive note names one concrete next repo-local follow-up or one exact external clarification trigger, and introduces no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:app-monitoring-addonv2-row63-branch-correction"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:52:20.108Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620_20260620095240",
+        "assigned_at": "2026-06-20T09:52:40.780Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620_20260620095240",
+        "worker_started_at": "2026-06-20T09:52:41.062Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-63 branch-correction packet at evidence/archive/vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620.md, re-anchoring row 63 under Azure Monitor Metrics with the bounded request contract, excluded adjacent surfaces, and one exact remaining clarification step.",
+        "last_worker_completed_at": "2026-06-20T09:53:53.751Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:54:12.550Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: correction packet re-anchors row 63 to Azure Monitor Metrics using the accepted verdict trace plus mounted-source/request-contract evidence, explicitly excludes App Monitoring and CCP control-plane branches, and preserves one exact remaining runtime clarification in evidence/archive/vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620.md."
+      },
+      "session_id": "s_task_vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:54:12.550Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: correction packet re-anchors row 63 to Azure Monitor Metrics using the accepted verdict trace plus mounted-source/request-contract evidence, explicitly excludes App Monitoring and CCP control-plane branches, and preserves one exact remaining runtime clarification in evidence/archive/vm-prerelease-row63-azure-monitor-metrics-branch-correction-packet-20260620.md."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-pool-deep-dive-mounted-source-alignment-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the ManagedSystem pool deep-dive so the human-facing worked-example narrative exactly matches the consolidated boundary map and mounted-source lineage: accepted existing-pool minimal add, create-time name+mode product-gap branch, day-2 count/type negative passes, adjacent VM+ManagedSystem rejection, and the create-time runtime-closure unknowns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/deep-dives/managedsystem-pool.md"
+      ],
+      "acceptance": [
+        "Deep-dive cites the mounted source anchors under /app/sources/aks-rp/test/e2ev3/sigs/rp/nativerp/plans/managedsystem*.go and the accepted archive note evidence/archive/managedsystem-pool-worked-example-boundary-map-consolidation-20260620.md.",
+        "Deep-dive narrative separates accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and remaining create-time unknown edges without implying callers should send forbidden generic pool fields.",
+        "Deep-dive names the exact unchanged external retest trigger for the create-time sku.DefaultClaim architecture-mismatch product gap and introduces no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:managedsystem-pool-worked-example"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:54:12.599Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-deep-dive-mounted-source-alignment-20260620_20260620095412",
+        "assigned_at": "2026-06-20T09:54:12.649Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-deep-dive-mounted-source-alignment-20260620",
+        "worker_started_attempt_id": "a_managedsystem-pool-deep-dive-mounted-source-alignment-20260620_20260620095412",
+        "worker_started_at": "2026-06-20T09:54:22.346Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated `model/knowledge-map/deep-dives/managedsystem-pool.md` to align the ManagedSystem worked-example narrative with the accepted 2026-06-20 boundary consolidation and mounted-source lineage under `/app/sources/aks-rp`, without any cloud execution or task-tree changes.",
+        "last_worker_completed_at": "2026-06-20T09:55:26.179Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:56:13.304Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: model/knowledge-map/deep-dives/managedsystem-pool.md now cites the mounted-source managedsystem*.go anchors plus the accepted 2026-06-20 consolidation note, cleanly separates accepted/rejected/observed/adjacent/create-time-unknown branches, and preserves the exact unchanged sku.DefaultClaim retest trigger without cloud execution."
+      },
+      "session_id": "s_task_managedsystem-pool-deep-dive-mounted-source-alignment-20260620",
+      "session_history": [
+        "s_task_managedsystem-pool-deep-dive-mounted-source-alignment-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:56:13.304Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: model/knowledge-map/deep-dives/managedsystem-pool.md now cites the mounted-source managedsystem*.go anchors plus the accepted 2026-06-20 consolidation note, cleanly separates accepted/rejected/observed/adjacent/create-time-unknown branches, and preserves the exact unchanged sku.DefaultClaim retest trigger without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

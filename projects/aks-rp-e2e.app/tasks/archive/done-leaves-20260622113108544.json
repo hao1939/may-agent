@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:31:08.544Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review confirms the repo-local mounted-source reconciliation branch is complete: virtualmachine-mounted-source-coverage-batch1-20260622 was already accepted and archived as bounded evidence that VM prerelease/checkin rows 25+50, 40-43, 33, and 76 are fully carried by maintained repo-local source/spec/model surfaces. The truthful live frontier is now only external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, a single family-level external-human-transport wait for later out-of-runtime human/operator send-handoff-approval-reply proof on the already-routed covered MachinesPreview and VM prerelease asks. No new runnable repo-local leaf, duplicate blocked child, or cloud-mutation branch should be introduced until that durable external proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-mounted-source-coverage-batch1-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the bounded VirtualMachine mounted-source batch from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, then inspect the directly referenced scenario definitions for the covered MachinesPreview and VM prerelease rows (including rows 25+50, 40-43, 33, and 76), mapping each into feature/input/expectation coverage and identifying which contracts are already carried by maintained repo-local surfaces versus exact missing maintained surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-mounted-source-coverage-batch1-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact exists at ../aks-rp-e2e/evidence/archive/virtualmachine-mounted-source-coverage-batch1-20260622.md and cites the exact mounted-source suite files plus the directly referenced scenario definition files/rows reviewed from VirtualMachine prerelease.go and/or checkin.go, including the bounded row/scenario count covered and the inferred feature/input/expectation contracts.",
+        "For each reviewed VM row/scenario, the artifact states whether current model/spec/replay surfaces already cover it or names the exact missing maintained surface/path plus the recommended repo-local follow-up leaf; it explicitly reconciles whether the local/source-backed portion of the current external wait is already consumed versus where evidence is still missing, with no cloud mutation or new passive external wait introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:26:12.256Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-mounted-source-coverage-batch1-20260622_20260622112612",
+        "assigned_at": "2026-06-22T11:26:12.306Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-mounted-source-coverage-batch1-20260622",
+        "worker_started_attempt_id": "a_virtualmachine-mounted-source-coverage-batch1-20260622_20260622112612",
+        "worker_started_at": "2026-06-22T11:26:28.467Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded archive artifact `evidence/archive/virtualmachine-mounted-source-coverage-batch1-20260622.md`, mapping VM prerelease rows 25, 33, 40-43, 50, and 76 from mounted source into exact feature/input/expectation contracts and reconciling each against maintained repo-local surfaces versus remaining external-evidence gaps.",
+        "last_worker_completed_at": "2026-06-22T11:28:43.263Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:29:25.684Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive artifact maps rows 25, 33, 40-43, 50, and 76 into exact feature/input/expectation contracts, confirms every bounded row already has maintained repo-local carriers, and truthfully narrows remaining work to the existing external-human-transport family wait. Row 76 is accepted with an explicit caveat that its bounded source authority comes from mounted old-suite tunnel-conformance files rather than current VM checkin/prerelease, which still satisfies the bounded reconciliation goal without requiring a new repo-local authoring leaf."
+      },
+      "session_id": "s_task_virtualmachine-mounted-source-coverage-batch1-20260622",
+      "session_history": [
+        "s_task_virtualmachine-mounted-source-coverage-batch1-20260622"
+      ],
+      "result": "Created the bounded archive artifact `evidence/archive/virtualmachine-mounted-source-coverage-batch1-20260622.md`, mapping VM prerelease rows 25, 33, 40-43, 50, and 76 from mounted source into exact feature/input/expectation contracts and reconciling each against maintained repo-local surfaces versus remaining external-evidence gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:29:25.684Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive artifact maps rows 25, 33, 40-43, 50, and 76 into exact feature/input/expectation contracts, confirms every bounded row already has maintained repo-local carriers, and truthfully narrows remaining work to the existing external-human-transport family wait. Row 76 is accepted with an explicit caveat that its bounded source authority comes from mounted old-suite tunnel-conformance files rather than current VM checkin/prerelease, which still satisfies the bounded reconciliation goal without requiring a new repo-local authoring leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

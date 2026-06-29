@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:16:57.851Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review accepted the VM prerelease network/autoscale/kube-proxy gap batch as a truthful mounted-source closure for rows 99, 118, 125, 131, 150, 155, and 178: the shared coverage ledger now carries exact repo-local blockers grounded in mounted AKS RP source, mostly narrowing the remaining work to VirtualMachines prerelease substrate-fidelity gaps rather than unknown-source absence. The feature/spec lane now has two active authoring fronts left in this pass (identity/vnet/runner rows 152/153/154/161/162/174 and row 163 node-not-ready restart), while MachinesPreview remains the single external-send wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease missing-spec rows 99,118,125,131,150,155,178 by extracting mounted networking/autoscaling/kube-proxy source into exact specs, replays, coverage, and feature-set entries.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620.md"
+      ],
+      "acceptance": [
+        "Rows 99,118,125,131,150,155,178 are each either strict-covered with source/spec/replay/coverage/feature links or carry one exact repo-local blocker with source evidence.",
+        "bun runner/schema-check.ts, bun runner/wiring-check.ts, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt pass after the batch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:09:54.954Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T14:10:20.067Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620_20260620141126",
+        "assigned_at": "2026-06-20T14:11:26.936Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620_20260620141126",
+        "worker_started_at": "2026-06-20T14:11:27.158Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated VM prerelease coverage ledger blockers for rows 99, 118, 125, 131, 150, 155, and 178 using mounted AKS RP source evidence, and wrote the durable task report at evidence/archive/vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620.md. Required validations passed: schema-check, wiring-check, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+        "last_worker_completed_at": "2026-06-20T14:16:07.963Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:16:57.808Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker result: evidence/archive/vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620.md records mounted-source-backed exact repo-local blockers for VM prerelease rows 99, 118, 125, 131, 150, 155, and 178 in evidence/pipelines/virtualmachine-prerelease-coverage.json, and the acceptance checks passed via schema-check, wiring-check, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt."
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620"
+      ],
+      "result": "Updated VM prerelease coverage ledger blockers for rows 99, 118, 125, 131, 150, 155, and 178 using mounted AKS RP source evidence, and wrote the durable task report at evidence/archive/vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620.md. Required validations passed: schema-check, wiring-check, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:16:57.808Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker result: evidence/archive/vm-prerelease-gap-batch-network-autoscale-kubeproxy-20260620.md records mounted-source-backed exact repo-local blockers for VM prerelease rows 99, 118, 125, 131, 150, 155, and 178 in evidence/pipelines/virtualmachine-prerelease-coverage.json, and the acceptance checks passed via schema-check, wiring-check, and bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt."
+      },
+      "status": "done"
+    }
+  ]
+}

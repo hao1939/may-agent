@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T14:41:02.924Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 metric-recovery owner review: no review claims required acceptance, so this pass focused on truthful frontier shaping. The two shared operator-response waits (App Routing existing-cluster targets and CCP connected-cluster-proxy AAD admin-group prerequisites) remain blocked with archived send proof, while the cluster-autoscaler VM-prerelease create-stage HTTP 400 family stays repaired into concrete backlog follow-up via design-bounded-repro-spec-cluster-autoscaler-vm-prerelease-create-http400-family-20260628. Active verification is already saturated above the wake's maxConcurrent cap (6 active leaves vs 5), so keep the P1 autoscaler/spec runnable backlog queued and prefer it only after one active leaf finishes or is otherwise truthfully reclassified.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28325470289 for spec.cluster-autoscaler.vm-prerelease-overscale-node-stability and turn the confirmed fail/product_failure result into durable evidence and capability-model updates.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md"
+      ],
+      "acceptance": [
+        "Run 28325470289 artifacts are reviewed and the concrete failure signal is summarized with exact artifact paths.",
+        "The relevant capability-model/spec status is updated or an exact blocker is recorded if the durable model location cannot yet be changed safely.",
+        "Any mismatch between worker claim and run artifact is noted so future retries do not treat this case as a blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-overscale-node-stability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:33:34.531Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628_20260628143334",
+        "assigned_at": "2026-06-28T14:33:34.587Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628",
+        "worker_started_attempt_id": "a_update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628_20260628143334",
+        "worker_started_at": "2026-06-28T14:33:42.297Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28325470289 for spec.cluster-autoscaler.vm-prerelease-overscale-node-stability, wrote durable failure evidence in evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md, and updated model/knowledge-map/model.json to keep the row-47 path unknown while recording the replay-shape drift and create-stage fail evidence.",
+        "last_worker_completed_at": "2026-06-28T14:39:31.056Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md",
+          "model/knowledge-map/model.json"
+        ],
+        "reviewed_at": "2026-06-28T14:40:11.346Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md and model/knowledge-map/model.json capture run 28325470289 as fail/product_failure carrier-diagnostic evidence, keep the row-47 path unknown because the run stopped at cluster create and the replay drifted from the modeled exact 2/4/2 VirtualMachines carrier."
+      },
+      "session_id": "s_task_update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628",
+      "session_history": [
+        "s_task_update-model-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628"
+      ],
+      "result": "Reviewed run 28325470289 for spec.cluster-autoscaler.vm-prerelease-overscale-node-stability, wrote durable failure evidence in evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md, and updated model/knowledge-map/model.json to keep the row-47 path unknown while recording the replay-shape drift and create-stage fail evidence.",
+      "evidence": [
+        "evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md",
+        "model/knowledge-map/model.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:40:11.346Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable evidence/archive/spec-cluster-autoscaler-vm-prerelease-overscale-node-stability-fail-20260628.md and model/knowledge-map/model.json capture run 28325470289 as fail/product_failure carrier-diagnostic evidence, keep the row-47 path unknown because the run stopped at cluster create and the replay drifted from the modeled exact 2/4/2 VirtualMachines carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

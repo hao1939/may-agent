@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T07:01:27.722Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace remains the visible frontier for send-ready/external-response coordination. The accepted 2026-06-20 consolidation note is now durable parent context: this slice is already normalized at the family level, with App Routing shared rows 82/83/84/89 and the KMS family as the only truthful family waits, while App Monitoring row 63, App Routing row 85, CCP admin-group OID, go-e2ev3 devinfra, and similar waits remain distinct by external action or proof surface. The immediate owner action is the active reconcile leaf user-review-send-ready-family-matrix-live-routing-reconcile-20260620, which must map the accepted family matrix to exact current live task ids and decide whether any bounded stale-routing repair artifact is still needed before future response routing relies on that matrix.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-send-ready-wait-family-consolidation-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-20 send-ready family matrix plus the current user-review response-await leaves, determine which send-ready-only waits in user-review-workspace truly share one external wait surface and which must remain separate. Focus on the current send-ready packet families (including App Monitoring row 63, App Routing shared rows 82/83/84/89, App Routing row 85, CCP admin-group OID, go-e2ev3 devinfra upstream-scenario, KMS feature-flag/environment-capability, and any sibling waits referenced by the family matrix); produce one exact consolidation/routing note that names candidate affected task ids and the precise next tree mutations to apply, without sending packets or reopening broad rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-send-ready-wait-family-consolidation-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/external-response-await-send-ready-family-matrix-20260620.md and the current blocked response-await leaves it evaluates, and records one explicit keep-separate vs consolidate decision for each candidate family/group it inspects.",
+        "For any group that should collapse into a family-level wait, the note names the exact live task ids that would be replaced, the exact surviving wait representation/resume condition to preserve, and why no distinct meaning is lost; for any group that must stay separate, the note states the exact distinct external owner action or proof surface that prevents consolidation.",
+        "No cloud execution, no new outbound send, and no feature-family rediscovery occur; the task is limited to user-review wait normalization/routing based on already accepted artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:user-review-send-ready-wait-consolidation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:58:45.659Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-send-ready-wait-family-consolidation-20260620_20260620065845",
+        "assigned_at": "2026-06-20T06:58:45.712Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-send-ready-wait-family-consolidation-20260620",
+        "worker_started_attempt_id": "a_user-review-send-ready-wait-family-consolidation-20260620_20260620065845",
+        "worker_started_at": "2026-06-20T06:58:57.671Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the owner-facing consolidation/routing note at evidence/archive/user-review-send-ready-wait-family-consolidation-20260620.md after checking the accepted send-ready family matrix, repaired response-await notes, and the current live tasks in /app/projects/aks-rp-e2e.app/tasks/tree.json. The conclusion is that the tree is already normalized for this slice: App Routing shared 82/83/84/89 and KMS are the only valid family-level waits, and no additional consolidation mutation should be applied.",
+        "last_worker_completed_at": "2026-06-20T07:00:16.175Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T07:00:49.398Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-20 consolidation note after review: it cites the accepted send-ready family matrix and current live response-await leaves, shows App Routing rows 82/83/84/89 and KMS are already the only truthful family-level waits, and supports no additional consolidation mutation with all other waits remaining distinct by external action or proof surface."
+      },
+      "session_id": "s_task_user-review-send-ready-wait-family-consolidation-20260620",
+      "session_history": [
+        "s_task_user-review-send-ready-wait-family-consolidation-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T07:00:49.398Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-20 consolidation note after review: it cites the accepted send-ready family matrix and current live response-await leaves, shows App Routing rows 82/83/84/89 and KMS are already the only truthful family-level waits, and supports no additional consolidation mutation with all other waits remaining distinct by external action or proof surface."
+      },
+      "status": "done"
+    }
+  ]
+}

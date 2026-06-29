@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:09:15.113Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review accepted two repo-local source-contract completions without changing the single external-human wait. private-cluster-auth-service-tags is now source-bounded to the exact deny-all 0.0.0.0/32 -> AzureCloud same-cluster access-transition contract with maintained feature/spec/replay/model carriers already visible, while live verdict remains unknown. storage-csi-disk-clone is now fully carried repo-locally through replay/spec-index/model/path-summary for the exact azurediskcsi clone branch, and its noted validator debt is a separate bounded follow-up rather than a blocker. The truthful blocked frontier remains the one family-level external wait pending later out-of-runtime proof from the named human/operator approval lane. Next active work is the bounded storage-csi Blob Fuse2 clone mounted-source landing; remaining Storage CSI backlog stays dependency-waiting behind that same conflict scope.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-source-contract-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact private-cluster VNet integration Authorized Service Tags handwritten branch into repo-local carriers so path.private-cluster-vnet-integration-auth-service-tags stops being an unshaped unknown and gains a bounded source-backed request/expectation contract without opening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-source-contract-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact handwritten/private-cluster source file and scenario or line range backing the Authorized Service Tags lifecycle and states the specific deny-all to AzureCloud request/expectation contract carried by that branch.",
+        "Relevant repo-local carrier surfaces are added or updated so path.private-cluster-vnet-integration-auth-service-tags is visible in maintained feature/spec/replay/model outputs, or the bounded next missing carrier after inspection is named exactly in the archive note.",
+        "Scope stays repo-local and source-backed only: use mounted Go source and existing repo artifacts before any escalation, and do not do cloud mutation, external-send work, or reopen the separate external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:05:29.550Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-source-contract-landing-20260623_20260623070531",
+        "assigned_at": "2026-06-23T07:05:31.585Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-source-contract-landing-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-source-contract-landing-20260623_20260623070531",
+        "worker_started_at": "2026-06-23T07:05:55.338Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable archive note at evidence/archive/private-cluster-auth-service-tags-source-contract-landing-20260623.md proving the exact mounted private-cluster APIVNET Authorized Service Tags contract and confirming maintained repo-local carriers already expose path.private-cluster-vnet-integration-auth-service-tags as the deny-all -> AzureCloud lifecycle.",
+        "last_worker_completed_at": "2026-06-23T07:07:48.685Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:08:35.335Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/authorized_service_tags.go, bounds the exact deny-all 0.0.0.0/32 -> AzureCloud same-cluster access-transition contract, and confirms maintained repo-local feature/spec/replay/model carriers already expose path.private-cluster-vnet-integration-auth-service-tags. Live execution verdict remains unknown, but this source-contract landing task is complete."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-source-contract-landing-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-source-contract-landing-20260623"
+      ],
+      "result": "Wrote a durable archive note at evidence/archive/private-cluster-auth-service-tags-source-contract-landing-20260623.md proving the exact mounted private-cluster APIVNET Authorized Service Tags contract and confirming maintained repo-local carriers already expose path.private-cluster-vnet-integration-auth-service-tags as the deny-all -> AzureCloud lifecycle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:08:35.335Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/authorized_service_tags.go, bounds the exact deny-all 0.0.0.0/32 -> AzureCloud same-cluster access-transition contract, and confirms maintained repo-local feature/spec/replay/model carriers already expose path.private-cluster-vnet-integration-auth-service-tags. Live execution verdict remains unknown, but this source-contract landing task is complete."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-disk-clone-carrier-completion-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Finish the exact mounted Azure Disk clone branch already identified by the 2026-06-23 storage-csi mounted-source audit so the existing source-backed feature/spec contract gains the missing repo-local replay and normalized accepted path/view bridge without reopening broader Storage CSI coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-clone-carrier-completion-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurediskcsi.go lines 213-290 and states the exact clone contract: original PVC plus cloned PVC via PersistentVolumeClaim dataSource, hello-world write on the original claim, and cloned pod readback from /mnt/datavolume/outfile.",
+        "Relevant repo-local carrier surfaces are completed without widening scope: replays/storage-csi-disk-clone.ts is added or updated and the accepted normalized model/view bridge for path.storage-csi-disk-clone is visible in the maintained repo-local outputs, with exact touched files named in the archive note.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no reopening of the accepted VM-prerelease linux matrix packet, and no widening into unrelated Azure File or Blob branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:59:32.879Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:00:59.426Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-clone-carrier-completion-20260623_20260623070109",
+        "assigned_at": "2026-06-23T07:01:09.879Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-clone-carrier-completion-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-clone-carrier-completion-20260623_20260623070109",
+        "worker_started_at": "2026-06-23T07:01:41.170Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded Storage CSI disk-clone carrier finish-up by adding replays/storage-csi-disk-clone.ts, wiring spec/index metadata, and landing the accepted model/path-summary bridge for path.storage-csi-disk-clone with a durable archive note.",
+        "last_worker_completed_at": "2026-06-23T07:08:30.914Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:09:04.869Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurediskcsi.go:213-290, preserves the exact original-PVC -> cloned-PVC dataSource clone contract and cloned pod outfile readback expectation, and confirms the missing repo-local carriers now exist in replays/storage-csi-disk-clone.ts, specs/index.json, specs/storage-csi-disk-clone.json, and maintained model/path-summary outputs for path.storage-csi-disk-clone. The validator debt noted is a bounded follow-up concern, not a blocker for this carrier-completion task."
+      },
+      "session_id": "s_task_storage-csi-disk-clone-carrier-completion-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-clone-carrier-completion-20260623"
+      ],
+      "result": "Completed the bounded Storage CSI disk-clone carrier finish-up by adding replays/storage-csi-disk-clone.ts, wiring spec/index metadata, and landing the accepted model/path-summary bridge for path.storage-csi-disk-clone with a durable archive note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:09:04.869Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurediskcsi.go:213-290, preserves the exact original-PVC -> cloned-PVC dataSource clone contract and cloned pod outfile readback expectation, and confirms the missing repo-local carriers now exist in replays/storage-csi-disk-clone.ts, specs/index.json, specs/storage-csi-disk-clone.json, and maintained model/path-summary outputs for path.storage-csi-disk-clone. The validator debt noted is a bounded follow-up concern, not a blocker for this carrier-completion task."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:17:56.063Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill accepted and archives the remaining low-value completed leaves now that their durable meaning is captured at the root. The branch now explicitly knows: (1) private-cluster source-gap mapping is preserved as repo-local coverage knowledge, (2) private-endpoint-connections lifecycle remains execute-gated with bounded evidence, (3) VM prerelease row 32 auto-zone mixed-SKU is source-grounded from auto_zone.go with dedicated feature/spec/replay/model linkage and no live verdict claim, and (4) VM prerelease row 33 accelerated-networking already has an accepted row-local packet that preserves execute-capable but still execute-gated posture only. The single useful live next action remains vmpr-row33-coverage-markdown-sync-20260621, already assigned, to reconcile the stale row-33 markdown wording to the accepted packet/current coverage JSON without broadening scope or adding a live pass/fail claim. external-send-proof-dispatch-family-20260620 remains unchanged as the sole truthful family-level external-human transport ceiling until durable send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-source-gap-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus current repo-local specs/replays/model surfaces to map the private-cluster Go e2ev3 scenario family into a bounded source-backed gap report: identify the exact private-cluster scenario carriers, summarize the row/path assertions they exercise, link each to existing repo-local feature/spec/replay/model coverage when present, and record the concrete uncovered or weakly linked surfaces that should become the next dedicated non-cloud leaves without claiming any live cloud verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-source-gap-map-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted-source private-cluster suite/scenario carriers inspected and summarizes the source-grounded assertion surfaces without broadening beyond the inspected family.",
+        "Archive note maps each inspected private-cluster surface to current repo-local feature/spec/replay/model coverage status, clearly distinguishing already-covered, weakly linked, and uncovered items with exact file references when available.",
+        "Archive note ends with concrete next leaf candidates or a bounded no-gap conclusion for this family, and any resulting verdict remains source-grounded or execute-gated only with no live pass/fail claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-gap-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:14:43.532Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-source-gap-map-20260621_20260621041445",
+        "assigned_at": "2026-06-21T04:14:45.133Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-source-gap-map-20260621",
+        "worker_started_attempt_id": "a_private-cluster-source-gap-map-20260621_20260621041445",
+        "worker_started_at": "2026-06-21T04:15:00.156Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the mounted-source private-cluster coverage map and wrote `evidence/archive/private-cluster-source-gap-map-20260621.md`, mapping each discovered private-cluster scenario/group to exact repo-local spec/replay/model coverage and naming `private-endpoint-connections-lifecycle` as the next bounded executable leaf.",
+        "last_worker_completed_at": "2026-06-21T04:15:00.171Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:15:27.913Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-source-gap-map-20260621.md cites the mounted private-cluster plan/suite/pipeline carriers, maps each scenario/group to exact repo-local spec/replay/model coverage, and identifies private-endpoint-connections-lifecycle as the next bounded execute-gated leaf without claiming any live verdict."
+      },
+      "session_id": "s_task_private-cluster-source-gap-map-20260621",
+      "session_history": [
+        "s_task_private-cluster-source-gap-map-20260621"
+      ],
+      "result": "Built the mounted-source private-cluster coverage map and wrote `evidence/archive/private-cluster-source-gap-map-20260621.md`, mapping each discovered private-cluster scenario/group to exact repo-local spec/replay/model coverage and naming `private-endpoint-connections-lifecycle` as the next bounded executable leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:15:27.913Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-source-gap-map-20260621.md cites the mounted private-cluster plan/suite/pipeline carriers, maps each scenario/group to exact repo-local spec/replay/model coverage, and identifies private-endpoint-connections-lifecycle as the next bounded execute-gated leaf without claiming any live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

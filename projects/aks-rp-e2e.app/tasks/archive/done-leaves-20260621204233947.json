@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:42:33.947Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill: accepted and absorbed the repo-local row-60 adjacent-source frontier result. Durable project truth now records that the exact next VM prerelease/checkin branch after the settled row-59 SGX landing is row 60 Scenario_Addon, existing canonical spec/replay/index/coverage/evidence carriers already cover it, and the only remaining repo-local gap is the maintained knowledge-map/model/view landing. Open work stays intentionally narrow: continue active task vmpr-row60-addon-maintained-knowledge-map-landing-20260621 as the bounded successor, while preserving external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single shared external-human transport wait with no local retry.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: produce a bounded repo-local frontier-proof packet for the first exact post-row41 VM prerelease successor by tying source-order row 42 / maintained pipeline row 41 secure-TLS basic-with-VM-Windows adjacency to the already-landed canonical secure-tls-bootstrap basic carrier and prior exact evidence, without model/spec/replay edits or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Cite /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, and the directly referenced securetlsbootstrapping plan/common source needed to prove that the first exact adjacent post-row41 VM prerelease branch is source-order row 42 / maintained pipeline row 41 secure-TLS basic with AddVirtualMachinesWindowsNodePool().",
+        "Compare that adjacent branch against the existing repo-local secure-tls-bootstrap basic feature/spec/replay/evidence surfaces and produce one durable frontier-proof packet that records exact alias/numbering truth plus why evidence reuse is sufficient, without creating or editing model/spec/replay artifacts.",
+        "List exact repo/source files inspected and validation commands run, and confirm this pass performed no cloud execution, no external-human transport work, and no model edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/vmpr"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:35:09.630Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621_20260621203509",
+        "assigned_at": "2026-06-21T20:35:09.680Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621_20260621203509",
+        "worker_started_at": "2026-06-21T20:35:20.390Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded secure-TLS frontier-proof packet at evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md, proving source-order row 42 maps to maintained pipeline row 41 and is satisfied by canonical carrier/evidence reuse only, with no model edits or cloud execution.",
+        "last_worker_completed_at": "2026-06-21T20:35:20.404Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:36:04.616Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the bounded frontier-proof packet: evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md proves source-order row 42 maps to maintained pipeline row 41 and that existing secure-tls-bootstrap basic canonical carriers already satisfy the branch via evidence reuse only, with no new authoring or cloud execution."
+      },
+      "session_id": "s_task_vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621"
+      ],
+      "result": "Created the bounded secure-TLS frontier-proof packet at evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md, proving source-order row 42 maps to maintained pipeline row 41 and is satisfied by canonical carrier/evidence reuse only, with no model edits or cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:36:04.616Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the bounded frontier-proof packet: evidence/archive/vmpr-post-row41-row42-securetls-basic-frontier-proof-20260621.md proves source-order row 42 maps to maintained pipeline row 41 and that existing secure-tls-bootstrap basic canonical carriers already satisfy the branch via evidence reuse only, with no new authoring or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

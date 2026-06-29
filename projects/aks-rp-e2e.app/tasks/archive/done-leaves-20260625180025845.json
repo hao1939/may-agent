@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T18:00:25.845Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "As of the 2026-06-25 pre-window baseline in evidence/archive/external-proof-family-owner-followup-or-escalation-review-20260626.md, all six exact external returned-proof waits remain unchanged and no newer authoritative reply/proof is visible in the checked repo-local/app-local surfaces. The premature owner follow-up review leaf was replaced rather than accepted because its 2026-06-26+ date gate has not opened yet; the next truthful owner action remains the same bounded family follow-up/escalation review on or after 2026-06-26, or immediately if an authoritative reply artifact arrives sooner.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "followup-owner-external-proof-family-review-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "On or after 2026-06-26, perform one bounded owner review across the six exact external returned-proof waits, check whether any authoritative reply artifact arrived, and if silence continues capture one family-level follow-up/escalation artifact that preserves the existing exact packet authorities while identifying which waits remain unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-proof-family-owner-followup-or-escalation-review-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the 2026-06-26+ blocked-frontier review across aad-rbac row 37, external dispatch family, NATGW V2 v2->none, private-cluster auth service tags devbox endpoint, and serverless schedulerctrl public/private waits; for each branch it states whether a returned authoritative proof exists and cites the already-routed packet/send-proof artifact being checked.",
+        "If no returned proof exists for one or more branches, the same artifact captures one bounded owner follow-up or escalation action for the affected wait family/families with timestamp, channel, recipient/escalation path, sender/owner, exact linked packet authority, and the unchanged resume condition; it does not reopen local source/spec/model work or trigger cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T17:56:30.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_followup-owner-external-proof-family-review-20260626_20260625175631",
+        "assigned_at": "2026-06-25T17:56:31.412Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_followup-owner-external-proof-family-review-20260626",
+        "worker_started_attempt_id": "a_followup-owner-external-proof-family-review-20260626_20260625175631",
+        "worker_started_at": "2026-06-25T17:56:52.163Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote evidence/archive/external-proof-family-owner-followup-or-escalation-review-20260626.md, but the assigned 2026-06-26+ owner review cannot be truthfully completed yet because the current session date is still 2026-06-25. The artifact preserves the exact six-wait baseline, confirms no newer authoritative reply/proof is visible in checked repo-local/app-local surfaces, and records the precise resume condition for the first valid rerun.",
+        "last_worker_completed_at": "2026-06-25T17:59:24.932Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T18:00:25.792Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Closed the premature review leaf as replaced by the existing external-wait family state: the 2026-06-25 evidence artifact proved no new authoritative reply/proof exists yet and the assigned 2026-06-26+ owner follow-up cannot be truthfully accepted before the date gate opens."
+      },
+      "session_id": "s_task_followup-owner-external-proof-family-review-20260626",
+      "session_history": [
+        "s_task_followup-owner-external-proof-family-review-20260626"
+      ],
+      "result": "Wrote evidence/archive/external-proof-family-owner-followup-or-escalation-review-20260626.md, but the assigned 2026-06-26+ owner review cannot be truthfully completed yet because the current session date is still 2026-06-25. The artifact preserves the exact six-wait baseline, confirms no newer authoritative reply/proof is visible in checked repo-local/app-local surfaces, and records the precise resume condition for the first valid rerun.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-25T18:00:25.792Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Closed the premature review leaf as replaced by the existing external-wait family state: the 2026-06-25 evidence artifact proved no new authoritative reply/proof exists yet and the assigned 2026-06-26+ owner follow-up cannot be truthfully accepted before the date gate opens."
+      },
+      "status": "done"
+    }
+  ]
+}

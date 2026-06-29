@@ -4,10 +4,10 @@
   "type": "module",
   "description": "May-agent project app that drives the portable aks-rp-e2e domain workspace.",
   "scripts": {
-    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
+    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/default-task-worker.ts ./workflows/spec-loop-controller.ts ./workflows/single-spec-verifier.ts ./workflows/feature-reference-loop-controller.ts ./workflows/feature-reference-collector.ts ./workflows/feature-compact-loop-controller.ts ./workflows/feature-compact-planner.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts ./workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run integrity && bun run syntax && bun run typecheck && bun run format:check && bun run test",
     "integrity": "bun run ./scripts/check-integrity.ts",
-    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/default-task-worker.ts ./workflows/spec-loop-controller.ts ./workflows/single-spec-verifier.ts ./workflows/feature-reference-loop-controller.ts ./workflows/feature-reference-collector.ts ./workflows/feature-compact-loop-controller.ts ./workflows/feature-compact-planner.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts ./workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "bun test ./workflows/*.test.ts ./scripts/*.test.ts ./e2e/replanning-flow.test.ts --timeout 30000",
     "test:ui": "bun test ./e2e/feature-page.test.ts ./e2e/project-ui-replan-buttons.test.ts --timeout 30000",
@@ -16,6 +16,7 @@
     "metrics:register": "bun run ./scripts/register-project-metrics.ts",
     "metrics:sample": "bun run ./scripts/project-metrics.ts",
     "domain:checkpoint": "bun run ./scripts/domain-checkpoint.ts",
+    "spec-loop": "bun run ./scripts/spec-loop.ts",
     "tasks:summary": "bun run ./scripts/task-summary.ts",
     "task-tree": "bun run ./scripts/task-tree.ts"
   },

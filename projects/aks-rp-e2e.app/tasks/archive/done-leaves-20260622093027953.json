@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T09:30:27.953Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review rolled up the completed prerelease prep slice: vm-prerelease-row61-normalized-model-landing-20260622 already landed the accepted current-preview carrier, and vm-prerelease-rows75-76-source-carrier-audit-20260622 already established the exact mounted-source carriers that row75 and row76 must reconcile against. The live local frontier is now intentionally narrow: vm-prerelease-row75-normalized-model-reconciliation-20260622 is the single active knowledge-map:model-landing worker, vm-prerelease-row76-normalized-model-reconciliation-20260622 stays waiting only on that same conflict scope, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful external-human-transport wait until a human/operator records durable out-of-runtime send or reply proof. Next owner action is unchanged: let row75 finish or go stale, then promote row76 into the freed scope; do not create duplicate blockers or new cloud work from this branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row61-normalized-model-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile VM prerelease row 61 into the accepted normalized knowledge-map surfaces by verifying the existing feature/spec/replay carriers and then either landing path.virtualmachine-prerelease.row61-core-addon-compatibility into model/knowledge-map/model.json plus generated views or recording a bounded no-gap verdict that names the already-existing accepted carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row61-normalized-model-landing-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites evidence/archive/virtualmachine-prerelease-source-coverage-model-landing-20260622.md plus the exact row-61 feature/spec/replay/check carriers and shows one of two terminal repo-local outcomes: (a) path.virtualmachine-prerelease.row61-core-addon-compatibility is landed into the accepted normalized model/view surfaces with exact linked evidence, or (b) the artifact proves an already-accepted normalized carrier fully covers row 61 with no further repo-local edit needed.",
+        "The task performs no cloud mutation and does not reopen the external-human-transport family except to restate that live operator/send-proof work remains represented only by the shared blocked wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease:model-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:19:55.883Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row61-normalized-model-landing-20260622_20260622092210",
+        "assigned_at": "2026-06-22T09:22:10.941Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row61-normalized-model-landing-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row61-normalized-model-landing-20260622_20260622092210",
+        "worker_started_at": "2026-06-22T09:22:12.290Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed VM prerelease row 61 into the accepted normalized knowledge-map by adding the row-61 feature/scenario/input-DAG/path to model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/vm-prerelease-row61-normalized-model-landing-20260622.md with exact carrier and validation evidence.",
+        "last_worker_completed_at": "2026-06-22T09:26:15.550Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:27:43.655Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner verification: evidence/archive/vm-prerelease-row61-normalized-model-landing-20260622.md documents the row-61 source/spec/replay/check carriers and terminal landed outcome, model/knowledge-map/model.json now contains path.virtualmachine-prerelease.row61-core-addon-compatibility, and maintained views (path-summary.json, evidence-matrix.json, graph-view.json, evidence-index.md) expose the same path/evidence linkage. The worker packet lacked structured evidence, but repo-local outputs substantiate the landing; unrelated validator script debt/tooling mismatch is not a row-61 blocker."
+      },
+      "session_id": "s_task_vm-prerelease-row61-normalized-model-landing-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row61-normalized-model-landing-20260622"
+      ],
+      "result": "Landed VM prerelease row 61 into the accepted normalized knowledge-map by adding the row-61 feature/scenario/input-DAG/path to model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/vm-prerelease-row61-normalized-model-landing-20260622.md with exact carrier and validation evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:27:43.655Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner verification: evidence/archive/vm-prerelease-row61-normalized-model-landing-20260622.md documents the row-61 source/spec/replay/check carriers and terminal landed outcome, model/knowledge-map/model.json now contains path.virtualmachine-prerelease.row61-core-addon-compatibility, and maintained views (path-summary.json, evidence-matrix.json, graph-view.json, evidence-index.md) expose the same path/evidence linkage. The worker packet lacked structured evidence, but repo-local outputs substantiate the landing; unrelated validator script debt/tooling mismatch is not a row-61 blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

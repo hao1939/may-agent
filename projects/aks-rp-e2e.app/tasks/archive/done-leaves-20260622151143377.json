@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T15:11:43.377Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review: the watchdog's waiting-backlog sample was stale because private-cluster-none-dns-zone-v3-scale-validation-depth-20260622 is already review-accepted and private-cluster-none-dns-zone-v3-explicit-execute-tuple-gate-20260622 is now the live repo-local private-cluster follow-up. Archive the accepted scale-depth and virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622 done leaves because their durable meaning is now carried by the two active repo-local source/spec/model leaves plus their evidence artifacts. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human wait, do not split it, and keep current effort on the two active repo-local leaves rather than opening new blocker-management or live-run work.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-scale-validation-depth-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bring replays/private-cluster-none-private-dns-zone-v3.ts to mounted-source-equivalent post-transition scale validation depth for path.private-cluster-none-dns-zone-v3 by validating realized pool/compute state after each scale step, then record the exact residual live-run gate with local non-mutating verification evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-scale-validation-depth-20260622.md"
+      ],
+      "acceptance": [
+        "Update replays/private-cluster-none-private-dns-zone-v3.ts so the post-transition scale steps validate realized target state at mounted ScaleAndValidate depth rather than only PUT-response success, and write ../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-scale-validation-depth-20260622.md citing the mounted source helper and the exact replay changes.",
+        "Run the replay's local non-mutating checks needed to prove the repo-local hardening still preserves the source contract, and state the remaining truthful live-evidence gate for path.private-cluster-none-dns-zone-v3 without opening cloud mutation or duplicate external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-execute"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T15:05:14.050Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T15:05:18.428Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-scale-validation-depth-20260622_20260622150523",
+        "assigned_at": "2026-06-22T15:05:23.676Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-scale-validation-depth-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-scale-validation-depth-20260622_20260622150523",
+        "worker_started_at": "2026-06-22T15:06:06.831Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Hardened `replays/private-cluster-none-private-dns-zone-v3.ts` so post-transition scale validation now inspects realized VMSS/VM backing state at mounted `ScaleAndValidate` depth, and wrote the requested evidence artifact documenting the exact replay changes and remaining live gate.",
+        "last_worker_completed_at": "2026-06-22T15:10:07.599Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T15:10:52.210Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-scale-validation-depth-20260622.md documents the replay hardening to mounted ScaleAndValidate-equivalent realized VMSS/VM checks, and the cited local --check plus spec --dry-run prove the repo-local contract still passes without opening cloud mutation."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-scale-validation-depth-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-scale-validation-depth-20260622"
+      ],
+      "result": "Hardened `replays/private-cluster-none-private-dns-zone-v3.ts` so post-transition scale validation now inspects realized VMSS/VM backing state at mounted `ScaleAndValidate` depth, and wrote the requested evidence artifact documenting the exact replay changes and remaining live gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T15:10:52.210Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-scale-validation-depth-20260622.md documents the replay hardening to mounted ScaleAndValidate-equivalent realized VMSS/VM checks, and the cited local --check plus spec --dry-run prove the repo-local contract still passes without opening cloud mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile row-29 VirtualMachines mixed-SKU lifecycle maintained carriers so the feature/path stop presenting as draft once mounted source, ready spec, execute-capable replay, and existing local check evidence are already in place; register the missing row-29 evidence ids and regenerate the maintained views without claiming a live verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "Update the repo-local knowledge-map/model and directly coupled maintained view outputs for virtualmachines-mixed-sku-lifecycle and path.virtualmachines.mixed-sku-lifecycle so their status matches the already-supported execute-gated non-verdict posture, and register the cited row-29 evidence artifacts needed by that status.",
+        "Run the repo-local validation/view regeneration checks needed for this bounded reconciliation and write ../aks-rp-e2e/evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md explaining exactly what changed, what status now means, and the remaining truthful live-evidence gate without cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-mixed-sku-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T15:06:50.556Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T15:06:50.656Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622_20260622150710",
+        "assigned_at": "2026-06-22T15:07:10.569Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622",
+        "worker_started_attempt_id": "a_virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622_20260622150710",
+        "worker_started_at": "2026-06-22T15:07:11.916Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease row 29 maintained carriers from draft to execute-gated blocked in model/view outputs, registered the missing row-29 evidence IDs in model.json, regenerated knowledge-map views, and wrote the reconciliation artifact at evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T15:10:24.321Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T15:10:52.264Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md shows row 29 carriers were reconciled from draft to execute-gated blocked with the missing evidence IDs registered and maintained views regenerated; the remaining validator failures are explicitly pre-existing unrelated global issues, not a blocker for this bounded branch."
+      },
+      "session_id": "s_task_virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622",
+      "session_history": [
+        "s_task_virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622"
+      ],
+      "result": "Reconciled VM prerelease row 29 maintained carriers from draft to execute-gated blocked in model/view outputs, registered the missing row-29 evidence IDs in model.json, regenerated knowledge-map views, and wrote the reconciliation artifact at evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T15:10:52.264Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/virtualmachines-mixed-sku-lifecycle-model-status-reconciliation-20260622.md shows row 29 carriers were reconciled from draft to execute-gated blocked with the missing evidence IDs registered and maintained views regenerated; the remaining validator failures are explicitly pre-existing unrelated global issues, not a blocker for this bounded branch."
+      },
+      "status": "done"
+    }
+  ]
+}

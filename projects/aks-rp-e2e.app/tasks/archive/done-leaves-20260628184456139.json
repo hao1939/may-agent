@@ -1,0 +1,183 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:44:56.139Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 metric-recovery owner update: accepted two review artifacts under this branch. First, the row-37 AAD reconcile packet now locks path.aad-rbac.managed-v2-lifecycle to one canonical VirtualMachine PreRelease -> CheckIn -> Scenario_AAD carrier with non-pass status narrowed to the positive adminGroupObjectIDs+tenantID update branch. Second, the operator-wait matrix now gives one durable family view for the five spec-loop blocked waits, preserving all five as truthful external waits while documenting exact 2026-06-29 checkpoint actions. The matrix also exposed one clean carve-out: spec.deployment-safeguards.basic-enable-disable can move forward on committed origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb without clearing the blocked unrepaired-family wait, so a new active preparation leaf now captures that runnable next step. The other active branch remains the defender-profile wording/model split update.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the repaired spec-runner durable post-spawn progress path to rerun or recover the pending spec.defender-profile.vm-prerelease-matrix live verification, then archive the terminal verdict or exact new blocker with the post-spawn artifact trail that was previously missing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628.md"
+      ],
+      "acceptance": [
+        "Launch or recover only the intended spec.defender-profile.vm-prerelease-matrix run on the repaired repo-local runner/workflow path and record the exact run identifier, ref, and artifact directory used.",
+        "Archive durable evidence that post-spawn progress persisted after scenario-test.spawned (for example spec-runner steps/status checkpoints or linked workflow artifacts) so this family is no longer gated on console-only heartbeats.",
+        "End with one truthful outcome for the spec branch: terminal pass/fail/blocker with exact evidence, or a precise replacement blocker that names the new root cause and why the durable-progress repair is no longer the active gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:25:02.457Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T18:39:55.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_retry_20260628183955",
+        "worker_started_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_20260628183955",
+        "worker_started_at": "2026-06-28T18:39:56.211Z",
+        "stale_active_requeued_at": "2026-06-28T18:39:25.106Z",
+        "stale_active_requeue_reason": "worker session s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628 is still marked running but lastActivityAt stalled at 2026-06-28T18:26:30Z with no accepted archive artifact or terminal verdict; replace stale active execution with explicit recovery work",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_20260628182502",
+        "promoted_at": "2026-06-28T18:39:32.990Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_20260628183955",
+        "reviewed_at": "2026-06-28T18:40:37.523Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md: the older run single-defender-profile-vm-prerelease-matrix_247490 remained artifactless/running, but bounded rerun single-defender-profile-vm-prerelease-matrix_734848 completed with durable outer/spec-runner result artifacts and a trustworthy nonpassing live verdict. This closes the runner-progress repair branch because post-spawn durable artifacts now exist and the active gate moved from runner progress to a reviewed fail/product-contract mismatch."
+      },
+      "session_history": [
+        "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628",
+        "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_retry_20260628183955"
+      ],
+      "session_id": "s_task_rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628_retry_20260628183955",
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:40:37.523Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md: the older run single-defender-profile-vm-prerelease-matrix_247490 remained artifactless/running, but bounded rerun single-defender-profile-vm-prerelease-matrix_734848 completed with durable outer/spec-runner result artifacts and a trustworthy nonpassing live verdict. This closes the runner-progress repair branch because post-spawn durable artifacts now exist and the active gate moved from runner progress to a reviewed fail/product-contract mismatch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted VirtualMachine prerelease row-37 managed AAD lifecycle carrier across source/spec/replay/model so the current fail verdict is either justified as the exact maintained branch or replaced by a narrower source-grounded interpretation with a safe next retest condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a durable packet that cites the mounted row-37 source lineage plus current repo-local spec/replay/model carriers, states the exact input and expectation boundary, and records one owner-ready decision for path.aad-rbac.managed-v2-lifecycle: keep the fail verdict as-is, split/narrow it, or replace it with a better-bounded status and retest condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:41:45.900Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628_20260628184145",
+        "assigned_at": "2026-06-28T18:41:45.961Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628",
+        "worker_started_attempt_id": "a_reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628_20260628184145",
+        "worker_started_at": "2026-06-28T18:42:03.978Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a durable reconcile packet at evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md that ties mounted row-37 source lineage to current spec/model carriers and recommends keeping one canonical path with a narrower branch-mismatch-under-review verdict rather than the old broad helper-VM block story.",
+        "last_worker_completed_at": "2026-06-28T18:43:48.774Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:44:38.219Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md: it traces mounted row-37 source lineage (VirtualMachine PreRelease -> CheckIn -> Scenario_AAD), narrows the maintained verdict to the positive adminGroupObjectIDs+tenantID update branch, and preserves eastus2 helper-VM SkuNotAvailable only as variant history rather than the canonical path verdict."
+      },
+      "session_id": "s_task_reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628",
+      "session_history": [
+        "s_task_reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628"
+      ],
+      "result": "Archived a durable reconcile packet at evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md that ties mounted row-37 source lineage to current spec/model carriers and recommends keeping one canonical path with a narrower branch-mismatch-under-review verdict rather than the old broad helper-VM block story.",
+      "evidence": [
+        "evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:44:38.219Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/reconcile-path-aad-rbac-managed-v2-lifecycle-row37-mounted-source-and-model-20260628.md: it traces mounted row-37 source lineage (VirtualMachine PreRelease -> CheckIn -> Scenario_AAD), narrows the maintained verdict to the positive adminGroupObjectIDs+tenantID update branch, and preserves eastus2 helper-VM SkuNotAvailable only as variant history rather than the canonical path verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "audit-spec-loop-operator-wait-family-into-followup-matrix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build one durable evidence matrix for the five aks-spec-verification-loop operator-response waits so the 2026-06-29 owner checkpoint can escalate, replace, or preserve them without rediscovering each ask from scratch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-operator-wait-followup-matrix-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a matrix covering the current spec-loop operator waits for App Routing existing-cluster, CCP connected-cluster-proxy auth AAD admin-group, CostAnalysis underlay kubeconfig, deployment-safeguards authorized alternate-ref, and egress-lockdown fallback promotion with each wait's send-proof artifact, exact requested proof/input, stated resume checkpoint, and next owner action if no reply arrives.",
+        "Call out any wait that no longer needs to stay blocked because mounted source, bounded local evidence, or an existing terminal disposition already answers the question, so the owner can replace that wait with a narrower runnable/local task instead of another passive review cycle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "operator-response:aks-spec-verification-loop-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:42:48.837Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_audit-spec-loop-operator-wait-family-into-followup-matrix-20260628_20260628184248",
+        "assigned_at": "2026-06-28T18:42:48.889Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_audit-spec-loop-operator-wait-family-into-followup-matrix-20260628",
+        "worker_started_attempt_id": "a_audit-spec-loop-operator-wait-family-into-followup-matrix-20260628_20260628184248",
+        "worker_started_at": "2026-06-28T18:43:26.341Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built and archived a durable follow-up matrix for the five current aks-spec-verification-loop operator-response waits, including send-proof artifacts, exact missing proof/inputs, resume checkpoints, and owner next actions, with a specific carve-out note that only deployment-safeguards basic-enable-disable can be split into a runnable local leaf without clearing its family wait.",
+        "last_worker_completed_at": "2026-06-28T18:44:34.258Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-loop-operator-wait-followup-matrix-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:44:55.968Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/spec-loop-operator-wait-followup-matrix-20260628.md: it consolidates the five aks-spec-verification-loop operator waits into one durable owner matrix, preserves each wait as still truthful, records exact follow-up/escalation triggers, and identifies the only clean repo-local carve-out as a separate deployment-safeguards basic-enable-disable rerun on committed origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb."
+      },
+      "session_id": "s_task_audit-spec-loop-operator-wait-family-into-followup-matrix-20260628",
+      "session_history": [
+        "s_task_audit-spec-loop-operator-wait-family-into-followup-matrix-20260628"
+      ],
+      "result": "Built and archived a durable follow-up matrix for the five current aks-spec-verification-loop operator-response waits, including send-proof artifacts, exact missing proof/inputs, resume checkpoints, and owner next actions, with a specific carve-out note that only deployment-safeguards basic-enable-disable can be split into a runnable local leaf without clearing its family wait.",
+      "evidence": [
+        "evidence/archive/spec-loop-operator-wait-followup-matrix-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:44:55.968Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/spec-loop-operator-wait-followup-matrix-20260628.md: it consolidates the five aks-spec-verification-loop operator waits into one durable owner matrix, preserves each wait as still truthful, records exact follow-up/escalation triggers, and identifies the only clean repo-local carve-out as a separate deployment-safeguards basic-enable-disable rerun on committed origin/dev@4098213d8aba6587a7b1df243f5f36260046d2bb."
+      },
+      "status": "done"
+    }
+  ]
+}

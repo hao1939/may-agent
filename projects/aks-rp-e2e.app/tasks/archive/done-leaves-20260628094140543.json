@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:41:40.543Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner planning after accepted completion-evidence proof: the former trust gate is now resolved, so the feature-reference lane should burn down the existing collect-feature-reference-* review frontier from archived artifacts rather than rerun collectors. Keep re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628 as the single active batch-review leaf; its job is to close trust-gated review leaves with evidence-backed owner summaries or replace only genuinely defective archives with one concrete content-fix successor. Historical gate/setup leaves are archived because their meaning is now captured here and the accepted proof task under project root.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "await-evidence-propagation-proof-before-feature-reference-batch-review-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the single truthful wait for the current trust-gated feature-reference review batch until fix-project-task-completed-evidence-propagation-proof-20260628 is accepted with proof that one named worker run emitted non-empty project.task.completed evidence metadata for an archive artifact, then hand the batch back for archive-only re-review without collector reruns.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "This leaf remains the single owner-visible wait for the current trust-gated collect-feature-reference-* review family while completion-evidence propagation proof is unresolved.",
+        "Resume only when fix-project-task-completed-evidence-propagation-proof-20260628 is accepted with named non-empty completion-evidence proof, at which point owner review should replace this wait with concrete archive re-review/closure work rather than rerunning collectors."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:40:14.653Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T09:40:33.209Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the temporary trust-gate wait with active archive re-review task re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628 after accepting the completion-evidence propagation proof."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T09:40:33.209Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the temporary trust-gate wait with active archive re-review task re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628 after accepting the completion-evidence propagation proof."
+      },
+      "status": "done"
+    }
+  ]
+}

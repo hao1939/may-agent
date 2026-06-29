@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T13:06:43.167Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review also accepted the bounded cloud-provider credential-provider baseline-proof implementation: the replay baseline now matches the mounted source carrier and the five required Linux/Windows flag, kubelet-identity AcrPull, and Linux/Windows ACR-pull proof surfaces are prepared repo-locally with explicit evidence of remaining live-run-only gaps. Active frontier remains the private-cluster addonv2 execute-carrier staging leaf and the new Speculor update_private second-hop carrier leaf, plus the single external human wait family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-baseline-proof-implementation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: implement the bounded baseline credential-provider replay strengthening defined in evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md by updating the existing baseline carrier to explicit Azure CNI + Standard LB + Linux system pool + appended Windows2022 pool and emitting five separate spec-aligned proof stages for Linux flags, Windows flags, kubelet-identity AcrPull, Linux nginx pull, and Windows IIS pull without widening into rows 189/214 or normalized-model work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/cloud-provider-credential-provider.ts",
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-baseline-proof-implementation-20260623.md"
+      ],
+      "acceptance": [
+        "Update replays/cloud-provider-credential-provider.ts so the baseline create request truthfully matches the mounted source carrier and the replay emits or prepares exact spec-aligned assertion surfaces for assert.credential-provider.configured-linux, assert.credential-provider.configured-windows, assert.acr.attached-via-kubelet-identity, assert.acr-pull.nginx-linux, and assert.acr-pull.iis-windows, keeping scope limited to the existing baseline path.",
+        "Produce an archive note that cites the changed replay anchors, records any repo-local verification/check output used, and states any remaining live-run-only proof gap without claiming cloud execution; explicitly exclude normalized-model reopening and VM prerelease rows 189/214."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider.credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T13:01:45.907Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-baseline-proof-implementation-20260623_20260623130145",
+        "assigned_at": "2026-06-23T13:01:45.952Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-baseline-proof-implementation-20260623",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-baseline-proof-implementation-20260623_20260623130145",
+        "worker_started_at": "2026-06-23T13:02:11.594Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the bounded baseline credential-provider replay strengthening in replays/cloud-provider-credential-provider.ts and added an archive note documenting carrier/proof-stage changes plus repo-local verification and remaining live-run-only gaps.",
+        "last_worker_completed_at": "2026-06-23T13:06:12.004Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T13:06:43.118Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/cloud-provider-credential-provider-baseline-proof-implementation-20260623.md cites the bounded replay changes and repo-local verification, and replays/cloud-provider-credential-provider.ts now carries the explicit baseline contract plus the five required spec-aligned proof surfaces without widening scope."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-baseline-proof-implementation-20260623",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-baseline-proof-implementation-20260623"
+      ],
+      "result": "Implemented the bounded baseline credential-provider replay strengthening in replays/cloud-provider-credential-provider.ts and added an archive note documenting carrier/proof-stage changes plus repo-local verification and remaining live-run-only gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T13:06:43.118Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/cloud-provider-credential-provider-baseline-proof-implementation-20260623.md cites the bounded replay changes and repo-local verification, and replays/cloud-provider-credential-provider.ts now carries the explicit baseline contract plus the five required spec-aligned proof surfaces without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

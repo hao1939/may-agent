@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:17:48.395Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Reviewed 2026-06-22 watchdog/frontier state: accepted the row-54 ManagedSystem metadata-only alignment as done; remaining open work stays on two repo-local reconciliation leaves (localdns FIPS stale terminal verdict repair and authorized-ip-ranges bounded model churn reconciliation) plus one already-compressed family-level external human transport wait. No duplicate blocked children were reintroduced, and no new execute branch was created during this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the repo-local feature-level metadata for the row-54 VirtualMachines+ManagedSystem prerelease branch with the accepted source-grounded/unknown boundary map without changing the path verdict or adding new replay/spec branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622.md"
+      ],
+      "acceptance": [
+        "The task updates only the bounded repo-local metadata carriers needed to align virtualmachines-managedsystem-agentpool-vm-prerelease feature/status text with the accepted row-54 source-grounded/unknown conclusion, and cites the accepted boundary-map artifact as authority.",
+        "The resulting artifact names the exact files touched or confirmed, states that path.virtualmachines.managedsystem-agentpool-vm-prerelease remains unknown/source-grounded, and records that no adjacent final ManagedSystem verdict was reopened.",
+        "No cloud mutation is run, no new runnable replay/spec branch is created, and the work stays a metadata-only consistency repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-row54-metadata"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:12:16.231Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622_20260622131216",
+        "assigned_at": "2026-06-22T13:12:16.282Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622",
+        "worker_started_attempt_id": "a_managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622_20260622131216",
+        "worker_started_at": "2026-06-22T13:12:54.481Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned row-54 ManagedSystem feature-level metadata to the accepted unknown/source-grounded boundary map by updating model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622.md documenting the bounded metadata-only repair.",
+        "last_worker_completed_at": "2026-06-22T13:16:43.943Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T13:17:48.346Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker evidence: archive artifact documents the bounded row-54 metadata-only repair, keeps path.virtualmachines.managedsystem-agentpool-vm-prerelease unknown/source-grounded, leaves path.virtualmachines.managedsystem-combined untouched, and current repo diff shows the claimed bounded carriers (model/knowledge-map/model.json, views, feature/spec/replay surfaces) present for review."
+      },
+      "session_id": "s_task_managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622",
+      "session_history": [
+        "s_task_managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622"
+      ],
+      "result": "Aligned row-54 ManagedSystem feature-level metadata to the accepted unknown/source-grounded boundary map by updating model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622.md documenting the bounded metadata-only repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T13:17:48.346Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker evidence: archive artifact documents the bounded row-54 metadata-only repair, keeps path.virtualmachines.managedsystem-agentpool-vm-prerelease unknown/source-grounded, leaves path.virtualmachines.managedsystem-combined untouched, and current repo diff shows the claimed bounded carriers (model/knowledge-map/model.json, views, feature/spec/replay surfaces) present for review."
+      },
+      "status": "done"
+    }
+  ]
+}

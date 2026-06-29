@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:03:03.201Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier reconciliation removed the redundant MachinesPreview path-level wait from this lane. Durable feature/spec meaning remains in evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md and the send-ready packet, but the live resume condition now belongs only to external-send-proof-dispatch-family-20260620. This lane has no truthful local authoring backlog for the current slice; reopen feature/spec work only if a human records send or escalation proof for the MachinesPreview packet, an authoritative MachinesPreview reply arrives, or new steering changes the ask.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "machinespreview-human-send-proof-or-authoritative-reply-wait-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one truthful path-level blocked carrier for the MachinesPreview westus2/local replay gate, explicitly subordinate to external-send-proof-dispatch-family-20260620 until real human send/handoff proof or an authoritative reply exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md"
+      ],
+      "acceptance": [
+        "Carrier cites evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md as the accepted proof-capture authority for path.machines-agentpool-api-crud.machine-crud-blocked and the unchanged westus2/local replay contract.",
+        "The live resume trigger is exact: reopen only after a human owner/operator actually sends or escalates evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md through a real external channel and records durable repo-local send/handoff proof, or when the authoritative reply itself arrives and is linked back to the proof-capture artifact.",
+        "This leaf remains only the path-level carrier. It does not claim passive response-await truth before send/handoff proof exists, and it does not recreate local packet-drafting, source rediscovery, or duplicate send tasks because shared owner-side follow-up lives in external-send-proof-dispatch-family-20260620."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:11:52.050Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T17:02:54.353Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the single shared external-send blocker family external-send-proof-dispatch-family-20260620, which now carries the exact send-proof-or-authoritative-reply resume condition for the MachinesPreview westus2/local replay gate without duplicating a passive path-level wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T17:02:54.353Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the single shared external-send blocker family external-send-proof-dispatch-family-20260620, which now carries the exact send-proof-or-authoritative-reply resume condition for the MachinesPreview westus2/local replay gate without duplicating a passive path-level wait."
+      },
+      "status": "done"
+    }
+  ]
+}

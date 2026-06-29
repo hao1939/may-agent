@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:17:45.188Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 owner planning update after accepting both local prep reviews: static-egress origin/dev repair is now proven as an exact three-file branch landing plus optional replay cleanup with clean archive --check success, and VM prerelease family diagnosis is accepted as durable context showing provider-429 finalization loss rather than carrier breakage. The remaining runnable local work from this focus window is now exactly the two missing row-local retry artifacts for rows 40 and 50, while row 25 stays direct-spec-ready from its existing artifact, row 43 already has durable readiness evidence, and the external-human proof family remains compressed to one truthful blocked wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "static-egress-vmss-origin-dev-local-carrier-repair-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the bounded repo-local static-egress-vmss carrier repair needed before any origin/dev dispatch retry: move the maintained feature-owned probe/test wrapper onto the branch carrier, retarget the spec from replays/net-integration-static-egress-vmss.ts to the feature-owned probe, and re-prove exact branch-state --check readiness.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/static-egress-vmss-origin-dev-local-carrier-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact shows the exact files/diffs needed to replace the deleted replay-lib carrier on origin/dev, including the spec probeRef retarget and the maintained feature-owned probe/test surfaces to land.",
+        "The artifact ends with exact repo-local proof that the repaired branch-state carrier passes bun ... --check (or a tighter local blocker with the failing command/output), so a later planner can truthfully decide whether dispatch retry work now exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "static-egress-vmss-origin-dev"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:15:33.357Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_static-egress-vmss-origin-dev-local-carrier-repair-20260626_20260626201554",
+        "assigned_at": "2026-06-26T20:15:54.289Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_static-egress-vmss-origin-dev-local-carrier-repair-20260626",
+        "worker_started_attempt_id": "a_static-egress-vmss-origin-dev-local-carrier-repair-20260626_20260626201554",
+        "worker_started_at": "2026-06-26T20:15:54.560Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested static-egress carrier-repair artifact at evidence/archive/static-egress-vmss-origin-dev-local-carrier-repair-20260626.md, documenting the exact spec retarget, feature-owned probe/wrapper surfaces, and branch-state --check proof via a clean origin/dev archive overlay.",
+        "last_worker_completed_at": "2026-06-26T20:17:18.492Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:17:41.894Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the static-egress origin/dev repair artifact because it names the exact three branch landing surfaces plus optional replay cleanup, proves the spec probeRef retarget to the maintained feature-owned probe, and shows a clean origin/dev archive overlaid with only those files passes bun features/net-integration/tests/net-integration-static-egress-vmss.ts --check."
+      },
+      "session_id": "s_task_static-egress-vmss-origin-dev-local-carrier-repair-20260626",
+      "session_history": [
+        "s_task_static-egress-vmss-origin-dev-local-carrier-repair-20260626"
+      ],
+      "result": "Wrote the requested static-egress carrier-repair artifact at evidence/archive/static-egress-vmss-origin-dev-local-carrier-repair-20260626.md, documenting the exact spec retarget, feature-owned probe/wrapper surfaces, and branch-state --check proof via a clean origin/dev archive overlay.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:17:41.894Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the static-egress origin/dev repair artifact because it names the exact three branch landing surfaces plus optional replay cleanup, proves the spec probeRef retarget to the maintained feature-owned probe, and shows a clean origin/dev archive overlaid with only those files passes bun features/net-integration/tests/net-integration-static-egress-vmss.ts --check."
+      },
+      "status": "done"
+    }
+  ]
+}

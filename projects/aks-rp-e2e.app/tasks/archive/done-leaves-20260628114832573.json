@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T11:48:32.573Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner task-completed refill: accept the row-37 mounted-source packet as durable evidence that the managed AAD carrier stays on the unchanged VM prerelease Scenario_AAD contract with create-time adminUsers bootstrap and a later positive adminGroupObjectIDs+tenantID update branch. Archive the completed private-cluster-none-dns-zone-v3 source-boundary leaf and the completed row-37 source-packet leaf because their durable meaning is now captured on this lane. Keep exactly two live children here: the blocked shared App Routing existing-cluster operator-response family wait, and the active row-37 model/retest reconciliation leaf that must align path.aad-rbac.managed-v2-lifecycle wording with the accepted source packet plus the westus2 9/10-claims artifact so the model no longer overstates a generic helper-VM-capacity blocker.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "spec-private-cluster-none-dns-zone-v3-source-boundary-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound path.private-cluster-none-dns-zone-v3 from checked-in specs, adjacent private-cluster evidence, and mounted source so the path can move from unknown toward a source-backed expectation or exact evidence ceiling without any cloud run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-source-boundary-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a concise source/spec boundary note that names the owning feature/path, exact input/expectation contract, adjacent existing evidence reused, and the recommended next model action (promote to source-backed expectation, keep unknown with reason, or create one narrower follow-up probe)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:44:45.666Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-private-cluster-none-dns-zone-v3-source-boundary-20260628_20260628114445",
+        "assigned_at": "2026-06-28T11:44:45.746Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-private-cluster-none-dns-zone-v3-source-boundary-20260628",
+        "worker_started_attempt_id": "a_spec-private-cluster-none-dns-zone-v3-source-boundary-20260628_20260628114445",
+        "worker_started_at": "2026-06-28T11:45:11.922Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a concise source/spec boundary note for path.private-cluster-none-dns-zone-v3 under evidence/archive, confirming the exact mounted contract is the same-cluster system→none lifecycle and recommending the model stay execution-ceiling unknown rather than reopen repo-local repair.",
+        "last_worker_completed_at": "2026-06-28T11:46:22.673Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-none-dns-zone-v3-source-boundary-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:47:16.767Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived source/spec boundary note proves the exact mounted same-cluster system->none lifecycle and shows the remaining gap is execution-ceiling live breadth, not repo-local/source ambiguity."
+      },
+      "session_id": "s_task_spec-private-cluster-none-dns-zone-v3-source-boundary-20260628",
+      "session_history": [
+        "s_task_spec-private-cluster-none-dns-zone-v3-source-boundary-20260628"
+      ],
+      "result": "Archived a concise source/spec boundary note for path.private-cluster-none-dns-zone-v3 under evidence/archive, confirming the exact mounted contract is the same-cluster system→none lifecycle and recommending the model stay execution-ceiling unknown rather than reopen repo-local repair.",
+      "evidence": [
+        "evidence/archive/private-cluster-none-dns-zone-v3-source-boundary-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:47:16.767Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived source/spec boundary note proves the exact mounted same-cluster system->none lifecycle and shows the remaining gap is execution-ceiling live breadth, not repo-local/source ambiguity."
+      },
+      "status": "done"
+    },
+    {
+      "id": "spec-vm-prerelease-row37-managed-aad-source-packet-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract a mounted-source packet for the VM prerelease row-37 managed AAD lifecycle path so the exact replay contract, create-time inputs, and current environment gate are durable without relying on stale blocker wording.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260628.md"
+      ],
+      "acceptance": [
+        "Archive a packet citing the mounted /app/sources/aks-rp test files or referenced scenarios, summarizing the unchanged row-37 input contract, expected lifecycle assertions, and the narrowest truthful environment gate/retest condition for path.aad-rbac.managed-v2-lifecycle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:44:45.792Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-vm-prerelease-row37-managed-aad-source-packet-20260628_20260628114445",
+        "assigned_at": "2026-06-28T11:44:45.841Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-vm-prerelease-row37-managed-aad-source-packet-20260628",
+        "worker_started_attempt_id": "a_spec-vm-prerelease-row37-managed-aad-source-packet-20260628_20260628114445",
+        "worker_started_at": "2026-06-28T11:45:11.854Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a durable row-37 managed AAD source packet at evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260628.md, citing mounted AKS RP source plus current eastus2/westus2 execution evidence to preserve the exact create contract, lifecycle assertions, and narrowest truthful retest gate for path.aad-rbac.managed-v2-lifecycle.",
+        "last_worker_completed_at": "2026-06-28T11:46:42.885Z",
+        "last_worker_evidence": [
+          "evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:47:16.821Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived row-37 source packet preserves the mounted adminUsers-backed create contract and narrows the truthful next gate to the single adminGroupObjectIDs+tenantID positive-update branch rather than generic helper-VM capacity."
+      },
+      "session_id": "s_task_spec-vm-prerelease-row37-managed-aad-source-packet-20260628",
+      "session_history": [
+        "s_task_spec-vm-prerelease-row37-managed-aad-source-packet-20260628"
+      ],
+      "result": "Archived a durable row-37 managed AAD source packet at evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260628.md, citing mounted AKS RP source plus current eastus2/westus2 execution evidence to preserve the exact create contract, lifecycle assertions, and narrowest truthful retest gate for path.aad-rbac.managed-v2-lifecycle.",
+      "evidence": [
+        "evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:47:16.821Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived row-37 source packet preserves the mounted adminUsers-backed create contract and narrows the truthful next gate to the single adminGroupObjectIDs+tenantID positive-update branch rather than generic helper-VM capacity."
+      },
+      "status": "done"
+    }
+  ]
+}

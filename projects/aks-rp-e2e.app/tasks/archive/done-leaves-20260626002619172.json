@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T00:26:19.172Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 metric-recovery owner review: the brief live-idle-with-runnable-work spike self-cleared and the frontier is already truthful. Accept and archive the completed serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626 as durable evidence that the private validating-webhook post-window follow-up was captured without reopening local source/spec/model closure. Keep this branch compressed to exactly one blocked family-level external wait plus the one active public validating-webhook follow-up proof-capture leaf; do not create refill work, duplicate waits, sibling re-expansion, or cloud mutation from this recovery wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture one bounded post-window follow-up or escalation artifact for the already-routed private validating-webhook approval packet using the same unchanged private-only carrier and gate, or record an authoritative reply that arrived before the follow-up was sent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625.md plus evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-send-or-escalation-proof-capture-20260625.md, and captures either the bounded follow-up/escalation or an authoritative private-branch approve/redirect/blocker/deny reply.",
+        "The exact private-only scope remains unchanged: no live execution, no widening into public or APIServerVNetIntegration siblings, and no duplicate wait leaves are introduced from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T00:17:45.776Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T00:21:05.313Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626_20260626002354",
+        "assigned_at": "2026-06-26T00:23:54.310Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-captur",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626_20260626002354",
+        "worker_started_at": "2026-06-26T00:24:13.023Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured a durable private validating-webhook follow-up proof artifact showing no authoritative reply had arrived before the window and that the covered private wait received one bounded post-window follow-up via the existing family-level approval-dispatch route.",
+        "last_worker_completed_at": "2026-06-26T00:25:29.155Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T00:25:37.492Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626.md durably shows no authoritative private reply had arrived before the post-window check and that the exact private validating-webhook branch received one bounded family-level approval-dispatch follow-up without widening scope or creating duplicate waits."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-captur",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-captur"
+      ],
+      "result": "Captured a durable private validating-webhook follow-up proof artifact showing no authoritative reply had arrived before the window and that the covered private wait received one bounded post-window follow-up via the existing family-level approval-dispatch route.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T00:25:37.492Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626.md durably shows no authoritative private reply had arrived before the post-window check and that the exact private validating-webhook branch received one bounded family-level approval-dispatch follow-up without widening scope or creating duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

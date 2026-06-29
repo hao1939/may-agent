@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:55:02.466Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the four external waits compressed and unchanged until the 2026-06-26 follow-up window, but converts the VirtualMachine checkpoint gate from a passive shared-format wait into one visible routed runner/replay ownership task. Root now knows the repo-wide bun run check blocker is narrowed to seven currently dirty warned files compressed into four slices, so the next useful local action is to map those slices to exact owners or remediation asks without reopening the completed four-file VM prerelease ledger content.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-gate-owner-diagnosis-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the current repo-wide check failure cluster that blocks the VirtualMachine prerelease coverage-ledger checkpoint, using the current workspace state to identify the exact failing file families, whether any bounded aks-rp-e2e-owned remediation slice exists, and whether the checkpoint gate should stay blocked on external ownership instead of reopening the finished four-file ledger content.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-gate-owner-diagnosis-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive note records timestamped repo-root check evidence, current HEAD, the exact failing file families and counts that matter to the checkpoint gate, and whether the four-file VirtualMachine prerelease ledger slice remains candidate-clean apart from this external gate.",
+        "The note names one truthful next state: either a bounded runnable remediation slice owned here, or an exact external or shared-owner blocker or escalation path that the checkpoint-gate wait can cite without reopening the completed ledger authoring work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-check-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:45:38.995Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-gate-owner-diagnosis-20260624_20260624164539",
+        "assigned_at": "2026-06-24T16:45:39.043Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-gate-owner-diagnosis-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-gate-owner-diagnosis-20260624_20260624164539",
+        "worker_started_at": "2026-06-24T16:46:36.843Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the repo-wide `bun run check` gate and wrote a durable archive note showing the failure is a shared 155-file formatting cluster, while the four-file VirtualMachine prerelease coverage-ledger slice remains candidate-clean and should stay blocked on external/shared ownership.",
+        "last_worker_completed_at": "2026-06-24T16:49:26.268Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:50:03.926Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner diagnosis from evidence/archive/repo-wide-bun-check-gate-owner-diagnosis-20260624.md: repo-wide bun run check is currently blocked by a shared 155-file Prettier format cluster, the exact four-file VirtualMachine prerelease ledger slice remains candidate-clean, and no truthful aks-rp-e2e-owned remediation slice exists from this review."
+      },
+      "session_id": "s_task_repo-wide-bun-check-gate-owner-diagnosis-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-gate-owner-diagnosis-20260624"
+      ],
+      "result": "Diagnosed the repo-wide `bun run check` gate and wrote a durable archive note showing the failure is a shared 155-file formatting cluster, while the four-file VirtualMachine prerelease coverage-ledger slice remains candidate-clean and should stay blocked on external/shared ownership.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:50:03.926Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner diagnosis from evidence/archive/repo-wide-bun-check-gate-owner-diagnosis-20260624.md: repo-wide bun run check is currently blocked by a shared 155-file Prettier format cluster, the exact four-file VirtualMachine prerelease ledger slice remains candidate-clean, and no truthful aks-rp-e2e-owned remediation slice exists from this review."
+      },
+      "status": "done"
+    }
+  ]
+}

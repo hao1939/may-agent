@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:29:06.650Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner rollup: accepted the Azure Disk CSI xfs mounted-source follow-up as completed model/view closure, with durable evidence in ../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md and regenerated knowledge-map views proving path.storage-csi-disk-xfs is now represented repo-locally. Remaining live work stays intentionally narrow: storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623 remains the single active storage-csi learning leaf for the aggregate VM-prerelease Linux rows 12-18 and 20-22 packet-layer decision, while external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful family-level external-human wait for already-routed non-local asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-xfs-model-linkage-followup-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the landed bounded carrier evidence at ../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-mounted-source-carrier-20260623.md plus the exact repo-local feature/spec/model files it implicates, reconcile the Azure Disk CSI xfs branch linkage now that the carrier is present, or archive the exact no-op/evidence-ceiling result if no truthful linkage change remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites ../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-mounted-source-carrier-20260623.md and the exact feature/spec/model files reviewed, then records whether linkage changed or why a no-op/evidence ceiling is the truthful result.",
+        "If linkage work is needed, the bounded repo-local files are updated and the note cites exact paths plus non-mutating validation/check commands run; if no file change is warranted, the note records the exact reason with source-equivalent evidence from the landed carrier and adjacent repo-local files.",
+        "Scope stays bounded to the Azure Disk mounted-source xfs branch and regular learning/model-feedback only: no cloud mutation, no reopening of the external-human wait, and no widening into clone/resize/raw-block/Azure File/Blob branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:21:20.085Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-xfs-model-linkage-followup-20260623_20260623062332",
+        "assigned_at": "2026-06-23T06:23:32.608Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-xfs-model-linkage-followup-20260623",
+        "worker_started_attempt_id": "a_storage-csi-disk-xfs-model-linkage-followup-20260623_20260623062332",
+        "worker_started_at": "2026-06-23T06:23:35.574Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the bounded Azure Disk CSI xfs model/view linkage by updating model/knowledge-map/model.json with the xfs feature/scenario/DAG/path/evidence bridge, regenerating maintained views, and writing the durable archive note at evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T06:27:26.452Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:28:12.229Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md cites the landed xfs carrier, names the exact model/view files updated, records non-mutating generator/validator checks, and truthfully lands the bounded Azure Disk xfs model/view linkage without widening scope."
+      },
+      "session_id": "s_task_storage-csi-disk-xfs-model-linkage-followup-20260623",
+      "session_history": [
+        "s_task_storage-csi-disk-xfs-model-linkage-followup-20260623"
+      ],
+      "result": "Landed the bounded Azure Disk CSI xfs model/view linkage by updating model/knowledge-map/model.json with the xfs feature/scenario/DAG/path/evidence bridge, regenerating maintained views, and writing the durable archive note at evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:28:12.229Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/storage-csi-disk-xfs-model-linkage-followup-20260623.md cites the landed xfs carrier, names the exact model/view files updated, records non-mutating generator/validator checks, and truthfully lands the bounded Azure Disk xfs model/view linkage without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

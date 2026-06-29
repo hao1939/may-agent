@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:58:29.743Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier owner update: accepted safe done leaves are now compressed into the root branch. Private-cluster custom-DNS-zone exact coverage remains truthfully represented by the maintained private-dns-zone plus fqdn-subdomain split, and the row-26 VirtualMachines capacity-based-surge-maxunavailable mounted-source decision remains accepted as the basis for the active model/view landing repair. The live frontier stays intentionally small: keep the single external human-transport proof family wait unchanged, keep the row-26 VirtualMachines model/view landing as the only active same-scope model edit, leave row-29 mixed-sku lifecycle waiting behind that VirtualMachines branch, and refill capacity with a disjoint evidence-only private-cluster source inventory task that can nominate the next maintained landing without cloud execution or model churn.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted private-cluster handwritten e2ev3 source plus current maintained carriers to decide whether Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone and fqdn-subdomain maintained paths or requires a distinct exact child path/carrier set, without cloud execution and without reopening any broad final sibling verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted handwritten source contract for Scenario_PrivateLink_Custom_DNS_Zone and the current maintained repo-local carriers it could map to.",
+        "Evidence reaches a concrete canonical decision: either the current maintained paths already cover the exact source contract, or a distinct missing exact child path/carrier set is named precisely enough for a follow-up landing leaf.",
+        "No cloud mutation, no new external-human wait, and no churn to already-final broad sibling verdicts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:51:37.219Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622_20260622075137",
+        "assigned_at": "2026-06-22T07:51:37.269Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622",
+        "worker_started_attempt_id": "a_private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622_20260622075137",
+        "worker_started_at": "2026-06-22T07:51:57.985Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested evidence decision at evidence/archive/private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622.md, concluding the mounted Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone and fqdn-subdomain maintained split and does not require a distinct exact child path.",
+        "last_worker_completed_at": "2026-06-22T07:53:16.258Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:54:31.173Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-22 evidence artifact: mounted Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone plus fqdn-subdomain maintained split, so no distinct exact child path/carrier set is needed."
+      },
+      "session_id": "s_task_private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622",
+      "session_history": [
+        "s_task_private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622"
+      ],
+      "result": "Wrote the requested evidence decision at evidence/archive/private-cluster-custom-dns-zone-exact-contract-coverage-decision-20260622.md, concluding the mounted Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone and fqdn-subdomain maintained split and does not require a distinct exact child path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:54:31.173Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-22 evidence artifact: mounted Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone plus fqdn-subdomain maintained split, so no distinct exact child path/carrier set is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

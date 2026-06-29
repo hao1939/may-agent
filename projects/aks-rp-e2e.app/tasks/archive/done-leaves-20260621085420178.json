@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T08:54:20.179Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review kept external-send-proof-dispatch-family-20260620 as the single truthful human-transport wait, clarified that both environment-gated rerun leaves are now subordinate to the active azure-env-prereq-proof-capture-20260621 owner-diagnosis task, and compacted accepted row-150 and row-76 completion leaves whose durable meaning is already captured by their evidence and prior root rollup context. Remaining live work is: addonv2 row-63 live rerun, azure prerequisite proof capture, the consolidated external send wait, and the two exact rerun leaves that resume only after the shared Azure prerequisite family is clarified.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row150-kube-proxy-model-verdict-consumption-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the already-pass/verdictFinal row-150 post-parser-repair live result into the maintained model/spec/evidence surfaces for path.network-datapath.kube-proxy-custom-config.vm-prerelease so the project has one durable owner-facing verdict authority and no contradictory or stale row-150 branch state, without rerunning cloud execution or pretending a new verdict is needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row150-kube-proxy-model-verdict-consumption-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted pass authorities and the retired blocker leaf, names every model/spec/evidence surface updated or intentionally left unchanged, and proves the project no longer carries contradictory row-150 verdict state for path.network-datapath.kube-proxy-custom-config.vm-prerelease.",
+        "Artifact reconciles the current already-pass/verdictFinal=true model path with the maintained knowledge-map/spec surfaces: either by documenting the exact file-level updates made or by proving that no further local edits were needed beyond owner-facing evidence consolidation, with no new live replay.",
+        "Artifact ends with the smallest truthful next action for the row-150 branch after local verdict consumption, or states that no immediate follow-up remains beyond future revalidation triggers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:43:58.388Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row150-kube-proxy-model-verdict-consumption-20260621_20260621084358",
+        "assigned_at": "2026-06-21T08:43:58.435Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row150-kube-proxy-model-verdict-consumption-20260621",
+        "worker_started_attempt_id": "a_vmpr-row150-kube-proxy-model-verdict-consumption-20260621_20260621084358",
+        "worker_started_at": "2026-06-21T08:44:16.939Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Consumed the accepted row-150 kube-proxy post-parser-repair live pass into the maintained model/spec surfaces and wrote evidence/archive/vmpr-row150-kube-proxy-model-verdict-consumption-20260621.md documenting the authority chain, updated surfaces, and retired blocker context.",
+        "last_worker_completed_at": "2026-06-21T08:51:39.580Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:53:19.987Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-150 verdict-consumption artifact because it cites the accepted post-parser-repair live pass bundle, documents every maintained model/spec surface updated or intentionally left unchanged, and proves path.network-datapath.kube-proxy-custom-config.vm.prerelease no longer carries contradictory row-150 verdict state."
+      },
+      "session_id": "s_task_vmpr-row150-kube-proxy-model-verdict-consumption-20260621",
+      "session_history": [
+        "s_task_vmpr-row150-kube-proxy-model-verdict-consumption-20260621"
+      ],
+      "result": "Consumed the accepted row-150 kube-proxy post-parser-repair live pass into the maintained model/spec surfaces and wrote evidence/archive/vmpr-row150-kube-proxy-model-verdict-consumption-20260621.md documenting the authority chain, updated surfaces, and retired blocker context.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:53:19.987Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-150 verdict-consumption artifact because it cites the accepted post-parser-repair live pass bundle, documents every maintained model/spec surface updated or intentionally left unchanged, and proves path.network-datapath.kube-proxy-custom-config.vm.prerelease no longer carries contradictory row-150 verdict state."
+      },
+      "status": "done"
+    }
+  ]
+}

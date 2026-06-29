@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T17:50:59.423Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Airlock verification wave is now accepted: spec.airlock.agent-lifecycle (run 28296005693), spec.airlock.compliance-check (run 28296131726), and spec.airlock.vmagent-pod-status (run 28296259029) were reviewer-validated from spec-runner result.json with status=passed, phase=completed, probeExitCode=0. Remaining owner attention under this loop stays on unresolved review items, especially app-monitoring blocked/error claims and the smaller app-routing review queue; do not launch more spec work until that review frontier is reduced or concurrency is reconciled.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-airlock-agent-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.airlock.agent-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.airlock.agent-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.airlock.agent-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.airlock.agent-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted workflow run 28296005693 after validating spec-runner result.json under .state/spec-loop/artifacts/28296005693: status=passed, phase=completed, probeExitCode=0 for spec.airlock.agent-lifecycle."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:50.987Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-airlock-agent-lifecycle_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.083Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-airlock-agent-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-airlock-agent-lifecycle_20260627162151",
+        "worker_started_at": "2026-06-27T17:08:02.288Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.airlock.agent-lifecycle workflow run 28296005693 classified as pass. Loop key: verify-spec-airlock-agent-lifecycle-a_verify-spec-airlock-agent-lifecycle_20260627162151. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28296005693 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28296005693/aks-rp-e2e-28296005693-spec-test-results/test-results/single-airlock-agent-lifecycle_836159/artifacts/airlock-agent-lifecycle/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-27T17:13:10.044Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T17:50:44.195Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted workflow run 28296005693 after validating spec-runner result.json under .state/spec-loop/artifacts/28296005693: status=passed, phase=completed, probeExitCode=0 for spec.airlock.agent-lifecycle."
+      },
+      "session_id": "s_task_verify-spec-airlock-agent-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-airlock-agent-lifecycle"
+      ],
+      "result": "Spec spec.airlock.agent-lifecycle workflow run 28296005693 classified as pass. Loop key: verify-spec-airlock-agent-lifecycle-a_verify-spec-airlock-agent-lifecycle_20260627162151. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28296005693 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28296005693/aks-rp-e2e-28296005693-spec-test-results/test-results/single-airlock-agent-lifecycle_836159/artifacts/airlock-agent-lifecycle/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T17:50:44.195Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

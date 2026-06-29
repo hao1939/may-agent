@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:35:23.950Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog blocked-frontier review kept the three existing external waits unchanged because each already carries exact sent-proof plus returned-proof or post-2026-06-26 follow-up resume conditions, and the aad-rbac environment-overblock warning remains heuristic noise rather than missing local setup work. Archived the three newly safe repo-local done leaves because their durable meaning now lives in archive evidence plus prior model/view updates: serverless virtual-nodes subnet-validation authority wording is tightened to the mounted-source witness-family boundary, the VirtualMachine prerelease mounted-source coverage matrix is recorded, and the row-03 versus row-04 substrate drift review leaves only the active row-03 hybrid-substrate repair open. The live frontier stays clear and truthful: three no-cloud active repo-local repair leaves continue to consume capacity, while blocked work remains compressed to the same three exact external waits without duplicate follow-up tasks before their stated review window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the serverless virtual-nodes subnet-validation authority wording repair repo-locally: update features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts so path.serverless-virtual-nodes.subnet-validation truthfully says mounted AKS RP source backs the broader virtual-node/ACI witness family while the exact selector/toleration/node-name tuple used by the replay remains repo-local convention; regenerate any maintained model/view surfaces only if the wording change is surfaced there, and record a short archive note citing the accepted authority-tightening artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624.md"
+      ],
+      "acceptance": [
+        "features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts are updated so they no longer imply that the exact kubernetes.io/role=virtual-kubelet + virtual-kubelet.io/provider=azure:NoSchedule + virtual-node-aci-linux tuple is directly mounted-source-backed, while still preserving the delegated-subnet positive contract and existing blocked/runtime verdict for path.serverless-virtual-nodes.subnet-validation.",
+        "A durable archive note cites evidence/archive/serverless-virtual-nodes-subnet-validation-witness-authority-tightening-20260624.md plus the exact repo-local files changed, and explains whether any model/knowledge-map surfaces required regeneration for wording symmetry.",
+        "No cloud mutation, remote execution, or verdict widening occurs; this is repo-local wording/authority repair only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model.serverless-virtual-nodes.subnet-validation-authority"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T00:31:51.224Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624_20260624003151",
+        "assigned_at": "2026-06-24T00:31:51.277Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624_20260624003151",
+        "worker_started_at": "2026-06-24T00:32:18.861Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the repo-local authority-wording repair for serverless virtual-nodes subnet validation in features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts, and added the archive note at evidence/archive/serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624.md. Verified the spec still parses, the replay imports cleanly in gated check mode, and no maintained model/view regeneration was needed because the wording change is not surfaced in path-summary/model surfaces.",
+        "last_worker_completed_at": "2026-06-24T00:33:43.955Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:34:21.604Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: git diff shows features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts now tighten authority wording so mounted AKS RP source backs only the broader virtual-node/ACI witness family while the exact selector/toleration/node-name tuple stays repo-local convention; evidence/archive/serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624.md records the file-level repair and explicitly confirms no model/view regeneration was needed."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624"
+      ],
+      "result": "Landed the repo-local authority-wording repair for serverless virtual-nodes subnet validation in features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts, and added the archive note at evidence/archive/serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624.md. Verified the spec still parses, the replay imports cleanly in gated check mode, and no maintained model/view regeneration was needed because the wording change is not surfaced in path-summary/model surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:34:21.604Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: git diff shows features/serverless.yaml, specs/serverless-virtual-nodes-subnet-validation.json, and replays/serverless-virtual-nodes-subnet-validation.ts now tighten authority wording so mounted AKS RP source backs only the broader virtual-node/ACI witness family while the exact selector/toleration/node-name tuple stays repo-local convention; evidence/archive/serverless-virtual-nodes-subnet-validation-authority-wording-repair-20260624.md records the file-level repair and explicitly confirms no model/view regeneration was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

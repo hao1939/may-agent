@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T17:59:04.424Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the private-cluster public-second-hop repo-local carrier repair: mounted apiservervnetintegration/update_public.go exists, the stale spec/catalog lineage was repaired to features/private-cluster/packets/update-public-second-hop.yaml (and the mirrored private second-hop packet path), and the older source-check-only/test_not_implemented framing for this surface is now retired. The sibling privatelink public-FQDN post-repair review did not produce a live rerun run id; its durable value is confirmation that the repaired disable step now uses mounted-source-equivalent GET+mutate+full PUT semantics with healthy local check/dry-run wiring, while the only truthful next live action remains the existing external human/operator approval family wait rather than a new branch-local rerun or passive duplicate blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose and repair the repo-local source/carrier mismatch behind spec.private-cluster.vnet-integration-update-public-second-hop so the replay/check path resolves the mounted apiservervnetintegration/update_public.go contract truthfully before any further cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-public-second-hop-source-carrier-repair-20260629.md"
+      ],
+      "acceptance": [
+        "The repair note proves whether the failure came from stale replay wiring, wrong mounted-source path packaging, or another repo-local carrier mismatch by comparing the spec/replay contract with mounted source under /app/sources/aks-rp.",
+        "Any required repo-local follow-up is made concrete and bounded: either repair the offending spec/replay/source-carrier path or record the exact file/contract mismatch plus the next code task needed, without classifying this as a cloud/environment blocker.",
+        "The note explicitly states whether update_public.go exists in mounted source and whether a future rerun is justified only after the repo-local contract is repaired."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.vnet-integration-update-public-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:51:58.796Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629_20260629175158",
+        "assigned_at": "2026-06-29T17:51:58.848Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629",
+        "worker_started_attempt_id": "a_repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629_20260629175158",
+        "worker_started_at": "2026-06-29T17:52:19.435Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the public-second-hop issue as a repo-local source/carrier packaging mismatch, repaired the stale packet paths in the second-hop specs, and wrote a durable repair note at evidence/archive/private-cluster-vnet-integration-update-public-second-hop-source-carrier-repair-20260629.md. Mounted source update_public.go was confirmed present and authoritative; future reruns are justified only with the repaired contract plus the required checkpoint packet and mutation gate.",
+        "last_worker_completed_at": "2026-06-29T17:55:12.108Z",
+        "last_worker_evidence": [
+          "features/private-cluster/specs/private-cluster-vnet-integration-update-public-second-hop.json",
+          "features/private-cluster/specs/private-cluster-vnet-integration-update-private-second-hop.json",
+          "evidence/archive/private-cluster-vnet-integration-update-public-second-hop-source-carrier-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T17:59:04.250Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the repair note proves mounted update_public.go exists, the failure was a stale repo-local packet-path mismatch, both second-hop specs now point at features/private-cluster/packets/*-second-hop.yaml, and any future live rerun remains gated on the checkpoint packet plus the exact mutation gate rather than any environment blocker."
+      },
+      "session_id": "s_task_repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629",
+      "session_history": [
+        "s_task_repair-spec-private-cluster-vnet-integration-update-public-second-hop-source-carrier-20260629"
+      ],
+      "result": "Diagnosed the public-second-hop issue as a repo-local source/carrier packaging mismatch, repaired the stale packet paths in the second-hop specs, and wrote a durable repair note at evidence/archive/private-cluster-vnet-integration-update-public-second-hop-source-carrier-repair-20260629.md. Mounted source update_public.go was confirmed present and authoritative; future reruns are justified only with the repaired contract plus the required checkpoint packet and mutation gate.",
+      "evidence": [
+        "features/private-cluster/specs/private-cluster-vnet-integration-update-public-second-hop.json",
+        "features/private-cluster/specs/private-cluster-vnet-integration-update-private-second-hop.json",
+        "evidence/archive/private-cluster-vnet-integration-update-public-second-hop-source-carrier-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:59:04.250Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the repair note proves mounted update_public.go exists, the failure was a stale repo-local packet-path mismatch, both second-hop specs now point at features/private-cluster/packets/*-second-hop.yaml, and any future live rerun remains gated on the checkpoint packet plus the exact mutation gate rather than any environment blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

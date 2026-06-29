@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T14:36:42.574Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier owner pass archives the completed private-cluster carrier-reference repair because its durable meaning is already captured in accepted evidence and earlier owner summaries. The truthful live frontier remains the single blocked focus branch focus-mounted-source-coverage-closure-and-external-wait-20260623 with its three exact externally routed waits; the workflow-controller leaves aks-spec-verification-loop and aks-feature-reference-loop stay visible but done because their internal workflow state is intentionally non-terminal and should not be compacted by owner rollup.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-operator-wait-carrier-reference-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the stale maintained carrier references for path.private-cluster-none-dns-zone-v3 and path.private-cluster-privatelink-public-fqdn-toggle so model/view text points at the extant feature-local probe files instead of nonexistent replays/... paths, without changing either path's status, verdict, wait ownership, or external blocked posture.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/evidence/archive/private-cluster-operator-wait-carrier-reference-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Replace the stale private-cluster carrier references identified in the accepted predecision map with the current features/private-cluster/tests/... probe paths on every maintained surface that still points to nonexistent replays/... files for these two waits.",
+        "Record a brief durable evidence note showing exactly which stale references were repaired and explicitly confirm that no status, verdict, wait, or operator-routing state changed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T14:30:16.158Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-operator-wait-carrier-reference-repair-20260627_20260627143016",
+        "assigned_at": "2026-06-27T14:30:16.207Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-operator-wait-carrier-reference-repair-20260627",
+        "worker_started_attempt_id": "a_private-cluster-operator-wait-carrier-reference-repair-20260627_20260627143016",
+        "worker_started_at": "2026-06-27T14:30:28.981Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired stale private-cluster carrier references in model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json so the two maintained waits now point at extant feature-local probe files, then wrote a durable evidence note documenting the exact repairs and confirming no status/verdict/wait-state change.",
+        "last_worker_completed_at": "2026-06-27T14:31:58.699Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T14:32:23.692Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable evidence note shows the two private-cluster waits now point at extant features/private-cluster/tests/... carrier paths instead of stale replays/... references, and it explicitly confirms status, verdict, and external wait posture did not change."
+      },
+      "session_id": "s_task_private-cluster-operator-wait-carrier-reference-repair-20260627",
+      "session_history": [
+        "s_task_private-cluster-operator-wait-carrier-reference-repair-20260627"
+      ],
+      "result": "Repaired stale private-cluster carrier references in model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json so the two maintained waits now point at extant feature-local probe files, then wrote a durable evidence note documenting the exact repairs and confirming no status/verdict/wait-state change.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T14:32:23.692Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable evidence note shows the two private-cluster waits now point at extant features/private-cluster/tests/... carrier paths instead of stale replays/... references, and it explicitly confirms status, verdict, and external wait posture did not change."
+      },
+      "status": "done"
+    }
+  ]
+}

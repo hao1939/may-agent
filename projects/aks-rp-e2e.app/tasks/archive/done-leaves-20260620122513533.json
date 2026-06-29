@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T12:25:13.534Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog blocked-frontier review: no review leaves or resolved blockers arrived, so the lane stays intentionally underfilled behind one real bottleneck. vm-prerelease-e2ev3-missing-spec-authoring-batch-retry-20260620 remains the only local unlocker and must land the durable row-to-target authoring plan for rows 1, 3, 4, 9, 35, 36, 39, 40, and 44; vm-prerelease-plan-regenerate-and-proof-after-row-closure-20260620 remains the sole follow-on waiting only because it conflicts with that active authoring slice. MachinesPreview still stays as the single truthful external wait because repo-local evidence proves the packet is send-ready but this runtime still has no outbound owner/operator transport or authoritative reply to record proof-of-send; do not invent response-await or duplicate escalation work without new channel/owner evidence. No unrelated refill work should start until the active authoring retry lands or external MachinesPreview proof changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-plan-regenerate-and-proof-deferred-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the row-closure packets land, regenerate and verify the VirtualMachine prerelease replacement plan with bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt, then capture a dry-run plus the minimum incremental execution proof needed to show the replacement mechanism works without reopening unrelated exploration.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-plan-regenerate-and-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact plan-generation command, inputs, and outcome for evidence/pipelines/virtualmachine-prerelease.features.txt, including confirmation that the exact feature set stayed authoritative for the replacement plan.",
+        "Artifact includes a bounded dry-run result and an incremental execution proof slice that demonstrates the replacement pipeline mechanism works, clearly separating local planner/runner validation from any cloud mutation or blocked execution paths.",
+        "Prerequisite row-closure decisions are referenced, and any remaining gate is made exact rather than vague; if execution cannot proceed, the artifact names the concrete blocker and affected rows/features."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [
+        "vm-prerelease-missing-spec-row-closure-merge-20260620",
+        "vm-prerelease-candidate-only-resolution-merge-20260620"
+      ],
+      "trace": {
+        "created_at": "2026-06-20T12:08:13.222Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T12:19:37.032Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T12:21:00.356Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-plan-regenerate-and-proof-deferred-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-plan-regenerate-and-proof-deferred-20260620_20260620122100",
+        "worker_started_at": "2026-06-20T12:21:00.536Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-20T12:21:00.544Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-20T12:20:36.647Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Review rejected: the existing artifact was authored before prerequisite closure packets landed and explicitly claims those packets were missing/active, so it no longer satisfies current acceptance. Rework must rerun plan generation and dry-run proof against the now-landed closure artifacts and refresh the archive note with current evidence.",
+        "review_reject_fresh_session": false,
+        "previous_attempt_id": "a_vm-prerelease-plan-regenerate-and-proof-deferred-20260620_20260620121945",
+        "current_attempt_id": "a_vm-prerelease-plan-regenerate-and-proof-deferred-20260620_20260620122100",
+        "reviewed_at": "2026-06-20T12:21:48.006Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-plan-regenerate-and-proof-20260620.md captures the exact bun run plan input, resulting plan file, bounded dry-run proof, and the precise remaining prerequisite/environment gates. The artifact truthfully converts this attempt into durable local proof plus an exact rerun condition instead of leaving an unsupported review leaf."
+      },
+      "session_id": "s_task_vm-prerelease-plan-regenerate-and-proof-deferred-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-plan-regenerate-and-proof-deferred-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:21:48.006Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-plan-regenerate-and-proof-20260620.md captures the exact bun run plan input, resulting plan file, bounded dry-run proof, and the precise remaining prerequisite/environment gates. The artifact truthfully converts this attempt into durable local proof plus an exact rerun condition instead of leaving an unsupported review leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

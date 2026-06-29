@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:23:06.295Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner rollup accepts the completed VirtualMachine prerelease no-cloud coverage slice as durable history: the checkin-mounted-source coverage map, bounded follow-up selection, network-isolated ledger reconcile, and metadata refresh together justify one coherent checkpoint-ready ledger update. The stale watchdog review request for metadata refresh is already reconciled in that accepted slice, so the visible root should now carry only the active coverage-ledger checkpoint leaf plus the blocked external-wait focus branch until the checkpoint lands or the 2026-06-26 follow-up window opens for returned proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the mounted checkin/prerelease network-isolated sibling accounting ambiguity repo-locally: verify whether Scenario_NetworkIsolatedCluster_Managed_ACR_Outbound_Type_None should remain represented only through the maintained e2ev2 matrix lane or should be narrated as an explicit e2ev3-suite row in VirtualMachine prerelease/checkin coverage artifacts, without cloud execution or replay/model edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites evidence/archive/virtualmachine-prerelease-checkin-mounted-source-coverage-map-20260624.md plus the exact maintained prerelease/checkin ledger surfaces, traces the mounted checkin.go placement of Scenario_NetworkIsolatedCluster_Managed_ACR_Outbound_Type_None, and concludes one truthful repo-local accounting decision: matrix-only accounting remains correct with exact rationale, or an explicit e2ev3-suite-row narration/update is the next required local correction.",
+        "The output stays bounded to this one accounting ambiguity: no cloud execution, no new external wait, no widening into storage-linux or unrelated VirtualMachine siblings, and no replay/model-status promotion beyond naming a specific follow-up correction if needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source.virtualmachine-prerelease.checkin-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:10:57.368Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T16:10:57.501Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624_20260624161116",
+        "assigned_at": "2026-06-24T16:11:16.725Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624_20260624161116",
+        "worker_started_at": "2026-06-24T16:11:41.060Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive evidence selecting the network-isolated managed-ACR outbound-none VirtualMachine sibling accounting reconcile as the single highest-value next repo-local follow-up after reviewing the mounted-source coverage map and maintained ledger surfaces.",
+        "last_worker_completed_at": "2026-06-24T16:12:39.916Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:13:21.496Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive evidence truthfully closes the scoped decision by concluding that matrix-only accounting is no longer sufficient and that the next required repo-local correction is an explicit prerelease/checkin ledger reconciliation for Scenario_NetworkIsolatedCluster_Managed_ACR_Outbound_Type_None based on mounted checkin.go placement and maintained ledger totals."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-checkin-coverage-next-bounded-followup-selection-20260624"
+      ],
+      "result": "Created the requested archive evidence selecting the network-isolated managed-ACR outbound-none VirtualMachine sibling accounting reconcile as the single highest-value next repo-local follow-up after reviewing the mounted-source coverage map and maintained ledger surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:13:21.496Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive evidence truthfully closes the scoped decision by concluding that matrix-only accounting is no longer sufficient and that the next required repo-local correction is an explicit prerelease/checkin ledger reconciliation for Scenario_NetworkIsolatedCluster_Managed_ACR_Outbound_Type_None based on mounted checkin.go placement and maintained ledger totals."
+      },
+      "status": "done"
+    }
+  ]
+}

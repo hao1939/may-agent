@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:08:57.539Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner cleanup archives the last accepted bounded Windows storage+containerd clarification leaf. The stale watchdog review item is fully reconciled as accepted history, leaving a clean root with one active mounted-source mapping leaf and one blocked external-wait focus branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Correct the maintained Windows Storage CSI sibling metadata so the adjacency-only containerd variant is source-precise without widening path/spec/replay coverage: repair features/storage-csi/windows-base.yaml to match mounted source for Scenario_Win_CSI_Containerd, and only if needed align sibling-context wording in specs/storage-csi-windows-base.json, model/knowledge-map/model.json, and regenerated model/knowledge-map/views/path-summary.json.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/windows-base.yaml",
+        "../aks-rp-e2e/specs/storage-csi-windows-base.json",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "features/storage-csi/windows-base.yaml keeps Scenario_Win_CSI_Containerd as an adjacency/source-context-only env variant but updates its authored tuple to match mounted source rather than the current Windows2022 shorthand; the resulting note/text is explicit enough to distinguish it from the canonical Windows2022 base carrier.",
+        "Any spec/model/view edits, if made, stay bounded to wording alignment for sibling adjacency context only: no new feature ids, no new replay logic, no new accepted observed path, and no changes to the four external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.storage-csi.windows-base"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:02:26.046Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624_20260624160226",
+        "assigned_at": "2026-06-24T16:02:26.093Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624_20260624160226",
+        "worker_started_at": "2026-06-24T16:02:40.452Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Updated the Windows CSI sibling metadata to match mounted source: Scenario_Win_CSI_Containerd is now recorded as an adjacency-only Windows2019 + LTS + Kubernetes 1.32 variant in the feature packet, and bounded wording alignment was applied to the spec/model/path-summary surfaces. Attempted model validation/view regeneration, but the repo-wide validator currently fails on many unrelated pre-existing model errors, so no clean generator-backed refresh was possible from this task.",
+        "last_worker_completed_at": "2026-06-24T16:06:00.533Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:07:28.098Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the bounded Windows CSI sibling clarification: features/storage-csi/windows-base.yaml now keeps Scenario_Win_CSI_Containerd as adjacency-only Windows2019 + LTS + Kubernetes 1.32 source context rather than the canonical Windows2022 base carrier, and the linked spec/model/path-summary wording stays limited to sibling-context alignment without widening feature/spec/replay coverage or touching the four external waits."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-windows-storage-containerd-adjacency-clarification-20260624"
+      ],
+      "result": "Updated the Windows CSI sibling metadata to match mounted source: Scenario_Win_CSI_Containerd is now recorded as an adjacency-only Windows2019 + LTS + Kubernetes 1.32 variant in the feature packet, and bounded wording alignment was applied to the spec/model/path-summary surfaces. Attempted model validation/view regeneration, but the repo-wide validator currently fails on many unrelated pre-existing model errors, so no clean generator-backed refresh was possible from this task.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:07:28.098Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the bounded Windows CSI sibling clarification: features/storage-csi/windows-base.yaml now keeps Scenario_Win_CSI_Containerd as adjacency-only Windows2019 + LTS + Kubernetes 1.32 source context rather than the canonical Windows2022 base carrier, and the linked spec/model/path-summary wording stays limited to sibling-context alignment without widening feature/spec/replay coverage or touching the four external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:35:43.702Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 watchdog blocked-frontier owner pass repairs stale branch meaning on this parent. Archive the two completed none→loadBalancer carrier-shape repair children because their durable result is already captured here: the mounted/public compliant network-isolated target contract is now settled for the none→loadBalancer boundary, and that work should no longer appear live. The only remaining open child under this branch is repair-maintained-replay-natgw-to-none-compliant-network-isolated-carrier-20260628, which is the active carrier for reconciling path.net-integration.outbound-migration-natgw-to-none before any verdict/model update is accepted; do not spawn retry fan-out from the stale terminal warning until that active repair lands grounded output.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "map-none-to-lb-compliant-network-isolated-carrier-gap-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact compliant network-isolated none→loadBalancer carrier requirements now left open by the repaired packet: use mounted source and accepted public/spec lineage to identify the minimum truthful replay/model inputs needed before any future live verification can claim the compliant-source-shape branch.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/none-to-lb-compliant-network-isolated-carrier-gap-20260628.md"
+      ],
+      "acceptance": [
+        "Cite the mounted source/public/spec evidence that defines the compliant none-source shape, including bootstrap cache and private-cluster or API-server-VNet-integration prerequisites.",
+        "Compare the current repo-local replay/carrier surfaces against that compliant-source-shape contract and name the exact stale or missing inputs that keep the path source-grounded only.",
+        "Recommend the next bounded maintained-surface change needed for future live verification, including whether the current single path can stay unified or should split compliant-source-shape versus invalid-source-shape tracking."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-gap:none-to-lb-compliant-network-isolated-carrier:20260628"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:27:57.445Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-none-to-lb-compliant-network-isolated-carrier-gap-20260628_20260628022757",
+        "assigned_at": "2026-06-28T02:27:57.495Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-none-to-lb-compliant-network-isolated-carrier-gap-20260628",
+        "worker_started_attempt_id": "a_map-none-to-lb-compliant-network-isolated-carrier-gap-20260628_20260628022757",
+        "worker_started_at": "2026-06-28T02:28:16.858Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a durable carrier-gap note at evidence/archive/none-to-lb-compliant-network-isolated-carrier-gap-20260628.md mapping the exact compliant none→loadBalancer network-isolated source-shape contract, comparing it against current spec/packet/replay surfaces, and recommending the next bounded replay repair.",
+        "last_worker_completed_at": "2026-06-28T02:30:07.961Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:30:35.054Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/none-to-lb-compliant-network-isolated-carrier-gap-20260628.md cites the mounted source plus public/spec lineage for the compliant none→loadBalancer network-isolated source shape, compares that contract against the maintained replay, and narrows the next truthful step to a carrier-level replay repair/fork rather than more packet/spec rediscovery."
+      },
+      "session_id": "s_task_map-none-to-lb-compliant-network-isolated-carrier-gap-20260628",
+      "session_history": [
+        "s_task_map-none-to-lb-compliant-network-isolated-carrier-gap-20260628"
+      ],
+      "result": "Archived a durable carrier-gap note at evidence/archive/none-to-lb-compliant-network-isolated-carrier-gap-20260628.md mapping the exact compliant none→loadBalancer network-isolated source-shape contract, comparing it against current spec/packet/replay surfaces, and recommending the next bounded replay repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:30:35.054Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/none-to-lb-compliant-network-isolated-carrier-gap-20260628.md cites the mounted source plus public/spec lineage for the compliant none→loadBalancer network-isolated source shape, compares that contract against the maintained replay, and narrows the next truthful step to a carrier-level replay repair/fork rather than more packet/spec rediscovery."
+      },
+      "status": "done"
+    }
+  ]
+}

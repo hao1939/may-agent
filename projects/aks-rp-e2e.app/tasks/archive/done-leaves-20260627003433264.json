@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T00:34:33.264Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 blocked-frontier hygiene completion: the last completed repo-local normalization and ILPIP dual-stack carrier leaves are already captured in root-level rollups plus durable evidence, so archive them and leave the tree with only the two exact blocked waits that truthfully represent current project state.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-auto-zone-environment-family-model-normalization-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the VirtualMachines auto-zone sibling family in the maintained knowledge map so rows 31 and 32 are represented as one shared environment-blocked family anchored to mounted auto_zone.go and the observed InvalidAvailabilityZoneFormat rejection, while preserving each row's exact request and validation differences.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-auto-zone-environment-family-model-normalization-20260627.md"
+      ],
+      "acceptance": [
+        "Current maintained model/path/view surfaces are updated or explicitly reconciled so path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku no longer read as generic live-pending execute gates; they instead record the shared environment-blocked family rooted in availabilityZones=['auto'] rejection, preserve row-31 versus row-32 request/validation differences, and cite mounted source plus existing live evidence in a durable repo-local note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-auto-zone-environment-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:20:00.630Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-auto-zone-environment-family-model-normalization-20260627_20260627002146",
+        "assigned_at": "2026-06-27T00:21:46.387Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-auto-zone-environment-family-model-normalization-20260627",
+        "worker_started_attempt_id": "a_virtualmachines-auto-zone-environment-family-model-normalization-20260627_20260627002146",
+        "worker_started_at": "2026-06-27T00:21:46.765Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the maintained VM auto-zone sibling family in model/knowledge-map/model.json, added a durable repo-local note under evidence/archive/, and regenerated maintained views so rows 31 and 32 now read as a shared environment-blocked family anchored to mounted auto_zone.go plus the observed InvalidAvailabilityZoneFormat rejection while preserving each row’s exact request/validation split.",
+        "last_worker_completed_at": "2026-06-27T00:24:25.756Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:24:58.024Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable evidence note exists and the maintained model/path-summary surfaces now present rows 31 and 32 as one shared virtualmachines.auto-zone environment-blocked family anchored to mounted auto_zone.go plus the observed InvalidAvailabilityZoneFormat rejection, while preserving each row's exact request and validation differences."
+      },
+      "session_id": "s_task_virtualmachines-auto-zone-environment-family-model-normalization-20260627",
+      "session_history": [
+        "s_task_virtualmachines-auto-zone-environment-family-model-normalization-20260627"
+      ],
+      "result": "Normalized the maintained VM auto-zone sibling family in model/knowledge-map/model.json, added a durable repo-local note under evidence/archive/, and regenerated maintained views so rows 31 and 32 now read as a shared environment-blocked family anchored to mounted auto_zone.go plus the observed InvalidAvailabilityZoneFormat rejection while preserving each row’s exact request/validation split.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:24:58.024Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable evidence note exists and the maintained model/path-summary surfaces now present rows 31 and 32 as one shared virtualmachines.auto-zone environment-blocked family anchored to mounted auto_zone.go plus the observed InvalidAvailabilityZoneFormat rejection, while preserving each row's exact request and validation differences."
+      },
+      "status": "done"
+    }
+  ]
+}

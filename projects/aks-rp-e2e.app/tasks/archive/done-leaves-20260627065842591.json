@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T06:58:42.591Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier planning pass keeps the frontier simple and truthful: both existing blocked leaves remain exact external waits with unchanged resume conditions, and no new local refill/problem/setup work is justified while confirm-runnable stays empty. The private-cluster PrivateLink public-FQDN toggle execution-gate packet is now archived as represented project knowledge, leaving a single active repo-local leaf to turn that accepted gate into a bounded live-approval handoff artifact for the unchanged replay.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Translate path.private-cluster-privatelink-public-fqdn-toggle into a runnable but still no-cloud execution gate packet so a later worker can request or perform the exact live replay without rediscovering commands, preflight, evidence targets, or stop conditions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627.md"
+      ],
+      "acceptance": [
+        "Name the exact repo-local probe/test carrier and command surface for the toggle lifecycle, preserving the mounted create enable=true -> public credentials -> enabled check -> update disable=false -> disabled check order from the accepted boundary note.",
+        "Record the explicit execution gate, required preflight/environment assumptions, and the exact evidence bundle needed to promote the four modeled claims from observed unknown to reviewed live observation without widening scope to other private-cluster branches.",
+        "If a truthful no-cloud blocker remains for immediate execution, capture the stop condition and next owner ask in the packet instead of inventing a cloud run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T06:55:11.243Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627_20260627065511",
+        "assigned_at": "2026-06-27T06:55:11.295Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627",
+        "worker_started_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627_20260627065511",
+        "worker_started_at": "2026-06-27T06:55:26.963Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the execution-gate packet for the private-cluster PrivateLink public-FQDN toggle path at evidence/archive/private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627.md, grounding the exact live-run carrier, lifecycle, gate, preflight, evidence bundle, and stop conditions with mounted-source and local check evidence.",
+        "last_worker_completed_at": "2026-06-27T06:57:05.747Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T06:57:39.552Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-27 execution-gate packet after owner review confirmed the artifact names the current feature-local carrier, preserves the mounted create->public-credentials->disable lifecycle, records the exact live-execution gate/preflight/evidence bundle, and truthfully leaves only live approval plus Azure preflight as the remaining non-local stop condition."
+      },
+      "session_id": "s_task_private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627",
+      "session_history": [
+        "s_task_private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627"
+      ],
+      "result": "Created the execution-gate packet for the private-cluster PrivateLink public-FQDN toggle path at evidence/archive/private-cluster-privatelink-public-fqdn-toggle-execution-gate-packet-20260627.md, grounding the exact live-run carrier, lifecycle, gate, preflight, evidence bundle, and stop conditions with mounted-source and local check evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T06:57:39.552Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-27 execution-gate packet after owner review confirmed the artifact names the current feature-local carrier, preserves the mounted create->public-credentials->disable lifecycle, records the exact live-execution gate/preflight/evidence bundle, and truthfully leaves only live approval plus Azure preflight as the remaining non-local stop condition."
+      },
+      "status": "done"
+    }
+  ]
+}

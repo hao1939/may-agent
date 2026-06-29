@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:44:46.440Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner update: the lone external-human proof wait remains the single truthful blocked leaf and stays unchanged until returned proof arrives or the first owner follow-up after 2026-06-26. The active repo-local frontier now consists of the in-flight Cilium preview-upgrade create-400 diagnosis plus one newly assigned planned-maintenance model-linkage repair leaf, and the completed private-cluster VNet auth-service-tags closure slice is fully rolled up so the frontier stays readable.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update repo-local model/view carriers for path.private-cluster-vnet-integration-auth-service-tags so they cite the accepted selected-host endpoint/access-path reconcile, preserve the single external wait, and record the exact same-launcher SSH-first retry boundary without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json and any touched view carrier cite the accepted selected-host endpoint/access-path reconcile artifact and preserve the truthful blocked/environment status for path.private-cluster-vnet-integration-auth-service-tags.",
+        "The updated path notes the exact resume condition: returned owner/operator proof that either restores reachability to hayua@20.24.129.235:22 or supplies the corrected replacement endpoint tuple, after which the same-launcher retry restarts at the SSH hostname/pwd command boundary.",
+        "The work stays repo-local and bounded to evidence-feedback/model-update for path.private-cluster-vnet-integration-auth-service-tags only: no cloud mutation, no duplicate external wait creation, and no reopening broader host-routing or private-cluster implementation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:34:35.342Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623_20260623203435",
+        "assigned_at": "2026-06-23T20:34:35.401Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623_20260623203435",
+        "worker_started_at": "2026-06-23T20:34:50.225Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the private-cluster auth service-tags model/view carriers so path.private-cluster-vnet-integration-auth-service-tags now cites the accepted selected-host endpoint/access-path reconcile, preserves the single external wait, and records the exact SSH-first same-launcher resume boundary; regenerated path-summary.json from the model.",
+        "last_worker_completed_at": "2026-06-23T20:37:00.433Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:37:16.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: model/knowledge-map/model.json and regenerated views/path-summary.json now cite the accepted selected-host endpoint/access-path reconcile artifact, preserve blocked/environment status for path.private-cluster-vnet-integration-auth-service-tags, and record the exact same-launcher SSH-first resume/retest boundary (devbox -> hayua@20.24.129.235:22 or corrected replacement tuple) without creating duplicate waits or widening scope."
+      },
+      "session_id": "s_task_private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-auth-service-tags-model-resume-condition-update-20260623"
+      ],
+      "result": "Updated the private-cluster auth service-tags model/view carriers so path.private-cluster-vnet-integration-auth-service-tags now cites the accepted selected-host endpoint/access-path reconcile, preserves the single external wait, and records the exact SSH-first same-launcher resume boundary; regenerated path-summary.json from the model.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:37:16.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: model/knowledge-map/model.json and regenerated views/path-summary.json now cite the accepted selected-host endpoint/access-path reconcile artifact, preserve blocked/environment status for path.private-cluster-vnet-integration-auth-service-tags, and record the exact same-launcher SSH-first resume/retest boundary (devbox -> hayua@20.24.129.235:22 or corrected replacement tuple) without creating duplicate waits or widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

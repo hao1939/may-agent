@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T06:25:28.238Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning reconciled the stale watchdog review event as duplicate noise: private-cluster-dns-zone-none-scenario-lineage-decision-20260624 was already accepted, and the mounted-source/spec/replay cleanup for the historical dns-zone-none alias branch is now summarized on the root instead of left as loose done leaves. What the project now knows for path.private-cluster-none-dns-zone-v3 is that the canonical V3 path remains the only exact-source owner, the older dns-zone-none lineage is historical alias context only, accepted boundary evidence fixes the exact system-create -> none-update edge already evidenced, and the immediate next repo-local work is the active unknown-checkpoint-gap leaf to enumerate which canonical V3 lifecycle checkpoints are still unknown versus already evidenced before proposing any further local follow-up. All three current blocked leaves remain intentionally compressed exact external waits with next owner review on/after 2026-06-26 unless authoritative returned proof arrives sooner.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted knowledge model/view with the mounted-source adjacency audit so path.private-cluster-dns-zone-none is no longer presented as a distinct exact-source pass branch when canonical ownership belongs only to path.private-cluster-none-dns-zone-v3.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624.md"
+      ],
+      "acceptance": [
+        "The worker produces an archive note that cites the accepted adjacency audit and the exact model/view/spec/replay surfaces still carrying the generic alias (including the current model/knowledge-map and path-summary anchors), then recommends and applies the smallest truthful repo-local cleanup that preserves history while removing the false impression of a separate exact-source pass branch.",
+        "Any repo-local edits are limited to the most appropriate maintained model/view/spec carrier(s), record exact touched paths/anchors in the archive note, keep path.private-cluster-none-dns-zone-v3 as the canonical exact-source owner, and do not create cloud execution or new external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-dns-zone-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T06:15:04.372Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624_20260624061504",
+        "assigned_at": "2026-06-24T06:15:04.420Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624",
+        "worker_started_attempt_id": "a_private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624_20260624061504",
+        "worker_started_at": "2026-06-24T06:15:21.370Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the private-cluster dns-zone-none truthfulness cleanup by marking the generic alias feature/path as superseded in model/knowledge-map/model.json, refreshing maintained views, clarifying the maintained dns-zone-modes source contract, and writing an archive note at evidence/archive/private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624.md.",
+        "last_worker_completed_at": "2026-06-24T06:20:01.406Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T06:20:52.541Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-24 truthfulness cleanup: archive note and maintained model/views now mark path.private-cluster-dns-zone-none as superseded lineage only, preserve path.private-cluster-none-dns-zone-v3 as the canonical exact-source owner, and avoid any retry on the now-terminal alias branch."
+      },
+      "session_id": "s_task_private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624",
+      "session_history": [
+        "s_task_private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624"
+      ],
+      "result": "Applied the private-cluster dns-zone-none truthfulness cleanup by marking the generic alias feature/path as superseded in model/knowledge-map/model.json, refreshing maintained views, clarifying the maintained dns-zone-modes source contract, and writing an archive note at evidence/archive/private-cluster-dns-zone-none-model-view-truthfulness-cleanup-20260624.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T06:20:52.541Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-24 truthfulness cleanup: archive note and maintained model/views now mark path.private-cluster-dns-zone-none as superseded lineage only, preserve path.private-cluster-none-dns-zone-v3 as the canonical exact-source owner, and avoid any retry on the now-terminal alias branch."
+      },
+      "status": "done"
+    }
+  ]
+}

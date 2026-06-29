@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:44:25.783Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 watchdog hygiene continues archiving low-value completed local-prep leaves now fully represented by the focus branch summary; keep only the external-human wait live.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "static-egress-vmss-origin-dev-landing-handoff-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted static-egress VMSS origin/dev landing packet into a durable branch-landing handoff by recording the exact three-file ask, the intended maintainer-facing send/handoff path, and the proof needed to move this lane from local prep to a truthful external wait or landed-result review.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/static-egress-vmss-origin-dev-landing-handoff-20260626.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted landing packet, restates the exact three-file origin/dev change set plus local re-proof command, records a concrete send/handoff attempt or exact runtime limitation preventing send, and leaves the branch in one truthful next state: either send-proof-backed external wait/human ask context or a concrete landed-result follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "static-egress-carrier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:33:12.432Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_static-egress-vmss-origin-dev-landing-handoff-20260626_20260626203312",
+        "assigned_at": "2026-06-26T20:33:12.477Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_static-egress-vmss-origin-dev-landing-handoff-20260626",
+        "worker_started_attempt_id": "a_static-egress-vmss-origin-dev-landing-handoff-20260626_20260626203312",
+        "worker_started_at": "2026-06-26T20:33:31.844Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/static-egress-vmss-origin-dev-landing-handoff-20260626.md`, turning the accepted static-egress VMSS landing packet into an owner-ready maintainer handoff with the exact three-file ask, intended send path, runtime send limitation, and proof gates for external wait vs landed-result review.",
+        "last_worker_completed_at": "2026-06-26T20:35:01.352Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:35:33.262Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact cites the accepted landing packet, restates the exact three-file origin/dev change plus re-proof command, records the concrete maintainer send path together with the runtime send limitation, and truthfully leaves the lane owner-ready for maintainer send proof or landed branch-state proof rather than claiming a send that did not occur."
+      },
+      "session_id": "s_task_static-egress-vmss-origin-dev-landing-handoff-20260626",
+      "session_history": [
+        "s_task_static-egress-vmss-origin-dev-landing-handoff-20260626"
+      ],
+      "result": "Created `evidence/archive/static-egress-vmss-origin-dev-landing-handoff-20260626.md`, turning the accepted static-egress VMSS landing packet into an owner-ready maintainer handoff with the exact three-file ask, intended send path, runtime send limitation, and proof gates for external wait vs landed-result review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:35:33.262Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact cites the accepted landing packet, restates the exact three-file origin/dev change plus re-proof command, records the concrete maintainer send path together with the runtime send limitation, and truthfully leaves the lane owner-ready for maintainer send proof or landed branch-state proof rather than claiming a send that did not occur."
+      },
+      "status": "done"
+    }
+  ]
+}

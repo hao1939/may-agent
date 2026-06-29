@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T07:40:56.321Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 task-completed owner pass accepts the shared LocalDNS VM-prerelease host-preflight verdict and compresses this lane back to the truthful open waits only. The completed row-54/row-55 execution-gate groundwork, the bounded row-55 live attempt, and the family preflight review are now durable archived context because their meaning is preserved by linked evidence: both exact live carrier shapes are established, but no Azure-ready execution host is currently proved, so await-azure-ready-host-proof-localdns-vm-prerelease-family-20260628 carries the single remaining LocalDNS family wait. The only open children that still matter here are await-azure-ready-host-proof-localdns-vm-prerelease-family-20260628 for returned Azure-ready host proof and await-operator-response-spec-app-routing-existing-cluster-family-20260627 for the separate App Routing operator-response wait; do not refill unrelated spec work under this lane until one of those recorded resume signals changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "await-live-host-preflight-localdns-vm-prerelease-azurelinux-row54-execute-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful row-54 live-host preflight blocker for path.localdns.vm-prerelease.azurelinux until a host with AKS_RP_E2E_SUBSCRIPTION_ID, ARM auth, az, kubectl, and the exact mutation gate can launch the dedicated spec.localdns.vm-prerelease.azurelinux execute command already validated repo-locally.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-vm-prerelease-azurelinux-row54-execution-gate-20260628.md"
+      ],
+      "acceptance": [
+        "Task remains blocked only on execution-host preflight, not on source/spec/replay truth: the dedicated row-54 carrier and exact execute command are already validated in evidence/archive/localdns-vm-prerelease-azurelinux-row54-execution-gate-20260628.md.",
+        "Resume condition is exact and bounded: run AKS_RP_E2E_ALLOW_CLOUD_MUTATION=localdns-azlinux-vm-prerelease bun run spec spec.localdns.vm-prerelease.azurelinux --execute on a host with subscription id, ARM auth, az, and kubectl available."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.localdns.vm-prerelease.azurelinux"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:37:39.830Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T07:38:49.766Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive row54 environment wait with active family task establish-live-host-preflight-localdns-vm-prerelease-family-20260628, which will gather one shared host-readiness or escalation verdict for the LocalDNS VM-prerelease live-execution family instead of leaving row54 parked on an unworked environment blocker."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T07:38:49.766Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive row54 environment wait with active family task establish-live-host-preflight-localdns-vm-prerelease-family-20260628, which will gather one shared host-readiness or escalation verdict for the LocalDNS VM-prerelease live-execution family instead of leaving row54 parked on an unworked environment blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

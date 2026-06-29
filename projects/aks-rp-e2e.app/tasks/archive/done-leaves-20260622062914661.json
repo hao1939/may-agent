@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:29:14.661Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the rows44-49 mounted-source coverage matrix from evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md: row 45 is already canonically covered, rows 44 and 46-49 have exact repo-local carriers but remain adjacent because the current maintained model/path surfaces do not all land them, and there are no missing carriers in that slice. The smallest truthful next repo-local leaf is now the row-44 maintained-model landing repair, which becomes the active follow-up. The broader rows51-55 source-coverage matrix stays queued as the next bounded slice after that repair, while the single external-human-transport family wait remains the only blocked frontier item.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows44-49-source-coverage-matrix-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map VM prerelease rows 44-49 from the mounted AKS RP source into the current repo-local spec/replay/model carriers, so the project knows which exact input/expectation branches are already represented, which remain adjacent or missing, and what single bounded repo-local follow-up should come next without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted-source VM prerelease suite definitions that correspond to rows 44-49, then maps each row to current repo-local spec/replay/model or evidence carriers with exact file references and a truthful covered/adjacent/missing classification.",
+        "Artifact names the accepted-input, rejected-input, expectation, adjacent-surface, and unknown-edge boundaries for rows 44-49 at a bounded matrix level, then concludes with exactly one smallest truthful next repo-local follow-up leaf or an evidence-backed claim that no further local work remains before an external gate.",
+        "Task stays repo-local and non-mutating: it does not request human transport, does not run cloud execution, and does not broaden beyond rows 44-49 boundary mapping except for exact carrier references needed to classify coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:23:48.641Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows44-49-source-coverage-matrix-20260622_20260622062410",
+        "assigned_at": "2026-06-22T06:24:10.185Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows44-49-source-coverage-matrix-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows44-49-source-coverage-matrix-20260622_20260622062410",
+        "worker_started_at": "2026-06-22T06:24:35.753Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested repo-local artifact `evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md`, mapping VM prerelease rows 44-49 from mounted AKS RP source to current spec/replay/model carriers and classifying each row as covered vs adjacent with one bounded next follow-up leaf.",
+        "last_worker_completed_at": "2026-06-22T06:27:42.278Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:29:14.466Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md: mounted-source rows 44-49 are truthfully classified as row 45 covered, rows 44 and 46-49 adjacent, with no missing carriers; the artifact cites exact source/spec/replay/model references and names row 44 maintained-model landing repair as the smallest truthful next repo-local follow-up."
+      },
+      "session_id": "s_task_vmpr-rows44-49-source-coverage-matrix-20260622",
+      "session_history": [
+        "s_task_vmpr-rows44-49-source-coverage-matrix-20260622"
+      ],
+      "result": "Created the requested repo-local artifact `evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md`, mapping VM prerelease rows 44-49 from mounted AKS RP source to current spec/replay/model carriers and classifying each row as covered vs adjacent with one bounded next follow-up leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:29:14.466Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from evidence/archive/vmpr-rows44-49-source-coverage-matrix-20260622.md: mounted-source rows 44-49 are truthfully classified as row 45 covered, rows 44 and 46-49 adjacent, with no missing carriers; the artifact cites exact source/spec/replay/model references and names row 44 maintained-model landing repair as the smallest truthful next repo-local follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

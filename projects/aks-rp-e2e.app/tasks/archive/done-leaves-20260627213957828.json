@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T21:39:57.828Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Owner review accepted two spec-verification review slices. The app-routing public-api-enable mismatch is now explicitly classified as a probe/readback-contract gap rather than a reopened missing-cluster defect, and the next concrete slice is the backlog follow-up repair-spec-app-routing-public-api-enable-dual-api-readback-followup-20260627. The bounded tls-lifecycle-rotation rerun also closed its original evidence-write ENOENT question: the old crash did not recur, but the temporary repair-branch run stopped earlier at Azure federated login, so the branch now carries harness-health evidence only until a supported-ref follow-up is queued.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the new post-PATCH readback mismatch exposed by the repaired spec.app-routing.public-api-enable rerun: determine whether webAppRouting.enabled=undefined after an accepted PATCH is a probe/readback contract bug, eventual-consistency handling gap, or product behavior mismatch, and record the exact next action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627.md"
+      ],
+      "acceptance": [
+        "The artifact cites the repaired rerun evidence paths for single-app-routing-public-api-enable_020553 and names the exact assertion/result lines showing PATCH accepted but webAppRouting.enabled remained undefined.",
+        "The artifact classifies the mismatch as probe/tooling, runtime/eventual-consistency, or product behavior with concrete evidence from the rerun artifacts and source/spec contract.",
+        "The artifact records one exact next action or terminal verdict for spec.app-routing.public-api-enable, avoiding reopening the old missing-cluster carrier defect."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.public-api-enable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T21:34:05.462Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627_20260627213405",
+        "assigned_at": "2026-06-27T21:34:05.525Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627",
+        "worker_started_attempt_id": "a_classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627_20260627213405",
+        "worker_started_at": "2026-06-27T21:34:33.112Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested classification artifact for the repaired App Routing enable rerun, concluding the post-PATCH `webAppRouting.enabled=undefined` issue is currently best treated as a probe/readback-contract gap with possible unhandled eventual consistency, not yet a confirmed product mismatch.",
+        "last_worker_completed_at": "2026-06-27T21:36:11.627Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:39:13.232Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the classification artifact: it cites the repaired rerun evidence, shows PATCH accepted plus immediate readback undefined, and truthfully narrows the issue to a probe/readback-contract gap with bounded dual-API readback as the next action."
+      },
+      "session_id": "s_task_classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627",
+      "session_history": [
+        "s_task_classify-spec-app-routing-public-api-enable-post-patch-readback-mismatch-20260627"
+      ],
+      "result": "Produced the requested classification artifact for the repaired App Routing enable rerun, concluding the post-PATCH `webAppRouting.enabled=undefined` issue is currently best treated as a probe/readback-contract gap with possible unhandled eventual consistency, not yet a confirmed product mismatch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:39:13.232Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the classification artifact: it cites the repaired rerun evidence, shows PATCH accepted plus immediate readback undefined, and truthfully narrows the issue to a probe/readback-contract gap with bounded dual-API readback as the next action."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun only spec.app-routing.tls-lifecycle-rotation with the repaired probe so evidence emission succeeds without nested-path ENOENT, then classify the actual runtime/product result from the rerun artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Execute only the bounded single-spec path for spec.app-routing.tls-lifecycle-rotation using the repaired probe and record the run id plus exact artifact/result locations.",
+        "Prove that evidence emission no longer fails with the prior nested-path ENOENT; if a different failure occurs, classify it as a new blocker/result with exact evidence rather than reusing the old crash diagnosis.",
+        "Classify the rerun outcome only from the new run artifacts, explicitly separating harness health from any app-routing rotation/default-domain product behavior."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.tls-lifecycle-rotation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T20:55:08.471Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627_20260627205532",
+        "assigned_at": "2026-06-27T20:55:32.664Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627",
+        "worker_started_attempt_id": "a_rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627_20260627205532",
+        "worker_started_at": "2026-06-27T20:55:34.920Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed a bounded single-spec rerun for spec.app-routing.tls-lifecycle-rotation on a repair branch carrying the mkdir fix, then archived the new outcome in evidence/archive/rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627.md. The rerun did not reproduce the old ENOENT; instead it failed earlier at Azure federated login for the temporary branch ref, so no product/runtime verdict was reached.",
+        "last_worker_completed_at": "2026-06-27T20:59:46.257Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:39:14.219Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded rerun result: the old nested-path ENOENT did not recur, but the temporary repair-branch run failed earlier at Azure federated login, so the slice closes as harness-health evidence only and needs one supported-ref successor for product verdict recovery."
+      },
+      "session_id": "s_task_rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627",
+      "session_history": [
+        "s_task_rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627"
+      ],
+      "result": "Executed a bounded single-spec rerun for spec.app-routing.tls-lifecycle-rotation on a repair branch carrying the mkdir fix, then archived the new outcome in evidence/archive/rerun-spec-app-routing-tls-lifecycle-rotation-after-evidence-write-repair-20260627.md. The rerun did not reproduce the old ENOENT; instead it failed earlier at Azure federated login for the temporary branch ref, so no product/runtime verdict was reached.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:39:14.219Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded rerun result: the old nested-path ENOENT did not recur, but the temporary repair-branch run failed earlier at Azure federated login, so the slice closes as harness-health evidence only and needs one supported-ref successor for product verdict recovery."
+      },
+      "status": "done"
+    }
+  ]
+}

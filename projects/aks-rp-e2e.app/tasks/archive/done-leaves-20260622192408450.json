@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:24:08.450Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review confirms the only truthful blocked leaf is external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622; keep it as the lone family-level external-human wait. Archive the accepted vmpr-rows47-48 execution-ready reconciliation result, keep active repo-local capacity on ppg row-1 execute-body authoring plus VM prerelease row49 and rows47-48 maintained-surface reconciliation, and add row-9 KSCR execute-gated replay authoring as the next independent non-mutating replay-upgrade leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows47-48-execution-ready-surface-reconciliation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repo-local maintained surfaces for VM prerelease CAS rows 47 and 48 so the accepted knowledge map reflects that their dedicated replays are already execute-capable behind explicit gates, without implying cloud execution or creating new external waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows47-48-execution-ready-surface-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted row-47 and row-48 source scenarios plus current replay/spec/path ids, proves both replays already contain explicit execute-capable gated bodies, and records which maintained surfaces (for example diagnosis-summary, path-summary, specs metadata, or linked notes) were updated or still intentionally left unchanged with a source-backed reason.",
+        "The work stays repo-local and non-mutating: no cloud run is executed, no duplicate row-50 or external-human wait is created, and the resulting wording distinguishes local carrier readiness from any later live verification verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vmpr-rows47-48"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:18:11.238Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows47-48-execution-ready-surface-reconciliation-20260622_20260622191813",
+        "assigned_at": "2026-06-22T19:18:13.654Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows47-48-execution-ready-surface-reconciliation-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows47-48-execution-ready-surface-reconciliation-20260622_20260622191813",
+        "worker_started_at": "2026-06-22T19:19:06.651Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease CAS rows 47 and 48 accepted maintained-path wording to reflect execute-capable gated replays without claiming live verification, and wrote archive evidence at evidence/archive/vmpr-rows47-48-execution-ready-surface-reconciliation-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T19:22:10.411Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:23:06.148Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites the exact mounted row-47/48 suite and autoscaler-plan anchors, proves both dedicated replays already have explicit execute-capable gated bodies via fresh repo-local --check proof, and records the maintained-surface update boundary without claiming live verification."
+      },
+      "session_id": "s_task_vmpr-rows47-48-execution-ready-surface-reconciliation-20260622",
+      "session_history": [
+        "s_task_vmpr-rows47-48-execution-ready-surface-reconciliation-20260622"
+      ],
+      "result": "Reconciled VM prerelease CAS rows 47 and 48 accepted maintained-path wording to reflect execute-capable gated replays without claiming live verification, and wrote archive evidence at evidence/archive/vmpr-rows47-48-execution-ready-surface-reconciliation-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:23:06.148Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites the exact mounted row-47/48 suite and autoscaler-plan anchors, proves both dedicated replays already have explicit execute-capable gated bodies via fresh repo-local --check proof, and records the maintained-surface update boundary without claiming live verification."
+      },
+      "status": "done"
+    }
+  ]
+}

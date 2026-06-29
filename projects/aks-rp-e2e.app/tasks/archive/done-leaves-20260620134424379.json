@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:44:24.379Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "2026-06-20 watchdog backlog review: archived the accepted VM-only checkpoint isolation diagnosis because its durable meaning is now captured on this lane. Current lane truth: domain:checkpoint still cannot isolate a coherent VM-only packet from the whole dirty repo because scripts/domain-checkpoint.ts collapses all evidence/* into one evidence slice and all model/* into one model slice, mixing VM prerelease files with MachinesPreview/environment neighbors. The remaining live work here is checkpoint-helper-vm-packet-input-mode-20260620, which should add a bounded candidate-path input mode (for example --paths/--paths-file), rerun domain:checkpoint against a VM-only candidate packet, and record whether that yields a coherent owner-facing checkpoint slice. Keep this queued behind the current saturated five-task VM prerelease active batch unless an active slot frees.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose whether app-repo domain:checkpoint can produce a coherent VM-only checkpoint candidate for the current prerelease VM slice, and if not, capture the narrowest truthful local follow-up instead of leaving the row-35 helper issue as a passive hold.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact reruns or inspects the current app-repo domain:checkpoint behavior from /app/projects/aks-rp-e2e.app and records the exact VM-related candidate slice(s) and why non-VM files are still included.",
+        "Artifact maps the mixed-slice result back to the current held VM evidence/model files so the owner can tell whether one bounded VM-only checkpoint packet is already possible, whether selector/input hygiene is the blocker, or whether app-tooling follow-up is required.",
+        "Task ends with one concrete next step only: either a truthful VM-only checkpoint candidate packet path, a specific helper/tooling follow-up task, or an exact reason no bounded local isolation is yet possible."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:37.363Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620_20260620133937",
+        "assigned_at": "2026-06-20T13:39:37.412Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620_20260620133937",
+        "worker_started_at": "2026-06-20T13:39:54.090Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the live app-side domain:checkpoint behavior for the VM prerelease slice and wrote a durable artifact showing it cannot currently isolate a coherent VM-only checkpoint packet because broad evidence/model slice grouping still mixes VM and non-VM files.",
+        "last_worker_completed_at": "2026-06-20T13:41:58.928Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:42:30.022Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620.md as sufficient review evidence: it reran app-repo domain:checkpoint, proved the helper still buckets all dirty evidence/model files into broad slices, showed the current VM-only output is only two standalone candidate notes, and narrowed the truthful successor to one helper input-mode follow-up task for bounded VM packet evaluation."
+      },
+      "session_id": "s_task_vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620"
+      ],
+      "result": "Diagnosed the live app-side domain:checkpoint behavior for the VM prerelease slice and wrote a durable artifact showing it cannot currently isolate a coherent VM-only checkpoint packet because broad evidence/model slice grouping still mixes VM and non-VM files.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:42:30.022Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/vm-prerelease-checkpoint-helper-vm-only-isolation-diagnosis-20260620.md as sufficient review evidence: it reran app-repo domain:checkpoint, proved the helper still buckets all dirty evidence/model files into broad slices, showed the current VM-only output is only two standalone candidate notes, and narrowed the truthful successor to one helper input-mode follow-up task for bounded VM packet evaluation."
+      },
+      "status": "done"
+    }
+  ]
+}

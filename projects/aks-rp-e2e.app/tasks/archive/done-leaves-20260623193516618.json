@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:35:16.618Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the traffic-api-proxy authority-rule reconciliation artifact: the broader normalized carrier repair remains accepted, and the prior service-reachability/upgrade-survival carrier-gap leaves stay truthful only as superseded bounded history. The next and only repo-local active slice is traffic-api-proxy-authority-wording-dag-behavior-repair-20260623 for source-wording alignment, explicit input-DAG wiring, and missing path-level behavior assertions across access-control, service-reachability, and upgrade-survival; the two blocked waits remain unchanged as the single truthful external-human and private-cluster selected-host environment waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-api-proxy-authority-rule-reconciliation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using evidence/archive/traffic-api-proxy-normalized-carrier-gap-repair-20260623-problem-diagnosis.md plus the mounted AKS RP traffic-api-proxy source inventory and the existing spec/replay/model carriers, reconcile the canonical authority rule for path.traffic-api-proxy-access-control, path.traffic-api-proxy-service-reachability, and path.traffic-api-proxy-upgrade-survival, explicitly review whether the prior service-reachability/upgrade-survival repair leaves remain truthful or are superseded, and produce the bounded repo-local next patch plan or evidence-ceiling disposition without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-api-proxy-authority-rule-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact validator errors, mounted-source scenario inventory, and the current spec/replay/model carrier ids/files for access-control, service-reachability, and upgrade-survival, then records one explicit owner-approved authority rule for this traffic-api-proxy family rather than leaving the mismatch implicit.",
+        "The artifact explicitly reconciles the prior done leaves for service-reachability and upgrade-survival by stating whether their results stay accepted as bounded spec/replay-derived evidence, are superseded by a stricter mounted-source authority ceiling, or require one concrete follow-up repair leaf, with exact reasons tied to current validator output.",
+        "The work stays repo-local and bounded to the three named traffic-api-proxy paths: no cloud mutation, no reopening of unrelated blocked waits, and no broad validator cleanup beyond the exact next patch plan or truthful evidence-ceiling disposition for this family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-api-proxy-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:30:35.500Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-api-proxy-authority-rule-reconciliation-20260623_20260623193035",
+        "assigned_at": "2026-06-23T19:30:35.548Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-api-proxy-authority-rule-reconciliation-20260623",
+        "worker_started_attempt_id": "a_traffic-api-proxy-authority-rule-reconciliation-20260623_20260623193035",
+        "worker_started_at": "2026-06-23T19:30:55.445Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive reconciliation artifact at evidence/archive/traffic-api-proxy-authority-rule-reconciliation-20260623.md, making the traffic-api-proxy authority rule explicit, reconciling the prior service-reachability/upgrade-survival leaves as superseded-but-truthful, and recording the bounded next repo-local patch plan.",
+        "last_worker_completed_at": "2026-06-23T19:32:46.409Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:33:22.403Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review after checking evidence/archive/traffic-api-proxy-authority-rule-reconciliation-20260623.md: it cites the exact validator errors, mounted-source apiproxy scenario inventory, current spec/replay/model carriers for access-control/service-reachability/upgrade-survival, explicitly keeps the prior service-reachability and upgrade-survival repair leaves accepted as superseded bounded carrier fixes, and records one bounded repo-local next patch plan with no cloud work."
+      },
+      "session_id": "s_task_traffic-api-proxy-authority-rule-reconciliation-20260623",
+      "session_history": [
+        "s_task_traffic-api-proxy-authority-rule-reconciliation-20260623"
+      ],
+      "result": "Wrote the requested archive reconciliation artifact at evidence/archive/traffic-api-proxy-authority-rule-reconciliation-20260623.md, making the traffic-api-proxy authority rule explicit, reconciling the prior service-reachability/upgrade-survival leaves as superseded-but-truthful, and recording the bounded next repo-local patch plan.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:33:22.403Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review after checking evidence/archive/traffic-api-proxy-authority-rule-reconciliation-20260623.md: it cites the exact validator errors, mounted-source apiproxy scenario inventory, current spec/replay/model carriers for access-control/service-reachability/upgrade-survival, explicitly keeps the prior service-reachability and upgrade-survival repair leaves accepted as superseded bounded carrier fixes, and records one bounded repo-local next patch plan with no cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

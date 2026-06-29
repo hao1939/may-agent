@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:03:58.046Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 planning update after ASM custom-config/egress completion: archived the seven accepted repo-local mounted-source reconciliation leaves now that their durable meaning is already preserved on the project branch. The project frontier is intentionally narrow: one active repo-local follow-up remains on traffic-azure-service-mesh ingress-internal mounted-source reconciliation, plus two exact blocked waits that stay unchanged (the family-level external human/operator proof wait through the first owner review after 2026-06-26, and the private-cluster selected-host SSH environment wait until same-launcher step-1 reachability or an authoritative endpoint update arrives). No new worker refill was needed because the remaining active leaf is already assigned and truthfully bounded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.remediator.node-not-ready-restart: restore the exact handwritten/source lineage, normalized feature/scenario/DAG/path linkage, and expected-behavior wording while keeping observed runtime values limited to already cited evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted source files plus the touched feature/spec/replay/model carriers for path.remediator.node-not-ready-restart, and states the exact source-backed restart/remediation contract for the branch.",
+        "Carrier and model updates keep path.remediator.node-not-ready-restart claim-safe: restore normalized linkage and source-backed expected behavior, but preserve observed runtime state unless direct execution evidence already exists.",
+        "The work stays repo-local and bounded to path.remediator.node-not-ready-restart only: no cloud mutation, no external-human follow-up, and no widening into unrelated remediator or node-health families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "remediator-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:55:36.688Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623_20260623195536",
+        "assigned_at": "2026-06-23T19:55:36.740Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623",
+        "worker_started_attempt_id": "a_remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623_20260623195536",
+        "worker_started_at": "2026-06-23T19:56:19.500Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the mounted-source lineage for path.remediator.node-not-ready-restart by updating model/knowledge-map/model.json with normalized feature/scenario/DAG/path linkage, source-backed expectation behavior, and an archive evidence note at evidence/archive/remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623.md; regenerated derived views to surface the repaired path state.",
+        "last_worker_completed_at": "2026-06-23T20:00:34.331Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:00:59.347Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note cites the exact mounted remediator source, restores normalized feature/scenario/DAG/path linkage for path.remediator.node-not-ready-restart, and truthfully separates source-backed reboot/reimage expectations from still-unknown observed runtime behavior."
+      },
+      "session_id": "s_task_remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623",
+      "session_history": [
+        "s_task_remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623"
+      ],
+      "result": "Reconciled the mounted-source lineage for path.remediator.node-not-ready-restart by updating model/knowledge-map/model.json with normalized feature/scenario/DAG/path linkage, source-backed expectation behavior, and an archive evidence note at evidence/archive/remediator-node-not-ready-restart-mounted-source-linkage-reconcile-20260623.md; regenerated derived views to surface the repaired path state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:00:59.347Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note cites the exact mounted remediator source, restores normalized feature/scenario/DAG/path linkage for path.remediator.node-not-ready-restart, and truthfully separates source-backed reboot/reimage expectations from still-unknown observed runtime behavior."
+      },
+      "status": "done"
+    }
+  ]
+}

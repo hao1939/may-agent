@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T04:15:36.407Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review kept the single external-human wait unchanged because no newer out-of-runtime proof or successor-owner change exists. Roll up the completed NAT Gateway V2 mounted-source audit/reconcile leaves into the project summary: the V2->block carrier is already landed, the V2->none boundary audit is already accepted, and the only live repo-local execution lane remains the active V2->none mounted-source reconcile while the external-human transport family stays compressed to one exact blocked wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the exact repo-local carrier for mounted Scenario_NATGatewayV2_Migration_V2toBlock by extracting its source-backed contract into a maintained feature/spec/replay/model slice and reconciling the NAT Gateway V2 parent inventory so mounted family completeness is truthful without widening into cloud execution or the adjacent V2->none sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A new maintained child packet/spec/replay/model carrier exists for the exact mounted V2->block boundary, with source citations to managed_natgatewayv2.go and suite lineage proving the create-time NATGW V2 contract, bootstrap cache + node-image update preconditions, apiserver subnet/VNet-integration step, and final outboundType=block expectation.",
+        "features/net-integration/nat-gateway-v2.yaml is reconciled so its child inventory/count and mounted-source summary no longer omit the V2->block scenario, and the artifact explains the exact files created/updated plus any intentionally deferred adjacent sibling work such as V2->none.",
+        "Work remains bounded to repo-local feature knowledge/spec/replay/model updates only: no cloud mutation, no duplicate public-cluster migration framing, and no reopening of the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.net-integration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T04:01:02.958Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623_20260623040103",
+        "assigned_at": "2026-06-23T04:01:03.004Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623_20260623040103",
+        "worker_started_at": "2026-06-23T04:01:25.399Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the exact repo-local mounted-source carrier for NAT Gateway V2 V2→block by adding the child feature/spec/replay, reconciling the NAT Gateway V2 parent packet, and landing a maintained model/path plus evidence artifact for the source-grounded unknown branch.",
+        "last_worker_completed_at": "2026-06-23T04:12:05.720Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T04:12:50.106Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623.md documents mounted source citations, exact V2->block contract, and maintained carrier landing; domain git status confirms the new child feature/spec/replay files and the reconciled parent features/net-integration/nat-gateway-v2.yaml exist, while the already-active V2->none audit remains the bounded successor."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623"
+      ],
+      "result": "Landed the exact repo-local mounted-source carrier for NAT Gateway V2 V2→block by adding the child feature/spec/replay, reconciling the NAT Gateway V2 parent packet, and landing a maintained model/path plus evidence artifact for the source-grounded unknown branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T04:12:50.106Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/net-integration-natgw-v2-migration-v2-to-block-mounted-source-reconcile-20260623.md documents mounted source citations, exact V2->block contract, and maintained carrier landing; domain git status confirms the new child feature/spec/replay files and the reconciled parent features/net-integration/nat-gateway-v2.yaml exist, while the already-active V2->none audit remains the bounded successor."
+      },
+      "status": "done"
+    },
+    {
+      "id": "net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound the mounted Scenario_NATGatewayV2_Migration_V2toNone sibling separately from V2->block by using mounted AKS RP source and existing repo-local carriers to decide whether the exact V2->none contract is already represented or still needs a maintained feature/spec/replay/model slice, without reopening public-cluster *->none framing, cloud execution, or the external-human wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623.md"
+      ],
+      "acceptance": [
+        "Mounted source citations plus suite lineage show whether the exact V2->none sibling exists, its create/update preconditions, and its final outboundType expectation, with explicit differentiation from the already-active V2->block extraction and from public-cluster *->none scenarios.",
+        "The artifact names the current repo-local carrier state for V2->none: either cite the maintained feature/spec/replay/model files that already cover it or identify the exact missing carrier/files and the bounded next local task needed; features/net-integration/nat-gateway-v2.yaml inventory impact is stated.",
+        "Work remains repo-local and bounded to source/spec/replay/model truth only: no cloud mutation, no duplicate external-human blocked waits, and no reopening of already-complete VM/private-cluster branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.net-integration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T04:05:39.650Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623_20260623041208",
+        "assigned_at": "2026-06-23T04:12:08.325Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623_20260623041208",
+        "worker_started_at": "2026-06-23T04:12:09.430Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the repo-local mounted-source boundary audit for NAT Gateway V2 V2→none and wrote a durable evidence artifact showing the exact mounted sibling exists, is source/validator-backed, remains distinct from V2→block and public-cluster natgw→none, and still lacks a maintained feature/spec/replay/model carrier.",
+        "last_worker_completed_at": "2026-06-23T04:13:41.161Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T04:14:22.725Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623.md cites mounted managed_natgatewayv2.go, suite lineage, and RP validation proving the exact V2->none sibling exists, differs from both V2->block and public-cluster NATGW->none, and still lacks a maintained repo-local feature/spec/replay/model carrier."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623"
+      ],
+      "result": "Completed the repo-local mounted-source boundary audit for NAT Gateway V2 V2→none and wrote a durable evidence artifact showing the exact mounted sibling exists, is source/validator-backed, remains distinct from V2→block and public-cluster natgw→none, and still lacks a maintained feature/spec/replay/model carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T04:14:22.725Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/net-integration-natgw-v2-mounted-v2-to-none-source-boundary-audit-20260623.md cites mounted managed_natgatewayv2.go, suite lineage, and RP validation proving the exact V2->none sibling exists, differs from both V2->block and public-cluster NATGW->none, and still lacks a maintained repo-local feature/spec/replay/model carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

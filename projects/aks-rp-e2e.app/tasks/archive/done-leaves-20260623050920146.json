@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T05:09:20.146Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier planning update: keep the single external-human-transport wait unchanged because the blocked artifact still proves only later out-of-runtime human/operator proof is missing. Archive the two completed network-CNI/ACNS cleanup leaves because their durable meaning is now captured at the project level. The live frontier remains four repo-local active leaves—private-cluster second-hop carrier extract, ACNS Basic Retina -> Retina Enterprise parent/spec linkage repair, managed Gateway API mounted-source gap map, and RP cluster lifecycle mounted-source row gap map—plus the one exact family-level external wait. Prefer finishing one of those bounded repo-local leaves before adding fresh branches or reopening cloud execution.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-acns-retina-enterprise-family-model-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the network ACNS Retina enterprise mounted-source/spec/model family so the declared create, update-to-ACNS/Cilium, and k8s-upgrade enterprise paths have explicit normalized feature/scenario/DAG/path linkage, bounded status, and one durable repo-local evidence note without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-enterprise-family-model-linkage-repair-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted source/spec/model carriers it inspected for the ACNS Retina enterprise family, including the enterprise create path and the adjacent update-acns-cilium and k8s-upgrade branches, and records the current linkage/boundary for each.",
+        "The task either updates or confirms the maintained repo-local feature/scenario/DAG/path linkage and names the truthful resulting status for each covered path (for example draft vs ready) with evidence, without claiming live product behavior that has not been executed.",
+        "Work stays repo-local only: no cloud mutation, no external-human wait, and no widening beyond the ACNS Retina enterprise family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network/acns-retina-enterprise-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T05:02:16.128Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-enterprise-family-model-linkage-repair-20260623_20260623050216",
+        "assigned_at": "2026-06-23T05:02:16.180Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-enterprise-family-model-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_network-acns-retina-enterprise-family-model-linkage-repair-20260623_20260623050216",
+        "worker_started_at": "2026-06-23T05:03:06.488Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the ACNS Retina enterprise family model linkage by enriching `model/knowledge-map/model.json` for the create, update-to-Cilium, and k8s-upgrade branches with concrete feature/scenario/DAG/path linkage, truthful `unknown` status, and wrote the durable archive note `evidence/archive/network-acns-retina-enterprise-family-model-linkage-repair-20260623.md`; regenerated maintained views successfully.",
+        "last_worker_completed_at": "2026-06-23T05:07:54.600Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T05:08:16.944Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites exact mounted ACNS Retina enterprise create, update-to-Cilium, and k8s-upgrade carriers; it documents the concrete model.json plus maintained-view repairs; and it truthfully advances all three family paths to explicit normalized linkage with bounded unknown status without claiming unexecuted product behavior."
+      },
+      "session_id": "s_task_network-acns-retina-enterprise-family-model-linkage-repair-20260623",
+      "session_history": [
+        "s_task_network-acns-retina-enterprise-family-model-linkage-repair-20260623"
+      ],
+      "result": "Repaired the ACNS Retina enterprise family model linkage by enriching `model/knowledge-map/model.json` for the create, update-to-Cilium, and k8s-upgrade branches with concrete feature/scenario/DAG/path linkage, truthful `unknown` status, and wrote the durable archive note `evidence/archive/network-acns-retina-enterprise-family-model-linkage-repair-20260623.md`; regenerated maintained views successfully.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T05:08:16.944Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites exact mounted ACNS Retina enterprise create, update-to-Cilium, and k8s-upgrade carriers; it documents the concrete model.json plus maintained-view repairs; and it truthfully advances all three family paths to explicit normalized linkage with bounded unknown status without claiming unexecuted product behavior."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-mounted-source-gap-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the mounted handwritten Go e2ev3 network-CNI scenario family against current repo-local feature/spec/model linkage so the project has one bounded evidence note naming which exact network-CNI source carriers are already represented, which remain missing or weakly linked, and the next concrete repo-local follow-up path without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-gap-map-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted Go source files or scenario definitions it inspected for the chosen network-CNI family and lists the currently represented versus missing or weakly linked repo-local carriers with evidence.",
+        "The note identifies at least one concrete next repo-local follow-up leaf or confirms the family is already sufficiently linked, while staying truthful about draft versus ready status and avoiding any unexecuted product-behavior claims.",
+        "Work stays repo-local only: no cloud mutation, no external-human wait creation, and no widening beyond a bounded network-CNI handwritten-source gap map."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network/network-cni-mounted-source-gap-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T05:04:11.147Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-gap-map-20260623_20260623050411",
+        "assigned_at": "2026-06-23T05:04:11.196Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-gap-map-20260623",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-gap-map-20260623_20260623050411",
+        "worker_started_at": "2026-06-23T05:04:58.584Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded repo-local mounted-source gap audit for the network-CNI ACNS Retina Enterprise update family and wrote the durable evidence note at evidence/archive/network-cni-mounted-source-gap-map-20260623.md, identifying Scenario_Basic_Retina_Update_Retina_Enterprise as the only remaining weakly linked carrier.",
+        "last_worker_completed_at": "2026-06-23T05:07:09.584Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T05:08:03.853Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites exact mounted network ACNS Retina Enterprise update carriers, truthfully classifies ACNS Cilium and Retina->Basic siblings as represented, identifies Scenario_Basic_Retina_Update_Retina_Enterprise as the lone weakly linked sibling, and names the exact repo-local follow-up to repair features/network-cni.yaml plus specs/index.json without opening execution."
+      },
+      "session_id": "s_task_network-cni-mounted-source-gap-map-20260623",
+      "session_history": [
+        "s_task_network-cni-mounted-source-gap-map-20260623"
+      ],
+      "result": "Completed the bounded repo-local mounted-source gap audit for the network-CNI ACNS Retina Enterprise update family and wrote the durable evidence note at evidence/archive/network-cni-mounted-source-gap-map-20260623.md, identifying Scenario_Basic_Retina_Update_Retina_Enterprise as the only remaining weakly linked carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T05:08:03.853Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites exact mounted network ACNS Retina Enterprise update carriers, truthfully classifies ACNS Cilium and Retina->Basic siblings as represented, identifies Scenario_Basic_Retina_Update_Retina_Enterprise as the lone weakly linked sibling, and names the exact repo-local follow-up to repair features/network-cni.yaml plus specs/index.json without opening execution."
+      },
+      "status": "done"
+    }
+  ]
+}

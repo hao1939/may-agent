@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T09:04:06.508Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier owner pass keeps the frontier truthful and more readable: the three NATGW V2 reconciliation/cleanup leaves are already complete repo-local knowledge and add no new live capacity, so archive them at the project root. The only live repo-local action remains net-integration-multinic-mixed-mounted-source-contract-reconcile-20260627 to replace path.net-integration.multinic-mixed's misleading blocked/rootCauseClass none placeholder with source-backed model/evidence. The only blocked frontier remains the single focus-mounted-source-coverage-closure-and-external-wait-20260623 family holding three already-proven external response/proof waits; no duplicate environment/setup work is truthful until a returned reply/artifact arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the durable project state for path.net-integration.natgw-v2-migration-v2-to-block now that the execute lane exists: inspect the current model/knowledge-map path entry, feature/spec metadata, and any prior execution/result artifacts; record whether the path should remain product-gap/unknown/other, what exact evidence is still missing for observed behavior, and what the next bounded probe should be without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627.md"
+      ],
+      "acceptance": [
+        "Produce a durable evidence note that cites the current model status for path.net-integration.natgw-v2-migration-v2-to-block, the current spec/replay/test carrier and mutation gate, and the exact delta between repo-local carrier readiness and observed-behavior validation.",
+        "State one truthful next step for this path: either a repo-local model/spec update that can be made immediately from existing evidence, or an exact future execute/replay plan with the gate, prerequisites, and what new coverage it would add; do not run cloud mutation or create operator asks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T08:53:49.526Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627_20260627085349",
+        "assigned_at": "2026-06-27T08:53:49.576Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627_20260627085349",
+        "worker_started_at": "2026-06-27T08:54:05.925Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable reconciliation note for NATGW V2→block that confirms the path should remain unknown, cites the current spec/test carrier and mutation gate, and identifies the exact remaining gap as first live observed-behavior evidence rather than missing repo-local authoring.",
+        "last_worker_completed_at": "2026-06-27T08:55:23.848Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T08:55:55.046Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted durable reconciliation note: it cites current model status, mounted-source/spec/test carrier, mutation gate, and prior dry/gated artifacts, truthfully keeps path.net-integration.natgw-v2-migration-v2-to-block at unknown, and isolates the remaining gap as first live observed-behavior evidence rather than missing repo-local authoring. The note also exposes repo-local maintained-surface drift (stale execute-lane wording and replayRef), which should be handled as a follow-up cleanup task rather than as a status change."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-block-model-and-replay-state-reconcile-20260627"
+      ],
+      "result": "Produced a durable reconciliation note for NATGW V2→block that confirms the path should remain unknown, cites the current spec/test carrier and mutation gate, and identifies the exact remaining gap as first live observed-behavior evidence rather than missing repo-local authoring.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T08:55:55.046Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted durable reconciliation note: it cites current model status, mounted-source/spec/test carrier, mutation gate, and prior dry/gated artifacts, truthfully keeps path.net-integration.natgw-v2-migration-v2-to-block at unknown, and isolates the remaining gap as first live observed-behavior evidence rather than missing repo-local authoring. The note also exposes repo-local maintained-surface drift (stale execute-lane wording and replayRef), which should be handled as a follow-up cleanup task rather than as a status change."
+      },
+      "status": "done"
+    }
+  ]
+}

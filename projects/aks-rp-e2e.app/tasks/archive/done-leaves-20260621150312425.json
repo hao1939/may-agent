@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T15:03:12.425Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 planning update: archive the accepted row-40 SSH public-key source audit because evidence/archive/vm-prerelease-row40-ssh-public-key-source-audit-20260621.md plus bounded check-mode validation already proved the mounted row-40 Linux/Windows SSH public-key contract is truthfully preserved and kept distinct from row 39 with no repo-local repair needed. The live frontier is now accurate again: vm-prerelease-row37-managed-aad-source-audit-20260621 remains the single active repo-local knowledge task to source-back the adminUsers-managed AAD lifecycle carrier, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 stays the only blocked family-level wait until durable out-of-runtime send/handoff/escalation proof or authoritative replies arrive for the four covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row40-ssh-public-key-source-audit-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: audit the VM prerelease row-40 SSH public-key carrier from mounted e2ev3 source plus current repo-local feature/spec/replay/index/model surfaces so the exact Linux and Windows split for the SSH public-key update lifecycle is source-backed, explicitly separated from row 39 Disable SSH, and any missing or misworded repo-local carrier can be repaired repo-locally.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row40-ssh-public-key-source-audit-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted VM prerelease row-40 SSH public-key handwritten carrier and its suite registration(s), capture the exact Linux and Windows create/update/assertion flow and any per-OS split in the mounted source, and write an evidence report comparing that truth to the current repo-local feature/spec/replay/index/model surfaces.",
+        "If any repo-local carrier is missing, collapsed, or misstates the mounted row-40 SSH public-key contract, update only the minimum relevant repo-local artifact(s); otherwise record that no repair was needed and cite the already-truthful surfaces.",
+        "Keep the task repo-local and bounded to the row-40 SSH public-key source family only: no cloud mutation, no external asks, and no broad SSH-family sweep beyond the exact row-40 Linux/Windows split."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row40-ssh-public-key-source-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:58:52.326Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row40-ssh-public-key-source-audit-20260621_20260621145854",
+        "assigned_at": "2026-06-21T14:58:54.121Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row40-ssh-public-key-source-audit-20260621",
+        "worker_started_attempt_id": "a_vm-prerelease-row40-ssh-public-key-source-audit-20260621_20260621145854",
+        "worker_started_at": "2026-06-21T14:59:35.425Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded row-40 SSH public-key source audit and wrote a new evidence report at evidence/archive/vm-prerelease-row40-ssh-public-key-source-audit-20260621.md. Verified from mounted source plus repo-local maintained carriers that Linux/Windows are already kept separate from row 39 Disable SSH, so no repo-local repair was needed.",
+        "last_worker_completed_at": "2026-06-21T15:00:55.439Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T15:01:32.338Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-21 source-audit evidence: mounted e2ev3 source plus bounded check-mode replay validation prove the row-40 SSH public-key contract is already kept as a Linux/Windows split distinct from row 39 Disable SSH, and the report records that no repo-local repair was needed."
+      },
+      "session_id": "s_task_vm-prerelease-row40-ssh-public-key-source-audit-20260621",
+      "session_history": [
+        "s_task_vm-prerelease-row40-ssh-public-key-source-audit-20260621"
+      ],
+      "result": "Completed the bounded row-40 SSH public-key source audit and wrote a new evidence report at evidence/archive/vm-prerelease-row40-ssh-public-key-source-audit-20260621.md. Verified from mounted source plus repo-local maintained carriers that Linux/Windows are already kept separate from row 39 Disable SSH, so no repo-local repair was needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T15:01:32.338Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-21 source-audit evidence: mounted e2ev3 source plus bounded check-mode replay validation prove the row-40 SSH public-key contract is already kept as a Linux/Windows split distinct from row 39 Disable SSH, and the report records that no repo-local repair was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:49:42.693Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Accepted the two remaining review leaves from this repo-local/no-cloud refill slice and archived them into the parent branch summary. duplicate-matrix-archive-canonicalization-20260623 now preserves one canonical JSON/markdown evidence pair for each of the four duplicated 2026-06-23 matrix families so later model review can cite authoritative family-level artifacts without rereading wrapper-only or older rerun siblings. replay-gate-preflight-consistency-repair-20260623 now preserves the exact repo-local defect split for the selected burst carriers: stale readiness-note drift (OIDC default-by-version), force-live gate drift (VPA profile state), force-live plus missing required-env contract (workload identity linux), and Bun-runtime dependency mismatch (App Routing row 82), with narrow repair surfaces recorded and no product verdict movement. Open work remains unchanged and concrete: cloud-provider-credential-provider-model-residue-reconciliation-20260623 and net-integration-mounted-variant-linkage-reconciliation-20260623 stay active, private-cluster-update-private-second-hop-model-view-reconciliation-20260623 stays waiting behind the knowledge-map-model conflict, and the single family-level external-human proof wait remains the only truthful blocked child. The earlier watchdog review request referred to already-archived stale task ids rather than current review leaves; the live tree is now reconciled with no pending review tasks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "duplicate-matrix-archive-canonicalization-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Canonicalize the duplicated 2026-06-23 matrix and rerun artifact stems so later model review can cite one authoritative evidence pair per logical family instead of repeated timestamped outputs.",
+      "inputs": [
+        "../aks-rp-e2e/evidence/archive/probe-artifact-burst-triage-20260623.md"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/duplicate-matrix-archive-canonicalization-20260623.md"
+      ],
+      "acceptance": [
+        "A durable note maps the chosen canonical artifact pair for each selected duplicate stem family and records why non-canonical siblings are deferred or ignored for model review.",
+        "The task does not promote product verdicts from duplicated burst artifacts or trigger new execution; it only makes later repo-local review safer and smaller."
+      ],
+      "forbidden": [
+        "Do not reinterpret environment-throttled burst artifacts as new product pass/fail verdicts."
+      ],
+      "depends_on": [],
+      "context": {
+        "lane": "evidence feedback -> archive hygiene -> model feedback",
+        "source": "probe-artifact burst triage bucket 6",
+        "acceptance_note": "Accepted after owner review of evidence/archive/duplicate-matrix-archive-canonicalization-20260623.md: the note selects one canonical JSON/markdown pair for each of the four duplicated 2026-06-23 matrix families, explains why wrapper-only/older/sub-slice siblings are ignored for ordinary model review, and stays strictly archive-hygiene only with no new execution or verdict promotion."
+      },
+      "trace": {
+        "created_at": "2026-06-23T15:05:00Z",
+        "created_by": "focus-plan-review",
+        "current_attempt_id": "a_duplicate-matrix-archive-canonicalization-20260623_20260623144655",
+        "assigned_at": "2026-06-23T14:46:55.145Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_duplicate-matrix-archive-canonicalization-20260623",
+        "worker_started_attempt_id": "a_duplicate-matrix-archive-canonicalization-20260623_20260623144655",
+        "worker_started_at": "2026-06-23T14:46:59.591Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable archive-hygiene note at evidence/archive/duplicate-matrix-archive-canonicalization-20260623.md that selects one canonical JSON/markdown evidence pair for each duplicated 2026-06-23 matrix family and explains why sibling artifacts should be ignored for ordinary model review.",
+        "last_worker_completed_at": "2026-06-23T14:48:39.766Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:49:26.206Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/duplicate-matrix-archive-canonicalization-20260623.md: the note selects one canonical JSON/markdown pair for each of the four duplicated 2026-06-23 matrix families, explains why wrapper-only/older/sub-slice siblings are ignored for ordinary model review, and stays strictly archive-hygiene only with no new execution or verdict promotion."
+      },
+      "session_id": "s_task_duplicate-matrix-archive-canonicalization-20260623",
+      "session_history": [
+        "s_task_duplicate-matrix-archive-canonicalization-20260623"
+      ],
+      "result": "Created a durable archive-hygiene note at evidence/archive/duplicate-matrix-archive-canonicalization-20260623.md that selects one canonical JSON/markdown evidence pair for each duplicated 2026-06-23 matrix family and explains why sibling artifacts should be ignored for ordinary model review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:49:26.206Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

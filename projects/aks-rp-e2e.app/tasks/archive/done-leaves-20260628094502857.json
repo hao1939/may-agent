@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:45:02.857Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner planning after accepted completion-evidence proof: the former trust gate is resolved, so the lane now treats the existing collect-feature-reference-* archive set as reviewable evidence rather than a rerun queue. Keep re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628 as the single active owner batch that burns down the trust-gated review frontier by either closing archive-backed leaves with evidence-backed summaries or creating one concrete content-defect successor when an archive actually fails acceptance. No leaf in this batch should remain open only because of the old completion-evidence propagation gap.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-review the current trust-gated feature-reference batch, including collect-feature-reference-secops-identity-reset-sp-vm-prerelease and collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease, after completion-evidence propagation is proven so archive-backed leaves can be closed without rerun or replaced by concrete content-fix follow-ups.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "fix-project-task-completed-evidence-propagation-proof-20260628 has accepted proof that one named worker run emitted non-empty project.task.completed evidence metadata for an archive artifact.",
+        "For each current collect-feature-reference-* review leaf still blocked only by the trust gate, including collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease, the existing archive artifact was re-reviewed and the leaf was either marked done without rerun or replaced by one concrete content-defect follow-up.",
+        "If an existing archive still contains placeholder-grade sections such as missing API/doc references or overclaimed summaries, the batch review creates one concrete successor for that feature instead of closing the leaf.",
+        "The review outcome names the affected feature-reference leaves, including collect-feature-reference-secops-identity-reset-sp-vm-prerelease and collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease, and does not rerun collectors unless archive content is actually missing or contradictory."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:38:43.574Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628_20260628093904",
+        "assigned_at": "2026-06-28T09:39:04.363Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628",
+        "worker_started_attempt_id": "a_review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628_20260628093904",
+        "worker_started_at": "2026-06-28T09:39:05.216Z",
+        "reviewed_at": "2026-06-28T09:40:14.711Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced this misleading active batch-review leaf with blocked wait await-evidence-propagation-proof-before-feature-reference-batch-review-20260628 because the batch cannot truthfully run until the completion-evidence propagation proof task is accepted; keep collectors in review and do not rerun them meanwhile."
+      },
+      "session_id": "s_task_review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628",
+      "session_history": [
+        "s_task_review-feature-reference-trust-gate-batch-after-evidence-propagation-proof-20260628"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T09:40:14.711Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced this misleading active batch-review leaf with blocked wait await-evidence-propagation-proof-before-feature-reference-batch-review-20260628 because the batch cannot truthfully run until the completion-evidence propagation proof task is accepted; keep collectors in review and do not rerun them meanwhile."
+      },
+      "status": "done"
+    }
+  ]
+}

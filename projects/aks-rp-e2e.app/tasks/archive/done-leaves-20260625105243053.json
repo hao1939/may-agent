@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T10:52:43.054Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner review accepts the VirtualMachine prerelease mounted-source coverage matrix as durable history: rows 25, 33, 37, 40-43, 50, 75, and 76 are now source-backed to exact carriers/expectations, row 37 stays isolated on the AAD approval wait, and rows 75-76 are traced to old-suite AKSConformance lineage rather than e2ev3 CheckIn. The only fresh repo-local next step is the already-assigned virtualmachine-prerelease-source-lineage-reconciliation-20260625 leaf to verify durable model/spec/view surfaces preserve the row-40 Linux/Windows split and 75-76 lineage truth; the five exact external returned-proof waits remain unchanged until the 2026-06-26 follow-up window or earlier authoritative reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP VirtualMachine prerelease/checkin source into a source-backed coverage matrix for the already-tracked prerelease rows/slices (rows 25, 33, 37, 40-43, 50, 75, 76), capturing exact scenario definitions, input carriers, expectation assertions, current external-wait linkage, and any remaining repo-local knowledge gaps without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and/or checkin.go plus referenced scenario definitions, and maps the covered rows/slices to exact feature/path/input/expectation evidence with source-backed notes rather than guesses.",
+        "Artifact explicitly links each mapped row/slice to the current task-tree disposition (existing external wait family, AAD RBAC specific wait, or remaining repo-local closure candidate), names any still-missing source/evidence edge, and proposes at least one concrete bounded next step or states that no further repo-local step remains.",
+        "No cloud execution, no approval-send/wait duplication, and no reopening of already-closed private-cluster-none-dns-zone-v3 or blocked returned-proof waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T10:48:19.754Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625_20260625104819",
+        "assigned_at": "2026-06-25T10:48:19.805Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625_20260625104819",
+        "worker_started_at": "2026-06-25T10:48:40.441Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact `evidence/archive/virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625.md`, mapping VM prerelease rows 25, 33, 37, 40-43, 50, 75, and 76 to exact mounted-source carriers, repo-local spec/assertion surfaces, and current wait-family linkage without cloud execution.",
+        "last_worker_completed_at": "2026-06-25T10:50:46.442Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T10:51:27.004Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-25 mounted-source matrix review: the archive artifact proves rows 25, 33, 37, 40-43, 50, 75, and 76 now have exact source-backed carrier/expectation mapping, row 37 is correctly isolated onto the AAD approval wait, rows 75-76 are correctly traced to old-suite AKSConformance sources, and no fresh cloud-free closure leaf remains for that row set beyond durable lineage reconciliation."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625"
+      ],
+      "result": "Created the requested archive artifact `evidence/archive/virtualmachine-prerelease-mounted-source-row-coverage-matrix-20260625.md`, mapping VM prerelease rows 25, 33, 37, 40-43, 50, 75, and 76 to exact mounted-source carriers, repo-local spec/assertion surfaces, and current wait-family linkage without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T10:51:27.004Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-25 mounted-source matrix review: the archive artifact proves rows 25, 33, 37, 40-43, 50, 75, and 76 now have exact source-backed carrier/expectation mapping, row 37 is correctly isolated onto the AAD approval wait, rows 75-76 are correctly traced to old-suite AKSConformance sources, and no fresh cloud-free closure leaf remains for that row set beyond durable lineage reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

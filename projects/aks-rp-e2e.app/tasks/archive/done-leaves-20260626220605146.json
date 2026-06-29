@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:06:05.146Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 blocked-frontier refill: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single open branch, keep the two truthful external-proof waits compressed, and repair the row-50 environment-overblock by replacing its passive wait with one assigned local execution-host preflight/escalation decision leaf that must classify whether unchanged row-50 work can reopen or whether a narrower exact external wait remains.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row25-row50-first-live-run-gate-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the freed VM prerelease direct-spec execute lane into one exact next local runnable leaf by reconciling rows 25 and 50 against the accepted dry-run gate proof and carrier audits, then write a repo-local packet that names the first unchanged live-run candidate, its exact gate/preflight requirements, and the evidence/approval surface needed before any cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row25-row50-first-live-run-gate-packet-20260626.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row25-vs-row26 feasibility audit, the row25/row50 mutation-gate dry-run evidence, and the preserved freed-rows execute-gate packet instead of treating the lane as missing source or blocked on human transport.",
+        "Artifact makes one concrete owner-ready choice for the next VM prerelease live-run candidate (row 25 or row 50), names the exact unchanged spec/replay/command surface plus preflight and approval predicates, and states whether any bounded repo-local carrier tweak is still required before execution.",
+        "Result explicitly preserves the two existing external-proof waits unchanged and does not execute cloud mutation; if the lane is still execute-gated, the packet records the exact resume condition and next leaf rather than reopening duplicate blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:50:06.364Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row25-row50-first-live-run-gate-packet-20260626_20260626215013",
+        "assigned_at": "2026-06-26T21:50:13.028Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row25-row50-first-live-run-gate-packet-20260626",
+        "worker_started_attempt_id": "a_vmpr-row25-row50-first-live-run-gate-packet-20260626_20260626215013",
+        "worker_started_at": "2026-06-26T21:50:29.275Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested owner-ready gate packet at evidence/archive/vmpr-row25-row50-first-live-run-gate-packet-20260626.md, choosing row 50 as the first unchanged live-run candidate and preserving the two existing external-proof waits unchanged.",
+        "last_worker_completed_at": "2026-06-26T21:52:18.611Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T21:52:54.877Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the packet cites the accepted row25/row26 feasibility audit, the row25/row50 mutation-gate dry-run proof, and the freed-rows execute-gate packet; it truthfully chooses row 50 as the first unchanged live-run candidate, preserves row 25 as next, and leaves both external-proof waits unchanged."
+      },
+      "session_id": "s_task_vmpr-row25-row50-first-live-run-gate-packet-20260626",
+      "session_history": [
+        "s_task_vmpr-row25-row50-first-live-run-gate-packet-20260626"
+      ],
+      "result": "Wrote the requested owner-ready gate packet at evidence/archive/vmpr-row25-row50-first-live-run-gate-packet-20260626.md, choosing row 50 as the first unchanged live-run candidate and preserving the two existing external-proof waits unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T21:52:54.877Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the packet cites the accepted row25/row26 feasibility audit, the row25/row50 mutation-gate dry-run proof, and the freed-rows execute-gate packet; it truthfully chooses row 50 as the first unchanged live-run candidate, preserves row 25 as next, and leaves both external-proof waits unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

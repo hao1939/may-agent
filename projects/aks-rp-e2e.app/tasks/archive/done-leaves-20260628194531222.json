@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T19:45:31.222Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner review: archive the accepted defender-profile wording/model split leaf because its durable meaning now lives in branch evidence and maintained model/spec surfaces. The live repo-local successor under this branch is now exactly one active metadata-repair leaf, repair-private-cluster-none-dns-zone-v3-metadata-links-20260628, while the five operator-response waits remain separate truthful blockers because each still depends on a distinct already-dispatched returned artifact or authorization and all share the same next owner review/send-escalation checkpoint of 2026-06-29T16:45:00Z. Do not invent new spec-loop cloud reruns from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the defender-profile VM prerelease spec packet and capability-model wording so the 2026-06-28 live evidence is carried forward as a request/readback-vs-runtime split instead of a final product-gap claim, and document the exact next retest gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628.md"
+      ],
+      "acceptance": [
+        "Durably update the maintained defender-profile spec/model surfaces affected by the 2026-06-28 run so they stop claiming simple workspace-id persistence as established truth, explicitly record the three GET-persistence failures plus passing runtime bundles, resolve stale generated/check-only wording that contradicts the completed live run, and archive an evidence note citing the exact files changed and the bounded retest condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:43:55.310Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628_20260628184355",
+        "assigned_at": "2026-06-28T18:43:55.362Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628",
+        "worker_started_attempt_id": "a_update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628_20260628184355",
+        "worker_started_at": "2026-06-28T18:44:08.419Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the Defender VM prerelease spec packet, capability model, regenerated views, and archived a durable evidence note so the 2026-06-28 live result is now carried as a request/readback-vs-runtime split under review with an explicit retest gate.",
+        "last_worker_completed_at": "2026-06-28T18:47:40.109Z",
+        "last_worker_evidence": [
+          "features/defender-profile/specs/defender-profile-vm-prerelease-matrix.json",
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/evidence-index.md",
+          "model/knowledge-map/views/model.generated.md",
+          "evidence/archive/update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:48:08.602Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence note and maintained defender surfaces now carry the 2026-06-28 VM prerelease result as a request/readback-vs-runtime split under review with explicit retest gates, and no contradiction with the missing replays/execution/automation.md path was introduced because the note explicitly anchors to design/archive/legacy-replay-execution/automation.md."
+      },
+      "session_id": "s_task_update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628",
+      "session_history": [
+        "s_task_update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628"
+      ],
+      "result": "Updated the Defender VM prerelease spec packet, capability model, regenerated views, and archived a durable evidence note so the 2026-06-28 live result is now carried as a request/readback-vs-runtime split under review with an explicit retest gate.",
+      "evidence": [
+        "features/defender-profile/specs/defender-profile-vm-prerelease-matrix.json",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/evidence-index.md",
+        "model/knowledge-map/views/model.generated.md",
+        "evidence/archive/update-defender-profile-vm-prerelease-model-and-spec-wording-from-live-split-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:48:08.602Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence note and maintained defender surfaces now carry the 2026-06-28 VM prerelease result as a request/readback-vs-runtime split under review with explicit retest gates, and no contradiction with the missing replays/execution/automation.md path was introduced because the note explicitly anchors to design/archive/legacy-replay-execution/automation.md."
+      },
+      "status": "done"
+    }
+  ]
+}

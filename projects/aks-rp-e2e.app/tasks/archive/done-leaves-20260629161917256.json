@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:19:17.256Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two repo-local follow-ups and kept the spec-verification lane truthful: the ACNS retina-enterprise live-surface inspection confirmed the existing gh/az-capable-host + live-slot wait remains the single exact blocker with no rerun or escalation justified, while the disable-ssh artifact review proved run 28386236395 never entered execute because the live carrier hard-requires evidence/pipelines/virtualmachine-prerelease-coverage.json during preflight. The lane now preserves one new assigned repo-local repair leaf to harden that disable-ssh preflight before any bounded rerun, keeps the active cilium artifact-reconcile leaf as the sole next action for run 28382578674, and otherwise leaves the saturated verifier wave plus exact family waits unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound the missing live-execution surface for spec.network-acns-basic-retina-update-retina-enterprise by checking whether a gh/az-capable host or approved alternate live surface exists, and record the exact promote-or-wait condition before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-live-surface-check-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the current blocked wait and the reviewed host-capability evidence that left the spec without a truthful live slot.",
+        "The note records whether one gh/az-capable host or approved alternate surface exists now, or proves the wait remains exact with the specific missing capability or owner response needed.",
+        "If a local setup, escalation, or promotion action can move the spec, the note names that concrete next task without running cloud mutation; otherwise it preserves the single truthful wait condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-acns-basic-retina-update-retina-enterprise"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T16:15:06.857Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T16:15:10.543Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629_20260629161514",
+        "assigned_at": "2026-06-29T16:15:14.746Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629",
+        "worker_started_attempt_id": "a_inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629_20260629161514",
+        "worker_started_at": "2026-06-29T16:15:41.788Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the current wait, host capabilities, and spec-loop saturation for `spec.network-acns.basic-retina-update-retina-enterprise`, then wrote a durable live-surface gate note confirming no gh/az-capable host or approved alternate live surface exists yet and that the existing wait remains exact.",
+        "last_worker_completed_at": "2026-06-29T16:17:10.218Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-live-surface-check-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:18:49.466Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-live-surface-check-20260629.md: owner-reviewed host capability and verifier-slot state still show no gh/az-capable live surface and no truthful promotion slot, so the existing wait remains the single exact blocker and no rerun/escalation is justified."
+      },
+      "session_id": "s_task_inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629",
+      "session_history": [
+        "s_task_inspect-network-acns-basic-retina-update-retina-enterprise-live-surface-gate-20260629"
+      ],
+      "result": "Reviewed the current wait, host capabilities, and spec-loop saturation for `spec.network-acns.basic-retina-update-retina-enterprise`, then wrote a durable live-surface gate note confirming no gh/az-capable host or approved alternate live surface exists yet and that the existing wait remains exact.",
+      "evidence": [
+        "evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-live-surface-check-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:18:49.466Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/spec-network-acns-basic-retina-update-retina-enterprise-live-surface-check-20260629.md: owner-reviewed host capability and verifier-slot state still show no gh/az-capable live surface and no truthful promotion slot, so the existing wait remains the single exact blocker and no rerun/escalation is justified."
+      },
+      "status": "done"
+    }
+  ]
+}

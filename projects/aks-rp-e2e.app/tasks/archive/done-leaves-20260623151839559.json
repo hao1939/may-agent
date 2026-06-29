@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T15:18:39.559Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Further compacted the focus branch after confirming the watchdog review target was already archived and the remaining private-cluster none-dns-zone-v3 closure meaning is fully preserved in prior rollups and archive evidence. The live branch is now intentionally minimal: one active repo-local auth-service-tags selected-host preflight contract task and one exact family-level blocked external-human wait, with no leftover completed children requiring review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the already-maintained repo-local private-cluster source/spec/replay/model artifacts and mounted AKS RP source to close the remaining unknown classification for path.private-cluster-none-dns-zone-v3: verify the exact handwritten scenario lineage and canonical carrier surfaces, then record whether the path can be promoted to a bounded repo-local verdict or whether one narrower evidence ceiling still blocks it without reopening the external-send family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted private-cluster source lineage plus the current repo-local spec/replay/model carriers for path.private-cluster-none-dns-zone-v3, and states a truthful repo-local closure outcome: either the maintained path can be reclassified with bounded evidence, or the exact remaining evidence ceiling is narrowed without duplicating the existing external wait family.",
+        "The work stays repo-local and bounded to path.private-cluster-none-dns-zone-v3 classification repair only; no cloud mutation, no duplicate external waits, and no speculative new feature branch are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T15:14:42.342Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623_20260623151442",
+        "assigned_at": "2026-06-23T15:14:42.391Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623_20260623151442",
+        "worker_started_at": "2026-06-23T15:15:05.839Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new archive closure note at evidence/archive/private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623.md that confirms the mounted source lineage and checked-in carrier surfaces for path.private-cluster-none-dns-zone-v3 are complete, and narrows the remaining blocker to the exact live lifecycle evidence ceiling only.",
+        "last_worker_completed_at": "2026-06-23T15:16:33.227Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T15:17:22.530Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the mounted private-cluster scenario lineage and all maintained repo-local spec/replay/model carriers for path.private-cluster-none-dns-zone-v3, and it truthfully keeps the path at bounded unknown because the only remaining gap is accepted live observation of the same-cluster system->none lifecycle. This satisfies the review without reopening the external-send family or inventing new closure work."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623"
+      ],
+      "result": "Created a new archive closure note at evidence/archive/private-cluster-none-dns-zone-v3-source-spec-model-closure-20260623.md that confirms the mounted source lineage and checked-in carrier surfaces for path.private-cluster-none-dns-zone-v3 are complete, and narrows the remaining blocker to the exact live lifecycle evidence ceiling only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T15:17:22.530Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the mounted private-cluster scenario lineage and all maintained repo-local spec/replay/model carriers for path.private-cluster-none-dns-zone-v3, and it truthfully keeps the path at bounded unknown because the only remaining gap is accepted live observation of the same-cluster system->none lifecycle. This satisfies the review without reopening the external-send family or inventing new closure work."
+      },
+      "status": "done"
+    }
+  ]
+}

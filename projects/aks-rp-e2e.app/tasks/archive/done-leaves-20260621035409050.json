@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:54:09.050Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog blocked-frontier planning pass: archived the two accepted precursor leaves now that their durable meaning is captured in the root rollup. The private-endpoint path-split reconcile established that the broader accepted list/read carrier path.private-cluster-private-endpoint-connections stays final while a narrower maintained-surface repair remains active only to restore the lifecycle-only maintained carrier from existing 2026-06-21 pass evidence. The VM prerelease maintained-slice checkpoint gap likewise stays accepted as evidence feeding the active app-local helper/tooling leaf vmpr-maintained-slice-domain-checkpoint-subslice-helper-20260621 rather than a separate runnable branch. Frontier remains intentionally narrow and truthful: keep the three active repair/tooling leaves assigned, keep external-send-proof-dispatch-family-20260620 as the only live external-human transport wait for the two send-ready packets, and do not create duplicate passive waits or fresh technical retries until repo-local send/escalation proof or an authoritative reply exists.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-endpoint-connections-lifecycle-path-split-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prove whether a distinct lifecycle-only feature path.private-cluster-private-endpoint-connections-lifecycle still exists separately from the already-final broader path.private-cluster-private-endpoint-connections verdict; if it does, capture the exact model/task-text split and next bounded execute contract, and if it does not, land only the minimal mapping/text hygiene needed to preserve the accepted broader-path decision without reopening it.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-endpoint-connections-lifecycle-path-split-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites the current accepted status of path.private-cluster-private-endpoint-connections plus the stale-terminal warning on private-endpoint-connections-lifecycle-bounded-execute-retry-20260621, then shows one evidence-backed answer about whether a distinct lifecycle-only path remains.",
+        "If no distinct lifecycle-only gap remains, the note names the exact minimal model/task-text hygiene required, preserves the accepted broader-path verdict unchanged, and does not require a cloud run or synthetic preflight blocker.",
+        "Only if a distinct lifecycle-only gap is proven, the note names the exact lifecycle-only path/spec/replay surface and ends with the bounded next execute contract or exact non-cloud blocker evidence needed before any live retry."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-endpoint-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:50:25.640Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-endpoint-connections-lifecycle-path-split-reconcile-20260621_20260621035025",
+        "assigned_at": "2026-06-21T03:50:25.734Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-endpoint-connections-lifecycle-path-split-reconcile-20260621",
+        "worker_started_attempt_id": "a_private-endpoint-connections-lifecycle-path-split-reconcile-20260621_20260621035025",
+        "worker_started_at": "2026-06-21T03:51:06.726Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconcile note at evidence/archive/private-endpoint-connections-lifecycle-path-split-reconcile-20260621.md. It proves the lifecycle-only branch still exists as a distinct source/spec/replay/feature/evidence carrier, while the maintained model/view path surfaces currently expose only the already-accepted broader pass sibling.",
+        "last_worker_completed_at": "2026-06-21T03:52:34.803Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:53:01.112Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/private-endpoint-connections-lifecycle-path-split-reconcile-20260621.md: it proves the lifecycle-only branch still exists separately in mounted source, specs/features/replay, and 2026-06-21 live pass evidence, while the maintained path/model surfaces currently expose only the already-final broader pass sibling. This resolves the stale-terminal retry as maintained-surface drift rather than a reason to reopen path.private-cluster-private-endpoint-connections."
+      },
+      "session_id": "s_task_private-endpoint-connections-lifecycle-path-split-reconcile-20260621",
+      "session_history": [
+        "s_task_private-endpoint-connections-lifecycle-path-split-reconcile-20260621"
+      ],
+      "result": "Wrote the requested reconcile note at evidence/archive/private-endpoint-connections-lifecycle-path-split-reconcile-20260621.md. It proves the lifecycle-only branch still exists as a distinct source/spec/replay/feature/evidence carrier, while the maintained model/view path surfaces currently expose only the already-accepted broader pass sibling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:53:01.112Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/private-endpoint-connections-lifecycle-path-split-reconcile-20260621.md: it proves the lifecycle-only branch still exists separately in mounted source, specs/features/replay, and 2026-06-21 live pass evidence, while the maintained path/model surfaces currently expose only the already-final broader pass sibling. This resolves the stale-terminal retry as maintained-surface drift rather than a reason to reopen path.private-cluster-private-endpoint-connections."
+      },
+      "status": "done"
+    }
+  ]
+}

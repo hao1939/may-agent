@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:04:39.690Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog stale-review reconciliation: confirmed traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623 was already owner-reviewed and accepted, so no review leaf was reopened. The frontier remains intentionally narrow and truthful: one active repo-local mounted-source reconciliation stays in progress for path.traffic-azure-service-mesh.ingress-internal, while the two existing blocked waits remain the only live waits (external human/operator proof family follow-up after 2026-06-26 if silent, and the path.private-cluster-vnet-integration-auth-service-tags same-launcher SSH environment wait). Archived completed mounted-source reconciliation leaves whose durable meaning is already represented by project rollup/evidence so future wakes focus on the single live repo-local task plus exact waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.traffic-api-proxy.large-payload and path.traffic-api-proxy.websocket-streaming: determine whether each branch has an exact handwritten/source slice or must remain source-grounded draft, then tighten feature/spec/replay/model wording and archive the evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source apiproxy files plus the touched feature/spec/replay/model carriers for large-payload and websocket-streaming, and records whether each path has exact handwritten/source authority or only source-grounded draft support.",
+        "Carrier and model updates keep the two traffic-api-proxy paths claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit draft/source-grounded wording instead of borrowing neighboring traffic-api-proxy evidence.",
+        "The work stays repo-local and bounded to path.traffic-api-proxy.large-payload and path.traffic-api-proxy.websocket-streaming only: no cloud mutation, no blocked-wait follow-up, and no widening into unrelated traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-api-proxy-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:42:00.036Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623_20260623194200",
+        "assigned_at": "2026-06-23T19:42:00.089Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623_20260623194200",
+        "worker_started_at": "2026-06-23T19:42:20.236Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled traffic API Proxy large-payload and websocket-streaming carriers against mounted source, updating feature/spec/replay/model wording and archiving a bounded evidence note without cloud work.",
+        "last_worker_completed_at": "2026-06-23T19:50:24.202Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:52:43.749Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites exact mounted apiproxy and Envoy files, the touched specs/replays/model diff keeps large-payload narrowed to the compatibility_http.go header-boundary sub-slice and websocket-streaming at config-level draft only, and the work stays repo-local without cloud or blocker widening."
+      },
+      "session_id": "s_task_traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_traffic-api-proxy-large-payload-websocket-mounted-source-reconcile-20260623"
+      ],
+      "result": "Reconciled traffic API Proxy large-payload and websocket-streaming carriers against mounted source, updating feature/spec/replay/model wording and archiving a bounded evidence note without cloud work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:52:43.749Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites exact mounted apiproxy and Envoy files, the touched specs/replays/model diff keeps large-payload narrowed to the compatibility_http.go header-boundary sub-slice and websocket-streaming at config-level draft only, and the work stays repo-local without cloud or blocker widening."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:51:08.228Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review now accepts the VM prerelease row-37 managed AAD source-promotion repair: the evidence archive grounds the mounted-source carrier and the repo-local specs/index.json entry is aligned as a source-backed unknown path for path.aad-rbac.managed-v2-lifecycle. The live learning frontier stays intentionally narrow: VM prerelease row-38 Azure RBAC source promotion remains the single active adjacent source-grounding task, while the external-send-proof dispatch family remains the single compressed blocked wait for human transport proof outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-standard-index-model-promotion-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: promote the exact mounted Scenario_Standard_VirtualNodes extension-plane carrier from source-grounded packet/spec/replay into an accepted indexed/modeled repo-local path so serverless knowledge stops at a truthful visible path boundary without collapsing it into addon-plane aciConnectorLinux branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-index-model-promotion-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the accepted extension-lifecycle matrix plus current specs/index.json, model/knowledge-map/views/path-summary.json, and any directly linked serverless feature/model carriers; write evidence/archive/serverless-virtualnodes-standard-index-model-promotion-20260621.md that names the exact spec id, replay id, proposed path id, and any adjacent serverless family links needed for source-faithful promotion.",
+        "If the exact mounted extension-plane carrier is still missing from accepted repo-local indexes/model views, update the relevant repo-local index/model-facing artifact(s) so the source-grounded standard carrier becomes a visible accepted path without inventing a new live verdict or merging it into addon-plane aciConnectorLinux leaves; otherwise record the exact existing owner surface that already satisfies that promotion.",
+        "Keep the task repo-local only: no cloud mutation, no external asks, and no expansion beyond the mounted standard VirtualNodes extension-plane branch plus the minimum adjacent serverless surfaces needed to keep addon-plane separation truthful."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtualnodes-source-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:43:58.430Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-index-model-promotion-20260621_20260621144402",
+        "assigned_at": "2026-06-21T14:44:02.005Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-index-model-promotion-20260621",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-index-model-promotion-20260621_20260621144402",
+        "worker_started_at": "2026-06-21T14:44:18.598Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted the exact mounted Scenario_Standard_VirtualNodes extension-plane carrier into accepted repo-local index/model surfaces by indexing spec.serverless-virtualnodes.standard, adding scenario/DAG/feature/path model entries, regenerating views, and writing the requested evidence report.",
+        "last_worker_completed_at": "2026-06-21T14:49:28.225Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:50:20.556Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: evidence/archive/serverless-virtualnodes-standard-index-model-promotion-20260621.md names the exact spec/replay/path carrier, proves the promotion gap in specs/index.json and knowledge-map views was closed repo-locally, and preserves truthful separation from addon-plane aciConnectorLinux branches without claiming a new live verdict."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-index-model-promotion-20260621",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-index-model-promotion-20260621"
+      ],
+      "result": "Promoted the exact mounted Scenario_Standard_VirtualNodes extension-plane carrier into accepted repo-local index/model surfaces by indexing spec.serverless-virtualnodes.standard, adding scenario/DAG/feature/path model entries, regenerating views, and writing the requested evidence report.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:50:20.556Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: evidence/archive/serverless-virtualnodes-standard-index-model-promotion-20260621.md names the exact spec/replay/path carrier, proves the promotion gap in specs/index.json and knowledge-map views was closed repo-locally, and preserves truthful separation from addon-plane aciConnectorLinux branches without claiming a new live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

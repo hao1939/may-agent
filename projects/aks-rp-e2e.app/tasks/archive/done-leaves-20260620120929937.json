@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T12:09:29.937Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier owner review: no worker completions or new blocker evidence arrived, so the feature/spec lane remains intentionally narrow. MachinesPreview stays the single truthful external wait pending durable repo-local proof of send/handoff or an authoritative preview-registration reply; do not recast it as response-await without outbound proof. VirtualMachine prerelease replacement still flows through the two fresh active suite row-accounting leaves (prerelease.go and checkin.go), which in turn unlock the waiting candidate-only resolution merge, missing-spec closure merge, and deferred plan-regeneration proof tasks. The remaining visible done VM prerelease batch/proof leaves are superseded provenance now represented by this parent summary and can be archived for readability; no unrelated refill work should start until one active suite leaf finishes or external MachinesPreview evidence changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-missing-spec-row-closure-batch-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Merge the prerelease-suite and checkin-suite VirtualMachine row-accounting artifacts into the final missing-spec closure packet for evidence/pipelines/virtualmachine-prerelease-coverage.json, producing one exact inventory of rows that need spec authoring/refresh versus intentional terminal exclusion while preserving evidence/pipelines/virtualmachine-prerelease.features.txt and avoiding model/checkpoint edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-missing-spec-row-closure-batch-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact merges the suite-level row-accounting packets into one final accounting for every currently missing-spec row in evidence/pipelines/virtualmachine-prerelease-coverage.json, with each row mapped to either exact spec-to-author/refresh work or intentional terminal exclusion.",
+        "Artifact cites the prerelease-suite and checkin-suite row-accounting artifacts plus mounted-source references so the final packet can be used for follow-on spec/replay edits without re-reading source.",
+        "Work preserves evidence/pipelines/virtualmachine-prerelease.features.txt as the exact feature set for this replacement pass and stays outside model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, and blocked checkpoint slices."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:05:19.793Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T12:08:01.563Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T12:05:49.890Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-missing-spec-row-closure-batch-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-missing-spec-row-closure-batch-20260620_20260620120549",
+        "worker_started_at": "2026-06-20T12:06:12.662Z",
+        "stale_active_requeued_at": "2026-06-20T12:08:00.900Z",
+        "stale_active_requeue_reason": "Oversized batch replaced by concrete prerelease/checkin suite row-accounting leaves; keep this task as the later merge packet once source-bounded artifacts exist.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_vm-prerelease-missing-spec-row-closure-batch-20260620_20260620120549",
+        "reviewed_at": "2026-06-20T12:08:13.271Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by vm-prerelease-missing-spec-row-closure-merge-20260620 so the merge packet carries explicit depends_on edges to the prerelease/checkin suite row-accounting leaves instead of appearing runnable before its source-bounded inputs exist."
+      },
+      "session_id": "s_task_vm-prerelease-missing-spec-row-closure-batch-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-missing-spec-row-closure-batch-20260620"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T12:08:13.271Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by vm-prerelease-missing-spec-row-closure-merge-20260620 so the merge packet carries explicit depends_on edges to the prerelease/checkin suite row-accounting leaves instead of appearing runnable before its source-bounded inputs exist."
+      },
+      "status": "done"
+    }
+  ]
+}

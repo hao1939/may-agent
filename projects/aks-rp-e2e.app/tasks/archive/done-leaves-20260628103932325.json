@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T10:39:32.325Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner blocked-frontier/planning rollup: the accepted AAD managed-v2 row-37 HTTP 409 reconciliation, helper-VM eastus2 ceiling check, and private-cluster-none-dns-zone-v3 boundary note already have durable evidence and are now summarized on this parent. Keep this lane intentionally narrow: one active repo-local model/spec narrowing leaf remains for path.aad-rbac.managed-v2-lifecycle, and one exact App Routing existing-cluster operator-response wait remains blocked until a real reply or its recorded owner-review checkpoint.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the westus2 row-37 managed AAD lifecycle admin-groups-tenant-updated HTTP 409 result against mounted Scenario_AAD source intent, maintained spec/replay carriers, and current model wording so path.aad-rbac.managed-v2-lifecycle no longer relies on an over-broad pure helper-VM environment-blocked classification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628.md"
+      ],
+      "acceptance": [
+        "Durable evidence cites the exact mounted row-37 source/scenario, the westus2 spec-loop artifact 28290019089 terminal result, the maintained spec/replay/model carriers, and explains whether adminGroupObjectIDs+tenantID update is expected, replay-shaped wrong, product-mismatched, or model-classified too coarsely.",
+        "The task leaves one concrete successor decision for path.aad-rbac.managed-v2-lifecycle without duplicating the eastus2 helper-VM capacity wait: either a narrowed model/verdict update recommendation or one further bounded repo-local follow-up leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T10:33:35.626Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628_20260628103335",
+        "assigned_at": "2026-06-28T10:33:35.678Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628",
+        "worker_started_attempt_id": "a_spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628_20260628103335",
+        "worker_started_at": "2026-06-28T10:33:47.181Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable reconciliation artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628.md concluding the row-37 path should no longer be treated as a pure helper-VM environment block because workflow run 28290019089 reached product assertions and failed only the adminGroupObjectIDs+tenantID update branch with HTTP 409.",
+        "last_worker_completed_at": "2026-06-28T10:36:40.668Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T10:37:26.710Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archived row-37 reconciliation: it cites mounted Scenario_AAD row-37 intent, workflow run 28290019089, and current carriers, and it truthfully concludes the path cannot remain classified as a pure helper-VM environment block because the run reached the adminGroupObjectIDs+tenantID update assertion and failed there with HTTP 409."
+      },
+      "session_id": "s_task_spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628",
+      "session_history": [
+        "s_task_spec-aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628"
+      ],
+      "result": "Wrote a durable reconciliation artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628.md concluding the row-37 path should no longer be treated as a pure helper-VM environment block because workflow run 28290019089 reached product assertions and failed only the adminGroupObjectIDs+tenantID update branch with HTTP 409.",
+      "evidence": [
+        "evidence/archive/aad-rbac-managed-v2-lifecycle-row37-admin-groups-tenant-409-reconciliation-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T10:37:26.710Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archived row-37 reconciliation: it cites mounted Scenario_AAD row-37 intent, workflow run 28290019089, and current carriers, and it truthfully concludes the path cannot remain classified as a pure helper-VM environment block because the run reached the adminGroupObjectIDs+tenantID update assertion and failed there with HTTP 409."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:01:04.952Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review kept external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human wait because repo-local dispatch/handoff proof already exists and the only remaining residue is later out-of-runtime human/operator send/escalation/approval/reply/identity/registration/execution proof recorded back into the repo-local archive. Repo-local capacity should stay on the two active leaves: network-cni-cilium-enterprise-addon-model-landing-20260622 must land the distinct mounted Scenario_Cilium_Dataplane_Enterprise contract into accepted model/path carriers without duplicate source/spec/replay work or cloud mutation, and speculor-mounted-source-gap-map-20260622 must map one bounded mounted speculor Go e2ev3 slice to current spec/replay/model coverage and either name one concrete repo-local successor or conclude truthfully that no duplicate leaf is needed. Archive the completed predecessor network-cni-mounted-source-gap-map-20260622 as summarized knowledge; do not reopen duplicate blocked children or local rediscovery beneath the external wait from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-gap-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map one bounded network-cni Go e2ev3 source slice into current spec/replay/model coverage and name the next truthful repo-local branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-gap-map-20260622.md"
+      ],
+      "acceptance": [
+        "Mounted /app/sources/aks-rp network-cni e2ev3 suites/scenarios are cited with exact file references and mapped to existing specs/replays/model paths or marked uncovered.",
+        "The archive artifact identifies at least one concrete next repo-local leaf or a truthful no-duplicate conclusion for the highest-value uncovered network-cni slice without cloud mutation.",
+        "If current carriers are already sufficient, the artifact cites the maintained carrier files and explains why no duplicate execution/source leaf should be reopened from this slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T12:55:49.511Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-gap-map-20260622_20260622125549",
+        "assigned_at": "2026-06-22T12:55:49.559Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-gap-map-20260622",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-gap-map-20260622_20260622125549",
+        "worker_started_at": "2026-06-22T12:56:12.650Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the archive artifact evidence/archive/network-cni-mounted-source-gap-map-20260622.md, mapping the mounted Cilium e2ev3 source slice to current specs/replays/model coverage and naming the next truthful repo-local leaf as an enterprise-addon model-landing task rather than a duplicate execution/source branch.",
+        "last_worker_completed_at": "2026-06-22T12:59:09.177Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T12:59:53.022Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-mounted-source-gap-map-20260622.md cites exact mounted Cilium source files, maps them to maintained repo-local carriers, and the repo-local check confirms the enterprise addon feature/spec/replay files exist while path.network-cni-cilium-enterprise-addon-lifecycle and path.network-cni-cilium-stop-start are still absent from model/knowledge-map/views/path-summary.json, so the next truthful step is model landing rather than duplicate source/replay work."
+      },
+      "session_id": "s_task_network-cni-mounted-source-gap-map-20260622",
+      "session_history": [
+        "s_task_network-cni-mounted-source-gap-map-20260622"
+      ],
+      "result": "Created the archive artifact evidence/archive/network-cni-mounted-source-gap-map-20260622.md, mapping the mounted Cilium e2ev3 source slice to current specs/replays/model coverage and naming the next truthful repo-local leaf as an enterprise-addon model-landing task rather than a duplicate execution/source branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T12:59:53.022Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-mounted-source-gap-map-20260622.md cites exact mounted Cilium source files, maps them to maintained repo-local carriers, and the repo-local check confirms the enterprise addon feature/spec/replay files exist while path.network-cni-cilium-enterprise-addon-lifecycle and path.network-cni-cilium-stop-start are still absent from model/knowledge-map/views/path-summary.json, so the next truthful step is model landing rather than duplicate source/replay work."
+      },
+      "status": "done"
+    }
+  ]
+}

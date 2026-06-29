@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:11:50.393Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 blocked-frontier refill: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single open branch, keep the VM prerelease external-proof family compressed to one truthful blocked leaf, and reopen static-egress only as a bounded blocker-durability repair because its promised wait artifact was not inspectable at the listed path. Next useful work is the assigned static-egress evidence-repair leaf; after that branch is repaired, the tree should return to exact external waits only.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row50-approval-and-azure-ready-host-proof-wait-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external wait for VM prerelease row 50 until durable repo-local proof exists that the unchanged dedicated live run was explicitly approved and an Azure-ready execution host was nominated/proven for the exact carrier preserved in the accepted handoff packet; do not reopen local diagnosis or widen into adjacent autoscaler work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-approval-and-azure-ready-host-proof-wait-20260626.md"
+      ],
+      "acceptance": [
+        "Task remains blocked only while approval proof and Azure-ready host proof are absent; blocker text cites the accepted handoff packet and diagnosis artifact and preserves the exact unchanged carrier and mutation token.",
+        "When durable repo-local approval proof and host-readiness proof arrive, this wait can be closed and replaced by a fresh runnable execution-evidence leaf for the same unchanged row-50 direct-spec run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T21:59:05.478Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T22:00:50.427Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during blocked-frontier review because the passive row-50 approval+host-proof wait was overblocked for an environment/capability issue. The active leaf vmpr-row50-host-readiness-and-ask-route-decision-packet-20260626 now owns the exact repo-local check for remaining selected-host/setup work versus one sharper external approval+host-owner wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T22:00:50.427Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during blocked-frontier review because the passive row-50 approval+host-proof wait was overblocked for an environment/capability issue. The active leaf vmpr-row50-host-readiness-and-ask-route-decision-packet-20260626 now owns the exact repo-local check for remaining selected-host/setup work versus one sharper external approval+host-owner wait."
+      },
+      "status": "done"
+    }
+  ]
+}

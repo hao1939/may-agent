@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:25:07.638Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+  "summary": "VM prerelease ASM repair branch now has two accepted bounded correction decisions and one active repo-local application task. The accepted row-72 decomposition proves the shared ASM CNI matrix currently overstates coverage: row 72 must be demoted from covered ASM behavior to neutral pod-subnet+Cilium adjacent evidence only, while the backlog successor vm-prerelease-addonv2-asm-row72-matrix-coverage-correction-20260620 remains queued behind the active row-211 conflict. Shared functionality and broader exact-source waits remain blocked until authoritative ASM source semantics return.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit only VM prerelease ASM CNI row 72 against the current shared ASM CNI matrix coverage, the neutral pod-subnet+cilium landing, and the accepted bounded row-72 note, then define the smallest truthful spec/coverage repair so row 72 is no longer treated as fully covered ASM behavior without exact source.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-addonv2-asm-cni-bounded-source-equivalent-slice-20260620.md plus the current shared ASM CNI matrix spec/coverage surfaces and the neutral pod-subnet+cilium spec/replay landing already in repo.",
+        "The note ends with one planner-usable repair decision for row 72 only: either an exact spec/coverage correction to create next or an evidence-backed explanation of why the current shared matrix treatment can remain unchanged despite the accepted row-72 contradiction.",
+        "No cloud execution, no rows 69-71 semantic authoring, and no broad ASM rediscovery occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:addonv2-asm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:17:49.169Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620_20260620081749",
+        "assigned_at": "2026-06-20T08:17:49.223Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620_20260620081749",
+        "worker_started_at": "2026-06-20T08:18:55.730Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-72-only archive note at evidence/archive/vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620.md, reconciling the accepted blocker lineage, current ASM matrix coverage, and the landed neutral pod-subnet+Cilium evidence into a single repair decision.",
+        "last_worker_completed_at": "2026-06-20T08:19:55.614Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:24:44.620Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-72-only archive note as a bounded decision artifact: it cites the accepted ASM CNI lineage, proves row 72 should be demoted from covered ASM behavior to neutral substrate-adjacent evidence, and leaves the repo-local matrix correction queued as the next concrete successor rather than claiming the fix is already landed."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:24:44.620Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-72-only archive note as a bounded decision artifact: it cites the accepted ASM CNI lineage, proves row 72 should be demoted from covered ASM behavior to neutral substrate-adjacent evidence, and leaves the repo-local matrix correction queued as the next concrete successor rather than claiming the fix is already landed."
+      },
+      "status": "done"
+    }
+  ]
+}

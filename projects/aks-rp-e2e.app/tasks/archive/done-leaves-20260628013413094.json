@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T01:34:13.094Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 stale-active owner repair reclaimed the three abandoned net-integration collector slots and accepted three sibling review packets after lightweight artifact validation. Durable evidence now includes the basiclb-migration-natgw, cross-subscription-vnet, and custom-route-table-user-assigned-msi feature-reference packets under evidence/archive/, while natgw-v2-stack-transition, nsg-control, and outbound-migration-lb-to-natgw were requeued as the next runnable collectors because their stale active sessions had no archive proof. Keep the remaining review leaves for owner validation and let the requeued trio refill this lane when worker capacity frees.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-net-integration-basiclb-migration-natgw",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for net-integration-basiclb-migration-natgw.",
+      "inputs": [
+        "feature:net-integration-basiclb-migration-natgw",
+        "packet:features/net-integration/packets/basiclb-migration-natgw.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-basiclb-migration-natgw"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "net-integration-basiclb-migration-natgw",
+        "packetPath": "features/net-integration/packets/basiclb-migration-natgw.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "net-integration",
+        "coveredFeatureIds": [
+          "net-integration-basiclb-migration-natgw"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-basiclb-migration-natgw-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T01:23:30.824Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-basiclb-migration-natgw_20260628012331",
+        "assigned_at": "2026-06-28T01:23:31.060Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-basiclb-migration-natgw_20260628012331",
+        "worker_started_at": "2026-06-28T01:23:52.631Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for net-integration-basiclb-migration-natgw: evidence/archive/feature-reference-net-integration-basiclb-migration-natgw-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T01:25:23.314Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T01:34:03.110Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-basiclb-migration-natgw-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-basiclb-migration-natgw"
+      ],
+      "result": "Collected official feature references for net-integration-basiclb-migration-natgw: evidence/archive/feature-reference-net-integration-basiclb-migration-natgw-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T01:34:03.110Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-net-integration-cross-subscription-vnet",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for net-integration-cross-subscription-vnet.",
+      "inputs": [
+        "feature:net-integration-cross-subscription-vnet",
+        "packet:features/net-integration/packets/cross-subscription-vnet.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-cross-subscription-vnet"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "net-integration-cross-subscription-vnet",
+        "packetPath": "features/net-integration/packets/cross-subscription-vnet.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "net-integration",
+        "coveredFeatureIds": [
+          "net-integration-cross-subscription-vnet"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T01:23:30.833Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-cross-subscription-vnet_20260628012331",
+        "assigned_at": "2026-06-28T01:23:31.099Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-cross-subscription-vnet",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-cross-subscription-vnet_20260628012331",
+        "worker_started_at": "2026-06-28T01:23:53.216Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for net-integration-cross-subscription-vnet: evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T01:25:22.104Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T01:34:03.163Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-cross-subscription-vnet",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-cross-subscription-vnet"
+      ],
+      "result": "Collected official feature references for net-integration-cross-subscription-vnet: evidence/archive/feature-reference-net-integration-cross-subscription-vnet-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T01:34:03.163Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-net-integration-custom-route-table-user-assigned-msi",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for net-integration-custom-route-table-user-assigned-msi.",
+      "inputs": [
+        "feature:net-integration-custom-route-table-user-assigned-msi",
+        "packet:features/net-integration/packets/custom-route-table-user-assigned-msi.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-custom-route-table-user-assigned-msi"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "net-integration-custom-route-table-user-assigned-msi",
+        "packetPath": "features/net-integration/packets/custom-route-table-user-assigned-msi.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "net-integration",
+        "coveredFeatureIds": [
+          "net-integration-custom-route-table-user-assigned-msi"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "trace": {
+        "created_at": "2026-06-28T01:23:30.840Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi_20260628012331",
+        "assigned_at": "2026-06-28T01:23:31.121Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi",
+        "worker_started_attempt_id": "a_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi_20260628012331",
+        "worker_started_at": "2026-06-28T01:23:53.433Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for net-integration-custom-route-table-user-assigned-msi: evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T01:24:59.437Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T01:34:03.218Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after validating evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260628.md exists; worker claim produced the expected durable feature-reference packet."
+      },
+      "session_id": "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi",
+      "session_history": [
+        "s_task_collect-feature-reference-net-integration-custom-route-table-user-assigned-msi"
+      ],
+      "result": "Collected official feature references for net-integration-custom-route-table-user-assigned-msi: evidence/archive/feature-reference-net-integration-custom-route-table-user-assigned-msi-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T01:34:03.218Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

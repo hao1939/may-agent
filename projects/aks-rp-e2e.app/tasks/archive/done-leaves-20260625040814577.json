@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T04:08:14.577Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 root hygiene compacted the duplicate-canonicalization branch: batches A and B remain preserved as archived history for homogeneous VM-prerelease duplicate survivor selection and rebucketing, with the measured duplicate-group reduction from 659 to 655 unchanged. Live project work stays compressed under focus-mounted-source-coverage-closure-and-external-wait-20260623 as five exact returned-proof waits only; do not reopen repo-local source/spec/setup/model closure or treat the aad-rbac environment-overblock warning as actionable before the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "matrix-duplicate-canonicalization-batch-a-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retire or rebucket the non-canonical wrapper/timestamp archive copies for the already-homogeneous VM-prerelease matrix families traffic-azure-service-mesh-vm-prerelease-addonv2-matrix, storage-csi-vm-prerelease-linux-matrix, and network-cni-vm-prerelease-azure-matrix, preserving one canonical md/json pair per family plus any minimal review-supporting survivors without touching the five exact external waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/matrix-duplicate-canonicalization-batch-a-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the canonical survivor md/json pair for each of the three target families, lists the exact retired/rebucketed duplicate files or equivalent repo-local changes, cites the prior canonicalization evidence used, and confirms the five exact external waits were left untouched.",
+        "The worker records a post-change duplicate-group recount or metric refresh evidence for justifying whether the three-family cleanup reduced the duplicate-group count as expected; if measured reduction differs from the expected ceiling, the note explains why without claiming unverified improvement."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "artifact-duplicate-groups"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T03:48:57.400Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_matrix-duplicate-canonicalization-batch-a-20260625_20260625034857",
+        "assigned_at": "2026-06-25T03:48:57.445Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_matrix-duplicate-canonicalization-batch-a-20260625",
+        "worker_started_attempt_id": "a_matrix-duplicate-canonicalization-batch-a-20260625_20260625034857",
+        "worker_started_at": "2026-06-25T03:49:13.183Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rebucketed 107 timestamped full-family duplicate archive files for the traffic ASM addonv2, storage CSI Linux, and network CNI Azure VM-prerelease matrix families into evidence/pipelines/duplicate-canonicalization-batch-a-20260625/, kept the canonical/archive survivor files, and wrote evidence/archive/matrix-duplicate-canonicalization-batch-a-20260625.md with the exact moved-file ledger and post-change metric recount showing 665 -> 659.",
+        "last_worker_completed_at": "2026-06-25T03:59:07.371Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T03:59:53.629Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct archive review: evidence/archive/matrix-duplicate-canonicalization-batch-a-20260625.md names the canonical survivor md/json pair for each of the three target families, lists 107 exact rebucketed files, confirms the five exact external waits were untouched, and records the measured duplicate-group recount improvement from 665 to 659 (the expected 6-group reduction)."
+      },
+      "session_id": "s_task_matrix-duplicate-canonicalization-batch-a-20260625",
+      "session_history": [
+        "s_task_matrix-duplicate-canonicalization-batch-a-20260625"
+      ],
+      "result": "Rebucketed 107 timestamped full-family duplicate archive files for the traffic ASM addonv2, storage CSI Linux, and network CNI Azure VM-prerelease matrix families into evidence/pipelines/duplicate-canonicalization-batch-a-20260625/, kept the canonical/archive survivor files, and wrote evidence/archive/matrix-duplicate-canonicalization-batch-a-20260625.md with the exact moved-file ledger and post-change metric recount showing 665 -> 659.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T03:59:53.629Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct archive review: evidence/archive/matrix-duplicate-canonicalization-batch-a-20260625.md names the canonical survivor md/json pair for each of the three target families, lists 107 exact rebucketed files, confirms the five exact external waits were untouched, and records the measured duplicate-group recount improvement from 665 to 659 (the expected 6-group reduction)."
+      },
+      "status": "done"
+    }
+  ]
+}

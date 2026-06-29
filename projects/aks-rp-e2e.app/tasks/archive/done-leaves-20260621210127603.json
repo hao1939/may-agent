@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:01:27.603Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted the app-monitoring Azure Monitor Metrics reconcile leaf: row-63 maintained surfaces are now source-grounded and execution-gated, with the durable reconcile note in evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621.md and refreshed model/path-summary/evidence-index carriers preserving the result. Archive that completed leaf so the live frontier stays truthful: aad-managed-v2-westus2-canceled-create-carrier-reconcile-20260621 remains the only active repo-local reconcile task, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single exact external-human-transport wait. The stale watchdog review for vmpr row-26 was already dismissed by parent rollup; no new runnable backlog is created from it.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: reconcile the row-63 Azure Monitor Metrics maintained status surfaces so the mounted-source-backed execution-gated contract, spec/replay wiring, and generated knowledge-map views all agree truthfully without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted/local source anchors plus current repo-local carriers to determine whether path.app-monitoring-addonv2-azure-monitor-metrics should now be represented as execution-gated rather than external-proof/source-semantics blocked, and land the truthful maintained status/view/model wording accordingly.",
+        "Update every needed maintained surface for that decision, citing exact files changed and explicit command outcomes for validate/generate/check/execute-gate proofs, while preserving bounded repo-local semantics only.",
+        "Write a durable reconcile note that explains any remaining disagreement between model.json, generated views, specs, replay, and prior evidence packets; if some surfaces intentionally remain blocked, justify that with exact evidence rather than stale wording."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:46:30.459Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621_20260621204630",
+        "assigned_at": "2026-06-21T20:46:30.518Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621_20260621204630",
+        "worker_started_at": "2026-06-21T20:46:56.725Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the row-63 Azure Monitor Metrics maintained knowledge-map surfaces from stale source-semantics-blocked wording to source-grounded execution-gated status, updated model/derived views, and wrote a durable reconcile note under evidence/archive.",
+        "last_worker_completed_at": "2026-06-21T21:00:37.541Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:01:27.546Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621.md cites mounted source anchors, the 2026-06-21 check/executegate proofs, and maintained-surface updates showing path.app-monitoring-addonv2-azure-monitor-metrics now truthfully classified as execution-gated rather than source-semantics blocked. Model and generated path-summary now agree on the bounded repo-local contract, and no cloud execution was claimed."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621"
+      ],
+      "result": "Reconciled the row-63 Azure Monitor Metrics maintained knowledge-map surfaces from stale source-semantics-blocked wording to source-grounded execution-gated status, updated model/derived views, and wrote a durable reconcile note under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:01:27.546Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-status-surface-reconcile-20260621.md cites mounted source anchors, the 2026-06-21 check/executegate proofs, and maintained-surface updates showing path.app-monitoring-addonv2-azure-monitor-metrics now truthfully classified as execution-gated rather than source-semantics blocked. Model and generated path-summary now agree on the bounded repo-local contract, and no cloud execution was claimed."
+      },
+      "status": "done"
+    }
+  ]
+}

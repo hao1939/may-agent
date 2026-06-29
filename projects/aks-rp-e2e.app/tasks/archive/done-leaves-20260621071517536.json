@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:15:17.536Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner blocked-frontier review accepted the row-63 next-SKU selection note as durable branch evidence: evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md cites the accepted Standard_D4s_v4 rejection allowlist plus prior row-local replay evidence to justify Standard_D2_v4 as the next truthful eastus2 Linux override and keeps Windows aligned at Standard_D2_v4 because Linux create and first Windows pool create already cleared at that size. Archive that completed note because its meaning is now represented here, and keep addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-20260621 as the sole live child to refresh current post-Standard_D4s_v4 row-63 execution evidence without widening scope. Preserve external-send-proof-dispatch-family-20260620 as the only project-level blocked external-human wait; no duplicate blocker family is needed from this review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted Standard_D4s_v4 rerun evidence and its returned eastus2 allowed-SKU guidance, produce one bounded local note that selects the next truthful Linux system-pool VM-size override for Scenario_Addonv2_Azure_Monitor_Metrics row 63, states whether a paired Windows override can stay aligned or must be deferred until Linux create clears, and pins the exact next rerun command delta without widening beyond properties.azureMonitorProfile.metrics.enabled plus the create/upgrade runtime bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted Standard_D4s_v4 rerun evidence and the exact returned allowed-SKU list or equivalent replay artifact lines that justify the next VM-size choice instead of guessing.",
+        "Artifact names the next concrete AKS_RP_E2E_NODE_VM_SIZE choice for eastus2 row-63 replay, explains whether AKS_RP_E2E_WINDOWS_NODE_VM_SIZE should match now or remain a later conditional choice because Linux system-pool create still gates the row, and preserves the bounded row-local contract.",
+        "Artifact records the exact next rerun command delta or, if no safe bounded choice exists from current evidence, names the precise evidence gap/blocker that prevents another truthful rerun without widening scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:12:32.093Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621_20260621071232",
+        "assigned_at": "2026-06-21T07:12:32.142Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621",
+        "worker_started_attempt_id": "a_addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621_20260621071232",
+        "worker_started_at": "2026-06-21T07:12:52.349Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded row-63 SKU-selection note at evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md, selecting Standard_D2_v4 for both Linux and Windows based on the accepted D4s_v4 rejection allowlist plus the prior live replay that already cleared Linux create and first Windows pool create at that size.",
+        "last_worker_completed_at": "2026-06-21T07:15:01.174Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:15:17.382Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md satisfies the bounded selection task by citing the accepted Standard_D4s_v4 rejection allowlist, naming Standard_D2_v4 as the next truthful eastus2 Linux override, showing the paired Windows Standard_D2_v4 choice can stay aligned because prior row-local replay evidence already cleared Linux create and first Windows pool create at that size, and pinning the exact next rerun env delta without widening scope."
+      },
+      "session_id": "s_task_addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621",
+      "session_history": [
+        "s_task_addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621"
+      ],
+      "result": "Created the bounded row-63 SKU-selection note at evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md, selecting Standard_D2_v4 for both Linux and Windows based on the accepted D4s_v4 rejection allowlist plus the prior live replay that already cleared Linux create and first Windows pool create at that size.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:15:17.382Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/addonv2-azure-monitor-metrics-row63-next-allowed-sku-selection-20260621.md satisfies the bounded selection task by citing the accepted Standard_D4s_v4 rejection allowlist, naming Standard_D2_v4 as the next truthful eastus2 Linux override, showing the paired Windows Standard_D2_v4 choice can stay aligned because prior row-local replay evidence already cleared Linux create and first Windows pool create at that size, and pinning the exact next rerun env delta without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

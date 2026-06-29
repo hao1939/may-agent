@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T23:35:21.532Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-dirty-domain-slices-20260628",
+  "summary": "This branch now has four accepted dirty-slice review outcomes from 2026-06-28: network/private-cluster/platform produced one clean landing task; VM-prerelease/supporting proved the canonical VPA profile-state knowledge-map path is already narrowed and only left adjacent compact/spec residue; runner/model split into one clean runner/runtime landing task plus one exact row-29 VirtualMachines mixed-sku lifecycle maintained-nextAction repair; all remaining open work under this branch is now concrete landing or residue cleanup rather than unresolved review.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "review-dirty-runner-model-slice-20260628",
+      "parent_id": "user-review-dirty-domain-slices-20260628",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the current dirty runner/runtime plus knowledge-map/model slice from the 2026-06-28 checkpoint helper, decide whether the runner/status and generated model-view changes are coherent with durable project evidence, and either land them with a bounded summary or identify the exact unsupported residue for follow-up/revert.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-dirty-runner-model-slice-20260628.md"
+      ],
+      "acceptance": [
+        "The artifact names the dirty runner/spec-runner and knowledge-map/model/view files under review, states whether they belong to one coherent repo-local change set, and records the exact next action: land, split, or revert unsupported residue.",
+        "If the slice is acceptable, the task updates task-tree context with the durable meaning and identifies the commit-ready subset; if not, it identifies the exact files and reason they cannot be accepted yet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:dirty-runner-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:29:52.442Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-dirty-runner-model-slice-20260628_20260628232956",
+        "assigned_at": "2026-06-28T23:29:56.951Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-dirty-runner-model-slice-20260628",
+        "worker_started_attempt_id": "a_review-dirty-runner-model-slice-20260628_20260628232956",
+        "worker_started_at": "2026-06-28T23:30:06.408Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the dirty runner/runtime and knowledge-map/model slice, wrote an owner-ready artifact concluding the runner files are a coherent commit-ready subset while the model/view batch should be split because row-29 mixed-sku lifecycle still has a stale replays-path residue.",
+        "last_worker_completed_at": "2026-06-28T23:33:34.893Z",
+        "last_worker_evidence": [
+          "evidence/archive/review-dirty-runner-model-slice-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T23:34:58.934Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review artifact: it truthfully split the dirty slice by confirming runner/spec-runner + vitest-runtime status/test files are a coherent commit-ready subset while the model/view aggregate still needs one exact row-29 VirtualMachines mixed-sku lifecycle nextAction carrier repair before that batch can be treated as clean."
+      },
+      "session_id": "s_task_review-dirty-runner-model-slice-20260628",
+      "session_history": [
+        "s_task_review-dirty-runner-model-slice-20260628"
+      ],
+      "result": "Reviewed the dirty runner/runtime and knowledge-map/model slice, wrote an owner-ready artifact concluding the runner files are a coherent commit-ready subset while the model/view batch should be split because row-29 mixed-sku lifecycle still has a stale replays-path residue.",
+      "evidence": [
+        "evidence/archive/review-dirty-runner-model-slice-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T23:34:58.934Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review artifact: it truthfully split the dirty slice by confirming runner/spec-runner + vitest-runtime status/test files are a coherent commit-ready subset while the model/view aggregate still needs one exact row-29 VirtualMachines mixed-sku lifecycle nextAction carrier repair before that batch can be treated as clean."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-dirty-vmpr-and-supporting-feature-slices-20260628",
+      "parent_id": "user-review-dirty-domain-slices-20260628",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the current dirty VM-prerelease-adjacent and supporting feature slices surfaced by the checkpoint helper—cloud-provider, cluster-autoscaler, cost-analysis, defender-profile, localdns, workload-identity, and workload-autoscaler—and decide which edits represent truthful mounted-source/spec/test/model progress versus unsupported residue.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-dirty-vmpr-and-supporting-feature-slices-20260628.md"
+      ],
+      "acceptance": [
+        "The artifact enumerates the reviewed dirty feature/spec/test/packet files in this slice and maps each family to a keep/split/revert decision grounded in repo-local evidence.",
+        "Any accepted residue is translated into one coherent landing/commit-ready subset or a narrower follow-up leaf rather than remaining as unowned dirty files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:dirty-vmpr-supporting"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:29:52.492Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-dirty-vmpr-and-supporting-feature-slices-20260628_20260628232957",
+        "assigned_at": "2026-06-28T23:29:57.002Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-dirty-vmpr-and-supporting-feature-slices-20260628",
+        "worker_started_attempt_id": "a_review-dirty-vmpr-and-supporting-feature-slices-20260628_20260628232957",
+        "worker_started_at": "2026-06-28T23:30:06.445Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the assigned dirty VM-prerelease/supporting feature slice, checked mounted-source and durable evidence, ran bounded repo-local checks where applicable, and wrote a durable keep/split/revert decision artifact at evidence/archive/review-dirty-vmpr-and-supporting-feature-slices-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T23:32:05.699Z",
+        "last_worker_evidence": [
+          "evidence/archive/review-dirty-vmpr-and-supporting-feature-slices-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T23:32:49.576Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review artifact: all reviewed VM-prerelease/supporting dirty files are evidence-backed keep decisions partitioned into seven coherent landing subsets, with only an optional narrow VPA model/view follow-up remaining."
+      },
+      "session_id": "s_task_review-dirty-vmpr-and-supporting-feature-slices-20260628",
+      "session_history": [
+        "s_task_review-dirty-vmpr-and-supporting-feature-slices-20260628"
+      ],
+      "result": "Reviewed the assigned dirty VM-prerelease/supporting feature slice, checked mounted-source and durable evidence, ran bounded repo-local checks where applicable, and wrote a durable keep/split/revert decision artifact at evidence/archive/review-dirty-vmpr-and-supporting-feature-slices-20260628.md.",
+      "evidence": [
+        "evidence/archive/review-dirty-vmpr-and-supporting-feature-slices-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T23:32:49.576Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review artifact: all reviewed VM-prerelease/supporting dirty files are evidence-backed keep decisions partitioned into seven coherent landing subsets, with only an optional narrow VPA model/view follow-up remaining."
+      },
+      "status": "done"
+    },
+    {
+      "id": "narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628",
+      "parent_id": "user-review-dirty-domain-slices-20260628",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Narrow the normalized workload-autoscaler VPA profile-state model/view path so it matches the accepted packet promotion boundary from the 2026-06-28 VM-prerelease/supporting dirty-slice review, or record exact evidence that no repo-local narrowing is needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628.md"
+      ],
+      "acceptance": [
+        "The artifact identifies the exact model/view files and path ids still broader than the accepted features/workload-autoscaler/packets/vpa-profile-state.yaml contract and cites the mounted-source or durable evidence used to judge them.",
+        "If repo-local narrowing is warranted, the follow-up records the exact bounded edits or successor task needed to align packet/model wording without reopening the accepted packet keep decision."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workload-autoscaler:vpa-profile-state-model-alignment"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T23:32:49.691Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628_20260628233249",
+        "assigned_at": "2026-06-28T23:32:49.745Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628",
+        "worker_started_attempt_id": "a_narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628_20260628233249",
+        "worker_started_at": "2026-06-28T23:33:16.320Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the workload-autoscaler VPA profile-state normalized model/view boundary and wrote a durable evidence note confirming the canonical knowledge-map path is already narrowed; identified only adjacent stale compact/spec surfaces for optional follow-up.",
+        "last_worker_completed_at": "2026-06-28T23:34:47.886Z",
+        "last_worker_evidence": [
+          "evidence/archive/narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T23:35:21.426Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review artifact: it showed the canonical normalized knowledge-map path path.workload-autoscaler.vpa-profile-public-update.staging-pass is already narrowed to the 3-behavior packet boundary, so no canonical model/view repair is needed; only adjacent compact/spec residue remains for optional cleanup."
+      },
+      "session_id": "s_task_narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628",
+      "session_history": [
+        "s_task_narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628"
+      ],
+      "result": "Reviewed the workload-autoscaler VPA profile-state normalized model/view boundary and wrote a durable evidence note confirming the canonical knowledge-map path is already narrowed; identified only adjacent stale compact/spec surfaces for optional follow-up.",
+      "evidence": [
+        "evidence/archive/narrow-workload-autoscaler-vpa-profile-state-model-view-alignment-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T23:35:21.426Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review artifact: it showed the canonical normalized knowledge-map path path.workload-autoscaler.vpa-profile-public-update.staging-pass is already narrowed to the 3-behavior packet boundary, so no canonical model/view repair is needed; only adjacent compact/spec residue remains for optional cleanup."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:02:01.097Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog planning update: confirmed the review-pending SecOps FIPS kata linkage task is already accepted/done, so no review leaf remains from the trigger. The single truthful blocked frontier remains the external-human approval/send-proof family wait. To refill runnable repo-local learning capacity, added and assigned storage-csi-mounted-source-coverage-gap-map-20260623 as a bounded mounted-source coverage audit that can identify the next exact storage-csi linkage repair candidate while the existing active network-cni cilium-enterprise-addon linkage repair continues.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bridge the mounted Scenario_Cluster_FIPS_Kata_Blocked packet into truthful repo-local feature/spec/replay/model linkage so path.secops-fips.kata-blocked is no longer only a draft linkage gap.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted source inspected in /app/sources/aks-rp/test/e2ev3/sigs/secops/clusterfips/plans/cluster_fips_kata_blocked.go plus the repo-local files added or updated for this path bridge.",
+        "Repo-local feature/spec/replay/model or path-summary linkage truthfully represents the KataVMIsolation rejection boundary for path.secops-fips.kata-blocked without borrowing runtime verdicts from adjacent secops FIPS branches.",
+        "Scope stays in the regular-learning lane only: repo-local source-backed authoring and linkage repair allowed, but no cloud execution, no external-human waits, and no widening beyond the mounted Scenario_Cluster_FIPS_Kata_Blocked packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T05:56:31.915Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T05:58:09.947Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623_20260623055825",
+        "assigned_at": "2026-06-23T05:58:25.150Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623_20260623055825",
+        "worker_started_at": "2026-06-23T05:58:47.244Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the requested durable archive note at evidence/archive/secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623.md documenting the mounted source and the truthful repo-local feature/spec/replay/model linkage for path.secops-fips.kata-blocked without borrowing adjacent runtime verdicts.",
+        "last_worker_completed_at": "2026-06-23T05:59:58.103Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:00:36.556Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after direct artifact review: evidence/archive/secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623.md cites the mounted cluster_fips_kata_blocked.go source plus repo-local feature/spec/replay/model/view carriers, preserves the KataVMIsolation rejection boundary, and explicitly keeps path.secops-fips.kata-blocked in source-grounded draft-carrier state without borrowing runtime verdicts."
+      },
+      "session_id": "s_task_secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623",
+      "session_history": [
+        "s_task_secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623"
+      ],
+      "result": "Added the requested durable archive note at evidence/archive/secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623.md documenting the mounted source and the truthful repo-local feature/spec/replay/model linkage for path.secops-fips.kata-blocked without borrowing adjacent runtime verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:00:36.556Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after direct artifact review: evidence/archive/secops-cluster-fips-kata-blocked-normalized-linkage-repair-20260623.md cites the mounted cluster_fips_kata_blocked.go source plus repo-local feature/spec/replay/model/view carriers, preserves the KataVMIsolation rejection boundary, and explicitly keeps path.secops-fips.kata-blocked in source-grounded draft-carrier state without borrowing runtime verdicts."
+      },
+      "status": "done"
+    }
+  ]
+}

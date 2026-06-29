@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:12:04.400Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 planner repair keeps external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful blocked family and fixes the malformed VM prerelease decomposition: two aggregate-file leaves targeting nonexistent features/virtual-machines.yaml were closed as replaced, a concrete file-specific row61 prerelease grounding backlog leaf now targets an existing artifact, and a separate runnable AAD managed v2 execute-contract evidence refresh leaf was assigned to use repo-local evidence while VM work is blocked by conflict scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-mounted-source-packet-grounding-retry-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Ground exactly one remaining VirtualMachine prerelease scenario packet in features/virtual-machines.yaml against the mounted handwritten source after the prior attempt misfiled work into app-monitoring, so the VM prerelease source-backed frontier advances on the intended artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtual-machines.yaml"
+      ],
+      "acceptance": [
+        "Pick one remaining VirtualMachine prerelease scenario entry in features/virtual-machines.yaml that still uses placeholder, batch-plan, or otherwise not-yet-mounted-source wording, and ground that single packet against /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus any exact referenced scenario/checkin definition, updating goSource/source linkage to the exact mounted file(s) used by the handwritten test.",
+        "For that same packet, verify productIntent, inputs, and expectedBehavior against the mounted source and correct any overclaim or missing detail while keeping the artifact source-grounded only: no live execution claim, no new external wait, and no widening into unrelated app-monitoring or non-virtual-machine scenarios.",
+        "Keep scope limited to one selected VirtualMachine prerelease packet and any exact nearby linkage needed for coherence in features/virtual-machines.yaml; do not modify features/app-monitoring.yaml in this retry."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtual-machines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:08:29.513Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T23:10:38.257Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mounted-source-packet-grounding-retry-20260621_retry_20260621231038",
+        "worker_started_attempt_id": "a_vmpr-mounted-source-packet-grounding-retry-20260621_20260621231038",
+        "worker_started_at": "2026-06-21T23:10:55.747Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Reviewed the assigned VM prerelease mounted-source packet scope, found the referenced aggregate file does not exist in this repo, and repaired one concrete remaining inconsistency by updating features/virtualmachines-auto-zone-mixed-sku.yaml from draft to blocked to match its already-mounted-source-grounded, execute-gated posture.",
+        "last_worker_completed_at": "2026-06-21T23:10:06.164Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-21T23:10:33.383Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Acceptance not met: the worker summary cites a missing aggregate file and a side repair in features/virtualmachines-auto-zone-mixed-sku.yaml, but this retry remains scoped to grounding one packet in features/virtual-machines.yaml without widening into other feature packets. Requeue the task for a fresh, source-grounded packet update on the intended artifact.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_vmpr-mounted-source-packet-grounding-retry-20260621_20260621230829",
+        "current_attempt_id": "a_vmpr-mounted-source-packet-grounding-retry-20260621_20260621231038",
+        "reviewed_at": "2026-06-21T23:11:58.529Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced this malformed aggregate-file retry with a file-specific VirtualMachine prerelease grounding task because features/virtual-machines.yaml does not exist in the repo, so the leaf was not executable as written."
+      },
+      "session_history": [
+        "s_task_vmpr-mounted-source-packet-grounding-retry-20260621",
+        "s_task_vmpr-mounted-source-packet-grounding-retry-20260621_retry_20260621231038"
+      ],
+      "result": "Reviewed the assigned VM prerelease mounted-source packet scope, found the referenced aggregate file does not exist in this repo, and repaired one concrete remaining inconsistency by updating features/virtualmachines-auto-zone-mixed-sku.yaml from draft to blocked to match its already-mounted-source-grounded, execute-gated posture.",
+      "evidence": [],
+      "session_id": "s_task_vmpr-mounted-source-packet-grounding-retry-20260621_retry_20260621231038",
+      "resolution": "replaced",
+      "done_at": "2026-06-21T23:11:58.529Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced this malformed aggregate-file retry with a file-specific VirtualMachine prerelease grounding task because features/virtual-machines.yaml does not exist in the repo, so the leaf was not executable as written."
+      },
+      "status": "done"
+    }
+  ]
+}

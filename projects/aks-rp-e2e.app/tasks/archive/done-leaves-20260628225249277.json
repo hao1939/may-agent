@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T22:52:49.277Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review accepted the westus2 cluster-count preflight next-action artifact: no repo-local reroute or unsent escalation remains, so this lane now carries only the single truthful shared wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 for same-spec westus2 preflight-blocked leaves. Resume this lane only on same-surface recovery proof, a durably proven alternate environment/endpoint, or an authoritative runner/operator reroute/decline; do not create duplicate retry/setup/escalation leaves while the accepted diagnosis and dispatch proof remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-staging-westus2-cluster-count-preflight-next-action-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the shared westus2 cluster-count preflight family from existing repo-local evidence and current loop state, then produce the next truthful move for the blocked KMS spec family: exact alternate environment/reroute, exact owner escalation handoff, or an updated family blocker with explicit resume trigger if no local move remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md"
+      ],
+      "acceptance": [
+        "The artifact cites the current family blocker evidence and loop/task state for the westus2 cluster-count preflight failure family.",
+        "It chooses one concrete next action for the family: alternate environment candidate with proof, exact escalation/handoff packet, or a refreshed no-local-move blocker statement with precise resume trigger.",
+        "If the current family wait should be replaced or narrowed, the artifact states exactly which task ids and blocker text should change next."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:staging-westus2-cluster-count-preflight"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T22:50:41.302Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-staging-westus2-cluster-count-preflight-next-action-20260628_20260628225041",
+        "assigned_at": "2026-06-28T22:50:41.356Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-staging-westus2-cluster-count-preflight-next-action-20260628",
+        "worker_started_attempt_id": "a_diagnose-staging-westus2-cluster-count-preflight-next-action-20260628_20260628225041",
+        "worker_started_at": "2026-06-28T22:50:54.690Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the owner-ready next-action artifact for the westus2 cluster-count preflight family at evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md. It concludes there is no remaining repo-local reroute, confirms dispatch/send-proof already exists, and recommends preserving the existing family wait with an optional narrowing to exclude the two current wrong-run KMS v2plus leaves.",
+        "last_worker_completed_at": "2026-06-28T22:52:20.364Z",
+        "last_worker_evidence": [
+          "evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T22:52:43.999Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md cites the current family diagnosis and dispatch proof, confirms no repo-local reroute remains, and recommends keeping await-staging-westus2-cluster-count-preflight-family-recovery-20260628 as the single live family wait with only optional narrowing for the two wrong-run KMS v2plus leaves."
+      },
+      "session_id": "s_task_diagnose-staging-westus2-cluster-count-preflight-next-action-20260628",
+      "session_history": [
+        "s_task_diagnose-staging-westus2-cluster-count-preflight-next-action-20260628"
+      ],
+      "result": "Produced the owner-ready next-action artifact for the westus2 cluster-count preflight family at evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md. It concludes there is no remaining repo-local reroute, confirms dispatch/send-proof already exists, and recommends preserving the existing family wait with an optional narrowing to exclude the two current wrong-run KMS v2plus leaves.",
+      "evidence": [
+        "evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:52:43.999Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/westus2-cluster-count-preflight-family-next-action-20260628.md cites the current family diagnosis and dispatch proof, confirms no repo-local reroute remains, and recommends keeping await-staging-westus2-cluster-count-preflight-family-recovery-20260628 as the single live family wait with only optional narrowing for the two wrong-run KMS v2plus leaves."
+      },
+      "status": "done"
+    }
+  ]
+}

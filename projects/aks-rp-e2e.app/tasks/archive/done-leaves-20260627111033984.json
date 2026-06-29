@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T11:10:33.984Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Archived the three reviewed spec verification leaves that already have durable dispositions: network-cni-cilium-dataplane, node-pool-config-ephemeral-disk, and runtime-container-kscr-rotation-matrix. The live spec frontier is now the AAD RBAC verification tranche plus acccvm, industry-node-restriction, KMS, PPG placement, Windows VirtualMachines, and the ephemeral-disk HTTP400 classifier follow-up.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "verify-spec-network-cni-cilium-dataplane",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.cilium-dataplane through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.cilium-dataplane",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.cilium-dataplane"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.cilium-dataplane",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: workflow run 28287120869 passed spec.network-cni.cilium-dataplane; result.json shows status=passed with 1 pass / 0 fail / 0 blocked / 0 error, so this leaf has a truthful terminal verification disposition."
+      },
+      "trace": {
+        "created_at": "2026-06-27T10:54:43.829Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-cilium-dataplane_20260627105443",
+        "assigned_at": "2026-06-27T10:54:43.901Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-cilium-dataplane",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-cilium-dataplane_20260627105443",
+        "worker_started_at": "2026-06-27T10:55:28.467Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.network-cni.cilium-dataplane workflow run 28287120869 classified as pass. Loop key: verify-spec-network-cni-cilium-dataplane-a_verify-spec-network-cni-cilium-dataplane_202606. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287120869 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287120869/aks-rp-e2e-28287120869-spec-test-results/test-results/single-network-cni-cilium-dataplane_549143/artifacts/network-cni-cilium-dataplane/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-27T11:01:34.231Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T11:05:02.760Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: workflow run 28287120869 passed spec.network-cni.cilium-dataplane; result.json shows status=passed with 1 pass / 0 fail / 0 blocked / 0 error, so this leaf has a truthful terminal verification disposition."
+      },
+      "session_id": "s_task_verify-spec-network-cni-cilium-dataplane",
+      "session_history": [
+        "s_task_verify-spec-network-cni-cilium-dataplane"
+      ],
+      "result": "Spec spec.network-cni.cilium-dataplane workflow run 28287120869 classified as pass. Loop key: verify-spec-network-cni-cilium-dataplane-a_verify-spec-network-cni-cilium-dataplane_202606. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287120869 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287120869/aks-rp-e2e-28287120869-spec-test-results/test-results/single-network-cni-cilium-dataplane_549143/artifacts/network-cni-cilium-dataplane/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T11:05:02.760Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-pool-config-ephemeral-disk",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-pool-config.ephemeral-disk through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-pool-config.ephemeral-disk",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-pool-config.ephemeral-disk",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review: this run is not the shared runner-packaging failure. The spec-runner artifact reached ARM auth, RG create, and AKS cluster create before returning HTTP 400, so the leaf is a reviewed nonpassing spec result rather than a missing-module blocker family member."
+      },
+      "trace": {
+        "created_at": "2026-06-27T10:54:43.821Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk_20260627105443",
+        "assigned_at": "2026-06-27T10:54:43.881Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-pool-config-ephemeral-disk",
+        "worker_started_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk_20260627105443",
+        "worker_started_at": "2026-06-27T11:01:34.267Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-pool-config.ephemeral-disk workflow run 28287257872 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-a_verify-spec-node-pool-config-ephemeral-disk_. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287257872 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287257872/aks-rp-e2e-28287257872-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_205935/artifacts/node-pool-config-ephemeral-disk/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-27T11:02:35.617Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T11:05:02.819Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: this run is not the shared runner-packaging failure. The spec-runner artifact reached ARM auth, RG create, and AKS cluster create before returning HTTP 400, so the leaf is a reviewed nonpassing spec result rather than a missing-module blocker family member."
+      },
+      "session_id": "s_task_verify-spec-node-pool-config-ephemeral-disk",
+      "session_history": [
+        "s_task_verify-spec-node-pool-config-ephemeral-disk"
+      ],
+      "result": "Spec spec.node-pool-config.ephemeral-disk workflow run 28287257872 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-a_verify-spec-node-pool-config-ephemeral-disk_. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287257872 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287257872/aks-rp-e2e-28287257872-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_205935/artifacts/node-pool-config-ephemeral-disk/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T11:05:02.819Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-runtime-container-kscr-rotation-matrix",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.runtime-container.kscr-rotation-matrix through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.runtime-container.kscr-rotation-matrix",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.runtime-container.kscr-rotation-matrix"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.runtime-container.kscr-rotation-matrix",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review as runner/replay error, not product evidence: workflow run 28287105915 failed before scenario execution with Cannot find module './lib/arm-rest.ts' from replays/runtime-container-kscr-rotation-matrix.ts. Follow-up is tracked in repair-runtime-container-kscr-replay-arm-rest-import-20260627."
+      },
+      "trace": {
+        "created_at": "2026-06-27T10:54:43.813Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix_20260627105443",
+        "assigned_at": "2026-06-27T10:54:43.859Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-runtime-container-kscr-rotation-matrix",
+        "worker_started_attempt_id": "a_verify-spec-runtime-container-kscr-rotation-matrix_20260627105443",
+        "worker_started_at": "2026-06-27T10:54:50.211Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28287105915 classified as error. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-a_verify-spec-runtime-container-kscr-ro. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287105915 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287105915/aks-rp-e2e-28287105915-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_510754/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-27T10:55:28.229Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T11:05:02.907Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review as runner/replay error, not product evidence: workflow run 28287105915 failed before scenario execution with Cannot find module './lib/arm-rest.ts' from replays/runtime-container-kscr-rotation-matrix.ts. Follow-up is tracked in repair-runtime-container-kscr-replay-arm-rest-import-20260627."
+      },
+      "session_id": "s_task_verify-spec-runtime-container-kscr-rotation-matrix",
+      "session_history": [
+        "s_task_verify-spec-runtime-container-kscr-rotation-matrix"
+      ],
+      "result": "Spec spec.runtime-container.kscr-rotation-matrix workflow run 28287105915 classified as error. Loop key: verify-spec-runtime-container-kscr-rotation-matrix-a_verify-spec-runtime-container-kscr-ro. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28287105915 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28287105915/aks-rp-e2e-28287105915-spec-test-results/test-results/single-runtime-container-kscr-rotation-matrix_510754/artifacts/runtime-container-kscr-rotation-matrix/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T11:05:02.907Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

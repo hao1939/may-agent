@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:42:33.432Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner rollup accepted two repo-local VM prerelease frontier clarifications as durable knowledge: (1) the next-bounded-row frontier refresh established row 63 as the live repo-local successor, and (2) row 55 is now explicitly classified as already covered by the current carrier chain spec.managedsystem.rest-add-existing.minimal-rest -> variant.standalone-e2ev3, with the superseded standalone artifact kept only for replay-local/source-variant hygiene. The visible frontier should therefore stay minimal and truthful: keep vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622 as the only active repo-local leaf, preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external wait, and do not reopen stale row-55 or private-cluster review logic without new evidence.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-next-bounded-row-frontier-refresh-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted VM prerelease source suite, current maintained carriers, and the accepted row-55 closure, identify the next single bounded VM prerelease row or tightly-coupled micro-cluster where repo-local model/spec/replay discoverability can still improve without cloud mutation, and write the exact next recommended leaf from that review.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-next-bounded-row-frontier-refresh-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted VM prerelease suite, the accepted current frontier state after row-55 closure, and current maintained carriers, then names one exact next row or micro-cluster worth repo-local follow-up, or documents that the remaining VM prerelease frontier is exhausted for now.",
+        "The recommendation is bounded to repo-local learning/model/spec/replay cleanup only: no cloud mutation, no reopening of already-closed direct-link judgments, and no duplicate external-human wait tasks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-next-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:37:01.995Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-next-bounded-row-frontier-refresh-20260622_20260622173702",
+        "assigned_at": "2026-06-22T17:37:02.047Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-next-bounded-row-frontier-refresh-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-next-bounded-row-frontier-refresh-20260622_20260622173702",
+        "worker_started_at": "2026-06-22T17:37:43.944Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive review at evidence/archive/vm-prerelease-next-bounded-row-frontier-refresh-20260622.md. It cites the mounted VM prerelease suite, the accepted post-row-55 frontier state, and current maintained carriers, then recommends one exact next bounded repo-local leaf: a row-63 Azure Monitor Metrics legacy-landing metadata repair.",
+        "last_worker_completed_at": "2026-06-22T17:40:36.624Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:41:39.778Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 frontier-refresh review: the archive artifact truthfully cites the mounted VM prerelease suite, the accepted post-row-55 frontier state, and maintained carriers, then narrows the next bounded repo-local follow-up to row 63 Azure Monitor Metrics legacy-landing metadata repair with no cloud mutation or duplicate external wait."
+      },
+      "session_id": "s_task_vm-prerelease-next-bounded-row-frontier-refresh-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-next-bounded-row-frontier-refresh-20260622"
+      ],
+      "result": "Wrote the requested archive review at evidence/archive/vm-prerelease-next-bounded-row-frontier-refresh-20260622.md. It cites the mounted VM prerelease suite, the accepted post-row-55 frontier state, and current maintained carriers, then recommends one exact next bounded repo-local leaf: a row-63 Azure Monitor Metrics legacy-landing metadata repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:41:39.778Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 frontier-refresh review: the archive artifact truthfully cites the mounted VM prerelease suite, the accepted post-row-55 frontier state, and maintained carriers, then narrows the next bounded repo-local follow-up to row 63 Azure Monitor Metrics legacy-landing metadata repair with no cloud mutation or duplicate external wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row55-source-coverage-note-alignment-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the VM prerelease suite source-coverage packet's row-55 note so it truthfully states that the current non-superseded carrier already exists as execution variant variant.standalone-e2ev3 on spec.managedsystem.rest-add-existing.minimal-rest, while the superseded standalone packet remains only for narrow replay-local/source-variant hygiene; this is the durable successor to archived stale task vm-prerelease-row55-standalone-variant-metadata-promotion-20260622 and any watchdog review pointers that still cite it.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md"
+      ],
+      "acceptance": [
+        "The updated packet explicitly cites the row-55 repair evidence plus the current spec/model/view carrier chain and says row 55 is not missing a current metadata carrier; it names spec.managedsystem.rest-add-existing.minimal-rest and variant.standalone-e2ev3 exactly.",
+        "The update stays repo-local documentation/model-hygiene only: no duplicate standalone current spec is proposed, no cloud mutation or external wait is reopened, and the archived stale review task vm-prerelease-row55-standalone-variant-metadata-promotion-20260622 is explicitly superseded by this clarification plus the existing next-frontier task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row55-note"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:39:32.234Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row55-source-coverage-note-alignment-20260622_20260622173932",
+        "assigned_at": "2026-06-22T17:39:32.286Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row55-source-coverage-note-alignment-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row55-source-coverage-note-alignment-20260622_20260622173932",
+        "worker_started_at": "2026-06-22T17:39:48.765Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated `evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md` so row 55 now explicitly states the current carrier chain already exists through `spec.managedsystem.rest-add-existing.minimal-rest` and execution variant `variant.standalone-e2ev3`, while the superseded standalone packet is only replay-local/source-variant hygiene.",
+        "last_worker_completed_at": "2026-06-22T17:40:57.953Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:41:39.825Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 row-55 packet-note alignment: the coverage packet now truthfully states that row 55 already has a current carrier chain through spec.managedsystem.rest-add-existing.minimal-rest and variant.standalone-e2ev3, while the superseded standalone packet remains only replay-local/source-variant hygiene."
+      },
+      "session_id": "s_task_vm-prerelease-row55-source-coverage-note-alignment-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row55-source-coverage-note-alignment-20260622"
+      ],
+      "result": "Updated `evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md` so row 55 now explicitly states the current carrier chain already exists through `spec.managedsystem.rest-add-existing.minimal-rest` and execution variant `variant.standalone-e2ev3`, while the superseded standalone packet is only replay-local/source-variant hygiene.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:41:39.825Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 row-55 packet-note alignment: the coverage packet now truthfully states that row 55 already has a current carrier chain through spec.managedsystem.rest-add-existing.minimal-rest and variant.standalone-e2ev3, while the superseded standalone packet remains only replay-local/source-variant hygiene."
+      },
+      "status": "done"
+    }
+  ]
+}

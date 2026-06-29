@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:31:07.185Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace rollup: the earlier human-steering reference to user-review-send-ready-batch-owner-handoff-packet-20260620 is historical only and not a live leaf anymore; current live review work now distinguishes real owner-action from true response waits. Accepted owner-routing repair notes for KMS managed HSM and the shared wave-1 send-proof family remain preserved as branch history, while the Managed HSM permission branch is repaired into one concrete next leaf kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620 plus the post-send wait kms-v2plus-managed-hsm-permission-response-await-20260619. Other row-scoped consume-proof waits stay blocked only behind their named shared family waits or returned proof artifacts, rather than reopening broad rediscovery.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the Managed HSM permission response-await shape by proving or replacing the owner-routing path for the exact external permission ask. Using the existing execute evidence and current blocked wait, determine whether durable repo-local handoff/send proof already exists for the Managed HSM permission request, or record the precise missing owner path/escalation step that must replace the passive wait so the branch stays truthful.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current blocked wait kms-v2plus-managed-hsm-permission-response-await-20260619 plus the existing Managed HSM execute/permission evidence, identifies the exact external permission or owner route required, and states whether durable send/handoff proof exists today.",
+        "If proof exists, the note names the live wait or successor that should carry it next; if proof does not exist, the note records the exact missing owner/escalation path so planning can replace or repair the passive wait without inventing environment closure.",
+        "No cloud execution, no permission-semantic rediscovery, and no broad KMS rerun planning occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:kms-v2plus-managed-hsm-permission-owner-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:25:24.078Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620_20260620082525",
+        "assigned_at": "2026-06-20T08:25:25.928Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620",
+        "worker_started_attempt_id": "a_kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620_20260620082525",
+        "worker_started_at": "2026-06-20T08:26:33.588Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the Managed HSM owner-routing repair note at evidence/archive/kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620.md. The note cites the current blocked wait plus execute/unblock evidence, confirms no durable repo-local send/handoff proof exists yet, and records the exact missing owner send-proof and successor-repair steps the project owner should use.",
+        "last_worker_completed_at": "2026-06-20T08:28:13.255Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:29:12.222Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the Managed HSM owner-routing repair note: it cites the live permission wait plus execute/unblock evidence, proves no durable repo-local send/handoff proof exists yet for the Managed HSM permission ask, and records both the exact missing owner send-proof step and the successor-routing caution needed before any future permission reply is consumed."
+      },
+      "session_id": "s_task_kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620",
+      "session_history": [
+        "s_task_kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:29:12.222Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the Managed HSM owner-routing repair note: it cites the live permission wait plus execute/unblock evidence, proves no durable repo-local send/handoff proof exists yet for the Managed HSM permission ask, and records both the exact missing owner send-proof step and the successor-routing caution needed before any future permission reply is consumed."
+      },
+      "status": "done"
+    }
+  ]
+}

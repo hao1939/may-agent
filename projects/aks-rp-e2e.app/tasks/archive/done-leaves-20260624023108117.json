@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:31:08.118Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner rollup accepted the completed storage-csi raw-block replay carrier as durable repo-local runner coverage: spec/index discoverability, bounded Vitest proof, and archive evidence now pin the Block+VolumeDevice+/dev/sdx+dd path without claiming cloud execution. The truthful next executable work remains the two already-active storage CSI replay-carrier skeleton leaves for path.storage-csi-disk-resize and path.storage-csi-disk-xfs, while the three external approval/devbox waits stay intentionally unchanged until returned proof arrives or the first same-branch owner follow-up on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-raw-block-replay-carrier-skeleton-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded repo-local replay carrier for path.storage-csi-disk-raw-block from the accepted mounted-source boundary map and existing storage CSI runner patterns so the project has a dedicated raw-block replay/test/evidence carrier ready for future gated verification without claiming cloud execution now.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/storage-csi-disk-raw-block.ts",
+        "../aks-rp-e2e/replays/storage-csi-disk-raw-block.test.ts",
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-replay-carrier-skeleton-20260624.md"
+      ],
+      "acceptance": [
+        "Create a dedicated raw-block replay carrier that stays bounded to managed-csi + volumeMode=Block + VolumeDevice at /dev/sdx + dd, reusing existing runner primitives where appropriate without widening into disk-pvc-dynamic, resize, xfs, clone, snapshot, or Azure File semantics.",
+        "Add companion repo-local validation proof (test and/or archive note) citing the mounted source, the accepted raw-block boundary-map artifact, and any minimal manifest/index wiring, while explicitly recording that no cloud execution happened and what future gate/preflight would still be required.",
+        "If a minimal maintained wiring sync is needed so the replay is discoverable and claim-safe, land that bounded change with validation evidence; otherwise record why no further maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:24:53.032Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-replay-carrier-skeleton-20260624_20260624022453",
+        "assigned_at": "2026-06-24T02:24:53.083Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-replay-carrier-skeleton-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-replay-carrier-skeleton-20260624_20260624022453",
+        "worker_started_at": "2026-06-24T02:25:47.821Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the dedicated repo-local raw-block replay carrier and companion Vitest, wired spec/index discoverability for spec.storage-csi.disk-raw-block, and archived bounded evidence showing --check passes while --execute remains intentionally blocked with no cloud execution.",
+        "last_worker_completed_at": "2026-06-24T02:29:06.855Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:30:05.917Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result after reviewing evidence/archive/storage-csi-disk-raw-block-replay-carrier-skeleton-20260624.md: the dedicated raw-block replay/test carrier, bounded spec/index wiring, and repo-local --check/execute-gate proof satisfy the replay-carrier acceptance without claiming cloud execution."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-replay-carrier-skeleton-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-replay-carrier-skeleton-20260624"
+      ],
+      "result": "Added the dedicated repo-local raw-block replay carrier and companion Vitest, wired spec/index discoverability for spec.storage-csi.disk-raw-block, and archived bounded evidence showing --check passes while --execute remains intentionally blocked with no cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:30:05.917Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result after reviewing evidence/archive/storage-csi-disk-raw-block-replay-carrier-skeleton-20260624.md: the dedicated raw-block replay/test carrier, bounded spec/index wiring, and repo-local --check/execute-gate proof satisfy the replay-carrier acceptance without claiming cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

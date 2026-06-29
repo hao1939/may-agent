@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:49:39.279Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 task-completed owner reconciliation accepted evidence/archive/external-send-proof-handoff-refresh-20260620.md as durable provenance for the shared external-send family. The refresh note correctly consolidates the already send-ready MachinesPreview handoff packet and VM prerelease rows-25-and-50 operator bundle, cites the accepted proof-capture authorities, and makes the only truthful next owner action explicit: capture real human send/escalation proof with timestamp/channel/recipient linkage or link an authoritative reply. No new passive response-await or duplicate send tasks are warranted. Keep external-send-proof-dispatch-family-20260620 as the single live family-level transport ceiling until that proof or reply exists; all other VM-prerelease replacement work in this focus branch remains complete.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-send-proof-handoff-refresh-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the existing send-ready MachinesPreview handoff packet, VM prerelease live-operator bundle, and any repo-local proof-capture notes into one exact owner-facing dispatch/proof bundle that states what a human must send, to whom, through which channel, and what timestamped proof fields must be captured to satisfy external-send-proof-dispatch-family-20260620, without claiming runtime can perform the outbound send.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-handoff-refresh-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the two already send-ready packet artifacts plus the accepted proof-capture authorities, states whether any durable repo-local send or escalation proof currently exists, and links the affected feature/path surfaces covered by the MachinesPreview and VM prerelease packets.",
+        "Artifact ends with one exact owner-facing dispatch instruction set: required recipient or escalation chain, approved packet linkage, required proof fields (timestamp/channel/recipient or authoritative reply), and the precise condition that would let external-send-proof-dispatch-family-20260620 resume or close, without recreating passive response-await leaves or launching cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-send-proof-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:47:05.460Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-handoff-refresh-20260620_20260620194710",
+        "assigned_at": "2026-06-20T19:47:10.722Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-handoff-refresh-20260620",
+        "worker_started_attempt_id": "a_external-send-proof-handoff-refresh-20260620_20260620194710",
+        "worker_started_at": "2026-06-20T19:47:28.617Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested handoff/proof-capture refresh artifact at evidence/archive/external-send-proof-handoff-refresh-20260620.md, consolidating the accepted MachinesPreview and VM prerelease send-ready packets, their proof authorities, required proof fields, and truthful no-proof review triggers without inventing passive await state.",
+        "last_worker_completed_at": "2026-06-20T19:47:28.630Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:47:55.716Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/external-send-proof-handoff-refresh-20260620.md truthfully consolidates the two send-ready packet artifacts, cites the accepted proof-capture authorities, states that no durable repo-local send/escalation proof or authoritative reply exists yet, and ends with exact owner-facing proof fields and resume triggers without inventing passive await state."
+      },
+      "session_id": "s_task_external-send-proof-handoff-refresh-20260620",
+      "session_history": [
+        "s_task_external-send-proof-handoff-refresh-20260620"
+      ],
+      "result": "Created the requested handoff/proof-capture refresh artifact at evidence/archive/external-send-proof-handoff-refresh-20260620.md, consolidating the accepted MachinesPreview and VM prerelease send-ready packets, their proof authorities, required proof fields, and truthful no-proof review triggers without inventing passive await state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:47:55.716Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/external-send-proof-handoff-refresh-20260620.md truthfully consolidates the two send-ready packet artifacts, cites the accepted proof-capture authorities, states that no durable repo-local send/escalation proof or authoritative reply exists yet, and ends with exact owner-facing proof fields and resume triggers without inventing passive await state."
+      },
+      "status": "done"
+    }
+  ]
+}

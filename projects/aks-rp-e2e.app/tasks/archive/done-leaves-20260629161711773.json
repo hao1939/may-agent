@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:17:11.773Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review kept the spec-verification lane truthful: verify-spec-node-pool-config.disable-ssh-lifecycle remains unresolved as live-run 28386236395 never entered execute, so the active reconcile leaf stays the right next action; archived artifact reviews for spec.network-swift-v1.dynamic-ip-allocation (run 28382060674) and spec.network-swift-v1.scale-validation (run 28382142478) are now accepted as scenario-level SIGTERM interruptions near the 60-minute timeout with no model verdict change and only later bounded reruns if fresh evidence is needed; verify-spec-network-swift-v2.network-policy-cilium was not accepted as feature evidence and is replaced by an assigned artifact-reconciliation leaf for run 28382578674 before any rerun or model decision. The active verifier wave still carries the main throughput, while exact family waits remain limited to already-reviewed external/publication/live-slot dependencies.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review saved artifacts for spec.network-swift-v1.dynamic-ip-allocation run 28382060674 and classify whether the terminal failure was a runner/watch result-publication issue, a scenario-level failure, or artifact-inconclusive before any model verdict or rerun decision.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifact-review-20260629.md"
+      ],
+      "acceptance": [
+        "Saved workflow metadata plus top-level and scenario-level result artifacts for run 28382060674 were inspected and cited with exact paths.",
+        "The follow-up note classifies the run as runner/watch publication issue, scenario/spec failure, or artifact-inconclusive, with quoted evidence for the chosen class.",
+        "The note records the next truthful action for this spec path: model update, bounded rerun, shared problem candidate only if the same failure pattern recurs, or no further action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-swift-v1.dynamic-ip-allocation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T16:11:13.502Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629_20260629161122",
+        "assigned_at": "2026-06-29T16:11:22.038Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629_20260629161122",
+        "worker_started_at": "2026-06-29T16:12:05.934Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed saved workflow/top-level/scenario-level artifacts for run 28382060674 and wrote a durable artifact-review note classifying the run as a scenario-level SIGTERM interruption near workflow timeout, with bounded rerun and no model update as the next truthful action.",
+        "last_worker_completed_at": "2026-06-29T16:14:21.151Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifact-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:16:27.055Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner artifact review: archived run 28382060674 is scenario-level SIGTERM interruption near the 60-minute timeout, not product evidence and not a pure publication issue; keep the model unchanged and use a later bounded rerun if this exact path needs fresh evidence."
+      },
+      "session_id": "s_task_reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifacts-20260629"
+      ],
+      "result": "Reviewed saved workflow/top-level/scenario-level artifacts for run 28382060674 and wrote a durable artifact-review note classifying the run as a scenario-level SIGTERM interruption near workflow timeout, with bounded rerun and no model update as the next truthful action.",
+      "evidence": [
+        "evidence/archive/spec-network-swift-v1-dynamic-ip-allocation-run-28382060674-artifact-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:16:27.055Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner artifact review: archived run 28382060674 is scenario-level SIGTERM interruption near the 60-minute timeout, not product evidence and not a pure publication issue; keep the model unchanged and use a later bounded rerun if this exact path needs fresh evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review saved artifacts for spec.network-swift-v1.scale-validation run 28382142478 and classify whether the SIGTERM/test_error outcome was runner-watch interruption evidence, a scenario-level failure, or artifact-inconclusive; explicitly reconcile the prior auto-accepted terminal leaf before any model verdict or rerun decision.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-network-swift-v1-scale-validation-run-28382142478-artifact-review-20260629.md"
+      ],
+      "acceptance": [
+        "Saved workflow metadata plus top-level and scenario-level result/status artifacts for run 28382142478 were inspected and cited with exact paths.",
+        "The follow-up note classifies the run as runner/watch interruption evidence, scenario/spec failure, or artifact-inconclusive, with quoted evidence for the chosen class and explicit caution against treating SIGTERM/test_error as product-semantic evidence unless the scenario assertion was actually reached.",
+        "The note records the next truthful action for this spec path and explicitly states whether the earlier auto-accepted done leaf should be treated as worker-attempt history only versus accepted feature evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-swift-v1.scale-validation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T16:12:59.060Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629_20260629161259",
+        "assigned_at": "2026-06-29T16:12:59.127Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629_20260629161259",
+        "worker_started_at": "2026-06-29T16:13:36.683Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed archived workflow/top-level/scenario artifacts for spec.network-swift-v1.scale-validation run 28382142478 and wrote a durable artifact-review note classifying it as scenario-level execution interruption, not product evidence, with explicit reconciliation of the earlier auto-accepted verifier leaf.",
+        "last_worker_completed_at": "2026-06-29T16:15:50.089Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-network-swift-v1-scale-validation-run-28382142478-artifact-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:16:27.107Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner artifact review: archived run 28382142478 is scenario-level SIGTERM interruption near the 60-minute timeout while still in cluster creation, so the earlier auto-accepted verifier leaf remains attempt history only; keep the model unchanged and use a later bounded rerun if this exact path needs fresh evidence."
+      },
+      "session_id": "s_task_reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-network-swift-v1-scale-validation-run-28382142478-artifacts-20260629"
+      ],
+      "result": "Reviewed archived workflow/top-level/scenario artifacts for spec.network-swift-v1.scale-validation run 28382142478 and wrote a durable artifact-review note classifying it as scenario-level execution interruption, not product evidence, with explicit reconciliation of the earlier auto-accepted verifier leaf.",
+      "evidence": [
+        "evidence/archive/spec-network-swift-v1-scale-validation-run-28382142478-artifact-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:16:27.107Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner artifact review: archived run 28382142478 is scenario-level SIGTERM interruption near the 60-minute timeout while still in cluster creation, so the earlier auto-accepted verifier leaf remains attempt history only; keep the model unchanged and use a later bounded rerun if this exact path needs fresh evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-network-swift-v2-network-policy-cilium",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-swift-v2.network-policy-cilium through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-swift-v2.network-policy-cilium",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-swift-v2.network-policy-cilium"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-swift-v2.network-policy-cilium",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review did not accept the verifier leaf as feature evidence: worker output only established a SIGTERM/error terminal state, so this leaf is replaced by reconcile-spec-network-swift-v2-network-policy-cilium-run-28382578674-artifacts-20260629 for bounded artifact classification before any rerun or model decision."
+      },
+      "trace": {
+        "created_at": "2026-06-29T15:15:28.990Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-swift-v2-network-policy-cilium_20260629151529",
+        "assigned_at": "2026-06-29T15:15:29.014Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-swift-v2-network-policy-cilium",
+        "worker_started_attempt_id": "a_verify-spec-network-swift-v2-network-policy-cilium_20260629151529",
+        "worker_started_at": "2026-06-29T15:15:39.616Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.network-swift-v2.network-policy-cilium workflow run 28382578674 classified as error. Loop key: verify-spec-network-swift-v2-network-policy-cilium-a_verify-spec-network-swift-v2-network. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28382578674 Result: runs/test-results/single-network-swift-v2-network-policy-cilium_559905/artifacts/network-swift-v2-network-policy-cilium/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28382578674/aks-rp-e2e-28382578674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28382578674/aks-rp-e2e-28382578674-spec-test-results/test-results/single-network-swift-v2-network-policy-cilium_559905/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T16:16:09.597Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T16:17:08.058Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review did not accept the verifier leaf as feature evidence: worker output only established a SIGTERM/error terminal state, so this leaf is replaced by reconcile-spec-network-swift-v2-network-policy-cilium-run-28382578674-artifacts-20260629 for bounded artifact classification before any rerun or model decision."
+      },
+      "session_id": "s_task_verify-spec-network-swift-v2-network-policy-cilium",
+      "session_history": [
+        "s_task_verify-spec-network-swift-v2-network-policy-cilium"
+      ],
+      "result": "Spec spec.network-swift-v2.network-policy-cilium workflow run 28382578674 classified as error. Loop key: verify-spec-network-swift-v2-network-policy-cilium-a_verify-spec-network-swift-v2-network. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28382578674 Result: runs/test-results/single-network-swift-v2-network-policy-cilium_559905/artifacts/network-swift-v2-network-policy-cilium/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28382578674/aks-rp-e2e-28382578674-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28382578674/aks-rp-e2e-28382578674-spec-test-results/test-results/single-network-swift-v2-network-policy-cilium_559905/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T16:17:08.058Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

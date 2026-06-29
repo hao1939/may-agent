@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T11:24:34.986Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner cleanup archives the accepted VM prerelease mounted-source coverage matrix as durable history: the artifact now captures the maintained prerelease/checkin carrier inventory, separates rows already parked on the shared external waits from row 44's remaining repo-local reconciliation, and preserves the bounded next-action order. Keep vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624 as the only active assigned work under maxConcurrent=1, keep private-cluster-privatelink-create-k8s-validation-list-private-link-resources-implementation-20260624 queued as the single runnable successor behind it, and leave the four exact external waits unchanged until returned proof arrives or the first bounded follow-up window on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-coverage-matrix-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP VirtualMachine prerelease/checkin source into a durable repo-local coverage matrix that separates already-blocked external approval rows from still-open knowledge/spec/replay gaps, then nominate the first bounded non-cloud follow-up leaf worth running next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go plus any directly referenced scenario definitions used, lists the concrete prerelease/checkin rows or scenarios inspected, and states which ones are already covered by existing blocked external-wait branches versus which still lack durable repo-local coverage.",
+        "The artifact names one concrete next repo-local follow-up candidate (spec/model/replay repair or evidence-ceiling task), explains why it is not merely a duplicate of the existing external-send/private-cluster/serverless blocked waits, and claims no cloud mutation or external approval outcome."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T11:16:48.061Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-coverage-matrix-20260624_20260624111648",
+        "assigned_at": "2026-06-24T11:16:48.113Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-coverage-matrix-20260624",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-coverage-matrix-20260624_20260624111648",
+        "worker_started_at": "2026-06-24T11:17:20.276Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md`, a durable mounted-source coverage matrix that cites the VM prerelease/checkin suite plus directly referenced scenario files, separates rows already covered by blocked external waits from row 44’s non-wait repo-local status, and nominates a bounded row-44 stale-history reconciliation as the next no-cloud follow-up.",
+        "last_worker_completed_at": "2026-06-24T11:19:55.897Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T11:20:53.596Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md cites mounted prerelease/checkin suite anchors plus row-specific scenario files, separates rows 25/33/40-43/50 onto existing external waits, and nominates row 44 stale-history/evidence-ceiling reconciliation as the next bounded repo-local follow-up."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-coverage-matrix-20260624",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-coverage-matrix-20260624"
+      ],
+      "result": "Created `evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md`, a durable mounted-source coverage matrix that cites the VM prerelease/checkin suite plus directly referenced scenario files, separates rows already covered by blocked external waits from row 44’s non-wait repo-local status, and nominates a bounded row-44 stale-history reconciliation as the next no-cloud follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T11:20:53.596Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md cites mounted prerelease/checkin suite anchors plus row-specific scenario files, separates rows 25/33/40-43/50 onto existing external waits, and nominates row 44 stale-history/evidence-ceiling reconciliation as the next bounded repo-local follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

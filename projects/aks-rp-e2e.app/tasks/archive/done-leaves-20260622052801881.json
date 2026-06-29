@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:28:01.881Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner rollup: the VM prerelease row27 mixed-SKU source/replay reconciliation and the rows40-43 plan-readiness audit are both accepted and now represented at the project level. Current VM prerelease frontier is intentionally narrowed to one active repo-local rows40-43 ask-packet authoring leaf that packages the exact five execution-ready singleton-cluster members and their probe-specific gates, plus the single shared external human-transport proof wait for asks that still need real send/handoff/reply evidence outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-feature-set-plan-readiness-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the current VM prerelease family repo-local surfaces and recent evidence to identify the smallest next checkpoint-worthy or execution-gated slice after the cloud-provider row-44 sibling landing, with explicit include/exclude guidance for the next truthful VM-family branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-feature-set-plan-readiness-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites current repo-local VM prerelease family dirty surfaces/evidence and names the next bounded branch that is actually plan-ready now, including exact include/exclude files and whether the branch is source/spec/model only or blocked on a real external gate.",
+        "Artifact distinguishes repo-local progress from human-transport or cloud-execution waits, and preserves any already-proven terminal or external blocker classifications rather than reopening them.",
+        "Work stays repo-local and bounded: no cloud mutation, no checkpoint commit, and no unrelated family normalization outside the selected next VM prerelease branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:25:28.493Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-feature-set-plan-readiness-audit-20260622_20260622052619",
+        "assigned_at": "2026-06-22T05:26:19.244Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-feature-set-plan-readiness-audit-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-feature-set-plan-readiness-audit-20260622_20260622052619",
+        "worker_started_at": "2026-06-22T05:26:37.769Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the VM prerelease plan-readiness audit artifact at evidence/archive/vm-prerelease-feature-set-plan-readiness-audit-20260622.md, validated five adjacent repo-local VM prerelease carriers with replay --check, and generated a bounded planner result at runs/plans/plan_20260622013322187_8s7hkn.json showing the exact next execution-ready bundle.",
+        "last_worker_completed_at": "2026-06-22T05:26:37.783Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:27:16.067Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 VM prerelease plan-readiness audit: the durable artifact proves rows40-43 are now truthfully requestable as a five-member singleton-cluster live-execution bundle, cites the exact maintained spec set plus plan_20260622013322187_8s7hkn.json, and cleanly separates repo-local carrier readiness from any later human-send or cloud-execution gate."
+      },
+      "session_id": "s_task_vm-prerelease-feature-set-plan-readiness-audit-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-feature-set-plan-readiness-audit-20260622"
+      ],
+      "result": "Produced the VM prerelease plan-readiness audit artifact at evidence/archive/vm-prerelease-feature-set-plan-readiness-audit-20260622.md, validated five adjacent repo-local VM prerelease carriers with replay --check, and generated a bounded planner result at runs/plans/plan_20260622013322187_8s7hkn.json showing the exact next execution-ready bundle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:27:16.067Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 VM prerelease plan-readiness audit: the durable artifact proves rows40-43 are now truthfully requestable as a five-member singleton-cluster live-execution bundle, cites the exact maintained spec set plus plan_20260622013322187_8s7hkn.json, and cleanly separates repo-local carrier readiness from any later human-send or cloud-execution gate."
+      },
+      "status": "done"
+    }
+  ]
+}

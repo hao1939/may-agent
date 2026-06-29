@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:46:48.923Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 follow-up root compaction keeps only the live landing/repair leaves plus the single shared external wait on the visible frontier. The remaining completed precursor leaves—private-cluster-k8s-validation-model-variant-visibility-repair-20260620, vm-prerelease-autozone-boundary-reconcile-20260620, and vm-prerelease-mounted-source-next-gap-batch1-20260620—already have their durable meaning represented in the active successor leaves and root rollup, so they can be archived without losing project memory. Keep the three active repo-local model/view landing tasks assigned, and keep external-send-proof-dispatch-family-20260620 as the sole blocked transport ceiling until send proof, escalation proof, or an authoritative reply is recorded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-k8s-validation-model-variant-visibility-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted private-cluster handwritten source gap packet to repair maintained knowledge-map visibility for Scenario_Private_Cluster_With_K8S_Validation by authoring a bounded variant-visibility packet that keeps canonical ownership on the base PrivateLink create path while making the attached k8s-validation variant explicit in model/view terms.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-k8s-validation-model-variant-visibility-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted PrivateLink-with-validation Go sources plus the current feature/spec/replay artifacts, and explains why the k8s-validation branch is an attached variant rather than a separate topology path.",
+        "Artifact truthfully states the current maintained-model/view gap, proposes the concrete variant metadata or linkage needed for visibility, and preserves canonical ownership on path.private-cluster-privatelink-create while linking spec.private-cluster.privatelink-create.k8s-validation.",
+        "Artifact ends with the exact repo-local model/view repair or next bounded follow-up needed to surface the attached variant without cloud mutation or duplicate blocker churn."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-variant-visibility"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:40:21.043Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T22:40:23.437Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-k8s-validation-model-variant-visibility-repair-20260620_20260620224042",
+        "assigned_at": "2026-06-20T22:40:42.921Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-k8s-validation-model-variant-visibility-repair-20260620",
+        "worker_started_attempt_id": "a_private-cluster-k8s-validation-model-variant-visibility-repair-20260620_20260620224042",
+        "worker_started_at": "2026-06-20T22:40:43.516Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested bounded variant-visibility packet at evidence/archive/private-cluster-k8s-validation-model-variant-visibility-repair-20260620.md, citing mounted source, current feature/spec/replay/model surfaces, and the exact repo-local model/view repair needed to surface the attached K8S-validation variant while preserving canonical ownership on path.private-cluster-privatelink-create.",
+        "last_worker_completed_at": "2026-06-20T22:43:01.960Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:45:11.146Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet is evidence-backed and correctly concludes the gap is repo-local model/view visibility only. Follow-up landing task private-cluster-k8s-validation-model-view-land-20260620 already carries the exact bounded model/view patch and regeneration work, so this review leaf is complete."
+      },
+      "session_id": "s_task_private-cluster-k8s-validation-model-variant-visibility-repair-20260620",
+      "session_history": [
+        "s_task_private-cluster-k8s-validation-model-variant-visibility-repair-20260620"
+      ],
+      "result": "Authored the requested bounded variant-visibility packet at evidence/archive/private-cluster-k8s-validation-model-variant-visibility-repair-20260620.md, citing mounted source, current feature/spec/replay/model surfaces, and the exact repo-local model/view repair needed to surface the attached K8S-validation variant while preserving canonical ownership on path.private-cluster-privatelink-create.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:45:11.146Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet is evidence-backed and correctly concludes the gap is repo-local model/view visibility only. Follow-up landing task private-cluster-k8s-validation-model-view-land-20260620 already carries the exact bounded model/view patch and regeneration work, so this review leaf is complete."
+      },
+      "status": "done"
+    }
+  ]
+}

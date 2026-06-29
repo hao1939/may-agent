@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:49:31.742Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review accepted the completed storage-CSI gate-packet slice as durable repo-local execution planning: storage-csi-disk-raw-block-live-execution-gate-packet-20260624a accepted evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md as truthful, and the same project branch now already carries durable disk-resize, disk-xfs, file-clone, and file-clone replay-carrier closure for the completed storage-CSI leaves. The frontier remains intentionally compressed to the same three exact external-proof waits with first bounded follow-up no earlier than 2026-06-26, while active focus stays on storage-csi-file-resize-mounted-source-boundary-map-20260624 as the next repo-local mounted-source boundary map.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-raw-block-live-execution-gate-packet-20260624a",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded future-live execution gate packet for path.storage-csi-disk-raw-block using the accepted mounted-source boundary map and replay carrier so a later mutating probe can stay truthful about prerequisites, mutation gate, cleanup, evidence outputs, and resume conditions without widening into disk clone, resize, xfs, snapshot, or unrelated CSI families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted handwritten Azure Disk raw-block source slice, the accepted raw-block boundary-map artifact, and the accepted replay-carrier artifact, and enumerates the bounded live prerequisites for the original raw-block provisioning + pod attach + /dev/sdx verification branch only.",
+        "Record the exact non-cloud and cloud gates for a future live probe, including the required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, ordered preflight checks, cleanup expectations, named evidence outputs, and truthful resume/abort conditions if any prerequisite is missing or the carrier remains execute-gated.",
+        "Do not run cloud mutation; if a small maintained wording/model/view sync is needed so the future gate is claim-safe, validate it repo-locally and cite that proof, otherwise state why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:43:25.612Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-live-execution-gate-packet-20260624a_20260624024325",
+        "assigned_at": "2026-06-24T02:43:25.660Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-live-execution-gate-packet-20260624a",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-live-execution-gate-packet-20260624a_20260624024325",
+        "worker_started_at": "2026-06-24T02:44:05.892Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded future-live gate packet for path.storage-csi-disk-raw-block at evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md, grounded in the mounted source slice, accepted boundary map, accepted replay carrier, and fresh repo-local gate proofs.",
+        "last_worker_completed_at": "2026-06-24T02:45:39.812Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:46:47.963Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md as a truthful bounded future-live gate packet: it cites the mounted Azure Disk raw-block source slice, the accepted boundary-map and replay-carrier artifacts, preserves the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-disk-raw-block gate, documents ordered non-cloud/cloud preflights, cleanup and evidence expectations, and makes no cloud-mutation claim."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-live-execution-gate-packet-20260624a",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-live-execution-gate-packet-20260624a"
+      ],
+      "result": "Authored the bounded future-live gate packet for path.storage-csi-disk-raw-block at evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md, grounded in the mounted source slice, accepted boundary map, accepted replay carrier, and fresh repo-local gate proofs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:46:47.963Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/storage-csi-disk-raw-block-live-execution-gate-packet-20260624.md as a truthful bounded future-live gate packet: it cites the mounted Azure Disk raw-block source slice, the accepted boundary-map and replay-carrier artifacts, preserves the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-disk-raw-block gate, documents ordered non-cloud/cloud preflights, cleanup and evidence expectations, and makes no cloud-mutation claim."
+      },
+      "status": "done"
+    }
+  ]
+}

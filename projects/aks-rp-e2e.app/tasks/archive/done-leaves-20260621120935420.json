@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:09:35.420Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review confirmed the watchdog wake was stale: vmpr-row34-maintained-surface-wording-repair-20260621 was already accepted and is now archived into the project rollup. The project frontier remains unchanged otherwise: vmpr-row75-aksconformance-core-canonical-carrier-20260621 is the sole live active row-scoped repo-local continuation, while the external human transport proof family and the privatecluster shared-apiserver-subnet execution approval ceiling remain the only truthful blocked waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row34-maintained-surface-wording-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the stale maintained knowledge-map surfaces for VM prerelease row 34 / path.virtualmachines.vmas-to-vms-migration-slb so model.json and views/path-summary.json truthfully reflect the current execute-capable-but-not-live-verified repo-local posture already documented by the accepted row-34 run-ready packet, without broadening into cloud execution or unrelated VM prerelease rows.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row34-maintained-surface-wording-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row-34 run-ready packet plus the current stale wording in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, naming the exact feature/path fields that need repair.",
+        "Result updates the maintained row-34 model/path-summary posture away from stale draft/source-grounded-check-replay wording to a truthful execute-capable-but-not-live-verified repo-local state that matches the existing spec/replay/feature/coverage carriers, and records verification evidence for the changed fields.",
+        "Work remains repo-local and non-mutating: it does not run the cloud replay, does not claim a live product verdict, and does not reopen unrelated VM prerelease rows or blocked execution-approval families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row34-vmas-to-vms-migration-slb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:04:37.463Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row34-maintained-surface-wording-repair-20260621_20260621120437",
+        "assigned_at": "2026-06-21T12:04:37.509Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row34-maintained-surface-wording-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row34-maintained-surface-wording-repair-20260621_20260621120437",
+        "worker_started_at": "2026-06-21T12:04:56.088Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-34 maintained knowledge-map wording in model.json and regenerated path-summary.json to reflect the execute-capable-but-not-live-verified repo-local posture, and wrote a bounded evidence note at evidence/archive/vmpr-row34-maintained-surface-wording-repair-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T12:07:40.091Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:08:47.854Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted on file-level evidence only: evidence/archive/vmpr-row34-maintained-surface-wording-repair-20260621.md names the stale/new maintained row-34 surfaces, and the maintained model/view carriers now truthfully show path.virtualmachines.vmas-to-vms-migration-slb as blocked execute-capable with coverageState=source-grounded-check-replay-execute-capable. Scoped acceptance stays repo-local and excludes unrelated pre-existing validation debt."
+      },
+      "session_id": "s_task_vmpr-row34-maintained-surface-wording-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row34-maintained-surface-wording-repair-20260621"
+      ],
+      "result": "Repaired row-34 maintained knowledge-map wording in model.json and regenerated path-summary.json to reflect the execute-capable-but-not-live-verified repo-local posture, and wrote a bounded evidence note at evidence/archive/vmpr-row34-maintained-surface-wording-repair-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:08:47.854Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted on file-level evidence only: evidence/archive/vmpr-row34-maintained-surface-wording-repair-20260621.md names the stale/new maintained row-34 surfaces, and the maintained model/view carriers now truthfully show path.virtualmachines.vmas-to-vms-migration-slb as blocked execute-capable with coverageState=source-grounded-check-replay-execute-capable. Scoped acceptance stays repo-local and excludes unrelated pre-existing validation debt."
+      },
+      "status": "done"
+    }
+  ]
+}

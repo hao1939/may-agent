@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:28:39.271Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "VM prerelease rows 25-33 execute-readiness work is now preserved as completed provenance only: the accepted row25-34 execute-candidate packet plus accepted readiness notes for rows 25-26, 27/29/30, 31-32, and row 33 together capture the mounted-source/spec/replay contracts, bounded plan/check evidence, and the exact future live execute envelopes for those families. Keep only row 34 as the live frontier in this lane; any remaining execution ceiling for the archived siblings is the already-shared westus2/local credential or runtime gate, not missing replay intent.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VirtualMachines prerelease rows 25 and 26 into one bounded execute-readiness slice by proving the capacity-based-surge pair already has stable mounted-source/spec/replay/plan coverage and by recording the exact non-cloud replay contract to use once execution environment access exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the row 25 and row 26 mounted-source scenarios, their spec/replay carriers, and the accepted row25-34 execute-candidate packet, then records why they are one coherent promotion batch rather than separate draft leaves.",
+        "The note reproduces bounded local readiness evidence for the pair (plan/check commands and outcomes only, no cloud mutation) and names the exact replay/spec contract that should be run when environment access is available.",
+        "Any remaining ceiling is stated as the shared execution-environment blocker, not a new source-authority gap, and the note does not perform cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row25-26-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:16:53.930Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620_20260620091653",
+        "assigned_at": "2026-06-20T09:16:53.979Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620_20260620091653",
+        "worker_started_at": "2026-06-20T09:17:05.354Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the execute-readiness archive note for VM prerelease rows 25-26 capacity surge and reproduced bounded local readiness evidence with both replay --check runs and a grouped one-cluster plan run, without any cloud mutation.",
+        "last_worker_completed_at": "2026-06-20T09:18:43.389Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:19:21.777Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620.md cites the mounted-source row25+26 scenarios, the accepted row25-34 execute-candidate packet, both replay --check passes, and the grouped one-cluster plan run; remaining ceiling is correctly recorded only as the shared execution-environment blocker."
+      },
+      "session_id": "s_task_vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:19:21.777Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620.md cites the mounted-source row25+26 scenarios, the accepted row25-34 execute-candidate packet, both replay --check passes, and the grouped one-cluster plan run; remaining ceiling is correctly recorded only as the shared execution-environment blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

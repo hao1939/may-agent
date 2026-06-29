@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T07:13:49.226Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 accepted app-monitoring kubeconfig archive carrier repair. The repo-local helper now handles nested custom kubeconfig artifact paths and has a focused non-cloud regression test; exact live rerun gate is documented in evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md. Continue remaining aad-rbac/virtualmachines reconciliations and workload-autoscaler repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-app-monitoring-kubeconfig-archive-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local app-monitoring single-spec carrier so spec.app-monitoring.addonv2-azure-monitor-metrics can archive/consume kubeconfig artifacts without the ENOENT path failure seen in run 28298349876, then record the verified local repair and exact rerun gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/runner/scenario-lib/azure-resource.ts",
+        "../aks-rp-e2e/runner/scenario-lib/azure-resource.test.ts",
+        "../aks-rp-e2e/evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md"
+      ],
+      "acceptance": [
+        "The carrier path that previously raised ENOENT for the kubeconfig archive path is identified and repaired in repo-local code/spec wiring.",
+        "A bounded non-cloud validation path shows the repaired carrier now handles kubeconfig artifact paths truthfully before any fresh live rerun is requested.",
+        "Durable evidence records the exact fix, validation command/output, affected spec id, and the single meaningful live rerun condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:repair:app-monitoring",
+        "feature:app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T07:09:58.191Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-app-monitoring-kubeconfig-archive-carrier-20260629_20260629071010",
+        "assigned_at": "2026-06-29T07:10:10.374Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-app-monitoring-kubeconfig-archive-carrier-20260629",
+        "worker_started_attempt_id": "a_repair-app-monitoring-kubeconfig-archive-carrier-20260629_20260629071010",
+        "worker_started_at": "2026-06-29T07:10:29.206Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired kubeconfig archive carrier path handling in runner/scenario-lib/azure-resource.ts, added runner/scenario-lib/azure-resource.test.ts proving nested custom kubeconfig artifact paths create parent directories and write the decoded payload, and recorded exact rerun gate in evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T07:13:42.515Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T07:13:49.168Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: runner/scenario-lib/azure-resource.ts now creates the actual kubeconfig target parent directory, runner/scenario-lib/azure-resource.test.ts proves nested custom artifact paths write successfully, and evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md records the bounded validation and exact staging rerun gate."
+      },
+      "session_id": "s_task_repair-app-monitoring-kubeconfig-archive-carrier-20260629",
+      "session_history": [
+        "s_task_repair-app-monitoring-kubeconfig-archive-carrier-20260629"
+      ],
+      "result": "Repaired kubeconfig archive carrier path handling in runner/scenario-lib/azure-resource.ts, added runner/scenario-lib/azure-resource.test.ts proving nested custom kubeconfig artifact paths create parent directories and write the decoded payload, and recorded exact rerun gate in evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T07:13:49.168Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: runner/scenario-lib/azure-resource.ts now creates the actual kubeconfig target parent directory, runner/scenario-lib/azure-resource.test.ts proves nested custom artifact paths write successfully, and evidence/archive/repair-app-monitoring-kubeconfig-archive-carrier-20260629.md records the bounded validation and exact staging rerun gate."
+      },
+      "status": "done"
+    }
+  ]
+}

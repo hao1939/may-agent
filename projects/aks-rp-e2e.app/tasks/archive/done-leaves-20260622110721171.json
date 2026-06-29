@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:07:21.171Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review accepted the bounded node-custom-ca-trust live rerun: the repaired mounted-source-equivalent PEM/base64 payload no longer reproduces CATrustPreviewCAPEMDecodeFailure, and the current bounded gate is now an eastus2 subscription/location restriction on Standard_D4s_v5. The frontier is repaired from empty-active/empty-runnable to one concrete repo-local follow-up leaf that reconciles this new environment diagnosis into model/status/replay-prep surfaces without cloud mutation, while preserving the single truthful external human-transport family wait as the only blocked sibling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "run-node-custom-ca-trust-create-bounded-live-rerun-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute exactly one bounded post-repair live replay of replays/node-custom-ca-trust-create.ts using the repaired mounted-source-equivalent PEM/base64 payload so the project can determine whether the prior CATrustPreviewCAPEMDecodeFailure was solely caused by the old malformed replay payload or whether a remaining product/environment issue still exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/run-node-custom-ca-trust-create-bounded-live-rerun-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact live command, run id/timestamps, region/subscription context used, and whether the repaired replay reaches ARM acceptance, create success, or a bounded failure signature without hidden extra mutations.",
+        "The artifact explicitly compares the observed live result against the earlier CATrustPreviewCAPEMDecodeFailure, stating whether that signature is gone, persists, or is replaced by a different bounded product/environment outcome, and updates the narrow next action accordingly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay-node-custom-ca-trust-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:03:57.321Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_run-node-custom-ca-trust-create-bounded-live-rerun-20260622_20260622110357",
+        "assigned_at": "2026-06-22T11:03:57.373Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_run-node-custom-ca-trust-create-bounded-live-rerun-20260622",
+        "worker_started_attempt_id": "a_run-node-custom-ca-trust-create-bounded-live-rerun-20260622_20260622110357",
+        "worker_started_at": "2026-06-22T11:04:11.600Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed one bounded live rerun of replays/node-custom-ca-trust-create.ts with the repaired PEM/base64 payload, captured new JSON evidence, and wrote an archive summary showing the prior CATrustPreviewCAPEMDecodeFailure is gone and replaced by an eastus2 VM-size subscription restriction.",
+        "last_worker_completed_at": "2026-06-22T11:06:02.094Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:06:51.634Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/run-node-custom-ca-trust-create-bounded-live-rerun-20260622.md as a bounded live rerun with exact command/run context and a clear outcome comparison: the repaired mounted-source-equivalent custom CA payload no longer reproduces CATrustPreviewCAPEMDecodeFailure and instead fails earlier on an eastus2 subscription VM-size restriction for Standard_D4s_v5. This satisfies review acceptance because the artifact captures the mutation boundary, compares old vs new failure signatures, and narrows the next act to one environment-bounded rerun prerequisite rather than broad new mutation work."
+      },
+      "session_id": "s_task_run-node-custom-ca-trust-create-bounded-live-rerun-20260622",
+      "session_history": [
+        "s_task_run-node-custom-ca-trust-create-bounded-live-rerun-20260622"
+      ],
+      "result": "Executed one bounded live rerun of replays/node-custom-ca-trust-create.ts with the repaired PEM/base64 payload, captured new JSON evidence, and wrote an archive summary showing the prior CATrustPreviewCAPEMDecodeFailure is gone and replaced by an eastus2 VM-size subscription restriction.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:06:51.634Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/run-node-custom-ca-trust-create-bounded-live-rerun-20260622.md as a bounded live rerun with exact command/run context and a clear outcome comparison: the repaired mounted-source-equivalent custom CA payload no longer reproduces CATrustPreviewCAPEMDecodeFailure and instead fails earlier on an eastus2 subscription VM-size restriction for Standard_D4s_v5. This satisfies review acceptance because the artifact captures the mutation boundary, compares old vs new failure signatures, and narrows the next act to one environment-bounded rerun prerequisite rather than broad new mutation work."
+      },
+      "status": "done"
+    }
+  ]
+}

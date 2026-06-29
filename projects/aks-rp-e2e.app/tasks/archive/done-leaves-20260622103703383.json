@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T10:37:03.383Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 planning update accepted the completed row-54 ManagedSystem replay-authoring slice after reviewing the archive artifact and repo-local carrier updates: the dedicated replay, spec, index, and feature metadata now preserve the mounted create-time ManagedSystem row-54 truth as execute-gated but still evidence-gated for live verdicts. The single blocked frontier remains the exact external human/operator out-of-runtime proof wait. To refill local capacity without reopening external waits, the next assigned repo-local leaf is vmpr-rows31-32-auto-zone-maintained-status-reconcile-20260622, which should reconcile the already execute-gated row-31/32 carriers against any stale maintained draft/unknown status surfaces.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row54-managedsystem-agentpool-replay-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the execute-gated repo-local replay body for mounted VirtualMachine prerelease row 54 (Scenario_VirtualMachine_ManagedSystem_AgentPool_VirtualMachine) using mounted source and existing repo-local carriers only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row54-managedsystem-agentpool-replay-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the mounted source carrier from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/managedsystem.go plus the updated repo-local replay/spec/feature files and explains the final row-54 carrier truth.",
+        "replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts is upgraded from source/spec-check wrapper to an execute-gated replay body or the artifact proves one narrower repo-local change was required instead, with exact touched paths and no cloud mutation or external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-row54-managedsystem-agentpool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:27:28.318Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row54-managedsystem-agentpool-replay-authoring-20260622_20260622102728",
+        "assigned_at": "2026-06-22T10:27:28.414Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row54-managedsystem-agentpool-replay-authoring-20260622",
+        "worker_started_attempt_id": "a_vmpr-row54-managedsystem-agentpool-replay-authoring-20260622_20260622102728",
+        "worker_started_at": "2026-06-22T10:27:39.868Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Upgraded the row-54 VM prerelease ManagedSystem replay from a source-spec-check wrapper to an execute-gated live carrier, aligned the canonical spec/index/feature metadata, and wrote the requested archive artifact documenting the final mounted-source truth and touched files.",
+        "last_worker_completed_at": "2026-06-22T10:34:38.480Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T10:35:58.302Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the archive artifact plus repo-local file surfaces: row 54 now has a dedicated execute-gated replay body, aligned spec/index/feature metadata, and a durable explanation of the mounted create-time ManagedSystem carrier truth without claiming live verdict coverage."
+      },
+      "session_id": "s_task_vmpr-row54-managedsystem-agentpool-replay-authoring-20260622",
+      "session_history": [
+        "s_task_vmpr-row54-managedsystem-agentpool-replay-authoring-20260622"
+      ],
+      "result": "Upgraded the row-54 VM prerelease ManagedSystem replay from a source-spec-check wrapper to an execute-gated live carrier, aligned the canonical spec/index/feature metadata, and wrote the requested archive artifact documenting the final mounted-source truth and touched files.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T10:35:58.302Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the archive artifact plus repo-local file surfaces: row 54 now has a dedicated execute-gated replay body, aligned spec/index/feature metadata, and a durable explanation of the mounted create-time ManagedSystem carrier truth without claiming live verdict coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

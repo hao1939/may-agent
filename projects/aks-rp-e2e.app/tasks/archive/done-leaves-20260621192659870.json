@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:26:59.870Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Rolled up the accepted post-row41 source-frontier exploration and the superseded ungated row42 secure-TLS proof placeholder into the project root. The live regular-learning path is now explicit and unchanged: vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260621 remains the only active model/knowledge-map landing, vmpr-row41-windows-ssh-public-key-maintained-model-view-landing-post-row40-20260621 stays waiting on that model conflict scope, vmpr-post-row41-row42-securetls-basic-frontier-proof-gated-20260621 stays gated on both SSH-public-key landings, and the single external-send-proof family remains the only truthful blocked wait for human transport outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row41-adjacent-source-frontier-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/source lane: inspect mounted AKS RP VirtualMachine prerelease/checkin source plus current repo-local VM prerelease artifacts to identify the exact next adjacent post-row41 scenario branch that can progress without cloud execution, with source-backed recommendations for the next maintained-model/spec follow-up after the SSH public-key split lands.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing exact mounted /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and any directly referenced scenario files that bound the next adjacent post-row41 VirtualMachine prerelease scenario(s), including exact scenario ids/names and why they are adjacent to the Disable SSH plus SSH public-key trio.",
+        "Classify each adjacent candidate by repo-local next action type (maintained model/view landing, source/spec extraction, replay/evidence reuse, or exact external gate) and explicitly name at least one concrete follow-up task that can proceed without cloud mutation once row39-41 work is complete.",
+        "Stay disjoint from the active model/knowledge-map conflict scope: do not edit model/knowledge-map files in this task, and preserve the current blocked external-send-proof family state unless new external proof is discovered."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-adjacent-source-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:20:13.077Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row41-adjacent-source-frontier-20260621_20260621192013",
+        "assigned_at": "2026-06-21T19:20:13.126Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row41-adjacent-source-frontier-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row41-adjacent-source-frontier-20260621_20260621192013",
+        "worker_started_at": "2026-06-21T19:20:36.250Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced durable frontier evidence at evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md, source-bounding the exact post-row41 adjacent VM prerelease secure-TLS scenarios from mounted AKS RP checkin/prerelease source and classifying the next non-cloud follow-up as evidence-reuse rather than new model/spec authoring.",
+        "last_worker_completed_at": "2026-06-21T19:22:43.611Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:23:11.865Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md cites the exact mounted checkin/prerelease ordering plus securetlsbootstrapping source files, correctly classifies rows 42-44 as already-covered canonical secure-TLS carriers, and names the bounded next non-cloud follow-up (row-42 secure-TLS basic frontier proof) without reopening model/knowledge-map work or the external-send-proof family."
+      },
+      "session_id": "s_task_vmpr-post-row41-adjacent-source-frontier-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row41-adjacent-source-frontier-20260621"
+      ],
+      "result": "Produced durable frontier evidence at evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md, source-bounding the exact post-row41 adjacent VM prerelease secure-TLS scenarios from mounted AKS RP checkin/prerelease source and classifying the next non-cloud follow-up as evidence-reuse rather than new model/spec authoring.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:23:11.865Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md cites the exact mounted checkin/prerelease ordering plus securetlsbootstrapping source files, correctly classifies rows 42-44 as already-covered canonical secure-TLS carriers, and names the bounded next non-cloud follow-up (row-42 secure-TLS basic frontier proof) without reopening model/knowledge-map work or the external-send-proof family."
+      },
+      "status": "done"
+    }
+  ]
+}

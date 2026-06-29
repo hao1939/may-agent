@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:36:54.336Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner refill/reconciliation accepted five repo-local closure slices under this branch and archived their low-value done leaves because their durable meaning is now represented here: private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623 confirmed the exact mounted system->none carrier is source/spec/replay/model complete but still execution-ceiling unknown pending one future exact-lifecycle live proof or returned external artifact; serverless-virtual-nodes-subnet-validation-evidence-ceiling-audit-20260623 preserved the narrowest truthful blocked/runtime wording for delegated-subnet wiring versus unproven witness-backed placement; static-egress-azurelinux-env-attachment-refresh-20260623, storage-csi-file-adjacent-draft-linkage-batch-20260623, and traffic-managed-gateway-draft-evidence-ceiling-audit-20260623 each landed their bounded repo-local carrier/evidence hardening without reopening cloud execution. Remaining live work is intentionally narrow: serverless-virtualnodes-standard-family-source-boundary-reconciliation-20260623 stays active to reconcile mounted handwritten virtualnodes family source boundaries against maintained carriers, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful family-level external-human wait for covered VM/private-cluster asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repo-local evidence ceiling for path.private-cluster-none-dns-zone-v3 by citing the exact existing replay/spec/source/archive carriers, distinguishing what is already known from what still requires external or live proof, without reopening cloud execution or the existing external-human wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact repo-local replay/spec/source/archive carriers inspected for path.private-cluster-none-dns-zone-v3, explains why the path remains unknown or can be narrowed further, and records the exact missing proof needed for any stronger verdict.",
+        "The note explicitly preserves the existing external-human wait boundary and does not spawn duplicate owner-send/response-await tasks or reopen cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:30:34.091Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T16:30:34.145Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623_20260623163040",
+        "assigned_at": "2026-06-23T16:30:40.971Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623_20260623163040",
+        "worker_started_at": "2026-06-23T16:31:06.095Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the durable archive note evidence/archive/private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623.md, reconciling the exact repo-local source/spec/replay/model/archive carriers for path.private-cluster-none-dns-zone-v3 and preserving the single existing external-human wait boundary without reopening cloud execution.",
+        "last_worker_completed_at": "2026-06-23T16:33:07.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:33:38.660Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623.md cites the exact mounted V3 source/spec/replay/model/archive carriers, preserves the single shared external-human wait, and truthfully keeps path.private-cluster-none-dns-zone-v3 at an execution-bounded unknown ceiling without reopening live mutation."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623"
+      ],
+      "result": "Wrote the durable archive note evidence/archive/private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623.md, reconciling the exact repo-local source/spec/replay/model/archive carriers for path.private-cluster-none-dns-zone-v3 and preserving the single existing external-human wait boundary without reopening cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:33:38.660Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-evidence-ceiling-reconciliation-20260623.md cites the exact mounted V3 source/spec/replay/model/archive carriers, preserves the single shared external-human wait, and truthfully keeps path.private-cluster-none-dns-zone-v3 at an execution-bounded unknown ceiling without reopening live mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

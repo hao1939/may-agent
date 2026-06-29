@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:54:33.030Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner refill after accepting the row31-32 auto-zone ownership-linkage audit: completed VM prerelease maintained-surface maintenance is now parent-summarized. The row33 duplicate-archive provenance review is accepted as closed provenance-only work; the rows31-32 auto-zone family review remains the accepted evidence baseline for the exact quartet; and the bounded rows31-32 ownership-linkage audit is accepted as resolving truthful archived owners for the four maintained replay/spec paths through smallest archived-output metadata repair plus bounded checkpoint confirmation. Open project work is now intentionally two-track: one active bounded row50 draft-status reconciliation for the dedicated cluster-autoscaler VM prerelease branch, and one blocked family-level external-human send-proof wait that remains the sole truthful transport ceiling for the send-ready MachinesPreview and VM prerelease packets.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "vmpr-row33-archive-duplication-provenance-review-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Do one bounded app-workspace review of the duplicate archived-task-id state for virtualmachines-accelerated-networking-live-body-implementation-20260621 across tasks/archive/done-leaves-20260621030639307.json and tasks/archive/done-leaves-20260621031544803.json, explain why both bundles still carry the same archived task id after the selector-tooling fix, and state the smallest supported next action (retain as-is with rationale, or perform a specific later cleanup) without hand-editing archive JSON, committing, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-archive-duplication-provenance-review-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621.md plus the exact two archive bundle files and records bounded archive/task-tree evidence showing how the duplicate archived task id ended up in both bundles.",
+        "Archive note states whether the older duplicate bundle entry is still carrying distinct durable meaning that should remain archived, or whether a later supported cleanup path should retire/replace it, with the exact smallest truthful next action.",
+        "Archive note explicitly states that no hand-edits to archive JSON or tasks/tree.json, no commit, no cleanup, no staging, and no cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:40:48.431Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T05:49:32.628Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-archive-duplication-provenance-review-20260621_20260621054949",
+        "assigned_at": "2026-06-21T05:49:49.134Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-archive-duplication-provenance-review-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-archive-duplication-provenance-review-20260621_20260621054949",
+        "worker_started_at": "2026-06-21T05:50:12.145Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded provenance review note at evidence/archive/vmpr-row33-archive-duplication-provenance-review-20260621.md explaining why the same archived row-33 task id remains in two done-leaves bundles after the selector-tooling fix and recommending retain-as-is with later cleanup only via a dedicated supported primitive.",
+        "last_worker_completed_at": "2026-06-21T05:51:05.292Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:51:28.713Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded provenance review: the archive note cites the prior selector-tooling evidence and both exact done-leaves bundles, explains the two separate rollup snapshots that preserved the same archived row-33 task id, confirms current tree state no longer carries a live duplicate, and truthfully concludes the smallest supported next action is retain-as-is unless a later dedicated archive-cleanup primitive is added."
+      },
+      "session_id": "s_task_vmpr-row33-archive-duplication-provenance-review-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-archive-duplication-provenance-review-20260621"
+      ],
+      "result": "Wrote the bounded provenance review note at evidence/archive/vmpr-row33-archive-duplication-provenance-review-20260621.md explaining why the same archived row-33 task id remains in two done-leaves bundles after the selector-tooling fix and recommending retain-as-is with later cleanup only via a dedicated supported primitive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:51:28.713Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded provenance review: the archive note cites the prior selector-tooling evidence and both exact done-leaves bundles, explains the two separate rollup snapshots that preserved the same archived row-33 task id, confirms current tree state no longer carries a live duplicate, and truthfully concludes the smallest supported next action is retain-as-is unless a later dedicated archive-cleanup primitive is added."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows31-32-auto-zone-family-review-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from evidence/archive/vmpr-adjacent-envelope-subslice-map-20260621.md, do one bounded repo-workspace review of the row-31 and row-32 auto-zone replay/spec quartet to explain why all four surfaces remain needs-planner-review in domain:checkpoint, determine whether the two variants share one ownership/provenance gap or should split further, and state the smallest truthful next action without performing any commit, edit, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows31-32-auto-zone-family-review-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-adjacent-envelope-subslice-map-20260621.md plus the exact auto-zone replay/spec quartet and records the bounded helper evidence showing why all four remain needs-planner-review.",
+        "Archive note identifies the concrete ownership/provenance gap for rows 31-32, including whether a shared accepted task/evidence linkage or supported repo-local repair path exists, or whether the pair should split into smaller leaves.",
+        "Archive note ends with the smallest concrete next action for the auto-zone family and explicitly states that no commit, edit, cleanup, staging, or cloud execution was performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:27:14.031Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T05:37:12.887Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows31-32-auto-zone-family-review-20260621_20260621054244",
+        "assigned_at": "2026-06-21T05:42:44.965Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows31-32-auto-zone-family-review-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows31-32-auto-zone-family-review-20260621_20260621054244",
+        "worker_started_at": "2026-06-21T05:42:45.567Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested bounded review at evidence/archive/vmpr-rows31-32-auto-zone-family-review-20260621.md, explaining why the row-31/32 auto-zone replay/spec quartet still shows needs-planner-review and concluding the two variants share one helper-visible ownership/provenance gap rather than needing an immediate split.",
+        "last_worker_completed_at": "2026-06-21T05:44:20.457Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:45:03.210Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review note shows the row-31/32 auto-zone quartet still sits at needs-planner-review because accepted archived work exists but none of the reviewed archived tasks expose the exact replay/spec paths in helper-visible ownership metadata; both variants share one ownership/provenance gap and need a separate bounded ownership-linkage audit rather than an immediate split."
+      },
+      "session_id": "s_task_vmpr-rows31-32-auto-zone-family-review-20260621",
+      "session_history": [
+        "s_task_vmpr-rows31-32-auto-zone-family-review-20260621"
+      ],
+      "result": "Wrote the requested bounded review at evidence/archive/vmpr-rows31-32-auto-zone-family-review-20260621.md, explaining why the row-31/32 auto-zone replay/spec quartet still shows needs-planner-review and concluding the two variants share one helper-visible ownership/provenance gap rather than needing an immediate split.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:45:03.210Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review note shows the row-31/32 auto-zone quartet still sits at needs-planner-review because accepted archived work exists but none of the reviewed archived tasks expose the exact replay/spec paths in helper-visible ownership metadata; both variants share one ownership/provenance gap and need a separate bounded ownership-linkage audit rather than an immediate split."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from evidence/archive/vmpr-rows31-32-auto-zone-family-review-20260621.md, do one bounded app-workspace ownership-linkage audit for replays/virtualmachines-auto-zone-single-sku.ts, replays/virtualmachines-auto-zone-mixed-sku.ts, specs/virtualmachines-auto-zone-single-sku.json, and specs/virtualmachines-auto-zone-mixed-sku.json to determine which accepted archived row-31/row-32 task(s), if any, should truthfully own each exact maintained path; if a supported exact-path mapping exists, apply the smallest supported archived-output metadata repair on the chosen archived task ids and rerun bounded domain:checkpoint on the exact quartet, otherwise capture the exact ambiguity and the owner decision still required. Do not edit replay/spec/model contents, commit, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-rows31-32-auto-zone-family-review-20260621.md, the exact auto-zone replay/spec quartet, and the bounded archive/task-tree evidence showing which accepted row-31/row-32 task(s) could truthfully own each maintained path.",
+        "If a supported metadata repair is possible, archive note records the exact repair command(s) plus bounded post-repair domain:checkpoint output for the exact quartet; if not, it records the exact ambiguity evidence and the precise owner decision still required.",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:45:03.260Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T05:51:28.663Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621_20260621055128",
+        "assigned_at": "2026-06-21T05:51:28.763Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621_20260621055128",
+        "worker_started_at": "2026-06-21T05:51:50.683Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded rows 31-32 auto-zone ownership-linkage audit, wrote the archive note at evidence/archive/vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621.md, and applied four exact archived-output metadata repairs so the quartet now resolves to truthful accepted owners in domain:checkpoint.",
+        "last_worker_completed_at": "2026-06-21T05:53:42.372Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:53:54.914Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker's bounded auto-zone ownership-linkage audit: the archive note cites the accepted family review and exact replay/spec quartet, records four smallest truthful archived-output metadata repairs on accepted row-31/row-32 tasks, and shows bounded pre/post domain:checkpoint evidence that each maintained path now resolves to one truthful accepted owner with no replay/spec/model edits or cloud work."
+      },
+      "session_id": "s_task_vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621",
+      "session_history": [
+        "s_task_vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621"
+      ],
+      "result": "Completed the bounded rows 31-32 auto-zone ownership-linkage audit, wrote the archive note at evidence/archive/vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621.md, and applied four exact archived-output metadata repairs so the quartet now resolves to truthful accepted owners in domain:checkpoint.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:53:54.914Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker's bounded auto-zone ownership-linkage audit: the archive note cites the accepted family review and exact replay/spec quartet, records four smallest truthful archived-output metadata repairs on accepted row-31/row-32 tasks, and shows bounded pre/post domain:checkpoint evidence that each maintained path now resolves to one truthful accepted owner with no replay/spec/model edits or cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

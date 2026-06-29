@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:02:20.462Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review reconciles the private-cluster public-second-hop normalization into the feature-reference lane: the archive now carries concrete REST/spec plus Learn references, states the supported in-place public-APIVNET -> private-APIVNET contract without over-claiming subnet-retention, and preserves the privateDNSZone comment-vs-examples/Learn mismatch as an explicit public contradiction. The lane remains in review/cleanup mode for the remaining feature-reference normalization siblings (OIDC issuer, remediator, RP cluster lifecycle, SecOps FIPS batch, and related private-cluster/serverless notes); no new active spec work is opened because the spec-verification frontier is already at the 5-leaf cap.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-normalization-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the private-cluster-vnet-integration-update-public-second-hop archive so its top-level official-reference sections and expectation summary match the concrete public API/Learn evidence already collected, eliminating the current placeholder 'no matching reference found yet' contradictions and leaving a promotion-ready branch note.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/feature-reference-private-cluster-vnet-integration-update-public-second-hop-20260628.md"
+      ],
+      "acceptance": [
+        "The durable archive's top-level Official API References and Official Documentation References sections cite the concrete public REST/spec and Learn references already identified for the second-hop update path.",
+        "The repaired note states the supported in-place public APIVNET -> private-cluster update contract without over-claiming inferred postconditions such as subnet retention unless explicitly sourced.",
+        "Any remaining public contradictions, especially the privateDNSZone spec-comment versus examples/Learn mismatch, are called out explicitly as contradictions rather than hidden by placeholder text."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-update-public-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:58:12.689Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-normalization-20260628_20260628055851",
+        "assigned_at": "2026-06-28T05:58:51.168Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-norma",
+        "worker_started_attempt_id": "a_repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-normalization-20260628_20260628055851",
+        "worker_started_at": "2026-06-28T05:58:52.579Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the public-second-hop feature-reference archive at evidence/archive/feature-reference-private-cluster-vnet-integration-update-public-second-hop-20260628.md so its top-level official-reference sections now cite concrete AKS REST/spec and Microsoft Learn sources, its behavior summary matches the supported in-place public-APIVNET→private-cluster contract, and the remaining privateDNSZone contradiction is called out explicitly.",
+        "last_worker_completed_at": "2026-06-28T05:59:58.839Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:01:15.714Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive now replaces placeholder contradictions with concrete REST/spec/Learn references, truthfully models the supported in-place public-APIVNET to private-APIVNET second hop, and keeps narrower subnet-retention/runtime witnesses labeled as source/execution-backed rather than overstated public contract."
+      },
+      "session_id": "s_task_repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-norma",
+      "session_history": [
+        "s_task_repair-feature-reference-private-cluster-vnet-integration-update-public-second-hop-summary-norma"
+      ],
+      "result": "Repaired the public-second-hop feature-reference archive at evidence/archive/feature-reference-private-cluster-vnet-integration-update-public-second-hop-20260628.md so its top-level official-reference sections now cite concrete AKS REST/spec and Microsoft Learn sources, its behavior summary matches the supported in-place public-APIVNET→private-cluster contract, and the remaining privateDNSZone contradiction is called out explicitly.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:01:15.714Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive now replaces placeholder contradictions with concrete REST/spec/Learn references, truthfully models the supported in-place public-APIVNET to private-APIVNET second hop, and keeps narrower subnet-retention/runtime witnesses labeled as source/execution-backed rather than overstated public contract."
+      },
+      "status": "done"
+    }
+  ]
+}

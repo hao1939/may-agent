@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T02:21:10.696Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 network-cni overlay mutation family intake and audit history are compacted: the archived done slice established the bounded uncovered family from mounted handwritten source, accepted both replay-contract audits as source-backed gap maps for path.network-cni-azure-overlay-dual-stack-migration and path.network-cni-azure-overlay-podcidr-expansion, and left the concrete no-cloud repair package visible as one active replay/model repair leaf plus the sibling backlog repair leaf for the second path.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-coverage-gap-map-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted e2ev3 network-cni handwritten scenarios as the primary source to inventory one bounded uncovered network-cni family, map intended inputs/expectations to maintained feature/spec/replay/model coverage, and identify the next no-cloud evidence/spec/model leaves without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence lists the exact mounted source files/scenarios reviewed for the chosen network-cni family, summarizes intended feature behavior from the handwritten cases, and maps each scenario to existing maintained feature/spec/replay/model coverage or a precise gap.",
+        "The artifact names at least two concrete follow-up leaves with exact path/family scope and durable output targets, and this task introduces no live execution, approval wait, or environment placeholder."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sig.network-cni.coverage-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T02:11:08.718Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-coverage-gap-map-20260625_20260625021108",
+        "assigned_at": "2026-06-25T02:11:08.770Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-coverage-gap-map-20260625",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-coverage-gap-map-20260625_20260625021108",
+        "worker_started_at": "2026-06-25T02:11:31.688Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive artifact `evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md`, mapping the mounted network-cni overlay mutation lifecycle family (dual-stack migration + pod CIDR expansion) from handwritten source to maintained feature/spec/replay/model coverage and naming concrete no-cloud follow-up leaves.",
+        "last_worker_completed_at": "2026-06-25T02:14:03.904Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T02:14:41.874Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md cites the exact mounted overlay_dualstack_win.go and overlay_expansion.go scenarios, recovers the overlay mutation lifecycle intent and boundaries, maps both maintained carrier stacks to their current draft/skeletal gaps, and names concrete no-cloud follow-up leaves for replay-contract hardening without introducing cloud execution or approval waits."
+      },
+      "session_id": "s_task_network-cni-mounted-source-coverage-gap-map-20260625",
+      "session_history": [
+        "s_task_network-cni-mounted-source-coverage-gap-map-20260625"
+      ],
+      "result": "Produced the requested archive artifact `evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md`, mapping the mounted network-cni overlay mutation lifecycle family (dual-stack migration + pod CIDR expansion) from handwritten source to maintained feature/spec/replay/model coverage and naming concrete no-cloud follow-up leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T02:14:41.874Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/network-cni-mounted-source-coverage-gap-map-20260625.md cites the exact mounted overlay_dualstack_win.go and overlay_expansion.go scenarios, recovers the overlay mutation lifecycle intent and boundaries, maps both maintained carrier stacks to their current draft/skeletal gaps, and names concrete no-cloud follow-up leaves for replay-contract hardening without introducing cloud execution or approval waits."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:05:48.067Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning hygiene follow-up: compacted the remaining safe completed repo-local reconciliation leaves after the stale watchdog review wake. Their durable meaning is already preserved by project rollup plus linked evidence archives, so future owner wakes should focus on the one active ASM ingress-internal mounted-source reconciliation and the two exact blocked waits only. No review frontier was reopened, no blocked family changed, and no refill leaf was added because runnable backlog remains truthfully empty while the assigned active repo-local task is still in progress.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.traffic-azure-service-mesh.custom-config and path.traffic-azure-service-mesh.egress-gateway: determine whether each branch has an exact handwritten/source slice or must remain source-grounded draft, then tighten feature/spec/replay/model wording and archive the bounded evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus the touched feature/spec/replay/model carriers for custom-config and egress-gateway, and records whether each path has exact handwritten/source authority or only source-grounded draft support.",
+        "Carrier and model updates keep the two traffic-azure-service-mesh paths claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit draft/source-grounded wording instead of borrowing neighboring ASM evidence.",
+        "The work stays repo-local and bounded to path.traffic-azure-service-mesh.custom-config and path.traffic-azure-service-mesh.egress-gateway only: no cloud mutation, no blocked-wait follow-up, and no widening into unrelated traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-azure-service-mesh-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:53:27.084Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623_20260623195330",
+        "assigned_at": "2026-06-23T19:53:30.159Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623_20260623195330",
+        "worker_started_at": "2026-06-23T19:53:51.697Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the two ASM paths repo-locally using mounted AKS RP source, wrote a durable archive note at evidence/archive/traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623.md, and tightened the feature/spec/model wording so custom-config and egress-gateway are now explicit mounted-source-backed drafts rather than vague family-level drafts.",
+        "last_worker_completed_at": "2026-06-23T20:01:28.688Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:02:56.704Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence names the exact mounted-source files and explains why both ASM custom-config and egress-gateway now have exact source-step authority while remaining mounted-source-backed drafts only. Repo-local carriers and model.json now use claim-safe wording (custom-config = shared MeshConfig validation; egress-gateway = request/readiness/test-selection slice) without promoting any live verdict or widening scope."
+      },
+      "session_id": "s_task_traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623"
+      ],
+      "result": "Reconciled the two ASM paths repo-locally using mounted AKS RP source, wrote a durable archive note at evidence/archive/traffic-azure-service-mesh-custom-config-egress-mounted-source-reconcile-20260623.md, and tightened the feature/spec/model wording so custom-config and egress-gateway are now explicit mounted-source-backed drafts rather than vague family-level drafts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:02:56.704Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence names the exact mounted-source files and explains why both ASM custom-config and egress-gateway now have exact source-step authority while remaining mounted-source-backed drafts only. Repo-local carriers and model.json now use claim-safe wording (custom-config = shared MeshConfig validation; egress-gateway = request/readiness/test-selection slice) without promoting any live verdict or widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

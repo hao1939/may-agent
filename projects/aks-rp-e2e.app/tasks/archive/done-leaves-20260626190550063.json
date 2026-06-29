@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:05:50.063Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner accepted the final repo-local repair for path.net-integration.multinic-mixed: canonical maintained surfaces remain blocked, while the only stale raw-model pass row now survives solely as historical id path.net-integration.multinic-mixed.legacy-two-pool-separate-subnet-staging-pass with explicit canonical linkage. Archive the completed duplicate-path repair child; this branch no longer carries the multinic contradiction and now needs a fresh single-spec refill from the still-open spec-loop backlog recorded in .state/spec-loop/state.json.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining repo-local duplicate-path contradiction for path.net-integration.multinic-mixed by reconciling the legacy raw model pass entry with the canonical blocked mounted-source verdict, preserving any still-useful two-pool historical evidence under a distinct exact identifier if needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626.md"
+      ],
+      "acceptance": [
+        "Repo-local evidence identifies the exact duplicate/raw-model location(s) that still publish path.net-integration.multinic-mixed as pass and records the bounded repair applied or the exact reason no local repair is safe.",
+        "After the change, maintained repo-local status surfaces no longer expose a pass verdict under the canonical path id path.net-integration.multinic-mixed while preserving any distinct historical two-pool meaning under a non-conflicting identifier or explicit archive note.",
+        "The artifact records the exact files/commands checked and the resulting canonical verdict surface without requiring cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:net-integration-multinic-mixed"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:00:34.458Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626_20260626190034",
+        "assigned_at": "2026-06-26T19:00:34.506Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626",
+        "worker_started_attempt_id": "a_net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626_20260626190034",
+        "worker_started_at": "2026-06-26T19:00:51.093Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the raw-model duplicate path contradiction for path.net-integration.multinic-mixed by renaming the legacy pass row in model/knowledge-map/model.json to a distinct historical id and documented the repair in evidence/archive/net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T19:04:21.889Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:05:50.014Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 evidence: the live raw-model duplicate pass row was renamed to historical id path.net-integration.multinic-mixed.legacy-two-pool-separate-subnet-staging-pass, preserved with canonicalPathId back-linking, and regenerated maintained views no longer expose a pass verdict under canonical path.net-integration.multinic-mixed."
+      },
+      "session_id": "s_task_net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626",
+      "session_history": [
+        "s_task_net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626"
+      ],
+      "result": "Repaired the raw-model duplicate path contradiction for path.net-integration.multinic-mixed by renaming the legacy pass row in model/knowledge-map/model.json to a distinct historical id and documented the repair in evidence/archive/net-integration-multinic-mixed-raw-model-duplicate-path-repair-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:05:50.014Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 evidence: the live raw-model duplicate pass row was renamed to historical id path.net-integration.multinic-mixed.legacy-two-pool-separate-subnet-staging-pass, preserved with canonicalPathId back-linking, and regenerated maintained views no longer expose a pass verdict under canonical path.net-integration.multinic-mixed."
+      },
+      "status": "done"
+    }
+  ]
+}

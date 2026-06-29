@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T17:35:07.281Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 blocked-frontier owner review accepted the bounded replay-family format-gate reductions completed so far: private-cluster, storage-csi, bootstrap-profile-managed-acr-lifecycle, and CCP slices are all landed in evidence with targeted clean verification, and the repo-wide bun run check frontier has been truthfully reduced from the earlier 71-file state to 62 remaining warnings without widening beyond accepted slices. The four external response-await leaves remain correctly compressed under the focus branch until returned proof or the first follow-up review on/after 2026-06-26. The VirtualMachine prerelease coverage-ledger checkpoint gate stays blocked only on a future green repo-wide bun run check, with the newly assigned bounded network-acns replay-family slice now carrying the single local next action on the shared format gate.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact 5-file private-cluster replay-family frontier from the accepted 79-warning rerun, then rerun targeted verification for that same file set and refresh the repo-wide warning count without widening beyond that family, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command(s) for the 5 private-cluster replay files, targeted verification output for the same file set, and the resulting git diff or equivalent proof showing only the intended private-cluster replay-family formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the accepted 5-file private-cluster family, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:22:53.152Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624_20260624172253",
+        "assigned_at": "2026-06-24T17:22:53.251Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624_20260624172253",
+        "worker_started_at": "2026-06-24T17:23:17.377Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied bounded Prettier writeback to the exact 5-file private-cluster replay frontier, verified that slice is now Prettier-clean, and archived evidence showing repo-wide bun check warnings dropped from 79 to 74 without widening scope.",
+        "last_worker_completed_at": "2026-06-24T17:25:10.067Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:25:58.388Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: archive evidence shows the exact 5-file private-cluster replay-family writeback, targeted Prettier check failed before and passed after, selected-file diff stayed within that slice, and a fresh repo-wide bun run check reduced the remaining format frontier from 79 to 74 warnings without widening scope."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-private-cluster-slice-writeback-20260624"
+      ],
+      "result": "Applied bounded Prettier writeback to the exact 5-file private-cluster replay frontier, verified that slice is now Prettier-clean, and archived evidence showing repo-wide bun check warnings dropped from 79 to 74 without widening scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:25:58.388Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: archive evidence shows the exact 5-file private-cluster replay-family writeback, targeted Prettier check failed before and passed after, selected-file diff stayed within that slice, and a fresh repo-wide bun run check reduced the remaining format frontier from 79 to 74 warnings without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

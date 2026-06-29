@@ -1,0 +1,183 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:09:47.376Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review keeps the single truthful external-human family wait unchanged and archives the completed aks-spec verification loop plus the credential-provider mounted-source packet sync because their durable no-cloud meaning is already represented at the root. Live repo-local work now stays focused on cluster-autoscaler mounted-source closure: the active profile-matrix packet sync remains in progress, and the next adjacent refill should stay in-family and no-cloud rather than reopening the external-wait branch from silence alone.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "aks-spec-verification-loop",
+      "parent_id": "project",
+      "state": "done",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run a bounded single-spec verification loop over aks-rp-e2e specs, prioritizing the dev-infra-core feature set first and keeping only a small frontier of live verification leaves open.",
+      "inputs": [
+        "../aks-rp-e2e/specs/index.json",
+        "../aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Controller pulses keep a bounded child frontier filled from pending specs.",
+        "Dev Infra Core selectors are scheduled before the remaining spec backlog.",
+        "Each child leaf runs one single-spec GitHub workflow and records pass, fail, blocked, or error in spec-loop state.",
+        "The loop remains open until all specs have reviewed dispositions or the owner intentionally closes it."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop"
+      ],
+      "depends_on": [],
+      "workflow": "spec-loop-controller",
+      "context": {
+        "windowSize": 5,
+        "stateRef": ".state/spec-loop/state.json",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "priorityFeatureSet": "dev-infra-core",
+        "rollup_summary": "2026-06-26 owner hygiene rollup accepts the no-cloud review-net-integration-static-egress-vmss-after-reconciled-nsg-control completion as archived context already represented by the parent rollup and linked evidence. This branch now carries the durable row-56 ManagedSystem source-map understanding plus the accepted static-egress review outcome only as summarized parent knowledge; no open child work remains here unless contradictory source/spec/runtime evidence appears or a new bounded replay question is intentionally reopened.",
+        "archived_done_leaf_count": 26,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260626130811368.json",
+            "archived": 1,
+            "at": "2026-06-26T13:08:11.368Z",
+            "summary": "2026-06-26 owner hygiene rollup accepts the no-cloud review-net-integration-static-egress-vmss-after-reconciled-nsg-control completion as archived context already represented by the parent rollup and linked evidence. This branch now carries the durable row-56 ManagedSystem source-map understanding plus the accepted static-egress review outcome only as summarized parent knowledge; no open child work remains here unless contradictory source/spec/runtime evidence appears or a new bounded replay question is intentionally reopened.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "review-net-integration-static-egress-vmss-after-reconciled-nsg-control-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626123018744.json",
+            "archived": 1,
+            "at": "2026-06-26T12:30:18.744Z",
+            "summary": "2026-06-26 owner review accepts the no-cloud row-56 ManagedSystem source map as completed context: evidence/archive/vm-prerelease-row56-managedsystem-agentpool-source-map-20260626.md proves the exact mounted row-56 carrier, boundary edges, replay/model coverage, and the precise execute-gated next probe while keeping the path product-unknown but well bounded. The only live child in aks-spec-verification-loop is now review-net-integration-static-egress-vmss-after-reconciled-nsg-control-20260626; do not reopen row-56 source mapping from this lane unless new contradictory source evidence appears.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-row56-managedsystem-agentpool-source-map-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626122610893.json",
+            "archived": 2,
+            "at": "2026-06-26T12:26:10.893Z",
+            "summary": "2026-06-26 metric-recovered owner review accepted the repo-local reconciliation slice: evidence/archive/reconcile-spec-loop-state-after-reviewed-nsg-control-20260626.md plus ../aks-rp-e2e/.state/spec-loop/state.json now preserve the reviewed earlier-sibling queue ordering with outbound-lb-custom-ip, authorized-ip-ranges, authorized-service-tags, and nsg-control all recorded ahead of static-egress-vmss, with truthful pass/result linkage and no new launch. The older blocked static-egress leaf is archived as replaced because its predecessor blocker is satisfied. The only live spec-loop action now is review-net-integration-static-egress-vmss-after-reconciled-nsg-control-20260626, which may review existing artifacts first and only then relaunch that one spec if needed; no earlier-queue reorder work should reopen from this branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "reconcile-spec-loop-state-after-reviewed-nsg-control-20260626",
+              "review-net-integration-static-egress-vmss-after-refreshed-nsg-control-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626122459571.json",
+            "archived": 1,
+            "at": "2026-06-26T12:24:59.571Z",
+            "summary": "2026-06-26 blocked-frontier owner review keeps aks-spec-verification-loop as a two-step local dependency chain: refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626 plus review-net-integration-nsg-control-after-refreshed-earlier-queue-20260626 are accepted durable context, including archive evidence for the preserved earlier-sibling queue and the reviewed terminal nsg-control pass. The only live repo-local action is reconcile-spec-loop-state-after-reviewed-nsg-control-20260626 to repair .state/spec-loop/state.json so spec.net-integration.nsg-control is recorded ahead of spec.net-integration.static-egress-vmss with truthful loopTaskId/summary linkage and an archive mismatch note; only after that reconciliation is accepted should review-net-integration-static-egress-vmss-after-refreshed-nsg-control-20260626 resume as the next bounded newer-sibling leaf. No relaunch or static-egress review belongs in the reconciliation leaf.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "review-net-integration-nsg-control-after-refreshed-earlier-queue-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626121906187.json",
+            "archived": 6,
+            "at": "2026-06-26T12:19:06.188Z",
+            "summary": "2026-06-26 blocked-frontier owner review accepted the preserved-order refresh as complete: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md and ../aks-rp-e2e/.state/spec-loop/state.json now capture reviewed terminal queue facts for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags, and the stale loopTaskId/order mismatch has already been reconciled. The pre-refresh blocked successors for authorized-ip-ranges, authorized-service-tags, reconcile, nsg-control, and static-egress-vmss are archived as completed or replaced context. The next truthful spec-loop action is a fresh newer-sibling leaf for spec.net-integration.nsg-control on the accepted single-spec launcher surface, with static-egress-vmss queued strictly behind that refreshed review.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626",
+              "authorized-ip-ranges-after-outbound-lb-custom-ip-earlier-net-integration-review-20260626",
+              "authorized-service-tags-after-authorized-ip-ranges-earlier-net-integration-review-20260626",
+              "reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626",
+              "review-net-integration-nsg-control-after-earlier-queue-and-order-reconcile-20260626",
+              "review-net-integration-static-egress-vmss-after-nsg-control-20260626"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-26T11:18:24.026Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-26T11:20:26.736Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aks-spec-verification-loop",
+        "last_controller_pulse_at": "2026-06-26T11:20:27.565Z",
+        "last_controller_pulse_summary": "Spec loop aks-spec-verification-loop controller pulse created 5 child task(s); releasing controller slot before child assignment.",
+        "previous_attempt_id": "a_aks-spec-verification-loop_20260626112026",
+        "rolled_up_at": "2026-06-26T13:08:11.368Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_aks-spec-verification-loop",
+      "session_history": [
+        "s_task_aks-spec-verification-loop"
+      ],
+      "result": "Child review pending: verify-spec-net-integration-outbound-lb-custom-ip.",
+      "blocker": "Child dependency waits remain truthful behind the sole active unlocker retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626. Keep reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626 and verify-newer-net-integration-single-spec-siblings-after-earlier-retry-queue-20260626 blocked until that active preserved-order retry queue is reviewed terminal and spec-loop state can become the source of truth again.",
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a no-cloud mounted-source packet sync for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix that maps the exact prerelease/checkin carrier, input boundary, expected upgrade behavior, and current replay/spec/model linkage so the next execute-gated step is explicit without reopening the external-wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted Go source carrier(s) and any checked-in replay/spec artifacts for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix, with enough detail to reproduce the source-backed intent locally.",
+        "The writeup records accepted inputs, rejected/adjacent edges, expected upgrade behavior, current model status, and the precise next safe action (packet/spec sync, replay check, or execute gate) for this path only.",
+        "No cloud mutation or duplicate external-human wait work is introduced; the task stays within repo-local source/spec/model/evidence work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:05:17.214Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626_20260626130517",
+        "assigned_at": "2026-06-26T13:05:17.298Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626_20260626130517",
+        "worker_started_at": "2026-06-26T13:05:44.815Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local mounted-source packet sync for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and archived it under evidence/archive with exact mounted-source, spec/replay/model linkage, input boundary, adjacent/rejected edges, and next execute-gated action.",
+        "last_worker_completed_at": "2026-06-26T13:07:31.771Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:08:27.245Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-26: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626.md cites the exact mounted credentialprovider upgrade carriers (nodeimageupgrade.go, upgrade.go, common.go), maps source rows 189/214 to current prerelease aliases 191/216, records accepted/rejected boundaries and expected upgrade behavior, links the maintained spec/replay/model surfaces, and makes the next step explicit as one bounded execute-gated run for this exact path only without reopening the external-human wait family."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260"
+      ],
+      "result": "Produced the requested repo-local mounted-source packet sync for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and archived it under evidence/archive with exact mounted-source, spec/replay/model linkage, input boundary, adjacent/rejected edges, and next execute-gated action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:08:27.245Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-26: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-packet-sync-20260626.md cites the exact mounted credentialprovider upgrade carriers (nodeimageupgrade.go, upgrade.go, common.go), maps source rows 189/214 to current prerelease aliases 191/216, records accepted/rejected boundaries and expected upgrade behavior, links the maintained spec/replay/model surfaces, and makes the next step explicit as one bounded execute-gated run for this exact path only without reopening the external-human wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

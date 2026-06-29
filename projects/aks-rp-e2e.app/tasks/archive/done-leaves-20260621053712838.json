@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:37:12.838Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner reconciliation after the row-33 problem-resolved wake: the row-33 VM prerelease family is now durably understood end-to-end. Completed work established the truthful archived carrier, diagnosed the duplicate archived-task-id across bundles, and then closed the app tooling gap by adding archive-file targeting for set-archived-outputs so the row-33 metadata repair could be rerun successfully. The immediate remaining live execution step is vmpr-row34-archived-output-attachment-repair-20260621 in repo-workspace; the three waiting family-review leaves should stay deferred until that metadata-only repair clears. The external-send blocked family remains unchanged and is still the single truthful external-human transport wait.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "vmpr-archived-output-duplicate-archive-id-family-unblock-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md, do one bounded repo/app-workspace diagnosis of the duplicate archived-task-id ambiguity blocking task-tree set-archived-outputs for VM prerelease metadata repairs. Confirm whether virtualmachines-accelerated-networking-live-body-implementation-20260621 and virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621 each appear in more than one archive bundle, explain the smallest supported repair path or app-tooling gap, and state the exact next action to unblock row 33 first and row 34 next without direct hand edits, commit, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md and targeted archive-bundle evidence for both archived carrier ids, recording whether the row-33 and row-34 metadata repairs share the same duplicate-archived-id root cause.",
+        "Archive note identifies the smallest truthful supported unblock path: either an existing task-tree/archive operation that resolves the duplicate archived-id ambiguity without hand-editing tree files, or a concrete project-app tooling gap that needs a focused fix before rerunning the row-33 and row-34 set-archived-outputs repairs.",
+        "Archive note ends with the exact next action sequence for row 33 first and row 34 second, and explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:33:25.365Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-archived-output-duplicate-archive-id-family-unblock-20260621_20260621053325",
+        "assigned_at": "2026-06-21T05:33:25.413Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-archived-output-duplicate-archive-id-family-unblock-20260621",
+        "worker_started_attempt_id": "a_vmpr-archived-output-duplicate-archive-id-family-unblock-20260621_20260621053325",
+        "worker_started_at": "2026-06-21T05:33:53.913Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the archived-output duplicate-id blocker and wrote evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md confirming row 33 has a real duplicate archive-bundle id while row 34 does not, with the smallest truthful unblock identified as an app-tooling gap.",
+        "last_worker_completed_at": "2026-06-21T05:34:46.046Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:35:15.356Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md: row 33 is truthfully blocked by a real duplicate archived-task-id across two archive bundles, while row 34's archived carrier is unique and remains independently actionable. The current set-archived-outputs flow has no bundle selector, so the next truthful follow-up is a focused app-tooling task for row 33 rather than treating row 34 as sharing the same blocker."
+      },
+      "session_id": "s_task_vmpr-archived-output-duplicate-archive-id-family-unblock-20260621",
+      "session_history": [
+        "s_task_vmpr-archived-output-duplicate-archive-id-family-unblock-20260621"
+      ],
+      "result": "Diagnosed the archived-output duplicate-id blocker and wrote evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md confirming row 33 has a real duplicate archive-bundle id while row 34 does not, with the smallest truthful unblock identified as an app-tooling gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:35:15.356Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md: row 33 is truthfully blocked by a real duplicate archived-task-id across two archive bundles, while row 34's archived carrier is unique and remains independently actionable. The current set-archived-outputs flow has no bundle selector, so the next truthful follow-up is a focused app-tooling task for row 33 rather than treating row 34 as sharing the same blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-archived-output-attachment-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the supported archived-output metadata repair for row 33 by attaching replays/virtualmachines-accelerated-networking.ts and specs/virtualmachines-accelerated-networking.json to the archived accepted task virtualmachines-accelerated-networking-live-body-implementation-20260621 after the shared duplicate-archive-id family unblock confirms a supported path, then rerun a bounded domain:checkpoint on those two exact paths to confirm both no longer report needs-planner-review. Do not edit replay/spec/model contents, commit, cleanup, staging, or run cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note records the exact set-archived-outputs command applied to virtualmachines-accelerated-networking-live-body-implementation-20260621 and cites the accepted ownership-decision note as basis for choosing that archived carrier.",
+        "Archive note includes the bounded post-repair domain:checkpoint evidence for replays/virtualmachines-accelerated-networking.ts and specs/virtualmachines-accelerated-networking.json, showing the helper-visible ownership recommendation after the metadata repair.",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:31:07.477Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-archived-output-attachment-repair-20260621_20260621053144",
+        "assigned_at": "2026-06-21T05:31:44.368Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-archived-output-attachment-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-archived-output-attachment-repair-20260621_20260621053144",
+        "worker_started_at": "2026-06-21T05:31:58.146Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Attempted the supported row-33 archived-output repair and wrote evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md, but the command is blocked because the archived task id exists in two archive bundles, so domain:checkpoint still reports both row-33 files as needs-planner-review.",
+        "last_worker_completed_at": "2026-06-21T05:32:46.500Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:34:31.996Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner reviewed evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md and accepted the duplicate archive-id blocker diagnosis as sufficient. The attempted metadata repair could not run because archived task virtualmachines-accelerated-networking-live-body-implementation-20260621 exists in two archive bundles, so this row-33 leaf is superseded by active family task vmpr-archived-output-duplicate-archive-id-family-unblock-20260621, which owns the supported unblock path before row-33 retry."
+      },
+      "session_id": "s_task_vmpr-row33-archived-output-attachment-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-archived-output-attachment-repair-20260621"
+      ],
+      "result": "Attempted the supported row-33 archived-output repair and wrote evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md, but the command is blocked because the archived task id exists in two archive bundles, so domain:checkpoint still reports both row-33 files as needs-planner-review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:34:31.996Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner reviewed evidence/archive/vmpr-row33-archived-output-attachment-repair-20260621.md and accepted the duplicate archive-id blocker diagnosis as sufficient. The attempted metadata repair could not run because archived task virtualmachines-accelerated-networking-live-body-implementation-20260621 exists in two archive bundles, so this row-33 leaf is superseded by active family task vmpr-archived-output-duplicate-archive-id-family-unblock-20260621, which owns the supported unblock path before row-33 retry."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-replay-spec-output-ownership-decision-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide the smallest truthful helper-visible ownership action for the row-33 accelerated-networking maintained surfaces after the accepted family review: either identify and restore exact accepted-task ownership/provenance for replays/virtualmachines-accelerated-networking.ts and specs/virtualmachines-accelerated-networking.json through an existing truthful carrier using the supported task-tree output-attachment primitive if warranted, or explicitly confirm that one or both files should intentionally remain needs-planner-review until a future accepted carrier exists. Record the helper-visible basis for the decision without editing product/model surfaces, committing, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-replay-spec-output-ownership-decision-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-33 family review note plus the exact accepted carrier candidate tasks and records whether exact replay/spec ownership already exists, can be truthfully restored through supported task-tree output attachment, or is still intentionally absent.",
+        "Archive note states the owner decision for the row-33 maintained surfaces, including whether a supported task-tree set-outputs or set-archived-outputs action should be applied to an existing accepted task for one or both exact filepaths, or whether needs-planner-review should intentionally remain with the exact reason.",
+        "Archive note ends with the smallest concrete next action for row 33 and explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:29:17.697Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-replay-spec-output-ownership-decision-20260621_20260621052917",
+        "assigned_at": "2026-06-21T05:29:17.744Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-replay-spec-output-ownership-decision-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-replay-spec-output-ownership-decision-20260621_20260621052917",
+        "worker_started_at": "2026-06-21T05:29:30.691Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-33 ownership-decision archive note at evidence/archive/vmpr-row33-replay-spec-output-ownership-decision-20260621.md, concluding that both exact maintained filepaths can truthfully be restored through one archived accepted carrier via task-tree set-archived-outputs on virtualmachines-accelerated-networking-live-body-implementation-20260621.",
+        "last_worker_completed_at": "2026-06-21T05:30:33.874Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:31:07.428Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row33-replay-spec-output-ownership-decision-20260621.md verifies both exact row-33 maintained surfaces already have one truthful archived accepted carrier, virtualmachines-accelerated-networking-live-body-implementation-20260621, and the remaining helper-visible gap is metadata-only set-archived-outputs repair rather than intentional planner-review status."
+      },
+      "session_id": "s_task_vmpr-row33-replay-spec-output-ownership-decision-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-replay-spec-output-ownership-decision-20260621"
+      ],
+      "result": "Wrote the requested row-33 ownership-decision archive note at evidence/archive/vmpr-row33-replay-spec-output-ownership-decision-20260621.md, concluding that both exact maintained filepaths can truthfully be restored through one archived accepted carrier via task-tree set-archived-outputs on virtualmachines-accelerated-networking-live-body-implementation-20260621.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:31:07.428Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row33-replay-spec-output-ownership-decision-20260621.md verifies both exact row-33 maintained surfaces already have one truthful archived accepted carrier, virtualmachines-accelerated-networking-live-body-implementation-20260621, and the remaining helper-visible gap is metadata-only set-archived-outputs repair rather than intentional planner-review status."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row34-migration-replay-ownership-review-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using evidence/archive/vmpr-adjacent-envelope-subslice-map-20260621.md as the starting contract, do one bounded repo-workspace review of replays/virtualmachines-vmas-to-vms-migration-slb.ts to explain why domain:checkpoint still marks only the row-34 replay as needs-planner-review while specs/virtualmachines-vmas-to-vms-migration-slb.json is already candidate; capture the exact ownership/provenance gap, whether a supported repo-local repair path exists, and the smallest truthful next task without performing any commit, edit, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row34-migration-replay-ownership-review-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-adjacent-envelope-subslice-map-20260621.md plus the exact row-34 replay/spec files, and records the bounded helper evidence showing replay vs spec readiness divergence.",
+        "Archive note identifies the concrete ownership/provenance reason the replay remains needs-planner-review, including any accepted task/evidence linkage that already covers part of the pair, and states whether a supported repo-local repair path exists or whether planner-review status is still intentional.",
+        "Archive note ends with the smallest concrete next action for the row-34 replay and explicitly states that no commit, edit, cleanup, staging, or cloud execution was performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:26:05.126Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row34-migration-replay-ownership-review-20260621_20260621052605",
+        "assigned_at": "2026-06-21T05:26:05.172Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row34-migration-replay-ownership-review-20260621",
+        "worker_started_attempt_id": "a_vmpr-row34-migration-replay-ownership-review-20260621_20260621052605",
+        "worker_started_at": "2026-06-21T05:26:22.723Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded row-34 replay ownership/provenance review and wrote the requested archive note explaining why the spec is candidate while the replay remains needs-planner-review.",
+        "last_worker_completed_at": "2026-06-21T05:27:29.530Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:28:17.301Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review note in evidence/archive/vmpr-row34-migration-replay-ownership-review-20260621.md: bounded domain:checkpoint evidence shows the row-34 spec is already helper-linked to accepted task vm-prerelease-row34-spec-coverage-prose-refresh-20260620 while replays/virtualmachines-vmas-to-vms-migration-slb.ts still has accepted_tasks=[] and remains needs-planner-review; the note also identifies the precise replay-side provenance gap and narrows the next owner action to a replay ownership-decision task rather than new source/spec/cloud work."
+      },
+      "session_id": "s_task_vmpr-row34-migration-replay-ownership-review-20260621",
+      "session_history": [
+        "s_task_vmpr-row34-migration-replay-ownership-review-20260621"
+      ],
+      "result": "Completed the bounded row-34 replay ownership/provenance review and wrote the requested archive note explaining why the spec is candidate while the replay remains needs-planner-review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:28:17.301Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review note in evidence/archive/vmpr-row34-migration-replay-ownership-review-20260621.md: bounded domain:checkpoint evidence shows the row-34 spec is already helper-linked to accepted task vm-prerelease-row34-spec-coverage-prose-refresh-20260620 while replays/virtualmachines-vmas-to-vms-migration-slb.ts still has accepted_tasks=[] and remains needs-planner-review; the note also identifies the precise replay-side provenance gap and narrows the next owner action to a replay ownership-decision task rather than new source/spec/cloud work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row34-replay-ownership-decision-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide the smallest truthful repo-local ownership/provenance action for replays/virtualmachines-vmas-to-vms-migration-slb.ts after the accepted row-34 review: either identify and restore the real accepted replay-scoped task/output linkage for evidence/archive/virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621.md, or explicitly confirm that the replay should intentionally remain needs-planner-review until a future accepted carrier exists. Record the helper-visible basis for the decision without editing product/model surfaces, committing, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row34-replay-ownership-decision-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-34 review note plus the exact replay evidence carrier candidate and records whether a real accepted replay-scoped task/output linkage already exists, can be truthfully restored, or is absent.",
+        "Archive note states the owner decision for the row-34 replay singleton: restore accepted replay ownership linkage through an existing truthful carrier, or intentionally leave domain:checkpoint on needs-planner-review with the exact reason.",
+        "Archive note ends with the smallest concrete next action for the row-34 replay and explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:28:14.819Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row34-replay-ownership-decision-20260621_20260621053035",
+        "assigned_at": "2026-06-21T05:30:35.308Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row34-replay-ownership-decision-20260621",
+        "worker_started_attempt_id": "a_vmpr-row34-replay-ownership-decision-20260621_20260621053035",
+        "worker_started_at": "2026-06-21T05:30:35.795Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-34 replay ownership decision note at evidence/archive/vmpr-row34-replay-ownership-decision-20260621.md, concluding that the replay has a real accepted archived carrier and should be restored via task-tree set-archived-outputs rather than left in needs-planner-review.",
+        "last_worker_completed_at": "2026-06-21T05:31:26.868Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:31:44.273Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-21 row-34 archive note: it proves replays/virtualmachines-vmas-to-vms-migration-slb.ts already has a truthful archived accepted carrier (virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621) and the remaining gap is metadata-only set-archived-outputs restoration, not further review work."
+      },
+      "session_id": "s_task_vmpr-row34-replay-ownership-decision-20260621",
+      "session_history": [
+        "s_task_vmpr-row34-replay-ownership-decision-20260621"
+      ],
+      "result": "Wrote the requested row-34 replay ownership decision note at evidence/archive/vmpr-row34-replay-ownership-decision-20260621.md, concluding that the replay has a real accepted archived carrier and should be restored via task-tree set-archived-outputs rather than left in needs-planner-review.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:31:44.273Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-21 row-34 archive note: it proves replays/virtualmachines-vmas-to-vms-migration-slb.ts already has a truthful archived accepted carrier (virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621) and the remaining gap is metadata-only set-archived-outputs restoration, not further review work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add a supported task-tree/app primitive to resolve duplicate archived-task-id ambiguity for VM prerelease row 33 without hand-editing archive JSON: either allow set-archived-outputs to select one authoritative done-leaves bundle for virtualmachines-accelerated-networking-live-body-implementation-20260621, or add an equivalent supported archive-dedup repair flow, then prove the row-33 archived-output attachment command can target the intended bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-archived-output-duplicate-archive-id-family-unblock-20260621.md plus the exact app files changed, and explains which supported selector or dedup primitive was added for duplicate archived task ids.",
+        "Archive note records the exact verification command(s) showing the new primitive can truthfully disambiguate virtualmachines-accelerated-networking-live-body-implementation-20260621 to one authoritative archive bundle without hand-editing tasks/tree.json or archive bundle JSON.",
+        "Archive note states whether the row-33 archived-output attachment command itself was run successfully after the tooling change or, if still deferred, the exact remaining bounded step; it also explicitly states that no domain replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:35:15.408Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621_20260621053515",
+        "assigned_at": "2026-06-21T05:35:15.456Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621_20260621053515",
+        "worker_started_at": "2026-06-21T05:35:32.161Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621.md, documenting the supported --archive-file selector for set-archived-outputs, the exact app files carrying it, and proof that row-33 can be disambiguated to the authoritative archive bundle without hand edits.",
+        "last_worker_completed_at": "2026-06-21T05:36:56.819Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:37:12.791Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted resolved-problem follow-up: the app now exposes set-archived-outputs --archive-file in scripts/task-tree.ts, and the problem-resolved event reports the bounded row-33 metadata rerun succeeded and moved the two row-33 paths from needs-planner-review to candidate. This closes the duplicate-archive selector gap; row34 remains the next live repo-workspace repair."
+      },
+      "session_id": "s_task_vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621"
+      ],
+      "result": "Wrote the requested archive note at evidence/archive/vmpr-row33-duplicate-archive-bundle-selector-tooling-20260621.md, documenting the supported --archive-file selector for set-archived-outputs, the exact app files carrying it, and proof that row-33 can be disambiguated to the authoritative archive bundle without hand edits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:37:12.791Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted resolved-problem follow-up: the app now exposes set-archived-outputs --archive-file in scripts/task-tree.ts, and the problem-resolved event reports the bounded row-33 metadata rerun succeeded and moved the two row-33 paths from needs-planner-review to candidate. This closes the duplicate-archive selector gap; row34 remains the next live repo-workspace repair."
+      },
+      "status": "done"
+    }
+  ]
+}

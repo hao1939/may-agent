@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:44:40.604Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 blocked-frontier refill: preserve the single truthful external-human wait for VM prerelease row 33 approval/send-proof return plus shared-identity rows 75-76, archive the already-accepted private-cluster reconcile sibling because its durable meaning now lives in repo evidence/model surfaces, and reopen exactly one runnable private-cluster follow-up to resolve why path.private-cluster-none-dns-zone-v3 still appears unknown despite the accepted reconcile work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-status-reconcile-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the unknown model state for path.private-cluster-none-dns-zone-v3 using existing repo-local packet/evidence and decide whether it should inherit the shared external-human wait or another final status without any cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-status-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the current private-cluster packet/evidence surfaces and explains the truthful next classification for path.private-cluster-none-dns-zone-v3, including whether it should reuse the shared external-human wait or remain another status.",
+        "The worker updates the relevant model/knowledge-map surface(s) if the status can be reconciled repo-locally, or records the exact bounded blocker/evidence ceiling if it cannot; no cloud mutation or duplicate blocked wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:38:53.868Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-status-reconcile-20260626_20260626223853",
+        "assigned_at": "2026-06-26T22:38:53.913Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-status-reconcile-20260626",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-status-reconcile-20260626_20260626223853",
+        "worker_started_at": "2026-06-26T22:39:13.392Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested durable archive reconciliation note for path.private-cluster-none-dns-zone-v3, concluding it should remain an execution-ceiling unknown and should not inherit the shared external-human wait as its primary status; no model/view edits were warranted.",
+        "last_worker_completed_at": "2026-06-26T22:40:31.855Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T22:40:59.392Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 archive reconciliation note: repo-local packet/spec/replay/model evidence confirms path.private-cluster-none-dns-zone-v3 should remain an execution-ceiling unknown, should not inherit the shared external-human wait as its primary status, and needs no model/view edits."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-status-reconcile-20260626",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-status-reconcile-20260626"
+      ],
+      "result": "Wrote the requested durable archive reconciliation note for path.private-cluster-none-dns-zone-v3, concluding it should remain an execution-ceiling unknown and should not inherit the shared external-human wait as its primary status; no model/view edits were warranted.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T22:40:59.392Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 archive reconciliation note: repo-local packet/spec/replay/model evidence confirms path.private-cluster-none-dns-zone-v3 should remain an execution-ceiling unknown, should not inherit the shared external-human wait as its primary status, and needs no model/view edits."
+      },
+      "status": "done"
+    }
+  ]
+}

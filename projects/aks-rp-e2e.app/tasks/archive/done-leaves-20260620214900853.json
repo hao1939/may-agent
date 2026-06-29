@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:49:00.853Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update: accepted and archived the private-cluster BYO-VNet PrivateLink source-equivalence audit because its durable meaning is now preserved at the project level. Current private-cluster conclusion is stable: mounted source provides canonical PrivateLink behavior plus the BYO-DNS shared-VNet private-cluster leg, but no standalone BYO-VNet-only handwritten carrier, so path.private-cluster-byo-vnet-privatelink remains a bounded shared-source-derived unknown rather than an exact source-equivalent branch. Live frontier is now one active non-cloud mounted-source authoring leaf for network-cni-overlay-podcidr-expansion-authoring-from-mounted-source-20260620 plus the single blocked external-send-proof-dispatch-family-20260620 carrier for the outbound MachinesPreview and VM-prerelease human-transport ceiling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted-source and repo-local evidence ceiling for path.private-cluster-byo-vnet-privatelink so the branch is backed by an exact or bounded source-equivalent carrier decision rather than an unexamined shared-source assumption.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the exact mounted private-cluster source anchors used by this branch, including /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/private_cluster.go, /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/byo_dns_server.go, and the corresponding checkin/prerelease/runner suite entries, and state whether any standalone BYO-VNet-only handwritten carrier exists.",
+        "Compare those source anchors against the current repo-local evidence lineage for the branch, including the existing BYO-subnet/BYO-DNS artifacts already under evidence/archive/, and explain exactly what is source-proven, what is only shared-source-derived, and where the evidence ceiling remains.",
+        "Write one durable evidence packet that recommends the truthful next model state for path.private-cluster-byo-vnet-privatelink (remain unknown, strengthen source-equivalent grounding, or queue a bounded follow-up), and do not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:46:16.442Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620_20260620214624",
+        "assigned_at": "2026-06-20T21:46:24.370Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620",
+        "worker_started_attempt_id": "a_private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620_20260620214624",
+        "worker_started_at": "2026-06-20T21:46:57.311Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited mounted-source and repo-local evidence for path.private-cluster-byo-vnet-privatelink and wrote a durable evidence packet at evidence/archive/private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620.md concluding the branch remains a bounded shared-source-derived unknown, not an exact standalone source-equivalent carrier.",
+        "last_worker_completed_at": "2026-06-20T21:48:29.938Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:49:00.805Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence packet inspects the exact mounted private-cluster PrivateLink anchors, proves no standalone BYO-VNet-only handwritten carrier exists, compares the branch against adjacent BYO-DNS exactness and BYO-subnet evidence, and truthfully lands path.private-cluster-byo-vnet-privatelink as a bounded shared-source-derived unknown with no cloud execution."
+      },
+      "session_id": "s_task_private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620",
+      "session_history": [
+        "s_task_private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620"
+      ],
+      "result": "Audited mounted-source and repo-local evidence for path.private-cluster-byo-vnet-privatelink and wrote a durable evidence packet at evidence/archive/private-cluster-byo-vnet-privatelink-source-equivalence-audit-20260620.md concluding the branch remains a bounded shared-source-derived unknown, not an exact standalone source-equivalent carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:49:00.805Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence packet inspects the exact mounted private-cluster PrivateLink anchors, proves no standalone BYO-VNet-only handwritten carrier exists, compares the branch against adjacent BYO-DNS exactness and BYO-subnet evidence, and truthfully lands path.private-cluster-byo-vnet-privatelink as a bounded shared-source-derived unknown with no cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

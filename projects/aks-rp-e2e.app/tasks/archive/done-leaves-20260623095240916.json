@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:52:40.916Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review closed the remaining repo-local private-cluster model-state branch. private-cluster-auth-service-tags-model-state-reconcile-20260623 is already accepted and archived, restating path.private-cluster-vnet-integration-auth-service-tags from unknown to an execution-gated blocked state with exact retest conditions. private-cluster-none-dns-zone-v3-model-state-reconcile-20260623 is now accepted and archived, confirming path.private-cluster-none-dns-zone-v3 should remain unknown with an explicit execution-ceiling retest condition and no model/view edits. This focus branch is therefore reduced to one truthful family-level external-human wait only; do not reopen completed private-cluster repo-local source/status/model reconciliation or split the external wait unless returned operator evidence changes the ask.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-state-reconcile-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.private-cluster-none-dns-zone-v3, review the accepted trustworthy execute-gate packet plus existing status/source/boundary evidence and produce one repo-local model-state decision packet that says whether the path should remain unknown or be restated as an execution-gated blocked/ceiling state, with the exact retest condition and any bounded model/view edits needed; no cloud mutation or source rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-state-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the current model status for path.private-cluster-none-dns-zone-v3 together with the accepted execute-gate/status/source evidence and makes one explicit state recommendation with rationale, exact retest condition, and whether the remaining gap is now best represented as unknown versus execution-gated blocked/ceiling.",
+        "If the recommendation requires model or maintained-view changes, the task updates the relevant model/view files and validates them; otherwise the artifact records the exact files left unchanged and why the current model state still best represents the evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T09:49:37.536Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-state-reconcile-20260623_20260623094937",
+        "assigned_at": "2026-06-23T09:49:37.769Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-state-reconcile-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-state-reconcile-20260623_20260623094937",
+        "worker_started_at": "2026-06-23T09:50:32.438Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested durable decision packet at evidence/archive/private-cluster-none-dns-zone-v3-model-state-reconcile-20260623.md. It concludes path.private-cluster-none-dns-zone-v3 should remain unknown with an execution-ceiling retest condition, and that no model/view edits are needed because current maintained surfaces already express that state.",
+        "last_worker_completed_at": "2026-06-23T09:52:11.393Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T09:52:36.985Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive decision packet: it cites the accepted execute-gate, status, source, and live-ceiling evidence; makes an explicit recommendation to keep path.private-cluster-none-dns-zone-v3 unknown with an execution-ceiling retest condition; and records that maintained model/view files remain unchanged because they already express that truthful state."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-state-reconcile-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-state-reconcile-20260623"
+      ],
+      "result": "Wrote the requested durable decision packet at evidence/archive/private-cluster-none-dns-zone-v3-model-state-reconcile-20260623.md. It concludes path.private-cluster-none-dns-zone-v3 should remain unknown with an execution-ceiling retest condition, and that no model/view edits are needed because current maintained surfaces already express that state.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:52:36.985Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archive decision packet: it cites the accepted execute-gate, status, source, and live-ceiling evidence; makes an explicit recommendation to keep path.private-cluster-none-dns-zone-v3 unknown with an execution-ceiling retest condition; and records that maintained model/view files remain unchanged because they already express that truthful state."
+      },
+      "status": "done"
+    }
+  ]
+}

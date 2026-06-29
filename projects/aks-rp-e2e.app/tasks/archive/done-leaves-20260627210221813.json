@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T21:02:21.814Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+  "summary": "This bounded replay refill reserve is now fully closed. The branch accepted four exact path-specific slices: natgw-v2-migration-v2-to-none preserved check/gate/auth-preflight evidence without live mutation; repair-storage-csi-disk-xfs-carrier-evidence-20260627 restored the XFS carrier/check contract; repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627 fixed the repo-local pvcProbe witness assembly defect; and rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627 then re-used the exact mutation gate to close the remaining Bound/PV-driver witness gap with 6/6 passing runtime claims plus cleanup evidence. No new bounded replay leaves should be added here unless a future model gap specifically reopens one of these exact paths.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "execute-storage-csi-file-resize-20260627",
+      "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the dedicated path.storage-csi-file-resize carrier to verify the accepted check-lane/gate contract, then either run the exact bounded live resize branch when its mutation gate and cloud preflight are clean or preserve a precise blocker artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/execute-storage-csi-file-resize-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact quotes the exact path, the existing execute gate, the check-lane result, and whether the required Azure/cloud preflight is clean for the bounded file.csi resize scenario.",
+        "If live execution occurs, artifact records the resize contract evidence for Bound PVC, file.csi.azure.com lineage, 100Gi→200Gi expansion, df witness, <=2% drift rule, and bounded cleanup; otherwise it records the exact blocker and resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T18:58:26.300Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T19:02:02.749Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-27T20:45:07.452Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_execute-storage-csi-file-resize-20260627_retry_20260627204507",
+        "worker_started_attempt_id": "a_execute-storage-csi-file-resize-20260627_20260627204507",
+        "worker_started_at": "2026-06-27T20:45:10.919Z",
+        "stale_active_requeued_at": "2026-06-27T19:13:42.296Z",
+        "stale_active_requeue_reason": "P0 stale-active cleanup: worker started at 2026-06-27T19:06:52Z and no completion/review artifact was recorded by the 20:00Z owner check, so this leaf cannot stay active without a live session.",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_execute-storage-csi-file-resize-20260627_20260627190650",
+        "current_attempt_id": "a_execute-storage-csi-file-resize-20260627_20260627204507",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the bounded execution artifact for path.storage-csi-file-resize with mounted-source contract, check-lane/test proof, explicit execute-gate evidence, Azure preflight cleanliness, the prior bounded live run result, and the exact replay-shell blocker/resume condition.",
+        "last_worker_completed_at": "2026-06-27T20:46:08.393Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T20:50:01.382Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as bounded evidence harvest plus repo-local blocker discovery, not path closure: the artifact proves the exact gate/check lane, clean Azure preflight, and a live resize run where mount/write/resize/df/cleanup passed but Bound/PV-driver proof failed only because features/storage-csi/tests/storage-csi-file-resize.ts assembled the pvcProbe shell witness into /bin/sh syntax error ';' unexpected."
+      },
+      "session_history": [
+        "s_task_execute-storage-csi-file-resize-20260627",
+        "s_task_execute-storage-csi-file-resize-20260627_retry_20260627204507"
+      ],
+      "session_id": "s_task_execute-storage-csi-file-resize-20260627_retry_20260627204507",
+      "result": "Updated the bounded execution artifact for path.storage-csi-file-resize with mounted-source contract, check-lane/test proof, explicit execute-gate evidence, Azure preflight cleanliness, the prior bounded live run result, and the exact replay-shell blocker/resume condition.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T20:50:01.382Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as bounded evidence harvest plus repo-local blocker discovery, not path closure: the artifact proves the exact gate/check lane, clean Azure preflight, and a live resize run where mount/write/resize/df/cleanup passed but Bound/PV-driver proof failed only because features/storage-csi/tests/storage-csi-file-resize.ts assembled the pvcProbe shell witness into /bin/sh syntax error ';' unexpected."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-storage-csi-disk-xfs-carrier-evidence-20260627",
+      "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local carrier evidence contract for path.storage-csi-disk-xfs by reconciling the missing evidence/archive/storage-csi-disk-xfs-replay-carrier-skeleton-20260624.md and storage-csi-disk-xfs-mounted-source-boundary-map-20260624.md references, then rerun the dedicated XFS --check lane and record the exact repaired state or remaining contradiction.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-storage-csi-disk-xfs-carrier-evidence-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact proves whether the two missing evidence files were restored, replaced by updated references, or intentionally retired with exact source/model changes quoted.",
+        "Artifact includes the rerun of 'bun features/storage-csi/tests/storage-csi-disk-xfs.ts --check' and records pass or the exact remaining repo-local blocker for path.storage-csi-disk-xfs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.storage-csi-disk-xfs"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T19:09:05.948Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-27T20:50:34.974Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-storage-csi-disk-xfs-carrier-evidence-20260627_retry_20260627205034",
+        "worker_started_attempt_id": "a_repair-storage-csi-disk-xfs-carrier-evidence-20260627_20260627205034",
+        "worker_started_at": "2026-06-27T20:50:37.680Z",
+        "stale_active_requeued_at": "2026-06-27T19:13:42.356Z",
+        "stale_active_requeue_reason": "P0 stale-active cleanup: worker started at 2026-06-27T19:09:36Z and no completion/review artifact was recorded by the 20:00Z owner check, so this leaf is requeued for a fresh bounded repair attempt.",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_repair-storage-csi-disk-xfs-carrier-evidence-20260627_20260627190934",
+        "promoted_at": "2026-06-27T20:50:14.451Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-storage-csi-disk-xfs-carrier-evidence-20260627_20260627205034",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the storage-csi-disk-xfs carrier evidence is restored and consistent, reran the dedicated XFS check lane successfully, and refreshed the task artifact at evidence/archive/repair-storage-csi-disk-xfs-carrier-evidence-20260627.md with current repo-local proof.",
+        "last_worker_completed_at": "2026-06-27T20:51:22.364Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T20:53:08.292Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repair-storage-csi-disk-xfs-carrier-evidence-20260627.md proves the two missing XFS carrier notes are restored, still referenced across spec/probe/packet/model/view surfaces, and the dedicated repo-local check lane 'bun features/storage-csi/tests/storage-csi-disk-xfs.ts --check' now passes; no new cloud execution evidence is claimed."
+      },
+      "session_history": [
+        "s_task_repair-storage-csi-disk-xfs-carrier-evidence-20260627",
+        "s_task_repair-storage-csi-disk-xfs-carrier-evidence-20260627_retry_20260627205034"
+      ],
+      "session_id": "s_task_repair-storage-csi-disk-xfs-carrier-evidence-20260627_retry_20260627205034",
+      "result": "Verified the storage-csi-disk-xfs carrier evidence is restored and consistent, reran the dedicated XFS check lane successfully, and refreshed the task artifact at evidence/archive/repair-storage-csi-disk-xfs-carrier-evidence-20260627.md with current repo-local proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T20:53:08.292Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repair-storage-csi-disk-xfs-carrier-evidence-20260627.md proves the two missing XFS carrier notes are restored, still referenced across spec/probe/packet/model/view surfaces, and the dedicated repo-local check lane 'bun features/storage-csi/tests/storage-csi-disk-xfs.ts --check' now passes; no new cloud execution evidence is claimed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627",
+      "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local pvcProbe witness command assembly in features/storage-csi/tests/storage-csi-file-resize.ts so the bounded live path can prove resize-pvc reaches Bound and the backing PV uses file.csi.azure.com without the current /bin/sh syntax error.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact quotes the exact failing /bin/sh ';' unexpected witness text from execute-storage-csi-file-resize-20260627, identifies the precise command-assembly defect in features/storage-csi/tests/storage-csi-file-resize.ts, and records the minimal repo-local code repair with before/after command shape.",
+        "Artifact includes bounded repo-local proof that the repaired pvcProbe command now assembles and executes without the prior shell syntax error, plus the exact next rerun command using AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T20:50:01.442Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T20:50:14.451Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627_20260627205034",
+        "assigned_at": "2026-06-27T20:50:34.974Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627",
+        "worker_started_attempt_id": "a_repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627_20260627205034",
+        "worker_started_at": "2026-06-27T20:50:37.745Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the Azure File resize pvcProbe shell assembly by extracting a newline-joined getResizePvcProbeCommand() in features/storage-csi/tests/storage-csi-file-resize.ts, added repo-local proof tests, and wrote the required repair artifact under evidence/archive/.",
+        "last_worker_completed_at": "2026-06-27T20:52:11.617Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T20:54:18.490Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the narrow repo-local repair: the artifact preserves the exact /bin/sh ';' unexpected witness, identifies the semicolon-joined pvcProbe control-flow defect, records the newline-joined getResizePvcProbeCommand() fix, and includes bounded repo-local proof plus the exact live rerun command. Path closure still depends on the already-active rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627 leaf."
+      },
+      "session_id": "s_task_repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627",
+      "session_history": [
+        "s_task_repair-storage-csi-file-resize-pvcprobe-shell-assembly-20260627"
+      ],
+      "result": "Repaired the Azure File resize pvcProbe shell assembly by extracting a newline-joined getResizePvcProbeCommand() in features/storage-csi/tests/storage-csi-file-resize.ts, added repo-local proof tests, and wrote the required repair artifact under evidence/archive/.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T20:54:18.490Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the narrow repo-local repair: the artifact preserves the exact /bin/sh ';' unexpected witness, identifies the semicolon-joined pvcProbe control-flow defect, records the newline-joined getResizePvcProbeCommand() fix, and includes bounded repo-local proof plus the exact live rerun command. Path closure still depends on the already-active rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627 leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627",
+      "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the exact bounded path.storage-csi-file-resize carrier after the pvcProbe witness repair using the same mutation gate and prove the two previously missing claims or preserve any new exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact uses the same dedicated carrier and mutation gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize and records the ordered bounded evidence surface: resize-pvc Bound, PV csi.driver=file.csi.azure.com, /mnt/datavolume mount, hello-world witness, 100Gi→200Gi expansion, df witness, <=2% drift rule, and bounded cleanup.",
+        "Artifact either closes the prior repo-local proof gap by showing the repaired Bound/PV-driver witnesses or records a new exact blocker/resume condition narrower than the repaired shell-assembly issue."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T20:50:01.508Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T20:50:14.451Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627_20260627205242",
+        "assigned_at": "2026-06-27T20:52:42.327Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627",
+        "worker_started_attempt_id": "a_rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627_20260627205242",
+        "worker_started_at": "2026-06-27T20:52:44.625Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded live rerun for path.storage-csi-file-resize with the exact mutation gate, captured 6/6 passing claims in JSON evidence, and wrote the requested markdown artifact closing the prior Bound/PV-driver witness gap.",
+        "last_worker_completed_at": "2026-06-27T21:00:22.012Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:02:12.535Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of the markdown plus paired JSON carrier: the rerun preserved mutation gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, recorded the ordered bounded witnesses (Bound PVC, PV file.csi.azure.com, mount, hello-world, 100Gi→200Gi expansion, exact df witness, cleanup), and closed the prior pvcProbe Bound/PV-driver proof gap with 6/6 passing claims."
+      },
+      "session_id": "s_task_rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627",
+      "session_history": [
+        "s_task_rerun-storage-csi-file-resize-after-pvcprobe-repair-20260627"
+      ],
+      "result": "Completed the bounded live rerun for path.storage-csi-file-resize with the exact mutation gate, captured 6/6 passing claims in JSON evidence, and wrote the requested markdown artifact closing the prior Bound/PV-driver witness gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:02:12.535Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of the markdown plus paired JSON carrier: the rerun preserved mutation gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, recorded the ordered bounded witnesses (Bound PVC, PV file.csi.azure.com, mount, hello-world, 100Gi→200Gi expansion, exact df witness, cleanup), and closed the prior pvcProbe Bound/PV-driver proof gap with 6/6 passing claims."
+      },
+      "status": "done"
+    }
+  ]
+}

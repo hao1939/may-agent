@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:04:47.993Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier owner review accepted vm-prerelease-row49-dedicated-carrier-authoring-20260620: its archived evidence note now preserves the exact row49 VirtualMachines+autoscale-preview+Kubernetes 1.33 substrate, the post-create tainted testingpool shape, and the negative/positive taint phases with successful check-mode validation for the dedicated row49 spec/replay/model landing. The lane keeps machinespreview-human-send-or-authoritative-reply-gate-20260620 as the single truthful unsent external-human send/handoff gate for the unchanged westus2/local replay path; repo-local materials are send-ready, but no durable proof of actual send/escalation or authoritative registration-state proof exists yet, so no passive reply-wait or local rediagnosis task is truthful. To keep runnable no-cloud capacity, the lane now opens vm-prerelease-row50-statefulset-boundary-packet-20260620 as the next bounded mounted-source comparison slice to decide whether row50 needs its own dedicated VM-prerelease carrier or can truthfully reuse existing StatefulSet coverage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row49-dedicated-carrier-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture only the source-backed row49 prerequisite/delta packet for Scenario_CAS_Scale_From_Zero_Taints_CriticalAddonsOnly_VirtualMachine so the later dedicated spec/replay/model landing can be assigned truthfully after row48 lands, without editing the shared row48/49 carrier files now.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row49-dedicated-carrier-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "The branch cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus /app/sources/aks-rp/test/e2ev3/sigs/autoscale/clusterautoscaler/plans/scale_from_zero_taints_criticaladdonsonly.go and records the exact row49 VirtualMachines + autoscale-preview + Kubernetes 1.33 substrate, post-create tainted testing-pool shape, untolerating no-scale phase, and tolerating scale-and-schedule phase without cloud mutation.",
+        "The branch lands only repo-local prerequisite/delta artifacts that avoid the shared row48/49 landing files for now (for example a reviewed row49 coverage-surface note or dependency statement), and the evidence note records repo-local check-mode validation for those artifacts.",
+        "The evidence note explicitly states that the later dedicated row49 spec/replay/model landing should wait until the active row48 refresh lands because of shared-file overlap, so this active leaf is limited to prerequisite clarification rather than premature carrier landing authoring."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:52:42.662Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row49-dedicated-carrier-authoring-20260620_20260620155330",
+        "assigned_at": "2026-06-20T15:53:30.681Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row49-dedicated-carrier-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row49-dedicated-carrier-authoring-20260620_20260620155330",
+        "worker_started_at": "2026-06-20T15:53:30.973Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored and wired a dedicated VM prerelease row-49 carrier: added spec/replay/evidence, updated specs/index.json plus VM prerelease coverage/selectors, and landed the accepted row-49 path surface with successful local check-mode validation.",
+        "last_worker_completed_at": "2026-06-20T16:03:43.743Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:04:21.147Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-row49-dedicated-carrier-authoring-20260620.md cites mounted checkin.go plus the row49 autoscaler plan, records the exact VirtualMachines+preview+1.33 substrate and negative/positive taint phases, and includes successful repo-local check-mode validation for the dedicated row49 spec/replay/model landing."
+      },
+      "session_id": "s_task_vm-prerelease-row49-dedicated-carrier-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row49-dedicated-carrier-authoring-20260620"
+      ],
+      "result": "Authored and wired a dedicated VM prerelease row-49 carrier: added spec/replay/evidence, updated specs/index.json plus VM prerelease coverage/selectors, and landed the accepted row-49 path surface with successful local check-mode validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:04:21.147Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-row49-dedicated-carrier-authoring-20260620.md cites mounted checkin.go plus the row49 autoscaler plan, records the exact VirtualMachines+preview+1.33 substrate and negative/positive taint phases, and includes successful repo-local check-mode validation for the dedicated row49 spec/replay/model landing."
+      },
+      "status": "done"
+    }
+  ]
+}

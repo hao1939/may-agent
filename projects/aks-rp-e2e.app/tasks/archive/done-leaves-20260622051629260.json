@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:16:29.260Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog stale-review reconciliation: accepted and archived the completed workspace/replay/source leaves that established the current frontier. Durable root state now carries four facts: (1) the cloud-provider Credential Provider slice is accepted as a bounded mounted-source/spec/replay landing, (2) the vmpr row29 package and the rows33-34 plus rows40-43 follow-up slices are accepted and no longer need review, (3) the workspace audit proves the dirty repo still contains broader cloud-provider residue beyond any safe checkpoint, so the single live repo-local next action is the active mounted-source owner-map for that broader residue, and (4) all external-human send/reply dependencies stay compressed to one family-level blocked wait until real human transport proof or authoritative replies arrive.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloudprovider-credential-provider-mounted-source-precision-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the smallest mounted-source precision repair for speculor cloudprovider Credential Provider by authoring the missing dedicated child feature packet and reconciling existing spec/replay source lineage from legacy devbox refs to the mounted /app/sources carriers, without cloud execution or broad family rewrites.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-mounted-source-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Changes create features/cloud-provider/credential-provider.yaml and reconcile the exact mounted-source lineage in specs/cloud-provider-credential-provider.json plus replays/cloud-provider-credential-provider.ts, citing the mounted suite/plan files under /app/sources/aks-rp/test/e2ev3/sigs/speculor/cloudprovider/.",
+        "Artifact explains how the repaired child packet/spec/replay preserve the already-accepted create-time credential-provider contract while not collapsing the separate VM prerelease upgrade/source-holder branches for rows 189/214.",
+        "Work stays repo-local, performs no cloud mutation, records validation/check commands and outcomes, and does not rewrite unrelated cloudprovider scenarios beyond the bounded credential-provider precision landing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor",
+        "cloudprovider",
+        "credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:06:01.766Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloudprovider-credential-provider-mounted-source-precision-landing-20260622_20260622050625",
+        "assigned_at": "2026-06-22T05:06:25.760Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloudprovider-credential-provider-mounted-source-precision-landing-20260622",
+        "worker_started_attempt_id": "a_cloudprovider-credential-provider-mounted-source-precision-landing-20260622_20260622050625",
+        "worker_started_at": "2026-06-22T05:06:28.348Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the bounded credential-provider mounted-source precision repair: added features/cloud-provider/credential-provider.yaml, reconciled mounted-source lineage in specs/cloud-provider-credential-provider.json, replays/cloud-provider-credential-provider.ts, and specs/index.json, and wrote evidence/archive/cloud-provider-credential-provider-mounted-source-reconcile-20260622.md documenting the preserved boundary vs VM prerelease upgrade rows 189/214.",
+        "last_worker_completed_at": "2026-06-22T05:12:21.251Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:12:56.674Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-22: evidence/archive/cloud-provider-credential-provider-mounted-source-reconcile-20260622.md cites mounted /app/sources/aks-rp/test/e2ev3/sigs/speculor/cloudprovider plan and suite carriers, features/cloud-provider/credential-provider.yaml now exists with the create-time Linux+Windows+ACR boundary, and repo diff shows the bounded spec/replay/index reconciliation without collapsing VM prerelease upgrade rows 189/214."
+      },
+      "session_id": "s_task_cloudprovider-credential-provider-mounted-source-precision-landing-20260622",
+      "session_history": [
+        "s_task_cloudprovider-credential-provider-mounted-source-precision-landing-20260622"
+      ],
+      "result": "Landed the bounded credential-provider mounted-source precision repair: added features/cloud-provider/credential-provider.yaml, reconciled mounted-source lineage in specs/cloud-provider-credential-provider.json, replays/cloud-provider-credential-provider.ts, and specs/index.json, and wrote evidence/archive/cloud-provider-credential-provider-mounted-source-reconcile-20260622.md documenting the preserved boundary vs VM prerelease upgrade rows 189/214.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:12:56.674Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-22: evidence/archive/cloud-provider-credential-provider-mounted-source-reconcile-20260622.md cites mounted /app/sources/aks-rp/test/e2ev3/sigs/speculor/cloudprovider plan and suite carriers, features/cloud-provider/credential-provider.yaml now exists with the create-time Linux+Windows+ACR boundary, and repo diff shows the bounded spec/replay/index reconciliation without collapsing VM prerelease upgrade rows 189/214."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:37:18.247Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 focus-plan review keeps the spec-verification lane intentionally saturated and within the approved narrow focus: ten active single-spec verifier leaves remain the live execution wave, reconcile-path-kms-v2-trust-service-public-cluster-private-kv-post-repair-evidence-retry-20260629 remains the only bounded repo-local evidence/model retry, and wait-aad-rbac-known-run-28371054186-checkpoint-20260629 was re-reviewed against the generic environment-overblock warning and kept as the single truthful remote-publication wait until artifact publication or the 2026-06-29T18:15:00Z checkpoint. Archive the two remaining safe done children because their durable meaning is already preserved in accepted evidence and prior lane rollups; no new runnable refill leaf is added while the running window stays full and no review outputs need owner acceptance.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-kms-v2plus-negative-cases",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-negative-cases through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-negative-cases",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-negative-cases"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-negative-cases",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-negative-cases workflow run 28375944945 classified as error. Loop key: verify-spec-kms-v2plus-negative-cases-a_verify-spec-kms-v2plus-negative-cases_202606291334. GET cluster returned 404; cluster may not exist or credentials lack access. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375944945 Result: runs/test-results/single-kms-v2plus-negative-cases_440507/artifacts/kms-v2plus-negative-cases/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/test-results/single-kms-v2plus-negative-cases_440507/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:34:00.307Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-negative-cases_20260629133400",
+        "assigned_at": "2026-06-29T13:34:00.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-negative-cases",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-negative-cases_20260629133400",
+        "worker_started_at": "2026-06-29T13:34:06.967Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-negative-cases workflow run 28375944945 classified as error. Loop key: verify-spec-kms-v2plus-negative-cases-a_verify-spec-kms-v2plus-negative-cases_202606291334. GET cluster returned 404; cluster may not exist or credentials lack access. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375944945 Result: runs/test-results/single-kms-v2plus-negative-cases_440507/artifacts/kms-v2plus-negative-cases/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/test-results/single-kms-v2plus-negative-cases_440507/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T13:34:59.343Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:35:05.430Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.kms.v2plus-negative-cases workflow run 28375944945 classified as error. Loop key: verify-spec-kms-v2plus-negative-cases-a_verify-spec-kms-v2plus-negative-cases_202606291334. GET cluster returned 404; cluster may not exist or credentials lack access. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375944945 Result: runs/test-results/single-kms-v2plus-negative-cases_440507/artifacts/kms-v2plus-negative-cases/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/test-results/single-kms-v2plus-negative-cases_440507/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-negative-cases",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-negative-cases"
+      ],
+      "result": "Spec spec.kms.v2plus-negative-cases workflow run 28375944945 classified as error. Loop key: verify-spec-kms-v2plus-negative-cases-a_verify-spec-kms-v2plus-negative-cases_202606291334. GET cluster returned 404; cluster may not exist or credentials lack access. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28375944945 Result: runs/test-results/single-kms-v2plus-negative-cases_440507/artifacts/kms-v2plus-negative-cases/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28375944945/aks-rp-e2e-28375944945-spec-test-results/test-results/single-kms-v2plus-negative-cases_440507/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T13:35:05.430Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-custom-route-table-user-assigned-msi",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.custom-route-table-user-assigned-msi through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.custom-route-table-user-assigned-msi",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.custom-route-table-user-assigned-msi"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.custom-route-table-user-assigned-msi",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.custom-route-table-user-assigned-msi workflow run 28376012093 classified as done. Loop key: verify-spec-net-integration-custom-route-table-user-assigned-msi-a_verify-spec-net-integra. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376012093 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T13:35:06.821Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-custom-route-table-user-assigned-msi_20260629133506",
+        "assigned_at": "2026-06-29T13:35:06.848Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-custom-route-table-user-assigned-msi",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-custom-route-table-user-assigned-msi_20260629133506",
+        "worker_started_at": "2026-06-29T13:35:10.252Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.custom-route-table-user-assigned-msi workflow run 28376012093 classified as done. Loop key: verify-spec-net-integration-custom-route-table-user-assigned-msi-a_verify-spec-net-integra. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376012093 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json",
+        "last_worker_completed_at": "2026-06-29T13:35:57.956Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T13:36:03.653Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.net-integration.custom-route-table-user-assigned-msi workflow run 28376012093 classified as done. Loop key: verify-spec-net-integration-custom-route-table-user-assigned-msi-a_verify-spec-net-integra. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376012093 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json"
+      },
+      "session_id": "s_task_verify-spec-net-integration-custom-route-table-user-assigned-msi",
+      "session_history": [
+        "s_task_verify-spec-net-integration-custom-route-table-user-assigned-msi"
+      ],
+      "result": "Spec spec.net-integration.custom-route-table-user-assigned-msi workflow run 28376012093 classified as done. Loop key: verify-spec-net-integration-custom-route-table-user-assigned-msi-a_verify-spec-net-integra. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28376012093 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28376012093/aks-rp-e2e-28376012093-spec-test-results/test-results/single-net-integration-custom-route-table-user-assigned-msi_543925/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:36:03.653Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

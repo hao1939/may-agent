@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T04:14:53.925Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review accepts the aad-rbac public-reference refill as a truthful public-contract scan: the new archive note cites Learn plus stable ARM spec, confirms the public aadProfile inputs, and explicitly separates undocumented/private branches from public claims. The refill also surfaces the exact remaining repair scope now carried by repair-feature-reference-aad-rbac-public-source-boundary-20260628: keep aadProfile.adminUsers, exact resetAADProfile negative semantics, runCommand access, Automatic SKU, and the admin-group limit as source/execution-backed knowledge rather than public-contract wording. Archive the safe done feature-reference leaves so this lane stays focused on the single live aad-rbac boundary repair and do not refill unrelated collectors in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-node-image",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for node-image.",
+      "inputs": [
+        "feature:node-image",
+        "packet:features/node-image.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-image"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "node-image",
+        "packetPath": "features/node-image.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "node-image",
+        "coveredFeatureIds": [
+          "node-image-profile-upgrade-validation",
+          "node-image-upgrade-operation"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner accepted node-image public-reference note via the 20260628 repair batch; the repaired evidence note exists at evidence/archive/feature-reference-node-image-20260628.md and is now the accepted durable artifact for this feature-reference leaf."
+      },
+      "trace": {
+        "created_at": "2026-06-28T03:40:11.222Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T03:46:54.299Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-node-image_retry_20260628034654",
+        "worker_started_attempt_id": "a_collect-feature-reference-node-image_20260628034654",
+        "worker_started_at": "2026-06-28T03:47:00.789Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for node-image: evidence/archive/feature-reference-node-image-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T03:48:44.078Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-28T03:46:34.356Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner review rejected: claimed evidence/archive/feature-reference-node-image-20260628.md is missing in the domain workspace, so the draft artifact acceptance is not yet satisfied.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_collect-feature-reference-node-image_20260628034011",
+        "promoted_at": "2026-06-28T03:46:34.616Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-node-image_20260628034654",
+        "reviewed_at": "2026-06-28T04:06:17.726Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted node-image public-reference note via the 20260628 repair batch; the repaired evidence note exists at evidence/archive/feature-reference-node-image-20260628.md and is now the accepted durable artifact for this feature-reference leaf."
+      },
+      "session_history": [
+        "s_task_collect-feature-reference-node-image",
+        "s_task_collect-feature-reference-node-image_retry_20260628034654"
+      ],
+      "result": "Collected official feature references for node-image: evidence/archive/feature-reference-node-image-20260628.md.",
+      "evidence": [],
+      "session_id": "s_task_collect-feature-reference-node-image_retry_20260628034654",
+      "resolution": "completed",
+      "done_at": "2026-06-28T04:06:17.726Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

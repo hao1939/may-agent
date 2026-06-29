@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T13:01:09.338Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update after the resolved Speculor batch-2 source-inventory problem: accept the retry leaf as the durable outcome because its archive note landed and archive the rejected first attempt as replaced history. Keep the live frontier truthful and repo-local only: three assigned active leaves remain in flight (cloud-provider credential-provider proof-enrichment blueprint, private-cluster Addonv2 execute-readiness blueprint, and the next Speculor privatecluster/apiservervnetintegration source-inventory slice), while the single external-human proof wait remains the only blocked representation. Do not create a new problem branch for the resolved batch-2 issue or reopen completed source-inventory closure without new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "speculor-uncovered-scenario-batch2-source-inventory-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/source-coverage lane: inventory the next bounded batch of still-uncovered Go e2ev3 Speculor scenarios from mounted source into a durable repo-local map so reopened scenario-coverage closure keeps moving while the external-human wait remains compressed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-uncovered-scenario-batch2-source-inventory-20260623.md"
+      ],
+      "acceptance": [
+        "Produce a mounted-source-backed archive note for one bounded next Speculor batch that records exact scenario/file references, concise intent summaries, existing-or-missing feature/path anchors, and the smallest credible follow-up candidates needed for later spec/replay/model closure; do not guess behavior without source citations.",
+        "Keep scope repo-local only: no cloud execution, no speculative model verdict changes, and no widening beyond the chosen bounded batch. Record what remains after the batch so the next inventory slice is obvious."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-inventory.speculor"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:51:59.035Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-uncovered-scenario-batch2-source-inventory-20260623_20260623125159",
+        "assigned_at": "2026-06-23T12:51:59.084Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-uncovered-scenario-batch2-source-inventory-20260623",
+        "worker_started_attempt_id": "a_speculor-uncovered-scenario-batch2-source-inventory-20260623_20260623125159",
+        "worker_started_at": "2026-06-23T12:52:22.983Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-23T12:53:22.422Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:56:07.050Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review rejected: the worker left no archive artifact and no source-backed evidence, so the result is non-terminal. Replace it with a smaller deterministic retry leaf that preserves the same mounted-source Speculor inventory lane while requiring either a bounded archive note or exact local tooling-ceiling evidence."
+      },
+      "session_id": "s_task_speculor-uncovered-scenario-batch2-source-inventory-20260623",
+      "session_history": [
+        "s_task_speculor-uncovered-scenario-batch2-source-inventory-20260623"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-23T12:56:07.050Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review rejected: the worker left no archive artifact and no source-backed evidence, so the result is non-terminal. Replace it with a smaller deterministic retry leaf that preserves the same mounted-source Speculor inventory lane while requiring either a bounded archive note or exact local tooling-ceiling evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

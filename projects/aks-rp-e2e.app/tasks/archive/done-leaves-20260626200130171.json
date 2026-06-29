@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:01:30.171Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 scheduled blocked-frontier owner review: mounted-source triage is now accepted as durable parent context, so this focus branch should expose exactly one live child only—the already-narrowed family-level external wait. Preserve that blocked leaf as the single truthful external-human wait covering only the still-external asks (MachinesPreview family asks, VM prerelease row 33, VM prerelease shared-identity rows 75-76, and any still-true private-cluster-none-dns-zone-v3 reply dependency). Do not recreate the source-answered VM prerelease rows 25, 40-43, or 50 from this branch; if they reopen later, they belong as execute-gated local work rather than operator-proof waits. The separate active spec-dispatch leaf already refills project movement, so this review is blocker-family compression/hygiene, not a trigger to add more local work here.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "blocker-evidence-refresh-for-external-human-proof-family-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write a repo-local blocker artifact for the single external-human proof family wait that records the exact covered asks, the current already-routed status, the absence of any returned proof/reply as of the 2026-06-26 blocked-frontier review, and the fact that the blocked leaf's previously advertised archive path was not present when reviewed. Keep the branch compressed to the one truthful family-level wait and do not invent a new escalation or reopen covered local source/spec work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/blocker-evidence-refresh-for-external-human-proof-family-20260626.md"
+      ],
+      "acceptance": [
+        "Creates the named archive artifact with timestamp, blocked leaf id external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, the covered ask family (MachinesPreview asks, VM prerelease row 33, shared-identity rows 75-76, and path.private-cluster-none-dns-zone-v3), and the exact resume condition of returned external proof or new human steering.",
+        "The artifact explicitly notes that no returned proof/reply is present yet and that the blocked leaf's prior advertised output path was absent at review time, without fabricating send proof, new recipients, or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:52:26.583Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T19:52:35.658Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_blocker-evidence-refresh-for-external-human-proof-family-20260626_20260626195659",
+        "assigned_at": "2026-06-26T19:56:59.034Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_blocker-evidence-refresh-for-external-human-proof-family-20260626",
+        "worker_started_attempt_id": "a_blocker-evidence-refresh-for-external-human-proof-family-20260626_20260626195659",
+        "worker_started_at": "2026-06-26T19:56:59.316Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested blocker refresh artifact at evidence/archive/blocker-evidence-refresh-for-external-human-proof-family-20260626.md, documenting the covered ask family, already-routed wait status, absence of returned proof/reply, and absence of the previously advertised prior archive path.",
+        "last_worker_completed_at": "2026-06-26T19:58:04.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:58:58.928Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/blocker-evidence-refresh-for-external-human-proof-family-20260626.md: it truthfully records the covered ask family, already-routed external wait status, no returned proof/reply as of 2026-06-26 review, and the absence of the blocked leaf's previously advertised archive path without inventing new escalation or reopening covered local work."
+      },
+      "session_id": "s_task_blocker-evidence-refresh-for-external-human-proof-family-20260626",
+      "session_history": [
+        "s_task_blocker-evidence-refresh-for-external-human-proof-family-20260626"
+      ],
+      "result": "Created the requested blocker refresh artifact at evidence/archive/blocker-evidence-refresh-for-external-human-proof-family-20260626.md, documenting the covered ask family, already-routed wait status, absence of returned proof/reply, and absence of the previously advertised prior archive path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:58:58.928Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/blocker-evidence-refresh-for-external-human-proof-family-20260626.md: it truthfully records the covered ask family, already-routed external wait status, no returned proof/reply as of 2026-06-26 review, and the absence of the blocked leaf's previously advertised archive path without inventing new escalation or reopening covered local work."
+      },
+      "status": "done"
+    }
+  ]
+}

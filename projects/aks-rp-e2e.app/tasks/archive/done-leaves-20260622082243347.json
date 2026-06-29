@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:22:43.347Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner blocked-frontier planning update: the single truthful blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621 because no new human transport or reply evidence exists beyond the accepted 2026-06-21/2026-06-22 packet-readiness artifacts. Repo-local capacity stays focused on one active bounded lane, managedsystem-adjacent-vmprerelease-row-inventory-next-local-gap-20260622, which must inventory adjacent VirtualMachine prerelease/checkin rows from mounted source plus local artifacts, classify each row as already covered, externally gated, terminal/final, or still-open repo-local gap, and nominate exactly one next bounded follow-up without reopening final verdicts or creating another transport wait. No additional live execution or duplicate blocker leaves should be queued from this planning pass; the next tree mutation should come from accepting that inventory artifact or from real external send/reply proof arriving for the shared blocked family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-prerelease-mounted-source-expectation-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP Go source for the VirtualMachines prerelease singleton-cluster rows 40-43 bundle into a source-backed local expectation/input summary, so the knowledge model and external-execution ask can cite canonical scenario carriers instead of packet-only wording.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-mounted-source-expectation-map-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any directly referenced scenario/helper definitions needed to identify the exact row-40/41/42/43 input carriers, asserted expectations, and shared execution shape for the five-member singleton-cluster bundle.",
+        "Artifact distinguishes what is already proven locally from what still requires external human transport or cloud execution, and explicitly avoids reopening rows 25/29/33/50 or inventing unsupported expectations.",
+        "Task remains repo-local only: no cloud mutation, no new response-await leaf, and no duplicate external blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:08:55.446Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-mounted-source-expectation-map-20260622_20260622081042",
+        "assigned_at": "2026-06-22T08:10:42.267Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-mounted-source-expectation-map-20260622",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-mounted-source-expectation-map-20260622_20260622081042",
+        "worker_started_at": "2026-06-22T08:10:43.338Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a source-backed expectation map for the VirtualMachines prerelease rows 40-43 bundle at evidence/archive/virtualmachines-prerelease-mounted-source-expectation-map-20260622.md, grounded in mounted AKS RP Go source plus existing local spec/replay/coverage carriers.",
+        "last_worker_completed_at": "2026-06-22T08:12:11.262Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:12:33.836Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 after reviewing evidence/archive/virtualmachines-prerelease-mounted-source-expectation-map-20260622.md: it cites prerelease.go plus referenced checkin/plan helpers to identify the exact five row-40/41/42/43 carriers, distinguishes repo-local proof from remaining external/cloud execution needs, and stays repo-local without duplicating the shared external-human-transport blocker."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-mounted-source-expectation-map-20260622",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-mounted-source-expectation-map-20260622"
+      ],
+      "result": "Authored a source-backed expectation map for the VirtualMachines prerelease rows 40-43 bundle at evidence/archive/virtualmachines-prerelease-mounted-source-expectation-map-20260622.md, grounded in mounted AKS RP Go source plus existing local spec/replay/coverage carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:12:33.836Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 after reviewing evidence/archive/virtualmachines-prerelease-mounted-source-expectation-map-20260622.md: it cites prerelease.go plus referenced checkin/plan helpers to identify the exact five row-40/41/42/43 carriers, distinguishes repo-local proof from remaining external/cloud execution needs, and stays repo-local without duplicating the shared external-human-transport blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

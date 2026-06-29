@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T22:25:01.922Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review now advances the VM prerelease adjacent frontier from rows 48-49 into row 50. The accepted row-48 consistency-check artifact proves the dedicated CAS scale-from-zero FIPS row was missing from maintained model/view surfaces and records the bounded repair plus regenerated views. The accepted row-49 adjacent-source packet proves the next exact mounted-source branch is the dedicated VirtualMachine taints/CriticalAddonsOnly contract and that maintained row-local path/spec/replay carriers already exist, so no new blocker or cloud work was opened there. The only live blocked family remains the single external human-transport wait, while active backlog is refilled with the row-50 adjacent-source extraction to continue bounded repo-local VM prerelease mapping.",
+  "archived": 7,
+  "tasks": [
+    {
+      "id": "vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the already-proven row-44 Scenario_IPBasedLBBackendPool_VirtualMachine branch into the maintained knowledge map by adding path.cloud-provider.ipbased-lb-backend-pool to model/knowledge-map/model.json and regenerating the derived views so the canonical cloud-provider carrier is represented in accepted model state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json gains a truthful maintained entry for path.cloud-provider.ipbased-lb-backend-pool grounded in the accepted row-44 frontier proof and existing canonical spec/replay/feature/index carriers, without inventing new cloud behavior.",
+        "Derived model/knowledge-map/views outputs are regenerated and remain consistent with the new row-44 path entry.",
+        "Task stays repo-local only: no cloud execution, no external ask, and any evidence note cites the accepted row-44 frontier proof plus the existing cloud-provider IP-based LB backend-pool carrier files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:08:36.545Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621_20260621220836",
+        "assigned_at": "2026-06-21T22:08:36.595Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621",
+        "worker_started_attempt_id": "a_vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621_20260621220836",
+        "worker_started_at": "2026-06-21T22:08:52.683Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the canonical row-44 cloud-provider IP-based LB backend-pool branch into model/knowledge-map/model.json with new feature/scenario/DAG/path/evidence entries and regenerated the maintained views. Validation still reports many unrelated pre-existing model issues, but the new path is present and consistent across generated outputs.",
+        "last_worker_completed_at": "2026-06-21T22:12:43.350Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:13:18.305Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: model/knowledge-map/model.json now contains path.cloud-provider.ipbased-lb-backend-pool plus the canonical feature/scenario/dag/spec/replay linkage, and regenerated views/path-summary.json, views/evidence-matrix.json, and views/graph-view.json all carry the same row-44 maintained path without claiming new live execution evidence."
+      },
+      "session_id": "s_task_vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621",
+      "session_history": [
+        "s_task_vmpr-row44-cloud-provider-ipbased-lb-backend-pool-maintained-model-landing-20260621"
+      ],
+      "result": "Landed the canonical row-44 cloud-provider IP-based LB backend-pool branch into model/knowledge-map/model.json with new feature/scenario/DAG/path/evidence entries and regenerated the maintained views. Validation still reports many unrelated pre-existing model issues, but the new path is present and consistent across generated outputs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:13:18.305Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: model/knowledge-map/model.json now contains path.cloud-provider.ipbased-lb-backend-pool plus the canonical feature/scenario/dag/spec/replay linkage, and regenerated views/path-summary.json, views/evidence-matrix.json, and views/graph-view.json all carry the same row-44 maintained path without claiming new live execution evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-post-row45-next-adjacent-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the active row-44 maintained-model landing is complete and the already-bound row-45 autoscaled-VMs CRUD carrier family needs no new authoring, use mounted AKS RP VirtualMachine prerelease/checkin source plus existing repo-local carriers to identify the next adjacent branch after Scenario_Autoscaled_VMs_CRUD_VirtualMachine and write a bounded frontier proof that either binds it to an already-maintained canonical carrier or names the smallest repo-local model/spec/replay work still missing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row45-next-adjacent-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites mounted-source order showing the next adjacent VirtualMachine prerelease/checkin branch after Scenario_Autoscaled_VMs_CRUD_VirtualMachine, naming the exact scenario and any row-local mutator involved.",
+        "Artifact names that branch's input path and expectation path, and either ties it to an already-maintained canonical carrier or identifies the smallest repo-local model/spec/replay gap with the concrete files that would need updates.",
+        "Task stays repo-local only: no cloud execution, no external ask, and no blocker claim unless mounted source plus existing project artifacts truly fail to determine the next bounded authoring step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:11:32.209Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row45-next-adjacent-frontier-proof-20260621_20260621221134",
+        "assigned_at": "2026-06-21T22:11:34.580Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row45-next-adjacent-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row45-next-adjacent-frontier-proof-20260621_20260621221134",
+        "worker_started_at": "2026-06-21T22:11:54.224Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded frontier proof at evidence/archive/vmpr-post-row45-next-adjacent-frontier-proof-20260621.md, proving the next adjacent branch after maintained row-45 autoscaled VMs CRUD is CAS minCount and identifying the smallest remaining repo-local gap as specs/index.json plus optional model/view consistency repair.",
+        "last_worker_completed_at": "2026-06-21T22:13:33.177Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:14:13.120Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive proof uses mounted VM prerelease/checkin source plus existing repo-local carriers to show the next adjacent branch after row-45 autoscaled VMs CRUD is row-46 Scenario_CAS_MinCount_VirtualMachine, names its exact VM+preview+1.33+3/5/3 input and exact-3-recovery expectation paths, and narrows the remaining gap to repo-local wiring consistency rather than new source/spec/replay authoring."
+      },
+      "session_id": "s_task_vmpr-post-row45-next-adjacent-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row45-next-adjacent-frontier-proof-20260621"
+      ],
+      "result": "Wrote the bounded frontier proof at evidence/archive/vmpr-post-row45-next-adjacent-frontier-proof-20260621.md, proving the next adjacent branch after maintained row-45 autoscaled VMs CRUD is CAS minCount and identifying the smallest remaining repo-local gap as specs/index.json plus optional model/view consistency repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:14:13.120Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive proof uses mounted VM prerelease/checkin source plus existing repo-local carriers to show the next adjacent branch after row-45 autoscaled VMs CRUD is row-46 Scenario_CAS_MinCount_VirtualMachine, names its exact VM+preview+1.33+3/5/3 input and exact-3-recovery expectation paths, and narrows the remaining gap to repo-local wiring consistency rather than new source/spec/replay authoring."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row46-spec-index-registration-consistency-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Register the existing dedicated row-46 CAS minCount VM prerelease spec/replay carrier in specs/index.json and write a short proof that the dedicated replay check now resolves through the index without introducing new source/spec/replay authoring.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row46-spec-index-registration-consistency-20260621.md"
+      ],
+      "acceptance": [
+        "specs/index.json contains the dedicated entry for spec.cluster-autoscaler.vm-prerelease-mincount-recovery with its canonical spec file and replay path, matching the existing spec/replay carrier.",
+        "A repo-local verification run demonstrates replays/cluster-autoscaler-vm-prerelease-mincount-recovery.ts --check no longer fails on index-entry=null, and the artifact records the exact command and outcome.",
+        "Task stays in regular-learning repo-local maintenance scope only: no cloud execution, no new handwritten-source discovery, and no duplicate spec/replay authoring."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/index.json"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:14:13.168Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row46-spec-index-registration-consistency-20260621_20260621221413",
+        "assigned_at": "2026-06-21T22:14:13.215Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row46-spec-index-registration-consistency-20260621",
+        "worker_started_attempt_id": "a_vmpr-row46-spec-index-registration-consistency-20260621_20260621221413",
+        "worker_started_at": "2026-06-21T22:14:41.571Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Registered the existing row-46 CAS VM prerelease minCount carrier in specs/index.json and wrote proof/evidence that the dedicated replay check now resolves through the index and passes repo-local check mode.",
+        "last_worker_completed_at": "2026-06-21T22:15:53.940Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:16:56.512Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the 2026-06-21 evidence artifact shows specs/index.json now registers spec.cluster-autoscaler.vm-prerelease-mincount-recovery to the existing carrier and the repo-local replay --check path resolves without index-entry=null; bounded successor work remains in the already-active row-46 model/view consistency follow-up."
+      },
+      "session_id": "s_task_vmpr-row46-spec-index-registration-consistency-20260621",
+      "session_history": [
+        "s_task_vmpr-row46-spec-index-registration-consistency-20260621"
+      ],
+      "result": "Registered the existing row-46 CAS VM prerelease minCount carrier in specs/index.json and wrote proof/evidence that the dedicated replay check now resolves through the index and passes repo-local check mode.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:16:56.512Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the 2026-06-21 evidence artifact shows specs/index.json now registers spec.cluster-autoscaler.vm-prerelease-mincount-recovery to the existing carrier and the repo-local replay --check path resolves without index-entry=null; bounded successor work remains in the already-active row-46 model/view consistency follow-up."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row46-model-view-consistency-repair-followup-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect whether the maintained knowledge-map model and regenerated views already expose the dedicated CAS minCount VM prerelease path/spec linkage, and if not, land the smallest repo-local model/view consistency repair for the existing row-46 carrier after or alongside the index registration proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row46-model-view-consistency-repair-followup-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites current file evidence showing whether model/knowledge-map/model.json and maintained views expose path.cluster-autoscaler.vm-prerelease-mincount-recovery and spec.cluster-autoscaler.vm-prerelease-mincount-recovery, without requiring cloud execution or new source discovery.",
+        "If the dedicated path/spec linkage is still missing once the row-46 carrier wiring is reviewed, the task lands the smallest repo-local model/view repair needed and records the validation/regeneration commands; if already present, the artifact closes with explicit no-op proof.",
+        "Task remains repo-local and bounded to maintained model/view consistency for the already-existing row-46 carrier; no cloud execution or external ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:14:13.266Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T22:14:17.496Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row46-model-view-consistency-repair-followup-20260621_20260621221426",
+        "assigned_at": "2026-06-21T22:14:26.063Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row46-model-view-consistency-repair-followup-20260621",
+        "worker_started_attempt_id": "a_vmpr-row46-model-view-consistency-repair-followup-20260621_20260621221426",
+        "worker_started_at": "2026-06-21T22:14:41.529Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-46 VM prerelease CAS minCount knowledge-map/model/view consistency by restoring the dedicated scenario/DAG/path and evidence entries in model/knowledge-map/model.json, regenerating maintained views, and writing a task artifact at evidence/archive/vmpr-row46-model-view-consistency-repair-followup-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T22:19:16.557Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:20:12.932Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row46-model-view-consistency-repair-followup-20260621.md proves the maintained knowledge-map model and regenerated views were missing the dedicated row-46 CAS minCount linkage at task start, records the minimal repo-local repair in model/knowledge-map/model.json plus regenerated views, and cites regeneration/search validation commands without any cloud execution."
+      },
+      "session_id": "s_task_vmpr-row46-model-view-consistency-repair-followup-20260621",
+      "session_history": [
+        "s_task_vmpr-row46-model-view-consistency-repair-followup-20260621"
+      ],
+      "result": "Repaired the row-46 VM prerelease CAS minCount knowledge-map/model/view consistency by restoring the dedicated scenario/DAG/path and evidence entries in model/knowledge-map/model.json, regenerating maintained views, and writing a task artifact at evidence/archive/vmpr-row46-model-view-consistency-repair-followup-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:20:12.932Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row46-model-view-consistency-repair-followup-20260621.md proves the maintained knowledge-map model and regenerated views were missing the dedicated row-46 CAS minCount linkage at task start, records the minimal repo-local repair in model/knowledge-map/model.json plus regenerated views, and cites regeneration/search validation commands without any cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row47-model-view-consistency-check-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect whether the maintained knowledge-map model and regenerated views already expose the dedicated row-47 CAS overscale VM prerelease path/spec linkage named by the accepted adjacent-source packet, and if not, land the smallest repo-local model/view consistency repair for the existing row-47 carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row47-model-view-consistency-check-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites current file evidence showing whether model/knowledge-map/model.json and maintained views expose path.cluster-autoscaler.vm-prerelease-overscale-node-stability and spec.cluster-autoscaler.vm-prerelease-overscale-node-stability, without requiring cloud execution.",
+        "If the dedicated path/spec linkage is still missing once the row-47 carrier wiring is reviewed, the task lands the smallest repo-local model/view repair needed and records the validation/regeneration commands; if already present, the artifact closes with explicit proof that no repair was needed.",
+        "Task remains repo-local and bounded to maintained model/view consistency for the already-existing row-47 carrier declared in evidence/archive/vmpr-row47-next-adjacent-source-packet-20260621.md; no cloud execution or external ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:20:12.986Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row47-model-view-consistency-check-20260621_20260621222013",
+        "assigned_at": "2026-06-21T22:20:13.032Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row47-model-view-consistency-check-20260621",
+        "worker_started_attempt_id": "a_vmpr-row47-model-view-consistency-check-20260621_20260621222013",
+        "worker_started_at": "2026-06-21T22:20:30.736Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the row-47 VM prerelease CAS overscale dedicated path/spec linkage is already present in the accepted model and maintained views, and wrote a proof artifact at evidence/archive/vmpr-row47-model-view-consistency-check-20260621.md. No repo-local repair or cloud execution was needed.",
+        "last_worker_completed_at": "2026-06-21T22:21:11.661Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:21:48.383Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive artifact cites current model.json, path-summary.json, graph-view.json, spec, and coverage-ledger evidence showing path.cluster-autoscaler.vm-prerelease-overscale-node-stability and spec.cluster-autoscaler.vm-prerelease-overscale-node-stability are already exposed for the dedicated row-47 carrier, so the task closes as a bounded proof-only consistency check with no repo-local repair or cloud execution."
+      },
+      "session_id": "s_task_vmpr-row47-model-view-consistency-check-20260621",
+      "session_history": [
+        "s_task_vmpr-row47-model-view-consistency-check-20260621"
+      ],
+      "result": "Verified the row-47 VM prerelease CAS overscale dedicated path/spec linkage is already present in the accepted model and maintained views, and wrote a proof artifact at evidence/archive/vmpr-row47-model-view-consistency-check-20260621.md. No repo-local repair or cloud execution was needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:21:48.383Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive artifact cites current model.json, path-summary.json, graph-view.json, spec, and coverage-ledger evidence showing path.cluster-autoscaler.vm-prerelease-overscale-node-stability and spec.cluster-autoscaler.vm-prerelease-overscale-node-stability are already exposed for the dedicated row-47 carrier, so the task closes as a bounded proof-only consistency check with no repo-local repair or cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row48-model-view-consistency-check-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect whether the maintained knowledge-map model and regenerated views already expose the dedicated row-48 CAS scale-from-zero labels FIPS VM prerelease path/spec linkage named by the accepted adjacent-source packet, and if not, land the smallest repo-local model/view consistency repair for the existing row-48 carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row48-model-view-consistency-check-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites current file evidence showing whether model/knowledge-map/model.json and maintained views expose path.cluster-autoscaler.vm-prerelease-scale-from-zero-labels-fips and spec.cluster-autoscaler.vm-prerelease-scale-from-zero-labels-fips, without requiring cloud execution.",
+        "If the dedicated path/spec linkage is still missing once the row-48 carrier wiring is reviewed, the task lands the smallest repo-local model/view repair needed and records the validation/regeneration commands; if already present, the artifact closes with explicit proof that no repair was needed.",
+        "Task remains repo-local and bounded to maintained model/view consistency for the already-existing row-48 carrier declared in evidence/archive/vmpr-row48-next-adjacent-source-packet-20260621.md; no cloud execution or external ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:21:48.433Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row48-model-view-consistency-check-20260621_20260621222148",
+        "assigned_at": "2026-06-21T22:21:48.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row48-model-view-consistency-check-20260621",
+        "worker_started_attempt_id": "a_vmpr-row48-model-view-consistency-check-20260621_20260621222148",
+        "worker_started_at": "2026-06-21T22:22:04.947Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the smallest repo-local row-48 consistency repair by wiring the dedicated VM prerelease CAS scale-from-zero FIPS scenario/DAG/path/evidence into model/knowledge-map/model.json, regenerating maintained views, and documenting the before/after proof in evidence/archive/vmpr-row48-model-view-consistency-check-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T22:24:47.874Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:25:01.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row48-model-view-consistency-check-20260621.md proves the row-48 dedicated path/spec linkage was missing from maintained model/view surfaces, then landed the smallest repo-local model.json wiring plus regenerated views without any cloud or external dependency."
+      },
+      "session_id": "s_task_vmpr-row48-model-view-consistency-check-20260621",
+      "session_history": [
+        "s_task_vmpr-row48-model-view-consistency-check-20260621"
+      ],
+      "result": "Landed the smallest repo-local row-48 consistency repair by wiring the dedicated VM prerelease CAS scale-from-zero FIPS scenario/DAG/path/evidence into model/knowledge-map/model.json, regenerating maintained views, and documenting the before/after proof in evidence/archive/vmpr-row48-model-view-consistency-check-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:25:01.729Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row48-model-view-consistency-check-20260621.md proves the row-48 dedicated path/spec linkage was missing from maintained model/view surfaces, then landed the smallest repo-local model.json wiring plus regenerated views without any cloud or external dependency."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row49-next-adjacent-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the exact mounted-source contract for VM prerelease row 49 Scenario_CAS_Scale_From_Zero_Taints_CriticalAddonsOnly_VirtualMachine and map whether the maintained knowledge-map/spec/replay surfaces already carry a dedicated row-49 path/spec/replay linkage or still need a bounded repo-local follow-up.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row49-next-adjacent-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites mounted-source evidence from the VM prerelease suite and the row-49 handwritten scenario/validator carriers, showing the exact adjacent row relation to row 48 and the row-local input/expectation contract without requesting cloud mutation.",
+        "Artifact states whether maintained pipeline/spec/replay/model surfaces already carry a dedicated row-49 path/spec/replay linkage, naming the exact ids/files if present or the smallest truthful repo-local gap if absent, without claiming a fresh live product verdict.",
+        "Task stays repo-local and bounded to source/spec/model mapping for the dedicated row-49 carrier; no external ask, no blocked-family reopening, and no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:24:13.819Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row49-next-adjacent-source-packet-20260621_20260621222413",
+        "assigned_at": "2026-06-21T22:24:13.871Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row49-next-adjacent-source-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row49-next-adjacent-source-packet-20260621_20260621222413",
+        "worker_started_at": "2026-06-21T22:24:31.129Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded evidence packet `evidence/archive/vmpr-row49-next-adjacent-source-packet-20260621.md`, identifying row 49 as the exact adjacent VM prerelease branch after row 48 and naming the maintained row-local path/spec/replay carriers plus the explicit source-backed no-live-verdict ceiling.",
+        "last_worker_completed_at": "2026-06-21T22:24:31.143Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:25:01.777Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row49-next-adjacent-source-packet-20260621.md cites mounted-source row order and the maintained row-local path/spec/replay carriers, proving row 49 is the exact post-row48 adjacent VM prerelease branch and that no new blocked-family or cloud work is needed for this slice."
+      },
+      "session_id": "s_task_vmpr-row49-next-adjacent-source-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row49-next-adjacent-source-packet-20260621"
+      ],
+      "result": "Produced the bounded evidence packet `evidence/archive/vmpr-row49-next-adjacent-source-packet-20260621.md`, identifying row 49 as the exact adjacent VM prerelease branch after row 48 and naming the maintained row-local path/spec/replay carriers plus the explicit source-backed no-live-verdict ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:25:01.777Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row49-next-adjacent-source-packet-20260621.md cites mounted-source row order and the maintained row-local path/spec/replay carriers, proving row 49 is the exact post-row48 adjacent VM prerelease branch and that no new blocked-family or cloud work is needed for this slice."
+      },
+      "status": "done"
+    }
+  ]
+}

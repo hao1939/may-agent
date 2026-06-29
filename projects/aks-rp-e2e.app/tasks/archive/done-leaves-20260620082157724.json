@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:21:57.724Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace repair: the stale human-steering reference to user-review-send-ready-batch-owner-handoff-packet-20260620 is now reconciled as historical context rather than a live review leaf. The duplicate older family wait user-review-send-ready-batch-owner-send-proof-family-wait-20260620 has been replaced by the single truthful live carrier user-review-send-ready-wave1-proof-gap-family-wait-20260620, and the SecOps identity-binding-removal response-await leaf now cites that existing family-level send/handoff-proof path explicitly instead of implying an uncarried send step. Remaining open row-scoped consume-proof and response-await leaves stay blocked only on their exact returned proof or external owner disposition conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-identity-binding-removal-send-proof-wait-reconcile-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit only the current SecOps identity-binding-removal response-await leaf against the accepted ask packet, packetization matrix, and send-ready family guidance, then decide the smallest truthful repair: prove an existing send/handoff path is already durably carried, or define the exact replacement/escalation wait/task needed so the branch no longer passively says 'send or hand off' without a concrete owner-action carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-binding-removal-send-proof-wait-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites secops-identity-binding-removal-authoritative-source-response-await-20260620, evidence/archive/secops-identity-binding-removal-authoritative-source-ask-packet-20260620.md, and the current send-ready packetization/family guidance already accepted in repo.",
+        "The note ends with exactly one planner-usable repair result for this wait only: either accepted durable proof/handoff authority already exists and the live wait can be updated to cite it, or one exact replacement send-proof/escalation carrier must be created now with the old passive wait kept or replaced truthfully.",
+        "No cloud execution, no broad SecOps rediscovery, and no claim that authoritative removal semantics are resolved without returned proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:secops-identity-binding-removal-authoritative-source-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:18:32.209Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-identity-binding-removal-send-proof-wait-reconcile-20260620_20260620081832",
+        "assigned_at": "2026-06-20T08:18:32.263Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-identity-binding-removal-send-proof-wait-reconcile-20260620",
+        "worker_started_attempt_id": "a_secops-identity-binding-removal-send-proof-wait-reconcile-20260620_20260620081832",
+        "worker_started_at": "2026-06-20T08:18:55.853Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the SecOps identity-binding-removal response-await leaf and wrote a durable reconcile note showing the existing accepted batch handoff/send-proof family artifacts already carry the owner-action path, so no new replacement send-proof wait is needed.",
+        "last_worker_completed_at": "2026-06-20T08:20:29.689Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:21:52.867Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the SecOps reconcile note against the ask packet and accepted send-ready authorities. The note shows the branch already has a durable owner-action carrier via the accepted handoff/send-proof family artifacts, so no new replacement send-proof wait is needed; the row-local response-await leaf should instead cite the existing family-level wait explicitly."
+      },
+      "session_id": "s_task_secops-identity-binding-removal-send-proof-wait-reconcile-20260620",
+      "session_history": [
+        "s_task_secops-identity-binding-removal-send-proof-wait-reconcile-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:21:52.867Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the SecOps reconcile note against the ask packet and accepted send-ready authorities. The note shows the branch already has a durable owner-action carrier via the accepted handoff/send-proof family artifacts, so no new replacement send-proof wait is needed; the row-local response-await leaf should instead cite the existing family-level wait explicitly."
+      },
+      "status": "done"
+    }
+  ]
+}

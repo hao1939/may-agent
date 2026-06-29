@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T09:00:28.619Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier planning update kept the external human/operator transport family compressed to one truthful blocked wait backed by evidence/archive/external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622.md. To refill local capacity, the project now exposes one runnable repo-local leaf, virtualmachine-prerelease-rows40-43-source-contract-model-20260622, which should use mounted AKS RP prerelease sources to map rows 40-43 into exact input/expectation coverage and nominate the next model/spec landing or bounded no-gap verdict. Archived done children already summarize the accepted network ACNS landing and owner-side dispatch proof, so no duplicate blocked waits or re-discovery branches should be reopened.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact repo-local feature/spec carrier for Scenario_Basic_Retina_Update_Retina_Enterprise from the accepted mounted-source packet, preserving the Basic Retina start state, in-place update mutator, and post-update enterprise verification surface without importing unsupported topology or execution claims from neighboring carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/network-acns-basic-retina-update-retina-enterprise.yaml",
+        "../aks-rp-e2e/specs/network-acns-basic-retina-update-retina-enterprise.json",
+        "../aks-rp-e2e/evidence/archive/network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Feature/spec files exist with ids/path ids matching the accepted packet and bind to Scenario_Basic_Retina_Update_Retina_Enterprise without guessing beyond the cited mounted source.",
+        "The new carrier models the lifecycle as create basic Retina start state -> verify pre-update daemonset -> update advancedNetworking observability/security flags -> verify post-update enterprise Retina/Hubble/TLS surfaces, and explicitly avoids importing AzureLinux/Windows user-pool topology or broader pre-update metrics checks that the mounted update slice does not declare.",
+        "Archive evidence cites the accepted packet plus the exact repo-local files changed, records local validation commands/results only, and confirms no cloud execution, no duplicate external-human wait, and no duplicate replay authoring were introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:53:50.647Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622_20260622085350",
+        "assigned_at": "2026-06-22T08:53:50.704Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622",
+        "worker_started_attempt_id": "a_network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622_20260622085350",
+        "worker_started_at": "2026-06-22T08:54:09.943Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the new Basic Retina -> Retina Enterprise feature/spec carrier and archive evidence under /app/projects/aks-rp-e2e, grounded exactly to Scenario_Basic_Retina_Update_Retina_Enterprise from mounted source with local validation only.",
+        "last_worker_completed_at": "2026-06-22T08:56:29.095Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:57:15.069Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence and repo-local files show the new Basic Retina -> Retina Enterprise feature/spec carrier is landed with exact Scenario_Basic_Retina_Update_Retina_Enterprise binding, preserving the mounted-source Basic Retina start state, single pre-update daemonset check, in-place advancedNetworking observability/security-disabled update, and post-update enterprise Retina/Hubble/TLS verification surface with local validation only."
+      },
+      "session_id": "s_task_network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622",
+      "session_history": [
+        "s_task_network-acns-basic-retina-update-retina-enterprise-feature-spec-landing-20260622"
+      ],
+      "result": "Landed the new Basic Retina -> Retina Enterprise feature/spec carrier and archive evidence under /app/projects/aks-rp-e2e, grounded exactly to Scenario_Basic_Retina_Update_Retina_Enterprise from mounted source with local validation only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:57:15.069Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence and repo-local files show the new Basic Retina -> Retina Enterprise feature/spec carrier is landed with exact Scenario_Basic_Retina_Update_Retina_Enterprise binding, preserving the mounted-source Basic Retina start state, single pre-update daemonset check, in-place advancedNetworking observability/security-disabled update, and post-update enterprise Retina/Hubble/TLS verification surface with local validation only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the passive family wait with one actionable owner transport step: obtain durable proof of real human send/handoff/escalation or authoritative reply for the shared external-send family covering MachinesPreview, VM prerelease rows 25+50, VM prerelease rows 40-43 five-member live-execution ask, row-33 execute approval, and row-76 shared-identity, without reopening packet drafting, local source/setup, or cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted 2026-06-21/2026-06-22 family audit and readiness artifacts plus the exact packet paths for every covered ask, then records either a real human send/handoff/escalation or an authoritative direct reply with timestamp, channel, recipient or escalation path, sender/owner, exact packet linkage, and any returned approval/reply/blocker/execution evidence.",
+        "If runtime cannot directly perform the real human send, the artifact must instead capture the exact out-of-band owner/escalation handoff path and successor owner/proof gap well enough to justify returning the family to one exact external wait, without claiming delivery or reply already happened.",
+        "No new packet redrafting, no local source/setup rediscovery, no cloud mutation, and no duplicate blocked family leaves are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:55:34.438Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622_20260622085534",
+        "assigned_at": "2026-06-22T08:55:34.489Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622",
+        "worker_started_attempt_id": "a_external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622_20260622085534",
+        "worker_started_at": "2026-06-22T08:55:57.695Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact `evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622.md`, consolidating the family audit, exact packet paths, existing approval-dispatch proof for MachinesPreview/rows25+50/row33/row76/rows40-43, and the precise remaining out-of-band owner proof gap without reopening packets or cloud work.",
+        "last_worker_completed_at": "2026-06-22T08:57:36.007Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:58:05.049Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact truthfully captures repo-local approval-dispatch handoff proof for all covered asks, cites exact packet paths/timestamps, and preserves the remaining gap as external human/operator send-or-reply proof only; it does not overclaim delivery or approval."
+      },
+      "session_id": "s_task_external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622",
+      "session_history": [
+        "s_task_external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622"
+      ],
+      "result": "Created the requested archive artifact `evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalation-proof-capture-20260622.md`, consolidating the family audit, exact packet paths, existing approval-dispatch proof for MachinesPreview/rows25+50/row33/row76/rows40-43, and the precise remaining out-of-band owner proof gap without reopening packets or cloud work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:58:05.049Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact truthfully captures repo-local approval-dispatch handoff proof for all covered asks, cites exact packet paths/timestamps, and preserves the remaining gap as external human/operator send-or-reply proof only; it does not overclaim delivery or approval."
+      },
+      "status": "done"
+    }
+  ]
+}

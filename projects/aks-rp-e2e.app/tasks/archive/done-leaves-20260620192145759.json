@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:21:45.759Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier owner review keeps the VM/MachinesPreview branch intentionally collapsed to external-send-proof-dispatch-family-20260620 as the single truthful external-human transport wait: both outbound packets remain accepted and send-ready but still lack durable repo-local send/escalation proof or an authoritative reply, so no duplicate response-await or retry leaves were recreated. The completed private-cluster mounted-source slices are now parent-level knowledge only: private-cluster-mounted-source-gap-map-slice3-20260620 established the remaining weak-provenance frontier, private-cluster-shared-subnet-mounted-source-reconcile-20260620 grounded the BYO shared-subnet topology as covered provenance, and private-cluster-shared-apiserver-subnet-authoring-20260620 landed the exact shared API-server subnet success-path files. The live repo-local work therefore stays narrow and source-first: private-cluster-dns-zone-system-source-equivalent-reconcile-20260620 remains the in-flight bounded reconciliation, and the next queued continuation should stay on the adjacent private-cluster dns-zone-none source-equivalent boundary before any broader replay or cloud-execution work is proposed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-gap-map-slice3-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the remaining private-cluster source frontier after the active shared-apiserver-subnet and private-endpoint-lifecycle authoring branches by reconciling the still-weakly-anchored dns-zone-system, dns-zone-none, and egress-outboundtype surfaces against mounted AKS RP source and accepted source-equivalent evidence, then name at most one strongest truthful next landing or exact evidence ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-gap-map-slice3-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the already accepted slice-1/slice-2 private-cluster gap maps plus the exact mounted or source-equivalent files inspected for dns-zone-system, dns-zone-none, and egress-outboundtype, and compares each branch against current repo-local feature/spec/model surfaces without cloud execution.",
+        "Artifact classifies each of those three remaining branches as exact mounted-source candidate, accepted source-equivalent candidate, already truthfully covered, or insufficiently anchored, and explains the judgment with bounded evidence rather than broad family guesses.",
+        "Artifact ends with at most one concrete next follow-up leaf recommendation naming the proposed landing/evidence target file path (or an exact evidence ceiling if no truthful landing is ready), so the project regains runnable backlog without reopening the blocked external-send family or duplicating the two active private-cluster authoring leaves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-mounted-source-gap-map-slice3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:17:16.567Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-gap-map-slice3-20260620_20260620191716",
+        "assigned_at": "2026-06-20T19:17:16.614Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-gap-map-slice3-20260620",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-gap-map-slice3-20260620_20260620191716",
+        "worker_started_at": "2026-06-20T19:17:41.579Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested private-cluster slice-3 gap-map artifact at evidence/archive/private-cluster-mounted-source-gap-map-slice3-20260620.md, classifying dns-zone-system, dns-zone-none, and egress-outboundtype against mounted/source-equivalent evidence and naming one bounded next follow-up leaf.",
+        "last_worker_completed_at": "2026-06-20T19:20:28.458Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:20:47.254Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review after reading evidence/archive/private-cluster-mounted-source-gap-map-slice3-20260620.md: the artifact cites the prior slice-1/slice-2 gap maps, names the exact mounted or source-equivalent files inspected for dns-zone-system, dns-zone-none, and egress-outboundtype, compares each branch against current repo-local feature/spec/replay/model surfaces, and ends with one bounded next follow-up recommendation. Review outcome: dns-zone-system is strong enough for a source-equivalent reconcile leaf, dns-zone-none is already truthfully covered by the exact none-dns-zone-v3 landing, and private-cluster-egress-outboundtype remains below the evidence floor for new authoring."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-gap-map-slice3-20260620",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-gap-map-slice3-20260620"
+      ],
+      "result": "Produced the requested private-cluster slice-3 gap-map artifact at evidence/archive/private-cluster-mounted-source-gap-map-slice3-20260620.md, classifying dns-zone-system, dns-zone-none, and egress-outboundtype against mounted/source-equivalent evidence and naming one bounded next follow-up leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:20:47.254Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review after reading evidence/archive/private-cluster-mounted-source-gap-map-slice3-20260620.md: the artifact cites the prior slice-1/slice-2 gap maps, names the exact mounted or source-equivalent files inspected for dns-zone-system, dns-zone-none, and egress-outboundtype, compares each branch against current repo-local feature/spec/replay/model surfaces, and ends with one bounded next follow-up recommendation. Review outcome: dns-zone-system is strong enough for a source-equivalent reconcile leaf, dns-zone-none is already truthfully covered by the exact none-dns-zone-v3 landing, and private-cluster-egress-outboundtype remains below the evidence floor for new authoring."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:18:58.352Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review accepted the bounded row-33 accelerated-networking markdown sync: the maintained coverage markdown now matches the accepted row-local packet and JSON by stating that row 33 is source-grounded with an execute-gated live body present but still non-verdict until an explicitly approved run captures cloud evidence. The project still carries one real external-human transport ceiling in external-send-proof-dispatch-family-20260620 for the MachinesPreview handoff packet and the VM prerelease rows-25-and-50 live-operator bundle; runtime cannot truthfully send or prove those outbound contacts. To keep the frontier runnable despite that single wait, a new repo-local leaf vmpr-dirty-workspace-checkpoint-slice-triage-20260621 now owns deciding whether the large dirty workspace can be separated into a coherent done checkpoint slice or needs smaller separation first.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "private-endpoint-connections-lifecycle-execute-gated-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact mounted private-cluster private-endpoint-connections lifecycle branch through the already-authored repo-local spec/replay path: verify the mounted-source lifecycle assertions for approve/wait-succeeded/reject/delete against the dedicated spec and replay, run only with the explicit mutation gate, and write archive evidence plus any required model/spec status promotion or bounded diagnosis without broadening beyond this scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-endpoint-connections-lifecycle-execute-gated-20260621.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted-source carrier /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/private_endpoint_connections.go plus the dedicated repo-local spec/replay/feature/model files for the lifecycle branch.",
+        "Execution is either performed with the explicit mutation gate and records pass/fail/blocked evidence for the approve/wait-succeeded/reject/delete lifecycle, or the note records the exact preflight/execute gate blocker encountered; no unsupported live claim is made.",
+        "Any resulting repo-local spec/model status or linkage updates are named exactly in the evidence note, and the path remains bounded to path.private-cluster-private-endpoint-connections-lifecycle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-endpoint-connections-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:15:27.959Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-endpoint-connections-lifecycle-execute-gated-20260621_20260621041528",
+        "assigned_at": "2026-06-21T04:15:28.005Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-endpoint-connections-lifecycle-execute-gated-20260621",
+        "worker_started_attempt_id": "a_private-endpoint-connections-lifecycle-execute-gated-20260621_20260621041528",
+        "worker_started_at": "2026-06-21T04:15:40.532Z",
+        "reviewed_at": "2026-06-21T04:17:14.382Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner reconciled stale-terminal retry: model_status_summary already records path.private-cluster-private-endpoint-connections and path.private-cluster-private-endpoint-connections-lifecycle as pass/final, so this active execute-gated retry would duplicate a resolved path until a new regression or changed source signal appears."
+      },
+      "session_id": "s_task_private-endpoint-connections-lifecycle-execute-gated-20260621",
+      "session_history": [
+        "s_task_private-endpoint-connections-lifecycle-execute-gated-20260621"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:17:14.382Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner reconciled stale-terminal retry: model_status_summary already records path.private-cluster-private-endpoint-connections and path.private-cluster-private-endpoint-connections-lifecycle as pass/final, so this active execute-gated retry would duplicate a resolved path until a new regression or changed source signal appears."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source to build the dedicated repo-local replay packet for VM prerelease row 32 auto-zone-mixed-sku: confirm the exact row-32 assertions and inputs from source, add or repair the dedicated execute-gated replay/spec/feature/model linkage needed for the row-local mixed-SKU auto-zone path, and write an archive note that records the bounded execute gate without claiming live cloud observation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621.md",
+        "../aks-rp-e2e/specs/virtualmachines-auto-zone-mixed-sku.json"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted-source row-32 carrier(s) and states the preserved assertion set for the dedicated auto-zone mixed-SKU contract without broadening beyond the row-local path.",
+        "Repo-local maintained surfaces link the dedicated row-32 path to its feature/spec/replay carriers and keep the verdict source-grounded or execute-gated only; no live pass/fail claim is introduced.",
+        "If a replay/spec/model file needed repair, the note names the exact files changed and the resulting execute gate or remaining bounded follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-row32"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:12:19.138Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621_20260621041219",
+        "assigned_at": "2026-06-21T04:12:19.191Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621_20260621041219",
+        "worker_started_at": "2026-06-21T04:12:36.266Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the dedicated row-32 auto-zone mixed-SKU replay packet, added a new feature packet at features/virtualmachines-auto-zone-mixed-sku.yaml, and repaired stale execute-gated wording/coverage metadata across spec/index/model/path-summary surfaces without claiming live cloud observation.",
+        "last_worker_completed_at": "2026-06-21T04:16:46.100Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:17:14.285Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note cites auto_zone.go plus prerelease/checkin lineage, adds the missing dedicated feature packet, and truthfully updates row-32 spec/index/model/path-summary posture to execute-capable but still execute-gated with no live verdict claim."
+      },
+      "session_id": "s_task_vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row32-auto-zone-mixed-sku-replay-packet-20260621"
+      ],
+      "result": "Built the dedicated row-32 auto-zone mixed-SKU replay packet, added a new feature packet at features/virtualmachines-auto-zone-mixed-sku.yaml, and repaired stale execute-gated wording/coverage metadata across spec/index/model/path-summary surfaces without claiming live cloud observation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:17:14.285Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note cites auto_zone.go plus prerelease/checkin lineage, adds the missing dedicated feature packet, and truthfully updates row-32 spec/index/model/path-summary posture to execute-capable but still execute-gated with no live verdict claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-accelerated-networking-replay-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source to prepare the dedicated repo-local replay packet for VM prerelease row 33 accelerated-networking: confirm the exact row-33 assertions and inputs from source plus the existing replay carrier, add or repair any dedicated execute-gated spec/feature/model linkage needed for the row-local accelerated-networking path, and write an archive note that records the bounded execute gate without claiming live cloud observation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-accelerated-networking-replay-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted-source row-33 carrier(s) and the existing repo replay carrier for accelerated networking, preserving the row-local assertion set without broadening beyond the dedicated path.",
+        "Repo-local maintained surfaces link the dedicated row-33 path to its feature/spec/replay carriers and keep the verdict source-grounded or execute-gated only; no live pass/fail claim is introduced.",
+        "If a replay/spec/model file needed repair, the note names the exact files changed and the resulting execute gate or remaining bounded follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-row33"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:13:48.019Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-accelerated-networking-replay-packet-20260621_20260621041359",
+        "assigned_at": "2026-06-21T04:13:59.836Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-accelerated-networking-replay-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-accelerated-networking-replay-packet-20260621_20260621041359",
+        "worker_started_at": "2026-06-21T04:14:00.356Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Prepared the row-33 accelerated-networking replay packet note and repaired the dedicated feature packet to match the current execute-gated replay posture without claiming live cloud observation.",
+        "last_worker_completed_at": "2026-06-21T04:16:36.514Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:17:14.336Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note cites vms_accelerated_networking.go plus prerelease/checkin lineage, repairs the dedicated row-33 feature packet to the truthful execute-gated non-verdict posture, and preserves one bounded follow-up for stale row-33 wording in evidence/pipelines/virtualmachine-prerelease-coverage.md."
+      },
+      "session_id": "s_task_vmpr-row33-accelerated-networking-replay-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-accelerated-networking-replay-packet-20260621"
+      ],
+      "result": "Prepared the row-33 accelerated-networking replay packet note and repaired the dedicated feature packet to match the current execute-gated replay posture without claiming live cloud observation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:17:14.336Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note cites vms_accelerated_networking.go plus prerelease/checkin lineage, repairs the dedicated row-33 feature packet to the truthful execute-gated non-verdict posture, and preserves one bounded follow-up for stale row-33 wording in evidence/pipelines/virtualmachine-prerelease-coverage.md."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-coverage-markdown-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Sync the stale row-33 accelerated-networking wording in evidence/pipelines/virtualmachine-prerelease-coverage.md to match the accepted row-local packet, current coverage JSON, and replay posture: execute-gated live body present, still non-verdict until an explicitly approved run records cloud evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-coverage-markdown-sync-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-33 packet plus evidence/pipelines/virtualmachine-prerelease-coverage.json and identifies the exact stale markdown wording that was reconciled.",
+        "Either evidence/pipelines/virtualmachine-prerelease-coverage.md is repaired only for row 33, or the note records the exact bounded blocker preventing that row-local sync; no broader ledger rewrite is introduced.",
+        "The resulting row-33 markdown wording preserves the exact accelerated-networking path as source-grounded and execute-gated only, with no live pass/fail claim added."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-row33"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:17:14.431Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-coverage-markdown-sync-20260621_20260621041714",
+        "assigned_at": "2026-06-21T04:17:14.480Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-coverage-markdown-sync-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-coverage-markdown-sync-20260621_20260621041714",
+        "worker_started_at": "2026-06-21T04:17:30.815Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced only row 33 in the VM prerelease coverage markdown to match the accepted row-local packet and current coverage JSON, and wrote an archive note documenting the stale wording and reconciliation evidence.",
+        "last_worker_completed_at": "2026-06-21T04:18:25.668Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:18:58.213Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row33-coverage-markdown-sync-20260621.md cites the accepted row-33 packet plus coverage JSON, identifies the stale markdown wording, and records the row-local repair in evidence/pipelines/virtualmachine-prerelease-coverage.md preserving execute-gated/non-verdict posture without adding any live claim."
+      },
+      "session_id": "s_task_vmpr-row33-coverage-markdown-sync-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-coverage-markdown-sync-20260621"
+      ],
+      "result": "Synced only row 33 in the VM prerelease coverage markdown to match the accepted row-local packet and current coverage JSON, and wrote an archive note documenting the stale wording and reconciliation evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:18:58.213Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row33-coverage-markdown-sync-20260621.md cites the accepted row-33 packet plus coverage JSON, identifies the stale markdown wording, and records the row-local repair in evidence/pipelines/virtualmachine-prerelease-coverage.md preserving execute-gated/non-verdict posture without adding any live claim."
+      },
+      "status": "done"
+    }
+  ]
+}

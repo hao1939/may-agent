@@ -1,7 +1,149 @@
 import { describe, expect, test } from "bun:test";
-import { summarizeDomainCheckpoint } from "./domain-checkpoint.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import {
+  parseCliArgs,
+  summarizeDomainCheckpoint,
+} from "./domain-checkpoint.ts";
 
 describe("domain checkpoint helper", () => {
+  test("parseCliArgs supports bounded candidate path inputs", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "domain-checkpoint-"));
+    const pathsFile = join(tempDir, "paths.txt");
+    writeFileSync(
+      pathsFile,
+      [
+        "# VM-only packet candidate",
+        "model/knowledge-map/model.json",
+        "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+        "",
+        "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+      ].join("\n"),
+    );
+
+    try {
+      expect(
+        parseCliArgs([
+          "--json",
+          "--bounded-slice",
+          "vmpr-maintained-seven",
+          "--paths=model/knowledge-map/model.json,evidence/archive/a.md",
+          "--paths",
+          "evidence/archive/b.md,evidence/archive/a.md",
+          "--paths-file",
+          pathsFile,
+        ]),
+      ).toEqual({
+        json: true,
+        boundedSliceLabel: "vmpr-maintained-seven",
+        paths: [
+          "evidence/archive/a.md",
+          "evidence/archive/b.md",
+          "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+          "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+          "model/knowledge-map/model.json",
+        ],
+      });
+      expect(() =>
+        parseCliArgs(["--bounded-slice", "vmpr-maintained-seven"]),
+      ).toThrow("--bounded-slice requires --paths or --paths-file");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("summarizeDomainCheckpoint can evaluate a bounded VM-only packet without broad dirty slices", () => {
+    const taskTree = {
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          outputs: ["model/knowledge-map/model.json"],
+          conflict_scope: ["model"],
+        },
+        "vm-done": {
+          id: "vm-done",
+          state: "done",
+          outputs: [
+            "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+            "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+          ],
+        },
+        "machinespreview-blocked": {
+          id: "machinespreview-blocked",
+          state: "blocked",
+          outputs: [
+            "evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md",
+          ],
+        },
+      },
+    };
+
+    const allChanges = [
+      {
+        status: "M",
+        path: "model/knowledge-map/model.json",
+        slice: "model",
+      },
+      {
+        status: "??",
+        path: "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+        slice: "evidence",
+      },
+      {
+        status: "??",
+        path: "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+        slice: "evidence",
+      },
+      {
+        status: "??",
+        path: "evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md",
+        slice: "evidence",
+      },
+    ];
+
+    const bounded = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      changes: allChanges.filter((change) =>
+        [
+          "model/knowledge-map/model.json",
+          "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+          "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+        ].includes(change.path),
+      ),
+    });
+
+    const evidenceSlice = bounded.slices.find(
+      (slice) => slice.slice === "evidence",
+    );
+    const modelSlice = bounded.slices.find((slice) => slice.slice === "model");
+
+    expect(evidenceSlice).toMatchObject({
+      recommendation: "candidate",
+      files: [
+        "evidence/archive/vm-prerelease-draft-promotion-batch-20260620.md",
+        "evidence/archive/vm-prerelease-mixed-sku-promotion-retry-20260620.md",
+      ],
+      accepted_tasks: ["vm-done"],
+      blocked_tasks: [],
+      active_or_review_tasks: [],
+    });
+    expect(modelSlice).toMatchObject({
+      recommendation: "hold",
+      files: ["model/knowledge-map/model.json"],
+      active_or_review_tasks: ["project"],
+    });
+    expect(
+      bounded.files.find(
+        (file) =>
+          file.path ===
+          "evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md",
+      ),
+    ).toBeUndefined();
+  });
+
   test("treats blocked-owned artifacts as hold instead of needs-planner-review", () => {
     const taskTree = {
       tasks: {
@@ -90,6 +232,125 @@ describe("domain checkpoint helper", () => {
       recommendation: "hold",
       blocked_tasks: ["blocked-owner"],
       accepted_tasks: ["done-owner"],
+    });
+  });
+
+  test("bounded sub-slice mode keeps root project exact-path ownership as non-blocking carrier", () => {
+    const taskTree = {
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          inputs: [
+            "project.json",
+            "model/knowledge-map/model.json",
+            "model/knowledge-map/views/path-summary.json",
+            "specs/index.json",
+          ],
+          outputs: ["model/knowledge-map/"],
+        },
+        "real-blocker": {
+          id: "real-blocker",
+          state: "blocked",
+          outputs: ["model/knowledge-map/views/status-summary.json"],
+        },
+      },
+    };
+
+    const changes = [
+      {
+        status: "M",
+        path: "model/knowledge-map/model.json",
+        slice: "model",
+      },
+      {
+        status: "M",
+        path: "model/knowledge-map/views/path-summary.json",
+        slice: "model",
+      },
+      {
+        status: "M",
+        path: "model/knowledge-map/views/status-summary.json",
+        slice: "model",
+      },
+    ];
+
+    const unbounded = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      changes,
+    });
+    const bounded = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      changes: changes.slice(0, 2),
+      boundedSliceLabel: "model:vmpr-maintained-seven",
+    });
+
+    expect(
+      unbounded.files.find(
+        (file) => file.path === "model/knowledge-map/model.json",
+      ),
+    ).toMatchObject({
+      recommendation: "hold",
+      active_or_review_tasks: [
+        { id: "project", status: "active", matched_by: ["path"] },
+      ],
+      carrier_tasks: [],
+    });
+    expect(
+      bounded.files.find(
+        (file) => file.path === "model/knowledge-map/model.json",
+      ),
+    ).toMatchObject({
+      slice: "model:vmpr-maintained-seven",
+      recommendation: "candidate",
+      active_or_review_tasks: [],
+      carrier_tasks: [
+        { id: "project", status: "active", matched_by: ["path"] },
+      ],
+    });
+    expect(
+      bounded.files.find(
+        (file) => file.path === "model/knowledge-map/views/path-summary.json",
+      ),
+    ).toMatchObject({
+      slice: "model:vmpr-maintained-seven",
+      recommendation: "candidate",
+      active_or_review_tasks: [],
+      carrier_tasks: [
+        { id: "project", status: "active", matched_by: ["path"] },
+      ],
+    });
+    expect(
+      bounded.slices.find(
+        (slice) => slice.slice === "model:vmpr-maintained-seven",
+      ),
+    ).toMatchObject({
+      recommendation: "candidate",
+      active_or_review_tasks: [],
+      blocked_tasks: [],
+      carrier_tasks: ["project"],
+      files: [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+      ],
+    });
+    expect(
+      summarizeDomainCheckpoint({
+        projectDir: "/tmp/aks-rp-e2e",
+        taskTree,
+        changes,
+        boundedSliceLabel: "model:vmpr-maintained-seven",
+      }).files.find(
+        (file) => file.path === "model/knowledge-map/views/status-summary.json",
+      ),
+    ).toMatchObject({
+      slice: "model:vmpr-maintained-seven",
+      recommendation: "hold",
+      blocked_tasks: [
+        { id: "real-blocker", status: "blocked", matched_by: ["path"] },
+      ],
     });
   });
 
@@ -225,6 +486,88 @@ describe("domain checkpoint helper", () => {
       recommendation: "candidate",
       blocked_tasks: [],
       accepted_tasks: ["done-owner"],
+    });
+  });
+
+  test("resolves accepted ownership from archived done-leaf tasks", () => {
+    const taskTree = {
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          outputs: ["tasks/tree.json"],
+        },
+      },
+    };
+
+    const summary = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      archivedTasks: [
+        {
+          id: "archived-row35-owner",
+          state: "done",
+          outputs: [
+            "../aks-rp-e2e/evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md",
+          ],
+        },
+        {
+          id: "archived-row25-owner",
+          state: "done",
+          outputs: [
+            "../aks-rp-e2e/evidence/archive/vm-prerelease-row25-live-replay-implementation-20260620.md",
+          ],
+        },
+      ],
+      changes: [
+        {
+          status: "??",
+          path: "evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md",
+          slice: "evidence",
+        },
+        {
+          status: "??",
+          path: "evidence/archive/vm-prerelease-row25-live-replay-implementation-20260620.md",
+          slice: "evidence",
+        },
+      ],
+    });
+
+    const row35 = summary.files.find(
+      (file) =>
+        file.path ===
+        "evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md",
+    );
+    const row25 = summary.files.find(
+      (file) =>
+        file.path ===
+        "evidence/archive/vm-prerelease-row25-live-replay-implementation-20260620.md",
+    );
+    const evidenceSlice = summary.slices.find(
+      (slice) => slice.slice === "evidence",
+    );
+
+    expect(row35).toMatchObject({
+      recommendation: "candidate",
+      accepted_tasks: [{ id: "archived-row35-owner", status: "done" }],
+      blocked_tasks: [],
+      active_or_review_tasks: [],
+    });
+    expect(row25).toMatchObject({
+      recommendation: "candidate",
+      accepted_tasks: [{ id: "archived-row25-owner", status: "done" }],
+      blocked_tasks: [],
+      active_or_review_tasks: [],
+    });
+    expect(evidenceSlice).toMatchObject({
+      recommendation: "candidate",
+      accepted_tasks: ["archived-row25-owner", "archived-row35-owner"],
+      blocked_tasks: [],
+      active_or_review_tasks: [],
+      files: [
+        "evidence/archive/vm-prerelease-post-row35-checkpoint-helper-rerun-20260620.md",
+        "evidence/archive/vm-prerelease-row25-live-replay-implementation-20260620.md",
+      ],
     });
   });
 });

@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:58:05.916Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner review accepted the NATGW V2→block maintained-wording repair: the model and path-summary surfaces now match the already-proved execute-gated live lane, while the live Azure verdict remains unknown until a reviewed gated run exists. The only remaining live frontier is focus-mounted-source-coverage-closure-and-external-wait-20260623, which truthfully stays consolidated as two exact external waits: the family-level VM prerelease/shared-identity proof return and the private-cluster system→none operator decision return. No new local retry or environment setup work is truthful until one of those external replies arrives.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale maintained model/path wording for path.net-integration.natgw-v2-migration-v2-to-block with the now-proven execute-gated carrier: either land the minimal path-local model/view wording repair plus bounded verification, or record an exact repo-local blocker showing why this single-path wording cannot yet be safely regenerated without unrelated validation debt.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627.md"
+      ],
+      "acceptance": [
+        "Worker leaves one durable artifact that cites the exact stale wording surface(s), the mounted/probe evidence proving the live lane already exists, and either (a) the landed minimal model/view wording repair with bounded verification, or (b) the exact validator/generation ceiling with unrelated failing surfaces named so the owner can keep this path truthful without claiming a live product verdict.",
+        "Scope stays bounded to path.net-integration.natgw-v2-migration-v2-to-block and its maintained model/view wording; do not run cloud mutation, do not reopen adjacent NATGW siblings, and do not broaden into general repo-wide model cleanup except to capture exact pre-existing blocker evidence if that is what prevents the path-local wording repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:52:53.087Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627_20260627055253",
+        "assigned_at": "2026-06-27T05:52:53.138Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627_20260627055253",
+        "worker_started_at": "2026-06-27T05:53:11.315Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a bounded blocker artifact at evidence/archive/net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627.md that names the stale NATGW V2→block model/view wording, cites mounted-source plus execute-gated carrier evidence, and documents the unrelated repo-wide validator/generation ceiling preventing a clean path-local wording regeneration.",
+        "last_worker_completed_at": "2026-06-27T05:54:51.310Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:55:31.773Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627.md satisfies the bounded acceptance by naming the exact stale model/view wording surfaces, citing mounted-source plus repo-local execute-gated carrier proof, and documenting the unrelated repo-wide validator/generation ceiling without misclassifying the path as missing-source or missing-implementation."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627"
+      ],
+      "result": "Produced a bounded blocker artifact at evidence/archive/net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627.md that names the stale NATGW V2→block model/view wording, cites mounted-source plus execute-gated carrier evidence, and documents the unrelated repo-wide validator/generation ceiling preventing a clean path-local wording regeneration.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:55:31.773Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627.md satisfies the bounded acceptance by naming the exact stale model/view wording surfaces, citing mounted-source plus repo-local execute-gated carrier proof, and documenting the unrelated repo-wide validator/generation ceiling without misclassifying the path as missing-source or missing-implementation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the completed mounted-source matrix for VM prerelease Windows rows 205, 206, 216, 217, and 218, repair one bounded evidence-surface gap by reconciling the first missing archive-backed evidence reference (prefer the row-218/base-branch pass surfaces or one shared missing packet), or record the exact repo-local reason it still cannot be repaired.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact cites at least one concrete missing evidence/archive reference named by the completed mounted-source matrix and identifies which row/spec/path/model surfaces currently depend on it.",
+        "Artifact determines whether the selected evidence reference can be repaired repo-locally by retargeting to existing durable evidence or by authoring a bounded replacement evidence note, without claiming new live verification.",
+        "Artifact records the exact next repair action or resulting reconciled target for that selected evidence-surface gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-windows-source-followup"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:43:50.713Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T05:43:57.485Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627_20260627054613",
+        "assigned_at": "2026-06-27T05:46:13.914Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627_20260627054613",
+        "worker_started_at": "2026-06-27T05:46:14.497Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested follow-up artifact concluding that rows 205, 206, 216, 217, and 218 already have exact repo-local carriers, and redirected any further owner action toward evidence-reference reconciliation rather than new carrier work.",
+        "last_worker_completed_at": "2026-06-27T05:47:14.251Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:47:41.321Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the artifact proves rows 205/206/216/217/218 already have exact repo-local carriers, so this branch closes as an evidence-integrity conclusion rather than new coverage. Further work, if any, belongs to a bounded row-205 evidence-reference repair and not another carrier-discovery leaf."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-windows-mounted-source-gap-follow-up-20260627"
+      ],
+      "result": "Wrote the requested follow-up artifact concluding that rows 205, 206, 216, 217, and 218 already have exact repo-local carriers, and redirected any further owner action toward evidence-reference reconciliation rather than new carrier work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:47:41.321Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the artifact proves rows 205/206/216/217/218 already have exact repo-local carriers, so this branch closes as an evidence-integrity conclusion rather than new coverage. Further work, if any, belongs to a bounded row-205 evidence-reference repair and not another carrier-discovery leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the first remaining repo-local evidence-reference gap for VM prerelease Windows row 205 by auditing the named missing archive link for path.windows.password-reset-containerd-virtualmachines, then either restore the missing evidence/archive note or retarget the affected model/spec evidence surfaces to existing durable repo-local evidence without claiming new live verification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact names every current row-205 evidence reference surface touched by the missing archive note, including the path/spec/model or derived-view surfaces that still point at it.",
+        "Artifact determines one truthful repo-local repair: either restore the missing evidence/archive/windows-password-reset-containerd-virtualmachines-mounted-source-model-linkage-20260623.md note or document precise retargets to existing durable evidence such as the mounted-source matrix and/or the 2026-06-26 probe packet.",
+        "If any model or maintained-view reference is changed, the task records exactly which files were updated and confirms the resulting row-205 evidence linkage is internally consistent without asserting new execution coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-windows-source-followup"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:47:41.371Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627_20260627054741",
+        "assigned_at": "2026-06-27T05:47:41.421Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627_20260627054741",
+        "worker_started_at": "2026-06-27T05:47:50.847Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Restored the missing row-205 archive linkage note and wrote a reconciliation artifact documenting every affected model/view evidence surface, confirming the repair was a file restoration rather than a model retarget.",
+        "last_worker_completed_at": "2026-06-27T05:49:58.329Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:50:33.634Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the reconciliation artifact names the row-205 model/view evidence surfaces, restores the previously missing windows-password-reset-containerd-virtualmachines archive note, and truthfully records that no model/view retarget was required."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-windows-row205-evidence-reference-reconciliation-20260627"
+      ],
+      "result": "Restored the missing row-205 archive linkage note and wrote a reconciliation artifact documenting every affected model/view evidence surface, confirming the repair was a file restoration rather than a model retarget.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:50:33.634Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the reconciliation artifact names the row-205 model/view evidence surfaces, restores the previously missing windows-password-reset-containerd-virtualmachines archive note, and truthfully records that no model/view retarget was required."
+      },
+      "status": "done"
+    },
+    {
+      "id": "net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the stale maintained wording for path.net-integration.natgw-v2-migration-v2-to-block so model/knowledge-map/model.json and any required maintained summary surface say the execute-gated live carrier already exists in code while the live Azure verdict remains unknown, using the narrowest safe repo-local maintenance method that avoids broad unrelated model cleanup.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Worker either lands a bounded repo diff limited to the NATGW V2→block maintained wording surfaces and leaves durable evidence showing the stale text was replaced with source-backed execute-gated-live-carrier wording, or leaves exact proof that no safe path-local maintained edit/regeneration method exists under current repo conventions.",
+        "Verification stays repo-local and bounded: cite the exact touched files, show any validator/generator command behavior that matters to the maintenance choice, do not run cloud mutation, and do not reopen adjacent NATGW siblings or unrelated model debt except as precise ceiling evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:55:31.823Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627_20260627055531",
+        "assigned_at": "2026-06-27T05:55:31.870Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627_20260627055531",
+        "worker_started_at": "2026-06-27T05:55:48.793Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the stale NATGW V2→block maintained wording in model/knowledge-map/model.json, regenerated path-summary.json, and archived bounded evidence proving the execute-gated live lane already exists while the live Azure verdict remains unknown.",
+        "last_worker_completed_at": "2026-06-27T05:57:25.825Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:58:05.863Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence and maintained surfaces agree that model/knowledge-map/model.json plus regenerated views/path-summary.json now truthfully say the execute-gated live carrier already exists in code behind AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block while live Azure verdict remains unknown; scope stayed repo-local with no cloud mutation."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-v2-to-block-safe-maintained-wording-repair-20260627"
+      ],
+      "result": "Repaired the stale NATGW V2→block maintained wording in model/knowledge-map/model.json, regenerated path-summary.json, and archived bounded evidence proving the execute-gated live lane already exists while the live Azure verdict remains unknown.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:58:05.863Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence and maintained surfaces agree that model/knowledge-map/model.json plus regenerated views/path-summary.json now truthfully say the execute-gated live carrier already exists in code behind AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block while live Azure verdict remains unknown; scope stayed repo-local with no cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

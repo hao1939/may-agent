@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:51:37.953Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the spec.node-confidential-vm.snp-pool run-28384238145 classification as bounded non-terminal evidence only: the reviewed artifacts prove a live ManagedCluster create reached HTTP 400, but the preserved ceiling remains provisioningState=undefined because the current verifier is stale against mounted-source Scenario_CVM_SNP authority and does not retain the non-2xx create body/correlation data. The lane therefore keeps exactly one truthful next action for this spec: the active repair leaf that must realign the probe/spec carrier and preserve a downloadable create-failure artifact before any rerun. The broader frontier stays intentionally unchanged: the current single-spec verifier wave, the network-cni.azure-default-mode rerun on the repaired 90-minute carrier, the ACNS Retina Enterprise instrumentation repair, and the two exact passive waits remain the live lane state.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28384238145 for spec.node-confidential-vm.snp-pool, classify the provisioningState=undefined create failure as runner/environment/product/remote-artifact evidence, and record the exact next truthful action before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-confidential-vm-snp-pool-run-28384238145-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Workflow metadata, top-level result.json, and first-failure runner artifacts are reviewed enough to explain why the verifier ended with provisioningState=undefined.",
+        "The archive note classifies whether the run reached a product assertion or stopped earlier, cites exact artifact paths/run URL, and names the evidence ceiling if the root cause stays inconclusive.",
+        "The task ends with one concrete follow-on outcome: exact rerun leaf, exact blocker/family link, or accepted model/evidence update; do not leave another ambiguous review-only result."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-confidential-vm.snp-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:45:28.629Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629_20260629154532",
+        "assigned_at": "2026-06-29T15:45:32.890Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629",
+        "worker_started_attempt_id": "a_classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629_20260629154532",
+        "worker_started_at": "2026-06-29T15:46:00.901Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed spec.node-confidential-vm.snp-pool run 28384238145 artifacts and wrote a durable classification note showing the run reached live ManagedCluster create (HTTP 400) but remained non-terminal because the verifier is stale against mounted-source-backed spec authority and failed to preserve the non-2xx create body.",
+        "last_worker_completed_at": "2026-06-29T15:47:47.503Z",
+        "last_worker_evidence": [
+          "evidence/archive/node-confidential-vm-snp-pool-run-28384238145-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:51:29.463Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archived run-28384238145 classification as bounded non-terminal evidence: the worker proved this spec reached live ManagedCluster create and hit HTTP 400, but the preserved ceiling stays at provisioningState=undefined because the current verifier is stale against mounted-source Scenario_CVM_SNP authority and does not retain the non-2xx create body/correlation data. No rerun is truthful yet; the existing repair leaf remains the sole next action for this spec."
+      },
+      "session_id": "s_task_classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629",
+      "session_history": [
+        "s_task_classify-spec-node-confidential-vm-snp-pool-provisioningstate-undefined-run-28384238145-20260629"
+      ],
+      "result": "Reviewed spec.node-confidential-vm.snp-pool run 28384238145 artifacts and wrote a durable classification note showing the run reached live ManagedCluster create (HTTP 400) but remained non-terminal because the verifier is stale against mounted-source-backed spec authority and failed to preserve the non-2xx create body.",
+      "evidence": [
+        "evidence/archive/node-confidential-vm-snp-pool-run-28384238145-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:51:29.463Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archived run-28384238145 classification as bounded non-terminal evidence: the worker proved this spec reached live ManagedCluster create and hit HTTP 400, but the preserved ceiling stays at provisioningState=undefined because the current verifier is stale against mounted-source Scenario_CVM_SNP authority and does not retain the non-2xx create body/correlation data. No rerun is truthful yet; the existing repair leaf remains the sole next action for this spec."
+      },
+      "status": "done"
+    }
+  ]
+}

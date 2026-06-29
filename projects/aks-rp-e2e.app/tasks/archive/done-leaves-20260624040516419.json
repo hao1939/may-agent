@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T04:05:16.419Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 watchdog-owner pass accepted the already-completed shared-model-validator post-frontier-254 maintained-view capture and archived that safe done child because its durable meaning already lives in archive evidence. The live branch is now truthfully reduced to one active repo-local frontier-258 repair slice plus the unchanged single family-level external-human wait; keep this branch repo-local/no-cloud only, and seed exactly one post-258 maintained-view/next-frontier capture leaf so the validator family stays executable after the active slice lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-model-validator-post-frontier-254-maintained-view-capture-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume the accepted frontier-254 repair evidence, rerun the exact repo-local shared model validator and maintained-view generator, and capture only the truthful post-repair state: prove inputDags[254].nodes[3][0].value is gone, then name only the immediate next frontier or validator-clean maintained-view state without widening into another repair family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-post-frontier-254-maintained-view-capture-20260624.md"
+      ],
+      "acceptance": [
+        "Use the accepted frontier-254 repair evidence plus fresh exact validator/generator reruns to show inputDags[254].nodes[3][0].value no longer appears and to identify the single immediate next residual if the validator is still non-clean, with command/output evidence in the archive note.",
+        "Keep the work repo-local and same-conflict only: no cloud execution, no reopening archived older repair families beyond what is required to prove the maintained-view/frontier state, and no batching of multiple new validator repairs into this capture task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:00:04.019Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-post-frontier-254-maintained-view-capture-20260624_20260624040107",
+        "assigned_at": "2026-06-24T04:01:07.510Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-post-frontier-254-maintained-view-capture-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-post-frontier-254-maintained-view-capture-20260624_20260624040107",
+        "worker_started_at": "2026-06-24T04:01:35.195Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the post-frontier-254 repo-local validator and maintained-view state in evidence/archive/shared-model-validator-post-frontier-254-maintained-view-capture-20260624.md, proving the 254 residual is gone and that the immediate next frontier is now inputDags[258].nodes[3][0].value after fresh validator/generator reruns.",
+        "last_worker_completed_at": "2026-06-24T04:03:35.125Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:04:20.557Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence/archive/shared-model-validator-post-frontier-254-maintained-view-capture-20260624.md contains fresh repo-local validator and generator reruns proving inputDags[254].nodes[3][0].value has no matches, maintained views regenerated at 2026-06-24T04:02:59.657Z, validator issue count dropped to 3502, and the single immediate next residual is truthfully captured as inputDags[258].nodes[3][0].value without widening scope."
+      },
+      "session_id": "s_task_shared-model-validator-post-frontier-254-maintained-view-capture-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-post-frontier-254-maintained-view-capture-20260624"
+      ],
+      "result": "Captured the post-frontier-254 repo-local validator and maintained-view state in evidence/archive/shared-model-validator-post-frontier-254-maintained-view-capture-20260624.md, proving the 254 residual is gone and that the immediate next frontier is now inputDags[258].nodes[3][0].value after fresh validator/generator reruns.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:04:20.557Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence/archive/shared-model-validator-post-frontier-254-maintained-view-capture-20260624.md contains fresh repo-local validator and generator reruns proving inputDags[254].nodes[3][0].value has no matches, maintained views regenerated at 2026-06-24T04:02:59.657Z, validator issue count dropped to 3502, and the single immediate next residual is truthfully captured as inputDags[258].nodes[3][0].value without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

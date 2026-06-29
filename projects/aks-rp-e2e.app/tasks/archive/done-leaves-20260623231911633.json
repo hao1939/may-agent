@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T23:19:11.633Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier/planning review accepted and archived the completed storage-csi file private-endpoint mounted-source/model-linkage repair because its durable meaning now lives in evidence/archive/storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623.md plus the maintained repo-local replay/spec/model/view carriers for path.storage-csi-file-private-endpoint. The live frontier remains truthful and intentionally compressed: private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623 stays the sole active repo-local leaf, while aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623, private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remain the only useful blocked waits until returned proof arrives or the first owner follow-up on/after 2026-06-26; the AAD environment-overblock warning was rechecked and remains heuristic noise because local narrowing/auth/quota diagnosis is already closed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert the exact mounted storage-csi file private-endpoint carrier into a maintained repo-local knowledge branch by checking the authoritative mounted source slice, then adding or repairing the canonical feature/scenario/input-DAG/feature-path/spec/replay linkage, source refs, and any nearby narrow model/index/view notes for path.storage-csi-file-private-endpoint so the branch stops depending on a thin draft placeholder.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623.md"
+      ],
+      "acceptance": [
+        "Repo diff is repo-local only and truthfully links path.storage-csi-file-private-endpoint through explicit mounted-source-backed feature/scenario/input-DAG/feature-path/spec/replay carriers, with any touched model/index/view notes kept narrow to the exact Azure File private-endpoint branch and not widened into adjacent storage-csi file siblings.",
+        "Archive note records the exact mounted source authority, the maintained carriers touched, the private-endpoint branch boundaries preserved against adjacent storage-csi file siblings, and the resulting next-step posture as source-grounded draft awaiting any future bounded verification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-private-endpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T23:09:29.937Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623_20260623231132",
+        "assigned_at": "2026-06-23T23:11:32.789Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623",
+        "worker_started_attempt_id": "a_storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623_20260623231132",
+        "worker_started_at": "2026-06-23T23:11:33.897Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the storage-csi-file-private-endpoint branch into a truthful repo-local mounted-source knowledge carrier by converting the replay to check-only/execute-gated, updating spec/index/model linkage, regenerating maintained views, and writing the archive note.",
+        "last_worker_completed_at": "2026-06-23T23:17:47.378Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T23:19:11.583Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-23 owner review: the archive note plus repo-local replay/spec/index/model/view readback now truthfully anchor path.storage-csi-file-private-endpoint to mounted source authority while keeping the replay check-only/execution-gated and the branch source-grounded draft only; no live verdict is overclaimed."
+      },
+      "session_id": "s_task_storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623",
+      "session_history": [
+        "s_task_storage-csi-file-private-endpoint-mounted-source-model-linkage-20260623"
+      ],
+      "result": "Repaired the storage-csi-file-private-endpoint branch into a truthful repo-local mounted-source knowledge carrier by converting the replay to check-only/execute-gated, updating spec/index/model linkage, regenerating maintained views, and writing the archive note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T23:19:11.583Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-23 owner review: the archive note plus repo-local replay/spec/index/model/view readback now truthfully anchor path.storage-csi-file-private-endpoint to mounted source authority while keeping the replay check-only/execution-gated and the branch source-grounded draft only; no live verdict is overclaimed."
+      },
+      "status": "done"
+    }
+  ]
+}

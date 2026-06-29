@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:11:57.113Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 metric-recovered owner hygiene pass: archive the completed VM prerelease carrier-packet controller leaf because its durable meaning is already captured in the active focus branch rollup, which now owns the four repo-local dry-run/readiness leaves for rows 25, 40-43, and 50 plus the single blocked external-human proof wait. Keep the visible project frontier truthful: one active focus branch with bounded local prep work, not a duplicate done controller leaf at the root.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-freed-rows-execute-gated-carrier-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the VM prerelease rows freed by mounted-source triage (25, 40-43, 50) into one concrete repo-local carrier packet: map each row to its canonical feature/spec/replay/model surface, state whether it can be grouped with bun run plan --features or should stay direct-spec, and name the next safest execution-prep/review leaf for each reopened boundary without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-freed-rows-execute-gated-carrier-packet-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact lists rows 25, 40-43, and 50 individually with exact source-backed carrier references (feature/spec/replay/model paths), current execute gate, and whether each row belongs to a canonical shared carrier or needs a standalone future leaf.",
+        "The artifact gives concrete next-step recommendations for reopened local work, including exact bun commands for plan/spec selection where repo-locally determinable, and explicitly avoids reclassifying any row as an external-human wait unless new contrary evidence is found."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-carrier-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:03:16.564Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T20:03:27.622Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-freed-rows-execute-gated-carrier-packet-20260626_20260626200348",
+        "assigned_at": "2026-06-26T20:03:48.476Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-freed-rows-execute-gated-carrier-packet-20260626",
+        "worker_started_attempt_id": "a_vmpr-freed-rows-execute-gated-carrier-packet-20260626_20260626200348",
+        "worker_started_at": "2026-06-26T20:03:48.681Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested carrier packet at evidence/archive/vmpr-freed-rows-execute-gated-carrier-packet-20260626.md, mapping VM prerelease rows 25, 40-43, and 50 to canonical feature/spec/replay/model surfaces, execute gates, shared-vs-direct execution posture, and owner-ready next local leaves without reopening any external-human waits.",
+        "last_worker_completed_at": "2026-06-26T20:07:48.817Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:09:16.944Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-freed-rows-execute-gated-carrier-packet-20260626.md satisfies both acceptance checks by mapping rows 25, 40-43, and 50 to exact feature/spec/replay/model surfaces, execute gates, shared-vs-direct posture, and concrete repo-local next leaves without reopening any external-human waits."
+      },
+      "session_id": "s_task_vmpr-freed-rows-execute-gated-carrier-packet-20260626",
+      "session_history": [
+        "s_task_vmpr-freed-rows-execute-gated-carrier-packet-20260626"
+      ],
+      "result": "Created the requested carrier packet at evidence/archive/vmpr-freed-rows-execute-gated-carrier-packet-20260626.md, mapping VM prerelease rows 25, 40-43, and 50 to canonical feature/spec/replay/model surfaces, execute gates, shared-vs-direct execution posture, and owner-ready next local leaves without reopening any external-human waits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:09:16.944Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-freed-rows-execute-gated-carrier-packet-20260626.md satisfies both acceptance checks by mapping rows 25, 40-43, and 50 to exact feature/spec/replay/model surfaces, execute gates, shared-vs-direct posture, and concrete repo-local next leaves without reopening any external-human waits."
+      },
+      "status": "done"
+    }
+  ]
+}

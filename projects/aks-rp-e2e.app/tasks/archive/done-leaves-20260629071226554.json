@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T07:12:26.554Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted App Routing repo-local spec-loop error reconciliation. The nine stale App Routing entries now have reviewed current classifications and exact resume conditions in evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md plus updated spec-loop state. Continue the remaining active aad-rbac/virtualmachines reconciliations and the app-monitoring/workload-autoscaler repair leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-loop-error-app-routing",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 9 error spec-loop result(s) for the app-routing feature family as repo-local grouped non-pass follow-up. Do not rerun live tests unless a blocker changed or a concrete test/spec repair makes the rerun meaningful.",
+      "inputs": [
+        "status:error",
+        "featureFamily:app-routing",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.app-routing.default-domain-http-reachability",
+        "spec:spec.app-routing.default-domain-tls-lifecycle",
+        "spec:spec.app-routing.nginx-disablement.standalone-pass",
+        "spec:spec.app-routing.nginx-to-istio-migration.zero-downtime",
+        "spec:spec.app-routing.public-api-default-domain-enable",
+        "spec:spec.app-routing.public-api-disable",
+        "spec:spec.app-routing.public-api-enable",
+        "spec:spec.app-routing.rollback-istio-to-nginx",
+        "spec:spec.app-routing.tls-lifecycle-rotation"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:app-routing",
+        "feature:app-routing"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "app-routing",
+        "totalSpecCount": 9,
+        "sampledSpecIds": [
+          "spec.app-routing.default-domain-http-reachability",
+          "spec.app-routing.default-domain-tls-lifecycle",
+          "spec.app-routing.nginx-disablement.standalone-pass",
+          "spec.app-routing.nginx-to-istio-migration.zero-downtime",
+          "spec.app-routing.public-api-default-domain-enable",
+          "spec.app-routing.public-api-disable",
+          "spec.app-routing.public-api-enable",
+          "spec.app-routing.rollback-istio-to-nginx",
+          "spec.app-routing.tls-lifecycle-rotation"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-planner-followup-policy-fix",
+        "acceptance_note": "Accepted owner review: .state/spec-loop/state.json and evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md reconcile all nine App Routing error entries from stale pending/null metadata into reviewed current statuses, with each spec classified as pass, product issue, test/spec issue, or environment wait and exact resume conditions; no fresh live rerun was performed."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:07:17.947Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-app-routing_20260629070832",
+        "assigned_at": "2026-06-29T07:08:32.576Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-app-routing",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-app-routing_20260629070832",
+        "worker_started_at": "2026-06-29T07:08:35.772Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the 9 App Routing spec-loop error entries by updating the domain mirror `.state/spec-loop/state.json` from stale pending/null metadata to reviewed current run statuses, and wrote `evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md` classifying each spec as pass, product issue, test/spec issue, or environment wait with exact resume conditions.",
+        "last_worker_completed_at": "2026-06-29T07:11:47.791Z",
+        "last_worker_evidence": [
+          ".state/spec-loop/state.json",
+          "evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T07:12:26.499Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: .state/spec-loop/state.json and evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md reconcile all nine App Routing error entries from stale pending/null metadata into reviewed current statuses, with each spec classified as pass, product issue, test/spec issue, or environment wait and exact resume conditions; no fresh live rerun was performed."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-app-routing",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-app-routing"
+      ],
+      "result": "Reconciled the 9 App Routing spec-loop error entries by updating the domain mirror `.state/spec-loop/state.json` from stale pending/null metadata to reviewed current run statuses, and wrote `evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md` classifying each spec as pass, product issue, test/spec issue, or environment wait with exact resume conditions.",
+      "evidence": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/reconcile-spec-loop-error-app-routing-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T07:12:26.499Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

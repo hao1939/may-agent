@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T10:23:11.692Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 blocked-frontier owner pass: archive the accepted natgw-to-none model reconciliation and the accepted feature-reference-loop terminal-state guard proof because their durable meaning is already represented in project memory. Live project state is now truthful and compact: one active repo-local investigation remains under aks-feature-reference-loop to explain the lingering non-terminal controller residue, while the only blocked frontier is the same four exact external waits with preserved send-proof/review checkpoints and no speculative refill or duplicate resend/source/spec work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use repo-local spec/test/feature-reference evidence to decide whether path.net-integration.outbound-migration-natgw-to-none should stay unknown as an execution-gated conditional-support path, or whether a tighter model/status wording change is now warranted without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-outbound-migration-natgw-to-none-owner-reconcile-next-20260628.md"
+      ],
+      "acceptance": [
+        "Write a bounded repo-local note that cites the canonical packet/spec/test/model surfaces for path.net-integration.outbound-migration-natgw-to-none, distinguishes invalid-target-shape versus compliant-target-shape semantics, and states one exact current verdict with evidence.",
+        "Do not run cloud mutation; conclude with one exact next action only: model no-change, model-text update, or future live-run gate, and explain why that action is the truthful successor for the project frontier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:net-integration-outbound-migration-natgw-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T10:10:21.675Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-20260628_20260628101023",
+        "assigned_at": "2026-06-28T10:10:23.583Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-202606",
+        "worker_started_attempt_id": "a_reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-20260628_20260628101023",
+        "worker_started_at": "2026-06-28T10:10:48.655Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a bounded owner-reconcile note at evidence/archive/net-integration-outbound-migration-natgw-to-none-owner-reconcile-next-20260628.md concluding the path should remain unknown/conditional-support with one exact next action: future live-run gate.",
+        "last_worker_completed_at": "2026-06-28T10:12:50.053Z",
+        "last_worker_evidence": [
+          "evidence/archive/net-integration-outbound-migration-natgw-to-none-owner-reconcile-next-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T10:13:19.933Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner reconcile note: mounted handwritten source plus repo-local packet/spec/test/model evidence support keeping path.net-integration.outbound-migration-natgw-to-none at unknown conditional-support status. Archived failures remain invalid-target-shape rejection evidence only; the single truthful successor is the existing future live-run gate for the compliant target shape, so no model-text follow-up leaf is needed."
+      },
+      "session_id": "s_task_reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-202606",
+      "session_history": [
+        "s_task_reconcile-model-path-net-integration-outbound-migration-natgw-to-none-conditional-support-202606"
+      ],
+      "result": "Wrote a bounded owner-reconcile note at evidence/archive/net-integration-outbound-migration-natgw-to-none-owner-reconcile-next-20260628.md concluding the path should remain unknown/conditional-support with one exact next action: future live-run gate.",
+      "evidence": [
+        "evidence/archive/net-integration-outbound-migration-natgw-to-none-owner-reconcile-next-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T10:13:19.933Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner reconcile note: mounted handwritten source plus repo-local packet/spec/test/model evidence support keeping path.net-integration.outbound-migration-natgw-to-none at unknown conditional-support status. Archived failures remain invalid-target-shape rejection evidence only; the single truthful successor is the existing future live-run gate for the compliant target shape, so no model-text follow-up leaf is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

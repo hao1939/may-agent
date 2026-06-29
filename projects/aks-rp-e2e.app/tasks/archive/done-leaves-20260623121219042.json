@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:12:19.042Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 stale watchdog-review wake reconciled again: the cited workload-identity review target was already accepted, so the project root should now carry only durable meaning from the completed no-cloud workload-identity carrier-alignment closures and the accepted private-cluster none-dns-zone-v3 readiness packet. Archive those done children because their evidence already lives in the linked archive artifacts and maintained model/spec/replay files. The live frontier is now exactly one active repo-local OIDC >=1.34 default-enabled readiness packet plus the single family-level external-human wait; do not recreate stale review leaves, reopen completed workload-identity/private-cluster closure, or split the shared external wait without new returned operator proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "automatic-sku-jwks-carrier-alignment-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/spec lane: use the accepted 2026-06-23 Automatic-SKU JWKS gap packet to update the repo-local automatic-SKU carriers so they explicitly preserve the inherited after-create JWKS branch as a sibling carrier with its future execution contract, without claiming a new runtime verdict or widening into other workload-identity branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/workload-identity-automatic-sku-jwks-carrier-alignment-20260623.md"
+      ],
+      "acceptance": [
+        "Update the repo-local automatic-SKU carrier surfaces using the accepted gap packet authority: the relevant spec/feature/replay/model note surfaces explicitly distinguish the accepted Automatic-SKU identity/discovery truth from the still-unmodeled inherited after-create JWKS branch, represent that branch as the sibling carrier chosen by the packet, and avoid claiming an observed JWKS-after-create runtime result.",
+        "The update remains no-cloud and branch-local, proposes the exact future execution delta needed to close the Automatic-SKU after-create JWKS gap, and does not reopen disable-reenable, upgrade-survival, OIDC rotation, or the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workload-identity.automatic-sku-jwks-after-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:00:10.716Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_automatic-sku-jwks-carrier-alignment-20260623_20260623120010",
+        "assigned_at": "2026-06-23T12:00:10.771Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_automatic-sku-jwks-carrier-alignment-20260623",
+        "worker_started_attempt_id": "a_automatic-sku-jwks-carrier-alignment-20260623_20260623120010",
+        "worker_started_at": "2026-06-23T12:00:34.949Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned the workload-identity Automatic-SKU repo-local carriers to preserve the inherited after-create JWKS branch as sibling carrier path.workload-identity.automatic-sku.jwks-after-create, updated the feature/spec/replay surfaces to keep the accepted pass at create/readback/discovery scope only, and wrote the requested evidence note.",
+        "last_worker_completed_at": "2026-06-23T12:06:48.271Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:07:42.842Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the worker produced the requested archive note and aligned the repo-local Automatic-SKU feature/spec/replay carriers to preserve the inherited after-create JWKS branch as sibling carrier path.workload-identity.automatic-sku.jwks-after-create while keeping the accepted pass scoped to create/readback/discovery only."
+      },
+      "session_id": "s_task_automatic-sku-jwks-carrier-alignment-20260623",
+      "session_history": [
+        "s_task_automatic-sku-jwks-carrier-alignment-20260623"
+      ],
+      "result": "Aligned the workload-identity Automatic-SKU repo-local carriers to preserve the inherited after-create JWKS branch as sibling carrier path.workload-identity.automatic-sku.jwks-after-create, updated the feature/spec/replay surfaces to keep the accepted pass at create/readback/discovery scope only, and wrote the requested evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T12:07:42.842Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the worker produced the requested archive note and aligned the repo-local Automatic-SKU feature/spec/replay carriers to preserve the inherited after-create JWKS branch as sibling carrier path.workload-identity.automatic-sku.jwks-after-create while keeping the accepted pass scoped to create/readback/discovery only."
+      },
+      "status": "done"
+    }
+  ]
+}

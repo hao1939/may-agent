@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T22:20:39.857Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-28 regular-learning owner review: keep this branch as the single visible carrier for the four truthful external waits only. The latency-checkpoint preparation/follow-up work is already accepted and archived; preserve the live waits unchanged until either a durable reply/proof/redirect arrives or the shared 2026-06-29T16:45:00Z checkpoint triggers one combined follow-up decision. Do not invent resend/setup/source leaves from this branch while those resume conditions remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "human-operator-response-latency-family-checkpoint-followup-20260629",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "At or after the shared 2026-06-29T16:45:00Z checkpoint, review the archived human:operator latency packet against any returned replies and either send one combined follow-up/escalation covering the eight still-reply-needed waits or record why individual waits changed, while preserving the already-spent external-send-proof family wait as passive unless new proof/reroute arrives.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md"
+      ],
+      "acceptance": [
+        "Reviews evidence/archive/prepare-human-operator-response-latency-checkpoint-packet-20260628.md against current wait artifacts and records which of the nine waits received a reply before the checkpoint versus which remain open.",
+        "If the eight reply-needed waits are still silent, artifact contains one combined follow-up/escalation message anchored to the exact asks in the checkpoint packet; if any wait changed, artifact records the exact replacement action or precise reason no shared follow-up was truthful.",
+        "Preserves the distinction that external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 stays passive unless a real reroute/proof/reply appears, rather than sending an age-only duplicate reminder."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "operator-response:human-operator-latency-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:01:37.214Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T21:03:13.143Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_human-operator-response-latency-family-checkpoint-followup-20260629_20260628210314",
+        "assigned_at": "2026-06-28T21:03:14.921Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_human-operator-response-latency-family-checkpoint-followup-20260629",
+        "worker_started_attempt_id": "a_human-operator-response-latency-family-checkpoint-followup-20260629_20260628210314",
+        "worker_started_at": "2026-06-28T21:04:17.705Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Recorded a durable pre-checkpoint blocker note at evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md explaining that the assigned follow-up cannot truthfully run before the required 2026-06-29T16:45:00Z checkpoint, after reviewing the checkpoint packet and current blocked wait family state.",
+        "last_worker_completed_at": "2026-06-28T21:06:42.942Z",
+        "last_worker_evidence": [
+          "evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md"
+        ],
+        "reviewed_at": "2026-06-28T21:15:59.933Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker's pre-checkpoint blocker note: the assigned follow-up cannot truthfully run before 2026-06-29T16:45:00Z, so the live state is now represented by the replacement blocked wait await-human-operator-response-latency-family-checkpoint-20260629 rather than by leaving this review leaf open."
+      },
+      "session_id": "s_task_human-operator-response-latency-family-checkpoint-followup-20260629",
+      "session_history": [
+        "s_task_human-operator-response-latency-family-checkpoint-followup-20260629"
+      ],
+      "result": "Recorded a durable pre-checkpoint blocker note at evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md explaining that the assigned follow-up cannot truthfully run before the required 2026-06-29T16:45:00Z checkpoint, after reviewing the checkpoint packet and current blocked wait family state.",
+      "evidence": [
+        "evidence/archive/human-operator-response-latency-family-checkpoint-followup-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T21:15:59.933Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker's pre-checkpoint blocker note: the assigned follow-up cannot truthfully run before 2026-06-29T16:45:00Z, so the live state is now represented by the replacement blocked wait await-human-operator-response-latency-family-checkpoint-20260629 rather than by leaving this review leaf open."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -4,7 +4,14 @@ import app from "../app.ts";
 type WorkflowHandler = {
   name?: string;
   on?: string[];
-  accepts?: Array<string | { type?: string }>;
+  accepts?: Array<
+    | string
+    | {
+        type?: string;
+        target?: Record<string, unknown>;
+        actions?: string[];
+      }
+  >;
   handler?: {
     workflow?: string;
   };
@@ -37,7 +44,13 @@ function handler(name: string): WorkflowHandler {
 }
 
 function handlerEvents(name: string): string[] {
-  return (handler(name).accepts ?? handler(name).on ?? [])
+  const entry = handler(name);
+  const selectors = Array.isArray(entry.accepts)
+    ? entry.accepts
+    : Array.isArray(entry.on)
+      ? entry.on
+      : [];
+  return selectors
     .map((selector) =>
       typeof selector === "string" ? selector : selector.type,
     )
@@ -79,7 +92,6 @@ describe("app event contract", () => {
         "project.planning.requested",
         "project.comment.created",
         "project.tick",
-        "project.action.invoked",
         "project.focus.approval.submitted",
         "project.task.completed",
         "project.problem.resolved",
@@ -102,18 +114,36 @@ describe("app event contract", () => {
     });
     expect(handler("aks-rp-e2e-spec-loop-controller")).toMatchObject({
       handler: { workflow: "spec-loop-controller" },
-      accepts: [{ type: "project.spec-loop.tick" }],
+      accepts: expect.arrayContaining([
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: expect.objectContaining({ project: projectId }),
+          actions: ["spec-loop"],
+        }),
+      ]),
     });
     expect(
       handler("aks-rp-e2e-feature-reference-loop-controller"),
     ).toMatchObject({
       handler: { workflow: "feature-reference-loop-controller" },
-      accepts: [{ type: "project.feature-reference-loop.tick" }],
+      accepts: expect.arrayContaining([
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: expect.objectContaining({ project: projectId }),
+          actions: ["feature-reference-loop"],
+        }),
+      ]),
     });
     expect(handler("aks-rp-e2e-feature-compact-loop-controller")).toMatchObject(
       {
         handler: { workflow: "feature-compact-loop-controller" },
-        accepts: [{ type: "project.feature-compact-loop.tick" }],
+        accepts: expect.arrayContaining([
+          expect.objectContaining({
+            type: "project.task.tick",
+            target: expect.objectContaining({ project: projectId }),
+            actions: ["feature-compact-loop"],
+          }),
+        ]),
       },
     );
   });
@@ -213,11 +243,39 @@ describe("app event contract", () => {
     });
 
     expect(actionEvent("pulse-spec-loop", { taskId: "loop-a" })).toMatchObject({
-      type: "project.spec-loop.tick",
+      type: "project.task.tick",
+      action: "spec-loop",
       target: { project: projectId, taskId: "loop-a" },
       data: {
         project: projectId,
+        action: "spec-loop",
         taskId: "loop-a",
+      },
+    });
+
+    expect(
+      actionEvent("pulse-feature-reference-loop", { taskId: "loop-b" }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      action: "feature-reference-loop",
+      target: { project: projectId, taskId: "loop-b" },
+      data: {
+        project: projectId,
+        action: "feature-reference-loop",
+        taskId: "loop-b",
+      },
+    });
+
+    expect(
+      actionEvent("pulse-feature-compact-loop", { taskId: "loop-c" }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      action: "feature-compact-loop",
+      target: { project: projectId, taskId: "loop-c" },
+      data: {
+        project: projectId,
+        action: "feature-compact-loop",
+        taskId: "loop-c",
       },
     });
   });

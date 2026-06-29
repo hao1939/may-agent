@@ -160,6 +160,7 @@ describe("focus-plan workflow", () => {
   test("asks for human approval and still wakes owner review for a proposed focus", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];
+    const sessionIds: string[] = [];
     const dispatched: Array<{
       type: string;
       payload: Record<string, unknown>;
@@ -184,8 +185,13 @@ describe("focus-plan workflow", () => {
         dispatched.push({ type, payload });
       },
       runAgent: async () => ({ status: "success" }),
-      runAgentSession: async (_agent: string, prompt: string) => {
+      runAgentSession: async (
+        _agent: string,
+        prompt: string,
+        sessionId: string,
+      ) => {
         prompts.push(prompt);
+        sessionIds.push(sessionId);
         return {
           status: "success",
           message:
@@ -200,6 +206,9 @@ describe("focus-plan workflow", () => {
     expect(prompts[0]).toContain("AKS RP E2E Focus Plan Mode");
     expect(prompts[0]).toContain("Current compact task-tree packet");
     expect(prompts[0]).toContain("run-rest-spec-batch");
+    expect(sessionIds).toHaveLength(1);
+    expect(sessionIds[0]).toMatch(/^s_focus_plan_strategy_\d{14}_[a-z0-9]+$/);
+    expect(sessionIds[0]).not.toBe("s_focus_plan_strategy");
     expect(dispatched.map((event) => event.type)).toEqual([
       "message.created",
       "project.owner.requested",

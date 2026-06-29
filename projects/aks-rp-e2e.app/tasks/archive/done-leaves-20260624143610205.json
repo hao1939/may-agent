@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T14:36:10.205Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog blocked-frontier owner review revalidated that the visible frontier should stay compressed to the same four exact external waits only: aad-rbac managed-v2 row-37 approval return, shared external dispatch-family return, private-cluster auth-service-tags devbox-endpoint return, and serverless schedulerctrl validating-webhook public approval return. No returned authoritative proof exists yet, no runnable/review work is truthful before the follow-up window on or after 2026-06-26, and the aad-rbac environment-overblock warning remains explicitly rejected by the linked narrowing evidence. Archive the completed private-cluster none-dns-zone-v3 mounted-source boundary decision leaf under project history; keep all four blocked waits intact until proof arrives or the first 2026-06-26+ follow-up/escalation review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-open repo-local learning for path.private-cluster-none-dns-zone-v3 by tracing the exact mounted-source/spec/replay/model carrier, deciding whether the current model status should remain unknown or be tightened to a more truthful source-grounded state, and recording the next bounded action without any cloud mutation or external wait duplication.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted AKS RP source files, repo-local spec/replay/index/model paths for path.private-cluster-none-dns-zone-v3, and explains the accepted input boundary, expectation boundary, adjacent siblings, and why the current unknown status is or is not still truthful.",
+        "If repo-local evidence justifies a tighter maintained state or blocker/retest wording, the worker updates the relevant model/knowledge-map artifact(s) in the same slice and links them from the archive artifact; otherwise the artifact must name the exact missing evidence needed next without inventing a new external-human wait.",
+        "No cloud mutation, no packet redrafting, and no reopening of the four existing external-proof waits; this task stays strictly repo-local and conflict-scoped to path.private-cluster-none-dns-zone-v3."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T14:28:17.280Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624_20260624142817",
+        "assigned_at": "2026-06-24T14:28:17.325Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624_20260624142817",
+        "worker_started_at": "2026-06-24T14:28:34.883Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the repo-local boundary/status decision for path.private-cluster-none-dns-zone-v3, wrote the requested durable archive note, and repaired the replay so its execute gate now truly enforces the exact probe-specific mutation gate plus explicit subscription/location tuple.",
+        "last_worker_completed_at": "2026-06-24T14:31:43.930Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T14:32:38.912Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624.md cites the exact mounted source/spec/replay/model carriers and truthfully keeps path.private-cluster-none-dns-zone-v3 at unknown because accepted live evidence still covers only the terminal none-mode subset. The replay diff also verifies the task's concrete repo-local repair: execute mode now enforces AKS_RP_E2E_ALLOW_CLOUD_MUTATION === private-cluster-none-private-dns-zone-v3 plus explicit subscription/location tuple. Broader dirty model/view files were not needed to accept this branch and are not trusted here beyond the artifact-aligned unknown status decision."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624"
+      ],
+      "result": "Completed the repo-local boundary/status decision for path.private-cluster-none-dns-zone-v3, wrote the requested durable archive note, and repaired the replay so its execute gate now truly enforces the exact probe-specific mutation gate plus explicit subscription/location tuple.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T14:32:38.912Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-status-decision-20260624.md cites the exact mounted source/spec/replay/model carriers and truthfully keeps path.private-cluster-none-dns-zone-v3 at unknown because accepted live evidence still covers only the terminal none-mode subset. The replay diff also verifies the task's concrete repo-local repair: execute mode now enforces AKS_RP_E2E_ALLOW_CLOUD_MUTATION === private-cluster-none-private-dns-zone-v3 plus explicit subscription/location tuple. Broader dirty model/view files were not needed to accept this branch and are not trusted here beyond the artifact-aligned unknown status decision."
+      },
+      "status": "done"
+    }
+  ]
+}

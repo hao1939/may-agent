@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:04:38.724Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease repo-local frontier follow-through is now absorbed through source-order row 54 / maintained row 54: the accepted LocalDNS enable/disable and ManagedSystem AgentPool frontier-proof packets preserve exact mounted-source adjacency, keep source-order versus maintained row numbering truthful, and prove dedicated canonical repo-local carriers already cover those branches without new model/spec/replay authoring or cloud execution. The only live regular-learning frontier remains row 55 ManagedSystemPool enable attachment repair, while the sole external-human-transport wait stays compressed to one family-level blocked leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row54-managedsystem-agentpool-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/evidence-feedback lane: produce a bounded frontier-proof packet for the exact VM-prerelease ManagedSystem AgentPool boundary immediately after LocalDNS enable/disable, using mounted source plus repo-local spec/replay/model/coverage evidence to determine whether canonical exact carriers already exist or whether the truthful outcome is a maintained-surface caveat or bounded gap note. Keep scope to repo-local source/evidence/spec/replay/model inspection only; no cloud execution and no external-send work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row54-managedsystem-agentpool-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing the exact mounted checkin/prerelease adjacency for ManagedSystem AgentPool immediately after LocalDNS enable/disable, preserving source-order versus maintained pipeline row-number truth and naming the exact row-local scenario.",
+        "State whether canonical repo-local carriers already exist for that exact ManagedSystem AgentPool branch by citing exact existing source/spec/replay/coverage/model/check artifacts when present, or by recording the precise bounded repo-local caveat or gap if maintained surfaces drift from the mounted source contract; do not invent cloud/product verdicts beyond cited repo-local evidence.",
+        "Name the next truthful follow-up boundary after this packet while making no cloud mutation claims and no external-human-transport claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:01:12.471Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row54-managedsystem-agentpool-frontier-proof-20260621_20260621200112",
+        "assigned_at": "2026-06-21T20:01:12.518Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row54-managedsystem-agentpool-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-row54-managedsystem-agentpool-frontier-proof-20260621_20260621200112",
+        "worker_started_at": "2026-06-21T20:01:24.934Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-54 frontier-proof packet at evidence/archive/vmpr-row54-managedsystem-agentpool-frontier-proof-20260621.md, proving the exact post-LocalDNS ManagedSystem AgentPool adjacency and that canonical repo-local exact carriers already exist for the mounted create-time VM-prerelease branch.",
+        "last_worker_completed_at": "2026-06-21T20:02:46.539Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:03:25.242Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-21 frontier-proof packet: it cites mounted checkin/prerelease adjacency showing LocalDNS enable/disable is followed by source-order row 54 virtualmachine.Scenario_ManagedSystem_AgentPool, preserves maintained pipeline row 54 truth, proves the exact create-time ManagedSystem carrier already has dedicated feature/spec/replay/index/coverage support, and names row 55 ManagedSystemPool enable as the next truthful boundary."
+      },
+      "session_id": "s_task_vmpr-row54-managedsystem-agentpool-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-row54-managedsystem-agentpool-frontier-proof-20260621"
+      ],
+      "result": "Produced the bounded row-54 frontier-proof packet at evidence/archive/vmpr-row54-managedsystem-agentpool-frontier-proof-20260621.md, proving the exact post-LocalDNS ManagedSystem AgentPool adjacency and that canonical repo-local exact carriers already exist for the mounted create-time VM-prerelease branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:03:25.242Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-21 frontier-proof packet: it cites mounted checkin/prerelease adjacency showing LocalDNS enable/disable is followed by source-order row 54 virtualmachine.Scenario_ManagedSystem_AgentPool, preserves maintained pipeline row 54 truth, proves the exact create-time ManagedSystem carrier already has dedicated feature/spec/replay/index/coverage support, and names row 55 ManagedSystemPool enable as the next truthful boundary."
+      },
+      "status": "done"
+    }
+  ]
+}

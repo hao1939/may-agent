@@ -1,0 +1,1416 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:51:25.197Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace remains historical/human-facing rather than a live execution frontier. Outbound owner-send proof is unavailable in this runtime, passive response-await shapes were already repaired into active local successors elsewhere, and any remaining true external or returned-proof semantics now live in other branches instead of this lane. Archive these completed children so the visible tree keeps only active domain work and truthful blockers.",
+  "archived": 36,
+  "tasks": [
+    {
+      "id": "vm-prerelease-azure-keyvault-secrets-provider-source-holder-response-await-20260618",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait state for the outbound VM-prerelease row-103 Azure Key Vault Secrets Provider handwritten-source ask so returned authoritative proof routes back into the existing row-103 blocked branch instead of spawning new addon-family rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-azure-keyvault-secrets-provider-source-holder-response-await-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted row-103 boundary packet, the accepted handwritten-source blocker note, and the send-ready owner handoff packet, and states that the only missing input is authoritative source-shaped proof for Scenario_Azure_KeyVault_Secrets_Provider.",
+        "Resume condition is precise: a human/source holder returns the exact scenario body or authoritative excerpt with source path plus input/assertion lines, after which planning routes that packet back into vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-extraction-20260618 instead of opening a new umbrella keyvault branch.",
+        "Task remains a shared user-review wait node only; it does not claim row 103 is source-closed, does not broaden into generic keyvault/addon work, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:keyvault-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T08:05:55.756Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:06.781Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:06.781Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Record the exact external/source resume condition for VM prerelease row 64 Addonv2 ASM CRUD so the branch does not silently attach to the existing enable-lifecycle family without source-equivalence proof, and route future handwritten/native evidence toward either truthful attachment or a dedicated Addonv2 CRUD landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted row-64 source packet, names the exact missing proof for Scenario_Addonv2_Azure_Service_Mesh_CRUD versus Scenario_Traffic_AzureServiceMesh_Enable_Lifecycle, and records the precise resume condition for attachment or dedicated-spec branching.",
+        "Task remains a bounded source-holder/user-review wait node only; it does not reopen broad ASM rediscovery or claim repo-local equivalence that the current evidence does not support."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-addonv2-asm-crud-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:08:53.208Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-autoscaling-handwritten-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait for the outbound VM prerelease AutoScaling handwritten proof ask so rows 125 and 131 share one visible resume condition after the send-ready handoff packet was accepted. Any returned authoritative proof must route through the accepted handoff packet into the existing row-125 and row-131 blocked leaves instead of creating duplicate autoscaling asks.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-handwritten-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted handoff packet evidence/archive/vm-prerelease-autoscaling-handwritten-source-holder-handoff-packet-20260619.md plus the affected blocked leaves vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619 and vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619, and records that rows 124 and 126-130 are already covered by accepted canonical slices so the only remaining external ask is authoritative proof for rows 125 and 131.",
+        "Resume condition is precise: a human/source holder returns authoritative handwritten, archived exact, or accepted source-equivalent proof for Scenario_AutoScaling_Service_Principal and/or Scenario_AutoScaling_Spot, after which planning routes each returned packet to the matching existing blocked leaf instead of reopening broad autoscaling discovery.",
+        "Task remains a shared user-review wait node only; it does not claim either row is unblocked yet, does not perform cloud execution, and leaves one authoritative outbound path for the autoscaling source ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T07:05:46.513Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.359Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.359Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-uninstall-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for the VM prerelease uninstall family (rows 197-201) so the accepted uninstall blocker wave and send-ready owner handoff packet route through one visible resume condition instead of repeated repo-local re-search. Any returned authoritative scenario/helper excerpt for Scenario_Uninstall_Calico_NPM_Kubenet, Scenario_Uninstall_Calico_NPM_Azure_Overlay, Scenario_Uninstall_Calico_NPM_Cilium_Upgrade, Scenario_Uninstall_Azure_NPM, or Scenario_Uninstall_Azure_NPM_Cilium_Upgrade must feed the next spec-authoring successor rather than spawning broad rediscovery work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-uninstall-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted wave artifact evidence/archive/vm-prerelease-uninstall-missing-spec-wave-20260619.md and the send-ready owner handoff packet evidence/archive/vm-prerelease-uninstall-source-holder-owner-handoff-20260619.md, and names rows 197-201 plus the missing uninstall contract facts still required.",
+        "Resume condition is precise: a human/source-holder returns one authoritative handwritten scenario body or exact helper/implementation excerpt for the uninstall family that exposes setup, uninstall mutation, and verdict assertions for one or more of rows 197-201, after which planning routes that packet into a bounded uninstall spec/replay authoring successor.",
+        "Task remains a shared user-review wait node only; it does not claim any uninstall row is unblocked yet, does not perform execution, and leaves one authoritative outbound path for the external ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-uninstall-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T07:17:26.453Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.477Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.477Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-fleet-handwritten-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait state for the VM prerelease Fleet external-source ask so rows 139-142 stay coordinated under one visible resume condition after the accepted Fleet source-recovery packet proved repo-local durable sources are exhausted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-fleet-handwritten-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted Fleet source-recovery archive evidence/archive/vm-prerelease-fleet-handwritten-source-recovery-20260619.md, names rows 139-142 plus their exact missing contract facts, and treats that archive as the authoritative outbound ask/handoff packet for remaining Fleet source recovery.",
+        "Resume condition is precise: a human/source-holder returns authoritative handwritten Go, archived exact body/expectation excerpts, or an accepted upstream source path for one or more of Scenario_Fleet, Scenario_Fleet_Auto_Upgrade_Profile, Scenario_Fleet_Auto_Upgrade_Generate, or Scenario_Fleet_Updaterun_Windows_vms, after which planning routes the returned proof into a bounded Fleet spec/replay authoring successor.",
+        "Task remains a shared user-review wait node only; it does not claim any Fleet row is unblocked yet, does not reopen broad repo rediscovery, and does not perform cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-fleet-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T07:19:54.259Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.536Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.536Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-tlsbootstraptoken-upgrade-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for the VM prerelease TLSBootstrapToken upgrade family (rows 179-181) so the accepted outbound ask packet and existing blocked source-unblock leaf share one visible resume condition instead of repeated repo-local rediscovery. Any returned authoritative scenario/helper excerpt for Scenario_TLSBootstrapToken_UpgradeBasic, Scenario_TLSBootstrapToken_UpgradeAP, or Scenario_TLSBootstrapToken_Upgrade290744555 must route back into the existing blocked source-unblock branch rather than spawning new broad TLS search work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-tlsbootstraptoken-upgrade-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted missing-spec wave artifact evidence/archive/vm-prerelease-tlsbootstrap-missing-spec-wave-20260619.md, the send-ready ask packet evidence/archive/vm-prerelease-tlsbootstraptoken-upgrade-source-holder-packet-20260619.md, and the existing blocked leaf vm-prerelease-tlsbootstraptoken-upgrade-source-unblock-20260619, while naming rows 179-181 plus the exact contract facts still required.",
+        "Resume condition is precise: a human/source-holder returns handwritten e2ev3 source or an accepted authoritative repo-local equivalent proving the exact request/expectation contract for one or more of Scenario_TLSBootstrapToken_UpgradeBasic, Scenario_TLSBootstrapToken_UpgradeAP, and Scenario_TLSBootstrapToken_Upgrade290744555, including whether rows 180/181 are strict variants or separate siblings, after which planning routes that packet back into vm-prerelease-tlsbootstraptoken-upgrade-source-unblock-20260619.",
+        "Task remains a shared user-review wait node only; it does not claim any TLSBootstrapToken upgrade row is unblocked yet, does not perform cloud execution, and leaves one authoritative outbound path for the external ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-tlsbootstraptoken-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T07:45:31.359Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.594Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.594Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rawubuntu-egress-lockdown-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for VM prerelease RawUbuntu egress-lockdown rows 172/173 so the send-ready egresslockdown ask remains the only resume path for deciding whether servicetags is just a selector variant or a separate expectation branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rawubuntu-egress-lockdown-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted source-holder packet evidence/archive/vm-prerelease-rawubuntu-egress-lockdown-source-holder-packet-20260619.md and the accepted source packet evidence/archive/vm-prerelease-rawubuntu-egress-lockdown-source-packet-20260619.md, and states that repo-local evidence still lacks the exact request bodies and verdict-bearing assertions for Scenario_RawUbuntu_Egress_Lockdown and Scenario_RawUbuntu_Egress_Lockdown_ServiceTags.",
+        "Resume condition is precise: an upstream/source holder returns authoritative handwritten, archived-exact, or authoritative-equivalent materials for the two egresslockdown scenarios, including enough body/assertion detail to decide shared-branch-with-selector vs separate-branch shape, after which planning routes that proof into one bounded unblock/review leaf for rows 172/173 only.",
+        "Task remains a shared user-review wait node only; it does not collapse row 173 into the authorized-service-tags branch, does not claim branch shape prematurely, and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-rawubuntu-egress-lockdown-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:08:43.758Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.652Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.652Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-network-plugin-none-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for VM prerelease row 155 so the send-ready Scenario_Network_Plugin_None ask remains the only resume path for deciding whether the VirtualMachines + shared-identity row is a truthful execution variant of the existing none-BYO-CNI branch or needs its own VM-backed branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-network-plugin-none-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted row-155 source packet evidence/archive/vm-prerelease-network-plugin-none-vm-source-packet-20260619.md plus the existing spec.network-cni.none-byo-cni / replays/network-cni-none-byo-cni.ts branch, and records that repo-local evidence still lacks the authoritative Scenario_Network_Plugin_None body needed to prove exact identity or exact difference.",
+        "Resume condition is precise: a source holder returns the handwritten scenario body, an archived exact equivalent, or an authoritative equivalent excerpt for Scenario_Network_Plugin_None with enough request/assertion detail to compare it against the canonical none-BYO-CNI branch, after which planning routes the returned proof into one bounded unblock/review leaf for row 155.",
+        "Task remains a shared user-review wait node only; it does not promote row 155, does not author a VM-backed spec/replay by analogy alone, and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-network-plugin-none-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:08:43.903Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.716Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.716Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row178-swift-cilium-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for VM prerelease Swift row 178 so the accepted row-scoped ask packet remains the only resume path for the unresolved StaticBlock + cilium contract and any returned proof routes back into the existing row-178 branch instead of reopening broad Swift/Cilium discovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row178-swift-cilium-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted row-scoped ask packet evidence/archive/vm-prerelease-row178-swift-cilium-source-authority-recovery-20260619.md plus the accepted follow-up note evidence/archive/vm-prerelease-row178-swift-staticblock-cilium-followup-20260619.md, and states that repo-local evidence still lacks authoritative proof for a combined Swift v1 StaticBlock + cilium branch or truthful execution-variant collapse.",
+        "Resume condition is precise: a source holder returns authoritative handwritten, archived-exact, or authoritative-equivalent proof for Scenario_Swift_CNI_VNetScale_Cilium that preserves the combined StaticBlock + cilium request and verdict contract, after which planning routes that proof into one bounded unblock/review leaf for row 178 only.",
+        "Task remains a shared user-review wait node only; it does not change the VM prerelease coverage ledger, does not reopen unrelated Swift/Cilium families, and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-row178-swift-cilium-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:08:44.057Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.778Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.778Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-credential-provider-upgrade-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for VM prerelease credential-provider upgrade rows 189/214 so the send-ready upgrade ask remains the only resume path for distinguishing node-image-upgrade and general-upgrade credential-provider contracts before any upgrade-aware branch is authored.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-credential-provider-upgrade-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted source-holder packet evidence/archive/vm-prerelease-credential-provider-upgrade-source-holder-packet-20260619.md plus the accepted baseline create-time credential-provider branch, and states that repo-local evidence still lacks authoritative excerpts proving the exact upgrade operation and post-upgrade credential-provider assertions for rows 189 and 214.",
+        "Resume condition is precise: a source holder returns authoritative handwritten, archived-exact, or authoritative-equivalent proof for Scenario_Credential_Provider_Node_Image_upgrade and/or Scenario_Credential_Provider_Upgrade with enough operation/assertion detail to distinguish separate branches, a variant relationship, or no truthful attachment, after which planning routes that proof into one bounded unblock/review leaf for rows 189/214 only.",
+        "Task remains a shared user-review wait node only; it does not collapse upgrade semantics into the baseline create-time credential-provider contract, does not author speculative specs/replays, and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-credential-provider-upgrade-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:08:44.210Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.832Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.832Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-windows-gen2-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for VM prerelease Windows row 217 so the send-ready Gen2 ask remains the only resume path for recovering the validate_windows_gen2_nodes_image_version assertion body before any truthful Gen2 branch or extension decision is made.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-windows-gen2-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted source-holder packet evidence/archive/vm-prerelease-windows-gen2-source-holder-packet-20260619.md plus the accepted row-218 base VM branch packet, and states that repo-local evidence still lacks the authoritative assertion-bearing excerpt behind validate_windows_gen2_nodes_image_version=true.",
+        "Resume condition is precise: a source holder returns the handwritten scenario body, helper/assertion body, or archived authoritative-equivalent excerpt for Scenario_Windows2022_K8S_With_Gen2_vms or validate_windows_gen2_nodes_image_version with enough context to decide whether row 217 is a thin extension of row 218 or a separate Gen2 branch, after which planning routes that proof into one bounded unblock/review leaf for row 217 only.",
+        "Task remains a shared user-review wait node only; it does not collapse row 217 into the row-218 base branch, does not author speculative Gen2 specs/replays, and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-windows-gen2-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:09:08.521Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.891Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.891Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-kms-v1v2-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait for the accepted VM prerelease KMS v1/v2 outbound packet so rows 148-149 stay coordinated under one visible resume condition after the send-ready ask is available.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-kms-v1v2-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted outbound packet evidence/archive/vm-prerelease-kms-v1v2-source-holder-packet-20260619.md plus the row-148/149 matrix anchors and records that repo-local evidence is exhausted pending authoritative classification of whether the v1/v2 suffixes are naming aliases or semantic contract branches.",
+        "Resume condition is precise: a human/source-holder returns authoritative handwritten or source-equivalent proof that classifies Scenario_KMS_Public_Cluster_v1_Public_Key_Vault and/or Scenario_KMS_Private_Cluster_v2_Private_Key_Vault, after which planning routes each returned proof back into the existing VM prerelease KMS branch instead of reopening broad repo rediscovery.",
+        "Task remains a shared user-review wait node only; it makes no product claim, performs no cloud execution, and leaves one exact next owner action once proof arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-kms-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T08:19:52.056Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:07.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:07.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-missing-spec-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait for the consolidated VM prerelease missing-spec handoff packet so the still-unpacketized families (AgentPool operations/upgrade, AKSConformance, Multi-agent-pool runner, New-VNET/private-cluster, NetworkPolicy ENO migration, and residual Windows tail rows) share one visible resume condition after the send-ready cover sheet is issued, with returned proof routing mechanically into the exact family/row-local consumers now defined, including row 154 -> vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-missing-spec-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted consolidated handoff packet evidence/archive/vm-prerelease-missing-spec-source-holder-handoff-packet-20260619.md, names the exact still-unpacketized families and row groups it covers, and preserves the routing rule that any returned proof must flow back into the existing row-local branches or family-local consume-proof tasks named in that packet instead of creating new broad search tasks; for AKSConformance rows 75/76, route directly to vm-prerelease-aksconformance-consume-proof-gated-20260620; for multi-agent-pool runner row 154, route directly to vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620.",
+        "Resume condition is precise: a human sends the consolidated handoff packet and returns authoritative source proof in an accepted form for one or more covered families, after which planning routes each returned packet into the exact row-local branch or family-local consumer specified in the handoff packet; for AKSConformance rows 75/76 route to vm-prerelease-aksconformance-consume-proof-gated-20260620, for row 154 route to vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620, and for New-VNET/private-cluster rows 161/162/168 route directly to vm-prerelease-vnet-privatecluster-consume-proof-20260620."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-missing-spec-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T09:01:04.911Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.004Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.004Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-missing-spec-unpacketized-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single human/source-holder response wait after sending the VM prerelease missing-spec handoff packet for the still-unpacketized families so returned authoritative proof for agentpool operations/upgrade, AKSConformance, multi-agent-pool runner, New-VNET/private-cluster, NetworkPolicy ENO migration, and residual Windows tail rows routes back into the exact existing row-local or family-local consumers instead of spawning duplicate rediscovery asks, including row 154 -> vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-missing-spec-unpacketized-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked wait cites evidence/archive/vm-prerelease-missing-spec-source-holder-handoff-packet-20260619.md as the single outbound cover sheet, lists the covered unpacketized families only (agentpool operations/upgrade, AKSConformance, multi-agent-pool runner, New-VNET/private-cluster, NetworkPolicy ENO migration, and residual Windows tail rows), and preserves the packet's exact row-family routing rules back into existing blocker branches or accepted family-local consume-proof artifacts; for AKSConformance rows 75/76, route directly to vm-prerelease-aksconformance-consume-proof-gated-20260620; for multi-agent-pool runner row 154, route directly to vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620.",
+        "Resume condition is precise: a human sends the handoff packet and returns authoritative handwritten, archived exact, or accepted source-equivalent proof for one or more covered families, after which planning creates only bounded family/row-local follow-up work or routes directly into the named existing blocked leaves/family-local consumers; for AKSConformance rows 75/76 route directly to vm-prerelease-aksconformance-consume-proof-gated-20260620, for row 154 route directly to vm-prerelease-row154-multi-agentpool-runner-consume-proof-20260620, and for New-VNET/private-cluster rows 161/162/168 route directly to vm-prerelease-vnet-privatecluster-consume-proof-20260620. No broad repo rediscovery or cloud execution is triggered by the wait itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-missing-spec-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T09:10:32.219Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.062Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.062Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row150-kubeproxyconfig-iptables-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external human/source-holder response wait for VM prerelease row 150 (Scenario_KubeProxyConfig_IPTABLES) so the accepted row-scoped recovery note and send-ready ask packet end in one visible blocked resume condition: return authoritative proof showing whether the scenario is an alias of the default iptables branch or an explicit kubeProxyConfig.mode=IPTABLES contract, plus the intended verdict surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row150-kubeproxyconfig-iptables-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked task context references the accepted blocker packet, the accepted row-150 authority-recovery note, and the send-ready source-holder ask packet so the wait state is grounded in current project evidence rather than a fresh repo search.",
+        "Resume condition is precise: a human/source holder returns one authoritative row-150 artifact in accepted form (handwritten scenario/plan body, authoritative alias statement to the default iptables branch, or request/replay proof with explicit persisted networkProfile.kubeProxyConfig.mode=IPTABLES plus intended assertions), after which planning routes that proof into the existing row-150 branch.",
+        "Task remains a user-review wait node only: it does not claim row 150 is resolved, does not reopen broad VM prerelease rediscovery, and does not perform cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-kubeproxyconfig-iptables-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T09:25:47.175Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.120Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.120Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "kms-v2plus-managed-hsm-permission-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Wait only for a returned external Managed HSM permission reply after the exact unblock ask has been durably sent/handed off, so this branch is the single truthful post-send family wait rather than an unproven response-await.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2plus-managed-hsm-permission-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/kms-v2plus-managed-hsm-permission-unblock-packet-20260619.md, the accepted owner-routing repair note, and the active send/handoff task kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620 as the prerequisite that must land durable send proof before this wait is live.",
+        "Resume condition is precise: first durable send/handoff proof lands via kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620, then an external owner confirms either the executing identity or scenario control-plane identity can read CmkKey plus the needed Managed HSM role definitions on akse2ecmkmanagedhsmpub, or provides an equivalent MSFT-tenant Managed HSM setup; only then should planning recreate or resume the westus2/local rerun leaf.",
+        "Task remains a bounded post-send external-wait node only: it does not reopen broad KMS rediscovery, does not claim the permission fix happened, and does not schedule cloud execution while send proof is still missing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:kms-v2plus-managed-hsm-permission-response-await"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T14:42:39.010Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:33:55.416Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by kms-v2plus-managed-hsm-permission-owner-send-external-wait-20260620 because the accepted send-handoff review proved no actual outbound delivery occurred yet; a post-send response-await is not truthful until a human owner/operator first performs and proves the external handoff."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:33:55.416Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by kms-v2plus-managed-hsm-permission-owner-send-external-wait-20260620 because the accepted send-handoff review proved no actual outbound delivery occurred yet; a post-send response-await is not truthful until a human owner/operator first performs and proves the external handoff."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-identity-migration-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for the VM prerelease identity/migration family rows 35, 36, 152, 153, and 174 now that evidence/archive/vm-prerelease-identity-migration-missing-spec-wave-20260619.md defines the row-exact asks and evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md defines the exact consumer routing. Keep one visible resume condition for authoritative handwritten/source-equivalent proof instead of repeated family rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-identity-migration-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites evidence/archive/vm-prerelease-source-needed-blocker-refresh-20260619.md, evidence/archive/vm-prerelease-identity-migration-missing-spec-wave-20260619.md, and evidence/archive/vm-prerelease-identity-migration-consume-proof-successor-map-20260620.md; names rows 35/36/152/153/174 and states that returned proof routes mechanically to vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618, vm-prerelease-row36-msi-azure-monitor-aad-auth-consume-proof-20260620, vm-prerelease-row152-spn-to-msi-migration-consume-proof-20260620, vm-prerelease-row153-user-assigned-msi-consume-proof-20260620, or vm-prerelease-row174-reset-sp-consume-proof-20260620 as applicable.",
+        "Resume condition is precise: a human/source holder returns accepted authoritative handwritten, archived-exact, or source-equivalent proof for one or more of the named rows, after which planning resumes the exact row-local consumer above instead of broad rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-identity-migration-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T18:59:12.481Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.358Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.358Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-blob-pvc-dynamic-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external send-and-response wait for the Blob PVC dynamic source-holder ask now that the packet is accepted and send-ready, so the next branch stays one exact resume condition instead of reopening repo rediscovery or splitting approval work from lineage work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-blob-pvc-dynamic-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked note cites evidence/archive/storage-csi-blob-pvc-dynamic-source-holder-ask-packet-20260619.md plus the accepted feature landing and authoritative-source recovery artifacts, and states that the current project output is a send-ready outbound packet rather than returned proof or approval.",
+        "Resume condition is precise: a human sends the accepted outbound packet and returns either authoritative AKS RP Blob PVC dynamic lineage or an explicit approval/denial on using managed AKS docs plus upstream blob-csi-driver dynamic-provisioning examples as the contract basis, after which planning routes the answer into one bounded feature/spec follow-up instead of reopening broad search.",
+        "Task remains a user-review blocked successor only: no cloud execution, no model promotion, and no duplicate source-recovery or parallel approval branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:storage-csi-blob-pvc-dynamic-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:41:21.744Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.420Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.420Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtual-nodes-missing-delegation-source-holder-response-await-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external source-holder response wait for the bounded serverless virtual-nodes missing-delegation ask so the accepted packet no longer sits in review and the branch stays explicitly blocked on authoritative negative-path semantics only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-missing-delegation-source-holder-response-await-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked wait cites the accepted send-ready packet evidence/archive/serverless-virtual-nodes-missing-delegation-source-holder-outbound-send-packet-20260619.md and states that the positive delegated-subnet contract remains unchanged while repo-local negative-path searching is exhausted.",
+        "Resume condition is precise: return one handwritten, archived-exact, or accepted source-equivalent packet that answers whether missing/wrong delegation is a distinct branch and, if so, supplies the exact file/excerpt, failure stage, and rejection surface for Scenario_Serverless_VirtualNodes_SubnetValidation.",
+        "Task remains a user-review blocked successor only: it does not schedule cloud execution, does not claim path.serverless-virtual-nodes-subnet-validation is closed, and keeps the branch at unknown until authoritative proof returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:serverless-virtual-nodes-missing-delegation-response-await"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:49:33.315Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:08.480Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:08.480Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-az-aks-create-cli-crash-owner-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the external owner/routing response wait for the accepted westus2/local local-host az aks create tuple-unpack crash handoff packet so the shared tooling blocker has one precise resume condition while repo-local bypass feasibility work continues separately.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-az-aks-create-cli-crash-owner-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked wait context cites evidence/archive/westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620.md plus the active bypass-feasibility task and states that the only missing external input is a confirmed tooling-owner route and a host tuple or alternate client-path response for the bounded local az aks create control repro.",
+        "Resume condition is precise: tooling owners confirm a host tuple change, fix, or approved alternate client path and the same bounded control repro no longer reproduces ValueError: too many values to unpack (expected 3), after which planning can retry or requeue affected execute leaves.",
+        "Task remains an external-response wait node only: no cloud execution, no duplicate crash triage, and no new product verdict claims while the existing bypass-feasibility work remains the sole repo-local problem-solving leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:westus2-local-aks-preview-create-crash-owner-response",
+        "tooling:westus2-local-aks-preview-create-crash"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:06:22.860Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:21.622Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:21.622Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "trusted-access-dataplane-token-gateway-environment-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external response wait for the send-ready Trusted Access dataplane environment packet so path.trusted-access.dataplane-token-gateway has one exact owner/operator resume condition while the existing blocked execute leaf remains unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/trusted-access-dataplane-token-gateway-environment-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites the accepted send-ready packet evidence/archive/trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620.md plus the blocked Trusted Access dataplane execute leaf, and states that the only missing input is one owner/operator reply about whether an execution environment exists where the unchanged replay can resolve and reach *.ta.azmk8s.io from the in-cluster dataplane step.",
+        "Resume condition is precise: a reply identifying a DNS-capable/reachable environment reactivates the existing blocked Trusted Access execute leaf for the unchanged contract; a reply confirming no such environment keeps the blocker unchanged.",
+        "Task remains a user-review wait node only: no cloud execution, no auth/kubectl re-triage, and no broad trusted-access rediscovery until the external reply arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:trusted-access-dataplane-token-gateway-environment-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:04:09.121Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:22.051Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:22.051Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-accsgx-row57-59-source-holder-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external response wait for the send-ready VM prerelease ACCSGX rows 57/58/59 ask packet so those three row-scoped missing-spec blockers now share one exact operator/source-holder resume condition without reopening confidential-computing rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-accsgx-row57-59-source-holder-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites the accepted send-ready ask packet evidence/archive/vm-prerelease-accsgx-row57-59-source-holder-ask-packet-20260620.md and states that the only missing input is row-scoped authoritative proof for Scenario_ACCSGX, Scenario_ACCSGXIcelake, and/or Scenario_ACCSGXInProc in handwritten, archived-exact, or accepted source-equivalent form.",
+        "Resume condition is precise: a human/source holder returns accepted proof for one or more of rows 57/58/59, after which planning routes it into the existing VM prerelease coverage ledger and any bounded successor authoring/readiness leaf needed for the exact row proved.",
+        "Task remains a user-review wait node only: no cloud execution, no claim that the ACCSGX-family rows are source-unblocked yet, and no collapse into generic confidential-computing coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-accsgx-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:46:24.063Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:09.047Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:09.047Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addon-umbrella-row60-61-source-holder-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external response wait for the send-ready VM prerelease addon-umbrella rows 60/61 ask packet so Scenario_Addon and Scenario_Core_Addon_Kubernetes_Compatibility now share one exact operator/source-holder resume condition without reopening broad addon rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addon-umbrella-row60-61-source-holder-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites the accepted send-ready ask packet evidence/archive/vm-prerelease-addon-umbrella-row60-61-source-holder-ask-packet-20260620.md and states that the only missing input is row-scoped authoritative proof for Scenario_Addon and/or Scenario_Core_Addon_Kubernetes_Compatibility in handwritten, archived-exact, or accepted source-equivalent form.",
+        "Resume condition is precise: a human/source holder returns accepted proof for row 60 and/or row 61, after which planning routes it into the VM prerelease coverage ledger and any bounded successor authoring/readiness leaf needed for the exact row proved.",
+        "Task remains a user-review wait node only: no cloud execution, no claim that either addon-umbrella row is source-unblocked yet, and no collapse into generic addon-management coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-addon-umbrella-source-holder-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:46:24.150Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:09.110Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:09.110Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-binding-removal-authoritative-source-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Track the single external response wait for the send-ready SecOps identity binding removal authoritative-source ask so Scenario_SecOps_Identity_Binding_Removal has one exact resume condition while maintained landing work stays blocked on handwritten/source-equivalent proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-binding-removal-authoritative-source-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites evidence/archive/secops-identity-binding-removal-authoritative-source-ask-packet-20260620.md and states that the only missing input is one authoritative row-scoped reply for Scenario_SecOps_Identity_Binding_Removal.",
+        "Resume condition is precise: a human/source holder returns handwritten, archived-exact, or accepted source-equivalent proof that pins whether removal targets control-plane identity, kubelet identity, or both, together with the exact request/update shape and success-vs-rejection assertions, after which planning routes the reply back into the SecOps removal branch.",
+        "Task remains a user-review wait node only: no cloud execution, no broad SecOps family rediscovery, and no claim that the removal contract is source-unblocked until the proof arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:secops-identity-binding-removal-authoritative-source-response"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:50:18.625Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:09.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:09.172Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-baseline-create-canceled-owner-response-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one visible send-unproven owner-action wait for the shared westus2/local baseline cluster-create ARM LRO Canceled blocker family so affected branches have a truthful owner-routing resume path rather than a passive reply-await without proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-baseline-create-canceled-owner-response-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked wait cites the accepted owner handoff packet and the two affected blocked execute leaves, and states that the only missing external input is the owner's routing decision for the shared westus2/local baseline-create Canceled family.",
+        "Resume condition is precise: an owner reply arrives that classifies the family as known incident, transient retry noise, or branch-specific defect routing, after which planning updates aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619 and private-cluster-vnet-integration-update-westus2-local-execute-20260619 accordingly.",
+        "Task remains a user-review wait node only: no cloud rerun, no merged execution leaf, and no broad westus2/local rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "problem:westus2-local-baseline-create-canceled"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:13:05.491Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:22.124Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:22.124Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Preserve the exact next live execute for path.secops-identity-binding-role-assignment now that bounded --check passed. Keep the unchanged maintained spec/replay pair ready, but block rerun until the probe-specific mutation gate is explicitly opened for secops-identity-role-assignment-validation so the canonical positive RBAC branch can collect one live create/cleanup verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-role-assignment-validation-live-execute-gate-await-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked task context cites evidence/archive/secops-identity-role-assignment-validation-check-gated-execute-20260620.md plus evidence/archive/run_20260620061622467_r0xkqc-secops-identity-role-assignment-validation.json and states that the maintained spec/replay pair is check-clean while live execute remains gated only by missing explicit mutation approval.",
+        "Resume condition is precise: rerun specs/secops-identity-role-assignment-validation.json and replays/secops-identity-role-assignment-validation.ts only when an approved session supplies --execute together with AKS_RP_E2E_ALLOW_CLOUD_MUTATION=secops-identity-role-assignment-validation, after which the unchanged bounded replay should capture live create result, cleanup state, and final path classification.",
+        "Task remains a blocked owner/user-review wait for explicit execute authorization only: no secops-family rediscovery, no replay/spec rewrite, and no claim that path.secops-identity-binding-role-assignment has live evidence before that gated rerun occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:secops-identity-role-assignment-execute-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:18:06.585Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:22.186Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:22.186Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-vm-prerelease-row82-verdict-authority-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for App Routing VM prerelease row 82 only and decide the durable request/expectation verdict surface for Scenario_AppRouting_Ubuntu_MultiZone_External_ExternalNginx.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-row82-verdict-authority-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When authoritative row-82 proof returns, the note records the exact verdict-bearing helper/assertion surface and any correction to the current external-LB/Host-header understanding without guessing from adjacent rows.",
+        "The task stays blocked until accepted send/handoff proof exists for the shared App Routing outbound bundle and row-82 proof itself returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:app-routing-row82-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:30.932Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.262Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.262Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-vm-prerelease-row83-default-internal-equivalence-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for App Routing VM prerelease row 83 only and decide the exact default/internal exposure semantics plus equivalence-or-difference relative to canonical row 79.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-row83-default-internal-equivalence-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When authoritative row-83 proof returns, the note records the exact default field, internal field or verdict-bearing surface, and whether row 83 is truly equivalent to or distinct from canonical row 79.",
+        "The task stays blocked until accepted send/handoff proof exists for the shared App Routing outbound bundle and row-83 proof itself returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:app-routing-row83-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:30.984Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.328Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.328Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-vm-prerelease-row84-request-verdict-lineage-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for App Routing VM prerelease row 84 only and pin the exact request-lineage plus verdict contract for the row-84 external/OSM scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-row84-request-verdict-lineage-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When authoritative row-84 proof returns, the note records the exact request/mutator lineage and confirms or corrects the current external verdict-contract equivalence understanding.",
+        "The task stays blocked until accepted send/handoff proof exists for the shared App Routing outbound bundle and row-84 proof itself returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:app-routing-row84-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:31.038Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.396Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.396Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-vm-prerelease-row89-internal-exposure-semantics-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for App Routing VM prerelease row 89 only and decide whether there is any row-89-specific internal exposure/helper/verdict surface beyond defaultIngressControllerType=External.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-row89-internal-exposure-semantics-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When authoritative row-89 proof returns, the note records any row-89-specific internal exposure/helper/verdict surface or explicit proof that no extra row-89 surface exists.",
+        "The task stays blocked until accepted send/handoff proof exists for the shared App Routing outbound bundle and row-89 proof itself returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:app-routing-row89-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:31.091Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.523Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.523Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-vm-prerelease-row85-internal-exposure-semantics-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume returned authoritative proof for App Routing VM prerelease row 85 only and decide the exact internal exposure/helper/verdict surface for the distinct row-85 internal OSM/internal-nginx path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-row85-internal-exposure-semantics-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When authoritative row-85 proof returns, the note records any row-85-specific internal exposure/helper/verdict surface beyond defaultIngressControllerType=Internal, or explicit proof that no extra such surface exists.",
+        "The task stays blocked until accepted send/handoff proof exists for the distinct row-85 outbound packet and row-85 proof itself returns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:app-routing-row85-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:31.144Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.462Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.462Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "go-e2ev3-devinfra-upstream-scenario-inventory-consume-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume one accepted returned packet containing all seven verbatim test/e2ev3/sigs/devinfra/ NewScenario() names with file/source context, verify it satisfies the existing devinfra upstream inventory contract, import/classify the seven names against current project coverage in the already-frozen order, and record only the exact residue or alias outcomes proven by that packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/go-e2ev3-devinfra-upstream-scenario-inventory-consume-proof-20260620.md"
+      ],
+      "acceptance": [
+        "When an accepted seven-name packet arrives, the note cites evidence/archive/go-e2ev3-devinfra-upstream-scenario-reply-intake-successor-20260620.md plus the accepted upstream review packet and verifies that all seven names and source/path context are present before any import/classification claim is made.",
+        "The task records the bounded import/classification result in the already-frozen order and creates follow-up residue only if the imported list proves true uncovered scenarios remain; no broad rediscovery or outbound contact occurs.",
+        "Until the packet arrives, the blocker points to the family-level wave-1 owner-action wait rather than the archived historical blocker id."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:go-e2ev3-devinfra-upstream-proof-consume"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:05:59.905Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:32.589Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:32.589Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive consume-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to settle the contract or record a bounded evidence ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-baseline-create-canceled-owner-routing-repair-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the shared westus2/local baseline-create ARM LRO Canceled blocker family by producing or citing one exact owner-routing/handoff proof packet for the family-level external ask, or by recording the precise reason no such owner route currently exists. Use the accepted reconcile notes to keep AAD managed-v2 ResetAAD and private-cluster VNet integration waits truthful and deduplicated.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-baseline-create-canceled-owner-routing-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/westus2-local-create-path-shared-blocker-reconcile-20260620.md and evidence/archive/westus2-local-baseline-create-canceled-family-next-action-reconcile-20260620.md, identifies the exact affected blocked leaves, and either points to durable owner-routing proof or records the exact unresolved owner-routing gap.",
+        "The note ends with one truthful next-step shape for the family: either a real external response-await with proof-of-send/handoff, or a concrete local retry/diagnosis/escalation successor if no owner handoff has actually happened yet.",
+        "No replay execution and no reinvestigation of unrelated westus2/local CLI-crash blockers occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-local-baseline-create-canceled"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:23:21.507Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_westus2-local-baseline-create-canceled-owner-routing-repair-20260620_20260620082321",
+        "assigned_at": "2026-06-20T08:23:21.566Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_westus2-local-baseline-create-canceled-owner-routing-repair-20260620",
+        "worker_started_attempt_id": "a_westus2-local-baseline-create-canceled-owner-routing-repair-20260620_20260620082321",
+        "worker_started_at": "2026-06-20T08:23:41.601Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested owner-routing repair note at evidence/archive/westus2-local-baseline-create-canceled-owner-routing-repair-20260620.md. The note cites the required reconcile artifacts, identifies the exact two affected blocked leaves, confirms the existing family handoff packet, and records that the remaining gap is proof-of-send/handoff rather than lack of an owner-routing packet.",
+        "last_worker_completed_at": "2026-06-20T08:24:20.093Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:26:01.603Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the westus2/local baseline-create family routing note: it cites the required reconcile artifacts, confirms the family packetization/owner-routing already exists for the two affected execute leaves, and narrows the remaining tree repair to missing proof-of-send or handoff rather than pretending the passive response-await is already justified."
+      },
+      "session_id": "s_task_westus2-local-baseline-create-canceled-owner-routing-repair-20260620",
+      "session_history": [
+        "s_task_westus2-local-baseline-create-canceled-owner-routing-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:26:01.603Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the westus2/local baseline-create family routing note: it cites the required reconcile artifacts, confirms the family packetization/owner-routing already exists for the two affected execute leaves, and narrows the remaining tree repair to missing proof-of-send or handoff rather than pretending the passive response-await is already justified."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-baseline-create-canceled-send-proof-repair-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the passive westus2/local baseline-create Canceled owner-response wait with concrete proof-of-send or exact owner-routing evidence. Using the accepted family routing note and existing handoff packet, determine whether durable repo-local send/handoff proof already exists for the family ask; if not, record the exact missing owner/escalation step so the project stops treating the family as a passive response-await without proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-baseline-create-canceled-send-proof-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites westus2-local-baseline-create-canceled-owner-response-await-20260620, the accepted family routing repair note, and the existing owner handoff packet, then states whether durable send/handoff proof exists today for the shared baseline-create Canceled family ask.",
+        "If proof exists, the note names the exact live family wait or execute successors that should carry it next; if proof does not exist, the note records the exact missing send/handoff/escalation step so planning can retire the fake passive wait and keep only truthful owner work.",
+        "No replay execution and no unrelated westus2/local environment rediscovery occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "problem:westus2-local-baseline-create-canceled"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:26:15.867Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_westus2-local-baseline-create-canceled-send-proof-repair-20260620_20260620082618",
+        "assigned_at": "2026-06-20T08:26:18.966Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_westus2-local-baseline-create-canceled-send-proof-repair-20260620",
+        "worker_started_attempt_id": "a_westus2-local-baseline-create-canceled-send-proof-repair-20260620_20260620082618",
+        "worker_started_at": "2026-06-20T08:26:33.611Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/westus2-local-baseline-create-canceled-send-proof-repair-20260620.md`, documenting that the westus2/local baseline-create Canceled family has send-ready routing and handoff artifacts but no durable repo-local proof that the owner ask was actually sent, and naming the exact missing owner send/handoff proof step.",
+        "last_worker_completed_at": "2026-06-20T08:27:17.481Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:29:12.353Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the westus2/local baseline-create Canceled send-proof repair note: it cites the family wait, routing authorities, and owner handoff packet, proves no durable repo-local send/handoff proof exists yet for the shared family ask, and records the exact owner send/handoff proof artifact required before the family can be treated as a true passive response-await."
+      },
+      "session_id": "s_task_westus2-local-baseline-create-canceled-send-proof-repair-20260620",
+      "session_history": [
+        "s_task_westus2-local-baseline-create-canceled-send-proof-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:29:12.353Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the westus2/local baseline-create Canceled send-proof repair note: it cites the family wait, routing authorities, and owner handoff packet, proves no durable repo-local send/handoff proof exists yet for the shared family ask, and records the exact owner send/handoff proof artifact required before the family can be treated as a true passive response-await."
+      },
+      "status": "done"
+    },
+    {
+      "id": "kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Perform the actual owner send/handoff for the Managed HSM permission unblock ask so the branch stops pretending a reply is pending before the ask is proven sent. Route evidence/archive/kms-v2plus-managed-hsm-permission-unblock-packet-20260619.md through the exact owner path identified by evidence/archive/kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620.md, and archive durable repo-local proof of send/handoff or the exact owner-delivery blocker that prevents sending it.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/kms-v2plus-managed-hsm-permission-unblock-packet-20260619.md plus evidence/archive/kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620.md and names the exact owner/operator route used for the send/handoff.",
+        "Success requires one durable proof target: either repo-local proof that the ask was actually sent/handed off, or exact evidence of the owner-delivery blocker that must itself become the only truthful live wait/escalation next; do not leave the branch as an unproven passive response-await.",
+        "No cloud execution, no KMS rerun, and no semantic rediscovery occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:kms-v2plus-managed-hsm-permission-send-handoff"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:30:49.864Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620_20260620083116",
+        "assigned_at": "2026-06-20T08:31:16.365Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620",
+        "worker_started_attempt_id": "a_kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620_20260620083116",
+        "worker_started_at": "2026-06-20T08:31:36.222Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested archive note at evidence/archive/kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620.md, documenting the exact Managed HSM packet, the accepted owner batch route, and the concrete owner-delivery blocker: this worker runtime has no outbound owner-contact channel to actually perform or prove the handoff.",
+        "last_worker_completed_at": "2026-06-20T08:33:24.315Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:33:48.042Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620.md proves the exact Managed HSM ask packet and owner route are identified, but no truthful repo-local send/handoff proof can be created from this runtime because the external owner-delivery channel is unavailable here; branch must now carry that owner-send blocker directly."
+      },
+      "session_id": "s_task_kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620",
+      "session_history": [
+        "s_task_kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:33:48.042Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620.md proves the exact Managed HSM ask packet and owner route are identified, but no truthful repo-local send/handoff proof can be created from this runtime because the external owner-delivery channel is unavailable here; branch must now carry that owner-send blocker directly."
+      },
+      "status": "done"
+    },
+    {
+      "id": "kms-v2plus-managed-hsm-permission-owner-send-external-wait-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Wait only for the human owner/operator to perform the exact external Managed HSM permission send or handoff and record durable repo-local proof, because this runtime can prepare the packet and route but cannot actually deliver it through the owner-operated channel. Keep this as the single truthful live blocker until outbound proof exists; only then should planning recreate the post-send reply wait or resume the westus2/local rerun path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-v2plus-managed-hsm-permission-owner-send-external-wait-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/kms-v2plus-managed-hsm-permission-unblock-packet-20260619.md, evidence/archive/kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620.md, and the accepted blocker note evidence/archive/kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620.md, and states that the remaining gap is an owner-operated external delivery action rather than a missing packet or route.",
+        "Resume condition is precise: a human owner/operator with the real outbound channel sends or hands off the Managed HSM ask and records date/time, channel or recipient path, confirmation that the leaf was covered, and any delivery exception in a durable repo-local proof artifact; after that, planning may recreate the post-send external-reply wait or rerun successor.",
+        "Task remains a bounded owner-send wait only: no KMS semantic rediscovery, no fake response-await state, and no cloud execution while outbound proof is still missing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:kms-v2plus-managed-hsm-permission-owner-send-wait"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:33:55.360Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:22.308Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:22.308Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-environment-runtime-burndown-20260620. Passive environment/capability/owner-delivery waits are no longer valid live work; the active burndown branch must diagnose, retry/dry-run, select an alternate/conditional plan, or preserve one precise shared capability carrier with a review trigger."
+      },
+      "status": "done"
+    }
+  ]
+}

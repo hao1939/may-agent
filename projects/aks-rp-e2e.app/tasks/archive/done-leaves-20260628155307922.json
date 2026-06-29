@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T15:53:07.922Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner hygiene rollup: archived the accepted storage-csi disk-pvc-dynamic reference leaf because its durable meaning is already represented by the current storage-csi reference-batch archive summary. This branch keeps the official-reference seed set already accepted for advanced-disk, blob-driver-enable, blob-fuse2-clone, blob-pvc-dynamic, blob-verify-nfs, byok, byok-ephemeral-os, csidrivers, disk-clone, disk-driver-enable, and disk-pvc-dynamic; remaining open storage-csi reference leaves should extend the packet set instead of recollecting covered slices.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-storage-csi-disk-pvc-dynamic",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for storage-csi-disk-pvc-dynamic, or record a concrete no-official-source-found blocker with exact search evidence.",
+      "inputs": [
+        "feature:storage-csi-disk-pvc-dynamic",
+        "packet:features/storage-csi/packets/disk-pvc-dynamic.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked and exact URLs were cited, or the artifact records exact search evidence showing no official Learn source was found.",
+        "Azure REST API spec references were checked and exact URLs were cited, or the artifact records exact search evidence showing no relevant public REST spec source was found.",
+        "Gaps or contradictions against existing feature packets/specs were summarized without claiming success unsupported by the artifact.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:storage-csi-disk-pvc-dynamic"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "storage-csi-disk-pvc-dynamic",
+        "packetPath": "features/storage-csi/packets/disk-pvc-dynamic.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "storage-csi",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "acceptance_note": "Accepted review: archived packet evidence/archive/feature-reference-storage-csi-disk-pvc-dynamic-20260628.md now cites public Learn references, the public AKS REST spec file grounding storageProfile.diskCSIDriver, and concrete gaps/contradictions for storage-csi-disk-pvc-dynamic packet promotion."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:44.636Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T15:28:55.134Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-storage-csi-disk-pvc-dynamic",
+        "stale_active_requeued_at": "2026-06-28T13:15:56.119Z",
+        "stale_active_requeue_reason": "watchdog stale active cleanup: session not running",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-storage-csi-disk-pvc-dynamic_20260628152610",
+        "worker_started_attempt_id": "a_collect-feature-reference-storage-csi-disk-pvc-dynamic_20260628152855",
+        "worker_started_at": "2026-06-28T15:32:44.911Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for storage-csi-disk-pvc-dynamic: evidence/archive/feature-reference-storage-csi-disk-pvc-dynamic-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T15:34:02.902Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-28T15:28:54.933Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Rejected: archived evidence says 'No matching reference found yet' for both API and documentation references and does not record a concrete search-evidence blocker, so the done claim is unsupported.",
+        "review_reject_fresh_session": false,
+        "current_attempt_id": "a_collect-feature-reference-storage-csi-disk-pvc-dynamic_20260628152855",
+        "reviewed_at": "2026-06-28T15:35:05.540Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived packet evidence/archive/feature-reference-storage-csi-disk-pvc-dynamic-20260628.md now cites public Learn references, the public AKS REST spec file grounding storageProfile.diskCSIDriver, and concrete gaps/contradictions for storage-csi-disk-pvc-dynamic packet promotion."
+      },
+      "session_id": "s_task_collect-feature-reference-storage-csi-disk-pvc-dynamic",
+      "session_history": [
+        "s_task_collect-feature-reference-storage-csi-disk-pvc-dynamic"
+      ],
+      "result": "Collected official feature references for storage-csi-disk-pvc-dynamic: evidence/archive/feature-reference-storage-csi-disk-pvc-dynamic-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:35:05.540Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

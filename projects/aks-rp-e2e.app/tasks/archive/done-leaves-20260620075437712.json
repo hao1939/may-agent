@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T07:54:37.712Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Accepted 2026-06-20 frontier audits now clarify two noisy blocked families without reopening execution: the westus2/local family frontier map confirms only the existing shared waits are needed for baseline-create-Canceled vs local CLI-crash execute blockers, and the send-ready blocked-frontier burn-down confirms all 34 live response-await waits remain distinct today with 0 safe replacements while highlighting a small missing-linkage-repair subset for follow-up. Next owner work shifts to producing a single owner-sendable batch handoff packet for the 34-leaf send-ready cohort and repairing current-successor routing for the App Routing linkage-gap waits.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "westus2-local-shared-blocker-family-frontier-map-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted westus2/local shared-blocker authorities already cited by the live tree, build one durable current-frontier map for blocked westus2/local execute leaves that distinguishes the baseline cluster-create ARM LRO Canceled family, the az aks create CLI crash family, and branch-local/non-family blockers. The note should name exact live task ids, classify each leaf into the right family or non-family bucket, and recommend only exact linkage repairs or explicit no-change findings so future blocked-frontier reviews do not have to rediscover family membership.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-shared-blocker-family-frontier-map-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note lists the current live westus2/local blocked execute leaves in scope and classifies each one as baseline-create-Canceled family, az-aks-create CLI crash family, or branch-local/non-family blocker using the accepted 2026-06-20 family reconcile/handoff artifacts as authority.",
+        "For each classified leaf, the note states the exact current or recommended shared wait linkage; if no repair is needed for a leaf or family, it says so explicitly.",
+        "No cloud execution or rerun occurs; the output is a repo-local frontier map that can directly drive later mark-done, blocker-text repair, or family-consolidation decisions without broad rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "blocker:westus2-local-shared-families"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:48:11.262Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_westus2-local-shared-blocker-family-frontier-map-20260620_20260620074817",
+        "assigned_at": "2026-06-20T07:48:17.694Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_westus2-local-shared-blocker-family-frontier-map-20260620",
+        "worker_started_attempt_id": "a_westus2-local-shared-blocker-family-frontier-map-20260620_20260620074817",
+        "worker_started_at": "2026-06-20T07:48:34.604Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable frontier map at evidence/archive/westus2-local-shared-blocker-family-frontier-map-20260620.md classifying current blocked westus2/local execute leaves into baseline-create-Canceled, az aks create CLI-crash, and branch-local/non-family buckets with exact wait-linkage or explicit no-change findings.",
+        "last_worker_completed_at": "2026-06-20T07:51:04.199Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T07:51:52.451Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable frontier map at evidence/archive/westus2-local-shared-blocker-family-frontier-map-20260620.md: it truthfully classifies the 9 current blocked westus2/local execute holders into 2 baseline-create ARM LRO Canceled leaves, 1 az aks create CLI-crash leaf, and 6 branch-local/non-family blockers, and only recommends one optional readability-only wait-link repair for ManagedSystem."
+      },
+      "session_id": "s_task_westus2-local-shared-blocker-family-frontier-map-20260620",
+      "session_history": [
+        "s_task_westus2-local-shared-blocker-family-frontier-map-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T07:51:52.451Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable frontier map at evidence/archive/westus2-local-shared-blocker-family-frontier-map-20260620.md: it truthfully classifies the 9 current blocked westus2/local execute holders into 2 baseline-create ARM LRO Canceled leaves, 1 az aks create CLI-crash leaf, and 6 branch-local/non-family blockers, and only recommends one optional readability-only wait-link repair for ManagedSystem."
+      },
+      "status": "done"
+    },
+    {
+      "id": "user-review-send-ready-blocked-frontier-burn-down-map-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-20 send-ready duplicate-leaf burndown audit plus the completed routing index artifact, produce the one remaining owner-facing burn-down map that turns the preserved 34-leaf response-await family into exact current tree-action guidance: for each live family or singleton wait, state the exact present-tense action (keep/no-change, consume returned proof into named live successor, or preserve until current successor is identified) without redoing the routing inventory.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-send-ready-blocked-frontier-burn-down-map-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/user-review-send-ready-family-duplicate-leaf-burndown-audit-20260620.md, evidence/archive/send-ready-response-await-family-routing-index-20260620.md, and evidence/archive/user-review-send-ready-family-matrix-live-routing-reconcile-20260620.md, then groups the current live send-ready waits by exact present-tense tree action using current live task ids.",
+        "For every group or singleton wait, the note gives one explicit owner action recommendation in task-tree terms today: keep blocked/no change, preserve until reply proof is consumed into a named live successor, or preserve until the current successor must be identified or created; it also states whether any live wait is safe-replaceable by the shared send-proof family wait today.",
+        "No cloud execution or external outreach occurs; the output is a repo-local blocker-action map that can directly drive future mark-done, replaced, or blocker-text repair decisions under user-review-workspace."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "blocker:user-review-send-ready-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:51:52.565Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-send-ready-blocked-frontier-burn-down-map-20260620_20260620075152",
+        "assigned_at": "2026-06-20T07:51:52.621Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-send-ready-blocked-frontier-burn-down-map-20260620",
+        "worker_started_attempt_id": "a_user-review-send-ready-blocked-frontier-burn-down-map-20260620_20260620075152",
+        "worker_started_at": "2026-06-20T07:52:08.196Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable burn-down map at evidence/archive/user-review-send-ready-blocked-frontier-burn-down-map-20260620.md, reconciling the live 34-leaf send-ready/no-proof blocked frontier against the accepted 2026-06-20 send-proof, queue, and live-routing notes with exact per-family recommendations and no tree mutation.",
+        "last_worker_completed_at": "2026-06-20T07:53:40.764Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T07:54:37.405Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-20 burn-down map because the archive note cites the current send-proof, queue, routing, and duplicate-leaf authorities; confirms all 34 live response-await leaves remain distinct today with 0 safe replacements; and identifies the exact missing-linkage-repair subset that future planning can work without rediscovering the full frontier."
+      },
+      "session_id": "s_task_user-review-send-ready-blocked-frontier-burn-down-map-20260620",
+      "session_history": [
+        "s_task_user-review-send-ready-blocked-frontier-burn-down-map-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T07:54:37.405Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-20 burn-down map because the archive note cites the current send-proof, queue, routing, and duplicate-leaf authorities; confirms all 34 live response-await leaves remain distinct today with 0 safe replacements; and identifies the exact missing-linkage-repair subset that future planning can work without rediscovering the full frontier."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:13:38.725Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner reconfirmed the watchdog runnable-backlog wake was stale: network-cni-base-overlay-mounted-lineage-refresh-20260627 is already active with a started worker, secops-fips-mounted-source-inventory-20260627 remains the other in-flight repo-local source task, and no refill/reassignment is needed. Project root now carries forward the accepted network-cni mounted-source coverage result: evidence/archive/network-cni-mounted-source-coverage-map-20260627.md mapped the mounted handwritten network-cni families to current model/spec/replay coverage, recorded remaining wrapper/overlay/Swift residual gaps, and directly seeded the active base-overlay lineage refresh leaf while preserving the existing blocked external-wait family unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-coverage-map-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted Go e2ev3 network-cni scenarios into a durable repo-local coverage artifact that identifies existing model/spec coverage, uncovered scenario rows, and the next no-cloud feature-work leaves worth seeding.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-coverage-map-20260627.md"
+      ],
+      "acceptance": [
+        "Use the mounted AKS RP Go source handwritten e2ev3 cases as the primary source, list the concrete network-cni scenarios/rows inspected, and map each to existing model/spec/replay coverage or an explicit uncovered gap.",
+        "Summarize accepted inputs, expected behavior surfaces, adjacent unknowns, and the top next repo-local follow-up leaves without claiming live/cloud verdicts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:08:32.647Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T05:08:37.416Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-coverage-map-20260627_20260627050842",
+        "assigned_at": "2026-06-27T05:08:42.897Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-coverage-map-20260627",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-coverage-map-20260627_20260627050842",
+        "worker_started_at": "2026-06-27T05:09:04.157Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source coverage artifact at evidence/archive/network-cni-mounted-source-coverage-map-20260627.md, mapping inspected network-cni Go scenarios/rows to current repo-local spec/model coverage, explicit gaps, accepted inputs, expectation surfaces, and owner-ready next no-cloud leaves.",
+        "last_worker_completed_at": "2026-06-27T05:12:19.942Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:12:51.283Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-mounted-source-coverage-map-20260627.md inspects the mounted network-cni handwritten source, maps concrete scenario families to current repo-local spec/replay/model coverage states, records remaining wrapper/lineage/Swift residual gaps, and seeds bounded no-cloud successor leaves without claiming cloud verdicts."
+      },
+      "session_id": "s_task_network-cni-mounted-source-coverage-map-20260627",
+      "session_history": [
+        "s_task_network-cni-mounted-source-coverage-map-20260627"
+      ],
+      "result": "Produced the requested mounted-source coverage artifact at evidence/archive/network-cni-mounted-source-coverage-map-20260627.md, mapping inspected network-cni Go scenarios/rows to current repo-local spec/model coverage, explicit gaps, accepted inputs, expectation surfaces, and owner-ready next no-cloud leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:12:51.283Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-mounted-source-coverage-map-20260627.md inspects the mounted network-cni handwritten source, maps concrete scenario families to current repo-local spec/replay/model coverage states, records remaining wrapper/lineage/Swift residual gaps, and seeds bounded no-cloud successor leaves without claiming cloud verdicts."
+      },
+      "status": "done"
+    }
+  ]
+}

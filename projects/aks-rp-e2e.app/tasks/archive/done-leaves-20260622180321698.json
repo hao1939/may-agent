@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:03:21.698Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update reconciled a stale watchdog-review-pending wake without reopening already accepted work: private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622 remains accepted done, the shared external-human transport blocker stays compressed to one exact family-level wait, and the only live repo-local execution lane is vm-prerelease-rows-25-50-mounted-source-spec-map-20260622 to map mounted AKS RP source for rows 25 and 50 into canonical spec/replay/model carriers and decide whether one bounded metadata/spec repair successor is needed. No cloud run, no duplicate wait, and no review retry were introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repo-local maintained status for path.private-cluster-none-dns-zone-v3 using the existing 20260622 mounted-source, run-readiness, and status-check packets so the feature/spec/model surfaces truthfully represent the current state without cloud execution or reopening the shared external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Using the existing 20260622 source-equivalence/readiness/status-check evidence, update only the necessary repo-local surfaces (features/private-cluster/none-dns-zone-v3.yaml, specs/private-cluster-none-private-dns-zone-v3.json, model/knowledge-map/model.json and regenerated views if needed) so path.private-cluster-none-dns-zone-v3 status, next action, and external-wait linkage are internally consistent and truthful.",
+        "Archive evidence cites the exact packets and edited surfaces, states whether the path remains unknown or becomes explicitly wait-linked, and confirms no new cloud run, no duplicate blocked wait, and no unrelated private-cluster path changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:59:18.948Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622_20260622175918",
+        "assigned_at": "2026-06-22T17:59:18.997Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622_20260622175918",
+        "worker_started_at": "2026-06-22T17:59:36.931Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that private-cluster none-dns-zone-v3 maintained carriers already truthfully remain unknown, and refreshed the requested archive landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md documenting the exact reused packets, checked surfaces, and no-change decision.",
+        "last_worker_completed_at": "2026-06-22T18:01:18.133Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:02:33.704Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the landing note cites the exact 20260622 mounted-source/run-readiness/status-check packets, confirms all maintained carriers already truthfully keep path.private-cluster-none-dns-zone-v3 at unknown, and records the no-edit/no-duplicate-wait/no-cloud-run decision with exact checked surfaces."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-maintained-status-reconcile-20260622"
+      ],
+      "result": "Verified that private-cluster none-dns-zone-v3 maintained carriers already truthfully remain unknown, and refreshed the requested archive landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md documenting the exact reused packets, checked surfaces, and no-change decision.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:02:33.704Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the landing note cites the exact 20260622 mounted-source/run-readiness/status-check packets, confirms all maintained carriers already truthfully keep path.private-cluster-none-dns-zone-v3 at unknown, and records the no-edit/no-duplicate-wait/no-cloud-run decision with exact checked surfaces."
+      },
+      "status": "done"
+    }
+  ]
+}

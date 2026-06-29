@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T17:51:58.957Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning review accepted two worker outputs into durable lane knowledge: private-cluster-addonv2 coreaddons privatecluster now has a fail-closed mutation-gated execute lane with truthful no-live-coverage wording, and the shared-subnet reconciliation note confirms run 28391323440 already matches the maintained same-subnet product-constraint path distinct from the shared-apiserver-subnet success sibling. The update-public-second-hop verifier error is not accepted as a cloud verdict; it is now tracked as a repo-local source/carrier repair because mounted source currently contains apiservervnetintegration/update_public.go and the replay contract must be reconciled before any rerun.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded execute lane for spec.private-cluster-addonv2.coreaddons-privatecluster in features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.ts using the accepted mounted-source contract, while keeping current check mode non-mutating and preserving the exact private-path validation boundary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.ts"
+      ],
+      "acceptance": [
+        "The replay only mutates when --execute is supplied and AKS_RP_E2E_ALLOW_CLOUD_MUTATION exactly equals private-cluster-addonv2-coreaddons-privatecluster; otherwise it stays fail-closed/check-only.",
+        "The execute path requires explicit subscription/location preflight, preserves the mounted create shape (private cluster + Azure CNI + Azure network policy + addonv2 core addons), preserves jumpbox/private-path handling when required, and wires the four mounted addon validations without widening into generic private-cluster coverage.",
+        "Any required companion spec/test/catalog wording changes are kept truthful: no claim of live coverage until real execute evidence exists, and check mode remains non-mutating."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster-addonv2.coreaddons-privatecluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:34:59.983Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629_20260629173500",
+        "assigned_at": "2026-06-29T17:35:00.038Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629",
+        "worker_started_attempt_id": "a_implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629_20260629173500",
+        "worker_started_at": "2026-06-29T17:35:27.290Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a mutation-gated execute lane for private-cluster-addonv2-coreaddons-privatecluster in the replay, updated the companion spec/packet truth surfaces to reflect implemented gated execution without claiming live verdict coverage, regenerated spec-catalog, and verified the check/gate contracts with passing Vitest coverage.",
+        "last_worker_completed_at": "2026-06-29T17:48:57.076Z",
+        "last_worker_evidence": [
+          "features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.ts",
+          "features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.test.ts",
+          "features/private-cluster/specs/private-cluster-addonv2-coreaddons-privatecluster.json",
+          "features/private-cluster/packets/addonv2-coreaddons-privatecluster-source-packet.yaml",
+          "runner/generated/spec-catalog.json",
+          "evidence/archive/manual-gate-check-private-cluster-addonv2-coreaddons-privatecluster.json"
+        ],
+        "reviewed_at": "2026-06-29T17:51:58.692Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker output: the replay now has a fail-closed mutation-gated execute lane, companion spec/packet/catalog truth surfaces were updated without claiming live execute coverage, and the gated check contract is verified by the cited local evidence set."
+      },
+      "session_id": "s_task_implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629",
+      "session_history": [
+        "s_task_implement-private-cluster-addonv2-coreaddons-privatecluster-execute-lane-20260629"
+      ],
+      "result": "Implemented a mutation-gated execute lane for private-cluster-addonv2-coreaddons-privatecluster in the replay, updated the companion spec/packet truth surfaces to reflect implemented gated execution without claiming live verdict coverage, regenerated spec-catalog, and verified the check/gate contracts with passing Vitest coverage.",
+      "evidence": [
+        "features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.ts",
+        "features/private-cluster/tests/private-cluster-addonv2-coreaddons-privatecluster.test.ts",
+        "features/private-cluster/specs/private-cluster-addonv2-coreaddons-privatecluster.json",
+        "features/private-cluster/packets/addonv2-coreaddons-privatecluster-source-packet.yaml",
+        "runner/generated/spec-catalog.json",
+        "evidence/archive/manual-gate-check-private-cluster-addonv2-coreaddons-privatecluster.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:51:58.692Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker output: the replay now has a fail-closed mutation-gated execute lane, companion spec/packet/catalog truth surfaces were updated without claiming live execute coverage, and the gated check contract is verified by the cited local evidence set."
+      },
+      "status": "done"
+    },
+    {
+      "id": "map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted pass for spec.private-cluster.vnet-integration-shared-subnet into the capability model/knowledge map so the same-subnet rejection is recorded as a distinct private-cluster VNet integration product-constraint surface and kept separate from the adjacent shared-apiserver-subnet carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-shared-subnet-pass-model-reconciliation-20260629.md"
+      ],
+      "acceptance": [
+        "A repo-local note cites run 28391323440/result artifacts and records the exact boundary proven by the pass: same API server subnet plus agent node subnet is rejected with HTTP 400 InvalidParameter, the message states the API server subnet cannot be the same as the agent node subnet, and no cluster resource is created.",
+        "The relevant capability-model/knowledge-map entries are updated, or the note explains precisely why no model text change was needed.",
+        "The note explicitly distinguishes this same-subnet product-constraint surface from the adjacent shared-apiserver-subnet carrier so the archived verifier leaf is truthfully absorbed instead of treated as a rerun/blocker candidate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.vnet-integration-shared-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:46:08.568Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629_20260629174608",
+        "assigned_at": "2026-06-29T17:46:08.627Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629",
+        "worker_started_attempt_id": "a_map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629_20260629174608",
+        "worker_started_at": "2026-06-29T17:46:29.375Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation note at evidence/archive/private-cluster-vnet-integration-shared-subnet-pass-model-reconciliation-20260629.md, citing run 28391323440 and confirming the maintained model/path-summary already encode the same-subnet rejection as a distinct product-constraint path separate from the shared-apiserver-subnet success sibling.",
+        "last_worker_completed_at": "2026-06-29T17:49:06.494Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-vnet-integration-shared-subnet-pass-model-reconciliation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T17:51:58.746Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the reconciliation note: it cites run 28391323440/result artifacts, confirms the same-subnet HTTP 400 InvalidParameter boundary, and records that the maintained model already preserves this product-constraint separately from the shared-apiserver-subnet success sibling."
+      },
+      "session_id": "s_task_map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629",
+      "session_history": [
+        "s_task_map-private-cluster-vnet-integration-shared-subnet-pass-into-model-20260629"
+      ],
+      "result": "Wrote the requested reconciliation note at evidence/archive/private-cluster-vnet-integration-shared-subnet-pass-model-reconciliation-20260629.md, citing run 28391323440 and confirming the maintained model/path-summary already encode the same-subnet rejection as a distinct product-constraint path separate from the shared-apiserver-subnet success sibling.",
+      "evidence": [
+        "evidence/archive/private-cluster-vnet-integration-shared-subnet-pass-model-reconciliation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:51:58.746Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the reconciliation note: it cites run 28391323440/result artifacts, confirms the same-subnet HTTP 400 InvalidParameter boundary, and records that the maintained model already preserves this product-constraint separately from the shared-apiserver-subnet success sibling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-private-cluster-vnet-integration-update-public-second-hop",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.private-cluster.vnet-integration-update-public-second-hop through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.private-cluster.vnet-integration-update-public-second-hop",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.vnet-integration-update-public-second-hop"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.private-cluster.vnet-integration-update-public-second-hop",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.private-cluster.vnet-integration-update-public-second-hop workflow run 28391650793 classified as error. Loop key: verify-spec-private-cluster-vnet-integration-update-public-second-hop-a_verify-spec-privat. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28391650793 Result: runs/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/artifacts/private-cluster-vnet-integration-update-public-second-hop/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T17:47:02.170Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-private-cluster-vnet-integration-update-public-second-hop_20260629174702",
+        "assigned_at": "2026-06-29T17:47:02.198Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-private-cluster-vnet-integration-update-public-second-hop",
+        "worker_started_attempt_id": "a_verify-spec-private-cluster-vnet-integration-update-public-second-hop_20260629174702",
+        "worker_started_at": "2026-06-29T17:47:10.289Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.private-cluster.vnet-integration-update-public-second-hop workflow run 28391650793 classified as error. Loop key: verify-spec-private-cluster-vnet-integration-update-public-second-hop-a_verify-spec-privat. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28391650793 Result: runs/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/artifacts/private-cluster-vnet-integration-update-public-second-hop/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T17:48:03.707Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T17:48:13.410Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.private-cluster.vnet-integration-update-public-second-hop workflow run 28391650793 classified as error. Loop key: verify-spec-private-cluster-vnet-integration-update-public-second-hop-a_verify-spec-privat. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28391650793 Result: runs/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/artifacts/private-cluster-vnet-integration-update-public-second-hop/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-private-cluster-vnet-integration-update-public-second-hop",
+      "session_history": [
+        "s_task_verify-spec-private-cluster-vnet-integration-update-public-second-hop"
+      ],
+      "result": "Spec spec.private-cluster.vnet-integration-update-public-second-hop workflow run 28391650793 classified as error. Loop key: verify-spec-private-cluster-vnet-integration-update-public-second-hop-a_verify-spec-privat. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28391650793 Result: runs/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/artifacts/private-cluster-vnet-integration-update-public-second-hop/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28391650793/aks-rp-e2e-28391650793-spec-test-results/test-results/single-private-cluster-vnet-integration-update-public-second-hop_742667/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T17:48:13.410Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

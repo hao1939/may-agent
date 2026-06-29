@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:46:43.954Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog-review-pending reconciliation: row29 knowledge-map prose plus validation follow-up are fully summarized at the project branch, leaving exactly two live project-level leaves: vm-prerelease-row41-later-phase-carrier-authoring-20260622 as the single repo-local active carrier-extension task, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful family-level external-human wait. No review backlog remains from this wake; the next useful local action is the bounded mounted-source/local-validation row-41 later-phase authoring pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row29-knowledge-map-validation-followup-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the pending row-29 mixed-SKU lifecycle prose-sync changes against bounded acceptance, capture explicit local validation evidence for the touched knowledge-map surfaces, and tighten only row-29 model/view wording if needed so the row can be accepted as execute-capable but still live-gated without widening beyond rows 27 or 30.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row29-knowledge-map-validation-followup-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact quotes the current row-29 model/path-summary/status-summary wording, confirms whether it truthfully describes the maintained replay as repo-local execute-capable but explicitly live-gated, and names any bounded wording repair still required.",
+        "Artifact records explicit repo-local validation evidence for the touched knowledge-map surfaces (for example derived-view regeneration, targeted JSON/tooling verification, or another bounded knowledge-map check) and explains any pre-existing unrelated check noise separately rather than claiming a project-wide clean check that was not obtained.",
+        "Any edits stay bounded to row-29 knowledge surfaces and supporting evidence references only, preserving row-27 upgrade and row-30 deallocate boundaries while producing a reviewable acceptance packet for the pending prose-sync leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row29-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:42:30.823Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row29-knowledge-map-validation-followup-20260622_20260622024230",
+        "assigned_at": "2026-06-22T02:42:30.870Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row29-knowledge-map-validation-followup-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row29-knowledge-map-validation-followup-20260622_20260622024230",
+        "worker_started_at": "2026-06-22T02:42:56.153Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded acceptance artifact `evidence/archive/vm-prerelease-row29-knowledge-map-validation-followup-20260622.md`, confirming row-29 knowledge-map wording is already truthful as repo-local execute-capable but explicitly live-gated, with explicit local validation evidence and unrelated global validator noise called out separately.",
+        "last_worker_completed_at": "2026-06-22T02:44:49.869Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:45:40.040Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted during 2026-06-22 watchdog review: the evidence packet quotes the current row-29 model/path/status wording, records explicit repo-local validation for the touched knowledge-map surfaces, and confirms no further bounded wording repair is required."
+      },
+      "session_id": "s_task_vm-prerelease-row29-knowledge-map-validation-followup-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row29-knowledge-map-validation-followup-20260622"
+      ],
+      "result": "Created the bounded acceptance artifact `evidence/archive/vm-prerelease-row29-knowledge-map-validation-followup-20260622.md`, confirming row-29 knowledge-map wording is already truthful as repo-local execute-capable but explicitly live-gated, with explicit local validation evidence and unrelated global validator noise called out separately.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:45:40.040Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted during 2026-06-22 watchdog review: the evidence packet quotes the current row-29 model/path/status wording, records explicit repo-local validation for the touched knowledge-map surfaces, and confirms no further bounded wording repair is required."
+      },
+      "status": "done"
+    }
+  ]
+}

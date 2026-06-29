@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:32:17.238Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner accepted the root Vitest discovery-surface repair: repo-local verification now includes feature-local wrappers under features/*/tests/**/*.test.ts, and evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md proves both the exact prior include gap and clean post-change verification for the new SecOps FIPS wrapper plus another feature-local wrapper without changing execute gating. With that repo-local successor closed, the only live frontier remains the existing two exact external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623, so no new runnable leaf is truthful from this task-completed wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-feature-vitest-discovery-surface-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local verification surface for newly landed feature-local secops carriers by resolving why the secops-fips-base-unaligned-pools-rejection .test.ts wrapper is not discovered under the current Vitest/runtime pattern, then land the smallest durable runner or wrapper change that restores local verification without changing execute gating or making any cloud claim.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Determine the exact repo-local discovery gap behind bun x vitest run not picking up features/secops/tests/secops-fips-base-unaligned-pools-rejection.test.ts, using current Vitest config and existing replay/feature carrier conventions.",
+        "Land a bounded repo-local repair or source-equivalent wrapper pattern so this SecOps FIPS carrier participates in durable local verification without changing cloud-execute gating semantics.",
+        "Record changed files plus verification commands proving the discovery/verification path now works, or capture the smallest truthful runner constraint and successor if direct repair is not yet possible."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-vitest-discovery"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:30:05.005Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-feature-vitest-discovery-surface-repair-20260627_20260627053005",
+        "assigned_at": "2026-06-27T05:30:05.059Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-feature-vitest-discovery-surface-repair-20260627",
+        "worker_started_attempt_id": "a_secops-feature-vitest-discovery-surface-repair-20260627_20260627053005",
+        "worker_started_at": "2026-06-27T05:30:15.461Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired root Vitest discovery in /app/projects/aks-rp-e2e/vitest.config.ts so feature-local wrappers under features/*/tests/**/*.test.ts are now discovered, and recorded proof plus verification in evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T05:31:39.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:32:13.141Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md proves the exact root Vitest include gap, shows the bounded vitest.config.ts repair to include features/*/tests/**/*.test.ts, and records post-change Vitest/Bun verification for the new SecOps wrapper plus an independent feature-local wrapper without changing cloud execute gating semantics."
+      },
+      "session_id": "s_task_secops-feature-vitest-discovery-surface-repair-20260627",
+      "session_history": [
+        "s_task_secops-feature-vitest-discovery-surface-repair-20260627"
+      ],
+      "result": "Repaired root Vitest discovery in /app/projects/aks-rp-e2e/vitest.config.ts so feature-local wrappers under features/*/tests/**/*.test.ts are now discovered, and recorded proof plus verification in evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:32:13.141Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/secops-feature-vitest-discovery-surface-repair-20260627.md proves the exact root Vitest include gap, shows the bounded vitest.config.ts repair to include features/*/tests/**/*.test.ts, and records post-change Vitest/Bun verification for the new SecOps wrapper plus an independent feature-local wrapper without changing cloud execute gating semantics."
+      },
+      "status": "done"
+    }
+  ]
+}

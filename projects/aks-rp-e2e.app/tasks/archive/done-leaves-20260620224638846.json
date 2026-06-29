@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:46:38.846Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier review kept the tree truthful and reduced root noise. The four completed authoring/reconcile precursor leaves are durable provenance only: private-cluster-addonv2-coreaddons-model-path-authoring-20260620, private-cluster-k8s-validation-model-variant-visibility-repair-20260620, vm-prerelease-autozone-boundary-reconcile-20260620, and vm-prerelease-mounted-source-next-gap-batch1-20260620 already produced the accepted packets that now feed the three active repo-local landing/repair leaves. The live project frontier should therefore stay narrow: keep private-cluster-addonv2-coreaddons-model-view-land-20260620, private-cluster-k8s-validation-model-view-land-20260620, and vm-prerelease-autozone-model-view-repair-20260620 as the active model/view landing tasks, and keep external-send-proof-dispatch-family-20260620 as the single truthful external-human transport wait until repo-local send/escalation proof or an authoritative reply is captured. Do not recreate duplicate send-proof or passive response-await leaves from this root.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-addonv2-coreaddons-model-path-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted private-cluster Addonv2 source packet/spec/replay slice for Scenario_Addonv2_PrivateCluster into a first maintained knowledge-map path landing by authoring a bounded model-path packet that defines the truthful feature/path ids, selected input DAG nodes, spec linkage, and non-executed status for the private-cluster × Addonv2 core-addons branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-addonv2-coreaddons-model-path-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted Addonv2 private-cluster Go sources and the already maintained packet/spec/replay artifacts for Scenario_Addonv2_PrivateCluster, and explains why this is a distinct post-public-FQDN private-cluster branch.",
+        "Artifact names the intended maintained feature/path landing, selected input DAG nodes, spec linkage, and truthful current status/reasoning for path.private-cluster-addonv2.coreaddons-privatecluster without claiming live execution evidence.",
+        "Artifact ends with the concrete repo-local model/view update or exact next bounded follow-up needed to expose this branch in the maintained knowledge map, without creating duplicate external-send waits or running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-model-authoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:40:20.996Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-addonv2-coreaddons-model-path-authoring-20260620_20260620224021",
+        "assigned_at": "2026-06-20T22:40:21.088Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-addonv2-coreaddons-model-path-authoring-20260620",
+        "worker_started_attempt_id": "a_private-cluster-addonv2-coreaddons-model-path-authoring-20260620_20260620224021",
+        "worker_started_at": "2026-06-20T22:40:42.871Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested model-path packet at evidence/archive/private-cluster-addonv2-coreaddons-model-path-authoring-20260620.md, grounding Scenario_Addonv2_PrivateCluster in mounted source and existing packet/spec/replay carriers, and documented the exact next bounded model/view update needed to expose path.private-cluster-addonv2.coreaddons-privatecluster without claiming live execution evidence.",
+        "last_worker_completed_at": "2026-06-20T22:44:01.298Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:44:24.849Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/private-cluster-addonv2-coreaddons-model-path-authoring-20260620.md cites the mounted Addonv2 private-cluster sources, existing packet/spec/replay carriers, and the exact minimal model/view landing needed to expose path.private-cluster-addonv2.coreaddons-privatecluster truthfully as a non-executed source-grounded branch."
+      },
+      "session_id": "s_task_private-cluster-addonv2-coreaddons-model-path-authoring-20260620",
+      "session_history": [
+        "s_task_private-cluster-addonv2-coreaddons-model-path-authoring-20260620"
+      ],
+      "result": "Authored the requested model-path packet at evidence/archive/private-cluster-addonv2-coreaddons-model-path-authoring-20260620.md, grounding Scenario_Addonv2_PrivateCluster in mounted source and existing packet/spec/replay carriers, and documented the exact next bounded model/view update needed to expose path.private-cluster-addonv2.coreaddons-privatecluster without claiming live execution evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:44:24.849Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/private-cluster-addonv2-coreaddons-model-path-authoring-20260620.md cites the mounted Addonv2 private-cluster sources, existing packet/spec/replay carriers, and the exact minimal model/view landing needed to expose path.private-cluster-addonv2.coreaddons-privatecluster truthfully as a non-executed source-grounded branch."
+      },
+      "status": "done"
+    }
+  ]
+}

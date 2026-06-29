@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T09:51:17.340Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 regular-learning owner review remains unchanged after hygiene follow-through: virtualmachines-managedsystem-model-request-shape-normalization-and-view-regeneration-20260625 stays the sole active no-cloud learning leaf because no completion artifact exists yet, while the remaining completed reconciliation slices are now rolled into the project summary and their durable meaning lives in archive evidence plus current model/view state. Preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single blocked family of five exact returned-proof waits unchanged until the first bounded follow-up/escalation window on or after 2026-06-26 or any earlier authoritative reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular-learning no-cloud: reconcile the normalized request-shape wording and boundary description for path.virtualmachines.managedsystem-combined using mounted AKS RP source plus current repo-local feature/spec/model/view surfaces, so the path explicitly records the rejected same-pool ManagedSystem + VirtualMachines caller shape and clearly distinguishes it from the handwritten source pattern that appends a separate ManagedSystem pool with Type=nil and VirtualMachinesProfile=nil.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the mounted AKS RP VirtualMachines/ManagedSystem source files and the current repo-local feature/spec/model/view surfaces for path.virtualmachines.managedsystem-combined, and states the exact normalized request-shape wording that should represent the rejected same-pool caller contract or proves the current wording already matches.",
+        "If the repo-local feature/spec/model/view wording is inconsistent, the task updates the relevant files, regenerates/validates affected derived surfaces, and records the exact before/after wording with evidence-backed rationale; if no file change is needed, the artifact explains why not.",
+        "The artifact states whether this wording reconciliation changes any interpretation of path.managedsystem.create-time-initial-pool, and ends with a precise no-cloud stop condition or next follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T09:48:06.992Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625_20260625094807",
+        "assigned_at": "2026-06-25T09:48:07.041Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625",
+        "worker_started_attempt_id": "a_virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625_20260625094807",
+        "worker_started_at": "2026-06-25T09:48:23.482Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested no-cloud archive packet at evidence/archive/virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625.md, reconciling the rejected same-pool caller shape against mounted AKS RP source and identifying the remaining normalized model request-shape token mismatch.",
+        "last_worker_completed_at": "2026-06-25T09:48:23.503Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T09:49:15.369Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-25 archive artifact as a credible source-backed reconciliation review: it cites mounted AKS RP source and repo-local feature/spec/model/view surfaces, clearly distinguishes the rejected same-pool ManagedSystem+VirtualMachines PUT from the handwritten separate ManagedSystem-shaped appended pool, and identifies one remaining repo-local normalized request-shape token mismatch. The review leaf is complete as reconciliation evidence, while the unresolved model/view normalization and regeneration work moves to a new bounded follow-up leaf."
+      },
+      "session_id": "s_task_virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625",
+      "session_history": [
+        "s_task_virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625"
+      ],
+      "result": "Produced the requested no-cloud archive packet at evidence/archive/virtualmachines-managedsystem-combined-request-shape-wording-reconciliation-20260625.md, reconciling the rejected same-pool caller shape against mounted AKS RP source and identifying the remaining normalized model request-shape token mismatch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T09:49:15.369Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-25 archive artifact as a credible source-backed reconciliation review: it cites mounted AKS RP source and repo-local feature/spec/model/view surfaces, clearly distinguishes the rejected same-pool ManagedSystem+VirtualMachines PUT from the handwritten separate ManagedSystem-shaped appended pool, and identifies one remaining repo-local normalized request-shape token mismatch. The review leaf is complete as reconciliation evidence, while the unresolved model/view normalization and regeneration work moves to a new bounded follow-up leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

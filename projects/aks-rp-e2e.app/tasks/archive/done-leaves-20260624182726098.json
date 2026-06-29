@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T18:27:26.098Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner accepted the bounded repo-wide format-gate reductions through the net-integration-multinic-dualstack single-file slice: the archived single-file writebacks (traffic-applink, arm-rest, extension-addon-enable-upgrade-disable, fleet-auto-upgrade-generate-matrix, fleet-auto-upgrade-profile-lifecycle, fleet-hubless-rpapi-lifecycle, hcp-grpc-message-size-interceptor, managedsystem-count-mutation-negative, nap-full-cleanup-source-equivalent, and net-integration-multinic-dualstack) are all evidenced with targeted clean verification, and the shared repo-wide bun run check warning frontier now stands at 31 remaining warnings without widening beyond accepted slices. The single truthful local successor remains the bounded net-integration-multinic-mixed single-file writeback already active and assigned for repo-local writeback plus rerun; keep the VirtualMachine prerelease coverage-ledger checkpoint blocked only as a landing gate until a future repo-wide green check, and preserve the four exact external response waits unchanged until returned proof or the 2026-06-26 follow-up trigger.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact two-file traffic applink replay-family warning slice from the accepted 43-warning rerun (replays/traffic-applink-cross-cluster-discovery.ts and replays/traffic-applink-upgrade-survival.ts), then rerun targeted verification for that same slice and refresh the repo-wide warning count without widening beyond those traffic applink files, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/traffic-applink-cross-cluster-discovery.ts and replays/traffic-applink-upgrade-survival.ts, targeted verification output for that same file set, and git diff or equivalent proof showing only the intended traffic applink replay formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the traffic applink family writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the named traffic applink replay files, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:51:58.301Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624_20260624175158",
+        "assigned_at": "2026-06-24T17:51:58.349Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624_20260624175158",
+        "worker_started_at": "2026-06-24T17:52:19.061Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to the two traffic applink replay files, verified them clean with targeted checks, refreshed the repo-wide bun check warning count to 41, and recorded the full evidence packet in the requested archive artifact.",
+        "last_worker_completed_at": "2026-06-24T17:53:50.944Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:54:38.663Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624.md proves the bounded two-file traffic applink writeback stayed exact, targeted prettier --check passed for both files, and the repo-wide bun run check warning frontier dropped from 43 to 41 without any checkpoint attempt."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback only to the two traffic applink replay files, verified them clean with targeted checks, refreshed the repo-wide bun check warning count to 41, and recorded the full evidence packet in the requested archive artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:54:38.663Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repo-wide-bun-check-replay-frontier-traffic-applink-family-slice-writeback-20260624.md proves the bounded two-file traffic applink writeback stayed exact, targeted prettier --check passed for both files, and the repo-wide bun run check warning frontier dropped from 43 to 41 without any checkpoint attempt."
+      },
+      "status": "done"
+    }
+  ]
+}

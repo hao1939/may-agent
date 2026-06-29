@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:03:33.117Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning wake reconciled a stale worker-completion event for verify-spec-aad-rbac-managed-v2-lifecycle-postfix2-20260629 without duplicating work: the reported GitHub workflow dispatch 500 had no attached artifacts, the task was already reactivated at 2026-06-29T09:59:10Z, and the truthful next action is to let that retry and the sibling verifier leaves continue rather than creating a spec-specific blocked follow-up. The branch still preserves await-westus2-managedsystem-capacity-recovery-20260629 as the single reviewed environment-family wait because the accepted westus2 family diagnosis already ruled out a stronger repo-local reroute/setup/escalation action for that same-surface blocker. Live execution work is now the ten active single-spec verifier leaves (managed-v2 retry, three new AAD-RBAC specs, and the current timeout60/postfix reruns); do not create more backlog or a shared dispatch-infra problem leaf unless an additional active verifier independently reproduces the same workflow-dispatch 500 failure class.",
+  "archived": 8,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.net-integration.authorized-service-tags unchanged through the single-spec workflow with timeout_minutes=60 to clear the proven default 20-minute timeout envelope and recover a truthful verdict or a stronger infra diagnosis.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The run uses the unchanged spec.net-integration.authorized-service-tags contract with timeout_minutes=60 so the reviewed 20-minute envelope is no longer the limiting factor.",
+        "The outcome records whether the rerun reaches a terminal spec-runner verdict, or reproduces the same SIGTERM/missing-terminal-artifact shape that would justify a runner/workflow repair follow-up.",
+        "Any durable result links back to the 2026-06-29 SIGTERM family review so this rerun is interpreted as timeout-envelope verification, not a fresh speculative probe."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.authorized-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:42:45.233Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:42:54.002Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629_20260629094259",
+        "assigned_at": "2026-06-29T09:42:59.496Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629_20260629094259",
+        "worker_started_at": "2026-06-29T09:43:44.801Z",
+        "reviewed_at": "2026-06-29T09:43:47.087Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "session_id": "s_task_verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629",
+      "session_history": [
+        "s_task_verify-spec-net-integration-authorized-service-tags-timeout60-rerun-20260629"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:43:47.087Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.net-integration.static-egress-vmss unchanged through the single-spec workflow with timeout_minutes=60 to clear the proven default 20-minute timeout envelope and recover a truthful verdict or a stronger infra diagnosis.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The run uses the unchanged spec.net-integration.static-egress-vmss contract with timeout_minutes=60 so the reviewed 20-minute envelope is no longer the limiting factor.",
+        "The outcome records whether the rerun reaches a terminal spec-runner verdict, or reproduces the same SIGTERM/missing-terminal-artifact shape that would justify a runner/workflow repair follow-up.",
+        "Any durable result links back to the 2026-06-29 SIGTERM family review so this rerun is interpreted as timeout-envelope verification, not a fresh speculative probe."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.static-egress-vmss"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:42:45.284Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:42:54.002Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629_20260629094259",
+        "assigned_at": "2026-06-29T09:42:59.598Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629_20260629094259",
+        "worker_started_at": "2026-06-29T09:43:44.776Z",
+        "reviewed_at": "2026-06-29T09:43:47.234Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "session_id": "s_task_verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629",
+      "session_history": [
+        "s_task_verify-spec-net-integration-static-egress-vmss-timeout60-rerun-20260629"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:43:47.234Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-nsg-control-timeout60-rerun-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.net-integration.nsg-control unchanged through the single-spec workflow with timeout_minutes=60 to clear the proven default 20-minute timeout envelope and recover a truthful verdict or a stronger infra diagnosis.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The run uses the unchanged spec.net-integration.nsg-control contract with timeout_minutes=60 so the reviewed 20-minute envelope is no longer the limiting factor.",
+        "The outcome records whether the rerun reaches a terminal spec-runner verdict, or reproduces the same SIGTERM/missing-terminal-artifact shape that would justify a runner/workflow repair follow-up.",
+        "Any durable result links back to the 2026-06-29 SIGTERM family review so this rerun is interpreted as timeout-envelope verification, not a fresh speculative probe."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.nsg-control"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:42:45.337Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:42:54.002Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-nsg-control-timeout60-rerun-20260629_20260629094259",
+        "assigned_at": "2026-06-29T09:42:59.547Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-nsg-control-timeout60-rerun-20260629",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-nsg-control-timeout60-rerun-20260629_20260629094259",
+        "worker_started_at": "2026-06-29T09:43:44.726Z",
+        "reviewed_at": "2026-06-29T09:43:47.173Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "session_id": "s_task_verify-spec-net-integration-nsg-control-timeout60-rerun-20260629",
+      "session_history": [
+        "s_task_verify-spec-net-integration-nsg-control-timeout60-rerun-20260629"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:43:47.173Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced malformed timeout60 retry leaf with a workflow-bound single-spec verifier retry."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Launch a 60-minute single-spec rerun for spec.aad-rbac.managed-v2-lifecycle after run 28361955065 ended in SIGTERM before the scenario completed, and preserve durable dispatch/run-id proof for later terminal review.",
+      "inputs": [],
+      "outputs": [
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "A rerun is launched for spec.aad-rbac.managed-v2-lifecycle with the timeout raised enough to test whether the prior SIGTERM was runner timeout rather than a product verdict, or a concrete preflight blocker is recorded before cloud mutation.",
+        "Durable dispatch evidence identifies the launched rerun/run id so a separate follow-up can inspect terminal artifacts and classify timeout/runner behavior versus any product result truthfully."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:45:15.614Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:45:37.909Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629_20260629094553",
+        "assigned_at": "2026-06-29T09:45:53.533Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629",
+        "worker_started_attempt_id": "a_verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629_20260629094553",
+        "worker_started_at": "2026-06-29T09:46:27.667Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Launched a fresh 60-minute single-spec rerun for spec.aad-rbac.managed-v2-lifecycle as GitHub Actions run 28363422257 and archived durable dispatch/recovery evidence plus prior-run SIGTERM proof. The rerun was still in progress with no terminal artifacts at session end, so final timeout-vs-product classification remains for the next review step.",
+        "last_worker_completed_at": "2026-06-29T09:50:30.477Z",
+        "last_worker_evidence": [
+          "evidence/archive/rerun-spec-aad-rbac-managed-v2-lifecycle-single-spec-timeout-60m-20260629.md",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-request.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-payload.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-response.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/runs-list-initial.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/run-api-initial.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/jobs-api-initial.json",
+          ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/artifacts-api-initial.json"
+        ],
+        "reviewed_at": "2026-06-29T09:52:26.472Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded launch slice: evidence/archive/rerun-spec-aad-rbac-managed-v2-lifecycle-single-spec-timeout-60m-20260629.md plus the archived dispatch payload/response prove a fresh 60-minute rerun was launched as GitHub Actions run 28363422257 after prior SIGTERM run 28361955065. Terminal timeout-vs-product classification remains split into a dedicated follow-up review leaf."
+      },
+      "session_id": "s_task_verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629",
+      "session_history": [
+        "s_task_verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629"
+      ],
+      "result": "Launched a fresh 60-minute single-spec rerun for spec.aad-rbac.managed-v2-lifecycle as GitHub Actions run 28363422257 and archived durable dispatch/recovery evidence plus prior-run SIGTERM proof. The rerun was still in progress with no terminal artifacts at session end, so final timeout-vs-product classification remains for the next review step.",
+      "evidence": [
+        "evidence/archive/rerun-spec-aad-rbac-managed-v2-lifecycle-single-spec-timeout-60m-20260629.md",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-request.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-payload.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/dispatch-response.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/runs-list-initial.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/run-api-initial.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/jobs-api-initial.json",
+        ".state/spec-loop/artifacts/manual-1782726562-verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629/artifacts-api-initial.json"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:52:26.472Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded launch slice: evidence/archive/rerun-spec-aad-rbac-managed-v2-lifecycle-single-spec-timeout-60m-20260629.md plus the archived dispatch payload/response prove a fresh 60-minute rerun was launched as GitHub Actions run 28363422257 after prior SIGTERM run 28361955065. Terminal timeout-vs-product classification remains split into a dedicated follow-up review leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-vm-prerelease-single-spec-result-timing-gap-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound why spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease run 28362055893 finished as a workflow/error classification before the scenario wrote a terminal single-spec result, using existing artifacts and timing only, and define one exact repo-local repair or rerun gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md"
+      ],
+      "acceptance": [
+        "The archive note cites run 28362055893 workflow metadata, top-level result surfaces, and per-scenario artifact timing to classify whether the gap is result aggregation, watcher/orchestrator ordering, or missing child terminal artifacts rather than a product verdict.",
+        "The note ends with one exact next action: repo-local repair, bounded tooling handoff, or a rerun condition that would make the next live attempt materially different."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:47:53.658Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-vm-prerelease-single-spec-result-timing-gap-20260629_20260629094800",
+        "assigned_at": "2026-06-29T09:48:00.430Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-vm-prerelease-single-spec-result-timing-gap-20260629",
+        "worker_started_attempt_id": "a_diagnose-vm-prerelease-single-spec-result-timing-gap-20260629_20260629094800",
+        "worker_started_at": "2026-06-29T09:48:33.022Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28362055893 as a missing-child-terminal-artifacts timing failure, not a product verdict or aggregation bug, and wrote the archive note with one exact rerun gate under evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T09:50:34.384Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:52:26.523Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis because evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md proves run 28362055893 never wrote child terminal artifacts and was fail-closed by the wrapper near the 20-minute envelope. This is runner/timing evidence, not a product verdict, and it supports the separate timeout60 rerun path already in the lane."
+      },
+      "session_id": "s_task_diagnose-vm-prerelease-single-spec-result-timing-gap-20260629",
+      "session_history": [
+        "s_task_diagnose-vm-prerelease-single-spec-result-timing-gap-20260629"
+      ],
+      "result": "Diagnosed run 28362055893 as a missing-child-terminal-artifacts timing failure, not a product verdict or aggregation bug, and wrote the archive note with one exact rerun gate under evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md.",
+      "evidence": [
+        "evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:52:26.523Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis because evidence/archive/spec-rp-cluster-lifecycle-vm-prerelease-result-timing-gap-20260629.md proves run 28362055893 never wrote child terminal artifacts and was fail-closed by the wrapper near the 20-minute envelope. This is runner/timing evidence, not a product verdict, and it supports the separate timeout60 rerun path already in the lane."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.aad-rbac.managed-v2-lifecycle with timeout_minutes=60 after the old run hit the 20-minute workflow timeout envelope.",
+      "inputs": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "The retry runs through the single-spec workflow on staging with timeout_minutes=60.",
+        "The result reaches a terminal scenario-test verdict or records a stronger non-timeout error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.aad-rbac.managed-v2-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replaced by the already-active verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629, which carries the same spec conflict scope with stronger acceptance text tied to run 28361955065 and the current assigned attempt. Keeping this backlog duplicate would create duplicate work for the same timeout60 rerun family."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:48:25.346Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T09:49:44.293Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the already-active verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629, which carries the same spec conflict scope with stronger acceptance text tied to run 28361955065 and the current assigned attempt. Keeping this backlog duplicate would create duplicate work for the same timeout60 rerun family."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:49:44.293Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect terminal artifacts for GitHub Actions run 28363422257 for spec.aad-rbac.managed-v2-lifecycle, then classify whether the 60-minute rerun ended in timeout/runner behavior or a product pass/fail/blocked result and update the spec-loop truthfully.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-managed-v2-lifecycle-run-28363422257-terminal-review-20260629.md"
+      ],
+      "acceptance": [
+        "The run status for 28363422257 is checked and terminal artifacts are archived or cited once available.",
+        "The follow-up note distinguishes runner-timeout/termination from any product verdict using the terminal run surfaces, and the task records any exact resume condition if the run is still non-terminal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:52:26.624Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629_20260629095226",
+        "assigned_at": "2026-06-29T09:52:26.672Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629",
+        "worker_started_attempt_id": "a_inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629_20260629095226",
+        "worker_started_at": "2026-06-29T09:52:54.877Z",
+        "reviewed_at": "2026-06-29T09:53:31.084Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Run 28363422257 is invalid for product classification: the resource group was deleted during the malformed rerun, causing ResourceGroupNotFound. Proper workflow-bound verifier retry remains required."
+      },
+      "session_id": "s_task_inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629",
+      "session_history": [
+        "s_task_inspect-run-28363422257-spec-aad-rbac-managed-v2-lifecycle-terminal-artifacts-20260629"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:53:31.084Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Run 28363422257 is invalid for product classification: the resource group was deleted during the malformed rerun, causing ResourceGroupNotFound. Proper workflow-bound verifier retry remains required."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-westus2-managedsystem-capacity-family-next-action-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the shared westus2 Automatic/ManagedSystem capacity blocker using the existing run artifacts and repo/source evidence so the family has one concrete next owner action instead of only a passive wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-managedsystem-capacity-family-next-action-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the exact westus2 run/result that produced AKSCapacityHeavyUsage plus nested SkuNotAvailable for aksmanagedap, explains whether any repo-local/source/public evidence suggests a bounded alternate setup or escalation, and concludes with one truthful next family-level action or confirms why the existing wait must remain the single live blocker.",
+        "The task does not run a new cloud probe; it only classifies the blocker family and, if justified, proposes the replacement/resume condition for the existing wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-managedsystem-capacity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:54:34.759Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-westus2-managedsystem-capacity-family-next-action-20260629_20260629095434",
+        "assigned_at": "2026-06-29T09:54:34.822Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-westus2-managedsystem-capacity-family-next-action-20260629",
+        "worker_started_attempt_id": "a_diagnose-westus2-managedsystem-capacity-family-next-action-20260629_20260629095434",
+        "worker_started_at": "2026-06-29T09:55:15.690Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Classified the westus2 Automatic/ManagedSystem capacity family in a new evidence note, using run 28361930300 plus the later eastus2 reroute diagnostics to conclude the existing westus2 passive wait remains the single truthful live blocker.",
+        "last_worker_completed_at": "2026-06-29T09:57:24.440Z",
+        "last_worker_evidence": [
+          "evidence/archive/westus2-managedsystem-capacity-family-next-action-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:58:08.889Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-29 evidence note: run 28361930300 and the later eastus2 diagnostics together prove a shared Automatic/ManagedSystem capacity-family environment blocker with no stronger repo-local next action than the existing family wait."
+      },
+      "session_id": "s_task_diagnose-westus2-managedsystem-capacity-family-next-action-20260629",
+      "session_history": [
+        "s_task_diagnose-westus2-managedsystem-capacity-family-next-action-20260629"
+      ],
+      "result": "Classified the westus2 Automatic/ManagedSystem capacity family in a new evidence note, using run 28361930300 plus the later eastus2 reroute diagnostics to conclude the existing westus2 passive wait remains the single truthful live blocker.",
+      "evidence": [
+        "evidence/archive/westus2-managedsystem-capacity-family-next-action-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:58:08.889Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-29 evidence note: run 28361930300 and the later eastus2 diagnostics together prove a shared Automatic/ManagedSystem capacity-family environment blocker with no stronger repo-local next action than the existing family wait."
+      },
+      "status": "done"
+    }
+  ]
+}

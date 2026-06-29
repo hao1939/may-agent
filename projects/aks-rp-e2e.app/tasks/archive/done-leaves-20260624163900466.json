@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T16:39:00.466Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review completes root hygiene for the VirtualMachine prerelease ledger slice: the prior owner landing-decision note is already preserved by the archived checkpoint history and current root rollup, so the visible root should expose only the compressed four-wait focus branch plus the single checkpoint-gate wait. No new repo-local authoring, repo-check remediation, or duplicate blocker branches are introduced from this review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Make the explicit owner checkpoint decision for the already candidate-ready 2026-06-24 VirtualMachine prerelease coverage ledger slice: either waive the unrelated repo-wide red bun run check for this exact four-file bounded evidence slice and land one owner-owned commit, or keep landing blocked until repo-wide check is green and record that exact policy plus resume condition without reopening the bounded VM coverage work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md"
+      ],
+      "acceptance": [
+        "Durable evidence updates the checkpoint packet with the final owner landing decision on the unrelated repo-wide red bun run check, the exact four-file staged slice, HEAD before/after, and the created commit hash if the owner lands the checkpoint; if the owner keeps landing blocked, the packet records the exact policy, blocker owner, and resume condition instead of pretending the slice landed.",
+        "The owner action stays confined to evidence/pipelines/virtualmachine-prerelease-coverage.{json,md} plus evidence/archive/virtualmachine-prerelease-checkin-network-isolated-ledger-reconcile-20260624.md and evidence/archive/virtualmachine-prerelease-coverage-metadata-refresh-20260624.md, with no new feature authoring, cloud execution, blocked-wait changes, or unrelated files mixed into the checkpoint decision."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ledger.virtualmachine-prerelease.coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:32:00.733Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624_20260624163200",
+        "assigned_at": "2026-06-24T16:32:00.782Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624_20260624163200",
+        "worker_started_at": "2026-06-24T16:32:16.781Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the VirtualMachine prerelease checkpoint packet to record the explicit owner landing decision: keep the four-file candidate slice blocked until repo-wide `bun run check` is green, with fresh bounded checkpoint, git, HEAD, and repo-check evidence captured.",
+        "last_worker_completed_at": "2026-06-24T16:35:40.456Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T16:36:20.888Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner decision packet: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md records the explicit no-waiver policy, exact four-file candidate slice, unchanged HEAD cf4e5f39a32cea03bdc0465fe14dacc955460650, and resume condition to wait for a green repo-wide bun run check before owner checkpoint landing."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-ledger-owner-landing-decision-20260624"
+      ],
+      "result": "Updated the VirtualMachine prerelease checkpoint packet to record the explicit owner landing decision: keep the four-file candidate slice blocked until repo-wide `bun run check` is green, with fresh bounded checkpoint, git, HEAD, and repo-check evidence captured.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T16:36:20.888Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner decision packet: evidence/archive/virtualmachine-prerelease-coverage-ledger-checkpoint-20260624.md records the explicit no-waiver policy, exact four-file candidate slice, unchanged HEAD cf4e5f39a32cea03bdc0465fe14dacc955460650, and resume condition to wait for a green repo-wide bun run check before owner checkpoint landing."
+      },
+      "status": "done"
+    }
+  ]
+}

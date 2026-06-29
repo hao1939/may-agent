@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:14:48.709Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Blocked-frontier owner review (2026-06-20T11:15Z): no helper-release evidence or worker completion claim landed, so keep shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620 as the single truthful live wait for the helper-held seven-file batch on model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json. The mixed-SKU model-classification follow-up remains intentionally collapsed behind that carrier; no duplicate checkpoint or response-await leaves are warranted until the helper clears the maintained batch. To avoid an empty runnable frontier while that shared gate persists, added one unrelated repo-local feature/spec follow-up under feature-knowledge-and-specs for the serverless virtual nodes authority-gap wording/metadata slice.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-mixed-sku-upgrade-model-classification-followup-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "When the shared seven-file gate clears, update the knowledge-map landing for row 27 / path.virtualmachines.mixed-sku-upgrade from generic draft to an explicit source-backed blocked/known-risk prerelease slice using the accepted blocker packet, while preserving unknown behavior assertions and recording the runner disable reason plus resume condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-mixed-sku-upgrade-model-classification-followup-20260620.md"
+      ],
+      "acceptance": [
+        "Task updates model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json for feature/scenario/path virtualmachines-mixed-sku-upgrade so the slice is no longer generic draft and instead records source-backed blocked/known-risk based on the accepted blocker packet.",
+        "Updated landing preserves behavior assertions as unknown where no live execution verdict exists and records the exact runner reason: disabled for CRP ARM vm state mismatch, with alternate/resume path of fixing the mismatch or using reimage for upgrade as stated in mounted source.",
+        "Task cites evidence/archive/virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620.md and completes only after the shared seven-file checkpoint/model gate no longer holds model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:38:35.020Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T11:12:47.023Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced this duplicate blocked leaf with the family-level seven-file gate carrier. The accepted mixed-SKU landing content remains preserved in the carrier blocker text and in evidence/archive/virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620.md; when the shared model gate clears, re-create the concrete model-landing work from that packet instead of keeping a second live blocked wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T11:12:47.023Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced this duplicate blocked leaf with the family-level seven-file gate carrier. The accepted mixed-SKU landing content remains preserved in the carrier blocker text and in evidence/archive/virtualmachine-prerelease-mixed-sku-upgrade-blocker-packet-20260620.md; when the shared model gate clears, re-create the concrete model-landing work from that packet instead of keeping a second live blocked wait."
+      },
+      "status": "done"
+    }
+  ]
+}

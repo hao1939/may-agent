@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T05:09:58.689Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner planning update accepts the cache-auto-registry-update review only as a replacement, not as a truthful spec verdict: the worker summary for verify-spec-bootstrap-profile-public-api-cache-auto-registry-update points at an unrelated autoupgrader-vm-prerelease-umbrella result path, so this leaf now rolls up as evidence of the shared single-spec artifact-routing mismatch rather than a terminal bootstrap-profile outcome. The direct-create public-api spec still owns the concrete ResourceGroupNotFound diagnosis branch, the direct-idempotent-update public-api spec still owns the source/check-only runnable-gap authoring branch, and the current cache-auto-registry-update plus other suspect review leaves are now intentionally funneled into diagnose-single-spec-artifact-routing-mismatch-batch-20260628 for accept-vs-retry classification before any further owner acceptance or rerun decisions from that review batch. Archive the completed replacement leaf because its durable meaning is preserved by this parent summary and the dedicated mismatch-diagnosis follow-up task.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.bootstrap-profile.public-api-cache-auto-registry-update through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.bootstrap-profile.public-api-cache-auto-registry-update",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-cache-auto-registry-update"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.bootstrap-profile.public-api-cache-auto-registry-update",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Review result is replaced by diagnose-single-spec-artifact-routing-mismatch-batch-20260628 because the worker summary cites the unrelated autoupgrader-vm-prerelease-umbrella result artifact rather than a truthful spec-local result."
+      },
+      "trace": {
+        "created_at": "2026-06-28T04:32:02.042Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T05:04:37.674Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+        "stale_active_requeued_at": "2026-06-28T04:45:54.014Z",
+        "stale_active_requeue_reason": "spec loop found active verifier child with no queued assignment and no worker start",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update_20260628044554",
+        "worker_started_attempt_id": "a_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update_20260628050437",
+        "worker_started_at": "2026-06-28T05:05:04.239Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.bootstrap-profile.public-api-cache-auto-registry-update workflow run 28312071315 classified as blocked. Loop key: verify-spec-bootstrap-profile-public-api-cache-auto-registry-update-a_verify-spec-bootstra. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28312071315 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28312071315/aks-rp-e2e-28312071315-spec-test-results/test-results/single-autoupgrader-vm-prerelease-umbrella_515095/artifacts/autoupgrader-vm-prerelease-umbrella/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T05:05:43.816Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-28T05:03:15.061Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Reject blocked review until owner-classified evidence exists; current worker claim is only a generic blocked summary, and existing bootstrap-profile follow-up leaves should diagnose method/artifact gaps before this spec is treated as a terminal result.",
+        "review_reject_fresh_session": false,
+        "current_attempt_id": "a_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update_20260628050437",
+        "reviewed_at": "2026-06-28T05:07:23.174Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review result is replaced by diagnose-single-spec-artifact-routing-mismatch-batch-20260628 because the worker summary cites the unrelated autoupgrader-vm-prerelease-umbrella result artifact rather than a truthful spec-local result."
+      },
+      "session_id": "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update",
+      "session_history": [
+        "s_task_verify-spec-bootstrap-profile-public-api-cache-auto-registry-update"
+      ],
+      "result": "Spec spec.bootstrap-profile.public-api-cache-auto-registry-update workflow run 28312071315 classified as blocked. Loop key: verify-spec-bootstrap-profile-public-api-cache-auto-registry-update-a_verify-spec-bootstra. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28312071315 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28312071315/aks-rp-e2e-28312071315-spec-test-results/test-results/single-autoupgrader-vm-prerelease-umbrella_515095/artifacts/autoupgrader-vm-prerelease-umbrella/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T05:07:23.174Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

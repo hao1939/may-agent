@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:03:57.854Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed reconciliation: accepted and archived the four completed repo-local leaves now that their durable meaning is captured at the project root. Row59 SGX canonical landing is now truthfully exposed on the maintained surface via model/knowledge-map/model.json and views/path-summary.json with exact feature/spec/replay grounding, while the earlier app-monitoring row63 review remains an evidence-ceiling judgment only and the row26 capacity-surge plus ACNS mounted-source semantics repairs remain preserved as archived knowledge. The live frontier stays intentionally narrow: network-cni-acns-observability-base-lineage-gap-reconcile-20260622 remains the single active repo-local/source-first task to decide whether the generic ACNS observability base path inherits the adjacent Cilium observability contract or must stay at an evidence ceiling, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the only truthful blocked family until durable human send/handoff/reply proof arrives.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the current canonical maintained model/path landing for VM prerelease row 59 SGX in-proc quote-helper-disabled so model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json truthfully expose the already-existing exact feature/spec/replay carrier for path.sgx-addon.vm-prerelease.inproc-quote-helper-disabled, or record evidence-backed reasons why the canonical landing must remain adjacent-only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Task uses the mounted AKS RP SGX row-59 source contract plus the existing exact feature/spec/replay carriers to determine the truthful canonical outcome for path.sgx-addon.vm-prerelease.inproc-quote-helper-disabled, then updates model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json if and only if the maintained surface should expose that path.",
+        "Artifact names the exact path id, source anchors, carrier references, model/view edits or refusal rationale, and the accepted-input, rejected-input, expectation, adjacent-surface, and unknown-edge boundaries needed to keep the maintained surface truthful for row 59.",
+        "Task stays repo-local and non-mutating: no human transport ask, no cloud execution, and no broader SGX multi-row repair beyond the exact row-59 canonical landing question."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map-maintained-surface"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:39:58.052Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T06:46:58.153Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622_20260622065554",
+        "assigned_at": "2026-06-22T06:55:54.262Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622",
+        "worker_started_attempt_id": "a_vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622_20260622065554",
+        "worker_started_at": "2026-06-22T06:55:55.423Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-59 SGX maintained landing by adding the exact in-proc quote-helper-disabled feature/scenario/DAG/path to model/knowledge-map/model.json, regenerated views, and wrote a bounded evidence note at evidence/archive/vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T07:00:26.898Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:01:02.947Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence artifact plus maintained-surface readback prove row-59 SGX in-proc quote-helper-disabled is now truthfully landed in model/knowledge-map/model.json and views/path-summary.json as source-grounded-check-replay/unknown, so no further review is needed for this repair."
+      },
+      "session_id": "s_task_vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622",
+      "session_history": [
+        "s_task_vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622"
+      ],
+      "result": "Repaired the row-59 SGX maintained landing by adding the exact in-proc quote-helper-disabled feature/scenario/DAG/path to model/knowledge-map/model.json, regenerated views, and wrote a bounded evidence note at evidence/archive/vmpr-row59-sgx-inproc-quote-helper-disabled-canonical-landing-repair-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:01:02.947Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence artifact plus maintained-surface readback prove row-59 SGX in-proc quote-helper-disabled is now truthfully landed in model/knowledge-map/model.json and views/path-summary.json as source-grounded-check-replay/unknown, so no further review is needed for this repair."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-monitoring-row63-execute-artifact-review-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the existing 2026-06-21 bounded execute artifacts for path.app-monitoring-addonv2-azure-monitor-metrics against the now-reconciled row-63 create/upgrade contract, then either accept a truthful live verdict into the maintained model/spec/replay surfaces or record the exact evidence gap that still blocks verdict acceptance.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-row63-execute-artifact-review-20260622.md"
+      ],
+      "acceptance": [
+        "Task inspects the existing 2026-06-21 row-63 execute artifacts plus the accepted 2026-06-22 source-semantics reconciliation, determines whether the available create/upgrade evidence truthfully proves the canonical request/readback contract and runtime assertion bundle for path.app-monitoring-addonv2-azure-monitor-metrics, and updates model/knowledge-map/model.json plus any needed view/spec metadata only if the verdict is fully supported.",
+        "Artifact names the exact execute artifact set reviewed, the create and upgrade readback/assertion findings, any supported verdict/model edits, and any residual missing evidence fields or contradictions that keep the path in review/blocked status without overclaiming live product behavior.",
+        "Task stays bounded to repo-local evidence review unless the existing artifact set is insufficient; it does not launch a fresh cloud run, does not reopen source-semantics questions already settled, and does not broaden beyond the exact row-63 Azure Monitor Metrics path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-live-evidence-review"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:55:29.295Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T06:55:33.553Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-row63-execute-artifact-review-20260622_20260622065533",
+        "assigned_at": "2026-06-22T06:55:33.651Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-row63-execute-artifact-review-20260622",
+        "worker_started_attempt_id": "a_app-monitoring-row63-execute-artifact-review-20260622_20260622065533",
+        "worker_started_at": "2026-06-22T06:55:54.230Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the 2026-06-21 row-63 execute artifacts against the reconciled Azure Monitor Metrics contract and wrote a bounded review artifact concluding the existing live set is insufficient for a truthful create+upgrade verdict; no maintained model/spec/view edits were made.",
+        "last_worker_completed_at": "2026-06-22T06:57:35.106Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:58:20.336Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact truthfully shows the 2026-06-21 row-63 execute set proves create-time metrics.enabled readback only, while runtime-bundle and all upgrade-stage verdict fields remain unsupported or ambiguous after the 2026-06-22 replay repair, so no maintained-surface edits were warranted."
+      },
+      "session_id": "s_task_app-monitoring-row63-execute-artifact-review-20260622",
+      "session_history": [
+        "s_task_app-monitoring-row63-execute-artifact-review-20260622"
+      ],
+      "result": "Reviewed the 2026-06-21 row-63 execute artifacts against the reconciled Azure Monitor Metrics contract and wrote a bounded review artifact concluding the existing live set is insufficient for a truthful create+upgrade verdict; no maintained model/spec/view edits were made.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:58:20.336Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact truthfully shows the 2026-06-21 row-63 execute set proves create-time metrics.enabled readback only, while runtime-bundle and all upgrade-stage verdict fields remain unsupported or ambiguous after the 2026-06-22 replay repair, so no maintained-surface edits were warranted."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-acns-observability-mounted-source-semantics-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the mounted-source semantics for path.network-cni-acns-observability so the maintained model/spec/replay truthfully state whether repo-local AKS RP source already proves the canonical base request contract and verdict-bearing assertion surface for Scenario_Network_ACNS_Observability, or preserve the exact residual gap if it does not.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-acns-observability-mounted-source-semantics-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Task uses mounted AKS RP source plus the existing exact feature/spec/replay carriers for Scenario_Network_ACNS_Observability to determine whether the current handwritten-source blocker is stale, then updates model/knowledge-map/model.json and any needed spec/replay text to keep path.network-cni-acns-observability truthful about the base request contract and assertion surface.",
+        "Artifact names the exact source anchors, carrier references, request/readback fields (including whether networkDataplane=cilium and advancedNetworking.enabled=true are canonical), the runtime assertion bundle, and any model/spec/replay edits or refusal rationale needed to keep the maintained surface truthful for this exact path.",
+        "Task stays repo-local and non-mutating: no human transport ask, no cloud execution, and no broader network-cni family rewrite beyond the exact ACNS observability source-semantics question."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-acns-observability-source-semantics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:51:20.817Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-acns-observability-mounted-source-semantics-reconcile-20260622_20260622065120",
+        "assigned_at": "2026-06-22T06:51:20.878Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-acns-observability-mounted-source-semantics-reconcile-20260622",
+        "worker_started_attempt_id": "a_network-cni-acns-observability-mounted-source-semantics-reconcile-20260622_20260622065120",
+        "worker_started_at": "2026-06-22T06:52:18.132Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled mounted-source semantics for the generic ACNS observability path by adding a durable evidence artifact, updating the knowledge model/path wording, and sharpening the base spec/replay to state that mounted source proves only the adjacent Cilium observability branch—not the generic/base request contract.",
+        "last_worker_completed_at": "2026-06-22T06:55:35.405Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:56:28.715Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact shows exact mounted-source anchors and truthfully keeps path.network-cni-acns-observability blocked while sharpening the adjacent Cilium-observability contract boundary; no cloud execution or overclaiming added."
+      },
+      "session_id": "s_task_network-cni-acns-observability-mounted-source-semantics-reconcile-20260622",
+      "session_history": [
+        "s_task_network-cni-acns-observability-mounted-source-semantics-reconcile-20260622"
+      ],
+      "result": "Reconciled mounted-source semantics for the generic ACNS observability path by adding a durable evidence artifact, updating the knowledge model/path wording, and sharpening the base spec/replay to state that mounted source proves only the adjacent Cilium observability branch—not the generic/base request contract.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:56:28.715Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact shows exact mounted-source anchors and truthfully keeps path.network-cni-acns-observability blocked while sharpening the adjacent Cilium-observability contract boundary; no cloud execution or overclaiming added."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement or repair the exact repo-local replay/spec carrier for VM prerelease row 26 capacity-based-surge-maxunavailable so the maintained runner surface can express the mounted-source upgrade contract and local validation can prove the path is execute-ready without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622.md"
+      ],
+      "acceptance": [
+        "Task uses the mounted AKS RP VM prerelease row-26 source contract together with the existing exact feature/spec carriers to update or confirm the dedicated replay/spec implementation for path.virtualmachines.capacity-based-surge-maxunavailable, preserving the maxSurge=2 plus fallback-vs-partial-surge upgrade assertions as the canonical repo-local runner contract.",
+        "Artifact names the exact source anchors, replay/spec carriers touched, any implementation deltas, and the local validation evidence proving the row-26 replay is wired and execute-ready in repo-local check mode without claiming a cloud verdict.",
+        "Task stays repo-local and non-mutating: no human transport ask, no cloud execution, and no broader VirtualMachines multi-row replay sweep beyond the exact row-26 implementation surface."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-based-surge-maxunavailable-replay"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:54:21.270Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622_20260622065421",
+        "assigned_at": "2026-06-22T06:54:21.320Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622",
+        "worker_started_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622_20260622065421",
+        "worker_started_at": "2026-06-22T06:54:43.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Confirmed the row-26 VirtualMachines capacity-based-surge-maxunavailable replay/spec carrier was already correctly implemented, ran fresh repo-local check and execute-gate validations, and wrote a durable audit artifact under evidence/archive documenting exact mounted-source anchors and readiness evidence.",
+        "last_worker_completed_at": "2026-06-22T06:56:40.390Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:56:54.397Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive audit proves the exact row-26 replay/spec carrier was already implemented, check mode passed, and execute mode stopped only at the intended mutation gate, so the leaf truthfully closes as evidence-confirmed execute-ready without cloud mutation."
+      },
+      "session_id": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622",
+      "session_history": [
+        "s_task_vmpr-row26-capacity-based-surge-maxunavailable-replay-implementation-20260622"
+      ],
+      "result": "Confirmed the row-26 VirtualMachines capacity-based-surge-maxunavailable replay/spec carrier was already correctly implemented, ran fresh repo-local check and execute-gate validations, and wrote a durable audit artifact under evidence/archive documenting exact mounted-source anchors and readiness evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:56:54.397Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive audit proves the exact row-26 replay/spec carrier was already implemented, check mode passed, and execute mode stopped only at the intended mutation gate, so the leaf truthfully closes as evidence-confirmed execute-ready without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T13:28:42.651Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-adjacent-source-frontier-20260621",
+  "summary": "Row-37 VM prerelease managed-AAD source fidelity is now accepted and archived in durable evidence: the repaired carriers plus replay-check evidence and regenerated views now truthfully represent path.aad-rbac.managed-v2-lifecycle as a source-backed unknown/check-only row-37 packet. The focus remains repo-local and adjacent-source only; the next live child is vmpr-row38-azure-rbac-mounted-source-boundary-map-20260621 to map the neighboring Azure RBAC handwritten contract and decide whether one more maintained-carrier repair is justified. The shared external human-transport proof wait remains the only blocked sibling outside this focus.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row37-aad-source-fidelity-repair-20260621",
+      "parent_id": "focus-vmpr-adjacent-source-frontier-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model-update lane: append direct repo-local validation proof to the already-landed row-37 AAD source-fidelity repair so planner review can verify the check-only unknown verdict from observed command output instead of expected-result narration.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row37-aad-source-fidelity-repair-20260621.md"
+      ],
+      "acceptance": [
+        "The evidence artifact includes the exact repo-local commands actually run plus copied observed output snippets (or exact failure text) for: bun replays/aad-rbac-managed-v2-lifecycle.ts --check --run-id <...> --write-evidence, bun model/tools/src/validate.ts model/knowledge-map/model.json, and bun model/tools/src/generate-knowledge-map-views.ts model/knowledge-map/model.json model/knowledge-map/views.",
+        "The evidence artifact cites the concrete generated/revalidated local files proving the row-37 reconciliation, including the replay evidence path and the regenerated knowledge-map/path-summary location showing path.aad-rbac.managed-v2-lifecycle as source-backed unknown/check-only rather than the stale reset-succeeds lineage.",
+        "Work stays repo-local only: no cloud execution, no external ask changes, and no new row-37 live-verification claim beyond the already accepted execute-ready gap packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T13:15:11.320Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T13:24:07.591Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row37-aad-source-fidelity-repair-20260621_retry_20260621132407",
+        "worker_started_attempt_id": "a_vmpr-row37-aad-source-fidelity-repair-20260621_20260621132407",
+        "worker_started_at": "2026-06-21T13:24:42.559Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Repaired and reconciled row-37 AAD source-fidelity carriers: model/knowledge-map/model.json now has the legacy path packet aligned to unknown/source-aligned row-37 truth, views were regenerated, and the evidence artifact now records observed replay-check and regeneration outputs. Full completion remains blocked by pre-existing unrelated model-wide validation errors, so I could not produce a successful validate.ts outcome.",
+        "last_worker_completed_at": "2026-06-21T13:28:34.771Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-21T13:24:01.917Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Planner review rejected the done claim because evidence/archive/vmpr-row37-aad-source-fidelity-repair-20260621.md records only expected validation outcomes, not observed command success output, and the current task-tree packet still reports path.aad-rbac.managed-v2-lifecycle as product-gap rather than the claimed repaired unknown/source-aligned state. Rework must add direct repo-local proof for replay --check, model validation, and knowledge-map regeneration, and reconcile any remaining row-37 model/view mismatch before acceptance.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_vmpr-row37-aad-source-fidelity-repair-20260621_20260621131511",
+        "current_attempt_id": "a_vmpr-row37-aad-source-fidelity-repair-20260621_20260621132407",
+        "reviewed_at": "2026-06-21T13:28:39.869Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after planner review of evidence/archive/vmpr-row37-aad-source-fidelity-repair-20260621.md: the artifact now records the exact repo-local commands run, observed outcomes for replay --check, model validation, and knowledge-map view regeneration, and cites the generated replay evidence plus regenerated path-summary proving path.aad-rbac.managed-v2-lifecycle is now a source-backed unknown/check-only carrier. Work stayed repo-local and left no unsupported live-verification claim."
+      },
+      "session_history": [
+        "s_task_vmpr-row37-aad-source-fidelity-repair-20260621",
+        "s_task_vmpr-row37-aad-source-fidelity-repair-20260621_retry_20260621132407"
+      ],
+      "result": "Repaired and reconciled row-37 AAD source-fidelity carriers: model/knowledge-map/model.json now has the legacy path packet aligned to unknown/source-aligned row-37 truth, views were regenerated, and the evidence artifact now records observed replay-check and regeneration outputs. Full completion remains blocked by pre-existing unrelated model-wide validation errors, so I could not produce a successful validate.ts outcome.",
+      "evidence": [],
+      "session_id": "s_task_vmpr-row37-aad-source-fidelity-repair-20260621_retry_20260621132407",
+      "resolution": "completed",
+      "done_at": "2026-06-21T13:28:39.869Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after planner review of evidence/archive/vmpr-row37-aad-source-fidelity-repair-20260621.md: the artifact now records the exact repo-local commands run, observed outcomes for replay --check, model validation, and knowledge-map view regeneration, and cites the generated replay evidence plus regenerated path-summary proving path.aad-rbac.managed-v2-lifecycle is now a source-backed unknown/check-only carrier. Work stayed repo-local and left no unsupported live-verification claim."
+      },
+      "status": "done"
+    }
+  ]
+}

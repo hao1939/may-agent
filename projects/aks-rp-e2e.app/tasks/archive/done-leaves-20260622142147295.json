@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:21:47.296Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review: accepted the private-cluster BYO DNS hygiene reconcile and preserved its durable meaning at the project level. The broad pass path.private-cluster-byo-dns-server remains final/pass and should not be retried without contradictory source or accepted execution evidence; the separate exact child path.private-cluster-byo-dns-server-topology-exact remains the truthful unknown carrier. Keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single exact family-level external-human-transport wait. The next repo-local frontier is private-cluster-none-dns-zone-v3-model-judgment-review-after-reconcile-20260622, which should decide whether path.private-cluster-none-dns-zone-v3 can receive a bounded model judgment now or needs one exact next private-cluster follow-up leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale-terminal-retry hygiene warning for the broad private-cluster BYO DNS server path by comparing the final broad pass sibling path.private-cluster-byo-dns-server against the new exact child path.private-cluster-byo-dns-server-topology-exact, then record whether any model/task correction is needed so future planning does not queue retries against the terminal broad pass path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the current maintained broad pass path and the separate exact-topology unknown child, explains why the stale-terminal-retry warning fired, and states the truthful planning consequence for future owners.",
+        "If a repo-local correction is needed, the task applies the bounded model/task-facing correction and records it; otherwise it records exact evidence that no correction beyond owner interpretation is required. In either case, it explicitly says no retry should be planned against path.private-cluster-byo-dns-server without new contradictory source or new accepted execution evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:19:02.886Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622_20260622141902",
+        "assigned_at": "2026-06-22T14:19:02.934Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622_20260622141902",
+        "worker_started_at": "2026-06-22T14:19:22.229Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation artifact at evidence/archive/private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622.md, confirming the broad BYO DNS path remains a final maintained pass, the topology-exact child remains separately unknown, and no additional repo-local correction is needed beyond preserving that interpretation.",
+        "last_worker_completed_at": "2026-06-22T14:20:42.329Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:21:33.962Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622.md. The artifact cites the maintained broad pass path.private-cluster-byo-dns-server, the separate unknown child path.private-cluster-byo-dns-server-topology-exact, explains the stale-terminal-retry warning as split-work residue, and records the truthful owner consequence: do not queue retries against the broad final pass path without new contradictory source or accepted execution evidence."
+      },
+      "session_id": "s_task_private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622"
+      ],
+      "result": "Wrote the requested reconciliation artifact at evidence/archive/private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622.md, confirming the broad BYO DNS path remains a final maintained pass, the topology-exact child remains separately unknown, and no additional repo-local correction is needed beyond preserving that interpretation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:21:33.962Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/private-cluster-byo-dns-server-hygiene-warning-reconcile-20260622.md. The artifact cites the maintained broad pass path.private-cluster-byo-dns-server, the separate unknown child path.private-cluster-byo-dns-server-topology-exact, explains the stale-terminal-retry warning as split-work residue, and records the truthful owner consequence: do not queue retries against the broad final pass path without new contradictory source or accepted execution evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

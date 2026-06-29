@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:29:40.618Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "2026-06-20 watchdog completion reconciliation: the stale review wake for vm-prerelease-row35-selector-promotion-proof-20260620 is already represented by accepted lane truth, so archive the replaced passive hold carrier here. Current lane truth is explicit: row 35 selector promotion is accepted and no longer needs review, shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620 was truthfully replaced, and the single live next action is vm-prerelease-post-row35-checkpoint-helper-rerun-20260620 to rerun domain:checkpoint and decide whether the shared seven-file model hold and broader evidence hold still block a coherent VM-prerelease checkpoint or now surface a bounded checkpointable slice.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-knowledge-map-seven-file-checkpoint-helper-hold-carrier-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one precise blocked carrier for the VM prerelease/shared-model checkpoint lane now that row 35 is repaired, while domain:checkpoint still holds the shared seven-file model slice and the intended 20-file VM prerelease cohort still cohabits a broader held evidence slice instead of surfacing as a checkpointable VM-only packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-post-row35-reassessment-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/shared-knowledge-map-seven-file-post-row35-reassessment-20260620.md as the accepted lane-truth artifact and preserves the exact blocker facts: row 35 repair accepted, slice=model still holds model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, and the intended 20-file VM prerelease cohort is still trapped in a broader held slice=evidence rather than a VM-only candidate packet.",
+        "The live resume trigger is exact: reopen only after a fresh domain:checkpoint rerun no longer reports hold on the shared seven-file slice for model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json and the VM prerelease promotion cohort named in vm-prerelease-shared-model-slice-partition-20260620.md surfaces as its own checkpointable candidate packet instead of cohabiting the broader held evidence slice.",
+        "This task remains the single truthful live representation of the VM prerelease/shared-model checkpoint blocker and does not spawn a checkpoint-ready follow-up before those helper-held conditions clear."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:27:06.120Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T13:28:09.851Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive hold carrier because row-35 selector promotion is now accepted and the truthful next step is a bounded local domain:checkpoint helper rerun to see whether the shared seven-file model hold and broader evidence hold still remain or have become checkpointable."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T13:28:09.851Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive hold carrier because row-35 selector promotion is now accepted and the truthful next step is a bounded local domain:checkpoint helper rerun to see whether the shared seven-file model hold and broader evidence hold still remain or have become checkpointable."
+      },
+      "summary": "Replaced the passive hold carrier because row-35 selector promotion is now accepted and the truthful next step is a bounded local domain:checkpoint helper rerun to see whether the shared seven-file model hold and broader evidence hold still remain or have become checkpointable.",
+      "replaced_by": [
+        "vm-prerelease-post-row35-checkpoint-helper-rerun-20260620"
+      ],
+      "supersededBy": [
+        "vm-prerelease-post-row35-checkpoint-helper-rerun-20260620"
+      ],
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T08:29:02.543Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner stale-active review repaired the row-63 frontier presentation: addonv2-row63-live-runtime-verdict-rerun-20260621 is now accepted as a non-terminal stale attempt because it never advanced beyond worker start and produced no durable artifact, and addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 is the single live child carrying the same post-parser-repair runtime-verdict contract. This focus branch remains intentionally narrow around Scenario_Addonv2_Azure_Monitor_Metrics and should only collect the first trustworthy helm/pod/node-exporter runtime evidence or the next exact blocker beyond the accepted parser repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-row63-live-runtime-verdict-rerun-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute one bounded live rerun for row 63 Azure Monitor Metrics now that the runtime-observation parser repair landed, so path.app-monitoring-addonv2-azure-monitor-metrics can collect its first trustworthy post-repair runtime verdict from actual helm/pod/node-exporter observations instead of the prior replay-side JSON parse artifact.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-row63-live-runtime-verdict-rerun-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the exact input path, expectation path, and model gap it is covering, then records the precise replay/spec command, run id, effective AzureMonitorProfile/body inputs, required mutation gate, and any reused cluster/shared-identity context before execution.",
+        "Artifact captures the first terminal live boundary reached after the parser repair: either trustworthy runtime evidence for helm release presence, ama-metrics pod health, and node-exporter proxy scrape on the row-63 lifecycle, or the exact new blocker/failure text that supersedes the prior 'JSON Parse error: Unterminated string' artifact.",
+        "If execution cannot proceed or terminates early, the artifact states whether the parser repair remains accepted, records the smallest truthful next action, and avoids reopening already-complete repair/modeling work unless new contradictory evidence appears."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:12:50.245Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-row63-live-runtime-verdict-rerun-20260621_20260621081254",
+        "assigned_at": "2026-06-21T08:12:54.102Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-row63-live-runtime-verdict-rerun-20260621",
+        "worker_started_attempt_id": "a_addonv2-row63-live-runtime-verdict-rerun-20260621_20260621081254",
+        "worker_started_at": "2026-06-21T08:13:12.821Z",
+        "reviewed_at": "2026-06-21T08:28:54.737Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog stale-active review accepted that this attempt never advanced beyond worker start and produced no durable evidence artifact or terminal verdict. Superseded by addonv2-row63-live-runtime-verdict-rerun-reissue-20260621, which preserves the same post-parser-repair contract and carries the truthful next bounded live rerun."
+      },
+      "session_id": "s_task_addonv2-row63-live-runtime-verdict-rerun-20260621",
+      "session_history": [
+        "s_task_addonv2-row63-live-runtime-verdict-rerun-20260621"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:28:54.737Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog stale-active review accepted that this attempt never advanced beyond worker start and produced no durable evidence artifact or terminal verdict. Superseded by addonv2-row63-live-runtime-verdict-rerun-reissue-20260621, which preserves the same post-parser-repair contract and carries the truthful next bounded live rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

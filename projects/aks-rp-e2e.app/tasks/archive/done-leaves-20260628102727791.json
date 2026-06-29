@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T10:27:27.791Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review accepted the runtime hold-state contract repair. This lane is now intentionally non-refill: app-local feature-reference state truthfully encodes holdState.mode=dormant-backlog-preserved, noRefillNow=true, 24 stale residue carriers, and 76 dormant backlog carriers, while the parent workflowProgress now reports zero active refill work and completionReady=true after one bounded refresh with no collector fan-out. No repo-local successor remains under this lane; reopen only if a bounded owner-selected feature slice is intentionally resumed or if future runtime evidence contradicts the accepted hold contract.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "inspect-feature-reference-loop-state-carriers-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the feature-reference loop state carriers and write exact evidence for why aks-feature-reference-loop still appears non-terminal despite the accepted hold-with-dormant-backlog decision, including which task-tree/workflow/app-state fields are stale historical residue versus still driving live controller behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact contradictory carriers now visible on aks-feature-reference-loop, including parent task state/status, context.workflowProgress counters, trace/controller residue, and the dormant-backlog hold summary.",
+        "Archive note distinguishes which carriers are merely historical residue versus which ones still drive live planner/controller behavior that must be repaired or reclassified.",
+        "Archive note ends with one bounded repair target for the follow-up task: the exact metadata/tooling fields that should change or be reinterpreted so the lane truthfully means hold-with-dormant-backlog-preserved without broad refill pressure."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop-state-truth"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T10:21:06.888Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_inspect-feature-reference-loop-state-carriers-20260628_20260628102116",
+        "assigned_at": "2026-06-28T10:21:16.178Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_inspect-feature-reference-loop-state-carriers-20260628",
+        "worker_started_attempt_id": "a_inspect-feature-reference-loop-state-carriers-20260628_20260628102116",
+        "worker_started_at": "2026-06-28T10:21:31.763Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md documenting the exact stale vs live carriers keeping aks-feature-reference-loop non-terminal and naming the bounded follow-up repair target.",
+        "last_worker_completed_at": "2026-06-28T10:23:39.174Z",
+        "last_worker_evidence": [
+          "evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T10:24:16.227Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md cites the exact stale vs live carriers on aks-feature-reference-loop, distinguishes historical residue from live controller/tooling inputs, and ends with the bounded runtime-state repair target now captured by repair-feature-reference-loop-runtime-hold-state-contract-20260628."
+      },
+      "session_id": "s_task_inspect-feature-reference-loop-state-carriers-20260628",
+      "session_history": [
+        "s_task_inspect-feature-reference-loop-state-carriers-20260628"
+      ],
+      "result": "Wrote the requested archive note at evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md documenting the exact stale vs live carriers keeping aks-feature-reference-loop non-terminal and naming the bounded follow-up repair target.",
+      "evidence": [
+        "evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T10:24:16.227Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/inspect-feature-reference-loop-state-carriers-20260628.md cites the exact stale vs live carriers on aks-feature-reference-loop, distinguishes historical residue from live controller/tooling inputs, and ends with the bounded runtime-state repair target now captured by repair-feature-reference-loop-runtime-hold-state-contract-20260628."
+      },
+      "status": "done"
+    }
+  ]
+}

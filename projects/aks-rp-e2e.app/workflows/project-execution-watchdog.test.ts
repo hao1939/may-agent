@@ -126,6 +126,51 @@ function writeRuntimeSession(
   db.close();
 }
 
+async function writeSpecLoopState(
+  projectDir: string,
+  input: {
+    specId: string;
+    taskId: string;
+    status?: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  },
+) {
+  await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+  await writeFile(
+    join(projectDir, ".state", "spec-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 5,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs: {
+          [input.specId]: {
+            status: input.status ?? "running",
+            taskId: input.taskId,
+            attempts: 1,
+            lastRunId: null,
+            lastRunUrl: null,
+            lastResultPath: null,
+            lastPrUrl: null,
+            activeAttemptId: input.activeAttemptId ?? "a_test",
+            activeTaskSessionId: input.activeTaskSessionId ?? null,
+            activeWorkflowRunId: input.activeWorkflowRunId ?? null,
+            heartbeatAt: input.heartbeatAt ?? null,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 function context(input: {
   projectDir: string;
   stateDbPath?: string;
@@ -187,6 +232,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-runnable-backlog",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -229,6 +275,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-blocked-frontier-review",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -278,6 +325,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-blocked-frontier-review",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -332,6 +380,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-stale-active-review",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -534,6 +583,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-stale-active-review",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -594,12 +644,169 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-capacity-underfilled",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
         },
       },
     ]);
+  });
+
+  test("treats single-spec verifier with live spec-loop heartbeat as active even without runtime session row", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "verify-spec-example": task("verify-spec-example", "active", {
+          workflow: "single-spec-verifier",
+          session_id: "s_task_verify-spec-example_retry_1",
+          trace: {
+            current_attempt_id: "a_test",
+            worker_started_at: new Date().toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "verify-spec-example",
+        active_task_ids: ["verify-spec-example"],
+      },
+    );
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.example",
+      taskId: "verify-spec-example",
+      activeAttemptId: "a_test",
+      activeTaskSessionId: "s_task_verify-spec-example_retry_1",
+      activeWorkflowRunId: "123456",
+      heartbeatAt: new Date().toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: { reason: "watchdog-capacity-underfilled" },
+    });
+  });
+
+  test("does not trust single-spec verifier heartbeat from an obsolete attempt", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "verify-spec-example": task("verify-spec-example", "active", {
+          workflow: "single-spec-verifier",
+          session_id: "s_task_verify-spec-example_retry_2",
+          trace: {
+            current_attempt_id: "a_live",
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "verify-spec-example",
+        active_task_ids: ["verify-spec-example"],
+      },
+    );
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.example",
+      taskId: "verify-spec-example",
+      activeAttemptId: "a_old",
+      activeTaskSessionId: "s_task_verify-spec-example_retry_2",
+      activeWorkflowRunId: "123456",
+      heartbeatAt: new Date().toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${join(projectDir, "missing.db")}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "sessionStartGraceMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [
+          { taskId: "verify-spec-example", reason: "session-not-running" },
+        ],
+      },
+    });
+  });
+
+  test("flags single-spec verifier when spec-loop heartbeat is stale", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "verify-spec-example": task("verify-spec-example", "active", {
+          workflow: "single-spec-verifier",
+          session_id: "s_task_verify-spec-example_retry_1",
+          trace: {
+            current_attempt_id: "a_test",
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "verify-spec-example",
+        active_task_ids: ["verify-spec-example"],
+      },
+    );
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.example",
+      taskId: "verify-spec-example",
+      activeAttemptId: "a_test",
+      activeTaskSessionId: "s_task_verify-spec-example_retry_1",
+      activeWorkflowRunId: "123456",
+      heartbeatAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${join(projectDir, "missing.db")}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [
+          { taskId: "verify-spec-example", reason: "verifier-no-heartbeat" },
+        ],
+      },
+    });
   });
 
   test("wakes owner when open work has no runnable backlog leaves", async () => {
@@ -625,6 +832,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-blocked-frontier-review",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
@@ -684,6 +892,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-review-pending",
           maxConcurrent: 1,
           requested_by: "project-execution-watchdog",
@@ -815,6 +1024,7 @@ describe("project execution watchdog", () => {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
           reason: "watchdog-capacity-underfilled",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",

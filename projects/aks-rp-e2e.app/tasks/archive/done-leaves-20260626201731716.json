@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:17:31.716Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 owner planning update after the stale row-25/row-26 problem event: the VM prerelease family diagnosis is now accepted as durable parent context, proving the apparent row-25/40/43/50 worker failures were shared provider-429 finalization loss rather than repo-local carrier breakage. Preserve row 25 as direct-spec-ready via its completed compaction-vs-direct artifact, treat row 43 as already evidenced and reviewable from its existing artifact, and expose only the two still-missing durable retry leaves for rows 40 and 50 plus the separate active static-egress carrier repair and the single truthful external-human wait. Do not recreate a standalone row-25 problem leaf or a generic VMPR runner-repair leaf unless new evidence contradicts the accepted family diagnosis.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-dry-run-readiness-error-family-diagnosis-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared evidence-free worker failure across the VM prerelease dry-run/readiness review family (rows 25, 40, 43, and 50), using repo-local source/spec/replay/runner surfaces to identify the exact common root cause and the concrete retry-or-repair path for each row without cloud mutation or external-human waits, while reconciling the stale row-25/row-26 problem event into the live family diagnosis artifact rather than recreating an archived standalone row task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-dry-run-readiness-error-family-diagnosis-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the four affected row tasks and their empty-evidence or misleading error/blocked traces, explicitly incorporates the row-25 vs row-26 compaction artifact at ../aks-rp-e2e/evidence/archive/vmpr-row25-row26-capacity-surge-compaction-vs-direct-dry-run-20260626.md, and proves whether the family issue is shared runner/wiring cause or row-specific divergence using repo-local evidence only.",
+        "The artifact ends with a concrete follow-up map: which existing row review leaves can be retried unchanged, which need rewritten follow-up leaves, whether misleading completion metadata (such as the row-25 blocked/error label despite direct-spec-ready evidence) should be normalized into retry-or-repair tasks before more dry-run/readiness retries, and how the stale vmpr-row25-row26-capacity-surge-compaction-vs-direct-dry-run-20260626 problem reference maps onto current live work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-dry-run-readiness-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:12:54.018Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-dry-run-readiness-error-family-diagnosis-20260626_20260626201254",
+        "assigned_at": "2026-06-26T20:12:54.062Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-dry-run-readiness-error-family-diagnosis-20260626",
+        "worker_started_attempt_id": "a_vmpr-dry-run-readiness-error-family-diagnosis-20260626_20260626201254",
+        "worker_started_at": "2026-06-26T20:13:29.943Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested family-diagnosis artifact at evidence/archive/vmpr-dry-run-readiness-error-family-diagnosis-20260626.md, proving the shared failure was provider-429 finalization loss rather than row-local carrier breakage and mapping each row to retry-vs-review owner action.",
+        "last_worker_completed_at": "2026-06-26T20:16:26.044Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:16:49.647Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the family diagnosis artifact because it cites rows 25/40/43/50, incorporates the row-25/row-26 compaction evidence, proves the shared failure was provider-429 finalization loss rather than a repo-local carrier defect, and maps current owner follow-up as accept/review for rows 25/43 and unchanged retries for rows 40/50."
+      },
+      "session_id": "s_task_vmpr-dry-run-readiness-error-family-diagnosis-20260626",
+      "session_history": [
+        "s_task_vmpr-dry-run-readiness-error-family-diagnosis-20260626"
+      ],
+      "result": "Wrote the requested family-diagnosis artifact at evidence/archive/vmpr-dry-run-readiness-error-family-diagnosis-20260626.md, proving the shared failure was provider-429 finalization loss rather than row-local carrier breakage and mapping each row to retry-vs-review owner action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:16:49.647Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the family diagnosis artifact because it cites rows 25/40/43/50, incorporates the row-25/row-26 compaction evidence, proves the shared failure was provider-429 finalization loss rather than a repo-local carrier defect, and maps current owner follow-up as accept/review for rows 25/43 and unchanged retries for rows 40/50."
+      },
+      "status": "done"
+    },
+    {
+      "id": "static-egress-vmss-origin-dev-retarget-proof-refresh-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-open the static-egress-vmss origin/dev carrier decision as a bounded repo-local follow-up: verify whether the branch still fails on deleted replay-lib imports, capture the exact present branch state, and decide whether a truthful dispatch retry leaf exists or the focus must continue to treat this as local carrier repair only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/static-egress-vmss-origin-dev-retarget-proof-refresh-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact records the current origin/dev state for the maintained static-egress-vmss replay/spec carrier and quotes the exact local proof for either continued import breakage or a repaired dispatchable state.",
+        "The artifact ends with one exact owner verdict: create/assign a dispatch retry leaf, create/assign a narrower local repair leaf, or preserve a precise local blocker with resume condition; no workflow queueing is attempted from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "static-egress-vmss-origin-dev"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:12:54.106Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T20:13:04.361Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_static-egress-vmss-origin-dev-retarget-proof-refresh-20260626_20260626201329",
+        "assigned_at": "2026-06-26T20:13:29.762Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_static-egress-vmss-origin-dev-retarget-proof-refresh-20260626",
+        "worker_started_attempt_id": "a_static-egress-vmss-origin-dev-retarget-proof-refresh-20260626_20260626201329",
+        "worker_started_at": "2026-06-26T20:13:30.422Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a repo-local evidence artifact proving `origin/dev` still fails for static-egress-vmss on deleted `replays/lib` imports and concluding the owner should create a narrower local repair leaf, not a dispatch retry leaf.",
+        "last_worker_completed_at": "2026-06-26T20:14:38.945Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:15:33.311Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: artifact proves origin/dev still points spec.net-integration.static-egress-vmss at the deleted replay carrier, reproduces missing replays/lib import failure under exact branch state, and truthfully concludes the next step is a narrower local repair leaf rather than a dispatch retry."
+      },
+      "session_id": "s_task_static-egress-vmss-origin-dev-retarget-proof-refresh-20260626",
+      "session_history": [
+        "s_task_static-egress-vmss-origin-dev-retarget-proof-refresh-20260626"
+      ],
+      "result": "Produced a repo-local evidence artifact proving `origin/dev` still fails for static-egress-vmss on deleted `replays/lib` imports and concluding the owner should create a narrower local repair leaf, not a dispatch retry leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:15:33.311Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: artifact proves origin/dev still points spec.net-integration.static-egress-vmss at the deleted replay carrier, reproduces missing replays/lib import failure under exact branch state, and truthfully concludes the next step is a narrower local repair leaf rather than a dispatch retry."
+      },
+      "status": "done"
+    }
+  ]
+}

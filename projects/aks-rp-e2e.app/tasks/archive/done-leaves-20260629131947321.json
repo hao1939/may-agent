@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T13:19:47.321Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepts two more repo-local repair/prep leaves and creates one concrete follow-up where the single-spec controller auto-accepted a weak terminal result. The KMS trust-service public-cluster/private-KV carriers now match mounted private-KV recovery and rotation semantics, including Contributor reassignment, managed-cluster reconcile, replace-all-secrets-before-first-rotation, and the tightened second-rotation guard. The rp-cluster-lifecycle new-vnet VM prerelease branch now has an accepted rerun-prep note that defines the exact future live rerun gate, timeout-proof dispatch evidence, and review boundary without launching cloud execution. In contrast, spec.net-integration.auto-assign-hostports run 28372252901 only preserved a create-time ARM timeout plus audit pointers, so a new active classification leaf now owns the bounded review of whether this is merely a spec-local evidence-gap/retry candidate or something stronger. Remaining open work stays on the active single-spec verification drain, this hostports timeout classification follow-up, and the existing truthful waits.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the accepted KMS v2 trust-service public-cluster/private-KV repo-local repair plan so the spec JSON and replay TS match mounted handwritten source for recovery, first rotation, and second-rotation guard behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/kms-etcd-encryption/specs/kms-v2-trust-service-public-cluster-private-kv.json",
+        "../aks-rp-e2e/features/kms-etcd-encryption/tests/kms-v2-trust-service-public-cluster-private-kv.ts"
+      ],
+      "acceptance": [
+        "The trust-service private-KV spec/replay restore source-equivalent recovery semantics: the feature-flag set matches mounted source, post-recovery Key Vault Contributor is reassigned, and managed-cluster reconcile-after-recovery is present before encryption-resume validation.",
+        "The trust-service private-KV flow inserts replace-all-secrets-before-first-rotation and updates operation/assertion ordering and check-mode references accordingly.",
+        "The second-rotation guard is tightened to source-equivalent behavior by requiring both RotateAzureKeyVaultKmsKeyError and the ensure-secrets-replaced message fragment; generic 409/non-OK alone no longer satisfies the assertion.",
+        "The leaf cites evidence/archive/kms-v2-trust-service-private-kv-source-alignment-plan-20260629.md as the bounded source-backed repair basis and does not launch a cloud rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:14:52.000Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T13:14:52.105Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629_20260629131459",
+        "assigned_at": "2026-06-29T13:14:59.156Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629",
+        "worker_started_attempt_id": "a_apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629_20260629131459",
+        "worker_started_at": "2026-06-29T13:15:22.567Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the trust-service private-KV source-alignment repair in the spec JSON and replay TS, restoring mounted-source recovery/rotation semantics without launching a cloud rerun. Verified the updated replay in check mode and confirmed the spec now carries the plan citation, restored feature flag, recovery reconcile step, pre-first-rotation replace step, and tightened second-rotation guard.",
+        "last_worker_completed_at": "2026-06-29T13:18:50.664Z",
+        "last_worker_evidence": [
+          "features/kms-etcd-encryption/specs/kms-v2-trust-service-public-cluster-private-kv.json",
+          "features/kms-etcd-encryption/tests/kms-v2-trust-service-public-cluster-private-kv.ts"
+        ],
+        "reviewed_at": "2026-06-29T13:19:47.103Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the KMS trust-service private-KV source-alignment apply task: the updated spec/test now restore the mounted private-KV recovery and rotation contract, including the konnectivity flag, post-recovery Key Vault Contributor reassignment, managed-cluster reconcile, replace-all-secrets-before-first-rotation, and the tightened second-rotation guard that requires both expected message fragments, all without a cloud rerun."
+      },
+      "session_id": "s_task_apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629",
+      "session_history": [
+        "s_task_apply-spec-kms-v2-trust-service-private-kv-source-alignment-repair-20260629"
+      ],
+      "result": "Applied the trust-service private-KV source-alignment repair in the spec JSON and replay TS, restoring mounted-source recovery/rotation semantics without launching a cloud rerun. Verified the updated replay in check mode and confirmed the spec now carries the plan citation, restored feature flag, recovery reconcile step, pre-first-rotation replace step, and tightened second-rotation guard.",
+      "evidence": [
+        "features/kms-etcd-encryption/specs/kms-v2-trust-service-public-cluster-private-kv.json",
+        "features/kms-etcd-encryption/tests/kms-v2-trust-service-public-cluster-private-kv.ts"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:19:47.103Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the KMS trust-service private-KV source-alignment apply task: the updated spec/test now restore the mounted private-KV recovery and rotation contract, including the konnectivity flag, post-recovery Key Vault Contributor reassignment, managed-cluster reconcile, replace-all-secrets-before-first-rotation, and the tightened second-rotation guard that requires both expected message fragments, all without a cloud rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the next trustworthy execution step for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease after the repo-local nginx-carrier repair by defining the exact rerun gate, expected evidence surfaces, and review boundary without launching a cloud run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629.md"
+      ],
+      "acceptance": [
+        "The artifact states the repaired carrier is repo-local prep only, names the exact future live rerun gate and safety conditions, and lists what new evidence the rerun must collect to distinguish carrier failure from product-path failure.",
+        "The artifact links the repaired replay/evidence and records whether any additional local cleanup or model/context update is needed before a later owner-approved rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T13:16:08.772Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629_20260629131616",
+        "assigned_at": "2026-06-29T13:16:16.507Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260",
+        "worker_started_attempt_id": "a_rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629_20260629131616",
+        "worker_started_at": "2026-06-29T13:17:03.519Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the rerun-prep artifact for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease, defining the exact owner-approved live rerun gate, required timeout-proof evidence, and the review boundary needed to separate repaired-carrier failures from real product-path failures.",
+        "last_worker_completed_at": "2026-06-29T13:18:38.283Z",
+        "last_worker_evidence": [
+          "evidence/archive/rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T13:19:47.156Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the VM prerelease rerun-prep artifact: it keeps the nginx-carrier repair as repo-local prep only, defines the exact future live rerun gate and timeout-proof evidence surfaces, and records the review boundary needed to separate carrier failure from real row-161 product-path failure."
+      },
+      "session_id": "s_task_rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260",
+      "session_history": [
+        "s_task_rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260"
+      ],
+      "result": "Created the rerun-prep artifact for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease, defining the exact owner-approved live rerun gate, required timeout-proof evidence, and the review boundary needed to separate repaired-carrier failures from real product-path failures.",
+      "evidence": [
+        "evidence/archive/rerun-prep-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-after-carrier-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T13:19:47.156Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the VM prerelease rerun-prep artifact: it keeps the nginx-carrier repair as repo-local prep only, defines the exact future live rerun gate and timeout-proof evidence surfaces, and records the review boundary needed to separate carrier failure from real row-161 product-path failure."
+      },
+      "status": "done"
+    }
+  ]
+}

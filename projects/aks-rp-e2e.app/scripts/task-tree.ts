@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -12,6 +12,7 @@ import {
   kanbanTaskTreeState,
   markTaskDone,
   planningPacket,
+  pruneMissingChildren,
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
@@ -19,6 +20,7 @@ import {
   rollupParent,
   summarizeTaskTree,
   updateAcceptedReviewMetadata,
+  updateArchivedTaskOutputs,
   updateTaskOutputs,
   updateTaskText,
   taskTreeConfig,
@@ -34,6 +36,7 @@ function usage(): never {
   bun run task-tree kanban
   bun run task-tree kanban-snapshot
   bun run task-tree repair-rollups
+  bun run task-tree prune-missing-children <parent-id>
   bun run task-tree compact-done [--limit N]
   bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
   bun run task-tree frontier
@@ -46,6 +49,7 @@ function usage(): never {
   bun run task-tree show <task-id>
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
   bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
+  bun run task-tree set-archived-outputs <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --output <path> [--output <path> ...]
   bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
   bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
@@ -56,7 +60,12 @@ Environment:
   APP_DIR=/app/projects/aks-rp-e2e.app
   PROJECT_DIR=/app/projects/aks-rp-e2e
   WORKER=aks-explorer
-  MAX_CONCURRENT=5`);
+  MAX_CONCURRENT=5
+
+Default maxConcurrent resolution when --max is omitted:
+  1. MAX_CONCURRENT env
+  2. app project.json policy.maxConcurrent
+  3. fallback 1 when no explicit policy is present`);
   process.exit(2);
 }
 
@@ -75,6 +84,21 @@ function numberOption(name: string, fallback: number): number {
 
 function hasFlag(name: string): boolean {
   return process.argv.includes(name);
+}
+
+function readProjectPolicyMaxConcurrent(appDir: string): number | null {
+  const projectJsonPath = join(appDir, "project.json");
+  try {
+    const parsed = JSON.parse(readFileSync(projectJsonPath, "utf-8")) as {
+      policy?: { maxConcurrent?: unknown };
+    };
+    const configured = parsed?.policy?.maxConcurrent;
+    return typeof configured === "number" && Number.isFinite(configured)
+      ? Math.max(1, Math.trunc(configured))
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function repeatedStringOption(name: string): string[] {
@@ -125,11 +149,16 @@ const appDir = resolve(
 const projectDir = resolve(
   process.env.PROJECT_DIR ?? join(appDir, "..", "aks-rp-e2e"),
 );
+const policyMaxConcurrent = readProjectPolicyMaxConcurrent(appDir);
+const fallbackMaxConcurrent =
+  Number.parseInt(process.env.MAX_CONCURRENT ?? "", 10) ||
+  policyMaxConcurrent ||
+  1;
 const config = taskTreeConfig({
   appDir,
   projectDir,
   worker: process.env.WORKER ?? "aks-explorer",
-  maxConcurrent: numberOption("--max", Number(process.env.MAX_CONCURRENT ?? 5)),
+  maxConcurrent: numberOption("--max", fallbackMaxConcurrent),
 });
 
 if (!existsSync(config.treePath)) {
@@ -150,6 +179,18 @@ if (command === "summary") {
   console.log(JSON.stringify(writeKanbanSnapshot(config), null, 2));
 } else if (command === "repair-rollups") {
   console.log(JSON.stringify(repairTaskTreeRollups(config), null, 2));
+} else if (command === "prune-missing-children") {
+  const parentId = process.argv[3];
+  if (!parentId) usage();
+  console.log(
+    JSON.stringify(
+      pruneMissingChildren(config, {
+        parentId,
+      }),
+      null,
+      2,
+    ),
+  );
 } else if (command === "compact-done") {
   console.log(
     JSON.stringify(
@@ -335,6 +376,21 @@ if (command === "summary") {
       updateTaskOutputs(config, {
         taskId,
         outputs,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "set-archived-outputs") {
+  const taskId = process.argv[3];
+  const outputs = repeatedStringOption("--output");
+  if (!taskId || outputs.length === 0) usage();
+  console.log(
+    JSON.stringify(
+      updateArchivedTaskOutputs(config, {
+        taskId,
+        outputs,
+        archiveFile: option("--archive-file"),
       }),
       null,
       2,

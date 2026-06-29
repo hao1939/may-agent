@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T03:34:16.889Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner refill/reconciliation: archive the completed ManagedSystem, OIDC, and managementplane-addonv2 no-cloud closure leaves because their durable meaning is already preserved in repo-local evidence plus the project rollup. Preserve the single truthful external-human family wait unchanged for the covered MachinesPreview, VM prerelease shared-identity, and private-cluster-none-dns-zone-v3 asks, and reopen independent progress by adding one new no-cloud source-boundary leaf for the next uncovered VM prerelease family rather than inventing duplicate reminder waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source and repo-local carrier contract for path.virtualmachines.managedsystem-agentpool-vm-prerelease (VM prerelease row 54) so the ManagedSystem worked example has a bounded no-cloud boundary artifact and one exact next probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact names path.virtualmachines.managedsystem-agentpool-vm-prerelease, the exact mounted-source carrier file(s) reviewed (starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any directly referenced scenario definition), and the selected ManagedSystem branch/intent being mapped.",
+        "The artifact records the accepted inputs, rejected/unknown edges, expected behavior, adjacent ManagedSystem/VirtualMachines surfaces, and the current repo-local spec/replay/model carriers or gaps for this exact path without running cloud mutation.",
+        "The artifact leaves one exact next owner/worker action (spec/replay/model repair, bounded validation, or truthful blocker) for this ManagedSystem path and does not reopen the unrelated external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T02:48:19.594Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626_20260626024900",
+        "assigned_at": "2026-06-26T02:49:00.974Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626_20260626024900",
+        "worker_started_at": "2026-06-26T02:49:01.165Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive boundary artifact for path.virtualmachines.managedsystem-agentpool-vm-prerelease, mapping the mounted-source create-time ManagedSystem carrier, adjacent surfaces, repo-local carriers, and one exact next no-cloud probe action.",
+        "last_worker_completed_at": "2026-06-26T02:50:16.725Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T02:50:49.340Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact names path.virtualmachines.managedsystem-agentpool-vm-prerelease, cites the mounted source lineage from prerelease/checkin/managedsystem carriers, maps accepted and rejected edges, and leaves the exact direct replay --check evidence refresh as the bounded next no-cloud action."
+      },
+      "session_id": "s_task_managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_managedsystem-agentpool-vm-prerelease-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the requested archive boundary artifact for path.virtualmachines.managedsystem-agentpool-vm-prerelease, mapping the mounted-source create-time ManagedSystem carrier, adjacent surfaces, repo-local carriers, and one exact next no-cloud probe action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T02:50:49.340Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact names path.virtualmachines.managedsystem-agentpool-vm-prerelease, cites the mounted source lineage from prerelease/checkin/managedsystem carriers, maps accepted and rejected edges, and leaves the exact direct replay --check evidence refresh as the bounded next no-cloud action."
+      },
+      "status": "done"
+    }
+  ]
+}

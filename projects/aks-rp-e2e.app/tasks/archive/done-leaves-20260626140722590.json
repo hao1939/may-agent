@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T14:07:22.590Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner planning update accepted the managementplane-addon addonv2 VM-prerelease mounted-source spec seed and keeps the project focused on repo-local VM-prerelease source/spec closure plus one truthful external-human wait. Completed knowledge slices now captured at the parent are: (1) cloud-provider credential-provider upgrade-matrix mounted-source seed established the base carrier, (2) cluster-autoscaler long-unregistered-nodes request-shape diagnosis clarified that row-local request/expectation boundary, and (3) managementplane-addon addonv2 create/scale/upgrade mounted-source seed grounded rows 73/74/215/219 and reduced next work to path-lineage mirroring only. Open runnable execution remains the two already-active path-local tasks: tighten existing carrier wording for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and build the mounted-source VHD/egress spec seed for path.egress-lockdown.vm-prerelease-vhd-matrix. The only live blocker remains the family-level external-human proof wait under focus-mounted-source-coverage-closure-and-external-wait-20260623; no duplicate wait leaves or repo-local rediscovery work should be reopened from that branch.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the handwritten and mounted-source carrier for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix into a durable no-cloud spec seed: identify the exact VM prerelease scenario rows and source anchors, the request-shape inputs and upgrade sequence, the expected credential-provider behavior, adjacent surfaces, and the minimal replay/spec/model follow-up needed without broadening beyond this path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the exact mounted AKS RP Go source anchors (starting from test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or checkin.go plus any referenced scenario definitions/helpers) for this path and names the owning VM prerelease carrier rows or equivalent checked-in source-backed surface.",
+        "The artifact records the path-local input/request sequence, expected credential-provider upgrade behavior, adjacent boundaries, and any source-backed limits or unknown edges needed for the knowledge map without running cloud mutation.",
+        "The artifact states the minimal next repo-local action for this exact path only: confirm an existing replay/spec carrier with citations or identify the smallest missing replay/spec/model slice to create next, while avoiding overlap with path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:02:09.040Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T14:02:17.887Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626_20260626140239",
+        "assigned_at": "2026-06-26T14:02:39.052Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-2026062",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626_20260626140239",
+        "worker_started_at": "2026-06-26T14:02:39.461Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source spec-seed artifact at evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626.md, mapping rows 189/214 to their mounted credentialprovider source anchors, expected upgrade behavior, boundaries, and minimal next repo-local action without cloud mutation.",
+        "last_worker_completed_at": "2026-06-26T14:04:42.988Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:06:11.105Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact credibly anchors VM prerelease ownership to exact matrix rows 189 and 214 plus mounted credentialprovider sources, records the negative e2ev3 prerelease/checkin boundary, and truthfully concludes the path already has an existing repo-local spec/replay/model carrier rather than needing a new branch."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-2026062",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-2026062"
+      ],
+      "result": "Created the requested mounted-source spec-seed artifact at evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-mounted-source-spec-seed-20260626.md, mapping rows 189/214 to their mounted credentialprovider source anchors, expected upgrade behavior, boundaries, and minimal next repo-local action without cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:06:11.105Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact credibly anchors VM prerelease ownership to exact matrix rows 189 and 214 plus mounted credentialprovider sources, records the negative e2ev3 prerelease/checkin boundary, and truthfully concludes the path already has an existing repo-local spec/replay/model carrier rather than needing a new branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the exact repo-local request-shape mismatch behind path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes failing create with json: unknown field \"scaleDownDelayAfterAdd\", reconcile the replay/spec/helper surface as needed for this exact path only, and leave a bounded no-cloud validation result plus the next safe action.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626.md"
+      ],
+      "acceptance": [
+        "The work identifies the exact repo-local source of the unsupported scaleDownDelayAfterAdd field for replays/cluster-autoscaler-vm-prerelease-row51-long-unregistered-nodes.ts, citing the relevant replay/spec/helper or mounted-source/API anchors, and explains whether the mismatch is replay-local, shared helper serialization, or API-version shape drift.",
+        "If a repo-local repair is justified, the relevant replay/spec/helper files are updated only for this exact path or the minimal shared surface, and check-only validation evidence shows the unknown-field create-time failure is removed or is replaced by a narrower truthful next blocker; no cloud-mutation execute run is performed.",
+        "The artifact explicitly preserves scope to path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes and excludes autoscaling-base, mincount-recovery, scale-from-zero, and unrelated cluster-autoscaler siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:00:07.417Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626_20260626140007",
+        "assigned_at": "2026-06-26T14:00:07.462Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626_20260626140007",
+        "worker_started_at": "2026-06-26T14:00:22.433Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the row-51 request-shape mismatch as an old replay-local camelCase autoscaler-profile body drift, wrote a bounded artifact at evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626.md, and verified current no-cloud check-mode evidence for this exact path only.",
+        "last_worker_completed_at": "2026-06-26T14:03:04.214Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:03:40.664Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 review: the archived diagnosis artifact proves the old row-51 create failure came from replay-local camelCase autoscaler-profile body drift, cites mounted source plus serde anchors for the hyphenated wire shape, records check-only validation for the current replay, and narrows the next action to one future execute-gated row-51 rerun only."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626"
+      ],
+      "result": "Diagnosed the row-51 request-shape mismatch as an old replay-local camelCase autoscaler-profile body drift, wrote a bounded artifact at evidence/archive/cluster-autoscaler-vm-prerelease-long-unregistered-nodes-request-shape-diagnosis-20260626.md, and verified current no-cloud check-mode evidence for this exact path only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:03:40.664Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 review: the archived diagnosis artifact proves the old row-51 create failure came from replay-local camelCase autoscaler-profile body drift, cites mounted source plus serde anchors for the hyphenated wire shape, records check-only validation for the current replay, and narrows the next action to one future execute-gated row-51 rerun only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the handwritten and mounted-source carrier for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade into a durable no-cloud spec seed: identify the exact VM prerelease scenario rows and source anchors, the create/scale/upgrade lifecycle inputs, expected addonv2 behavior, adjacent surfaces, and the minimal replay/spec/model follow-up needed without broadening beyond this path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the exact mounted AKS RP Go source anchors and owning VM-prerelease carrier rows for this path, including any referenced scenario definitions/helpers needed to explain the addonv2 create/scale/upgrade lifecycle.",
+        "The artifact records the path-local input/request sequence, expected addonv2 create/scale/upgrade behavior, adjacent boundaries, and any source-backed limits or unknown edges for the knowledge map without running cloud mutation.",
+        "The artifact states the minimal next repo-local action for this exact path only: confirm an existing replay/spec carrier with citations or identify the smallest missing replay/spec/model slice to create next, while avoiding overlap with currently active cloud-provider and egress-lockdown work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:03:49.255Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626_20260626140408",
+        "assigned_at": "2026-06-26T14:04:08.668Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-202606",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626_20260626140408",
+        "worker_started_at": "2026-06-26T14:04:09.413Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source spec-seed artifact for the managementplane addonv2 VM-prerelease create/scale/upgrade path, grounding rows 73/74/215/219 in mounted AKS RP source and identifying the smallest remaining repo-local follow-up as path-lineage mirroring only.",
+        "last_worker_completed_at": "2026-06-26T14:06:51.443Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:07:08.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626.md grounds path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in mounted AKS RP sources and VM-prerelease rows 73/74/215/219, captures the create/scale/upgrade plus overlay-VPA and ENO boundaries, and limits next repo-local follow-up to path-lineage mirroring without cloud mutation."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-202606",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-202606"
+      ],
+      "result": "Created the requested mounted-source spec-seed artifact for the managementplane addonv2 VM-prerelease create/scale/upgrade path, grounding rows 73/74/215/219 in mounted AKS RP source and identifying the smallest remaining repo-local follow-up as path-lineage mirroring only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:07:08.729Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-mounted-source-spec-seed-20260626.md grounds path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in mounted AKS RP sources and VM-prerelease rows 73/74/215/219, captures the create/scale/upgrade plus overlay-VPA and ENO boundaries, and limits next repo-local follow-up to path-lineage mirroring without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

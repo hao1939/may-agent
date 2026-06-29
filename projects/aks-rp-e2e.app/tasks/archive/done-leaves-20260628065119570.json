@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:51:19.571Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review accepts the coredns timeout-family classification: evidence/archive/classify-spec-ccp-coredns-component-lifecycle-cluster-create-timeout-family-20260628.md anchors trusted run 28313443977, shows the failure stopped in setup-cluster/create-cluster before any CoreDNS product assertion, and uses same-day pass 28312267641 as concrete anti-family evidence, so this spec stays classified as one-off environment noise unless the same 1200000ms cluster-create timeout reproduces again in the same lane. The open work in this lane is now intentionally narrow: repair-carrier-spec-ccp-metricsserver-upgrade-survival-pre-upgrade-retries-and-raw-output-20260628 remains the primary code/evidence forward path, await-operator-response-spec-app-routing-existing-cluster-family-20260627 remains the single truthful external wait, and capture-spec-ccp-autoupgrader-pipeline-daily-master-source-check-ceiling-20260628 is the bounded repo-local follow-up that should turn the trusted blocked/test_not_implemented rerun into a durable no-rerun execution ceiling or concrete spec/replay/model update.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 is accepted as durable artifact-identity proof, rerun and review spec.ccp-autoupgrader.k8s-rapid-mtc-window only from a result bundle whose workflow metadata, top-level result.json specId, and artifact family all match before any product verdict.",
+      "inputs": [],
+      "outputs": [
+        "test-results/"
+      ],
+      "acceptance": [
+        "The coredns custom-config gate review is accepted and explicitly confirms the repaired single-spec workflow preserves artifact/spec identity for sibling reruns.",
+        "A fresh rerun for spec.ccp-autoupgrader.k8s-rapid-mtc-window cites matching workflow metadata, top-level result.json specId, and artifact family before any verdict is accepted.",
+        "The rerun ends in a pass/fail/blocked/error classification with linked trustworthy artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-autoupgrader.k8s-rapid-mtc-window"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:35:00.638Z",
+        "created_by": "task-tree-tool",
+        "unblocked_at": "2026-06-28T06:44:06.388Z",
+        "unblocked_by": "task-tree-tool",
+        "unblock_reason": "Accepted coredns custom-config review proves the repaired single-spec artifact/spec identity gate is trustworthy enough to reopen sibling reruns.",
+        "current_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628_20260628064418",
+        "assigned_at": "2026-06-28T06:44:18.286Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628",
+        "worker_started_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628_20260628064418",
+        "worker_started_at": "2026-06-28T06:44:20.281Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the accepted coredns identity gate and produced a durable verification artifact for `spec.ccp-autoupgrader.k8s-rapid-mtc-window`, accepting a trustworthy pass only after matching workflow metadata, top-level specId, and artifact family in cached run bundle `28312225687`.",
+        "last_worker_completed_at": "2026-06-28T06:45:50.942Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:46:51.185Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628.md proves the identity gate via workflow metadata, top-level result.json specId, and artifact family for cached bundle 28312225687, so the trustworthy verdict is pass for spec.ccp-autoupgrader.k8s-rapid-mtc-window."
+      },
+      "session_id": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628",
+      "session_history": [
+        "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628"
+      ],
+      "result": "Reviewed the accepted coredns identity gate and produced a durable verification artifact for `spec.ccp-autoupgrader.k8s-rapid-mtc-window`, accepting a trustworthy pass only after matching workflow metadata, top-level specId, and artifact family in cached run bundle `28312225687`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:46:51.185Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-identity-gate-20260628.md proves the identity gate via workflow metadata, top-level result.json specId, and artifact family for cached bundle 28312225687, so the trustworthy verdict is pass for spec.ccp-autoupgrader.k8s-rapid-mtc-window."
+      },
+      "status": "done"
+    }
+  ]
+}

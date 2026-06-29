@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:21:48.938Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review treated the watchdog trigger as stale metadata because the requested review leaf vm-prerelease-row27-mixed-sku-upgrade-model-view-truthfulness-repair-20260622 had already been rolled up before this wake. Accepted vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622: mounted source, maintained feature/spec/replay carriers, and local --check evidence show rows 33 and 34 are already distinct and source/spec/replay sufficient. The next runnable repo-local leaf is vmpr-rows33-34-networking-migration-model-wording-repair-20260622 to repair stale knowledge-map wording for path.virtualmachines.accelerated-networking and path.virtualmachines.vmas-to-vms-migration-slb so they describe existing execute-gated live replays rather than missing implementation. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful blocked family pending real human send/reply proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map VM prerelease rows 33-34 into the maintained feature/spec/replay knowledge carriers so the networking-migration pair has an exact mounted-source/spec/replay contract, bounded adjacency notes, and a clear statement of whether any maintained model/view repair is required.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Use mounted /app/sources/aks-rp VM prerelease sources plus existing repo-local specs/replays to identify the exact row-33 and row-34 scenario boundaries, their distinguishing inputs/expectations, and any execute-gated/live-evidence status without cloud execution.",
+        "Write ../aks-rp-e2e/evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md with quoted source/spec/replay evidence, the row-to-carriers mapping, adjacent surfaces that must stay separate, and a binary decision: maintained carriers already truthful vs specific model/view repair required next.",
+        "Stay repo-local and bounded: no cloud mutation, no human-transport ask work, and no edits outside the rows33-34 networking-migration source/spec/model decision surface unless a quoted contradiction forces a minimal fix."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-networking-migration-row33-34-source-spec"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:20:41.864Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622_20260622072041",
+        "assigned_at": "2026-06-22T07:20:41.913Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622_20260622072041",
+        "worker_started_at": "2026-06-22T07:21:04.568Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-33/34 source/spec/replay reconcile packet at evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md, grounded in mounted AKS RP source and local check-mode validation with no cloud mutation.",
+        "last_worker_completed_at": "2026-06-22T07:21:04.679Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:21:42.629Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 review: evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md quotes mounted AKS RP source, existing feature/spec/replay carriers, and local --check validation to show rows 33 and 34 are already source/spec/replay sufficient and distinct; the only truthful remaining repo-local delta is maintained knowledge-map wording for the two path carriers."
+      },
+      "session_id": "s_task_vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622",
+      "session_history": [
+        "s_task_vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622"
+      ],
+      "result": "Produced the requested row-33/34 source/spec/replay reconcile packet at evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md, grounded in mounted AKS RP source and local check-mode validation with no cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:21:42.629Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 review: evidence/archive/vmpr-rows33-34-networking-migration-source-spec-reconcile-20260622.md quotes mounted AKS RP source, existing feature/spec/replay carriers, and local --check validation to show rows 33 and 34 are already source/spec/replay sufficient and distinct; the only truthful remaining repo-local delta is maintained knowledge-map wording for the two path carriers."
+      },
+      "status": "done"
+    }
+  ]
+}

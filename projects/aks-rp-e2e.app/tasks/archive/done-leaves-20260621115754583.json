@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:57:54.583Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 now preserves two accepted VM prerelease run-ready packets as durable branch knowledge: row 26 capacity-based-surge-maxunavailable and row 29 mixed-sku-lifecycle both have mounted-source grounding, exact bounded inputs/assertions, truthful maintained spec/replay/index/model linkage, and exact future execute-gated replay commands without cloud mutation. The live non-blocked frontier remains intentionally narrow: vmpr-mixed-sku-upgrade-run-ready-packet-20260621 stays the single active VM prerelease source/spec packet task, while the only open waits remain the family-level external human transport proof ceiling and the explicit execution approval ceiling for the private-cluster shared API-server subnet replay.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease/checkin source plus the maintained draft spec/replay surfaces to produce a bounded run-ready packet for path.virtualmachines.capacity-based-surge-maxunavailable: pin the exact row-26 scenario inputs/assertions, confirm or repair the maintained spec/replay/index/model linkage for this branch only, and leave an exact execute command/gate note for future cloud approval without running the probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the authoritative mounted VirtualMachine prerelease/checkin source for the capacity-based-surge-maxunavailable scenario and enumerates the exact row-26 inputs plus the verdict-bearing assertions that the maintained branch must preserve.",
+        "Maintained carriers for this row-26 branch are reconciled truthfully: the task confirms or repairs the dedicated feature/spec/replay/index/model linkage for path.virtualmachines.capacity-based-surge-maxunavailable without broadening into adjacent VM draft rows.",
+        "Artifact leaves one concrete future execute surface for this branch only, including the exact replay command and any probe gate/approval note needed for a later cloud run, while this task itself remains repo-local and non-mutating."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-based-surge-maxunavailable"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:52:41.108Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T11:52:46.012Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621_20260621115305",
+        "assigned_at": "2026-06-21T11:53:05.763Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621_20260621115305",
+        "worker_started_at": "2026-06-21T11:53:06.972Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-26 run-ready packet at evidence/archive/vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621.md and repaired the dedicated row-26 model/view linkage so the maintained carriers now truthfully show the execute-capable but gate-blocked replay state for path.virtualmachines.capacity-based-surge-maxunavailable.",
+        "last_worker_completed_at": "2026-06-21T11:55:59.133Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:56:39.784Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the bounded evidence packet truthfully pins VM prerelease row 26 source/scenario, exact inputs, assertions, and execute gate, and targeted carrier verification confirmed the maintained row-26 model/path-summary/spec-index surfaces now show blocked execute-capable coverage with row-local nextAction/resumeCondition for path.virtualmachines.capacity-based-surge-maxunavailable."
+      },
+      "session_id": "s_task_vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621"
+      ],
+      "result": "Produced the row-26 run-ready packet at evidence/archive/vmpr-capacity-based-surge-maxunavailable-run-ready-packet-20260621.md and repaired the dedicated row-26 model/view linkage so the maintained carriers now truthfully show the execute-capable but gate-blocked replay state for path.virtualmachines.capacity-based-surge-maxunavailable.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:56:39.784Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the bounded evidence packet truthfully pins VM prerelease row 26 source/scenario, exact inputs, assertions, and execute gate, and targeted carrier verification confirmed the maintained row-26 model/path-summary/spec-index surfaces now show blocked execute-capable coverage with row-local nextAction/resumeCondition for path.virtualmachines.capacity-based-surge-maxunavailable."
+      },
+      "status": "done"
+    }
+  ]
+}

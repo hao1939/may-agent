@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:38:45.271Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog blocked-frontier review: the lone blocked leaf external-send-proof-dispatch-family-20260620 remains the single truthful external-human transport wait for the send-ready MachinesPreview and VM prerelease packets, with source/spec/replay work already exhausted and resume only on durable send/escalation proof or authoritative reply. The completed row-34 archived-output attachment repair is now summarized at the root: the metadata repair itself succeeded, but bounded domain:checkpoint still reports replays/virtualmachines-vmas-to-vms-migration-slb.ts as needs-planner-review, so the live app-workspace successor is vmpr-row34-checkpoint-archive-discovery-mismatch-diagnosis-20260621. Repo-workspace review remains intentionally serialized on vmpr-rows25-26-capacity-based-surge-family-review-20260621; vmpr-rows27-29-30-mixed-sku-family-review-20260621 and vmpr-rows31-32-auto-zone-family-review-20260621 should stay queued behind that same repo-workspace conflict scope rather than being treated as idle-capacity refill.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row34-archived-output-attachment-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the supported archived-output metadata repair for row 34 by attaching replays/virtualmachines-vmas-to-vms-migration-slb.ts to the archived accepted task virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621, then rerun a bounded domain:checkpoint on that exact path to confirm it no longer reports needs-planner-review. Do not edit replay/spec/model contents, commit, cleanup, staging, or run cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row34-archived-output-attachment-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note records the exact set-archived-outputs command applied to virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621 and cites the accepted row-34 ownership-decision note as basis for choosing that archived carrier.",
+        "Archive note includes the bounded post-repair domain:checkpoint evidence for replays/virtualmachines-vmas-to-vms-migration-slb.ts, showing the helper-visible ownership recommendation after the metadata repair.",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:31:44.321Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row34-archived-output-attachment-repair-20260621_20260621053447",
+        "assigned_at": "2026-06-21T05:34:47.458Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row34-archived-output-attachment-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row34-archived-output-attachment-repair-20260621_20260621053447",
+        "worker_started_at": "2026-06-21T05:34:47.927Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Applied the row-34 archived-output metadata repair to archived task `virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621` and wrote the requested archive note, but the bounded `domain:checkpoint` rerun still reports `replays/virtualmachines-vmas-to-vms-migration-slb.ts` as `needs-planner-review`, indicating a residual helper/tooling mismatch rather than missing archived-output metadata.",
+        "last_worker_completed_at": "2026-06-21T05:36:28.934Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:37:46.905Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Reviewed partial result: the supported row-34 set-archived-outputs repair itself succeeded and the archive bundle now carries the replay path, but acceptance was not met because bounded domain:checkpoint still returns needs-planner-review. Replaced this review leaf with vmpr-row34-checkpoint-archive-discovery-mismatch-diagnosis-20260621 so the remaining helper/tooling mismatch is handled as concrete app-workspace work instead of leaving a non-terminal review open."
+      },
+      "session_id": "s_task_vmpr-row34-archived-output-attachment-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row34-archived-output-attachment-repair-20260621"
+      ],
+      "result": "Applied the row-34 archived-output metadata repair to archived task `virtualmachines-vmas-to-vms-migration-slb-live-body-implementation-20260621` and wrote the requested archive note, but the bounded `domain:checkpoint` rerun still reports `replays/virtualmachines-vmas-to-vms-migration-slb.ts` as `needs-planner-review`, indicating a residual helper/tooling mismatch rather than missing archived-output metadata.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-21T05:37:46.905Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Reviewed partial result: the supported row-34 set-archived-outputs repair itself succeeded and the archive bundle now carries the replay path, but acceptance was not met because bounded domain:checkpoint still returns needs-planner-review. Replaced this review leaf with vmpr-row34-checkpoint-archive-discovery-mismatch-diagnosis-20260621 so the remaining helper/tooling mismatch is handled as concrete app-workspace work instead of leaving a non-terminal review open."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T11:16:28.256Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 regular-learning owner review reconfirmed the frontier is intentionally compressed to one truthful external-human family wait only under focus-mounted-source-coverage-closure-and-external-wait-20260623. The vm-prerelease credential-provider upgrade matrix readiness review and ready-state model sync leaves are accepted as completed context only; no runnable repo-local follow-up, duplicate blocked waits, or live/cloud work should be created from this tick while returned proof and new human steering are absent. Preserve the single blocked external wait unchanged until durable external reply/proof arrives or steering materially changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the ready path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix branch from mounted VM prerelease source rows 189/214 through the current feature/spec/replay files so the project has one concrete next action outside the preserved external-human wait: confirm the bounded execute contract and either emit a repo-local readiness artifact with the exact future live gate or record the precise local blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted-source carrier rows plus the current feature, spec, and replay files; it states the selected input path and expected upgrade behavior and classifies the branch as locally ready, locally repair-needed, or still blocked.",
+        "If the branch is locally ready, the artifact names the exact --check and --execute command shape, mutation gate value, and preflight bundle required for the next verification run; if not, it records the minimal repo-local repair needed without reopening the preserved external-human wait branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:05:36.049Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626_20260626110536",
+        "assigned_at": "2026-06-26T11:05:36.098Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626_20260626110536",
+        "worker_started_at": "2026-06-26T11:05:46.050Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a repo-local readiness review artifact for the VM prerelease credential-provider upgrade matrix at evidence/archive/vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626.md, using mounted source rows 189/214 plus current feature/spec/replay/model evidence. Verified the carrier is locally repair-needed because the replay claims a probe-specific mutation gate but currently hardcodes mutationGateMatched=true.",
+        "last_worker_completed_at": "2026-06-26T11:08:03.391Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:08:41.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review artifact as evidence-backed owner review: mounted row-189/214 credential-provider upgrade sources are now present and the current branch is correctly classified as locally repair-needed because replays/vm-prerelease-tls-credential-upgrade-matrix.ts hardcodes mutationGateMatched=true instead of enforcing AKS_RP_E2E_ALLOW_CLOUD_MUTATION=vm-prerelease-tls-credential-upgrade-matrix. The preserved external-human wait does not govern this branch anymore; the truthful next step is one repo-local replay gate repair plus refreshed --check evidence."
+      },
+      "session_id": "s_task_vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626"
+      ],
+      "result": "Wrote a repo-local readiness review artifact for the VM prerelease credential-provider upgrade matrix at evidence/archive/vm-prerelease-credential-provider-upgrade-matrix-readiness-review-20260626.md, using mounted source rows 189/214 plus current feature/spec/replay/model evidence. Verified the carrier is locally repair-needed because the replay claims a probe-specific mutation gate but currently hardcodes mutationGateMatched=true.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:08:41.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review artifact as evidence-backed owner review: mounted row-189/214 credential-provider upgrade sources are now present and the current branch is correctly classified as locally repair-needed because replays/vm-prerelease-tls-credential-upgrade-matrix.ts hardcodes mutationGateMatched=true instead of enforcing AKS_RP_E2E_ALLOW_CLOUD_MUTATION=vm-prerelease-tls-credential-upgrade-matrix. The preserved external-human wait does not govern this branch anymore; the truthful next step is one repo-local replay gate repair plus refreshed --check evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

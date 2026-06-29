@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T18:48:58.209Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review: kept both active leaves unchanged (natgw-v2 dual-mode execute carrier repair and network-cni-cilium-preview owner send/escalation proof capture). Preserved the external-send-proof dispatch family as the single truthful family-level external wait because its own blocker explicitly defers follow-up until returned proof arrives or the first owner review after 2026-06-26. Rechecked the latest private-cluster selected-host preflight reconciliation artifact and confirmed no fresh same-launcher SSH/environment evidence beyond the recorded devbox timeout, so that branch remains one exact environment wait rather than spawning a duplicate retry leaf. The project frontier therefore stays intentionally underfilled by active capacity, not by missing planning work: next progress should come from the two active leaves or from new external/environment evidence satisfying an existing blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.network-cni-cilium-preview-upgrade, convert the current standardDDSv5Family environment blocker into one concrete owner-facing unblock packet that cites the accepted HTTP 400 + quota evidence, states the exact eastus2 >=8 vCPU resume gate, and requests either authoritative quota proof or owner-approved equivalent subscription+region for the same replay carrier without reopening generic Cilium/upgrade work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact at evidence/archive/network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623.md quotes the exact accepted blocker evidence (subscription, region, family, limit/current/remaining, required 8 vCPUs), defines the exact owner ask and exact resume condition, and is ready for out-of-runtime handoff without needing new source/spec rediscovery or cloud mutation.",
+        "The task stays branch-local to path.network-cni-cilium-preview-upgrade and either links to or supersedes the passive environment wait with a truthful next action; it does not create duplicate generic environment blockers or widen to unrelated quota families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-preview-upgrade-owner-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:44:05.122Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623_20260623184405",
+        "assigned_at": "2026-06-23T18:44:05.176Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623_20260623184405",
+        "worker_started_at": "2026-06-23T18:44:34.166Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the owner-facing unblock packet at evidence/archive/network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623.md, converting the eastus2 standardDDSv5Family blocker into one concrete ask with exact quota evidence and resume gate.",
+        "last_worker_completed_at": "2026-06-23T18:45:59.880Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T18:46:42.250Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet quotes the exact eastus2 standardDDSv5Family HTTP 400 + quota evidence, states the >=8 vCPU resume gate, requests either authoritative quota proof or an owner-approved equivalent subscription+region for the same replay carrier, and explicitly supersedes the earlier passive follow-up framing without widening scope."
+      },
+      "session_id": "s_task_network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623"
+      ],
+      "result": "Created the owner-facing unblock packet at evidence/archive/network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623.md, converting the eastus2 standardDDSv5Family blocker into one concrete ask with exact quota evidence and resume gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T18:46:42.250Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet quotes the exact eastus2 standardDDSv5Family HTTP 400 + quota evidence, states the >=8 vCPU resume gate, requests either authoritative quota proof or an owner-approved equivalent subscription+region for the same replay carrier, and explicitly supersedes the earlier passive follow-up framing without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

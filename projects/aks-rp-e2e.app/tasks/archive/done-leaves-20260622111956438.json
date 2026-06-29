@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:19:56.438Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner review accepted the private-cluster mounted-source split sufficiency landing: both exact contracts are already truthfully carried by maintained repo-local surfaces, so no new private-cluster split/sync child is needed. The repo-local closure branch is complete and archived; the only live frontier residue is external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level out-of-runtime human/operator proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-split-sufficiency-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the existing mounted-source private-cluster evidence for Scenario_PrivateLink_Custom_DNS_Zone and the BYO DNS server topology exact branch to decide whether current maintained model/spec/view surfaces already carry those exact contracts or need a narrow repo-local sync, then record the truthful landing decision without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-split-sufficiency-landing-20260622.md"
+      ],
+      "acceptance": [
+        "The output cites the existing archive evidence for custom DNS zone exact-contract reconcile and BYO DNS server topology exact landing, states whether each exact mounted-source contract is already covered by maintained paths/specs/views or needs a specific repo-local change, and names any exact files that would need editing/regeneration.",
+        "If maintained surfaces are already sufficient, the output explicitly says no new child path is needed and explains which current carriers own the contract; if they are not sufficient, the output reduces the gap to one narrow follow-up edit leaf rather than reopening broad private-cluster exploration.",
+        "No cloud mutation, external-send wait edits, or unrelated model rewrites are performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-exact-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:17:35.905Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-split-sufficiency-landing-20260622_20260622111735",
+        "assigned_at": "2026-06-22T11:17:35.958Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-split-sufficiency-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-split-sufficiency-landing-20260622_20260622111735",
+        "worker_started_at": "2026-06-22T11:18:08.381Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the assigned landing artifact at evidence/archive/private-cluster-mounted-source-split-sufficiency-landing-20260622.md, confirming both mounted-source contracts are already truthfully carried by current maintained surfaces and require no further repo-local split/sync leaf.",
+        "last_worker_completed_at": "2026-06-22T11:19:16.356Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:19:56.395Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/private-cluster-mounted-source-split-sufficiency-landing-20260622.md: the artifact cites the mounted-source rows and maintained carriers, confirms Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone + fqdn-subdomain split, and confirms Scenario_PrivateLink_BYO_DNS_Server exact topology is already landed as its own exact child; no further repo-local split/sync leaf is needed."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-split-sufficiency-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-split-sufficiency-landing-20260622"
+      ],
+      "result": "Produced the assigned landing artifact at evidence/archive/private-cluster-mounted-source-split-sufficiency-landing-20260622.md, confirming both mounted-source contracts are already truthfully carried by current maintained surfaces and require no further repo-local split/sync leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:19:56.395Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/private-cluster-mounted-source-split-sufficiency-landing-20260622.md: the artifact cites the mounted-source rows and maintained carriers, confirms Scenario_PrivateLink_Custom_DNS_Zone is already truthfully covered by the existing private-dns-zone + fqdn-subdomain split, and confirms Scenario_PrivateLink_BYO_DNS_Server exact topology is already landed as its own exact child; no further repo-local split/sync leaf is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

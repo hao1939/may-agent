@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T09:51:09.024Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 regular-learning owner review remains unchanged after hygiene follow-through: virtualmachines-managedsystem-model-request-shape-normalization-and-view-regeneration-20260625 stays the sole active no-cloud learning leaf because no completion artifact exists yet, while the remaining completed reconciliation slices are now rolled into the project summary and their durable meaning lives in archive evidence plus current model/view state. Preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single blocked family of five exact returned-proof waits unchanged until the first bounded follow-up/escalation window on or after 2026-06-26 or any earlier authoritative reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-xfs-output-path-reconciliation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular-learning no-cloud follow-up: reconcile the storage-csi disk XFS task-output contract by proving which refreshed archive artifact is the maintained record, then repair any repo-local task/evidence references so the reviewable output path and nearby linkage are truthful without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-output-path-reconciliation-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records the exact missing-vs-existing storage-csi disk XFS artifact paths observed from the prior review, names the maintained artifact that actually carries the refreshed evidence, and explains why the mismatch happened.",
+        "If the maintained artifact path should be the task's declared output, the task repairs the affected repo-local surfaces so future review points at the truthful path; otherwise it creates the expected durable artifact or updates the nearby linkage so the maintained record is unambiguous.",
+        "The follow-up leaves the storage-csi disk XFS slice with one truthful reviewable archive path and a precise no-cloud stop condition so planning does not reopen the same output-path ambiguity unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-disk-xfs"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T09:43:34.717Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-xfs-output-path-reconciliation-20260625_20260625094334",
+        "assigned_at": "2026-06-25T09:43:34.821Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-xfs-output-path-reconciliation-20260625",
+        "worker_started_attempt_id": "a_storage-csi-disk-xfs-output-path-reconciliation-20260625_20260625094334",
+        "worker_started_at": "2026-06-25T09:43:54.802Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the XFS output-path reconciliation artifact at evidence/archive/storage-csi-disk-xfs-output-path-reconciliation-20260625.md and clarified the maintained refreshed record by annotating evidence/archive/storage-csi-disk-xfs-replay-test-coherence-repair-20260625.md; no cloud execution or task-tree edits were performed.",
+        "last_worker_completed_at": "2026-06-25T09:46:22.613Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T09:47:05.919Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/storage-csi-disk-xfs-output-path-reconciliation-20260625.md proves the old expected file storage-csi-disk-xfs-replay-check-repair-20260625.md never existed, identifies storage-csi-disk-xfs-replay-test-coherence-repair-20260625.md as the maintained refreshed record, and the maintained artifact now carries an explicit output-contract note so the no-cloud XFS slice has one truthful reviewable archive path."
+      },
+      "session_id": "s_task_storage-csi-disk-xfs-output-path-reconciliation-20260625",
+      "session_history": [
+        "s_task_storage-csi-disk-xfs-output-path-reconciliation-20260625"
+      ],
+      "result": "Created the XFS output-path reconciliation artifact at evidence/archive/storage-csi-disk-xfs-output-path-reconciliation-20260625.md and clarified the maintained refreshed record by annotating evidence/archive/storage-csi-disk-xfs-replay-test-coherence-repair-20260625.md; no cloud execution or task-tree edits were performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T09:47:05.919Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/storage-csi-disk-xfs-output-path-reconciliation-20260625.md proves the old expected file storage-csi-disk-xfs-replay-check-repair-20260625.md never existed, identifies storage-csi-disk-xfs-replay-test-coherence-repair-20260625.md as the maintained refreshed record, and the maintained artifact now carries an explicit output-contract note so the no-cloud XFS slice has one truthful reviewable archive path."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T08:23:36.335Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog blocked-frontier review confirms the tree is truthfully blocked-only before the first follow-up window on/after 2026-06-26. Archive the three completed serverless validating-webhook repo-local notes because their durable meaning is already preserved in the project rollup and archive artifacts: the mounted-source topology matrix covers all validating-webhook topology pairs and exact allow/disallow contracts, the sibling reconciliation proves only the private-AVI linkage gap remained repo-local, and the accepted private-AVI linkage note closes that gap while leaving observed=unknown and the public approval wait unchanged. Keep exactly the same four blocked leaves as the only live frontier—the family-level external dispatch return, aad-rbac managed-v2 row-37 approval return, private-cluster auth-service-tags devbox endpoint return, and serverless validating-webhook public approval return—and do not reopen local source/spec/setup/model work or create duplicate waits before 2026-06-26 unless returned proof arrives sooner.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local boundary matrix for the six mounted serverless schedulerctrl validating-webhook topologies (public/private/APIServerVNetIntegration x allow/disallow), recording the exact input paths, expected admission outcomes, current spec/replay carriers, and how the existing public approval wait differs from the still-source-grounded siblings without widening any live gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624.md"
+      ],
+      "acceptance": [
+        "The artifact cites the mounted source scenario slices and the current canonical spec/replay carriers for all six validating-webhook topology pairs, and records the exact allow/disallow expectation contract for each.",
+        "The artifact distinguishes the already-routed public live-approval wait from private and APIServerVNetIntegration siblings, identifies any repo-local model/coverage gap still worth a follow-up leaf, and does not trigger or request cloud mutation from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook.repo-local-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T08:13:18.984Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624_20260624081319",
+        "assigned_at": "2026-06-24T08:13:19.035Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624_20260624081319",
+        "worker_started_at": "2026-06-24T08:13:46.162Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new boundary-matrix artifact at evidence/archive/serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624.md that maps the mounted schedulerctrl validating-webhook family across all mounted topology pairs, exact allow/disallow contracts, canonical spec/replay carriers, and the current public-only approval-wait boundary versus repo-local siblings.",
+        "last_worker_completed_at": "2026-06-24T08:16:01.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T08:16:31.461Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive matrix is mounted-source-backed and truthfully corrects the task text from 'six topologies' to four topology pairs / eight leaves while still satisfying the acceptance intent by mapping every validating-webhook topology pair, exact allow/disallow contract, canonical spec/replay carriers, and the current public-only approval-wait boundary versus repo-local siblings without widening live execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624"
+      ],
+      "result": "Authored a new boundary-matrix artifact at evidence/archive/serverless-schedulerctrl-validating-webhook-topology-boundary-matrix-20260624.md that maps the mounted schedulerctrl validating-webhook family across all mounted topology pairs, exact allow/disallow contracts, canonical spec/replay carriers, and the current public-only approval-wait boundary versus repo-local siblings.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T08:16:31.461Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive matrix is mounted-source-backed and truthfully corrects the task text from 'six topologies' to four topology pairs / eight leaves while still satisfying the acceptance intent by mapping every validating-webhook topology pair, exact allow/disallow contract, canonical spec/replay carriers, and the current public-only approval-wait boundary versus repo-local siblings without widening live execution."
+      },
+      "status": "done"
+    }
+  ]
+}

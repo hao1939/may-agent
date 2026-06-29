@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T08:12:45.016Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review accepts the latest feature-reference repair slice: node-http-proxy, OIDC signing-key rotation/default-enabled, planned-maintenance security-patch prod-MTC, PPG, serverless virtual-nodes upgrade-survival, and the controller-visible-state repair all now have evidence-backed archive notes or accepted branch repair. The OIDC duplicate review leaves converge on one shared repaired artifact. This lane should keep spending active slots on remaining weak collector drafts while treating these accepted repairs as completed context rather than open review work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-loop-visible-state-from-controller-progress-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the visible aks-feature-reference-loop tree state with the controller-backed feature-reference state after the NATGW→none wording review. Determine why the parent still shows done with only done children while workflowProgress reports non-terminal pending/running/openChildren work, then repair the tree so one truthful next child or exact completion/blocker state is visible without hand-editing tree.json.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-feature-reference-loop-visible-state-from-controller-progress-20260628.md"
+      ],
+      "acceptance": [
+        "Archive cites the concrete mismatch between aks-feature-reference-loop visible task-tree state and the controller-backed .state/feature-reference-loop/state.json/workflowProgress snapshot.",
+        "Using task-tree/app tooling only, the branch is repaired so the visible tree truthfully shows either (a) one concrete next child/backlog item or exact blocker if non-terminal feature work remains, or (b) evidence-backed completion if the controller state is actually terminal.",
+        "Any parent/child status or context updates needed to keep future planner wakes from treating this lane as done while hidden non-terminal work remains are recorded and evidenced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:53:41.310Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-loop-visible-state-from-controller-progress-20260628_20260628075341",
+        "assigned_at": "2026-06-28T07:53:41.356Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-loop-visible-state-from-controller-progress-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-loop-visible-state-from-controller-progress-20260628_20260628075341",
+        "worker_started_at": "2026-06-28T07:53:52.062Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the visible feature-reference loop state by sending one supported project.feature-reference-loop.tick pulse and documented the mismatch/repair in evidence/archive/repair-feature-reference-loop-visible-state-from-controller-progress-20260628.md. The aks-feature-reference-loop parent now visibly shows 25 live collector children and refreshed non-terminal workflowProgress instead of appearing effectively done.",
+        "last_worker_completed_at": "2026-06-28T07:55:54.247Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T08:12:44.524Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the evidence shows a supported controller tick restored truthful visible feature-reference frontier under aks-feature-reference-loop, so the branch no longer falsely appears finished."
+      },
+      "session_id": "s_task_repair-feature-reference-loop-visible-state-from-controller-progress-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-loop-visible-state-from-controller-progress-20260628"
+      ],
+      "result": "Repaired the visible feature-reference loop state by sending one supported project.feature-reference-loop.tick pulse and documented the mismatch/repair in evidence/archive/repair-feature-reference-loop-visible-state-from-controller-progress-20260628.md. The aks-feature-reference-loop parent now visibly shows 25 live collector children and refreshed non-terminal workflowProgress instead of appearing effectively done.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T08:12:44.524Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the evidence shows a supported controller tick restored truthful visible feature-reference frontier under aks-feature-reference-loop, so the branch no longer falsely appears finished."
+      },
+      "status": "done"
+    }
+  ]
+}

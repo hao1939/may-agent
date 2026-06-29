@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T12:35:43.323Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner blocked-frontier review accepted the VM prerelease row-54 ManagedSystem agent-pool maintained-model/view reconcile as a no-change, source-backed landing: the dedicated create-time branch remains modeled as its own maintained unknown path, distinct from the final path.virtualmachines.managedsystem-combined product-gap branch, with archive evidence captured in evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human-transport wait pending later out-of-runtime proof. Refill repo-local capacity with new private-cluster exact-contract/model-landing work rather than reopening the external wait or widening into cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted AKS RP source carriers, existing repo-local feature/spec/replay artifacts, and current maintained model/view state, reconcile only the VM prerelease ManagedSystem agent-pool branch so the exact source-backed request/expectation contract and source-grounded unknown verdict are truthfully represented on maintained repo-local surfaces without claiming a new live product verdict, without retrying or weakening the final path.virtualmachines.managedsystem-combined product-gap verdict, and without collapsing into the separate VirtualMachines+ManagedSystem combined branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the exact mounted-source carriers and repo-local maintained surfaces consulted for the VM prerelease ManagedSystem agent-pool branch, summarizes the accepted request/expectation contract, explains how this branch stays distinct from the final product-gap path.virtualmachines.managedsystem-combined verdict, and states whether any maintained surface was inaccurate before this pass.",
+        "If a bounded correction is needed, update only the maintained VM prerelease ManagedSystem agent-pool slice and regenerate affected views/status surfaces, then state exactly which maintained files/views changed; do not run cloud execution, reopen or soften final verdicts without new evidence, or widen into unrelated VirtualMachines/ManagedSystem branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-model-sync"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T12:33:04.064Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622_20260622123304",
+        "assigned_at": "2026-06-22T12:33:04.115Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622",
+        "worker_started_attempt_id": "a_virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622_20260622123304",
+        "worker_started_at": "2026-06-22T12:33:17.027Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the VM prerelease row-54 ManagedSystem agent-pool branch is already correctly represented across mounted-source-backed maintained surfaces and wrote a new reconcile evidence note at evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md; no model/view edits were needed.",
+        "last_worker_completed_at": "2026-06-22T12:34:45.005Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T12:35:43.275Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted archive evidence at evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md as sufficient no-op reconciliation proof: mounted-source carriers, maintained surfaces, and repo-local replay/check output all show the dedicated row-54 ManagedSystem agent-pool branch already lands as its own source-grounded unknown path without weakening the separate final path.virtualmachines.managedsystem-combined product-gap verdict."
+      },
+      "session_id": "s_task_virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622",
+      "session_history": [
+        "s_task_virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622"
+      ],
+      "result": "Verified the VM prerelease row-54 ManagedSystem agent-pool branch is already correctly represented across mounted-source-backed maintained surfaces and wrote a new reconcile evidence note at evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md; no model/view edits were needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T12:35:43.275Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted archive evidence at evidence/archive/virtualmachines-managedsystem-agentpool-vm-prerelease-maintained-model-view-reconcile-20260622.md as sufficient no-op reconciliation proof: mounted-source carriers, maintained surfaces, and repo-local replay/check output all show the dedicated row-54 ManagedSystem agent-pool branch already lands as its own source-grounded unknown path without weakening the separate final path.virtualmachines.managedsystem-combined product-gap verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

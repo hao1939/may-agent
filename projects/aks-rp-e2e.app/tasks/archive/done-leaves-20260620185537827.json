@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:55:37.827Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier owner review keeps the VM prerelease replacement slice collapsed to one truthful external-human transport wait and archives the last low-value done provenance leaf at the root. focus-vm-prerelease-pipeline-replacement-20260620 remains blocked only on external-send-proof-dispatch-family-20260620 until durable repo-local send/escalation proof or an authoritative reply is captured for the send-ready MachinesPreview or VM prerelease operator packets. Because the broader project was reopened to cover more Go e2ev3 source beyond this finished VM slice, the next local work should move to a new bounded non-cloud source/spec expansion leaf rather than recreating duplicate waits or stale VM-local discovery.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-archived-owner-output-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add or use a supported repo-local task-tree/app repair path for archived accepted-owner outputs so the 19 unresolved VM draft-promotion files can be attached to their truthful archived owner tasks and the bounded 20-file domain:checkpoint rerun can clear the current unattached-owner condition without reopening the excluded MachinesPreview or 7-file shared-model slices.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-archived-owner-output-repair-20260620.md"
+      ],
+      "acceptance": [
+        "The artifact cites the accepted owner-linkage diagnosis packet, names the three archived canonical owner tasks and the exact 19 unresolved draft-promotion files plus shared batch note that need archived-owner outputs attached, and documents the supported repair path chosen (new primitive or existing safe mechanism) for archived accepted tasks only.",
+        "A bounded repo-local repair is applied and evidenced so rerunning bun run --silent domain:checkpoint -- --json --paths-file <same 20-file manifest> no longer reports the same unattached-owner condition for those 19 files; if any residual file remains, the artifact names the exact residual and why it still cannot attach.",
+        "No cloud mutation, outbound send, or direct hand-edit of tasks/tree.json or project.json occurs; work stays within repo-local task-tree/app-tooling plus checkpoint verification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-archived-owner-output-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:14:30.798Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-archived-owner-output-repair-20260620_20260620181430",
+        "assigned_at": "2026-06-20T18:14:30.894Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-archived-owner-output-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-archived-owner-output-repair-20260620_20260620181430",
+        "worker_started_at": "2026-06-20T18:14:42.712Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added a supported `task-tree set-archived-outputs` repair path in the app tooling, attached the 20-file VM prerelease draft-promotion packet to its three truthful archived owner tasks, and verified the bounded `domain:checkpoint --paths-file` rerun now marks the evidence slice as `candidate` with no residual unattached-owner files.",
+        "last_worker_completed_at": "2026-06-20T18:18:47.843Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:19:33.966Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from evidence/archive/vm-prerelease-archived-owner-output-repair-20260620.md: the repo-local archived-owner repair path is now supported, the exact 20-file VM packet is attached to its 3 truthful archived owner tasks, and the bounded checkpoint rerun now reports candidate with no residual unattached-owner files.",
+        "rolled_up_at": "2026-06-20T18:50:43.817Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_vm-prerelease-archived-owner-output-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-archived-owner-output-repair-20260620"
+      ],
+      "result": "Added a supported `task-tree set-archived-outputs` repair path in the app tooling, attached the 20-file VM prerelease draft-promotion packet to its three truthful archived owner tasks, and verified the bounded `domain:checkpoint --paths-file` rerun now marks the evidence slice as `candidate` with no residual unattached-owner files.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:19:33.966Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from evidence/archive/vm-prerelease-archived-owner-output-repair-20260620.md: the repo-local archived-owner repair path is now supported, the exact 20-file VM packet is attached to its 3 truthful archived owner tasks, and the bounded checkpoint rerun now reports candidate with no residual unattached-owner files.",
+        "rollup_summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should use the repaired archived owner tasks directly rather than reopening this checkpoint rerun branch without new evidence.",
+        "archived_done_leaf_count": 3,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620185043817.json",
+            "archived": 1,
+            "at": "2026-06-20T18:50:43.817Z",
+            "summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should use the repaired archived owner tasks directly rather than reopening this checkpoint rerun branch without new evidence.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-archived-owner-output-checkpoint-rerun-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620182138357.json",
+            "archived": 1,
+            "at": "2026-06-20T18:21:38.357Z",
+            "summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should build on the repaired packet/evidence set rather than reopen archived-owner-output linkage.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-archived-owner-output-archive-set-outputs-tooling-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620182037654.json",
+            "archived": 1,
+            "at": "2026-06-20T18:20:37.654Z",
+            "summary": "2026-06-20 archived-owner-output repair is complete and durable: the supported task-tree set-archived-outputs path attached the 20-file VM prerelease draft-promotion packet to the three truthful archived owner tasks, and the bounded domain:checkpoint --paths-file rerun cleared the prior unattached-owner condition by reporting the slice as candidate with no residual file linkage gaps. This branch now serves only as completed provenance for the VM prerelease replacement slice; future local work should continue in vm-prerelease-source-coverage-map-20260620, while external-send-proof-dispatch-family-20260620 remains the single blocked transport wait.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-archived-owner-output-repair-path-20260620"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

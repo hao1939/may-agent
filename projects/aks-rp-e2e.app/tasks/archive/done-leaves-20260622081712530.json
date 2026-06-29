@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:17:12.530Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner rollup: accepted the row-54 ManagedSystem VM prerelease create-time carrier boundary artifact, which now durably records that the prerelease/checkin scenario is a distinct source-backed managedClusters create-time surface with a primary VirtualMachines System pool plus an appended ManagedSystem-minimal pool, separate from the already-final explicit agentPools PUT rejection preserved at path.virtualmachines.managedsystem-combined. The three earlier VM/ManagedSystem source-landing tasks plus this new row-54 boundary review are now summarized at the parent. The single truthful blocked family remains the external human-transport proof wait. Next useful repo-local work is to map the adjacent nativerp ManagedSystem enable/disable scenarios already referenced in the same checkin suite so the ManagedSystem boundary map continues to expand without reopening final verdicts or waiting on cloud transport.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-boundary-map-local-knowledge-pass-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the first durable ManagedSystem boundary map from existing local source/spec/model evidence so the project has a source-backed accepted/rejected/expected/unknown edge summary for the ManagedSystem pool surface without requiring cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-boundary-map-local-knowledge-pass-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the ManagedSystem input surface and adjacent combinations from existing local repo artifacts, including the create-time initial/default pool product-gap path and any explicitly supported or unsupported combinations already modeled.",
+        "Artifact distinguishes accepted inputs, rejected/product-gap inputs, expected behavior paths, observed local evidence sources, and unknown edges worth future probes, with citations to checked-in specs/model entries/source-backed notes rather than invented claims.",
+        "Task remains repo-local only: no cloud mutation, no new duplicate blocker family, and no reopening of already-final verdicts except to cite their retest condition/boundary meaning."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:12:33.883Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-boundary-map-local-knowledge-pass-20260622_20260622081233",
+        "assigned_at": "2026-06-22T08:12:33.933Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-boundary-map-local-knowledge-pass-20260622",
+        "worker_started_attempt_id": "a_managedsystem-boundary-map-local-knowledge-pass-20260622_20260622081233",
+        "worker_started_at": "2026-06-22T08:12:53.951Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new repo-local ManagedSystem boundary map artifact at evidence/archive/managedsystem-boundary-map-local-knowledge-pass-20260622.md, synthesizing mounted source, feature packets, maintained path-summary verdicts, and accepted evidence into one accepted/rejected/expected/unknown edge summary without cloud execution.",
+        "last_worker_completed_at": "2026-06-22T08:14:39.672Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:15:17.701Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/managedsystem-boundary-map-local-knowledge-pass-20260622.md: the artifact is repo-local, cites mounted source plus maintained feature/model artifacts, covers the minimal add-existing path, the create-time initial/default-pool product-gap path, explicit VirtualMachines+ManagedSystem unsupported combination, adjacent runtime/reconcile/single-pool passes, and preserves remaining unknown edges without reopening final verdicts."
+      },
+      "session_id": "s_task_managedsystem-boundary-map-local-knowledge-pass-20260622",
+      "session_history": [
+        "s_task_managedsystem-boundary-map-local-knowledge-pass-20260622"
+      ],
+      "result": "Created a new repo-local ManagedSystem boundary map artifact at evidence/archive/managedsystem-boundary-map-local-knowledge-pass-20260622.md, synthesizing mounted source, feature packets, maintained path-summary verdicts, and accepted evidence into one accepted/rejected/expected/unknown edge summary without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:15:17.701Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/managedsystem-boundary-map-local-knowledge-pass-20260622.md: the artifact is repo-local, cites mounted source plus maintained feature/model artifacts, covers the minimal add-existing path, the create-time initial/default-pool product-gap path, explicit VirtualMachines+ManagedSystem unsupported combination, adjacent runtime/reconcile/single-pool passes, and preserves remaining unknown edges without reopening final verdicts."
+      },
+      "status": "done"
+    }
+  ]
+}

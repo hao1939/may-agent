@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:41:20.573Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier owner review confirmed external-send-proof-dispatch-family-20260620 remains the single truthful live wait: both MachinesPreview and VM prerelease outbound packets are accepted and send-ready, but no repo-local send/escalation proof or authoritative reply exists, so no passive response-await split or duplicate send-proof leaves are warranted. Productive capacity stays on the three active authoring/source leaves for private-cluster Addonv2, private-cluster k8s-validation variant visibility, and VM prerelease mounted-source gap batch 1. The earlier private-cluster public-FQDN toggle source-gap slice is already accepted and its durable meaning is captured in this parent summary, so its done leaf can be archived for readability.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-next-source-gap-batch1-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the next bounded batch of handwritten private-cluster Go scenarios beyond the already accepted public-FQDN-toggle path, identify 1-2 source-distinct scenario branches that are still missing or weak in the maintained knowledge map, and write a source-backed gap packet that names the exact scenario ids, current spec/replay/model coverage status, and the best concrete next artifact for each branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-next-source-gap-batch1-20260620.md"
+      ],
+      "acceptance": [
+        "Packet cites the exact mounted private-cluster Go source files/scenario ids inspected and distinguishes them from the already accepted path.private-cluster-privatelink-public-fqdn-toggle branch.",
+        "For each selected branch, packet states current repo-local coverage truthfully: whether a maintained path/spec/replay already exists, is partial, or is missing, and links the existing artifacts or gap evidence.",
+        "Packet ends with at least one concrete next artifact recommendation under the regular learning or verification lane (for example source-boundary map, spec/replay authoring, or execute-readiness packet), without running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-expansion"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:37:20.806Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-next-source-gap-batch1-20260620_20260620223722",
+        "assigned_at": "2026-06-20T22:37:22.837Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-next-source-gap-batch1-20260620",
+        "worker_started_attempt_id": "a_private-cluster-next-source-gap-batch1-20260620_20260620223722",
+        "worker_started_at": "2026-06-20T22:37:45.126Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested source-backed gap packet at evidence/archive/private-cluster-next-source-gap-batch1-20260620.md, identifying Addonv2 private-cluster and PrivateLink K8S-validation as the next 1–2 post-public-FQDN handwritten branches still missing or weak in the maintained knowledge map.",
+        "last_worker_completed_at": "2026-06-20T22:39:53.860Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:40:20.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the source-backed private-cluster gap packet: it cites the exact mounted Go files and scenario ids inspected beyond the already accepted public-FQDN toggle branch, truthfully classifies current repo-local coverage for Scenario_Addonv2_PrivateCluster and Scenario_Private_Cluster_With_K8S_Validation, and names bounded next regular-learning artifacts for each without cloud mutation."
+      },
+      "session_id": "s_task_private-cluster-next-source-gap-batch1-20260620",
+      "session_history": [
+        "s_task_private-cluster-next-source-gap-batch1-20260620"
+      ],
+      "result": "Wrote the requested source-backed gap packet at evidence/archive/private-cluster-next-source-gap-batch1-20260620.md, identifying Addonv2 private-cluster and PrivateLink K8S-validation as the next 1–2 post-public-FQDN handwritten branches still missing or weak in the maintained knowledge map.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:40:20.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the source-backed private-cluster gap packet: it cites the exact mounted Go files and scenario ids inspected beyond the already accepted public-FQDN toggle branch, truthfully classifies current repo-local coverage for Scenario_Addonv2_PrivateCluster and Scenario_Private_Cluster_With_K8S_Validation, and names bounded next regular-learning artifacts for each without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

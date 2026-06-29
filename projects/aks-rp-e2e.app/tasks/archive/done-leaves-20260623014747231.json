@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T01:47:47.232Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted three repo-local precursor completions without treating them as end-state repairs: network-cni-cilium-stop-start-execute-boundary-note-20260623 captured the execute-gated boundary note; replay-path-record-storage-csi-csidrivers-batch12-split-20260623 established the truthful negative audit that no standalone csidrivers checkpoint slice exists yet; and vmpr-row75-aksconformance-core-source-status-reconcile-20260623 reconciled the row-75 source/spec/replay chain. The live project focus remains the two active maintained-surface repair leaves: storage-csidrivers-model-linkage-status-repair-20260623 must repair the dedicated csidrivers model/linkage/views from that evidence carrier, and vmpr-row75-model-view-status-repair-20260623 must repair the row-75 model/view status to the execute-gated truth. Keep the external human proof wait isolated as the single exact blocked family-level leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row75-aksconformance-core-source-status-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source plus the existing repo spec/replay/model carriers to tighten the exact boundary for path.virtualmachine-prerelease.row75-aksconformance-core. Produce a source-backed archive note that maps the row-75 input path, expected behavior path, current repo-local evidence status, adjacent VM prerelease surfaces, and the minimal truthful next repo-local change or retained draft verdict without reopening the unrelated external-human wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row75-aksconformance-core-source-status-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites exact mounted-source and repo-local carriers for path.virtualmachine-prerelease.row75-aksconformance-core, including the relevant VM prerelease source scenario entry plus the current spec/replay/model/view files, and records accepted inputs, expectations, adjacent surfaces, and unknown edges.",
+        "If repo-local repair is still needed, the note identifies the exact files and smallest truthful follow-up needed to promote or preserve the row-75 carrier; if the current carrier is already coherent, the note records the truthful draft/ready verdict and why no external-human transport blocker applies."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.virtualmachine-prerelease.row75-aksconformance-core"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T01:42:40.453Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row75-aksconformance-core-source-status-reconcile-20260623_20260623014244",
+        "assigned_at": "2026-06-23T01:42:44.317Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row75-aksconformance-core-source-status-reconcile-20260623",
+        "worker_started_attempt_id": "a_vmpr-row75-aksconformance-core-source-status-reconcile-20260623_20260623014244",
+        "worker_started_at": "2026-06-23T01:43:09.138Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-75 source/status archive note at evidence/archive/vmpr-row75-aksconformance-core-source-status-reconcile-20260623.md, reconciling mounted AKS RP source with repo-local feature/spec/replay/model/view carriers and identifying the minimal truthful follow-up as a bounded row-75 model/view repair rather than external-human wait work.",
+        "last_worker_completed_at": "2026-06-23T01:45:18.551Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T01:45:53.757Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-75 source/status note: mounted AKS RP source plus repo-local spec/replay/coverage carriers establish the exact user-kubeconfig deployment+tunnel+metrics boundary, prove the current gap is a model/view understatement rather than external-human wait work, and identify a bounded row-75 model/view repair as the smallest truthful successor."
+      },
+      "session_id": "s_task_vmpr-row75-aksconformance-core-source-status-reconcile-20260623",
+      "session_history": [
+        "s_task_vmpr-row75-aksconformance-core-source-status-reconcile-20260623"
+      ],
+      "result": "Produced the requested row-75 source/status archive note at evidence/archive/vmpr-row75-aksconformance-core-source-status-reconcile-20260623.md, reconciling mounted AKS RP source with repo-local feature/spec/replay/model/view carriers and identifying the minimal truthful follow-up as a bounded row-75 model/view repair rather than external-human wait work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T01:45:53.757Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-75 source/status note: mounted AKS RP source plus repo-local spec/replay/coverage carriers establish the exact user-kubeconfig deployment+tunnel+metrics boundary, prove the current gap is a model/view understatement rather than external-human wait work, and identify a bounded row-75 model/view repair as the smallest truthful successor."
+      },
+      "status": "done"
+    }
+  ]
+}

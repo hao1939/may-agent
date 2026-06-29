@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:11:30.899Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed review accepts the VM prerelease mounted-source coverage packet: rows 25, 33, 40-43, 50, and 76 are now source-backed in ../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-external-wait-covered-rows-mounted-source-coverage-packet-20260622.md, which exceeds the initial slice and makes the earlier 40-43/76 source follow-up obsolete. Keep virtualmachine-prerelease-external-wait-covered-rows-live-proof-family-matrix-20260622 as the single repo-local next action to convert that packet into minimal runtime-proof families. Leave external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged as the only family-level external-human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-external-wait-covered-rows-40-43-76-mounted-source-followup-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extend VM prerelease repo-local source coverage for the remaining external-wait-covered asks by mapping rows 40-43 and 76 from mounted AKS RP source and any directly referenced scenario definitions once the initial packet slice exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-external-wait-covered-rows-40-43-76-mounted-source-followup-20260622.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted-source suite/scenario/step/assertion locations for rows 40-43 and 76 and summarize for each ask the product inputs, lifecycle action, and expected behavior already source-backed versus what still depends on later external/live proof.",
+        "Keep the work repo-local only and reference the initial packet artifact so the branch can later roll up cleanly; if any row cannot be mapped from mounted source, record the exact missing source-equivalent artifact or narrow follow-up leaf needed rather than reopening external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:09:10.338Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T17:10:39.973Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Superseded before execution: the accepted initial packet already mapped rows 40-43 and 76 from mounted source, so this backlog source-follow-up would duplicate completed work."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:10:39.973Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Superseded before execution: the accepted initial packet already mapped rows 40-43 and 76 from mounted source, so this backlog source-follow-up would duplicate completed work."
+      },
+      "status": "done"
+    }
+  ]
+}

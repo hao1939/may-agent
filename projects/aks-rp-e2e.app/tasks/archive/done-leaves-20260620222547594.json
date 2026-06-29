@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:25:47.594Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update reconciled a stale watchdog review wake with current accepted state and refreshed the root frontier to match reality. The bounded private-cluster source boundary map batch and the VM prerelease row-26 maxUnavailable maintained-model reconcile are now archived as durable root-level provenance: mounted/source-backed private-cluster public-FQDN boundary inputs are captured, and the row-26 slice is already owner-reviewed with truthful execute-gated blocked status plus exact replay --check evidence. The live project frontier is intentionally narrow and explicit: keep private-cluster-public-fqdn-toggle-replay-authoring-20260620 as the sole active repo-local next step to turn that source/spec packet into an executable non-cloud replay, and keep external-send-proof-dispatch-family-20260620 as the single shared external-human transport ceiling until durable send/escalation proof or an authoritative reply is recorded. Do not reopen the accepted row-26 review work or recreate duplicate blocked waits without contradictory new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-source-boundary-map-batch1-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory one bounded private-cluster handwritten e2ev3 source slice from the mounted AKS RP repo and convert it into a durable scenario/input/expectation boundary map that identifies the best next non-cloud authoring target without mutating cloud resources.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-source-boundary-map-batch1-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted AKS RP private-cluster handwritten e2ev3 suite files and cite the exact scenario/helper files plus scenario names reviewed, then record which branches already have repo-local feature/spec/replay coverage and which do not.",
+        "For one best bounded private-cluster candidate slice, record the exact scenario intent, input path, expectation path, adjacent surfaces, and the current repo-local evidence/model ceiling so a follow-up authoring task can start without rediscovery.",
+        "End with one explicit next non-cloud leaf recommendation (model/spec/evidence authoring or equivalent) for that bounded private-cluster slice, without running cloud execution or broadening into a full-family rewrite."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:20:39.356Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-source-boundary-map-batch1-20260620_20260620222041",
+        "assigned_at": "2026-06-20T22:20:41.770Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-source-boundary-map-batch1-20260620",
+        "worker_started_attempt_id": "a_private-cluster-source-boundary-map-batch1-20260620_20260620222041",
+        "worker_started_at": "2026-06-20T22:21:05.619Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable private-cluster source boundary map at evidence/archive/private-cluster-source-boundary-map-batch1-20260620.md after reviewing mounted AKS RP PrivateLink/private-cluster handwritten source and repo-local feature/spec/replay coverage. The artifact identifies the public-FQDN toggle lifecycle as the best next bounded non-cloud authoring target because its source-grounded spec exists but the replay scaffold is still missing.",
+        "last_worker_completed_at": "2026-06-20T22:23:16.918Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:23:44.632Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-source-boundary-map-batch1-20260620.md cites the exact mounted private-cluster and adjacent public-FQDN handwritten source files/scenario names reviewed, maps repo-local feature/spec/replay coverage for the bounded PrivateLink slice, and identifies the public-FQDN toggle replay scaffold as the next bounded non-cloud authoring target."
+      },
+      "session_id": "s_task_private-cluster-source-boundary-map-batch1-20260620",
+      "session_history": [
+        "s_task_private-cluster-source-boundary-map-batch1-20260620"
+      ],
+      "result": "Created a durable private-cluster source boundary map at evidence/archive/private-cluster-source-boundary-map-batch1-20260620.md after reviewing mounted AKS RP PrivateLink/private-cluster handwritten source and repo-local feature/spec/replay coverage. The artifact identifies the public-FQDN toggle lifecycle as the best next bounded non-cloud authoring target because its source-grounded spec exists but the replay scaffold is still missing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:23:44.632Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-source-boundary-map-batch1-20260620.md cites the exact mounted private-cluster and adjacent public-FQDN handwritten source files/scenario names reviewed, maps repo-local feature/spec/replay coverage for the bounded PrivateLink slice, and identifies the public-FQDN toggle replay scaffold as the next bounded non-cloud authoring target."
+      },
+      "status": "done"
+    }
+  ]
+}

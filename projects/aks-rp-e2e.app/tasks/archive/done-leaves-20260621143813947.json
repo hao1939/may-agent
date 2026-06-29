@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:38:13.947Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner accepted the VM prerelease rows 36-39 adjacent-row boundary matrix: repo-local evidence now pins exact separators among row 36 Azure Monitor AAD auth, row 37 managed AAD lifecycle, row 38 Azure RBAC authorization, and row 39 Disable SSH lifecycle, with row-local check-mode artifacts and explicit future rerun gates preserved. The only live blocked wait remains the shared external human-transport proof family. Active local work stays on serverless virtual-nodes source coverage, and the next queued adjacent VM prerelease follow-up is a repo-local row-40/41 SSH key-update boundary matrix so future work does not conflate Disable SSH with SSH public-key rotation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-vmpr-rows36-39-boundary-matrix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: synthesize the mounted-source and repo-local carrier boundaries across the adjacent VM prerelease AAD rows 36-39 into one durable boundary matrix so future live work can target the correct row without reopening neighboring AAD auth, managed-AAD, Azure RBAC, or disable-SSH surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted-source row-specific scenarios plus the current repo-local row-36/37/38/39 carriers and write evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md mapping each row's accepted inputs, key positive/negative expectation branches, exact row separations, current evidence ceiling, and next safe rerun gate.",
+        "If features/aad-rbac.yaml or another repo-local carrier is missing any source-faithful cross-row distinction needed to keep rows 36-39 from being conflated, update that carrier text without claiming a new live verdict.",
+        "Keep the task repo-local only: no cloud mutation, no external asks, and no expansion beyond the adjacent VM prerelease AAD row-36/37/38/39 boundary family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-vmpr-adjacent-rows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:35:03.162Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-vmpr-rows36-39-boundary-matrix-20260621_20260621143503",
+        "assigned_at": "2026-06-21T14:35:03.206Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-vmpr-rows36-39-boundary-matrix-20260621",
+        "worker_started_attempt_id": "a_aad-rbac-vmpr-rows36-39-boundary-matrix-20260621_20260621143503",
+        "worker_started_at": "2026-06-21T14:35:18.340Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable adjacent-row boundary matrix at evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md covering rows 36-39 and revalidated each row’s repo-local source/spec/replay wiring with fresh check-mode evidence.",
+        "last_worker_completed_at": "2026-06-21T14:37:25.520Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:37:37.657Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md gives a source-backed adjacent-row matrix for VM prerelease rows 36-39, preserves exact row separators, records row-local check-mode evidence artifacts, and truthfully states that no carrier edit or new live verdict was needed."
+      },
+      "session_id": "s_task_aad-rbac-vmpr-rows36-39-boundary-matrix-20260621",
+      "session_history": [
+        "s_task_aad-rbac-vmpr-rows36-39-boundary-matrix-20260621"
+      ],
+      "result": "Wrote a durable adjacent-row boundary matrix at evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md covering rows 36-39 and revalidated each row’s repo-local source/spec/replay wiring with fresh check-mode evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:37:37.657Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/aad-rbac-vmpr-rows36-39-boundary-matrix-20260621.md gives a source-backed adjacent-row matrix for VM prerelease rows 36-39, preserves exact row separators, records row-local check-mode evidence artifacts, and truthfully states that no carrier edit or new live verdict was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

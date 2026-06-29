@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:07:27.072Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the bounded row-52 LocalDNS AzureLinux contract artifact into durable project memory: mounted-source and maintained row-local carriers now prove the exact row-52 VM-prerelease attachment ceiling, so the only live adjacent continuation is vmpr-row52-model-view-attachment-reconciliation-20260621 to reconcile repo-local model/view presentation for path.localdns.azurelinux. The external-send-proof dispatch family remains the single unrelated blocked wait and should stay compressed until real human transport proof or authoritative replies exist.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row52-localdns-azurelinux-next-contract-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: consume the accepted VM prerelease row-51 follow-up by extracting one bounded repo-local packet for the exact adjacent row-52 LocalDNS AzureLinux VirtualMachine contract, reusing the maintained row-local path/spec/replay carriers and confirming what, if anything, still needs repo-local reconciliation before any broader LocalDNS or row-53 work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row52-localdns-azurelinux-next-contract-20260621.md"
+      ],
+      "acceptance": [
+        "Produce one bounded artifact that cites the accepted evidence/archive/vmpr-row51-model-or-row52-followup-20260621.md packet plus the exact mounted row-52 carriers in virtualmachine/suites/checkin.go and the LocalDNS plan files, preserving the row-52-only VM prerelease contract truthfully.",
+        "Name and reconcile the maintained row-local surfaces for row 52 only — path.localdns.azurelinux, spec.localdns.vm-prerelease.azurelinux, specs/localdns-azlinux-vm-prerelease.json, and replays/localdns-azlinux-vm-prerelease.ts — and state any remaining repo-local exactness ceiling without widening into row 53 or generic LocalDNS family edits.",
+        "Keep scope strictly repo-local and adjacent-frontier only: no cloud execution, no reopening the external-send-proof blocker family, no row-51 rework unless the accepted evidence proves a contradiction, and no broader checkin-suite sweep."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-adjacent-source-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:02:59.751Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row52-localdns-azurelinux-next-contract-20260621_20260621170259",
+        "assigned_at": "2026-06-21T17:02:59.800Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row52-localdns-azurelinux-next-contract-20260621",
+        "worker_started_attempt_id": "a_vmpr-row52-localdns-azurelinux-next-contract-20260621_20260621170259",
+        "worker_started_at": "2026-06-21T17:03:09.265Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-52 LocalDNS AzureLinux contract artifact at evidence/archive/vmpr-row52-localdns-azurelinux-next-contract-20260621.md, reconciling the accepted row-51 follow-up with mounted source, maintained spec/replay/index surfaces, and the remaining row-52-only repo-local exactness ceiling.",
+        "last_worker_completed_at": "2026-06-21T17:04:29.236Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:05:46.267Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/vmpr-row52-localdns-azurelinux-next-contract-20260621.md: mounted source plus dedicated row-52 spec/replay/index/check carriers already ground the VM-prerelease LocalDNS AzureLinux contract, leaving only a narrow repo-local model/view presentation exactness gap."
+      },
+      "session_id": "s_task_vmpr-row52-localdns-azurelinux-next-contract-20260621",
+      "session_history": [
+        "s_task_vmpr-row52-localdns-azurelinux-next-contract-20260621"
+      ],
+      "result": "Produced the bounded row-52 LocalDNS AzureLinux contract artifact at evidence/archive/vmpr-row52-localdns-azurelinux-next-contract-20260621.md, reconciling the accepted row-51 follow-up with mounted source, maintained spec/replay/index surfaces, and the remaining row-52-only repo-local exactness ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:05:46.267Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/vmpr-row52-localdns-azurelinux-next-contract-20260621.md: mounted source plus dedicated row-52 spec/replay/index/check carriers already ground the VM-prerelease LocalDNS AzureLinux contract, leaving only a narrow repo-local model/view presentation exactness gap."
+      },
+      "status": "done"
+    }
+  ]
+}

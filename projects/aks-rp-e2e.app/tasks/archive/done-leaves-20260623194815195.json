@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:48:15.195Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 completion wake accepted oidc-default-and-jwks-mounted-source-linkage-repair-20260623: the archive packet cites exact mounted workload-identity source and canonical carriers for path.oidc.default-by-version.k8s-gte-1.34 plus the JWKS key-structure/retry-contract branches, and the reviewed model update preserves observed=unknown while regenerating the derived path-summary view. Active capacity remains fully occupied by five mounted-source/model reconciliation leaves (AAD RBAC row 37, ALB controller, traffic API proxy, AppLink, and managed-gateway-api); keep both existing blocked families compressed as truthful waits and do not add refill work until one active leaf completes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-default-and-jwks-mounted-source-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus the existing canonical OIDC carriers to reconcile path.oidc.default-by-version.k8s-gte-1.34, path.oidc.jwks-endpoint-validation.key-structure, and path.oidc.jwks-endpoint-validation.retry-contract: restore normalized feature/scenario/input-DAG/path linkage, tighten expected-behavior wording to the exact mounted-source contracts, and keep observed values claim-safe/unknown unless direct evidence exists, all without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-and-jwks-mounted-source-linkage-repair-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source OIDC files plus the touched feature/spec/replay/model carriers for the default-by-version and JWKS branches, and records the exact source-backed contracts used for each path.",
+        "Model and carrier updates keep these three OIDC paths claim-safe: default-enabled and JWKS retry/key-structure expectations may be strengthened from source, but observed values stay unknown unless exact execution evidence already exists and is cited.",
+        "The work stays repo-local and bounded to the three named OIDC paths only: no cloud mutation, no external-human follow-up, and no widening into unrelated identity or traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:39:59.905Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-and-jwks-mounted-source-linkage-repair-20260623_20260623194004",
+        "assigned_at": "2026-06-23T19:40:04.516Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-and-jwks-mounted-source-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_oidc-default-and-jwks-mounted-source-linkage-repair-20260623_20260623194004",
+        "worker_started_at": "2026-06-23T19:40:53.967Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the three assigned OIDC paths against mounted AKS RP source, updated `model/knowledge-map/model.json` and regenerated `path-summary.json`, and wrote a durable archive packet documenting the exact source-backed contracts while keeping observed values unknown unless path-specific evidence exists.",
+        "last_worker_completed_at": "2026-06-23T19:45:36.568Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:47:07.859Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/oidc-default-and-jwks-mounted-source-linkage-repair-20260623.md cites exact mounted workload-identity source files and touched canonical carriers for the three accepted OIDC paths, and grep verification shows model.json plus views/path-summary.json now contain the repaired default-by-version and JWKS key-structure/retry-contract path entries while preserving claim-safe observed=unknown semantics in the review artifact."
+      },
+      "session_id": "s_task_oidc-default-and-jwks-mounted-source-linkage-repair-20260623",
+      "session_history": [
+        "s_task_oidc-default-and-jwks-mounted-source-linkage-repair-20260623"
+      ],
+      "result": "Reconciled the three assigned OIDC paths against mounted AKS RP source, updated `model/knowledge-map/model.json` and regenerated `path-summary.json`, and wrote a durable archive packet documenting the exact source-backed contracts while keeping observed values unknown unless path-specific evidence exists.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:47:07.859Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/oidc-default-and-jwks-mounted-source-linkage-repair-20260623.md cites exact mounted workload-identity source files and touched canonical carriers for the three accepted OIDC paths, and grep verification shows model.json plus views/path-summary.json now contain the repaired default-by-version and JWKS key-structure/retry-contract path entries while preserving claim-safe observed=unknown semantics in the review artifact."
+      },
+      "status": "done"
+    }
+  ]
+}

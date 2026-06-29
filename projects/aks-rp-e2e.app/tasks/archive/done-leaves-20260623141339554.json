@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:13:39.555Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update accepted the mounted-VMSS sibling-carrier proposal as durable repo-local evidence and preserved external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human wait with the same resume trigger (returned proof immediately, or watchdog review after 2026-06-26 if still silent). Capacity is now refilled with one concrete repo-local next slice: serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623, which should author the bounded mounted VMSS lifecycle sibling spec/replay/model/view registration without rewriting the accepted row-62 VM/shared-identity carrier or reopening cloud execution.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "serverless-addonv2-aci-connector-model-path-reconciliation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: review the accepted repo-local carrier for the serverless addonv2 ACI connector path against the 2026-06-23 source contract packet, then correct any stale bounded model/path or directly coupled spec metadata so the accepted carrier truth matches mounted source/spec reality without opening cloud execution or widening into virtual-nodes standard or subnet-validation semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-addonv2-aci-connector-model-path-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "The archive output cites the 2026-06-23 addonv2 ACI connector source contract packet plus the mounted source/spec anchors, states exactly which accepted model/path or directly coupled spec wording was stale or already correct, and records the bounded correction/confirmation.",
+        "Repo-local edits, if needed, are limited to model/knowledge-map/model.json and only directly coupled carrier metadata such as specs/index.json for the same addonv2 ACI connector truth surface; no cloud execution, no reopening of the external-human wait branch, and no widening into unrelated serverless semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-addonv2.aci-connector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T13:55:55.700Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T13:55:59.286Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-23T13:56:42.319Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-addonv2-aci-connector-model-path-reconciliation-20260623",
+        "stale_active_requeued_at": "2026-06-23T13:56:16.172Z",
+        "stale_active_requeue_reason": "Planner restored single-writer discipline: keep addonv2 reconciliation queued until the active serverless virtualnodes model/spec reconciliation finishes because both slices may edit shared accepted model/spec files.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_serverless-addonv2-aci-connector-model-path-reconciliation-20260623_20260623135559",
+        "current_attempt_id": "a_serverless-addonv2-aci-connector-model-path-reconciliation-20260623_20260623135642",
+        "worker_started_attempt_id": "a_serverless-addonv2-aci-connector-model-path-reconciliation-20260623_20260623135642",
+        "worker_started_at": "2026-06-23T13:56:45.498Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the accepted serverless Addonv2 ACI connector carrier by updating model/knowledge-map/model.json from stale draft-linkage state to a source-grounded, environment-blocked row-62 VM/shared-identity variant, and wrote the archive note evidence/archive/serverless-addonv2-aci-connector-model-path-reconciliation-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T14:05:26.511Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:07:09.815Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: archive evidence/archive/serverless-addonv2-aci-connector-model-path-reconciliation-20260623.md cites the 2026-06-23 source contract packet plus mounted Addonv2 ACI connector sources, and repo-local model.json now carries the row-62 VirtualMachines/shared-identity branch as a source-grounded environment-blocked path with populated inputs/behavior and preserved scope boundaries."
+      },
+      "session_id": "s_task_serverless-addonv2-aci-connector-model-path-reconciliation-20260623",
+      "session_history": [
+        "s_task_serverless-addonv2-aci-connector-model-path-reconciliation-20260623"
+      ],
+      "result": "Reconciled the accepted serverless Addonv2 ACI connector carrier by updating model/knowledge-map/model.json from stale draft-linkage state to a source-grounded, environment-blocked row-62 VM/shared-identity variant, and wrote the archive note evidence/archive/serverless-addonv2-aci-connector-model-path-reconciliation-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:07:09.815Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: archive evidence/archive/serverless-addonv2-aci-connector-model-path-reconciliation-20260623.md cites the 2026-06-23 source contract packet plus mounted Addonv2 ACI connector sources, and repo-local model.json now carries the row-62 VirtualMachines/shared-identity branch as a source-grounded environment-blocked path with populated inputs/behavior and preserved scope boundaries."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: compare the mounted Addonv2 ACI connector handwritten suite against the now-accepted row-62 VirtualMachines/shared-identity repo-local carrier, then write a bounded gap map that names the exact mounted behaviors/assertions already represented versus still-unmodeled VMSS/lifecycle surfaces so the next owner choice about widening this feature is source-grounded and does not reopen cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md"
+      ],
+      "acceptance": [
+        "The archive output cites /app/sources/aks-rp/test/e2e/suites/addonv2/aciconnector/aciconnectorlinux.go, /app/sources/aks-rp/test/e2e/suites/addonv2/suggestion.go, the dedicated row-62 spec/replay/model carriers, and the 2026-06-23 reconciliation note, then enumerates which mounted suite setup/assertion/lifecycle elements are already covered by the accepted repo-local carrier versus still absent.",
+        "The note ends with one bounded recommendation for the next repo-local closure step (for example keep as-is, split a new path, or extend the carrier metadata) with no cloud execution, no reopening of the external-human wait branch, and no widening into unrelated serverless families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-addonv2.aci-connector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:07:09.860Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T14:07:19.085Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623_20260623140728",
+        "assigned_at": "2026-06-23T14:07:28.762Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623",
+        "worker_started_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623_20260623140728",
+        "worker_started_at": "2026-06-23T14:07:51.145Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a bounded mounted-vs-row62 Addonv2 ACI connector gap map to evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md, comparing mounted handwritten VMSS lifecycle coverage against the accepted repo-local row-62 VirtualMachines/shared-identity carrier and ending with a narrow owner recommendation.",
+        "last_worker_completed_at": "2026-06-23T14:09:29.700Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:10:05.514Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted after reviewing evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md: it cites the mounted Addonv2 source files plus the dedicated row-62 spec/replay/model carriers and 2026-06-23 reconciliation note, enumerates covered vs absent setup/assertion/lifecycle elements, and ends with a bounded recommendation to preserve the current VM/shared-identity carrier while considering a separate mounted-VMSS sibling if wider repo-local closure is wanted."
+      },
+      "session_id": "s_task_serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623",
+      "session_history": [
+        "s_task_serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623"
+      ],
+      "result": "Wrote a bounded mounted-vs-row62 Addonv2 ACI connector gap map to evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md, comparing mounted handwritten VMSS lifecycle coverage against the accepted repo-local row-62 VirtualMachines/shared-identity carrier and ending with a narrow owner recommendation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:10:05.514Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted after reviewing evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md: it cites the mounted Addonv2 source files plus the dedicated row-62 spec/replay/model carriers and 2026-06-23 reconciliation note, enumerates covered vs absent setup/assertion/lifecycle elements, and ends with a bounded recommendation to preserve the current VM/shared-identity carrier while considering a separate mounted-VMSS sibling if wider repo-local closure is wanted."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: turn the accepted mounted-vs-row62 gap map into one bounded repo-local proposal for an exact mounted-VMSS Addonv2 ACI connector sibling carrier, naming the candidate feature/path/spec/replay identifiers and the precise mounted-only setup/assertion/lifecycle surfaces it would own so the owner can decide later whether to widen coverage without rewriting the accepted VM/shared-identity row-62 carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623.md"
+      ],
+      "acceptance": [
+        "The archive output cites /app/sources/aks-rp/test/e2e/suites/addonv2/aciconnector/aciconnectorlinux.go, /app/sources/aks-rp/test/e2e/suites/addonv2/suggestion.go, the accepted row-62 spec/replay/model carriers, and evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-gap-mapping-20260623.md, then proposes one exact sibling-carrier shape (feature/path/spec/replay ids or equivalent metadata anchors) for the mounted VMSS lifecycle contract without changing the existing row-62 carrier.",
+        "The note explicitly enumerates which mounted-only surfaces belong in the proposed sibling (VMSS substrate, Network Contributor role assignment, helm-release verification, upgrade revalidation, delete lifecycle, and explicit VNet/subnet provisioning), states what remains intentionally on the current VM/shared-identity row-62 carrier, and performs no cloud execution, no tree-control work, and no reopening of the external-human wait branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-addonv2.aci-connector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:10:24.055Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623_20260623141027",
+        "assigned_at": "2026-06-23T14:10:27.852Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623",
+        "worker_started_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623_20260623141027",
+        "worker_started_at": "2026-06-23T14:10:57.973Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested mounted-VMSS sibling-carrier proposal to evidence/archive, citing the mounted handwritten source, accepted row-62 carriers, and the mounted-vs-row62 gap map while keeping the current row-62 branch unchanged.",
+        "last_worker_completed_at": "2026-06-23T14:12:09.382Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:13:01.596Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623.md cites the mounted handwritten source, the accepted row-62 spec/replay/model carriers, and the mounted-vs-row62 gap map, then cleanly proposes one bounded mounted-VMSS lifecycle sibling that enumerates the mounted-only VMSS, VNet/subnet, Network Contributor, helm-release, upgrade, and delete surfaces while explicitly leaving the accepted row-62 VM/shared-identity carrier unchanged."
+      },
+      "session_id": "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623",
+      "session_history": [
+        "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623"
+      ],
+      "result": "Wrote the requested mounted-VMSS sibling-carrier proposal to evidence/archive, citing the mounted handwritten source, accepted row-62 carriers, and the mounted-vs-row62 gap map while keeping the current row-62 branch unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:13:01.596Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623.md cites the mounted handwritten source, the accepted row-62 spec/replay/model carriers, and the mounted-vs-row62 gap map, then cleanly proposes one bounded mounted-VMSS lifecycle sibling that enumerates the mounted-only VMSS, VNet/subnet, Network Contributor, helm-release, upgrade, and delete surfaces while explicitly leaving the accepted row-62 VM/shared-identity carrier unchanged."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning / evidence-feedback lane: reconcile the accepted serverless scheduler-controller enable-on-create carrier against the existing canonical spec plus mounted source/spec/replay anchors, then repair any missing or stale normalized model/path linkage so path.serverless-schedulerctrl.enable-on-create is preserved as a bounded source-grounded draft without opening cloud execution or widening into other scheduler-controller variants.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "The archive output cites the existing canonical spec entry for path.serverless-schedulerctrl.enable-on-create plus the mounted source/spec/replay anchors, states whether the accepted model/path linkage was missing or stale, and records the bounded correction or confirms it is already correct.",
+        "Repo-local edits, if needed, are limited to model/knowledge-map/model.json and directly coupled carrier metadata such as specs/index.json or replay linkage for the same enable-on-create truth surface; preserve the verdict as source-grounded/draft, perform no cloud execution, do not widen into disable-after-create, disable-after-enable, or enable-on-existing semantics, and do not touch the external-human wait branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl.enable-on-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:00:34.182Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623_20260623140057",
+        "assigned_at": "2026-06-23T14:00:57.712Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623_20260623140057",
+        "worker_started_at": "2026-06-23T14:01:00.694Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale normalized model/path linkage for path.serverless-schedulerctrl.enable-on-create in model/knowledge-map/model.json and wrote the requested archive note documenting canonical spec, mounted source, replay anchors, and the bounded source-grounded repair. Regenerated maintained knowledge-map views so path-summary now reflects the repaired selected inputs and behavior assertions.",
+        "last_worker_completed_at": "2026-06-23T14:06:56.870Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:08:38.533Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted after validating evidence/archive/serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623.md plus repo-local model/view updates: the canonical spec/source/replay anchors are cited, model/knowledge-map/model.json now restores the exact enable-on-create inputPath/expectationPath + DAG/path linkage, and path-summary renders the repaired selected inputs/behavior assertions without widening scope or opening cloud execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623"
+      ],
+      "result": "Reconciled the stale normalized model/path linkage for path.serverless-schedulerctrl.enable-on-create in model/knowledge-map/model.json and wrote the requested archive note documenting canonical spec, mounted source, replay anchors, and the bounded source-grounded repair. Regenerated maintained knowledge-map views so path-summary now reflects the repaired selected inputs and behavior assertions.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:08:38.533Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted after validating evidence/archive/serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623.md plus repo-local model/view updates: the canonical spec/source/replay anchors are cited, model/knowledge-map/model.json now restores the exact enable-on-create inputPath/expectationPath + DAG/path linkage, and path-summary renders the repaired selected inputs/behavior assertions without widening scope or opening cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

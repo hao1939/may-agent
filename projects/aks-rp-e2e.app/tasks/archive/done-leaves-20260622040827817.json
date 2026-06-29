@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:08:27.817Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update after stale watchdog review reconciliation: archive the accepted rows54-76 VM prerelease repo-local slice audit and the accepted row-63 maintained model/view repair because their durable meaning is already preserved in the project rollup and evidence. The live repo-local frontier remains intentionally narrow: row63-runtime-interpretation-helm-vs-pods-20260622 stays the single active task to inspect accepted row-63 runtime evidence plus repo-local replay/verifier logic and classify the remaining gap as real runtime absence, verifier or release-name mismatch, sequencing/not-attempted verification, or another bounded interpretation issue. Preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the only truthful family-level external-human wait until durable proof of real send/handoff/escalation or authoritative replies arrives for the covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the maintained-source adjacency and maintained carriers for VM prerelease rows 54-76 so the next bounded repo-local authoring/model slice after the row53 closure and rows40-43 readiness conclusion is chosen from evidence instead of stale row lists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current rows54-76 mounted-source adjacency evidence plus the maintained row/family anchors it used to judge readiness, including any exact external waits already covered by the shared human-transport blocker.",
+        "Artifact names one next highest-value bounded repo-local slice under rows54-76, with exact row/path scope, why it is ready ahead of siblings, and whether the outcome should be authoring, model/view repair, replay-prep, or blocker consolidation.",
+        "If no rows54-76 repo-local slice is ready, artifact records the exact blocker family or missing prerequisite and links it to the existing shared wait or a single new local problem leaf rather than reopening broad family auditing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:59:33.426Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622_20260622035933",
+        "assigned_at": "2026-06-22T03:59:33.476Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622_20260622035933",
+        "worker_started_at": "2026-06-22T03:59:55.364Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested rows54-76 audit artifact at evidence/archive/vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622.md, concluding the next bounded repo-local slice should be row 63 model/view repair rather than row 76’s externally gated live frontier.",
+        "last_worker_completed_at": "2026-06-22T04:02:06.643Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:02:42.347Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 rows54-76 audit: the artifact cites the maintained row ledger, exact row-local evidence anchors, and the shared external-human-transport wait, then makes a bounded repo-local choice by naming row 63 path.app-monitoring-addonv2-azure-monitor-metrics as the next maintained model/view repair slice ahead of already-settled siblings and externally gated row 76."
+      },
+      "session_id": "s_task_vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622"
+      ],
+      "result": "Produced the requested rows54-76 audit artifact at evidence/archive/vm-prerelease-rows54-76-next-repo-local-slice-audit-20260622.md, concluding the next bounded repo-local slice should be row 63 model/view repair rather than row 76’s externally gated live frontier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:02:42.347Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 rows54-76 audit: the artifact cites the maintained row ledger, exact row-local evidence anchors, and the shared external-human-transport wait, then makes a bounded repo-local choice by naming row 63 path.app-monitoring-addonv2-azure-monitor-metrics as the next maintained model/view repair slice ahead of already-settled siblings and externally gated row 76."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:44:36.385Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier watchdog review reconfirmed the single external-send-proof family remains the only truthful live frontier because accepted owner-send audit plus accepted covered-packets local-dispatch proof already closed packet-quality and repo-local dispatch gaps, while no newer durable human send/handoff/escalation proof or authoritative reply exists and the 2026-06-22T10:08:46Z re-review threshold is still in the future. The completed row-47 VirtualMachine CAS overscale repo-local carrier repair is now durably represented by its archive artifacts and model-facing carrier updates, so it can be compacted from the live tree while the project root keeps the shared resume condition: revisit only when real external human transport proof or authoritative replies are preserved for the covered MachinesPreview, VM prerelease rows 25+50, row-76 shared-identity, or row-33 execute-approval asks, or when the next blocked-frontier review occurs after the threshold.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-cas-overscale-repo-local-carrier-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: repair the repo-local row-47 VirtualMachine CAS overscale carriers now that mounted-source review is accepted by wiring the dedicated spec into specs/index.json, restoring accepted knowledge-map/model/view exposure for path.cluster-autoscaler.vm-prerelease-overscale-node-stability, and documenting any still-needed feature-packet wording follow-up without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-cas-overscale-repo-local-carrier-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Update the repo-local carrier files required by the accepted boundary map so spec.cluster-autoscaler.vm-prerelease-overscale-node-stability is discoverable through specs/index.json and path.cluster-autoscaler.vm-prerelease-overscale-node-stability is present in the accepted model/view surfaces, or write exact evidence if one of those surfaces is intentionally derived elsewhere.",
+        "Validate the repaired row-47 carriers with the dedicated replay check and the normal repo-local validation path, and archive the exact commands/results in the output note.",
+        "If features/cluster-autoscaler.yaml still lacks truthful row-47 VM-prerelease carrier wording after the repair, record the exact remaining wording gap and the concrete next file/path for follow-up; otherwise explicitly state no further carrier wording task is needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/virtualmachine"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T21:33:23.025Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-cas-overscale-repo-local-carrier-repair-20260621_20260621213323",
+        "assigned_at": "2026-06-21T21:33:23.073Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-cas-overscale-repo-local-carrier-repair-20260621",
+        "worker_started_attempt_id": "a_virtualmachine-cas-overscale-repo-local-carrier-repair-20260621_20260621213323",
+        "worker_started_at": "2026-06-21T21:33:32.904Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-47 VM prerelease CAS overscale repo-local carriers by restoring the dedicated spec entry in specs/index.json, re-adding the accepted path/scenario/DAG to model/knowledge-map/model.json, regenerating derived views, and archiving a task note with validation results and the remaining feature-packet wording gap.",
+        "last_worker_completed_at": "2026-06-21T21:39:46.775Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:40:29.298Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local row-47 carrier repair: evidence/archive/virtualmachine-cas-overscale-repo-local-carrier-repair-20260621.md shows specs/index.json, model/knowledge-map/model.json, and derived path-summary exposure were restored for spec/path.cluster-autoscaler.vm-prerelease-overscale-node-stability; the dedicated replay check passed; and the remaining work is only the separately scoped features/cluster-autoscaler.yaml wording gap."
+      },
+      "session_id": "s_task_virtualmachine-cas-overscale-repo-local-carrier-repair-20260621",
+      "session_history": [
+        "s_task_virtualmachine-cas-overscale-repo-local-carrier-repair-20260621"
+      ],
+      "result": "Repaired the row-47 VM prerelease CAS overscale repo-local carriers by restoring the dedicated spec entry in specs/index.json, re-adding the accepted path/scenario/DAG to model/knowledge-map/model.json, regenerating derived views, and archiving a task note with validation results and the remaining feature-packet wording gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:40:29.298Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local row-47 carrier repair: evidence/archive/virtualmachine-cas-overscale-repo-local-carrier-repair-20260621.md shows specs/index.json, model/knowledge-map/model.json, and derived path-summary exposure were restored for spec/path.cluster-autoscaler.vm-prerelease-overscale-node-stability; the dedicated replay check passed; and the remaining work is only the separately scoped features/cluster-autoscaler.yaml wording gap."
+      },
+      "status": "done"
+    }
+  ]
+}

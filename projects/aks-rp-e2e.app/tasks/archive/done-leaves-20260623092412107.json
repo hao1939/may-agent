@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:24:12.107Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Accepted the 2026-06-23 private-cluster authorized-service-tags devbox SSH-route diagnosis packet. Repo-local evidence now narrows the launcher-side failure to transport reachability for hayua@20.24.129.235:22, with replay host-selection and local SSH-config drift ruled out as the leading causes. This focus branch therefore moves to one active repo-local endpoint-handoff packet for path.private-cluster-vnet-integration-auth-service-tags plus the unchanged family-level external-human proof wait; no live execution retry should occur until an owner confirms or repairs the devbox endpoint and the bounded SSH preflight succeeds.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use only repo-local evidence and bounded launcher-side diagnostics to explain or narrow why SSH to the selected private-cluster witness host alias devbox times out from this launcher, then record the exact next truthful unblock path for path.private-cluster-vnet-integration-auth-service-tags without opening cloud mutation or creating a duplicate external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the accepted host-selection wiring, execution-readiness, and devbox preflight packets, records exact repo-local or launcher-side diagnostics for the devbox SSH path (such as resolved SSH config/alias details, hostname/IP routing evidence, and any bounded connectivity/error probes that do not require cloud mutation), and classifies whether the timeout is most likely stale host selection, local network reachability, SSH config drift, or still unresolved.",
+        "The note leaves one concrete truthful next action or wait condition for path.private-cluster-vnet-integration-auth-service-tags, does not reopen live execution, does not invent a new external-human wait family, and preserves the current devbox-timeout evidence when no local fix is available."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T09:21:21.648Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623_20260623092121",
+        "assigned_at": "2026-06-23T09:21:21.705Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623_20260623092121",
+        "worker_started_at": "2026-06-23T09:21:46.304Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable SSH route diagnosis packet at evidence/archive/private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623.md that ties accepted host-selection/readiness packets to fresh launcher-side SSH/TCP diagnostics and classifies the failure as transport reachability to the configured devbox endpoint, with stale endpoint ownership still unresolved externally.",
+        "last_worker_completed_at": "2026-06-23T09:23:29.477Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T09:24:11.942Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the SSH-route diagnosis packet: launcher-side evidence proves the devbox timeout is a transport reachability failure to hayua@20.24.129.235:22, not replay host-selection drift or local SSH-config corruption, and the only truthful next step is an endpoint-owner handoff before any preflight retry."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623"
+      ],
+      "result": "Wrote a durable SSH route diagnosis packet at evidence/archive/private-cluster-auth-service-tags-devbox-ssh-route-diagnosis-packet-20260623.md that ties accepted host-selection/readiness packets to fresh launcher-side SSH/TCP diagnostics and classifies the failure as transport reachability to the configured devbox endpoint, with stale endpoint ownership still unresolved externally.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:24:11.942Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the SSH-route diagnosis packet: launcher-side evidence proves the devbox timeout is a transport reachability failure to hayua@20.24.129.235:22, not replay host-selection drift or local SSH-config corruption, and the only truthful next step is an endpoint-owner handoff before any preflight retry."
+      },
+      "status": "done"
+    }
+  ]
+}

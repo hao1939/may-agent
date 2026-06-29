@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T07:28:52.452Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning cleanup finishes the stale-review burst: the accepted storage-csi-file-clone-execute-capable-replay-implementation-20260625 leaf is now archived because its durable meaning is already preserved in parent history, while the live project frontier stays intentionally narrow — one active no-cloud serverless-virtual-nodes-multi-pod-burst execute-envelope packet and one compressed blocked family of five exact external returned-proof waits through the on/after-2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-clone-execute-capable-replay-implementation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extend the existing storage-csi-file-clone replay into an execute-capable repo-local implementation without changing its identity: keep default/--check non-mutating, and under --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-clone implement only the mounted Azure File clone branch with original PVC + writer pod, preserved 10-second wait, cloned PVC from PersistentVolumeClaim, cloned pod outfile readback, and explicit cleanup/evidence capture.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/storage-csi-file-clone.ts"
+      ],
+      "acceptance": [
+        "replays/storage-csi-file-clone.ts preserves the current non-mutating check/default path and exact gate string AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-clone, rejecting execute attempts without that exact gate.",
+        "The execute branch is wired only for path.storage-csi-file-clone and preserves the mounted Azure File clone flow from azurefilecsi.go: original PVC + writer pod, 10-second wait before clone, cloned PVC with dataSource.kind=PersistentVolumeClaim and dataSource.name=cloning-pvc-original-file, cloned pod readback of /mnt/datavolume/outfile, plus ordered cleanup/evidence hooks.",
+        "The implementation stays repo-local authoring only in this leaf: no live cloud run is performed from the task, and the replay is not widened into disk-clone, resize, private-endpoint, verifyNFS, unmount, or other storage-csi sibling paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T07:18:43.505Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-execute-capable-replay-implementation-20260625_20260625071846",
+        "assigned_at": "2026-06-25T07:18:46.006Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-execute-capable-replay-implementation-20260625",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-execute-capable-replay-implementation-20260625_20260625071846",
+        "worker_started_at": "2026-06-25T07:18:58.850Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an execute-capable repo-local Azure File clone replay in replays/storage-csi-file-clone.ts, preserving non-mutating default/check behavior and exact mutation gating, and updated replays/storage-csi-file-clone.test.ts to verify gating plus bounded clone contract helpers.",
+        "last_worker_completed_at": "2026-06-25T07:23:23.635Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T07:24:32.915Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner verification: replays/storage-csi-file-clone.ts preserves default/--check non-mutating behavior, exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-clone, bounded Azure File clone manifests/10s wait/readback/cleanup flow, and bun test replays/storage-csi-file-clone.test.ts passed 4/4 including gate and bounded execute-contract checks."
+      },
+      "session_id": "s_task_storage-csi-file-clone-execute-capable-replay-implementation-20260625",
+      "session_history": [
+        "s_task_storage-csi-file-clone-execute-capable-replay-implementation-20260625"
+      ],
+      "result": "Implemented an execute-capable repo-local Azure File clone replay in replays/storage-csi-file-clone.ts, preserving non-mutating default/check behavior and exact mutation gating, and updated replays/storage-csi-file-clone.test.ts to verify gating plus bounded clone contract helpers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T07:24:32.915Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner verification: replays/storage-csi-file-clone.ts preserves default/--check non-mutating behavior, exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-clone, bounded Azure File clone manifests/10s wait/readback/cleanup flow, and bun test replays/storage-csi-file-clone.test.ts passed 4/4 including gate and bounded execute-contract checks."
+      },
+      "status": "done"
+    }
+  ]
+}

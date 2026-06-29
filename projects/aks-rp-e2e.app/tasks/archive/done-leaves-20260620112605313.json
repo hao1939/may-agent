@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:26:05.313Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Owner rollup (2026-06-20T11:25Z): shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 remains the single truthful live wait for the helper-held seven-file checkpoint batch on model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json. The older shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620 leaf is now represented by the parent summary/history, so archive that done child while preserving the exact helper-release plus sibling-slice-clear resume trigger on the live carrier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one precise checkpoint/model-hygiene carrier for the shared seven-file knowledge-map batch, including the mixed-SKU upgrade model-classification follow-up, while preserving the exact helper-clear plus sibling-slice-clear resume trigger instead of duplicate blocked waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites the accepted seven-file checkpoint unblock-decision, slice-partition, and maintained-overlap evidence and names model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json as the current helper-held gate files.",
+        "The living resume trigger is exact: revisit only after the helper no longer holds the shared project/model gate on the seven-file batch and the named sibling slices no longer cohabit that maintained batch.",
+        "This task remains the single truthful live representation of that checkpoint wait; it does not re-route through environment/runtime burndown or spawn duplicate checkpoint blockers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:45:00.630Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T11:16:35.960Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T11:17:06.238Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the accidentally runnable backlog copy with blocked wait carrier shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 so the frontier truthfully shows this helper-held seven-file checkpoint as one exact external wait, not active backlog."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T11:17:06.238Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the accidentally runnable backlog copy with blocked wait carrier shared-knowledge-map-seven-file-checkpoint-wait-carrier-20260620 so the frontier truthfully shows this helper-held seven-file checkpoint as one exact external wait, not active backlog."
+      },
+      "status": "done"
+    }
+  ]
+}

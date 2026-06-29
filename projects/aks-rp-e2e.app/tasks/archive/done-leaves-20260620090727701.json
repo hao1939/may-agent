@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:07:27.702Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+  "summary": "VM prerelease feature-set replacement branch now serves as completed provenance only: all remaining visible children were accepted source-unblock, bounded-source, dry-run, or row-correction decisions whose durable meaning is already captured on this parent and on the live feature-spec lane summaries. No open work remains under this historical branch; current forward work continues in feature-knowledge-and-specs through the mounted-source ASM CNI import and its adjacent row-scoped successors.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-addonv2-asm-exact-source-unblock-20260617",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the exact missing handwritten/native/public source needed to decompose the VirtualMachine prerelease Addonv2 ASM functionality family into canonical row 66 functionality, row 67 BYOCA, and row 211 Windows-negative branches, so later coverage landing is based on exact scenario assertions instead of adjacent generic ASM specs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-exact-source-unblock-20260617.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-addonv2-asm-functionality-source-packet-20260617.md plus the repo-local absence of exact Scenario_Addonv2_Azure_Service_Mesh_Functionality, Scenario_Addonv2_Azure_Service_Mesh_BYOCA, and Scenario_Addonv2_Azure_Service_Mesh_Windows_Negative_Test_vms source bodies; names the precise handwritten/native/public source excerpt needed to pin assertions for rows 66, 67, and 211; and records the concrete resume condition for later canonical branch landing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-addons-traffic"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T20:06:46.222Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:36:06.085Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:36:06.085Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by blocked-source-equivalent-spec-burndown-20260620. Passive source-holder/exact-proof waits are no longer valid live work; the active burndown branch must use available local evidence/specs/replays/model/public docs to land bounded source-equivalent specs or precise evidence ceilings."
+      },
+      "status": "done"
+    }
+  ]
+}

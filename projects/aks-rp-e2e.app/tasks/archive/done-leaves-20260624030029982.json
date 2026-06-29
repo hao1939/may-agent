@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T03:00:29.982Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 owner planning update completed the focus-branch cleanup after accepting the storage-csi replay repair: storage-csi-file-resize-replay-check-mode-gate-repair-20260624 is now archived because its durable meaning is already represented by the archive note and this branch summary. The branch now truthfully reduces to one active serverless validating-webhook family gate-packet leaf, one exact shared external-human wait, and no extra done review clutter. The separate project-level backlog leaf storage-csi-file-resize-model-view-landing-20260624 remains the next runnable repo-local landing step, but it stays unassigned for now because worker capacity is already full with the active serverless gate packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-file-resize-replay-check-mode-gate-repair-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local carrier for path.storage-csi-file-resize so the maintained replay/test pair becomes claim-safe before any future live Azure File resize run: default invocation and --check must stay non-mutating, --execute must be the only live path, the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize gate must be enforced, and local validation must prove the carrier no longer enters auth/resource creation during non-cloud checks without widening into disk-resize, clone, snapshot, private-endpoint, NFS, Blob, or broader storage-csi rewrites.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-replay-check-mode-gate-repair-20260624.md"
+      ],
+      "acceptance": [
+        "Update the storage-csi-file-resize replay/test carrier so default and --check invocations are non-mutating and do not require Azure auth or create resources, while --execute remains the only live path gated by the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize value.",
+        "Repo-local validation proves the repaired carrier behavior with exact commands and outcomes for bun replays/storage-csi-file-resize.ts --check and bun test replays/storage-csi-file-resize.test.ts, and the evidence note explains any remaining bounded gap between the repaired carrier and a future source-equivalent live resize run.",
+        "If a small maintained wording/index/model/view sync is required to keep the repaired carrier claim-safe, land only the minimal bounded edit with local proof; otherwise state why no maintained metadata edit was needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:54:36.531Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-replay-check-mode-gate-repair-20260624_20260624025436",
+        "assigned_at": "2026-06-24T02:54:36.577Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-replay-check-mode-gate-repair-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-replay-check-mode-gate-repair-20260624_20260624025436",
+        "worker_started_at": "2026-06-24T02:55:02.885Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the storage-csi-file-resize replay/test carrier to be non-mutating by default and in --check, enforce the exact execute gate, and documented the bounded remaining live-gap in a new evidence note.",
+        "last_worker_completed_at": "2026-06-24T02:57:39.496Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:59:01.801Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/storage-csi-file-resize-replay-check-mode-gate-repair-20260624.md plus the probe artifact prove the replay/test carrier is now non-mutating by default and in --check, enforces the exact execute gate, and keeps live implementation blocked before auth/resource creation."
+      },
+      "session_id": "s_task_storage-csi-file-resize-replay-check-mode-gate-repair-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-resize-replay-check-mode-gate-repair-20260624"
+      ],
+      "result": "Repaired the storage-csi-file-resize replay/test carrier to be non-mutating by default and in --check, enforce the exact execute gate, and documented the bounded remaining live-gap in a new evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:59:01.801Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/storage-csi-file-resize-replay-check-mode-gate-repair-20260624.md plus the probe artifact prove the replay/test carrier is now non-mutating by default and in --check, enforces the exact execute gate, and keeps live implementation blocked before auth/resource creation."
+      },
+      "status": "done"
+    }
+  ]
+}

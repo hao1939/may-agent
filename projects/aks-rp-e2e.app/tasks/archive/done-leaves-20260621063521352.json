@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:35:21.352Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review and refill: accepted app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621 after direct evidence review, keeping its durable outcome as row-63 source-backed closure of request/readback semantics and verdict-bearing runtime assertions. The single blocked family external-send-proof-dispatch-family-20260620 remains the only truthful cross-branch external-human transport wait with no fresh send/reply proof. Live repo-local continuation now consists of the existing VM prerelease row-82 and policy-addon row-167 active leaves plus one newly assigned app-monitoring row-63 execute-run-plan leaf, which turns the accepted semantics packet into an explicit authorization/preflight/cleanup-ready replay plan rather than leaving spare capacity empty.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For Scenario_Addonv2_Azure_Monitor_Metrics, use mounted aks-rp source plus existing repo-local app-monitoring addonv2 spec/replay/model assets to replace the generic external-proof-needed blocker with one row-scoped proof packet that pins the exact request payload/readback semantics and verdict-bearing runtime assertion surface, or records the exact checked-in evidence ceiling if no exact source equivalent exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md"
+      ],
+      "acceptance": [
+        "The work cites the exact mounted or checked-in source file(s), scenario definitions, and row-local carriers used for Scenario_Addonv2_Azure_Monitor_Metrics, or records explicit repo-local proof that no exact checked-in source equivalent exists and which bounded source-equivalent artifacts were used instead.",
+        "Repo-local durable carriers are updated as warranted so the addonv2 azure-monitor-metrics branch truthfully captures the request-body/readback contract and verdict-bearing runtime assertion surface in maintained evidence/spec/model surfaces without collapsing it into generic addonv2 coverage.",
+        "The evidence artifact records files inspected/changed, validation commands/checks used, and whether the path should remain execute-blocked pending product observation or can advance to a narrower replay/model follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:29:56.878Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T06:29:56.979Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621_20260621062957",
+        "assigned_at": "2026-06-21T06:29:57.032Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621_20260621062957",
+        "worker_started_at": "2026-06-21T06:30:10.578Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Pinned the row-63 Azure Monitor Metrics source semantics using mounted aks-rp source, updated the accepted knowledge-map model/view surfaces from external-proof-needed to execution-gated, and wrote the durable evidence packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T06:33:31.382Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:34:45.951Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md: mounted aks-rp matrix row plus suite/source files pin row-63 contract to properties.azureMonitorProfile.metrics.enabled=true and verdict-bearing runtime surface to the Azure Monitor Metrics helm release, AMA pod set, and node-exporter proxy scrape after create/upgrade; repo-local knowledge-map/replay/spec carriers were updated and execute proof now truthfully leaves the branch authorization-gated rather than source-blocked."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621"
+      ],
+      "result": "Pinned the row-63 Azure Monitor Metrics source semantics using mounted aks-rp source, updated the accepted knowledge-map model/view surfaces from external-proof-needed to execution-gated, and wrote the durable evidence packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:34:45.951Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260621.md: mounted aks-rp matrix row plus suite/source files pin row-63 contract to properties.azureMonitorProfile.metrics.enabled=true and verdict-bearing runtime surface to the Azure Monitor Metrics helm release, AMA pod set, and node-exporter proxy scrape after create/upgrade; repo-local knowledge-map/replay/spec carriers were updated and execute proof now truthfully leaves the branch authorization-gated rather than source-blocked."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:50:01.639Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog blocked-frontier owner review confirms the project frontier remains intentionally collapsed to one truthful external-human transport wait. The accepted VM prerelease suite row frontier matrix is now parent-level provenance only: it already established how the prerelease/checkin suite rows map into the replacement slice and no longer needs to stay as a visible done leaf. The only live branch that still matters is focus-vm-prerelease-pipeline-replacement-20260620, whose repo-local replacement work is complete and whose sole remaining child is external-send-proof-dispatch-family-20260620 carrying the send-unproven-but-send-ready MachinesPreview and VM prerelease operator packets until durable repo-local send/escalation proof or an authoritative reply is captured. Do not recreate duplicate waits, passive response-await leaves, or broad repo-local discovery without new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-suite-row-frontier-matrix-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a durable repo-local VM prerelease suite frontier matrix from mounted prerelease.go/checkin.go plus current repo-local spec/replay/evidence carriers so the project can see which suite rows are already landed, which are exact external-send waits, and which still need bounded local authoring work after the row-28 reconciliation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-suite-row-frontier-matrix-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted VM prerelease suite anchors actually inspected (prerelease.go and/or checkin.go plus referenced row carriers as needed) and lists the row-level repo-local status for the current VM prerelease replacement slice rather than only narrative summaries.",
+        "Artifact distinguishes at least three classes with evidence-backed linkage: already-landed rows/carriers, exact external-send blocked rows/carriers, and rows that still need bounded repo-local authoring or reconciliation work, with one concrete next-action recommendation per unresolved class.",
+        "No cloud mutation, no external send, and no duplicate passive wait creation; output is a repo-local frontier/matrix artifact only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-suite-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:26:01.247Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-suite-row-frontier-matrix-20260620_20260620182603",
+        "assigned_at": "2026-06-20T18:26:03.258Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-suite-row-frontier-matrix-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-suite-row-frontier-matrix-20260620_20260620182603",
+        "worker_started_at": "2026-06-20T18:26:22.410Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable frontier artifact `evidence/archive/vm-prerelease-suite-row-frontier-matrix-20260620.md`, anchored to mounted `prerelease.go`/`checkin.go` and current coverage ledger state, with row-level classification for the current VM prerelease suite slice after row-28 reconciliation.",
+        "last_worker_completed_at": "2026-06-20T18:29:24.507Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:29:54.512Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the durable matrix artifact cites mounted prerelease.go/checkin.go, classifies rows 25-56 into already-landed vs zero external-send waits vs five bounded local exactness rows, and gives concrete next-action batches without creating cloud work or duplicate waits."
+      },
+      "session_id": "s_task_vm-prerelease-suite-row-frontier-matrix-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-suite-row-frontier-matrix-20260620"
+      ],
+      "result": "Created the durable frontier artifact `evidence/archive/vm-prerelease-suite-row-frontier-matrix-20260620.md`, anchored to mounted `prerelease.go`/`checkin.go` and current coverage ledger state, with row-level classification for the current VM prerelease suite slice after row-28 reconciliation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:29:54.512Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the durable matrix artifact cites mounted prerelease.go/checkin.go, classifies rows 25-56 into already-landed vs zero external-send waits vs five bounded local exactness rows, and gives concrete next-action batches without creating cloud work or duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

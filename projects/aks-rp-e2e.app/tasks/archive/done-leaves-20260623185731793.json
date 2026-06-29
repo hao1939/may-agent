@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T18:57:31.793Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier hygiene: archived the replaced network-cni human-send passive wait because its durable meaning is now carried by active task network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623. Current truthful frontier is two active repo-local leaves (network-cni transport/escalation-route reconciliation and private-cluster mounted-source scenario gap mapping) plus two exact blocked waits only: the shared external-send-proof family wait, unchanged until returned proof or the first owner review after 2026-06-26, and the private-cluster selected-host SSH environment wait, unchanged until same-launcher SSH step-1 proof or an authoritative endpoint/access update arrives. No duplicate blocker family or retry leaf was opened in this wake because no new external or environment evidence changed the resume conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-preview-upgrade-human-send-or-escalation-proof-wait-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.network-cni-cilium-preview-upgrade, hold one exact branch-local blocked wait until a human/operator outside this runtime actually sends or formally escalates the reviewed quota/equivalent-environment ask packet and records durable proof preserving the eastus2 >=8 standardDDSv5Family gate plus same-carrier equivalent-environment fallback; do not represent this branch as reply-waiting before send proof exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-preview-upgrade-human-send-or-escalation-proof-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact or authoritative handoff record proves the reviewed packet evidence/archive/network-cni-cilium-preview-upgrade-owner-quota-or-equivalent-environment-ask-packet-20260623.md was actually sent or formally escalated out of runtime, including timestamp, sender/owner, real channel or escalation path, recipient/target, exact linked packet path, and whether the result was direct send, handoff, or escalation.",
+        "The branch remains represented by one truthful path-specific external-human wait only: it preserves the exact eastus2 standardDDSv5Family remaining >= 8 gate and same-carrier equivalent-environment fallback, does not reopen generic Cilium/upgrade/source rediscovery, does not perform cloud mutation, and does not convert into passive reply-wait without send proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-preview-upgrade-owner-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:51:46.779Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T18:56:31.966Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive blocked wait because the branch still lacks a confirmed truthful out-of-runtime send/escalation route. Active task network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623 now owns route diagnosis and must decide whether a real external wait should be recreated or whether no repo-local transport route exists."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T18:56:31.966Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive blocked wait because the branch still lacks a confirmed truthful out-of-runtime send/escalation route. Active task network-cni-cilium-preview-upgrade-escalation-route-reconciliation-20260623 now owns route diagnosis and must decide whether a real external wait should be recreated or whether no repo-local transport route exists."
+      },
+      "status": "done"
+    }
+  ]
+}

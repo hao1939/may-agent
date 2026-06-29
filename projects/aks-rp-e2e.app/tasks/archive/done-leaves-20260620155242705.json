@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:52:42.705Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner blocked-frontier review accepted vm-prerelease-post-row48-next-candidate-selection-20260620 because its evidence note truthfully classifies rows 49-53 from mounted source and records row 49 as the next smallest dedicated VM prerelease follow-on after row48 lands. The lane now keeps machinespreview-external-send-proof-or-reply-wait-20260620 as the single truthful external-human wait until durable repo-local send/handoff proof or an authoritative reply exists, keeps serverless-schedulerctrl-lifecycle-feature-model-reconcile-20260620 as the active serverless model-reconcile slice, and adds vm-prerelease-row49-dedicated-carrier-authoring-20260620 as backlog to be assigned only once the row48 refresh is landed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-post-row48-next-candidate-selection-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted VirtualMachine prerelease handwritten source plus the accepted row46/47/48 branch state to choose the next smallest truthful no-cloud VM prerelease follow-up after row48, recording whether rows49-53 are already covered, remain generic-adjacent, or justify a new dedicated feature/spec/model branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-post-row48-next-candidate-selection-20260620.md"
+      ],
+      "acceptance": [
+        "The note cites the mounted VM prerelease source anchors reviewed for the post-row48 slice and summarizes the exact row49-53 candidate surfaces relevant to the current focus without running cloud mutation.",
+        "The note classifies each reviewed candidate against current repo-local coverage state (dedicated accepted carrier, dedicated replay/spec only, generic-adjacent only, or no truthful follow-up) and names the smallest truthful next branch if one remains.",
+        "If a next branch is nominated, the note states the intended lane (feature/spec/model vs runner/replay), expected durable outputs, and why it should wait until the active row48 refresh lands before assignment; if no branch is justified, the note records that evidence ceiling explicitly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:41:43.906Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-post-row48-next-candidate-selection-20260620_20260620154835",
+        "assigned_at": "2026-06-20T15:48:35.153Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-post-row48-next-candidate-selection-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-post-row48-next-candidate-selection-20260620_20260620154835",
+        "worker_started_at": "2026-06-20T15:49:03.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested post-row48 candidate-selection note at evidence/archive/vm-prerelease-post-row48-next-candidate-selection-20260620.md, classifying rows 49-53 against current repo-local coverage and nominating row 49 as the smallest truthful next no-cloud VM-prerelease branch after row48 lands.",
+        "last_worker_completed_at": "2026-06-20T15:51:46.780Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:52:42.618Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/vm-prerelease-post-row48-next-candidate-selection-20260620.md: it cites mounted VM prerelease source anchors for rows 49-53, classifies each row against current repo-local coverage, and truthfully nominates row 49 as the smallest next no-cloud branch while explicitly deferring assignment until the row48 refresh lands."
+      },
+      "session_id": "s_task_vm-prerelease-post-row48-next-candidate-selection-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-post-row48-next-candidate-selection-20260620"
+      ],
+      "result": "Produced the requested post-row48 candidate-selection note at evidence/archive/vm-prerelease-post-row48-next-candidate-selection-20260620.md, classifying rows 49-53 against current repo-local coverage and nominating row 49 as the smallest truthful next no-cloud VM-prerelease branch after row48 lands.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:52:42.618Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/vm-prerelease-post-row48-next-candidate-selection-20260620.md: it cites mounted VM prerelease source anchors for rows 49-53, classifies each row against current repo-local coverage, and truthfully nominates row 49 as the smallest next no-cloud branch while explicitly deferring assignment until the row48 refresh lands."
+      },
+      "status": "done"
+    }
+  ]
+}

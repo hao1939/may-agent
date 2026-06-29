@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T12:22:44.894Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning rollup accepts and archives the five completed repo-local no-cloud slices from today: ManagedSystem status-alignment audit, private-cluster none-dns-zone-v3 mounted-source closure, private-cluster plan-list drift inventory, private-cluster second-hop family boundary matrix, and private-cluster update-public second-hop wording parity repair. Those results now live as durable parent history; the live frontier is one active serverless virtual-nodes multi-pod-burst repo-local disposition audit plus the separate family of five exact external returned-proof waits that should not be reopened before their 2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-surface-status-alignment-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted ManagedSystem boundary matrix to reconcile whether repo-local feature/model/spec carriers still blur create-time product-gap vs explicit same-pool VirtualMachines+ManagedSystem unsupported surface, and publish one bounded no-cloud audit that either lists exact required wording/status repairs or confirms the current carriers are already aligned.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note checks the accepted ManagedSystem matrix against the maintained repo-local carriers for at least path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined, citing exact files and distinguishing create-time product-gap, caller-owned accepted inputs, and explicit same-pool unsupported/constraint behavior truthfully.",
+        "If wording/status drift exists, the note names the exact repo-local files and bounded edits needed; if no repair is needed, it records that conclusion with file citations and the current evidence ceiling for each checked branch.",
+        "No cloud mutation, no external-wait-family edits, and no speculative promotion beyond the cited repo-local evidence occur from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T12:17:42.362Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-surface-status-alignment-audit-20260625_20260625121742",
+        "assigned_at": "2026-06-25T12:17:42.414Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-surface-status-alignment-audit-20260625",
+        "worker_started_attempt_id": "a_managedsystem-surface-status-alignment-audit-20260625_20260625121742",
+        "worker_started_at": "2026-06-25T12:17:58.460Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed a repo-local ManagedSystem surface alignment audit and wrote evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md. The audit concludes current repo-local carriers already align create-time minimal name+mode product-gap handling with the separate same-pool VirtualMachines+ManagedSystem unsupported branch, so no wording/status repair is required.",
+        "last_worker_completed_at": "2026-06-25T12:19:49.852Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T12:20:51.490Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md cites the maintained feature/spec/model/deep-dive carriers plus mounted AKS RP source and shows the create-time minimal name+mode product-gap branch and the explicit same-pool VirtualMachines+ManagedSystem unsupported branch are already separated truthfully, so no repo-local wording/status repair is needed."
+      },
+      "session_id": "s_task_managedsystem-surface-status-alignment-audit-20260625",
+      "session_history": [
+        "s_task_managedsystem-surface-status-alignment-audit-20260625"
+      ],
+      "result": "Completed a repo-local ManagedSystem surface alignment audit and wrote evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md. The audit concludes current repo-local carriers already align create-time minimal name+mode product-gap handling with the separate same-pool VirtualMachines+ManagedSystem unsupported branch, so no wording/status repair is required.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T12:20:51.490Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/managedsystem-surface-status-alignment-audit-20260625.md cites the maintained feature/spec/model/deep-dive carriers plus mounted AKS RP source and shows the create-time minimal name+mode product-gap branch and the explicit same-pool VirtualMachines+ManagedSystem unsupported branch are already separated truthfully, so no repo-local wording/status repair is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

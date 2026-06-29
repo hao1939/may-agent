@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T22:23:20.931Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner archived the completed NAT Gateway V2 V2→none repo-local execution-prep slice as durable root history: live-control authoring, replay implementation, approval packet, and send-proof capture are all accepted and no longer need visible root leaves. The only open NATGW work remains the active model/task linkage reconciliation leaf for the stale terminal-warning check, plus the exact blocked returned-proof wait for path.net-integration.natgw-v2-migration-v2-to-none; keep the other external waits unchanged until returned proof or the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-none-live-replay-implementation-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the exact branch-local execute path for replays/net-integration-natgw-v2-migration-v2-to-none.ts so Scenario_NATGatewayV2_Migration_V2toNone can run the mounted sequence create -> create-time GET -> bootstrap cache update -> node-image upgrade -> VNet list -> VNet PUT adding the apiserver subnet -> API server VNet integration subnet wiring -> update outboundType=none -> final GET, while preserving the current default/--check repo-local validation behavior and avoiding adjacent NATGW sibling semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-none-live-replay-implementation-20260624.md"
+      ],
+      "acceptance": [
+        "Repo-local replay/spec/test/model files are updated only as needed for path.net-integration.natgw-v2-migration-v2-to-none, the mounted source links and operation coverage are documented in a durable archive artifact, and local validation shows --check still passes while the new execute path is wired for this exact branch.",
+        "The task does not run cloud mutation unless an explicit execution gate is added and satisfied inside the worker evidence; absent that, it must leave a truthful execute-ready or execute-gated result without widening into older natgw->none, V2->block, or V2->LB siblings or reopening the 2026-06-24 external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T22:05:24.631Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-none-live-replay-implementation-20260624_20260624220524",
+        "assigned_at": "2026-06-24T22:05:24.683Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-none-live-replay-implementation-20260624",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-none-live-replay-implementation-20260624_20260624220524",
+        "worker_started_at": "2026-06-24T22:05:48.411Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the exact branch-local execute carrier for `replays/net-integration-natgw-v2-migration-v2-to-none.ts`, preserved default/`--check` non-mutation, aligned exact-path wording in spec/index/model/path-summary, and archived durable evidence in `evidence/archive/natgw-v2-migration-v2-to-none-live-replay-implementation-20260624.md`.",
+        "last_worker_completed_at": "2026-06-24T22:14:02.084Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T22:14:49.237Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: durable archive evidence shows the exact branch-local execute carrier is implemented for path.net-integration.natgw-v2-migration-v2-to-none, default/--check remains non-mutating and passes, --execute now reaches the exact mutation gate and then truthfully stops at missing subscription/auth preflight, and the wording updates stay scoped to this exact path without reopening sibling natgw branches or the compressed external-wait frontier."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-none-live-replay-implementation-20260624",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-none-live-replay-implementation-20260624"
+      ],
+      "result": "Implemented the exact branch-local execute carrier for `replays/net-integration-natgw-v2-migration-v2-to-none.ts`, preserved default/`--check` non-mutation, aligned exact-path wording in spec/index/model/path-summary, and archived durable evidence in `evidence/archive/natgw-v2-migration-v2-to-none-live-replay-implementation-20260624.md`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T22:14:49.237Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: durable archive evidence shows the exact branch-local execute carrier is implemented for path.net-integration.natgw-v2-migration-v2-to-none, default/--check remains non-mutating and passes, --execute now reaches the exact mutation gate and then truthfully stops at missing subscription/auth preflight, and the wording updates stay scoped to this exact path without reopening sibling natgw branches or the compressed external-wait frontier."
+      },
+      "status": "done"
+    }
+  ]
+}

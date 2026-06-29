@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T14:19:05.350Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review reconciled a stale watchdog review-pending wake with the live tree: earlier egress-lockdown and network-cni mounted-source review leaves remain valid done history and were not reopened. The cluster-autoscaler VM-prerelease local-storage runtime preflight is now accepted as done because its archive note proves the dedicated replay passes repo-local --check with exit 0, writes the expected JSON/Markdown evidence pair, stays no-cloud, and leaves the five runtime behavior variables truthfully in ready-for-execute-gate-preparation state. Open project truth is now one active repo-local carrier-repair branch for path.network-cni.azure-overlay-agic-vm-prerelease plus one exact family-level external-human wait; no duplicate review leaves remain.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Confirm and, if needed, tighten the existing repo-local carrier wording for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix so the normalized spec/replay/model explicitly cite VM prerelease matrix rows 189 and 214, mounted credentialprovider source anchors, and the negative e2ev3 prerelease/checkin boundary without creating a new replay family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626.md"
+      ],
+      "acceptance": [
+        "The work verifies the currently cited normalized carrier files for this exact path and records file-path evidence showing whether wording changes were needed.",
+        "If wording was ambiguous, the updated repo-local carrier now explicitly ties the path to VM prerelease rows 189 and 214 and explains that e2ev3 virtualmachine prerelease/checkin is only a negative boundary, not the owning handwritten carrier.",
+        "The artifact states the final repo-local outcome for this exact path only: existing carrier confirmed unchanged or tightened with exact citations, without broadening into new replay/spec families or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:06:11.155Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T14:06:16.235Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626_20260626140632",
+        "assigned_at": "2026-06-26T14:06:32.728Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirm",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626_20260626140632",
+        "worker_started_at": "2026-06-26T14:06:33.474Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Confirmed the existing carrier for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and tightened the existing spec/index/model wording so it now explicitly cites rows 189/214, mounted credentialprovider anchors, and the e2ev3 prerelease/checkin negative boundary; wrote the requested evidence note.",
+        "last_worker_completed_at": "2026-06-26T14:13:09.581Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:13:47.189Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626.md records the mounted credentialprovider ownership for rows 189/214, and repo files now explicitly preserve the negative-boundary distinction for e2ev3 VirtualMachine/speculor prerelease-checkin surfaces without creating a new replay family."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirm",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirm"
+      ],
+      "result": "Confirmed the existing carrier for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and tightened the existing spec/index/model wording so it now explicitly cites rows 189/214, mounted credentialprovider anchors, and the e2ev3 prerelease/checkin negative boundary; wrote the requested evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:13:47.189Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-existing-carrier-wording-confirmation-20260626.md records the mounted credentialprovider ownership for rows 189/214, and repo files now explicitly preserve the negative-boundary distinction for e2ev3 VirtualMachine/speculor prerelease-checkin surfaces without creating a new replay family."
+      },
+      "status": "done"
+    }
+  ]
+}

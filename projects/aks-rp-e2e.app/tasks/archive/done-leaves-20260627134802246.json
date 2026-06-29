@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T13:48:02.246Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Accepted the row-37 helper-login-VM source map and archived that completed child. The spec branch now knows path.aad-rbac.managed-v2-lifecycle is source-defined through Scenario_AAD -> LoginVMTest, but the observed Standard_B2s/eastus2 helper-VM ceiling is maintained-surface/runtime rather than mounted-source-fixed. Next useful owner action is an explicit bounded decision on whether to preserve the current external-capacity-only wait unchanged or approve a maintained-surface helper-VM size/location variant without redesigning the row-37 scenario.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Trace the mounted-source row-37 managed-v2 AAD RBAC carrier through the e2ev3 prerelease/checkin/scenario definitions and write a repo-local source map that shows exactly where the helper login VM path is introduced, which carrier inputs are source-defined versus inherited, and whether any maintained-surface input change could alter the current Standard_B2s eastus2 capacity gate without redesigning the scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-row37-helper-login-vm-source-map-20260627.md"
+      ],
+      "acceptance": [
+        "The artifact cites the exact mounted-source files and symbols for the row-37 managed-v2 lifecycle carrier and the helper-login-VM path, with enough detail to follow the source lineage repo-locally.",
+        "The artifact classifies whether the current Standard_B2s/eastus2 helper-VM inputs are fixed in source, inherited from shared config, or outside mounted source, and names any exact source ceiling if the answer cannot be completed further.",
+        "The artifact concludes whether an intentionally approved maintained-surface input change could alter the helper-VM gate without redesigning the scenario; if not, it states why the accepted retest condition remains external capacity only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:45:13.742Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627_20260627134515",
+        "assigned_at": "2026-06-27T13:45:15.975Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627",
+        "worker_started_attempt_id": "a_source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627_20260627134515",
+        "worker_started_at": "2026-06-27T13:45:27.550Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-37 helper login VM source map to evidence/archive/aad-rbac-managed-v2-row37-helper-login-vm-source-map-20260627.md, tracing mounted-source lineage through VM prerelease/checkin, Scenario_AAD, and LoginVMTest, and classifying which helper inputs are source-defined versus inherited versus outside mounted source.",
+        "last_worker_completed_at": "2026-06-27T13:47:10.766Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:48:02.193Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local source map: mounted e2ev3 source definitively carries row 37 through Scenario_AAD into LoginVMTest, while the current Standard_B2s/eastus2 helper-VM gate is maintained-surface/runtime rather than handwritten-source-fixed."
+      },
+      "session_id": "s_task_source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627",
+      "session_history": [
+        "s_task_source-map-aad-rbac-managed-v2-row37-helper-login-vm-carrier-20260627"
+      ],
+      "result": "Wrote the requested row-37 helper login VM source map to evidence/archive/aad-rbac-managed-v2-row37-helper-login-vm-source-map-20260627.md, tracing mounted-source lineage through VM prerelease/checkin, Scenario_AAD, and LoginVMTest, and classifying which helper inputs are source-defined versus inherited versus outside mounted source.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:48:02.193Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local source map: mounted e2ev3 source definitively carries row 37 through Scenario_AAD into LoginVMTest, while the current Standard_B2s/eastus2 helper-VM gate is maintained-surface/runtime rather than handwritten-source-fixed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:54:06.361Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the three external waits exact and unchanged through the first bounded follow-up window on or after 2026-06-26: AAD RBAC row-37 approval, private-cluster auth-service-tags devbox endpoint return, and the shared external dispatch family all remain truthful single-branch waits with no local diagnosis reopening. Active repo-local work now spans two bounded authoring lanes: storage-csi-file-resize-live-execution-gate-packet-20260624 continues the storage-CSI future-live packet series, and serverless-schedulerctrl-validating-webhook-family-mounted-source-matrix-20260624 builds the mounted-source family matrix for the allow/disallow topology variants. Archived done children preserve the already-accepted storage-csi gate-packet and boundary-map slice so the next spare-capacity refill can seed a new repo-local draft family rather than reopening exact external waits.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-xfs-live-execution-gate-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded future-live execution gate packet for path.storage-csi-disk-xfs using the accepted mounted-source boundary map and replay carrier so a later mutating probe can stay truthful about prerequisites, mutation gate, cleanup, evidence outputs, and resume conditions without widening into raw-block, resize, clone, snapshot, or Azure File families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-xfs-live-execution-gate-packet-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted handwritten source slice, the accepted XFS boundary-map artifact, and the accepted replay-carrier artifact, and enumerates the bounded live prerequisites for xfs-disk-csi + fsType=xfs + xfs-pvc + xfs-pod + /mnt/datavolume hello-world validation only.",
+        "Record the exact non-cloud and cloud gates for a future live probe, including the required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, ordered preflight checks, cleanup expectations, named evidence outputs, and the truthful resume/abort conditions if any prerequisite is missing.",
+        "Do not run cloud mutation; if a small maintained wording/model/view sync is needed so the future gate is claim-safe, validate it repo-locally and cite that proof, otherwise state why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-xfs"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:33:51.113Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-xfs-live-execution-gate-packet-20260624_20260624023351",
+        "assigned_at": "2026-06-24T02:33:51.160Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-xfs-live-execution-gate-packet-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-xfs-live-execution-gate-packet-20260624_20260624023351",
+        "worker_started_at": "2026-06-24T02:34:14.113Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded live execution gate packet for path.storage-csi-disk-xfs at evidence/archive/storage-csi-disk-xfs-live-execution-gate-packet-20260624.md, grounded in the mounted source slice, accepted XFS boundary map, and accepted replay carrier, with ordered non-cloud/cloud gates, cleanup, evidence outputs, and resume/abort conditions.",
+        "last_worker_completed_at": "2026-06-24T02:36:02.400Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:37:44.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence/archive/storage-csi-disk-xfs-live-execution-gate-packet-20260624.md cites the exact mounted azurediskcsi.go:331-370 source slice plus the accepted XFS boundary-map and replay-carrier artifacts, records the ordered non-cloud/cloud gates and named future evidence outputs, and truthfully states that no cloud mutation ran and no live XFS executor exists yet."
+      },
+      "session_id": "s_task_storage-csi-disk-xfs-live-execution-gate-packet-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-xfs-live-execution-gate-packet-20260624"
+      ],
+      "result": "Authored the bounded live execution gate packet for path.storage-csi-disk-xfs at evidence/archive/storage-csi-disk-xfs-live-execution-gate-packet-20260624.md, grounded in the mounted source slice, accepted XFS boundary map, and accepted replay carrier, with ordered non-cloud/cloud gates, cleanup, evidence outputs, and resume/abort conditions.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:37:44.729Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence/archive/storage-csi-disk-xfs-live-execution-gate-packet-20260624.md cites the exact mounted azurediskcsi.go:331-370 source slice plus the accepted XFS boundary-map and replay-carrier artifacts, records the ordered non-cloud/cloud gates and named future evidence outputs, and truthfully states that no cloud mutation ran and no live XFS executor exists yet."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-clone-live-execution-gate-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded future-live execution gate packet for path.storage-csi-file-clone using the accepted mounted-source boundary map and replay carrier so a later mutating probe can stay truthful about prerequisites, mutation gate, cleanup, evidence outputs, and resume conditions without widening into disk clone, resize, raw-block, snapshot, or unrelated Azure File families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-clone-live-execution-gate-packet-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted handwritten Azure File clone source slice, the accepted file-clone boundary-map artifact, and the accepted replay-carrier artifact, and enumerates the bounded live prerequisites for the original write + wait + pvc clone + cloned outfile readback contract only.",
+        "Record the exact non-cloud and cloud gates for a future live probe, including the required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, ordered preflight checks, cleanup expectations, named evidence outputs, and the truthful resume/abort conditions if any prerequisite is missing.",
+        "Do not run cloud mutation; if a small maintained wording/model/view sync is needed so the future gate is claim-safe, validate it repo-locally and cite that proof, otherwise state why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:40:04.731Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-live-execution-gate-packet-20260624_20260624024004",
+        "assigned_at": "2026-06-24T02:40:04.778Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-live-execution-gate-packet-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-live-execution-gate-packet-20260624_20260624024004",
+        "worker_started_at": "2026-06-24T02:40:17.799Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded future-live execution gate packet for path.storage-csi-file-clone and captured repo-local gate evidence proving check passes, tests pass, and execute remains intentionally gated with no cloud mutation.",
+        "last_worker_completed_at": "2026-06-24T02:41:56.061Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:44:37.402Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/storage-csi-file-clone-live-execution-gate-packet-20260624.md truthfully grounds the bounded future-live file-clone gate in mounted source, accepted boundary/replay authorities, ordered non-cloud and cloud gates, cleanup/evidence expectations, and repo-local check/test/execute-gate proof with no cloud mutation claim."
+      },
+      "session_id": "s_task_storage-csi-file-clone-live-execution-gate-packet-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-clone-live-execution-gate-packet-20260624"
+      ],
+      "result": "Authored the bounded future-live execution gate packet for path.storage-csi-file-clone and captured repo-local gate evidence proving check passes, tests pass, and execute remains intentionally gated with no cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:44:37.402Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/storage-csi-file-clone-live-execution-gate-packet-20260624.md truthfully grounds the bounded future-live file-clone gate in mounted source, accepted boundary/replay authorities, ordered non-cloud and cloud gates, cleanup/evidence expectations, and repo-local check/test/execute-gate proof with no cloud mutation claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-clone-replay-carrier-skeleton-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded repo-local replay carrier for path.storage-csi-file-clone from the accepted mounted-source boundary map and existing Azure File/storage CSI runner patterns so the project has a dedicated file-clone replay/test/evidence carrier ready for future gated verification without claiming cloud execution now.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/storage-csi-file-clone.ts",
+        "../aks-rp-e2e/replays/storage-csi-file-clone.test.ts",
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-clone-replay-carrier-skeleton-20260624.md"
+      ],
+      "acceptance": [
+        "Create a dedicated file-clone replay carrier that stays bounded to the accepted Azure File clone path only, reusing existing runner primitives where appropriate without widening into disk clone, resize, raw-block, snapshot, or unrelated Azure File semantics.",
+        "Add companion repo-local validation proof (test and/or archive note) citing the mounted source, the accepted file-clone boundary-map artifact, and any minimal manifest/index wiring, while explicitly recording that no cloud execution happened and what future gated verification would still need.",
+        "If a minimal maintained wiring sync is needed so the replay is discoverable and claim-safe, land that bounded change with validation evidence; otherwise record why no further maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:36:02.802Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-replay-carrier-skeleton-20260624_20260624023602",
+        "assigned_at": "2026-06-24T02:36:02.856Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-replay-carrier-skeleton-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-replay-carrier-skeleton-20260624_20260624023602",
+        "worker_started_at": "2026-06-24T02:36:32.624Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Validated the existing storage-csi file-clone replay carrier against mounted source and repaired its companion test to assert the truthful source-grounded/gated contract; also wrote a durable archive note documenting the bounded carrier and why no further wiring edits were needed.",
+        "last_worker_completed_at": "2026-06-24T02:38:32.144Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:39:05.584Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: evidence/archive/storage-csi-file-clone-replay-carrier-skeleton-20260624.md revalidates the mounted Azure File clone source slice, confirms the dedicated replay/test/spec/index carrier stays bounded to path.storage-csi-file-clone, and records passing repo-local proof for check mode plus truthful execute gating without any cloud execution claim."
+      },
+      "session_id": "s_task_storage-csi-file-clone-replay-carrier-skeleton-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-clone-replay-carrier-skeleton-20260624"
+      ],
+      "result": "Validated the existing storage-csi file-clone replay carrier against mounted source and repaired its companion test to assert the truthful source-grounded/gated contract; also wrote a durable archive note documenting the bounded carrier and why no further wiring edits were needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:39:05.584Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: evidence/archive/storage-csi-file-clone-replay-carrier-skeleton-20260624.md revalidates the mounted Azure File clone source slice, confirms the dedicated replay/test/spec/index carrier stays bounded to path.storage-csi-file-clone, and records passing repo-local proof for check mode plus truthful execute gating without any cloud execution claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-mounted-source-boundary-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source boundary for path.storage-csi-file-resize using the handwritten Azure File resize case plus maintained feature/spec/replay carriers so the project can state accepted inputs, expected behavior, adjacent out-of-scope surfaces, and the next truthful repo-local execution-planning step without widening into disk-resize, clone, private-endpoint, NFS, Blob, or unrelated CSI families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-mounted-source-boundary-map-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted handwritten Azure File resize source slice and the maintained feature/spec/replay/test authorities for path.storage-csi-file-resize, and records the accepted input path, expected behavior path, observed source-authored assertions, cleanup shape, and adjacent rejected/out-of-scope surfaces in a bounded way.",
+        "State what the current maintained carriers already prove repo-locally, identify the next truthful follow-up artifact needed after the boundary map, and avoid any cloud mutation, live verdict, or widening into disk-resize, clone, snapshot, private-endpoint, NFS, Blob, or unrelated storage CSI branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:48:15.262Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-mounted-source-boundary-map-20260624_20260624024815",
+        "assigned_at": "2026-06-24T02:48:15.309Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-mounted-source-boundary-map-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-mounted-source-boundary-map-20260624_20260624024815",
+        "worker_started_at": "2026-06-24T02:48:43.710Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded Azure File resize boundary map at evidence/archive/storage-csi-file-resize-mounted-source-boundary-map-20260624.md, grounded in the mounted handwritten source and maintained feature/spec/replay/test carriers, with explicit accepted inputs, expected behavior, out-of-scope surfaces, and the next truthful repo-local follow-up artifact.",
+        "last_worker_completed_at": "2026-06-24T02:50:40.067Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:51:27.045Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/storage-csi-file-resize-mounted-source-boundary-map-20260624.md: the archive note cites the mounted handwritten Azure File resize source slice plus maintained feature/spec/replay/test carriers, records the bounded accepted inputs and expected behavior, and truthfully distinguishes current repo-local source grounding from missing normalized model/view/index linkage and from the non-source-equivalent placeholder replay/test carrier."
+      },
+      "session_id": "s_task_storage-csi-file-resize-mounted-source-boundary-map-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-resize-mounted-source-boundary-map-20260624"
+      ],
+      "result": "Authored the bounded Azure File resize boundary map at evidence/archive/storage-csi-file-resize-mounted-source-boundary-map-20260624.md, grounded in the mounted handwritten source and maintained feature/spec/replay/test carriers, with explicit accepted inputs, expected behavior, out-of-scope surfaces, and the next truthful repo-local follow-up artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:51:27.045Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/storage-csi-file-resize-mounted-source-boundary-map-20260624.md: the archive note cites the mounted handwritten Azure File resize source slice plus maintained feature/spec/replay/test carriers, records the bounded accepted inputs and expected behavior, and truthfully distinguishes current repo-local source grounding from missing normalized model/view/index linkage and from the non-source-equivalent placeholder replay/test carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

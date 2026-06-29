@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:18:15.572Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner treated the watchdog runnable-backlog wake as stale after rechecking current assignment state: network-cni-base-overlay-mounted-lineage-refresh-20260627 and secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627 remain the only active repo-local source leaves, the two external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 remain the only truthful blocked frontier, and no refill or duplicate assignment is needed from this event. Archive the completed secops-fips-mounted-source-inventory-20260627 child because its durable meaning is now represented at the root: mounted-source inventory already narrowed the next concrete secops-fips local work to the active Phase 3a unaligned-pools rejection packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-mounted-source-inventory-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the mounted Go e2ev3 secops-fips scenarios into a durable repo-local source packet that names exact scenario carriers, current model/spec coverage, and any uncovered feature-path candidates for later no-cloud decomposition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-mounted-source-inventory-20260627.md"
+      ],
+      "acceptance": [
+        "Use mounted handwritten e2ev3 secops-fips source as the primary evidence and record the exact files/scenarios inspected plus their current coverage state in model/specs/replays.",
+        "Identify the highest-value uncovered or weakly-modeled secops-fips carriers and propose bounded next leaves under the knowledge/spec lane without running cloud probes or broad planner-only control work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips-source-inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:08:32.700Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T05:08:37.416Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-mounted-source-inventory-20260627_20260627051220",
+        "assigned_at": "2026-06-27T05:12:20.663Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-mounted-source-inventory-20260627",
+        "worker_started_attempt_id": "a_secops-fips-mounted-source-inventory-20260627_20260627051220",
+        "worker_started_at": "2026-06-27T05:12:21.310Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable mounted-source inventory at evidence/archive/secops-fips-mounted-source-inventory-20260627.md that maps all mounted secops-fips handwritten scenarios to current repo-local spec/model/probe carriers and proposes bounded next no-cloud leaves for the owner.",
+        "last_worker_completed_at": "2026-06-27T05:15:20.211Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:15:56.068Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/secops-fips-mounted-source-inventory-20260627.md inventories all 10 mounted secops-fips handwritten scenarios, maps each to current repo-local model/spec/probe carriers, and identifies bounded no-cloud follow-up gaps without leaving the learning/spec lane."
+      },
+      "session_id": "s_task_secops-fips-mounted-source-inventory-20260627",
+      "session_history": [
+        "s_task_secops-fips-mounted-source-inventory-20260627"
+      ],
+      "result": "Created a durable mounted-source inventory at evidence/archive/secops-fips-mounted-source-inventory-20260627.md that maps all mounted secops-fips handwritten scenarios to current repo-local spec/model/probe carriers and proposes bounded next no-cloud leaves for the owner.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:15:56.068Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/secops-fips-mounted-source-inventory-20260627.md inventories all 10 mounted secops-fips handwritten scenarios, maps each to current repo-local model/spec/probe carriers, and identifies bounded no-cloud follow-up gaps without leaving the learning/spec lane."
+      },
+      "status": "done"
+    }
+  ]
+}

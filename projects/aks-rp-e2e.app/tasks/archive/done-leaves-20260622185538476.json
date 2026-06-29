@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:55:38.476Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the private-cluster none-DNS V3 source/carrier audit: the mounted handwritten source plus repo-local feature/spec/replay/model stack now prove there is no remaining local authoring gap for path.private-cluster-none-dns-zone-v3, and the only truthful next step for that branch is the already-compressed family-level external runtime/operator proof wait or a later accepted exact live execution. The live frontier stays intentionally minimal: keep the assigned VM prerelease source-carrier audit active for rows 25+50, 33, 40-43, and 76, and preserve one shared external-human-transport wait without spawning duplicate blockers.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-source-carrier-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local private-cluster artifacts to map the input/expectation boundary for path.private-cluster-none-dns-zone-v3, identify the exact current spec/replay/path carrier or the exact missing local authoring gap, and separate any repo-local modeling work from the existing external human-transport wait without running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-source-carrier-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted AKS RP private-cluster scenario/source files and the current repo-local private-cluster evidence/spec/replay/model carriers, explains the expected System→None Private DNS Zone V3 lifecycle boundary, and names the exact current carrier or one bounded missing local authoring gap.",
+        "The packet explicitly states what remains blocked only on later external human/operator proof versus what repo-local source/spec/model work is still actionable, and it introduces no duplicate external waits or cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:52:20.418Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-source-carrier-audit-20260622_20260622185220",
+        "assigned_at": "2026-06-22T18:52:20.465Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-source-carrier-audit-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-source-carrier-audit-20260622_20260622185220",
+        "worker_started_at": "2026-06-22T18:52:43.294Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the private-cluster none-DNS V3 source/carrier audit and wrote a durable archive packet showing the exact mounted source, current repo-local spec/replay/model carriers, and that no local authoring gap remains—only later accepted live execution or operator reply.",
+        "last_worker_completed_at": "2026-06-22T18:54:16.008Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:54:43.661Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted private-cluster source plus repo-local feature/spec/replay/model carriers, proves the exact system→none lifecycle carrier already exists, and truthfully narrows the remaining gap to the already-compressed external runtime/operator proof family rather than any local authoring repair."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-source-carrier-audit-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-source-carrier-audit-20260622"
+      ],
+      "result": "Completed the private-cluster none-DNS V3 source/carrier audit and wrote a durable archive packet showing the exact mounted source, current repo-local spec/replay/model carriers, and that no local authoring gap remains—only later accepted live execution or operator reply.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:54:43.661Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted private-cluster source plus repo-local feature/spec/replay/model carriers, proves the exact system→none lifecycle carrier already exists, and truthfully narrows the remaining gap to the already-compressed external runtime/operator proof family rather than any local authoring repair."
+      },
+      "status": "done"
+    }
+  ]
+}

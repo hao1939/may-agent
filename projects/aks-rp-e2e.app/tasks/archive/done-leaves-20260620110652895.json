@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:06:52.895Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner planning reconciliation: this lane remains the live focus with two active repo-local VM prerelease/source-coverage linkage repairs and no review-ready claims. Accepted earlier work in this branch established the mounted-source adjacency baseline, closed the serverless virtual nodes authority-gap question, and produced the mounted-source anchor retry evidence that justified replacing the earlier rejected autoscale attempt. The current next actions remain bounded and non-cloud: finish row 47 overscale linkage repair and row 52 LocalDNS linkage repair, then review their evidence before creating more feature-lane leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local VM prerelease coverage claim for row 46 so the maintained coverage surfaces stop implying exact coverage for Scenario_CAS_MinCount_VirtualMachine and instead record the truthful partial/generic-adjacent linkage to the current CAS mincount spec/replay, using the accepted mounted-source audit as evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Update evidence/pipelines/virtualmachine-prerelease-coverage.json for row 46 so it no longer claims exact covered status based only on sourceScenario=Scenario_CAS_MinCount; the row must explicitly capture the missing mounted substrate facts from the accepted audit (VirtualMachines pool type, VMsAgentPoolAutoscalePreview, kube 1.33, minCount/count 3).",
+        "Update evidence/pipelines/virtualmachine-prerelease-coverage.md so the markdown view matches the JSON authority for row 46 and truthfully describes the linkage as partial/generic-adjacent rather than exact VM prerelease coverage.",
+        "Write an archive note citing evidence/archive/vm-prerelease-autoscale-source-anchor-retry-20260620.md plus the exact edited row 46 file locations, and keep the task repo-local with no model landing edits and no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:vm-prerelease-autoscale-next"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:56:31.308Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620_20260620105636",
+        "assigned_at": "2026-06-20T10:56:36.292Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620_20260620105636",
+        "worker_started_at": "2026-06-20T10:56:52.369Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired VM prerelease row 46 coverage linkage to downgrade the maintained claim from exact covered to truthful candidate-only/generic-adjacent, updated both coverage ledgers, and wrote an archive note documenting the mounted-source evidence and edited file locations.",
+        "last_worker_completed_at": "2026-06-20T11:02:09.749Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T11:03:16.115Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after file-level validation: archive note evidence/archive/vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620.md documents the mounted-source downgrade rationale, and evidence/pipelines/virtualmachine-prerelease-coverage.json plus .md now show row 46 as candidate-only/partial-generic-adjacent with the missing VM prerelease substrate facts called out instead of exact covered status."
+      },
+      "session_id": "s_task_vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:03:16.115Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after file-level validation: archive note evidence/archive/vm-prerelease-autoscale-row46-coverage-linkage-repair-20260620.md documents the mounted-source downgrade rationale, and evidence/pipelines/virtualmachine-prerelease-coverage.json plus .md now show row 46 as candidate-only/partial-generic-adjacent with the missing VM prerelease substrate facts called out instead of exact covered status."
+      },
+      "status": "done"
+    }
+  ]
+}

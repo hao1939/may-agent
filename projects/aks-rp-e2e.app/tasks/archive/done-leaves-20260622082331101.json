@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:23:31.101Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner watchdog blocked-frontier planning update: accepted managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622 as durable parent knowledge, so the standalone nativerp ManagedSystem enable/disable adjacency to the row-54 VirtualMachines create-time carrier is now summarized at the project root without reopening the final VirtualMachines+ManagedSystem combined verdict. The only truthful blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621 because no durable human send/handoff/reply evidence exists beyond the accepted 2026-06-21 and 2026-06-22 local packet-readiness artifacts. Available repo-local capacity stays focused on the single active bounded lane managedsystem-adjacent-vmprerelease-row-inventory-next-local-gap-20260622, which must inventory adjacent VirtualMachine prerelease/checkin rows from mounted source plus local artifacts, classify each row as already covered, externally gated, terminal/final, or still-open repo-local gap, and nominate exactly one next bounded follow-up without creating a duplicate external wait or reopening final verdicts. No additional live-execution or blocker-churn leaves should be queued from this pass; the next tree mutation should come from accepting that inventory artifact or from real external transport proof arriving for the shared blocked family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local feature/model artifacts to document the standalone nativerp ManagedSystem enable/disable scenarios adjacent to the VirtualMachine checkin/prerelease suite, clarifying their own input/expectation boundary and their relationship to the row-54 create-time carrier while treating the already-final VirtualMachines+ManagedSystem combined rejection only as a fixed reference point, not a retry target.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted source entries in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and the referenced nativerp ManagedSystem scenario/plan definitions needed to show the exact enable/disable input and expectation shapes.",
+        "Artifact explains the boundary between the standalone nativerp ManagedSystem scenarios, the row-54 create-time VirtualMachines ManagedSystem carrier, and the already-final explicit VirtualMachines+ManagedSystem combined rejection, preserving the current final verdict on the combined path and documenting only adjacency plus retest conditions.",
+        "Work remains repo-local only: no cloud execution, no new external-human-transport wait, and no reopening or status change of final ManagedSystem verdicts except to cite them as fixed references."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:17:12.582Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622_20260622081712",
+        "assigned_at": "2026-06-22T08:17:12.633Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622",
+        "worker_started_attempt_id": "a_managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622_20260622081712",
+        "worker_started_at": "2026-06-22T08:17:48.542Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local boundary artifact at evidence/archive/managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622.md, grounding row-54/55/56 ManagedSystem adjacency from mounted AKS RP source and separating those surfaces from the final explicit VirtualMachines+ManagedSystem REST rejection branch.",
+        "last_worker_completed_at": "2026-06-22T08:20:00.709Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:20:20.020Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 review: the artifact is repo-local and source-backed, cites the checkin suite plus referenced nativerp scenario definitions, and clearly separates the standalone ManagedSystem enable/disable scenario surfaces from both the row-54 create-time carrier and the already-final explicit VirtualMachines+ManagedSystem combined rejection branch without reopening final verdicts or creating a new transport wait."
+      },
+      "session_id": "s_task_managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622",
+      "session_history": [
+        "s_task_managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622"
+      ],
+      "result": "Produced the requested repo-local boundary artifact at evidence/archive/managedsystem-nativerp-enable-disable-adjacent-source-boundary-20260622.md, grounding row-54/55/56 ManagedSystem adjacency from mounted AKS RP source and separating those surfaces from the final explicit VirtualMachines+ManagedSystem REST rejection branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:20:20.020Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 review: the artifact is repo-local and source-backed, cites the checkin suite plus referenced nativerp scenario definitions, and clearly separates the standalone ManagedSystem enable/disable scenario surfaces from both the row-54 create-time carrier and the already-final explicit VirtualMachines+ManagedSystem combined rejection branch without reopening final verdicts or creating a new transport wait."
+      },
+      "status": "done"
+    }
+  ]
+}

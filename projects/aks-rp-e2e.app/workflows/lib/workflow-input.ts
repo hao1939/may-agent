@@ -69,7 +69,9 @@ export function triggerValue(event: TriggerEvent | null, key: string): unknown {
       return (nestedParams as Record<string, unknown>)[key];
     }
   }
-  return event?.params && typeof event.params === "object" && key in event.params
+  return event?.params &&
+    typeof event.params === "object" &&
+    key in event.params
     ? event.params[key]
     : event?.[key];
 }
@@ -96,21 +98,35 @@ function nonEmptyString(value: unknown): string {
   return typeof value === "string" && value.trim() ? value : "";
 }
 
+function errorText(value: unknown): string {
+  if (typeof value === "string" && value.trim()) return value;
+  if (value && typeof value === "object") {
+    const typed = value as { message?: unknown; error?: unknown };
+    return nonEmptyString(typed.message) || nonEmptyString(typed.error);
+  }
+  return "";
+}
+
 export function resultText(result: unknown): string {
   if (result == null) return "";
   if (typeof result === "string") return result;
   const typed = result as {
     message?: string;
     summary?: string;
+    errorMessage?: string;
+    error?: unknown;
     lastAssistantText?: string | null;
     finishResult?: { summary?: unknown };
     status?: string;
   };
   const finishSummary = nonEmptyString(typed.finishResult?.summary);
+  const runtimeError =
+    nonEmptyString(typed.errorMessage) || errorText(typed.error);
   return (
     nonEmptyString(typed.message) ||
     nonEmptyString(typed.summary) ||
     finishSummary ||
+    runtimeError ||
     nonEmptyString(typed.lastAssistantText) ||
     nonEmptyString(typed.status) ||
     JSON.stringify(result) ||

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:57:49.657Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 task-completed wake: restored one visible MachinesPreview external-wait carrier as machinespreview-send-proof-or-authoritative-reply-wait-20260620 because the owner-send trail note is accepted but no durable send proof or authoritative reply exists yet. Archived machinespreview-external-send-proof-or-reply-wait-20260620 because it had already been replaced by the explicit owner-send trail; active source-backed work remains serverless-schedulerctrl-lifecycle-model-landing-20260620 and vm-prerelease-row49-dedicated-carrier-authoring-20260620.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "machinespreview-external-send-proof-or-reply-wait-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one truthful blocked carrier for the MachinesPreview preview-registration branch now that repo-local review confirmed the packet is send-ready but no real external send/escalation proof or authoritative reply exists yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md"
+      ],
+      "acceptance": [
+        "Carrier cites evidence/archive/machinespreview-owner-handoff-proof-capture-20260620.md as the accepted send-ready proof ceiling for path.machines-agentpool-api-crud.machine-crud-blocked and the unchanged rerun destination machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619.",
+        "The live resume trigger is exact: reopen only after a human owner/operator sends or escalates evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md outside runtime and preserves durable repo-local proof with timestamp, channel, recipient or escalation path, or after an authoritative MachinesPreview registration-state/equivalent-environment reply is preserved repo-locally.",
+        "Owner review records that no further repo-local packet-drafting or response-await leaf is truthful until external send proof or the authoritative reply itself exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:02:02.449Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T15:54:20.104Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive no-send-proof wait with an explicit owner-send/handoff action leaf that preserves the same packet, rerun target, and resume condition, so the branch now has one visible actionable external-ask carrier instead of a fake blocked reply wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T15:54:20.104Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive no-send-proof wait with an explicit owner-send/handoff action leaf that preserves the same packet, rerun target, and resume condition, so the branch now has one visible actionable external-ask carrier instead of a fake blocked reply wait."
+      },
+      "status": "done"
+    }
+  ]
+}

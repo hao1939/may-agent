@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T21:13:32.688Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 planning update: archived the completed user-review workspace lane because its durable checkpoint-slicing meaning is now preserved at the root. The live project frontier is now simpler and truthful: feature-knowledge-speculor-uncovered-slice-source-audit-20260622 remains the only active repo-local learning branch, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single exact family-level external-human wait until new repo-local proof of the later out-of-runtime send/approval/reply/execution result arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "lane-user-review-workspace-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep repo-local user review and checkpoint-slicing work under a durable workspace lane so dirty model/spec/replay/evidence changes can be sorted into truthful checkpointable slices without mixing active execution or external-wait branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-workspace-lane-20260622.md"
+      ],
+      "acceptance": [
+        "The lane can hold repo-local review/checkpoint leaves without reopening blocked external-human waits or live execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T21:08:13.067Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-22T21:12:04.855Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "result": "Child review pending: user-review-repo-checkpoint-slicing-lane-leaf-20260622.",
+      "context": {
+        "rollup_summary": "Accepted the 2026-06-22 dirty-repo checkpoint review: the durable packet inventories the 333-path mixed workspace, preserves the single external-human wait untouched, and narrows future checkpointing to one truthful evidence-only candidate (evidence/archive/vmpr-row50-execution-hardening-packet-20260622.md). Broader code-bearing model/spec/replay slices remain mixed through shared files and should not be checkpointed from this lane until later isolation work exists; regular forward motion stays with the active speculor source-audit leaf.",
+        "archived_done_leaf_count": 1,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260622211204854.json",
+            "archived": 1,
+            "at": "2026-06-22T21:12:04.855Z",
+            "summary": "Accepted the 2026-06-22 dirty-repo checkpoint review: the durable packet inventories the 333-path mixed workspace, preserves the single external-human wait untouched, and narrows future checkpointing to one truthful evidence-only candidate (evidence/archive/vmpr-row50-execution-hardening-packet-20260622.md). Broader code-bearing model/spec/replay slices remain mixed through shared files and should not be checkpointed from this lane until later isolation work exists; regular forward motion stays with the active speculor source-audit leaf.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "user-review-repo-checkpoint-slicing-lane-leaf-20260622"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

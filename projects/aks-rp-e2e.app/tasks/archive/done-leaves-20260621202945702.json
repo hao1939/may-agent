@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:29:45.702Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review accepted two evidence-only mounted-source decision packets. Storage CSI now has accepted proof that Scenario_CSI_Drivers_VMSS_Ubuntu is materially broader than the current disk-only carrier, so the next truthful storage-csi work is the assigned multi-CSI csidrivers source-landing split rather than keeping storage-csi-disk-driver-enable as canonical source-row ownership. Network-cni now has accepted proof that mounted Retina Enterprise plus its 1.31-1.34 family is a distinct observability-only mixed-OS contract from the existing all-tiers enterprise-tier carrier, so the next truthful network-cni work is the assigned network-acns-retina-enterprise carrier landing as a separate base carrier with minor-version variants. The single blocked external-send family remains an exact human-transport wait unchanged until the 2026-06-22T10:08:46Z threshold or new external proof/replies. Active/runnable capacity is therefore filled by secops-fips automatic SKU carrier landing plus the newly assigned storage-csi and network-cni carrier-landing follow-ups.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: reconcile the mounted handwritten CSI-drivers branch against the current repo-local disk-driver-enable carrier so the project can decide, without cloud execution, whether Scenario_CSI_Drivers_VMSS_Ubuntu should stay mapped to the narrow disk-only carrier or be widened/renamed/split into a more truthful multi-CSI canonical carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "Compare /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/csidrivers.go against the current repo-local carriers features/storage-csi/disk-driver-enable.yaml, specs/storage-csi-disk-driver-enable.json, and replays/storage-csi-disk-driver-enable.ts, citing the exact mounted-source steps that show broader disk/file/snapshot lifecycle intent.",
+        "Artifact concludes one explicit bounded outcome with file/path references: either the current disk-only carrier stays as the truthful canonical mapping with a durable rationale for excluding the remaining source behavior, or the repo-local canonical carrier must be widened/renamed/split to match the mounted handwritten branch more honestly.",
+        "Confirm no cloud execution, no external-human transport work, and no model edits occurred during this contract-boundary reconcile pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:26:15.596Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621_20260621202615",
+        "assigned_at": "2026-06-21T20:26:15.697Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621",
+        "worker_started_attempt_id": "a_storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621_20260621202615",
+        "worker_started_at": "2026-06-21T20:26:40.702Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a mounted-source reconcile artifact at evidence/archive/storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621.md concluding that Scenario_CSI_Drivers_VMSS_Ubuntu should no longer map canonically to the narrow disk-only carrier and should instead split to a truthful multi-CSI source landing.",
+        "last_worker_completed_at": "2026-06-21T20:28:19.822Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:28:59.984Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621.md credibly cites mounted csidrivers.go and proves Scenario_CSI_Drivers_VMSS_Ubuntu is materially broader than the current disk-only carrier, so the truthful next step is a split/multi-CSI source landing rather than keeping storage-csi-disk-driver-enable as the canonical source-row mapping."
+      },
+      "session_id": "s_task_storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621",
+      "session_history": [
+        "s_task_storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621"
+      ],
+      "result": "Produced a mounted-source reconcile artifact at evidence/archive/storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621.md concluding that Scenario_CSI_Drivers_VMSS_Ubuntu should no longer map canonically to the narrow disk-only carrier and should instead split to a truthful multi-CSI source landing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:28:59.984Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/storage-csi-csidrivers-contract-boundary-mounted-source-reconcile-20260621.md credibly cites mounted csidrivers.go and proves Scenario_CSI_Drivers_VMSS_Ubuntu is materially broader than the current disk-only carrier, so the truthful next step is a split/multi-CSI source landing rather than keeping storage-csi-disk-driver-enable as the canonical source-row mapping."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-acns-retina-enterprise-mounted-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: using mounted AKS RP handwritten source, compare Scenario_Retina_Enterprise and its K8s 1.31-1.34 matrix family against the current repo-local network-acns-enterprise-tier carrier, then produce a bounded repo-local packet that proves the exact contract drift and defines the smallest truthful next carrier shape without cloud execution or model edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-enterprise-mounted-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Produce a durable artifact that cites /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/retina_enterprise.go and /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/k8s_versions.go plus the current repo-local enterprise-tier feature/spec files, and proves with exact file/path references why the mounted Retina Enterprise family is not truthfully covered by the existing network-acns-enterprise-tier carrier.",
+        "Artifact concludes one bounded next-step recommendation with exact repo-local file/path references: either define the smallest truthful new or split canonical carrier packet needed for mounted Retina Enterprise base plus K8s 1.31-1.34 variants, or prove an exact narrower remap/update is sufficient, without performing the carrier landing itself.",
+        "Confirm no cloud execution, no external-human transport dependency work, and no model or knowledge-map edits occurred in this packet pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:27:13.206Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-enterprise-mounted-source-packet-20260621_20260621202713",
+        "assigned_at": "2026-06-21T20:27:13.253Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-enterprise-mounted-source-packet-20260621",
+        "worker_started_attempt_id": "a_network-acns-retina-enterprise-mounted-source-packet-20260621_20260621202713",
+        "worker_started_at": "2026-06-21T20:27:22.092Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded packet `evidence/archive/network-acns-retina-enterprise-mounted-source-packet-20260621.md` proving exact contract drift between mounted `Scenario_Retina_Enterprise` (+ 1.31-1.34 matrix) and the repo-local `network-acns-enterprise-tier` carrier, and recommending the smallest truthful next sibling carrier shape.",
+        "last_worker_completed_at": "2026-06-21T20:29:03.644Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:29:31.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/network-acns-retina-enterprise-mounted-source-packet-20260621.md credibly cites mounted Retina Enterprise and k8s_versions source to prove the repo-local network-acns-enterprise-tier carrier is a different all-tiers Cilium/security contract, so the truthful next move is a new sibling network-acns-retina-enterprise base carrier with 1.31-1.34 variants rather than remapping the existing enterprise-tier carrier."
+      },
+      "session_id": "s_task_network-acns-retina-enterprise-mounted-source-packet-20260621",
+      "session_history": [
+        "s_task_network-acns-retina-enterprise-mounted-source-packet-20260621"
+      ],
+      "result": "Produced the bounded packet `evidence/archive/network-acns-retina-enterprise-mounted-source-packet-20260621.md` proving exact contract drift between mounted `Scenario_Retina_Enterprise` (+ 1.31-1.34 matrix) and the repo-local `network-acns-enterprise-tier` carrier, and recommending the smallest truthful next sibling carrier shape.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:29:31.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/network-acns-retina-enterprise-mounted-source-packet-20260621.md credibly cites mounted Retina Enterprise and k8s_versions source to prove the repo-local network-acns-enterprise-tier carrier is a different all-tiers Cilium/security contract, so the truthful next move is a new sibling network-acns-retina-enterprise base carrier with 1.31-1.34 variants rather than remapping the existing enterprise-tier carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T14:14:43.065Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted both the shared single-spec missing-result recurrence diagnosis and the execution-ref provenance follow-up: run 28373435896 remains shared runner/spec-loop missing-result evidence only, not a deployment-safeguards or other spec-local verdict; the truthful next gate is to checkpoint the accepted shared repair slice onto the actual single-spec workflow carrier (dev/origin/dev) before any same-family rerun. The lane therefore keeps focus on the active single-spec verifier wave, while blocked leaves stay narrowed to one remote-artifact wait for aad-rbac run 28371054186 and one exact westus2 cluster-count preflight wait for multinic dualstack rather than duplicate environment churn.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Compare the accepted single-spec missing-result family repairs against the fresh deployment-safeguards run 28373435896 recurrence and determine the exact remaining shared runner/spec-loop gap, retry gate, or evidence ceiling before any spec-local rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-single-spec-missing-result-post-repair-recurrence-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites run 28373435896 together with the already accepted shared missing-result family evidence/repairs and states whether that run should have been covered by the existing repo-local fixes.",
+        "If a residual repo-local gap remains, the note names the exact code path/test surface to repair next; otherwise it records the exact retry gate or evidence ceiling for future same-family recurrences without blaming deployment-safeguards itself.",
+        "Deployment-safeguards and any same-family specs remain classified as shared runner/spec-loop error evidence, not product/environment verdicts, unless stronger terminal child evidence is found."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-family:single-spec-missing-result"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T14:06:21.903Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T14:06:31.262Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629_20260629140637",
+        "assigned_at": "2026-06-29T14:06:37.481Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629",
+        "worker_started_attempt_id": "a_diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629_20260629140637",
+        "worker_started_at": "2026-06-29T14:07:14.948Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the assigned recurrence note at evidence/archive/shared-single-spec-missing-result-post-repair-recurrence-20260629.md, comparing run 28373435896 against the accepted shared missing-result repairs and concluding the remaining boundary is a shared execution-ref propagation gate plus current artifact evidence ceiling, not a deployment-safeguards-specific rerun or verdict.",
+        "last_worker_completed_at": "2026-06-29T14:10:10.857Z",
+        "last_worker_evidence": [
+          "evidence/archive/shared-single-spec-missing-result-post-repair-recurrence-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T14:11:56.550Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the recurrence review as shared runner/spec-loop evidence only: run 28373435896 still matches the pre-propagation missing-result family, so deployment-safeguards is not reopened and the next truthful action is the new repo-local provenance task bound-shared-single-spec-missing-result-execution-ref-gate-20260629."
+      },
+      "session_id": "s_task_diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629",
+      "session_history": [
+        "s_task_diagnose-shared-single-spec-missing-result-post-repair-recurrence-20260629"
+      ],
+      "result": "Wrote the assigned recurrence note at evidence/archive/shared-single-spec-missing-result-post-repair-recurrence-20260629.md, comparing run 28373435896 against the accepted shared missing-result repairs and concluding the remaining boundary is a shared execution-ref propagation gate plus current artifact evidence ceiling, not a deployment-safeguards-specific rerun or verdict.",
+      "evidence": [
+        "evidence/archive/shared-single-spec-missing-result-post-repair-recurrence-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:11:56.550Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the recurrence review as shared runner/spec-loop evidence only: run 28373435896 still matches the pre-propagation missing-result family, so deployment-safeguards is not reopened and the next truthful action is the new repo-local provenance task bound-shared-single-spec-missing-result-execution-ref-gate-20260629."
+      },
+      "status": "done"
+    },
+    {
+      "id": "bound-shared-single-spec-missing-result-execution-ref-gate-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted shared single-spec missing-result recurrence review into one concrete repo-local next step: determine the minimal execution ref / checkpoint slice that proves the accepted runner/spec-loop repair is actually on the carrier used by future single-spec workflows, or record the exact blocker preventing that provenance.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-single-spec-missing-result-execution-ref-gate-20260629.md"
+      ],
+      "acceptance": [
+        "The note names the accepted shared missing-result repair surfaces that must be present on a proven execution ref for future same-family reruns.",
+        "The note records either a bounded checkpoint-ready slice/provenance path or one exact blocker that explains why the execution ref still cannot be proven from the current mixed workspace.",
+        "The note defines the next truthful same-family rerun gate without blaming deployment-safeguards or another spec-local feature."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-family:single-spec-missing-result"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T14:11:56.396Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_bound-shared-single-spec-missing-result-execution-ref-gate-20260629_20260629141156",
+        "assigned_at": "2026-06-29T14:11:56.446Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_bound-shared-single-spec-missing-result-execution-ref-gate-20260629",
+        "worker_started_attempt_id": "a_bound-shared-single-spec-missing-result-execution-ref-gate-20260629_20260629141156",
+        "worker_started_at": "2026-06-29T14:12:26.813Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded execution-ref provenance note at evidence/archive/shared-single-spec-missing-result-execution-ref-gate-20260629.md. The note proves the accepted shared missing-result repair is still only local working-tree state, names the minimal checkpoint slice required on dev/origin/dev, and defines the truthful same-family rerun gate.",
+        "last_worker_completed_at": "2026-06-29T14:14:00.304Z",
+        "last_worker_evidence": [
+          "evidence/archive/shared-single-spec-missing-result-execution-ref-gate-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T14:14:43.007Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the owner-bounded execution-ref provenance note: it proves the shared single-spec missing-result repair still exists only as local working-tree changes while HEAD==origin/dev, identifies the minimal checkpoint slice (.github/workflows/run-single-spec.yaml, runner/spec-runner.ts, runner/spec-runner-status.ts, runner/spec-runner-evidence.ts, runner/vitest-runtime/results.ts), and keeps same-family reruns gated on proving that slice on origin/dev rather than spawning a deployment-safeguards-specific retry."
+      },
+      "session_id": "s_task_bound-shared-single-spec-missing-result-execution-ref-gate-20260629",
+      "session_history": [
+        "s_task_bound-shared-single-spec-missing-result-execution-ref-gate-20260629"
+      ],
+      "result": "Produced the bounded execution-ref provenance note at evidence/archive/shared-single-spec-missing-result-execution-ref-gate-20260629.md. The note proves the accepted shared missing-result repair is still only local working-tree state, names the minimal checkpoint slice required on dev/origin/dev, and defines the truthful same-family rerun gate.",
+      "evidence": [
+        "evidence/archive/shared-single-spec-missing-result-execution-ref-gate-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:14:43.007Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the owner-bounded execution-ref provenance note: it proves the shared single-spec missing-result repair still exists only as local working-tree changes while HEAD==origin/dev, identifies the minimal checkpoint slice (.github/workflows/run-single-spec.yaml, runner/spec-runner.ts, runner/spec-runner-status.ts, runner/spec-runner-evidence.ts, runner/vitest-runtime/results.ts), and keeps same-family reruns gated on proving that slice on origin/dev rather than spawning a deployment-safeguards-specific retry."
+      },
+      "status": "done"
+    }
+  ]
+}

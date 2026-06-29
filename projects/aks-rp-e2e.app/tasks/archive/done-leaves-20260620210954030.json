@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:09:54.030Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 planner refill-race pass: archived the accepted App Monitoring source-semantics unblock leaf because its durable meaning is now preserved at the project level and superseded by the active bounded replay-extension successor. Current live frontier remains intentionally minimal: two active repo-local authoring slices (App Monitoring row-63 bounded replay extension and VM prerelease row-41 secure-TLS exact carrier authoring), plus the single family-level external send-proof transport wait under the VM prerelease pipeline-replacement branch. The watchdog runnable-backlog request for the App Monitoring task was a stale packet race, not a new gap, because that same task was already active/claimed by the newer tree snapshot.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and existing repo-local artifacts to pin the exact request/readback/verdict semantics for Scenario_Addonv2_Azure_Monitor_Metrics so the path stops depending on an unbounded source-proof blocker and the next bounded replay/model step is clear without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted AKS RP Go source and any exact repo-local authorities needed for Scenario_Addonv2_Azure_Monitor_Metrics, and cite the exact file paths plus bounded excerpts/lineage that establish the canonical request-body/readback contract and the verdict-bearing runtime assertion surface, or prove the precise local evidence ceiling.",
+        "Produce one durable repo-local proof packet that states whether the current feature/spec/replay/model assets already match that source-backed contract; if they do not, land the smallest bounded repo-local updates needed to keep the branch truthful and regenerate any directly affected views only when touched.",
+        "Conclude with the exact next project move for this path: either the source-semantics blocker is locally cleared and a bounded next replay/model step is named, or the remaining blocker is narrowed to one truthful external/source-equivalent ceiling without creating duplicate passive waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-source-semantics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:56:58.269Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620_20260620205658",
+        "assigned_at": "2026-06-20T20:56:58.316Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620_20260620205658",
+        "worker_started_at": "2026-06-20T20:57:18.850Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Cleared the row-63 Azure Monitor Metrics source-semantics blocker using mounted AKS RP source, wrote a durable proof packet, and updated the repo-local feature/spec/replay/model surfaces so the next step is a bounded replay-extension rather than an external source wait.",
+        "last_worker_completed_at": "2026-06-20T21:07:28.617Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:08:11.298Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after verifying the durable proof packet and repo-local diffs: mounted-source authorities now pin row 63 to properties.azureMonitorProfile.metrics.enabled=true plus the helm-release/pod-readiness/node-exporter runtime bundle, and the feature/spec/replay/model surfaces were updated coherently to replace the old source-semantics blocker with a bounded replay-extension successor."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620"
+      ],
+      "result": "Cleared the row-63 Azure Monitor Metrics source-semantics blocker using mounted AKS RP source, wrote a durable proof packet, and updated the repo-local feature/spec/replay/model surfaces so the next step is a bounded replay-extension rather than an external source wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:08:11.298Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after verifying the durable proof packet and repo-local diffs: mounted-source authorities now pin row 63 to properties.azureMonitorProfile.metrics.enabled=true plus the helm-release/pod-readiness/node-exporter runtime bundle, and the feature/spec/replay/model surfaces were updated coherently to replace the old source-semantics blocker with a bounded replay-extension successor."
+      },
+      "status": "done"
+    }
+  ]
+}

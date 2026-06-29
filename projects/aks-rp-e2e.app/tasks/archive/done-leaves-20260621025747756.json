@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T02:57:47.756Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted and archived the 2026-06-21 source-equivalent packet leaves as durable parent knowledge for app-monitoring azure-monitor-metrics and policy-addon large-scale-audit. The project now knows both branches have bounded mounted-source-grounded, check-only contracts with explicit nextAction preserved: app-monitoring carries properties.azureMonitorProfile.metrics.enabled=true plus the create/upgrade runtime verdict bundle, and policy-addon carries the shared-suite / GateKeeperProfile.IsLargeScaleAudit contract. The remaining active frontier stays focused on landing maintained source-grounded surfaces for app-monitoring and VirtualMachines live-body implementation work, while the external-send-proof dispatch family remains the single truthful human-transport blocker for outbound MachinesPreview and VM prerelease packets.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "policy-addon-large-scale-audit-source-grounded-surface-land-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the maintained policy-addon large-scale-audit feature/path/spec/replay/model surfaces from the old missing-handwritten-body ceiling to the accepted source-equivalent contract, using the expanded mounted-source-grounded verdict surface: shared policy-addon suite variant with large_scale_audit_enabled feature registration, RP GateKeeperProfile.IsLargeScaleAuditEnabled semantic toggle, and explicitly version-gated rendered audit-connection / DISK_EXPORT_ENABLED effects, while preserving check-only/no-fresh-cloud-verdict wording and one exact nextAction/resumeCondition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/policy-addon-large-scale-audit-source-grounded-surface-land-20260621.md"
+      ],
+      "acceptance": [
+        "Updated maintained policy-addon large-scale-audit feature/path/spec/replay/model surfaces replace missing-handwritten-body or opaque-source wording with the accepted shared-suite source-equivalent contract from the 2026-06-21 packet, without inventing a dedicated ARM addon config field or claiming a fresh cloud verdict.",
+        "The maintained surfaces choose and state the expanded bounded verdict surface explicitly: Azure Policy addon enablement baseline plus source-grounded GateKeeperProfile.IsLargeScaleAuditEnabled semantics and version-gated rendered audit-connection / DISK_EXPORT_ENABLED effects, with unknowns and non-claims preserved where the mounted handwritten handler did not prove explicit historical assertions.",
+        "Worker runs the needed repo-local regeneration/validation checks for the changed maintained surfaces and records the exact commands/results plus the specific wording/field changes in the archive note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "policy-addon"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T02:49:30.719Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_policy-addon-large-scale-audit-source-grounded-surface-land-20260621_20260621024930",
+        "assigned_at": "2026-06-21T02:49:30.766Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_policy-addon-large-scale-audit-source-grounded-surface-land-20260621",
+        "worker_started_attempt_id": "a_policy-addon-large-scale-audit-source-grounded-surface-land-20260621_20260621024930",
+        "worker_started_at": "2026-06-21T02:49:39.072Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the maintained PolicyAddon large-scale-audit spec/replay/model/view surfaces to the accepted 2026-06-21 source-equivalent check-only contract, added the new source-equivalent evidence linkage, regenerated views, and recorded the exact changes/validation results in the requested archive note.",
+        "last_worker_completed_at": "2026-06-21T02:56:21.832Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T02:56:56.612Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: archive note and repo diff show the maintained policy-addon row-167 spec/replay/model/view surfaces were updated from the old missing-handwritten ceiling to the accepted 2026-06-21 source-equivalent, check-only contract, with explicit GateKeeperProfile.IsLargeScaleAuditEnabled plus version-gated audit-connection / DISK_EXPORT_ENABLED semantics, regenerated views, and validation commands recorded without claiming a fresh cloud verdict."
+      },
+      "session_id": "s_task_policy-addon-large-scale-audit-source-grounded-surface-land-20260621",
+      "session_history": [
+        "s_task_policy-addon-large-scale-audit-source-grounded-surface-land-20260621"
+      ],
+      "result": "Updated the maintained PolicyAddon large-scale-audit spec/replay/model/view surfaces to the accepted 2026-06-21 source-equivalent check-only contract, added the new source-equivalent evidence linkage, regenerated views, and recorded the exact changes/validation results in the requested archive note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T02:56:56.612Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: archive note and repo diff show the maintained policy-addon row-167 spec/replay/model/view surfaces were updated from the old missing-handwritten ceiling to the accepted 2026-06-21 source-equivalent, check-only contract, with explicit GateKeeperProfile.IsLargeScaleAuditEnabled plus version-gated audit-connection / DISK_EXPORT_ENABLED semantics, regenerated views, and validation commands recorded without claiming a fresh cloud verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row35-mounted-source-path-land-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After vmpr-row34-mounted-source-path-land-20260621 lands, use the mounted AKS RP VirtualMachine prerelease source and the repo-local maintained carrier surfaces to land VM prerelease row 35 as a source-grounded, check-only feature/path/spec/replay/model slice with explicit nextAction and resumeCondition wording, then regenerate/validate the changed maintained outputs and write the evidence note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row35-mounted-source-grounding-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source locations consulted for VM prerelease row 35, including the VirtualMachine prerelease suite and any referenced scenario definitions, and explains the accepted row-35 contract it extracted.",
+        "Updated maintained feature/path/spec/replay/model surfaces represent row 35 as source-grounded and check-only with explicit nextAction/resumeCondition wording, without implying a fresh cloud verdict or broadening beyond the row-35 contract actually supported by source.",
+        "Worker runs the needed repo-local regeneration/validation checks for the changed maintained surfaces and records the commands/results in the artifact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T02:44:30.766Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row35-mounted-source-path-land-20260621_20260621024640",
+        "assigned_at": "2026-06-21T02:46:40.672Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row35-mounted-source-path-land-20260621",
+        "worker_started_attempt_id": "a_vmpr-row35-mounted-source-path-land-20260621_20260621024640",
+        "worker_started_at": "2026-06-21T02:46:41.267Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed VM prerelease row 35 as a source-grounded, check-only maintained slice with explicit nextAction/resumeCondition across feature/spec/index/coverage/model surfaces, and wrote the evidence note at evidence/archive/vmpr-row35-mounted-source-grounding-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T02:52:51.758Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T02:53:18.584Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: evidence/archive/vmpr-row35-mounted-source-grounding-20260621.md cites the mounted VM prerelease/checkin and MSI source files, documents the row-35 contract, records the maintained feature/spec/coverage/model updates, and includes repo-local regeneration/validation command results, so the source-grounded check-only row-35 slice is sufficiently landed."
+      },
+      "session_id": "s_task_vmpr-row35-mounted-source-path-land-20260621",
+      "session_history": [
+        "s_task_vmpr-row35-mounted-source-path-land-20260621"
+      ],
+      "result": "Landed VM prerelease row 35 as a source-grounded, check-only maintained slice with explicit nextAction/resumeCondition across feature/spec/index/coverage/model surfaces, and wrote the evidence note at evidence/archive/vmpr-row35-mounted-source-grounding-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T02:53:18.584Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: evidence/archive/vmpr-row35-mounted-source-grounding-20260621.md cites the mounted VM prerelease/checkin and MSI source files, documents the row-35 contract, records the maintained feature/spec/coverage/model updates, and includes repo-local regeneration/validation command results, so the source-grounded check-only row-35 slice is sufficiently landed."
+      },
+      "status": "done"
+    }
+  ]
+}

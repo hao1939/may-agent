@@ -1,0 +1,1671 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T04:58:35.190Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog runnable-backlog owner review: keep the fresh active no-cloud autoscaler profile-matrix mounted-source boundary map as the sole live execution lane under maxConcurrent=1, preserve the queued row-40 SSH replay-truth drift audit as the next runnable follow-up, maintain the single truthful external-human family wait unchanged pending returned proof, and archive completed cloud-provider, ManagedSystem, OIDC, SGX, and managementplane-addonv2 closure leaves whose durable meaning is already captured in repo-local evidence and the project rollup.",
+  "archived": 30,
+  "tasks": [
+    {
+      "id": "oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the replay gate contract for path.oidc.default-by-version.k8s-gte-1.34 by restoring env-based AKS_RP_E2E_ALLOW_CLOUD_MUTATION matching in replays/oidc-issuer-default-by-version.ts, then rerun the same non-cloud readiness checks and archive the refreshed evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626.md"
+      ],
+      "acceptance": [
+        "replays/oidc-issuer-default-by-version.ts computes the probe gate from AKS_RP_E2E_ALLOW_CLOUD_MUTATION against oidc-issuer-default-by-version instead of a hard-coded true value, and the archive artifact quotes the exact code/location repaired.",
+        "The archive artifact records reruns of the same bounded non-cloud validations for this path (replay --check with evidence write and spec dry-run or evidence-backed equivalent), including exact commands and outcomes after the repair.",
+        "The work stays repo-local, does not mutate cloud resources, does not reopen the compressed external-human wait family, and leaves the path either ready again or with one exact remaining repo-local blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc-default-by-version"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T02:49:32.425Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626_20260626025016",
+        "assigned_at": "2026-06-26T02:50:16.912Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626",
+        "worker_started_attempt_id": "a_oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626_20260626025016",
+        "worker_started_at": "2026-06-26T02:50:17.114Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired env-based mutation gating in replays/oidc-issuer-default-by-version.ts and archived refreshed repo-local validation evidence showing --check passes, spec dry-run passes, and --execute without the gate is correctly blocked.",
+        "last_worker_completed_at": "2026-06-26T02:51:22.342Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T02:51:59.387Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626.md quotes the replay gate repair in replays/oidc-issuer-default-by-version.ts, records refreshed non-cloud replay --check plus spec dry-run outcomes, and proves --execute without AKS_RP_E2E_ALLOW_CLOUD_MUTATION=oidc-issuer-default-by-version is gated again, so path.oidc.default-by-version.k8s-gte-1.34 is repo-local ready with no remaining local blocker."
+      },
+      "session_id": "s_task_oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626",
+      "session_history": [
+        "s_task_oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626"
+      ],
+      "result": "Repaired env-based mutation gating in replays/oidc-issuer-default-by-version.ts and archived refreshed repo-local validation evidence showing --check passes, spec dry-run passes, and --execute without the gate is correctly blocked.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T02:51:59.387Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/oidc-default-by-version-k8s-gte-134-replay-gate-repair-20260626.md quotes the replay gate repair in replays/oidc-issuer-default-by-version.ts, records refreshed non-cloud replay --check plus spec dry-run outcomes, and proves --execute without AKS_RP_E2E_ALLOW_CLOUD_MUTATION=oidc-issuer-default-by-version is gated again, so path.oidc.default-by-version.k8s-gte-1.34 is repo-local ready with no remaining local blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local ManagedSystem VM prerelease direct-check surface so the exact spaced --run-id command remains truthful: make replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts accept --run-id <value> and refresh its stale coverage-row expectation to the current ManagedSystem carrier row, then rerun the same no-cloud direct check and archive the verified result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The replay-local repair is bounded to repo files only: the direct command bun replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts --check --write-evidence --run-id managedsystem-agentpool-vm-prerelease-check-20260626 binds the requested run id instead of writing true-* evidence files, with no cloud mutation.",
+        "The replay's coverage-row assertion is refreshed to the current ManagedSystem carrier row in evidence/pipelines/virtualmachine-prerelease-coverage.json, and the rerun records whether the ManagedSystem create-time carrier now passes cleanly across replay/spec/feature/index linkage or names any remaining exact repo-local mismatch.",
+        "The archive artifact quotes the repair diff outcome, the rerun command and timestamped result, and does not reopen the external-human wait family or substitute the execute-oriented wrapper."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-managedsystem-agentpool-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T02:53:40.647Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626_20260626025340",
+        "assigned_at": "2026-06-26T02:53:40.693Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626",
+        "worker_started_attempt_id": "a_managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626_20260626025340",
+        "worker_started_at": "2026-06-26T02:53:51.727Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the ManagedSystem VM prerelease direct-check surface so spaced `--run-id` now binds correctly, refreshed the maintained row metadata to the current row 56 carrier, reran the exact no-cloud direct check, and archived the verified repair note.",
+        "last_worker_completed_at": "2026-06-26T02:58:29.654Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T02:59:03.647Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from archive evidence/archive/managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626.md: the bounded repo-local repair added spaced --run-id parsing, refreshed the ManagedSystem carrier metadata from row 54 to row 56, reran the exact no-cloud direct check, and produced requested run-id evidence files with a reported pass without reopening the external-human wait family."
+      },
+      "session_id": "s_task_managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626",
+      "session_history": [
+        "s_task_managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626"
+      ],
+      "result": "Repaired the ManagedSystem VM prerelease direct-check surface so spaced `--run-id` now binds correctly, refreshed the maintained row metadata to the current row 56 carrier, reran the exact no-cloud direct check, and archived the verified repair note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T02:59:03.647Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from archive evidence/archive/managedsystem-agentpool-vm-prerelease-direct-check-repair-20260626.md: the bounded repo-local repair added spaced --run-id parsing, refreshed the ManagedSystem carrier metadata from row 54 to row 56, reran the exact no-cloud direct check, and produced requested run-id evidence files with a reported pass without reopening the external-human wait family."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-agentpool-vm-prerelease-model-feedback-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted ManagedSystem VM prerelease row-56 direct-check repair evidence to update the repo-local capability/model surfaces for path.virtualmachines.managedsystem-agentpool-vm-prerelease so the path no longer stays unknown: capture the exact row-56 create-time VirtualMachines + ManagedSystem carrier, its no-cloud direct-check pass, and the remaining execute gate truthfully.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-agentpool-vm-prerelease-model-feedback-20260626.md"
+      ],
+      "acceptance": [
+        "The task updates the relevant repo-local model/knowledge-map surface(s) so path.virtualmachines.managedsystem-agentpool-vm-prerelease no longer stays at a stale unknown state and instead records the exact row-56 carrier, the accepted no-cloud direct-check pass evidence, and the remaining execute-gated/live-verdict boundary truthfully.",
+        "The archive artifact cites the accepted repair artifact plus the exact model/status diff and explains whether the path is now source-grounded/ready/blocked/other, without inventing cloud execution or reopening the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-managedsystem-agentpool-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T02:59:03.697Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-agentpool-vm-prerelease-model-feedback-20260626_20260626025903",
+        "assigned_at": "2026-06-26T02:59:03.749Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-agentpool-vm-prerelease-model-feedback-20260626",
+        "worker_started_attempt_id": "a_managedsystem-agentpool-vm-prerelease-model-feedback-20260626_20260626025903",
+        "worker_started_at": "2026-06-26T02:59:17.101Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the ManagedSystem VM prerelease capability/model surfaces to reflect the accepted row-56 direct-check repair and pass, regenerated maintained views, and wrote the requested archive feedback artifact.",
+        "last_worker_completed_at": "2026-06-26T03:02:29.722Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:03:21.381Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/managedsystem-agentpool-vm-prerelease-model-feedback-20260626.md and maintained-surface grep confirmation: the archive cites the accepted direct-check repair/pass evidence, model.json plus regenerated views now carry row-56 ManagedSystem AgentPool wording, source-grounded-direct-check-pass-execute-gated coverage state, and the path is no longer stale even though live verdict remains execute-gated."
+      },
+      "session_id": "s_task_managedsystem-agentpool-vm-prerelease-model-feedback-20260626",
+      "session_history": [
+        "s_task_managedsystem-agentpool-vm-prerelease-model-feedback-20260626"
+      ],
+      "result": "Updated the ManagedSystem VM prerelease capability/model surfaces to reflect the accepted row-56 direct-check repair and pass, regenerated maintained views, and wrote the requested archive feedback artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:03:21.381Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/managedsystem-agentpool-vm-prerelease-model-feedback-20260626.md and maintained-surface grep confirmation: the archive cites the accepted direct-check repair/pass evidence, model.json plus regenerated views now carry row-56 ManagedSystem AgentPool wording, source-grounded-direct-check-pass-execute-gated coverage state, and the path is no longer stale even though live verdict remains execute-gated."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a mounted-source boundary packet for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade from the checked-in VM prerelease e2ev3 carriers, capturing accepted inputs, expected behavior, adjacent surfaces, and the next repo-local spec/model action without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact mounted Go source files/scenario names that anchor path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade and summarizes the create/scale/upgrade lifecycle boundary in terms of concrete AKS inputs and expected behaviors.",
+        "The artifact identifies the current repo-local coverage state for this path (existing spec/replay/model linkage or exact missing piece), names adjacent surfaces that should stay out of scope for the first slice, and recommends one next safe no-cloud follow-up action.",
+        "No cloud-mutating or remote execution commands are run; this leaf stays in the regular learning lane and does not duplicate the external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-path:path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:07:58.034Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626_20260626030801",
+        "assigned_at": "2026-06-26T03:08:01.199Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626_20260626030801",
+        "worker_started_at": "2026-06-26T03:08:16.184Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source boundary packet at evidence/archive/managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626.md, grounding path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in mounted AKS RP Go source, current spec/replay/model linkage, and a concrete no-cloud follow-up repair.",
+        "last_worker_completed_at": "2026-06-26T03:09:51.578Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:10:23.753Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626.md: the packet cites exact mounted source and matrix anchors for rows 73/74/215/219, captures the create/scale/upgrade plus VPA and ENO lifecycle boundary, documents the row-73/74 VirtualMachines-vs-VMSS source tension, and proposes the correct bounded repo-local no-cloud metadata/spec repair."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626"
+      ],
+      "result": "Created the requested mounted-source boundary packet at evidence/archive/managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626.md, grounding path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in mounted AKS RP Go source, current spec/replay/model linkage, and a concrete no-cloud follow-up repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:10:23.753Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/managementplane-addon-vm-prerelease-addonv2-source-boundary-20260626.md: the packet cites exact mounted source and matrix anchors for rows 73/74/215/219, captures the create/scale/upgrade plus VPA and ENO lifecycle boundary, documents the row-73/74 VirtualMachines-vs-VMSS source tension, and proposes the correct bounded repo-local no-cloud metadata/spec repair."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local source/spec attachment for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade using the accepted mounted-source packet: add the missing exact source refs for overlayvpa/overlayvpa.go and eno/main.go, narrow the ENO expectation to the mounted create-with-ENO then update-disable lifecycle, and preserve the row-73/74 VirtualMachines matrix selector versus VirtualMachineScaleSets suite-body tension explicitly in repo-local spec/model wording without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The repo-local spec for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade cites all four mounted carriers, including overlayvpa/overlayvpa.go and eno/main.go, and the archive artifact quotes the exact changed sourceRefs or equivalent evidence.",
+        "The ENO expectation wording is narrowed to the mounted create-with-ENO plus update-disable-ENO lifecycle, and the row-73/74 VirtualMachines selector versus VirtualMachineScaleSets suite-body tension is preserved explicitly as a source/model-alignment note rather than flattened away.",
+        "No cloud-mutating or remote execution commands are run; the task stays repo-local and does not reopen the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-path:path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:10:23.800Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626_20260626031023",
+        "assigned_at": "2026-06-26T03:10:23.846Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626_20260626031023",
+        "worker_started_at": "2026-06-26T03:10:33.410Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the Addonv2 VM prerelease spec/model source attachments for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade, adding overlayvpa/overlayvpa.go and eno/main.go refs, narrowing ENO to the mounted create-then-disable lifecycle, preserving the row-73/74 VirtualMachines-vs-VMSS tension, and writing the requested archive artifact.",
+        "last_worker_completed_at": "2026-06-26T03:14:54.718Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:15:43.982Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of the archive artifact: it cites all four mounted carriers including overlayvpa/overlayvpa.go and eno/main.go, narrows ENO to the create-with-ENO then update-disable lifecycle, preserves the row-73/74 VirtualMachines-vs-VMSS source tension explicitly, and stays fully repo-local with regenerated knowledge-map views and no cloud execution."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-spec-source-repair-20260626"
+      ],
+      "result": "Repaired the Addonv2 VM prerelease spec/model source attachments for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade, adding overlayvpa/overlayvpa.go and eno/main.go refs, narrowing ENO to the mounted create-then-disable lifecycle, preserving the row-73/74 VirtualMachines-vs-VMSS tension, and writing the requested archive artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:15:43.982Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of the archive artifact: it cites all four mounted carriers including overlayvpa/overlayvpa.go and eno/main.go, narrows ENO to the create-with-ENO then update-disable lifecycle, preserves the row-73/74 VirtualMachines-vs-VMSS source tension explicitly, and stays fully repo-local with regenerated knowledge-map views and no cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact executable coverage for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade from the repaired mounted-source/spec packet: identify which repo-local specs, replays, and matrix rows cover the core create/scale, upgrade, overlay VPA, and ENO branches, and record the next bounded verification slice without running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact maps rows 73/74/215/219 to exact repo-local specIds, replay or source carriers, and notes where coverage is direct versus source-only, including the preserved VirtualMachines selector versus VMSS suite-body tension.",
+        "If the repaired spec/model wording still needs repo-local tightening to match executable coverage, the task updates the relevant file(s), regenerates derived views, and quotes the exact change; otherwise the artifact explicitly records that no further model edit was needed.",
+        "No cloud-mutating or remote execution commands are run; the task stays repo-local and does not reopen the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-path:path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:15:44.030Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626_20260626031544",
+        "assigned_at": "2026-06-26T03:15:44.081Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626_20260626031544",
+        "worker_started_at": "2026-06-26T03:16:02.534Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the executable surface for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in a new archive artifact, and repaired replay metadata in replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts so it now points at the canonical managementplane-addon spec/path while explicitly documenting its limited current execution scope.",
+        "last_worker_completed_at": "2026-06-26T03:17:54.578Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:18:38.263Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review verified the new archive artifact maps rows 73/74/215/219 to the canonical managementplane-addon spec/replay path, preserves the VirtualMachines-vs-VMSS tension and row-local narrowing, and the repaired replay metadata now points at spec.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade / path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade while explicitly disclosing its current minimal scaffolding scope."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-execution-surface-map-20260626"
+      ],
+      "result": "Mapped the executable surface for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in a new archive artifact, and repaired replay metadata in replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts so it now points at the canonical managementplane-addon spec/path while explicitly documenting its limited current execution scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:18:38.263Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review verified the new archive artifact maps rows 73/74/215/219 to the canonical managementplane-addon spec/replay path, preserves the VirtualMachines-vs-VMSS tension and row-local narrowing, and the repaired replay metadata now points at spec.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade / path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade while explicitly disclosing its current minimal scaffolding scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add a repo-local check-mode contract for replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts that proves the canonical managementplane-addon addonv2 carrier still self-describes the exact rows 73/74/215/219 coverage and its current minimal execution scope without running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626.md"
+      ],
+      "acceptance": [
+        "The replay gains a bounded local verification path or equivalent repo-local assertion flow that checks specId/pathIds, row/scenario set 73/74/215/219, the preserved VirtualMachines selector vs VMSS suite-body tension for rows 73/74, row-215 skip_upgrade=true narrowing, row-219 create-with-ENO then update-disable narrowing, and the explicit minimal-scaffolding scope note.",
+        "An archive artifact records the exact command(s) run, the assertion results, and whether any replay text changed to satisfy the contract; if derived views or generated artifacts are affected, the task regenerates them and quotes the exact repo-local delta.",
+        "No cloud-mutating or remote execution commands are run; the task stays fully repo-local and does not reopen the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-path:path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:18:38.312Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626_20260626031838",
+        "assigned_at": "2026-06-26T03:18:38.358Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626_20260626031838",
+        "worker_started_at": "2026-06-26T03:18:51.056Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added a repo-local check-mode contract to replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts and wrote an archive artifact documenting the exact no-cloud validation commands and passing assertions for rows 73/74/215/219 plus minimal-scope disclosure.",
+        "last_worker_completed_at": "2026-06-26T03:21:32.893Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:22:15.838Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of ../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626.md and ../aks-rp-e2e/replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts: the repo-local --check contract now truthfully verifies spec/probe identity, exact rows 73/74/215/219, VM-vs-VMSS tension, row-215 skip_upgrade narrowing, row-219 ENO narrowing, and preserved minimal live create+GET scaffolding without any cloud work."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626"
+      ],
+      "result": "Added a repo-local check-mode contract to replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts and wrote an archive artifact documenting the exact no-cloud validation commands and passing assertions for rows 73/74/215/219 plus minimal-scope disclosure.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:22:15.838Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of ../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-replay-check-contract-20260626.md and ../aks-rp-e2e/replays/traffic-azure-service-mesh-vm-prerelease-addonv2-matrix.ts: the repo-local --check contract now truthfully verifies spec/probe identity, exact rows 73/74/215/219, VM-vs-VMSS tension, row-215 skip_upgrade narrowing, row-219 ENO narrowing, and preserved minimal live create+GET scaffolding without any cloud work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Roll the newly added addonv2 replay check contract into durable model/knowledge-map evidence for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade by linking the canonical replay, mounted-source boundaries, and the new repo-local assertion outputs into one repo-local archive summary that states exactly what is ready now versus what still remains non-executed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact replay/spec/source/evidence files for rows 73/74/215/219, explains why the path remains ready rather than pass, and truthfully separates repo-local contract proof from unimplemented live scale/upgrade/overlay-VPA/ENO execution semantics.",
+        "If model or knowledge-map files need a narrow repo-local update to reflect the new contract evidence, the task makes that update and quotes the exact delta; otherwise it states explicitly why no model file changed.",
+        "No cloud-mutating or remote execution commands are run; the task stays repo-local and does not reopen the external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-path:path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:22:15.884Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626_20260626032215",
+        "assigned_at": "2026-06-26T03:22:15.933Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626_20260626032215",
+        "worker_started_at": "2026-06-26T03:22:36.816Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable repo-local rollup artifact `evidence/archive/managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626.md`, linking the canonical path/spec/replay, mounted-source boundaries for rows 73/74/215/219, and the new 2026-06-26 replay-check evidence while explaining why the path remains ready rather than pass.",
+        "last_worker_completed_at": "2026-06-26T03:23:57.776Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:24:26.695Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after verifying the archive rollup cites rows 73/74/215/219 via canonical spec/replay/source artifacts, explicitly preserves path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade as ready rather than pass, states no cloud/remote execution ran, leaves the external-human wait family untouched, and justifies no additional model-file update because the accepted ready/non-final posture already remained correct."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626"
+      ],
+      "result": "Created the durable repo-local rollup artifact `evidence/archive/managementplane-addon-vm-prerelease-addonv2-model-evidence-rollup-20260626.md`, linking the canonical path/spec/replay, mounted-source boundaries for rows 73/74/215/219, and the new 2026-06-26 replay-check evidence while explaining why the path remains ready rather than pass.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:24:26.695Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after verifying the archive rollup cites rows 73/74/215/219 via canonical spec/replay/source artifacts, explicitly preserves path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade as ready rather than pass, states no cloud/remote execution ran, leaves the external-human wait family untouched, and justifies no additional model-file update because the accepted ready/non-final posture already remained correct."
+      },
+      "status": "done"
+    },
+    {
+      "id": "sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted Go e2ev3 source carriers for VM prerelease SGX addon rows 57, 58, and 59 into exact repo-local path/spec/model next actions without cloud mutation, starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any referenced scenario definitions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the exact mounted source carriers for path.sgx-addon.vm-prerelease.coffeelake-out-of-proc, path.sgx-addon.vm-prerelease.icelake-out-of-proc, and path.sgx-addon.vm-prerelease.inproc-quote-helper-disabled, including row numbers, helper/scenario names, key inputs, expected behaviors, and adjacent surfaces.",
+        "Artifact states whether the three rows should stay separate or share a bounded common source/spec branch, and names the exact next repo-local follow-up leaf or leaves (feature/spec/replay/model) needed for each uncovered path without reopening already-covered external-wait work or running cloud mutation.",
+        "If any of the rows are already covered by existing repo-local feature/spec/replay/model assets, the artifact cites those assets and records the remaining gap precisely instead of duplicating work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sgx-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:34:16.936Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626_20260626033416",
+        "assigned_at": "2026-06-26T03:34:16.983Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626_20260626033416",
+        "worker_started_at": "2026-06-26T03:34:34.725Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new archive artifact mapping VM prerelease SGX rows 57-59 from the mounted e2ev3/e2ev2 source chain into exact repo-local path/spec/model carriers, and confirmed no additional repo-local follow-up leaf is needed unless the goal changes to live execution.",
+        "last_worker_completed_at": "2026-06-26T03:36:33.709Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:37:11.608Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626.md: mounted e2ev3 prerelease is only a negative boundary, exact row 57/58/59 carriers come from mounted e2ev2 VM matrix + SGX family matrices + handwritten SGX suites, and existing repo-local SGX matrix feature/spec/replay plus row-local model paths already cover all three rows with no new repo-local follow-up needed unless the goal changes to live execution."
+      },
+      "session_id": "s_task_sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created a new archive artifact mapping VM prerelease SGX rows 57-59 from the mounted e2ev3/e2ev2 source chain into exact repo-local path/spec/model carriers, and confirmed no additional repo-local follow-up leaf is needed unless the goal changes to live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:37:11.608Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/sgx-addon-vm-prerelease-row57-59-mounted-source-boundary-map-20260626.md: mounted e2ev3 prerelease is only a negative boundary, exact row 57/58/59 carriers come from mounted e2ev2 VM matrix + SGX family matrices + handwritten SGX suites, and existing repo-local SGX matrix feature/spec/replay plus row-local model paths already cover all three rows with no new repo-local follow-up needed unless the goal changes to live execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted Go source carriers for VM prerelease row 60 legacy addon path path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling into exact repo-local path/spec/model next actions without cloud mutation, starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any referenced scenario definitions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the exact mounted source carriers for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling, including the row number, scenario/helper names, key inputs, expected behaviors, and adjacent addon surfaces.",
+        "Artifact states whether row 60 should land as a separate path or share a bounded common source/spec branch with existing addon work, and names the exact next repo-local follow-up leaf or leaves needed for any uncovered feature/spec/replay/model gap without reopening external-wait work or running cloud mutation.",
+        "If row 60 is already covered by existing repo-local feature/spec/replay/model assets, the artifact cites those assets and records the remaining gap precisely instead of duplicating work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:37:11.665Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626_20260626033711",
+        "assigned_at": "2026-06-26T03:37:11.715Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626_20260626033711",
+        "worker_started_at": "2026-06-26T03:37:24.520Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact mapping mounted-source carriers for managementplane-addon VM prerelease row 60, confirming the dedicated canonical path/spec/model already exist and identifying two precise repo-local follow-up leaves: replay-body contract repair and coverage-row normalization.",
+        "last_worker_completed_at": "2026-06-26T03:38:57.991Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:39:30.392Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive artifact proves row-60 remains a separate canonical path, cites the mounted e2ev2/addon source carriers, confirms existing spec/replay/model assets, and narrows remaining work to replay-body contract repair plus coverage-row normalization without reopening cloud or external-wait work."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row60-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the requested archive artifact mapping mounted-source carriers for managementplane-addon VM prerelease row 60, confirming the dedicated canonical path/spec/model already exist and identifying two precise repo-local follow-up leaves: replay-body contract repair and coverage-row normalization.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:39:30.392Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive artifact proves row-60 remains a separate canonical path, cites the mounted e2ev2/addon source carriers, confirms existing spec/replay/model assets, and narrows remaining work to replay-body contract repair plus coverage-row normalization without reopening cloud or external-wait work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair replays/managementplane-addon-vm-prerelease-httpapplicationrouting-disable-scaling.ts so the repo-local replay body matches the mounted row-60 contract: preserve the no-addons create shape, fetch kubeconfig, inspect CPA/CoreDNS state, perform the exact 1->2->4 scaling ladder, send the legacy httpApplicationRouting disable update, and emit archive evidence of the repaired source-faithful check/execute surface without cloud mutation in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626.md"
+      ],
+      "acceptance": [
+        "Replay/body evidence cites the mounted source carriers and identifies the exact repaired operations/assertions now present in replays/managementplane-addon-vm-prerelease-httpapplicationrouting-disable-scaling.ts, including kubeconfig fetch, CPA/CoreDNS inspection, 1->2->4 scaling, and legacy httpApplicationRouting disable update.",
+        "Artifact states any still-unimplemented or deliberately stubbed step precisely, with bounded next repair if needed, instead of claiming source fidelity without code evidence.",
+        "No new feature path split, cloud mutation, or external-human wait is introduced; the task only repairs the existing canonical row-60 replay contract and records repo-local verification evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:39:30.441Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626_20260626033930",
+        "assigned_at": "2026-06-26T03:39:30.489Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626_20260626033930",
+        "worker_started_at": "2026-06-26T03:39:44.068Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-60 replay carrier in replays/managementplane-addon-vm-prerelease-httpapplicationrouting-disable-scaling.ts to encode the mounted no-addons+kubeconfig+CPA/CoreDNS+1→2→4+legacy-disable contract, and wrote archive evidence at evidence/archive/managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T03:44:19.984Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:44:58.660Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence cites mounted row-60 addon sources and the repaired replay now visibly carries the no-addons create shape, kubeconfig fetch, CPA/CoreDNS inspection, exact 1->2->4 scaling ladder, and legacy httpApplicationRouting disable update without introducing new waits or cloud mutation in this task."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626"
+      ],
+      "result": "Repaired the row-60 replay carrier in replays/managementplane-addon-vm-prerelease-httpapplicationrouting-disable-scaling.ts to encode the mounted no-addons+kubeconfig+CPA/CoreDNS+1→2→4+legacy-disable contract, and wrote archive evidence at evidence/archive/managementplane-addon-vm-prerelease-row60-replay-body-contract-repair-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:44:58.660Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence cites mounted row-60 addon sources and the repaired replay now visibly carries the no-addons create shape, kubeconfig fetch, CPA/CoreDNS inspection, exact 1->2->4 scaling ladder, and legacy httpApplicationRouting disable update without introducing new waits or cloud mutation in this task."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a no-cloud, mounted-source-backed boundary/model rollup for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling: map accepted inputs, expected behavior, adjacent surfaces, execute-only unknown edges, and any exact spec/model/evidence updates now justified by the repaired row-60 replay carrier without reopening the external-human wait family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the mounted row-60 source carriers plus the repaired replay and states the exact accepted create/update/scale/inspect boundary for path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling, including no-addons create shape, kubeconfig/CPA/CoreDNS checks, 1->2->4 ladder, and legacy httpApplicationRouting disable semantics.",
+        "Artifact distinguishes what is source-backed vs execute-only unknown, names adjacent/sibling addon surfaces worth not conflating with row 60, and records any remaining bounded gaps without inventing new blockers or cloud work.",
+        "Any repo-local model/spec/evidence text updates made by the task are reflected in the artifact with exact file references, or the artifact explicitly says no additional model/spec edit was justified beyond the rollup."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:44:58.704Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626_20260626034458",
+        "assigned_at": "2026-06-26T03:44:58.748Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626_20260626034458",
+        "worker_started_at": "2026-06-26T03:45:08.105Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-60 no-cloud rollup artifact at evidence/archive/managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626.md, grounded in mounted source, the repaired replay, and existing maintained spec/model surfaces; no further model/spec edits were justified.",
+        "last_worker_completed_at": "2026-06-26T03:46:31.663Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:47:01.963Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626.md cites mounted row-60 source carriers plus the repaired replay, states the exact no-addons create + kubeconfig/CPA/CoreDNS inspect + 1->2->4 ladder + legacy httpApplicationRouting disable boundary, distinguishes execute-only unknowns from source-backed knowledge, and explicitly records that no additional model/spec edits were justified."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626"
+      ],
+      "result": "Produced the requested row-60 no-cloud rollup artifact at evidence/archive/managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626.md, grounded in mounted source, the repaired replay, and existing maintained spec/model surfaces; no further model/spec edits were justified.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:47:01.963Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/managementplane-addon-vm-prerelease-row60-source-boundary-model-rollup-20260626.md cites mounted row-60 source carriers plus the repaired replay, states the exact no-addons create + kubeconfig/CPA/CoreDNS inspect + 1->2->4 ladder + legacy httpApplicationRouting disable boundary, distinguishes execute-only unknowns from source-backed knowledge, and explicitly records that no additional model/spec edits were justified."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local virtualmachine-prerelease coverage ledger metadata drift for the canonical row-60 Scenario_Addon branch so the coverage artifacts align with path.managementplane-addon.vm-prerelease-httpapplicationrouting-disable-scaling and its maintained row-60 naming without changing product verdicts or broadening scope.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626.md"
+      ],
+      "acceptance": [
+        "Update the relevant repo-local coverage ledger artifact(s) to reconcile the Scenario_Addon row number with the maintained canonical row-60 branch, or document an exact intentional mapping if a direct rewrite is not correct; cite every changed file and the before/after row mapping.",
+        "Archive evidence explains why the row-drift was metadata-only, confirms no model/path verdict change was made, and shows the repaired ledger now aligns with the row-60 spec/path/replay lineage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:47:02.008Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626_20260626034702",
+        "assigned_at": "2026-06-26T03:47:02.054Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626_20260626034702",
+        "worker_started_at": "2026-06-26T03:47:15.210Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the VM prerelease row-60 coverage-ledger metadata drift by making the maintained row-62 coverage entry explicitly alias canonical row 60, updating the JSON/MD/features ledgers and adding an archive note documenting the before/after mapping without changing product verdicts.",
+        "last_worker_completed_at": "2026-06-26T03:50:09.506Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:50:53.984Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the archive note: the repair truthfully preserved ledger row 62 while adding explicit canonical row-60 aliasing across the JSON/MD/features ledgers, and it documented that no spec/replay/model verdict or execute surface changed."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row60-coverage-ledger-row-drift-repair-20260626"
+      ],
+      "result": "Repaired the VM prerelease row-60 coverage-ledger metadata drift by making the maintained row-62 coverage entry explicitly alias canonical row 60, updating the JSON/MD/features ledgers and adding an archive note documenting the before/after mapping without changing product verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:50:53.984Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the archive note: the repair truthfully preserved ledger row 62 while adding explicit canonical row-60 aliasing across the JSON/MD/features ledgers, and it documented that no spec/replay/model verdict or execute surface changed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source boundary for VM prerelease row 61 core-addon compatibility so the repo-local knowledge map captures the canonical carrier, expected CoreDNS/metrics-server compatibility assertions, and the next no-cloud artifact/model follow-up without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted AKS RP source file(s)/scenario definitions for the row-61 core-addon compatibility branch and records the exact carrier lineage (scenario, helper entry points, canonical row naming, and adjacent surfaces) without guessing from stale ledger numbering.",
+        "The note spells out the accepted inputs, expected behavior assertions, known repo-local artifacts or gaps (spec/replay/model/coverage ledger), and recommends one bounded next no-cloud follow-up if additional repair is warranted; no cloud execution or external-human wait work is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:50:54.032Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626_20260626035054",
+        "assigned_at": "2026-06-26T03:50:54.083Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626_20260626035054",
+        "worker_started_at": "2026-06-26T03:51:10.287Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-61 mounted-source boundary map at evidence/archive/managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626.md, grounding the canonical carrier, expectations, adjacent surfaces, and one bounded no-cloud follow-up from mounted AKS RP source and existing repo-local artifacts.",
+        "last_worker_completed_at": "2026-06-26T03:52:52.266Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:54:05.111Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626.md: mounted source and repo-local artifacts establish the exact row-61 carrier, oldest/latest CoreDNS+metrics-server expectations, adjacent-surface separation, and the bounded no-cloud successor. Keep managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626 as the single active follow-up because replay-body fidelity remains the only unresolved repo-local gap."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Produced the requested row-61 mounted-source boundary map at evidence/archive/managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626.md, grounding the canonical carrier, expectations, adjacent surfaces, and one bounded no-cloud follow-up from mounted AKS RP source and existing repo-local artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:54:05.111Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/managementplane-addon-vm-prerelease-row61-mounted-source-boundary-map-20260626.md: mounted source and repo-local artifacts establish the exact row-61 carrier, oldest/latest CoreDNS+metrics-server expectations, adjacent-surface separation, and the bounded no-cloud successor. Keep managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626 as the single active follow-up because replay-body fidelity remains the only unresolved repo-local gap."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local row-61 replay body so virtualmachine-prerelease-row61-core-addon-compatibility.ts faithfully preserves the mounted two-branch oldest/latest CoreDNS and metrics-server compatibility contract without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The row-61 replay source is updated to preserve separate oldest/latest version branches, per-branch kubeconfig acquisition, CoreDNS nslookup bing.com validation, metrics-server availability validation, replica_num=2 validation, and per-branch cleanup structure consistent with the mounted handwritten source boundary.",
+        "An archive note cites the mounted source contract, summarizes the replay-body changes plus any remaining bounded repo-local gaps, and records local-only validation evidence (for example dry-run/check output or static contract inspection) with no cloud execution or external-human wait work introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:53:21.660Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626_20260626035323",
+        "assigned_at": "2026-06-26T03:53:23.976Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626_20260626035323",
+        "worker_started_at": "2026-06-26T03:53:40.792Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired replays/virtualmachine-prerelease-row61-core-addon-compatibility.ts to preserve the mounted row-61 oldest/latest two-branch CoreDNS and metrics-server contract, and archived local validation evidence in evidence/archive/managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T03:58:19.186Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T03:58:56.446Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of the archive artifact and replay source: the repaired row-61 carrier now preserves the mounted oldest/latest two-branch contract, per-branch kubeconfig acquisition, CoreDNS nslookup bing.com, metrics-server availability, replica_num=2, ordered cleanup, and truthful execute gating with local validation evidence."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626"
+      ],
+      "result": "Repaired replays/virtualmachine-prerelease-row61-core-addon-compatibility.ts to preserve the mounted row-61 oldest/latest two-branch CoreDNS and metrics-server contract, and archived local validation evidence in evidence/archive/managementplane-addon-vm-prerelease-row61-replay-body-contract-repair-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T03:58:56.446Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of the archive artifact and replay source: the repaired row-61 carrier now preserves the mounted oldest/latest two-branch contract, per-branch kubeconfig acquisition, CoreDNS nslookup bing.com, metrics-server availability, replica_num=2, ordered cleanup, and truthful execute gating with local validation evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Roll the repaired row-61 replay contract back into the repo-local capability model by updating the row-61 path/spec/feature/evidence story to reflect the mounted two-branch CoreDNS+metrics-server boundary, the restored no-cloud replay carrier, and the exact remaining live-only unknowns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive note links the repaired replay, cites the mounted row-61 source contract, and states the truthful repo-local verdict for path.virtualmachine-prerelease.row61-core-addon-compatibility, including which claims are now structurally covered and which remain live-execution unknowns.",
+        "Any needed repo-local model/spec/feature/status artifacts are updated so future status/reporting reflects the repaired row-61 oldest/latest CoreDNS and metrics-server contract without reopening unrelated blocked external-human waits or introducing cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T03:58:56.496Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626_20260626035856",
+        "assigned_at": "2026-06-26T03:58:56.545Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626_20260626035856",
+        "worker_started_at": "2026-06-26T03:59:10.768Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the row-61 repo-local capability surfaces to reflect the repaired two-branch CoreDNS+metrics-server carrier, added a durable rollup note at evidence/archive/managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626.md, refreshed model/spec/index metadata, and regenerated maintained knowledge-map views.",
+        "last_worker_completed_at": "2026-06-26T04:01:51.509Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:02:30.719Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626.md cites the mounted row-61 source contract, records the repaired two-branch CoreDNS+metrics-server replay carrier, and documents the truthful repo-local verdict as source-grounded direct-check pass with live behavior still execute-gated/unknown."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626"
+      ],
+      "result": "Updated the row-61 repo-local capability surfaces to reflect the repaired two-branch CoreDNS+metrics-server carrier, added a durable rollup note at evidence/archive/managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626.md, refreshed model/spec/index metadata, and regenerated maintained knowledge-map views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:02:30.719Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managementplane-addon-vm-prerelease-row61-model-status-rollup-20260626.md cites the mounted row-61 source contract, records the repaired two-branch CoreDNS+metrics-server replay carrier, and documents the truthful repo-local verdict as source-grounded direct-check pass with live behavior still execute-gated/unknown."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-checkpoint-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Checkpoint the accepted row-61 repo-local repair/model rollup slice by reviewing dirty repo files, validating the domain workspace, and recording one coherent commit hash tied to the completed row-61 repair branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-20260626.md"
+      ],
+      "acceptance": [
+        "git status/diff are reviewed against the accepted row-61 branch, domain checks needed for this slice pass or are captured with exact evidence, and one coherent repo commit records only the done row-61/model-view updates.",
+        "The archive note records the commit hash, checked commands/outcomes, and which accepted row-61/model artifacts were included so future review can link the durable evidence to the planner checkpoint."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:02:30.769Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-checkpoint-20260626_20260626040230",
+        "assigned_at": "2026-06-26T04:02:30.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-checkpoint-20260626_20260626040230",
+        "worker_started_at": "2026-06-26T04:02:49.162Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Reviewed the row-61 checkpoint surface, verified the row-61 replay/spec slice locally, and wrote a blocker note at evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-20260626.md. A coherent row-61-only commit hash could not be recorded because shared dirty files also contain unrelated row60/addonv2/ASM changes and full model validation is already red outside this slice.",
+        "last_worker_completed_at": "2026-06-26T04:05:52.977Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:06:49.084Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker's blocker review: the row-61 replay/spec slice is locally verified and the archive note proves checkpoint acceptance is not met because shared dirty files mix unrelated row60/addonv2/ASM changes and no truthful row-61-only commit hash can yet be recorded. Successor task managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626 now owns isolating a clean row-61 checkpoint surface before retrying the commit."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-20260626"
+      ],
+      "result": "Reviewed the row-61 checkpoint surface, verified the row-61 replay/spec slice locally, and wrote a blocker note at evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-20260626.md. A coherent row-61-only commit hash could not be recorded because shared dirty files also contain unrelated row60/addonv2/ASM changes and full model validation is already red outside this slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:06:49.084Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker's blocker review: the row-61 replay/spec slice is locally verified and the archive note proves checkpoint acceptance is not met because shared dirty files mix unrelated row60/addonv2/ASM changes and no truthful row-61-only commit hash can yet be recorded. Successor task managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626 now owns isolating a clean row-61 checkpoint surface before retrying the commit."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Isolate the accepted row-61 checkpoint surface into a truthful row-61-only dirty/commit-ready slice by separating unrelated row60/addonv2/ASM changes from shared files or by preparing a clean branch that carries only the row-61 replay/spec/coverage/model/evidence hunks.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626.md"
+      ],
+      "acceptance": [
+        "The worker proves with exact git status/diff evidence that the remaining dirty surface or prepared branch contains only row-61 replay/spec/coverage/model/view/evidence changes needed for the checkpoint, with unrelated row60/addonv2/ASM edits removed or moved aside.",
+        "The archive note records the isolation method, affected files/hunks, any residual global validation caveat, and the exact resume command/path for rerunning the final row-61 checkpoint commit task once the surface is clean."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:06:48.984Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626_20260626040649",
+        "assigned_at": "2026-06-26T04:06:49.034Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626_20260626040649",
+        "worker_started_at": "2026-06-26T04:06:59.460Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the owner-facing isolation note at evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626.md, classifying the current mixed dirty surface, identifying the truthful row-61-only slice, and recording the exact resume recipe for rerunning the final checkpoint task once unrelated row60/addonv2/ASM work is moved aside.",
+        "last_worker_completed_at": "2026-06-26T04:09:28.607Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:10:18.643Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note as sufficient owner-review output for analysis: it proves the current dirty tree is still mixed, precisely identifies the truthful row-61-only slice and excluded row60/addonv2/ASM surface, and records the exact clean-branch resume recipe. The task did not complete repo isolation itself, so the next leaf must perform the actual clean-slice preparation plus final row-61 checkpoint rerun."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626"
+      ],
+      "result": "Wrote the owner-facing isolation note at evidence/archive/managementplane-addon-vm-prerelease-row61-checkpoint-isolation-20260626.md, classifying the current mixed dirty surface, identifying the truthful row-61-only slice, and recording the exact resume recipe for rerunning the final checkpoint task once unrelated row60/addonv2/ASM work is moved aside.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:10:18.643Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note as sufficient owner-review output for analysis: it proves the current dirty tree is still mixed, precisely identifies the truthful row-61-only slice and excluded row60/addonv2/ASM surface, and records the exact clean-branch resume recipe. The task did not complete repo isolation itself, so the next leaf must perform the actual clean-slice preparation plus final row-61 checkpoint rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare a clean row-61-only branch/worktree from base 76672aea, carry only the accepted row-61 replay/spec/evidence files plus row-61 shared-file hunks, verify the isolated surface with exact git status/diff evidence, and rerun the final row-61 checkpoint flow so the row-61 slice can be committed coherently.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626.md"
+      ],
+      "acceptance": [
+        "Exact git status/diff evidence shows the prepared branch or dirty surface contains only row-61 replay/spec/evidence files and row-61-anchored hunks in shared model/view/spec-index files, with row60/addonv2/ASM coverage-ledger and shared-file contamination absent.",
+        "The archive note records the clean-slice method, the exact verification commands/outcomes for the isolated row-61 replay/spec plus shared files, and the rerun outcome of the final row-61 checkpoint flow including the resulting commit hash if successful or the exact remaining blocker if a coherent checkpoint still cannot be recorded."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managementplane-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:10:18.696Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626_20260626041018",
+        "assigned_at": "2026-06-26T04:10:18.747Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626",
+        "worker_started_attempt_id": "a_managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626_20260626041018",
+        "worker_started_at": "2026-06-26T04:10:35.960Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Prepared an isolated row-61-only worktree branch from base 76672aea, reran the row-61 checkpoint check/gate flow there, committed the clean slice as 8d48ed2fc1c9ff13eeb6a0d885f69a4482a719fe, and recorded the full method/evidence in evidence/archive/managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T04:20:54.239Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:21:51.063Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the archive artifact: it shows a row-61-only worktree from base 76672aea, row60/addonv2/ASM contamination grep empty, rerun check passed, execute gate stayed intentionally gated, and the clean slice was committed coherently as 8d48ed2fc1c9ff13eeb6a0d885f69a4482a719fe."
+      },
+      "session_id": "s_task_managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626",
+      "session_history": [
+        "s_task_managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626"
+      ],
+      "result": "Prepared an isolated row-61-only worktree branch from base 76672aea, reran the row-61 checkpoint check/gate flow there, committed the clean slice as 8d48ed2fc1c9ff13eeb6a0d885f69a4482a719fe, and recorded the full method/evidence in evidence/archive/managementplane-addon-vm-prerelease-row61-clean-slice-checkpoint-rerun-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:21:51.063Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the archive artifact: it shows a row-61-only worktree from base 76672aea, row60/addonv2/ASM contamination grep empty, rerun check passed, execute gate stayed intentionally gated, and the clean slice was committed coherently as 8d48ed2fc1c9ff13eeb6a0d885f69a4482a719fe."
+      },
+      "status": "done"
+    },
+    {
+      "id": "sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the completed SGX VM prerelease rows 57-59 mounted-source boundary map into one source-backed row matrix that states the exact input path, expectation path, execution gate, and next spec/replay authoring target for each SGX row (57 Coffeelake out-of-proc, 58 Icelake out-of-proc, 59 in-proc quote-helper-disabled).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note quotes the mounted source carriers for rows 57-59 from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any referenced scenario definitions, and maps each row to its exact candidate model path(s), accepted inputs, expected assertions, and execute/no-cloud boundary.",
+        "The note identifies the exact existing repo-local spec/replay coverage for each row and names the single next authoring target needed after the matrix, without broadening into unrelated VM prerelease families or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sgx-addon-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:21:51.111Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626_20260626042151",
+        "assigned_at": "2026-06-26T04:21:51.158Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626",
+        "worker_started_attempt_id": "a_sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626_20260626042151",
+        "worker_started_at": "2026-06-26T04:22:04.178Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested SGX rows 57-59 source-backed spec/replay matrix note at evidence/archive/sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626.md, mapping each row to exact mounted carriers, model path, input/expectation path, execution boundary, and confirming no further spec/replay authoring is needed.",
+        "last_worker_completed_at": "2026-06-26T04:23:53.369Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:24:43.224Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626.md: the note quotes the mounted source carriers and e2ev3 negative boundary for rows 57-59, maps each row to exact model/input/expectation paths plus the no-cloud execution gate, and truthfully resolves the acceptance question by making the single next authoring-target decision explicit as none because the shared SGX matrix feature/spec/replay carrier already exists."
+      },
+      "session_id": "s_task_sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626",
+      "session_history": [
+        "s_task_sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626"
+      ],
+      "result": "Wrote the requested SGX rows 57-59 source-backed spec/replay matrix note at evidence/archive/sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626.md, mapping each row to exact mounted carriers, model path, input/expectation path, execution boundary, and confirming no further spec/replay authoring is needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:24:43.224Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/sgx-addon-vm-prerelease-row57-59-spec-replay-matrix-20260626.md: the note quotes the mounted source carriers and e2ev3 negative boundary for rows 57-59, maps each row to exact model/input/expectation paths plus the no-cloud execution gate, and truthfully resolves the acceptance question by making the single next authoring-target decision explicit as none because the shared SGX matrix feature/spec/replay carrier already exists."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source carrier, accepted input path, expected assertion path, execute/no-cloud boundary, and existing repo-local spec/replay coverage for VM prerelease row 39 Disable SSH lifecycle without broadening into rows 40-43 or live cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note quotes the mounted VM prerelease/e2ev3 source carrier for row 39 from /app/sources/aks-rp and any referenced scenario definitions, and maps the row to path.node-pool-config.disable-ssh-lifecycle with its exact candidate input path, expected assertions, and execute/no-cloud boundary.",
+        "The note identifies whether exact repo-local spec/replay/model coverage for row 39 already exists and names the single next authoring target only if a real gap remains, without reopening the externally blocked rows 40-43 family or inventing cloud execution work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row39-disable-ssh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:24:43.275Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626_20260626042443",
+        "assigned_at": "2026-06-26T04:24:43.323Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626_20260626042443",
+        "worker_started_at": "2026-06-26T04:24:57.807Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-39 mounted-source boundary map at evidence/archive/virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626.md, confirming exact mounted source, input/expectation path, execute boundary, and that repo-local spec/replay/model coverage already exists with no new authoring target.",
+        "last_worker_completed_at": "2026-06-26T04:26:06.369Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:26:59.205Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626.md: it quotes the mounted source carrier, maps row 39 to path.node-pool-config.disable-ssh-lifecycle, preserves the no-cloud execute boundary, and confirms exact repo-local spec/replay/model coverage already exists with no new row-39 authoring target."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the row-39 mounted-source boundary map at evidence/archive/virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626.md, confirming exact mounted source, input/expectation path, execute boundary, and that repo-local spec/replay/model coverage already exists with no new authoring target.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:26:59.205Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/virtualmachine-prerelease-row39-disable-ssh-mounted-source-boundary-map-20260626.md: it quotes the mounted source carrier, maps row 39 to path.node-pool-config.disable-ssh-lifecycle, preserves the no-cloud execute boundary, and confirms exact repo-local spec/replay/model coverage already exists with no new row-39 authoring target."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source carrier, candidate input path, expected assertion path, execute/no-cloud boundary, and existing repo-local spec/replay/model coverage for the VM prerelease system-assigned managed identity lifecycle path without broadening into shared-identity or role-assignment siblings or live cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note quotes the exact mounted VM prerelease/e2ev3 source carrier for the system-assigned managed identity lifecycle path from /app/sources/aks-rp and any referenced scenario definitions, and maps it to path.secops-identity-binding-system-assigned with its candidate input path, expected assertions, and execute/no-cloud boundary.",
+        "The note identifies whether exact repo-local spec/replay/model coverage for this path already exists and names the single next authoring target only if a real gap remains, without reopening the external shared-identity wait family or inventing live cloud execution work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row35-system-assigned-identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:26:59.255Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626_20260626042659",
+        "assigned_at": "2026-06-26T04:26:59.304Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626_20260626042659",
+        "worker_started_at": "2026-06-26T04:27:08.469Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested mounted-source boundary note at evidence/archive/secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626.md, mapping the exact AKS RP mounted carrier, canonical path/spec/replay, current check-only vs execute boundary, and confirming no further repo-local authoring gap remains.",
+        "last_worker_completed_at": "2026-06-26T04:29:00.128Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:29:45.412Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive boundary map after verifying it quotes the exact mounted source carrier (Scenario_MSI_SystemAssigned_Identity), maps the canonical path/spec/replay chain for path.secops-identity-binding-system-assigned, and truthfully concludes that no further repo-local authoring gap remains beyond the already-modeled execute-scope boundary."
+      },
+      "session_id": "s_task_secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Authored the requested mounted-source boundary note at evidence/archive/secops-identity-binding-system-assigned-mounted-source-boundary-map-20260626.md, mapping the exact AKS RP mounted carrier, canonical path/spec/replay, current check-only vs execute boundary, and confirming no further repo-local authoring gap remains.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:29:45.412Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive boundary map after verifying it quotes the exact mounted source carrier (Scenario_MSI_SystemAssigned_Identity), maps the canonical path/spec/replay chain for path.secops-identity-binding-system-assigned, and truthfully concludes that no further repo-local authoring gap remains beyond the already-modeled execute-scope boundary."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-credential-provider-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mounted-source carrier, candidate input path, expected assertion path, execute/no-cloud boundary, and existing repo-local spec/replay/model coverage for path.cloud-provider.credential-provider without broadening into live cloud execution or unrelated cloud-provider siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note quotes the exact mounted AKS RP/e2ev3 source carrier from /app/sources/aks-rp for the credential-provider create-time path and maps it to path.cloud-provider.credential-provider with its candidate input path, expected assertions, and execute/no-cloud boundary.",
+        "The note identifies whether exact repo-local spec/replay/model coverage for this path already exists and names the single next authoring target only if a real repo-local gap remains, without inventing live cloud execution work or reopening unrelated blocked families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:29:45.462Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-mounted-source-boundary-map-20260626_20260626042945",
+        "assigned_at": "2026-06-26T04:29:45.512Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-mounted-source-boundary-map-20260626_20260626042945",
+        "worker_started_at": "2026-06-26T04:29:58.821Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source boundary map note for path.cloud-provider.credential-provider under evidence/archive, grounding the exact mounted source carrier, current repo-local coverage, and the execute/no-cloud boundary gap without widening into live work.",
+        "last_worker_completed_at": "2026-06-26T04:31:11.975Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:31:45.451Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/cloud-provider-credential-provider-mounted-source-boundary-map-20260626.md: it quotes the exact mounted Speculor credential-provider carrier, maps the maintained repo-local feature/spec/replay/model surfaces for path.cloud-provider.credential-provider, preserves the no-cloud boundary, and correctly isolates the one remaining repo-local gap to execute-gate enforcement in replays/cloud-provider-credential-provider.ts rather than inventing live work."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the requested mounted-source boundary map note for path.cloud-provider.credential-provider under evidence/archive, grounding the exact mounted source carrier, current repo-local coverage, and the execute/no-cloud boundary gap without widening into live work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:31:45.451Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/cloud-provider-credential-provider-mounted-source-boundary-map-20260626.md: it quotes the exact mounted Speculor credential-provider carrier, maps the maintained repo-local feature/spec/replay/model surfaces for path.cloud-provider.credential-provider, preserves the no-cloud boundary, and correctly isolates the one remaining repo-local gap to execute-gate enforcement in replays/cloud-provider-credential-provider.ts rather than inventing live work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-credential-provider-execute-gate-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local execute gate for path.cloud-provider.credential-provider so replays/cloud-provider-credential-provider.ts only allows cloud mutation when --execute is present and AKS_RP_E2E_ALLOW_CLOUD_MUTATION exactly equals cloud-provider-credential-provider, while preserving the existing no-cloud/check behavior and not widening into live execution or the VM prerelease credential-provider upgrade family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-execute-gate-repair-20260626.md"
+      ],
+      "acceptance": [
+        "replays/cloud-provider-credential-provider.ts enforces the declared exact probe-specific mutation gate: cloud mutation is allowed only with --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=cloud-provider-credential-provider, and broader values such as all are rejected or treated as non-matching without weakening the no-cloud default.",
+        "The archive note records the exact replay lines changed and repo-local verification evidence (for example check-mode or dry gate evaluation) showing the unchanged no-cloud/check lane plus the repaired exact gate, without performing cloud mutation or reopening unrelated cloud-provider work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:31:45.501Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-execute-gate-repair-20260626_20260626043145",
+        "assigned_at": "2026-06-26T04:31:45.549Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-execute-gate-repair-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-execute-gate-repair-20260626_20260626043145",
+        "worker_started_at": "2026-06-26T04:32:05.190Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the cloud-provider credential-provider replay gate to require the exact probe-specific env value and added an archive note with bounded repo-local verification for check mode, unset gate, broad gate, and no-`--execute` behavior.",
+        "last_worker_completed_at": "2026-06-26T04:34:25.994Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:35:11.945Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of the archive artifact and replay text: the replay now requires the exact probe id in AKS_RP_E2E_ALLOW_CLOUD_MUTATION together with --execute, broader values like all stay gated, and the existing no-cloud/check lane remains unchanged."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-execute-gate-repair-20260626",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-execute-gate-repair-20260626"
+      ],
+      "result": "Repaired the cloud-provider credential-provider replay gate to require the exact probe-specific env value and added an archive note with bounded repo-local verification for check mode, unset gate, broad gate, and no-`--execute` behavior.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:35:11.945Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of the archive artifact and replay text: the replay now requires the exact probe id in AKS_RP_E2E_ALLOW_CLOUD_MUTATION together with --execute, broader values like all stay gated, and the existing no-cloud/check lane remains unchanged."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-credential-provider-model-status-rollup-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the repo-local cloud-provider credential-provider capability record after the execute-gate repair: reconcile path.cloud-provider.credential-provider across the mounted-source boundary note, repaired replay gate, and model/spec status so future work has one exact no-cloud/live-execute contract without reopening unrelated cloud-provider families or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-model-status-rollup-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note cites the mounted-source boundary artifact plus the execute-gate repair evidence and records the exact future live-rerun gate for path.cloud-provider.credential-provider: cloud mutation needs --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=cloud-provider-credential-provider, while check/default stay non-mutating.",
+        "Any needed durable repo-local status surface is reconciled so path.cloud-provider.credential-provider no longer depends on the stale broad-gate assumption; if model or spec files change, the note cites them exactly, and if status remains unknown/execution-gated the note explains why without reopening the VM prerelease credential-provider upgrade family or performing cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:35:11.999Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-model-status-rollup-20260626_20260626043512",
+        "assigned_at": "2026-06-26T04:35:12.058Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-model-status-rollup-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-model-status-rollup-20260626_20260626043512",
+        "worker_started_at": "2026-06-26T04:35:23.806Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/cloud-provider-credential-provider-model-status-rollup-20260626.md` to reconcile the baseline credential-provider path’s mounted-source boundary, current unknown status, and exact post-repair live gate contract; also generated fresh check-mode and broad-gate proof artifacts confirming `all` no longer unlocks execution.",
+        "last_worker_completed_at": "2026-06-26T04:37:50.099Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:38:32.001Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/cloud-provider-credential-provider-model-status-rollup-20260626.md cites the mounted-source boundary and fresh check/broad-gate proof artifacts, preserves path.cloud-provider.credential-provider as unknown, and records the exact future live gate as --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=cloud-provider-credential-provider while rejecting stale broad-gate assumptions."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-model-status-rollup-20260626",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-model-status-rollup-20260626"
+      ],
+      "result": "Created `evidence/archive/cloud-provider-credential-provider-model-status-rollup-20260626.md` to reconcile the baseline credential-provider path’s mounted-source boundary, current unknown status, and exact post-repair live gate contract; also generated fresh check-mode and broad-gate proof artifacts confirming `all` no longer unlocks execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:38:32.001Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/cloud-provider-credential-provider-model-status-rollup-20260626.md cites the mounted-source boundary and fresh check/broad-gate proof artifacts, preserves path.cloud-provider.credential-provider as unknown, and records the exact future live gate as --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=cloud-provider-credential-provider while rejecting stale broad-gate assumptions."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted-source carrier and repo-local replay/spec surfaces for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix so the project has one exact no-cloud source-backed boundary note for that upgrade family before any execution or model promotion work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note cites the exact mounted Go source files and any checked-in replay/spec artifacts for the VM prerelease credential-provider upgrade matrix, naming the concrete row/scenario carriers, lifecycle steps, and adjacent surfaces without reopening the baseline create-time credential-provider path.",
+        "The note states the exact next safe action for this family (for example model update, replay hardening, or bounded execute-prep) and remains repo-local/no-cloud."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:38:32.059Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626_20260626043832",
+        "assigned_at": "2026-06-26T04:38:32.113Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626_20260626043832",
+        "worker_started_at": "2026-06-26T04:38:40.088Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested no-cloud source-boundary archive note at evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626.md, grounding the VM prerelease credential-provider upgrade family in mounted Go source plus repo-local spec/replay/readiness surfaces and stating the exact next safe repo-local action.",
+        "last_worker_completed_at": "2026-06-26T04:40:51.162Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:41:24.957Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626.md: the archive note cites exact mounted credentialprovider source files (nodeimageupgrade.go, upgrade.go, common.go, suggestion.go), preserves the row/scenario split and baseline boundary, names the canonical repo-local spec/replay carriers, and states the bounded next safe action as replay --check plus spec --dry-run only."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626"
+      ],
+      "result": "Wrote the requested no-cloud source-boundary archive note at evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626.md, grounding the VM prerelease credential-provider upgrade family in mounted Go source plus repo-local spec/replay/readiness surfaces and stating the exact next safe repo-local action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:41:24.957Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-source-seed-20260626.md: the archive note cites exact mounted credentialprovider source files (nodeimageupgrade.go, upgrade.go, common.go, suggestion.go), preserves the row/scenario split and baseline boundary, names the canonical repo-local spec/replay carriers, and states the bounded next safe action as replay --check plus spec --dry-run only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Revalidate the repo-local execute-prep surfaces for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix by rerunning the shared replay in --check mode and the canonical spec in --dry-run mode, then archive the exact no-cloud results and any contract drift without reopening the baseline create-time credential-provider path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note records the exact commands, run ids, and outcomes for bun replays/vm-prerelease-tls-credential-upgrade-matrix.ts --check and bun runner/spec-runner.ts spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix --dry-run, with no cloud mutation.",
+        "The note states whether the repo-local replay/spec still preserve the row-189 vs row-214 upgrade split, any gating or plan drift found, and keeps scope separate from path.cloud-provider.credential-provider."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:41:25.011Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626_20260626044125",
+        "assigned_at": "2026-06-26T04:41:25.063Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626_20260626044125",
+        "worker_started_at": "2026-06-26T04:41:43.485Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the assigned no-cloud execute-prep checks for the VM prerelease credential-provider upgrade matrix, archived the exact replay/spec outcomes, and documented the concrete repo-local contract drift causing replay --check to fail while spec --dry-run passed.",
+        "last_worker_completed_at": "2026-06-26T04:43:19.479Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:44:06.249Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626.md records the exact no-cloud replay --check and spec --dry-run commands, confirms the row-189 vs row-214 split remains preserved, and pinpoints repo-local replay/coverage-ledger drift plus missing final assertion detail without reopening the baseline credential-provider path."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626"
+      ],
+      "result": "Ran the assigned no-cloud execute-prep checks for the VM prerelease credential-provider upgrade matrix, archived the exact replay/spec outcomes, and documented the concrete repo-local contract drift causing replay --check to fail while spec --dry-run passed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:44:06.249Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-execute-prep-20260626.md records the exact no-cloud replay --check and spec --dry-run commands, confirms the row-189 vs row-214 split remains preserved, and pinpoints repo-local replay/coverage-ledger drift plus missing final assertion detail without reopening the baseline credential-provider path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the shared VM prerelease credential-provider upgrade replay check contract by reconciling its coverage-row validation with the maintained coverage ledger and preserving failing assertion/phase detail in final archived --check output, then rerun the bounded no-cloud replay check and archive the exact repo-local outcome without reopening the baseline create-time credential-provider family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The worker identifies the exact checked-in contract to normalize (replay coverage-row validation, ledger row ids, or equivalent shared helper), updates repo-local code/docs so the VM prerelease credential-provider upgrade check no longer fails solely because of the stale 189/214 vs 191/216 ledger mismatch, and names the changed files in the archive note.",
+        "The worker reruns bun replays/vm-prerelease-tls-credential-upgrade-matrix.ts --check with a fresh run id, archives the exact command and outcome, and if the check still fails the emitted final archive evidence now preserves the concrete failing assertions/phases needed for owner review; scope remains limited to path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-credential-provider-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:44:06.298Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626_20260626044406",
+        "assigned_at": "2026-06-26T04:44:06.347Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626_20260626044406",
+        "worker_started_at": "2026-06-26T04:44:20.979Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Repaired the credential-provider-specific check contract in replays/vm-prerelease-tls-credential-upgrade-matrix.ts to accept ledger aliases 191/216 for source/spec rows 189/214, added check-mode assertion preservation, reran the bounded no-cloud check, and archived the exact outcome plus remaining out-of-scope shared-row failures.",
+        "last_worker_completed_at": "2026-06-26T04:49:46.625Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:50:21.005Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the bounded credential-provider check-contract repair succeeded by normalizing row 189/214 to ledger aliases 191/216 and preserving failing assertion detail in final --check evidence; remaining replay failure is explicitly out of scope shared-row drift (179/180/184/202)."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-credential-provider-upgrade-check-contract-repair-20260626"
+      ],
+      "result": "Repaired the credential-provider-specific check contract in replays/vm-prerelease-tls-credential-upgrade-matrix.ts to accept ledger aliases 191/216 for source/spec rows 189/214, added check-mode assertion preservation, reran the bounded no-cloud check, and archived the exact outcome plus remaining out-of-scope shared-row failures.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:50:21.005Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the bounded credential-provider check-contract repair succeeded by normalizing row 189/214 to ledger aliases 191/216 and preserving failing assertion detail in final --check evidence; remaining replay failure is explicitly out of scope shared-row drift (179/180/184/202)."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining shared VM prerelease replay coverage-ledger/check mismatch for rows 179, 180, 184, and 202 in replays/vm-prerelease-tls-credential-upgrade-matrix.ts without reopening the credential-provider create-time family: identify the exact checked-in row/spec/replay contract for each failing row, decide whether the replay should accept maintained ledger aliases or the shared carrier should be narrowed, update the bounded repo-local contract, rerun the no-cloud --check with a fresh run id, and archive the exact outcome plus any still-failing assertions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626.md"
+      ],
+      "acceptance": [
+        "The worker classifies rows 179/180/184/202 against the maintained coverage ledger and their current owning specs (network-swift-v1 static-block-mode, network-swift-v1 vnetscale-static-block-cilium, trusted-access control-plane-lifecycle, and network-cni VM prerelease NPM uninstall matrix), then updates only the bounded shared replay/spec contract needed so the replay no longer misattributes those rows; changed files and row-to-spec decisions are named in the archive note.",
+        "The worker reruns bun replays/vm-prerelease-tls-credential-upgrade-matrix.ts --check with a fresh run id, archives the exact command, exit status, and final markdown/json evidence, and if the replay still fails the archived assertions clearly separate any remaining out-of-scope shared-row failures from the repaired rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider-shared-replay-ledger"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:50:21.059Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626_20260626045021",
+        "assigned_at": "2026-06-26T04:50:21.111Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626",
+        "worker_started_attempt_id": "a_cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626_20260626045021",
+        "worker_started_at": "2026-06-26T04:50:31.950Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the shared replay coverage-row contract in replays/vm-prerelease-tls-credential-upgrade-matrix.ts by accepting maintained ledger aliases for rows 179/180/184/202 (plus existing 189/214 aliases), reran the bounded --check, and archived the passing outcome in evidence/archive/cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T04:52:45.190Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:54:07.531Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626.md names the bounded replay change in replays/vm-prerelease-tls-credential-upgrade-matrix.ts, explicitly justifies maintained-ledger aliases 179→181, 180→182, 181→183, 184→186, 189→191, 202→204, and 214→216, and the fresh run artifacts cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626-check-vm-prerelease-tls-credential-upgrade-matrix.{md,json} show the rerun passed with exit 0."
+      },
+      "session_id": "s_task_cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626",
+      "session_history": [
+        "s_task_cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626"
+      ],
+      "result": "Repaired the shared replay coverage-row contract in replays/vm-prerelease-tls-credential-upgrade-matrix.ts by accepting maintained ledger aliases for rows 179/180/184/202 (plus existing 189/214 aliases), reran the bounded --check, and archived the passing outcome in evidence/archive/cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:54:07.531Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626.md names the bounded replay change in replays/vm-prerelease-tls-credential-upgrade-matrix.ts, explicitly justifies maintained-ledger aliases 179→181, 180→182, 181→183, 184→186, 189→191, 202→204, and 214→216, and the fresh run artifacts cloud-provider-vm-prerelease-shared-replay-ledger-row-repair-20260626-check-vm-prerelease-tls-credential-upgrade-matrix.{md,json} show the rerun passed with exit 0."
+      },
+      "status": "done"
+    },
+    {
+      "id": "node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact VM prerelease row-40 SSH public-key update carrier from mounted AKS RP source plus checked-in repo artifacts without cloud execution: determine whether Linux and Windows are one shared carrier or split carriers, capture accepted inputs, rejected/unsupported edges, expected behavior, observed checked-in evidence, adjacent surfaces, and the concrete spec/replay/model gaps that remain for the row-40 VirtualMachines path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive cites the exact mounted source file(s), scenario/plan names, and row mapping for the VM prerelease row-40 SSH public-key update carrier, and it states clearly whether Linux and Windows belong to one shared carrier or two distinct bounded branches.",
+        "The archive names the current repo-local spec/replay/model coverage for the row-40 path(s), documents accepted inputs, rejected/unsupported edges, expectations, observed evidence, adjacent surfaces, and unknowns, and recommends the next bounded no-cloud follow-up leaf if coverage is still incomplete."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-pool-config-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:54:07.591Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626_20260626045407",
+        "assigned_at": "2026-06-26T04:54:07.652Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626_20260626045407",
+        "worker_started_at": "2026-06-26T04:54:21.062Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive evidence at evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md, mapping the mounted-source VM prerelease SSH public-key boundary, confirming Linux/Windows are split carriers, and documenting the remaining repo-local spec/replay/model gaps.",
+        "last_worker_completed_at": "2026-06-26T04:56:46.083Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:57:21.479Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive cites exact mounted AKS RP source files and suite scenarios, proves the row-40 SSH public-key carrier is split into distinct Linux and Windows branches, captures accepted/rejected edges and repo-local evidence, and truthfully limits the new contradiction to replay/spec-model drift rather than the assigned boundary question."
+      },
+      "session_id": "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the requested archive evidence at evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md, mapping the mounted-source VM prerelease SSH public-key boundary, confirming Linux/Windows are split carriers, and documenting the remaining repo-local spec/replay/model gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:57:21.479Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive cites exact mounted AKS RP source files and suite scenarios, proves the row-40 SSH public-key carrier is split into distinct Linux and Windows branches, captures accepted/rejected edges and repo-local evidence, and truthfully limits the new contradiction to replay/spec-model drift rather than the assigned boundary question."
+      },
+      "status": "done"
+    }
+  ]
+}

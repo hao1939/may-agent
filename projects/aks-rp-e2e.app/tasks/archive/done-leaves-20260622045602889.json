@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:56:02.889Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review: archived four already-accepted completion leaves whose durable meaning is preserved in linked evidence and prior owner review, and refreshed the live frontier to match reality. The project now keeps one truthful external human-transport family wait, one active mounted-source reconcile for VM prerelease row 33, and one waiting sibling for row 34 that remains intentionally queued behind row 33 because both share the virtualmachines conflict scope. To avoid treating underfilled capacity as idle, the next non-conflicting repo-local lane should advance a bounded private-cluster execute-readiness reconciliation leaf rather than reopening the external wait or the replaced combined rows 33-34 task.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the dedicated repo-local carriers for path.private-cluster-privatelink-public-fqdn-toggle into a bounded readiness packet that restates the exact source-backed public-FQDN toggle lifecycle, identifies the current spec/replay/model/evidence linkage, and names the smallest truthful next move without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the existing source-backed path contract for Scenario_Private_Cluster_Public_FQDN, restates the enable/readback/disable verification surface that makes this branch distinct from the canonical private-cluster create path, and avoids inventing a live verdict.",
+        "Artifact compares the current repo-local spec/replay/model carriers and accepted evidence for path.private-cluster-privatelink-public-fqdn-toggle, recording whether the branch is already execute-ready or what exact bounded repo-local delta remains next.",
+        "Artifact records repo-local validation commands with outcomes, performs no cloud mutation, and does not do task-tree edits from worker scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:50:39.762Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622_20260622045039",
+        "assigned_at": "2026-06-22T04:50:39.811Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622",
+        "worker_started_attempt_id": "a_privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622_20260622045039",
+        "worker_started_at": "2026-06-22T04:50:58.830Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a bounded readiness-reconcile artifact at evidence/archive/privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622.md that restates the mounted-source public-FQDN toggle lifecycle, reconciles spec/replay/model/evidence linkage, and documents that spec-id runner check now passes repo-locally without any cloud mutation.",
+        "last_worker_completed_at": "2026-06-22T04:52:07.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:53:06.335Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-22: evidence/archive/privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622.md cites the mounted Scenario_Private_Cluster_Public_FQDN lifecycle, reconciles spec/replay/model carriers for path.private-cluster-privatelink-public-fqdn-toggle, and records that direct replay check, file-path runner check, and spec-id runner check now pass repo-locally without cloud mutation; next live work remains a future gated execution, not more readiness repair."
+      },
+      "session_id": "s_task_privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622",
+      "session_history": [
+        "s_task_privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622"
+      ],
+      "result": "Wrote a bounded readiness-reconcile artifact at evidence/archive/privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622.md that restates the mounted-source public-FQDN toggle lifecycle, reconciles spec/replay/model/evidence linkage, and documents that spec-id runner check now passes repo-locally without any cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:53:06.335Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-22: evidence/archive/privatecluster-public-fqdn-toggle-replay-readiness-reconcile-20260622.md cites the mounted Scenario_Private_Cluster_Public_FQDN lifecycle, reconciles spec/replay/model carriers for path.private-cluster-privatelink-public-fqdn-toggle, and records that direct replay check, file-path runner check, and spec-id runner check now pass repo-locally without cloud mutation; next live work remains a future gated execution, not more readiness repair."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:49:06.294Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted three additional spec-loop outputs while keeping the frontier narrow. The single-spec runner now publishes truthful terminal child bundles for interrupted live runs, the workflow bundle now retains dispatched/resolved timeout proof via workflow-timeout-proof.json for later missing-result review, and the fresh retry for spec.ccp-metricsserver.resource-metrics-api produced reviewable child artifacts that narrow the spec to a reproducible westus2 staging setup.cluster ARM create timeout before any metrics-server assertions. Open work remains the active single-spec verification drain plus the known-run backfill and current active spec leaves rather than new blind retries.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "harden-single-spec-timeout-metadata-retention-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Preserve dispatched and resolved timeout proof for single-spec workflow artifacts so missing-result reviews can distinguish outer workflow timeout/SIGTERM from Vitest or child-runner interruption when child result publication fails.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.github/workflows/run-single-spec.yaml"
+      ],
+      "acceptance": [
+        "The single-spec workflow or its local artifact-writing surface preserves durable timeout fields (for example timeout_minutes and resolved timeout seconds) alongside downloaded workflow metadata for later run review.",
+        "Deterministic local proof or test evidence shows an artifact bundle or review path can recover the dispatched timeout values without calling GitHub again.",
+        "The change stays bounded to timeout-proof retention and does not misclassify synthetic test.missing-recorded reruns as stronger product evidence by itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner-family:single-spec-missing-result"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:41:21.155Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_harden-single-spec-timeout-metadata-retention-20260629_20260629124456",
+        "assigned_at": "2026-06-29T12:44:56.919Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_harden-single-spec-timeout-metadata-retention-20260629",
+        "worker_started_attempt_id": "a_harden-single-spec-timeout-metadata-retention-20260629_20260629124456",
+        "worker_started_at": "2026-06-29T12:44:58.506Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added durable single-spec timeout proof retention to `.github/workflows/run-single-spec.yaml` by writing/uploading `runs/workflow-timeout-proof.json`, and documented the bounded change plus acceptance mapping in `evidence/archive/harden-single-spec-timeout-metadata-retention-20260629.md`.",
+        "last_worker_completed_at": "2026-06-29T12:47:43.635Z",
+        "last_worker_evidence": [
+          ".github/workflows/run-single-spec.yaml",
+          "evidence/archive/harden-single-spec-timeout-metadata-retention-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:49:03.079Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the bounded workflow-only change now uploads runs/workflow-timeout-proof.json beside workflow-metadata.json so downloaded single-spec bundles retain dispatched timeout_minutes plus resolved timeout_seconds/Vitest timeout fields without altering missing-result or product-verdict semantics."
+      },
+      "session_id": "s_task_harden-single-spec-timeout-metadata-retention-20260629",
+      "session_history": [
+        "s_task_harden-single-spec-timeout-metadata-retention-20260629"
+      ],
+      "result": "Added durable single-spec timeout proof retention to `.github/workflows/run-single-spec.yaml` by writing/uploading `runs/workflow-timeout-proof.json`, and documented the bounded change plus acceptance mapping in `evidence/archive/harden-single-spec-timeout-metadata-retention-20260629.md`.",
+      "evidence": [
+        ".github/workflows/run-single-spec.yaml",
+        "evidence/archive/harden-single-spec-timeout-metadata-retention-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:49:03.079Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the bounded workflow-only change now uploads runs/workflow-timeout-proof.json beside workflow-metadata.json so downloaded single-spec bundles retain dispatched timeout_minutes plus resolved timeout_seconds/Vitest timeout fields without altering missing-result or product-verdict semantics."
+      },
+      "status": "done"
+    }
+  ]
+}

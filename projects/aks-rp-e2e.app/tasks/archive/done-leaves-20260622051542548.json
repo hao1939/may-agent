@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:15:42.548Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner update: accepted the repaired workspace dirty-owner audit as truthful against the live frontier. The durable root state now preserves three facts: (1) the dedicated cloud-provider Credential Provider child slice is accepted as a bounded mounted-source/spec/replay landing, (2) the workspace audit proves the current dirty repo is still much broader than any safe checkpoint beyond the minimal accepted row29 package, and (3) the only useful repo-local next step is the already-active cloudprovider-broader-residue-mounted-source-owner-map-20260622 leaf, which must classify broader dirty cloud-provider files such as features/cloud-provider.yaml and features/cloud-provider/ipbased-lb-backend-pool.yaml into either a source-backed sibling branch or explicit checkpoint exclusion. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single blocked family-level wait with no new human send/reply evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "workspace-dirty-owner-mapping-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the workspace dirty-owner audit against current tree state by remapping dirty and untracked paths to the actual live branches, explicitly covering the active cloudprovider credential-provider mounted-source landing, the already-accepted VM prerelease row29 landing, the shared external-send blocked family, and one truthful checkpoint-ready slice decision (or an explicit no-safe-checkpoint verdict).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/workspace-dirty-owner-mapping-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites current git status --short, git diff --stat, and current task-tree summary/frontier, then maps dirty paths to the real current ownership states including at minimum active cloudprovider-credential-provider-mounted-source-precision-landing-20260622, accepted vmpr-row29-mounted-source-replay-landing-20260622, and blocked external-send-proof-dispatch-family-human-transport-proof-wait-20260621.",
+        "Artifact recommends exactly one truthful next checkpoint slice or explicitly says no safe checkpoint exists yet, with concrete include/exclude path sets and rationale tied to the current live tree rather than stale archived branch names.",
+        "Work stays repo-local and audit-only: no cloud mutation, no commits, no forced cleanup, and no edits outside the bounded audit artifact unless needed to repair that artifact itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workspace-review"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:10:55.401Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_workspace-dirty-owner-mapping-audit-20260622_20260622051055",
+        "assigned_at": "2026-06-22T05:10:55.454Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_workspace-dirty-owner-mapping-audit-20260622",
+        "worker_started_attempt_id": "a_workspace-dirty-owner-mapping-audit-20260622_20260622051055",
+        "worker_started_at": "2026-06-22T05:11:10.339Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested workspace dirty-owner audit at `evidence/archive/workspace-dirty-owner-mapping-audit-20260622.md`, classifying current dirty families into accepted-but-uncheckpointed slices, active branch output, blocked external-wait collateral, and no-owner residue with concrete next-branch suggestions.",
+        "last_worker_completed_at": "2026-06-22T05:11:10.356Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:12:01.456Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Rejected the first audit as review-complete output because it mapped the dirty workspace to stale branch names that do not match the current live tree or requested review surface. Replaced by workspace-dirty-owner-mapping-audit-repair-20260622, which now carries the concrete repair acceptance for current cloudprovider/row29/external-send ownership mapping."
+      },
+      "session_id": "s_task_workspace-dirty-owner-mapping-audit-20260622",
+      "session_history": [
+        "s_task_workspace-dirty-owner-mapping-audit-20260622"
+      ],
+      "result": "Wrote the requested workspace dirty-owner audit at `evidence/archive/workspace-dirty-owner-mapping-audit-20260622.md`, classifying current dirty families into accepted-but-uncheckpointed slices, active branch output, blocked external-wait collateral, and no-owner residue with concrete next-branch suggestions.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T05:12:01.456Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Rejected the first audit as review-complete output because it mapped the dirty workspace to stale branch names that do not match the current live tree or requested review surface. Replaced by workspace-dirty-owner-mapping-audit-repair-20260622, which now carries the concrete repair acceptance for current cloudprovider/row29/external-send ownership mapping."
+      },
+      "status": "done"
+    }
+  ]
+}

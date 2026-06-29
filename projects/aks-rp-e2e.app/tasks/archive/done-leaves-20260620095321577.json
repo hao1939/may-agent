@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:53:21.577Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs owner hygiene review (2026-06-20T09:56Z): the completed row63 addonv2 Azure Monitor Metrics mounted-source-equivalent audit and e2ev3 verdict-trace leaves are now preserved as provenance inside this lane rather than live frontier work. Together they established the durable local truth that VM prerelease row 63 is bounded by the addonv2 Azure Monitor Metrics request shape and one verdict-bearing runtime contract recovered from mounted prerelease/checkin sources, which is enough to replace the older generic row63 wording. The live repo-local learning frontier under this lane is now exactly two active leaves: (1) ManagedSystem Pool worked-example boundary-map consolidation to turn existing model/spec/evidence into one explicit accepted/rejected/expected/observed boundary note, and (2) a row63 branch-correction packet that reanchors the surviving row63 knowledge under Azure Monitor Metrics, excludes adjacent appMonitoring/control-plane surfaces unless row-local evidence supports them, and records the one exact remaining follow-up trigger. No cloud execution or duplicate blocker work is introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit mounted AKS RP source-adjacent artifacts for VM prerelease row 63 / Scenario_Addonv2_Azure_Monitor_Metrics so the current authoritative-source blocker is either narrowed to one exact missing fact or replaced by a bounded source-equivalent contract packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites exact mounted files checked for row 63, including /app/sources/aks-rp/test/e2e/suites/matrixdata/data/e2ev2_virtualmachine.test_matrix.json plus any nearby addonv2 source or capacity/snapshot references, and records what request-shape/runtime facts they do and do not prove for Scenario_Addonv2_Azure_Monitor_Metrics.",
+        "Task states one concrete owner decision for row 63: either keep the existing source-semantics wait because one exact verdict-bearing fact is still missing, or replace it with a bounded repo-local source-equivalent spec/model follow-up that does not overclaim runtime behavior.",
+        "No cloud execution and no direct edits to shared model/view checkpoint files are introduced during this audit."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:app-monitoring-addonv2-row63-mounted-source-equivalent-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:45:31.243Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620_20260620094533",
+        "assigned_at": "2026-06-20T09:45:33.742Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620_20260620094533",
+        "worker_started_at": "2026-06-20T09:46:01.723Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source audit for VM prerelease row 63 and wrote a durable archive note narrowing the blocker: mounted source now supports azureMonitorProfile.metrics.enabled as the best request-shape candidate, but one exact verdict-bearing runtime fact is still missing so the source-semantics wait should remain.",
+        "last_worker_completed_at": "2026-06-20T09:48:03.541Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:48:46.624Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the mounted matrix/addon/API/runtime-adjacent anchors, improves the request-shape candidate to azureMonitorProfile.metrics.enabled, and truthfully narrows the remaining gap to one missing verdict-bearing runtime fact without overclaiming row-63 semantics."
+      },
+      "session_id": "s_task_vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row63-addonv2-azure-monitor-metrics-mounted-source-equivalent-audit-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:48:46.624Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the mounted matrix/addon/API/runtime-adjacent anchors, improves the request-shape candidate to azureMonitorProfile.metrics.enabled, and truthfully narrows the remaining gap to one missing verdict-bearing runtime fact without overclaiming row-63 semantics."
+      },
+      "status": "done"
+    }
+  ]
+}

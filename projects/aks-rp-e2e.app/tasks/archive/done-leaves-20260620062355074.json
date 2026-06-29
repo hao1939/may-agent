@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:23:55.074Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "Spec-runner now records the serverless virtual-nodes DNS external-from-ACI staging run as accepted bounded runtime evidence: the project runner created the cluster/VNet/addon successfully, but no virtual-node-aci-linux node ever appeared, so the witness pod stayed Pending and the DNS assertion surface was never reached. Remaining work on this branch is the already-active model-reconcile successor plus any separately tracked runner-diagnosis follow-up or future rerun only after a material virtual-node readiness signal, not a reopen of the completed staging execute leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the next bounded execution packet for path.serverless-virtual-nodes.dns-resolution.external-from-aci before another live staging attempt. Using specs/serverless-virtual-nodes-dns-resolution-external-from-aci.json and replays/serverless-virtual-nodes-dns-resolution-external-from-aci.ts plus current runner conventions, identify the exact project-runner command family, required staging/preflight gates, and the first discriminating check/execute outcome worth collecting for this path. If runner/spec drift blocks execution preparation, classify that repo-local issue precisely instead of attempting a live run.",
+      "inputs": [
+        "specs/serverless-virtual-nodes-dns-resolution-external-from-aci.json",
+        "replays/serverless-virtual-nodes-dns-resolution-external-from-aci.ts"
+      ],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/",
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive note records the exact spec/replay inputs, intended project-runner command family, required staging/preflight gates, and whether the next useful action is --check, runner repair, or gated live execute for this path.",
+        "If a repo-local runner/spec/replay issue prevents preparing the packet, the note classifies it as runner/test drift with exact evidence and names the concrete successor needed before execution can resume.",
+        "The leaf is not credited with execution progress unless it produces a real run artifact or a precise repo-local blocker/proposal for the same path."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:serverless-virtual-nodes-dns-resolution-external-from-aci",
+        "path:path.serverless-virtual-nodes.dns-resolution.external-from-aci",
+        "artifact:serverless-virtual-nodes-dns-resolution-external-from-aci"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-left-underfilled-frontier",
+        "model_path_id": "path.serverless-virtual-nodes.dns-resolution.external-from-aci",
+        "feature_id": "serverless-virtual-nodes-dns-resolution-external-from-aci",
+        "model_status": "unknown",
+        "spec": "specs/serverless-virtual-nodes-dns-resolution-external-from-aci.json",
+        "replay": "replays/serverless-virtual-nodes-dns-resolution-external-from-aci.ts",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted owner review: the leaf produced durable live-run evidence (evidence/archive/serverless-vn-dns-external-staging-20260620.md plus the matching run JSON/artifacts) and met acceptance by executing through the project runner. The run proved cluster/VNet/addon persistence on eastus2/local, but no virtual-node-aci-linux node ever appeared, so the witness pod remained Pending and the DNS assertion was not exercised; this is a bounded runtime blocker, not a dry-run or missing-artifact claim."
+      },
+      "trace": {
+        "created_at": "2026-06-20T05:46:51.833Z",
+        "created_by": "model-gap-frontier-seeder",
+        "assigned_at": "2026-06-20T06:16:47.645Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620_20260620061647",
+        "worker_started_at": "2026-06-20T06:17:04.572Z",
+        "stale_active_requeued_at": "2026-06-20T06:16:29.452Z",
+        "stale_active_requeue_reason": "Repeated stale-active watchdog wake with no session activity or durable artifact across two attempts; demoting the broad live staging execution leaf and replacing it with a narrower preflight/command-packet diagnostic task before another execute attempt.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620_20260620061538",
+        "promoted_at": "2026-06-20T06:15:30.176Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620_20260620061647",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a real execute path in replays/serverless-virtual-nodes-dns-resolution-external-from-aci.ts and ran the spec through the project runner. The live staging run created the cluster/VNet successfully but blocked before the DNS claim because no virtual-node-aci-linux node appeared; evidence, runner artifacts, and an owner-review markdown summary were written.",
+        "last_worker_completed_at": "2026-06-20T06:20:32.268Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:21:27.201Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the leaf produced durable live-run evidence (evidence/archive/serverless-vn-dns-external-staging-20260620.md plus the matching run JSON/artifacts) and met acceptance by executing through the project runner. The run proved cluster/VNet/addon persistence on eastus2/local, but no virtual-node-aci-linux node ever appeared, so the witness pod remained Pending and the DNS assertion was not exercised; this is a bounded runtime blocker, not a dry-run or missing-artifact claim."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-dns-resolution-external-from-aci-staging-frontier-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:21:27.201Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

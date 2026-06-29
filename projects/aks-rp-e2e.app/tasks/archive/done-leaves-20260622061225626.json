@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:12:25.626Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner watchdog review accepted the rows26-34 adjacent-boundary matrix and the MultiNIC DualStack replay implementation as durable completed slices. Live open work is now narrowly focused on the active row-25 proof-and-isolation pass, which must inspect actual workspace files before the separate row-25 replay-implementation review can be accepted or sent back. The single external-human-transport wait remains the only truthful blocked family for asks that still require real human send/reply proof outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "netintegration-multinic-dualstack-replay-implementation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the repo-local execute-capable replay body for Scenario_MultiNIC_DualStack in replays/net-integration-multinic-dualstack.ts while preserving the existing non-mutating source/spec check lane and keeping scope limited to path.net-integration.multinic-dualstack.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/netintegration-multinic-dualstack-replay-implementation-20260622.md"
+      ],
+      "acceptance": [
+        "Replay implementation evidence cites the accepted 2026-06-22 execute-capability-gap artifact and shows that replays/net-integration-multinic-dualstack.ts no longer relies on replays/lib/source-spec-check.ts to handle --execute for this branch; instead it contains a dedicated execute lane guarded by the exact net-integration-multinic-dualstack mutation gate.",
+        "Implementation preserves the exact mounted-source branch contract only for Scenario_MultiNIC_DualStack: dual-stack VNet/subnet setup, managed cluster PUT with one Standard secondary NIC on nodepool1, persisted GET validation, VMSS IPv4+IPv6 secondary-NIC inspection, node secondary-nic-count=1 validation, and bounded cleanup flow are all wired repo-locally or truthfully called out if one still-missing helper prevents a complete body.",
+        "Artifact includes non-mutating repo-local validation evidence for the updated replay shape and ends with one truthful next-step verdict for this unchanged branch: execute-capable and ready for a future live-run gate, or one exact remaining repo-local helper/body gap without broadening to sibling MultiNIC scenarios."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replays/net-integration-multinic-dualstack.ts"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:03:00.649Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_netintegration-multinic-dualstack-replay-implementation-20260622_20260622060303",
+        "assigned_at": "2026-06-22T06:03:03.742Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_netintegration-multinic-dualstack-replay-implementation-20260622",
+        "worker_started_attempt_id": "a_netintegration-multinic-dualstack-replay-implementation-20260622_20260622060303",
+        "worker_started_at": "2026-06-22T06:03:28.467Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a dedicated execute-capable replay body in replays/net-integration-multinic-dualstack.ts and wrote evidence/archive/netintegration-multinic-dualstack-replay-implementation-20260622.md documenting the preserved check lane, exact mutation gate, bounded execute body, and local validation artifacts.",
+        "last_worker_completed_at": "2026-06-22T06:08:49.731Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:09:34.612Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-22: evidence/archive/netintegration-multinic-dualstack-replay-implementation-20260622.md and replays/net-integration-multinic-dualstack.ts prove --execute now routes to a dedicated replay-owned mutation-gated execute body for Scenario_MultiNIC_DualStack while preserving the source/spec check lane, exact dual-stack cluster/VMSS/node-label contract, and bounded cleanup; remaining work is only a future live-run gate outside repo-local implementation scope."
+      },
+      "session_id": "s_task_netintegration-multinic-dualstack-replay-implementation-20260622",
+      "session_history": [
+        "s_task_netintegration-multinic-dualstack-replay-implementation-20260622"
+      ],
+      "result": "Implemented a dedicated execute-capable replay body in replays/net-integration-multinic-dualstack.ts and wrote evidence/archive/netintegration-multinic-dualstack-replay-implementation-20260622.md documenting the preserved check lane, exact mutation gate, bounded execute body, and local validation artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:09:34.612Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-22: evidence/archive/netintegration-multinic-dualstack-replay-implementation-20260622.md and replays/net-integration-multinic-dualstack.ts prove --execute now routes to a dedicated replay-owned mutation-gated execute body for Scenario_MultiNIC_DualStack while preserving the source/spec check lane, exact dual-stack cluster/VMSS/node-label contract, and bounded cleanup; remaining work is only a future live-run gate outside repo-local implementation scope."
+      },
+      "status": "done"
+    }
+  ]
+}

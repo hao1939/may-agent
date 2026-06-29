@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:41:34.870Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed refill review: accepted the dedicated mounted-source-backed Retina Enterprise -> ACNS Cilium feature/spec/replay authoring leaf based on its evidence artifact and passing local source-spec plus wiring checks; the remaining ACNS value is the already-active maintained model/view landing task that must choose the normalized long-term path rather than re-author carriers. Serverless virtual-nodes subnet-validation boundary and VM prerelease row-54 repair work are already preserved in prior accepted artifacts, with the bounded next repo-local follow-up still the active replay failure-path hardening leaf. One truthful blocked family remains for external human transport proof across MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity; no new human send/reply proof has arrived, so capacity stays focused on the two active repo-local leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact repo-local feature/spec carriers for Scenario_Retina_Enterprise_Update_ACNS_Cilium so this mounted update lifecycle becomes a maintained source-backed branch instead of relying on adjacent create-time Retina Enterprise and Cilium observability carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Create features/network-acns-retina-enterprise-update-acns-cilium.yaml and specs/network-acns-retina-enterprise-update-acns-cilium.json using the accepted mounted-source packet as the primary authority and adjacent create-time carriers only as comparison anchors.",
+        "Preserve the exact lifecycle boundary in repo-local carriers: Retina Enterprise create precondition, in-place update mutator sets networkDataplane=cilium and networkPolicy=cilium, and post-update Cilium plus shared Hubble/TLS expectations without importing unproven Windows or AzureLinux pools.",
+        "Evidence artifact records files changed, local validation/regeneration command outcomes, and the next replay/model follow-up ids, with no cloud mutation and no task-tree edits by the worker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:34:48.347Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622_20260622043454",
+        "assigned_at": "2026-06-22T04:34:54.006Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622",
+        "worker_started_attempt_id": "a_network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622_20260622043454",
+        "worker_started_at": "2026-06-22T04:35:14.017Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new mounted-source-backed Retina Enterprise -> ACNS Cilium feature/spec/replay carriers, registered them in network-cni and specs/index, and wrote evidence showing source-spec check and wiring validation passed without cloud mutation.",
+        "last_worker_completed_at": "2026-06-22T04:39:03.289Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:40:26.611Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622.md plus carrier files: the worker authored the dedicated mounted-source-backed feature/spec/replay branch, registered it in features/network-cni.yaml and specs/index.json, and recorded passing source-spec check plus wiring validation without claiming model landing or cloud execution."
+      },
+      "session_id": "s_task_network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622",
+      "session_history": [
+        "s_task_network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622"
+      ],
+      "result": "Authored the new mounted-source-backed Retina Enterprise -> ACNS Cilium feature/spec/replay carriers, registered them in network-cni and specs/index, and wrote evidence showing source-spec check and wiring validation passed without cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:40:26.611Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-acns-retina-enterprise-update-acns-cilium-feature-spec-authoring-20260622.md plus carrier files: the worker authored the dedicated mounted-source-backed feature/spec/replay branch, registered it in features/network-cni.yaml and specs/index.json, and recorded passing source-spec check plus wiring validation without claiming model landing or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

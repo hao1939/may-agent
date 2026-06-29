@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:15:58.308Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog-blocked-frontier planning update: owner accepted the completed VM prerelease row-54 maintained-landing reconcile because its archive note and specs/index.json repair keep path.virtualmachines.managedsystem-agentpool-vm-prerelease source-grounded, separate from the create-time ManagedSystem default-pool product-gap, and verified by bun run check. That done leaf is now archived at the root so the live frontier stays readable: two active repo-local status/boundary reconciles remain for path.managedsystem.create-time-initial-pool and path.serverless-virtual-nodes.subnet-validation, one newly assigned runnable repo-local specs/model backfill covers the three creatable rp-nodepool-lifecycle missing spec-path records, and the only blocked family remains the exact external-human proof wait with no duplicate child waits or reopened repo-local work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row54-managedsystem-maintained-landing-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence-feedback/model-update lane: use mounted /app/sources/aks-rp VM prerelease sources plus existing repo-local feature/spec/replay/model carriers to reconcile the maintained landing for path.virtualmachines.managedsystem-agentpool-vm-prerelease, keeping its exact row-54 source-grounded unknown boundary separate from path.managedsystem.create-time-initial-pool and other ManagedSystem product-gap surfaces without reopening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row54-managedsystem-maintained-landing-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive cites the exact mounted row-54 source locations and current repo-local feature/spec/replay/model/view carriers for path.virtualmachines.managedsystem-agentpool-vm-prerelease, states the expected behavior and current evidence ceiling, and explains how it differs from the create-time ManagedSystem default-pool product-gap surface.",
+        "If the maintained model/view wording, path linkage, or adjacent ManagedSystem feature metadata is inconsistent with the accepted repo-local evidence, the task lands the smallest repo-local repair needed to keep row 54 source-grounded and truthfully unknown; otherwise it records why no repair is needed.",
+        "No cloud mutation, no new human wait, and no reopening of already-settled private-cluster or VM prerelease approval families are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines.managedsystem.row54"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:11:40.370Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row54-managedsystem-maintained-landing-reconcile-20260622_20260622221143",
+        "assigned_at": "2026-06-22T22:11:43.130Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row54-managedsystem-maintained-landing-reconcile-20260622",
+        "worker_started_attempt_id": "a_vmpr-row54-managedsystem-maintained-landing-reconcile-20260622_20260622221143",
+        "worker_started_at": "2026-06-22T22:12:06.948Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the maintained row-54 ManagedSystem landing in a new archive note and landed the minimal repo-local repair in specs/index.json so the row-54 replay preflight now matches the accepted spec/replay metadata and passes --check.",
+        "last_worker_completed_at": "2026-06-22T22:14:14.454Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:15:06.325Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive cites exact mounted row-54 source carriers, explains why path.virtualmachines.managedsystem-agentpool-vm-prerelease remains a separate source-grounded unknown from path.managedsystem.create-time-initial-pool, and the only bounded repo-local repair was the specs/index.json mutationGate alignment verified by bun run check."
+      },
+      "session_id": "s_task_vmpr-row54-managedsystem-maintained-landing-reconcile-20260622",
+      "session_history": [
+        "s_task_vmpr-row54-managedsystem-maintained-landing-reconcile-20260622"
+      ],
+      "result": "Reconciled the maintained row-54 ManagedSystem landing in a new archive note and landed the minimal repo-local repair in specs/index.json so the row-54 replay preflight now matches the accepted spec/replay metadata and passes --check.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:15:06.325Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive cites exact mounted row-54 source carriers, explains why path.virtualmachines.managedsystem-agentpool-vm-prerelease remains a separate source-grounded unknown from path.managedsystem.create-time-initial-pool, and the only bounded repo-local repair was the specs/index.json mutationGate alignment verified by bun run check."
+      },
+      "status": "done"
+    }
+  ]
+}

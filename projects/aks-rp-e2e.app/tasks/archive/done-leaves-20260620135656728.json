@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:56:56.728Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 owner review accepted row-190 Windows runner ledger attachment as a reviewed-exception pipeline_only exclusion with passing replay/wiring validation, and the earlier small-misc batch remains accepted because it promoted rows 1/9/144, preserved truthful terminal/blocked rows, and spawned exact row-level successors for remaining authoring gaps. Active work remains the fleet batch, checkpoint-helper archive-ownership repair, and row-exact VM prerelease authoring leaves (including rows 122, 137, and 206), while blocked carriers remain only the MachinesPreview external send dependency and the row-25 execution environment gate.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-gap-batch-small-misc-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the next high-diversity VM prerelease missing-spec rows 1, 9, 77, 78, 99, 118, 122, 136, 143, 144, 150, 152, 153, 154, 155, 161, 162, 163, 164, 165, 166, 174, 178, 187, 203, 204, 220, and 221 by splitting into exact row-level spec/replay updates or terminal exclusions and writing one inventory evidence packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-small-misc-20260620.md"
+      ],
+      "acceptance": [
+        "Each listed row has an explicit row-level disposition: strict covered, terminal-excluded, or split into a concrete successor with exact missing source/replay reason.",
+        "No row is silently left as missing-spec; unresolved rows get concrete bounded successors, not passive waits.",
+        "Coverage/features files are updated for every resolved row and the artifact summarizes remaining count after the batch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:39:56.485Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:40:44.579Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-gap-batch-small-misc-20260620_20260620134159",
+        "assigned_at": "2026-06-20T13:41:59.336Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-gap-batch-small-misc-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-gap-batch-small-misc-20260620_20260620134159",
+        "worker_started_at": "2026-06-20T13:41:59.695Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the batch closure packet at `evidence/archive/vm-prerelease-gap-batch-small-misc-20260620.md` and refreshed shared surfaces for the rows that could now be truthfully promoted.\n\nKey outcomes:\n- **Strict covered:** rows **1, 9, 144**\n- **Terminal-excluded for this pass:** rows **99, 118, 150, 152, 153, 154, 155, 161, 162, 163, 174, 178**\n- **Split into concrete bounded authoring successors:** rows **77, 78, 122, 136, 143, 164, 165, 166, 187, 203, 204, 220, 221**\n\nFiles updated:\n- `evidence/archive/vm-prerelease-gap-batch-small-misc-20260620.md`\n- `evidence/pipelines/virtualmachine-prerelease-coverage.json`\n- `evidence/pipelines/virtualmachine-prerelease-coverage.md`\n- `evidence/pipelines/virtualmachine-prerelease.features.txt`\n- `specs/index.json`\n- `specs/node-pool-config-kata-vm-isolation.json`\n\nCurrent shared totals after this batch:\n- **strict covered:** 165\n- **candidate only:** 23\n- **missing spec:** 44\n\nRESULT: done",
+        "last_worker_completed_at": "2026-06-20T13:53:42.051Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T13:54:52.007Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the closure packet after evidence review: rows 1, 9, and 144 were promoted on shared surfaces; rows 99/118/150/152/153/154/155/161/162/163/174/178 stayed on truthful blocked lineages; and 13 exact row-level authoring successors were created so no in-scope unresolved row remains as a passive gap."
+      },
+      "session_id": "s_task_vm-prerelease-gap-batch-small-misc-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-gap-batch-small-misc-20260620"
+      ],
+      "result": "Completed the batch closure packet at `evidence/archive/vm-prerelease-gap-batch-small-misc-20260620.md` and refreshed shared surfaces for the rows that could now be truthfully promoted.\n\nKey outcomes:\n- **Strict covered:** rows **1, 9, 144**\n- **Terminal-excluded for this pass:** rows **99, 118, 150, 152, 153, 154, 155, 161, 162, 163, 174, 178**\n- **Split into concrete bounded authoring successors:** rows **77, 78, 122, 136, 143, 164, 165, 166, 187, 203, 204, 220, 221**\n\nFiles updated:\n- `evidence/archive/vm-prerelease-gap-batch-small-misc-20260620.md`\n- `evidence/pipelines/virtualmachine-prerelease-coverage.json`\n- `evidence/pipelines/virtualmachine-prerelease-coverage.md`\n- `evidence/pipelines/virtualmachine-prerelease.features.txt`\n- `specs/index.json`\n- `specs/node-pool-config-kata-vm-isolation.json`\n\nCurrent shared totals after this batch:\n- **strict covered:** 165\n- **candidate only:** 23\n- **missing spec:** 44\n\nRESULT: done",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:54:52.007Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the closure packet after evidence review: rows 1, 9, and 144 were promoted on shared surfaces; rows 99/118/150/152/153/154/155/161/162/163/174/178 stayed on truthful blocked lineages; and 13 exact row-level authoring successors were created so no in-scope unresolved row remains as a passive gap."
+      },
+      "status": "done"
+    }
+  ]
+}

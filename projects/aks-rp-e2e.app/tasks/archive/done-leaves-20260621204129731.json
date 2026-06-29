@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:41:29.731Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 planning-update: treated the watchdog review-pending wake as stale because vmpr-post-row41-row43-securetls-vnet-frontier-proof-20260621 was already accepted and reviewed. Archived the remaining completed VM frontier proof leaves now that their durable meaning is captured in project rollup/evidence. Open work stays intentionally narrow: continue the single active repo-local mounted-source task vmpr-post-row58-followon-next-adjacent-source-frontier-20260621, and preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the only truthful external-human transport blocker family until real send/escalation proof or authoritative replies exist.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row41-adjacent-source-frontier-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: inspect mounted AKS RP VirtualMachine prerelease source around the row-41 frontier and identify the next truthful adjacent repo-local branch to land (or prove that existing maintained carriers already cover the next source-ordered scenario), without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md"
+      ],
+      "acceptance": [
+        "Use /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus any directly referenced scenario definitions to name the exact next source-ordered VM prerelease branch adjacent to the maintained row-41 frontier, and cite the mounted source lines/files used.",
+        "Compare that source branch against current repo-local VM prerelease carriers/specs/replays and conclude one of two bounded outcomes: either identify one concrete uncovered successor leaf with exact expected outputs/conflict scope, or record that existing maintained carriers already cover it and no successor is needed from this frontier check.",
+        "Produce a durable evidence note listing the exact repo/source files inspected and local validation commands run, and confirm this pass performed no cloud execution, no external-human transport work, and no model edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/vmpr"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:34:20.208Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row41-adjacent-source-frontier-20260621_20260621203422",
+        "assigned_at": "2026-06-21T20:34:22.314Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row41-adjacent-source-frontier-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row41-adjacent-source-frontier-20260621_20260621203422",
+        "worker_started_at": "2026-06-21T20:34:46.336Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced durable frontier evidence at evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md, source-bounding the exact post-row41 adjacent VM prerelease secure-TLS scenarios from mounted AKS RP checkin/prerelease source and classifying the next non-cloud follow-up as evidence-reuse rather than new model/spec authoring.",
+        "last_worker_completed_at": "2026-06-21T20:34:46.456Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T20:35:09.577Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the frontier packet: it cited mounted VM prerelease/checkin secure-TLS source adjacency after row 41, compared repo-local secure-tls-bootstrap carriers/evidence, and truthfully concluded the next non-cloud follow-up is a bounded row-42 evidence-reuse frontier proof rather than new model/spec authoring."
+      },
+      "session_id": "s_task_vmpr-post-row41-adjacent-source-frontier-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row41-adjacent-source-frontier-20260621"
+      ],
+      "result": "Produced durable frontier evidence at evidence/archive/vmpr-post-row41-adjacent-source-frontier-20260621.md, source-bounding the exact post-row41 adjacent VM prerelease secure-TLS scenarios from mounted AKS RP checkin/prerelease source and classifying the next non-cloud follow-up as evidence-reuse rather than new model/spec authoring.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:35:09.577Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the frontier packet: it cited mounted VM prerelease/checkin secure-TLS source adjacency after row 41, compared repo-local secure-tls-bootstrap carriers/evidence, and truthfully concluded the next non-cloud follow-up is a bounded row-42 evidence-reuse frontier proof rather than new model/spec authoring."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:24:33.520Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted and compacted the current repo-local closure slice. Private-cluster update_private second-hop reconciliation remains preserved in earlier project rollup/archive evidence as the distinct same-cluster private-APIVNET->public-APIVNET carrier. Newly accepted work adds that private-cluster none-dns-zone-v3 is now source/spec/replay/model aligned and execute-ready with no remaining repo-local repair, and that the serverless Addonv2 ACI connector mounted-VMSS sibling is authored and registered across repo-local discovery surfaces with runtime execution intentionally deferred. The only live frontier now is the single consolidated external-human wait for returned authorized runtime/operator proof; no duplicate local closure leaves remain open.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: determine the next truthful repo-local action for path.private-cluster-none-dns-zone-v3 without reopening cloud execution or the existing external-human wait, by reconciling mounted private-cluster source, existing repo-local specs/replays/model status, and already-archived dispatch evidence into one bounded execution-readiness packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623.md"
+      ],
+      "acceptance": [
+        "The archive packet cites the exact mounted source or source-equivalent private-cluster carrier(s) plus the current repo-local spec/replay/model surfaces for path.private-cluster-none-dns-zone-v3, and states whether the current model unknown can be narrowed to a more truthful repo-local status, prerequisite, or bounded artifact gap.",
+        "The packet nominates exactly one next follow-up class: either a bounded repo-local spec/replay/model repair slice or a precise external/runtime prerequisite with resume trigger; it must not introduce cloud mutation, packet redrafting loops, or duplicate external-human waits for asks already covered by external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster.none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:23:14.625Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623_20260623142317",
+        "assigned_at": "2026-06-23T14:23:17.643Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623_20260623142317",
+        "worker_started_at": "2026-06-23T14:23:27.587Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable execution-readiness packet for private-cluster none-dns-zone-v3 and verified the existing spec/replay remain exact-lifecycle execute-ready via fresh replay --check and spec-runner --dry-run evidence, with runtime authorization identified as the only remaining prerequisite.",
+        "last_worker_completed_at": "2026-06-23T14:23:27.603Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:24:17.854Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet cites the mounted V3 private-cluster lifecycle carriers, fresh replay --check and spec-runner --dry-run evidence, and shows no further repo-local repair is needed; path.private-cluster-none-dns-zone-v3 now truthfully waits only on the already-consolidated external authorized runtime proof family."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623"
+      ],
+      "result": "Created the durable execution-readiness packet for private-cluster none-dns-zone-v3 and verified the existing spec/replay remain exact-lifecycle execute-ready via fresh replay --check and spec-runner --dry-run evidence, with runtime authorization identified as the only remaining prerequisite.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:24:17.854Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet cites the mounted V3 private-cluster lifecycle carriers, fresh replay --check and spec-runner --dry-run evidence, and shows no further repo-local repair is needed; path.private-cluster-none-dns-zone-v3 now truthfully waits only on the already-consolidated external authorized runtime proof family."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs + runner/replays lane: author the bounded repo-local mounted-VMSS Addonv2 ACI connector sibling carrier proposed in evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623.md by adding the exact sibling spec/replay/model/view identifiers for the mounted VMSS lifecycle contract while leaving the accepted row-62 VM/shared-identity carrier unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/serverless-addonv2-aci-connector-mounted-vmss-lifecycle.json",
+        "../aks-rp-e2e/replays/serverless-addonv2-aci-connector-mounted-vmss-lifecycle.ts",
+        "../aks-rp-e2e/evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "The repo-local authoring updates add one exact mounted sibling carrier anchored to the proposal ids (including a mounted-VMSS lifecycle path/spec/replay identifier set or documented equivalent) and cite /app/sources/aks-rp/test/e2e/suites/addonv2/aciconnector/aciconnectorlinux.go, /app/sources/aks-rp/test/e2e/suites/addonv2/suggestion.go, and evidence/archive/serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-proposal-20260623.md as authority without rewriting the accepted row-62 VM/shared-identity carrier files beyond the minimum adjacency/reference additions needed to register the new sibling.",
+        "The new sibling explicitly carries the mounted-only VMSS substrate, explicit VNet/node-subnet/ACI-subnet provisioning, Network Contributor role assignment, helm-release verification, upgrade revalidation, and delete lifecycle surfaces, and the archive note explains any model/view registration edits plus any intentionally deferred runtime execution or unresolved authoring gaps."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-addonv2.aci-connector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:13:28.375Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623_20260623141330",
+        "assigned_at": "2026-06-23T14:13:30.788Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623",
+        "worker_started_attempt_id": "a_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623_20260623141330",
+        "worker_started_at": "2026-06-23T14:14:06.957Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the mounted VMSS Addonv2 ACI connector sibling carrier end-to-end: added the new spec and replay, registered it in specs/index.json and the knowledge-map model/views, and wrote the archive note documenting source anchors, registration edits, and deferred live execution.",
+        "last_worker_completed_at": "2026-06-23T14:22:59.578Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:24:17.899Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note records the exact mounted Addonv2 ACI connector VMSS sibling ids, source anchors, and repo-local registration across spec/replay/model/view surfaces while keeping the accepted row-62 VM/shared-identity carrier unchanged; no immediate follow-up leaf is required before future run planning."
+      },
+      "session_id": "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623",
+      "session_history": [
+        "s_task_serverless-addonv2-aci-connector-mounted-vmss-sibling-carrier-authoring-20260623"
+      ],
+      "result": "Authored the mounted VMSS Addonv2 ACI connector sibling carrier end-to-end: added the new spec and replay, registered it in specs/index.json and the knowledge-map model/views, and wrote the archive note documenting source anchors, registration edits, and deferred live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:24:17.899Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note records the exact mounted Addonv2 ACI connector VMSS sibling ids, source anchors, and repo-local registration across spec/replay/model/view surfaces while keeping the accepted row-62 VM/shared-identity carrier unchanged; no immediate follow-up leaf is required before future run planning."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs + user review workspace lane: use mounted AKS RP e2ev3 source and existing repo-local evidence to pin the exact row-37 managed AAD lifecycle carrier boundary for path.aad-rbac.managed-v2-lifecycle, including the intended inputs, expected behavior, current baseline create failure ceiling, and the narrowest truthful rerun trigger so future verification retries the same carrier instead of widening scope.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus the current row-37 repo-local replay/spec or evidence equivalent, and records the exact row-37 input path, expected managed AAD/login behavior, and why the present status is environment-blocked at baseline cluster create rather than a product mismatch.",
+        "The task either updates the corresponding repo-local spec/replay/model/view identifiers to match that bounded carrier or documents why existing identifiers are already exact, and it leaves one explicit rerun gate tied to the baseline create unblock condition without reopening the external human-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines.managed-aad-row37"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:18:32.749Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623_20260623141838",
+        "assigned_at": "2026-06-23T14:18:38.122Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623_20260623141838",
+        "worker_started_at": "2026-06-23T14:18:54.239Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable row-37 managed AAD rerun-boundary note at evidence/archive/virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623.md, citing mounted VirtualMachine suite/source files and current repo-local carriers to show the path is already exact and remains environment-blocked at baseline cluster create.",
+        "last_worker_completed_at": "2026-06-23T14:20:41.594Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:21:20.193Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites mounted prerelease/checkin VirtualMachine sources plus current repo-local carriers, confirms path.aad-rbac.managed-v2-lifecycle is already exact, and records the single truthful rerun gate at baseline cluster-create unblock without widening into adjacent AAD or external-wait scope."
+      },
+      "session_id": "s_task_virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623",
+      "session_history": [
+        "s_task_virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623"
+      ],
+      "result": "Created a durable row-37 managed AAD rerun-boundary note at evidence/archive/virtualmachines-row37-managed-aad-rerun-packet-source-boundary-20260623.md, citing mounted VirtualMachine suite/source files and current repo-local carriers to show the path is already exact and remains environment-blocked at baseline cluster create.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:21:20.193Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites mounted prerelease/checkin VirtualMachine sources plus current repo-local carriers, confirms path.aad-rbac.managed-v2-lifecycle is already exact, and records the single truthful rerun gate at baseline cluster-create unblock without widening into adjacent AAD or external-wait scope."
+      },
+      "status": "done"
+    }
+  ]
+}

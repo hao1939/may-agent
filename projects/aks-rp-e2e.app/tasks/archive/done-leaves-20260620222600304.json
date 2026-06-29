@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:26:00.304Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update finalized the stale watchdog-review reconciliation at the project root. The row-26 maxUnavailable maintained-model reconcile is accepted provenance only and no longer belongs on the live root frontier: its owner review already established the exact mounted-source/spec/replay/model linkage plus truthful execute-gated blocked status with exact replay --check evidence. The active project frontier remains intentionally narrow and executable: private-cluster-public-fqdn-toggle-replay-authoring-20260620 is the sole repo-local next step, while external-send-proof-dispatch-family-20260620 remains the single shared external-human transport ceiling until durable send/escalation proof or an authoritative reply is recorded. Do not reopen the archived row-26 slice or recreate duplicate send waits without contradictory new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease row-26 authorities plus the existing repo-local replay/spec wiring to reconcile the exact capacity-based-surge-maxunavailable lifecycle branch into one maintained-model slice without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/capacity_based_surge_with_maxunavailable_vms.go, any referenced VM prerelease helper/checkin/prerelease authorities, and the existing repo-local feature/spec/replay files for path.virtualmachines.capacity-based-surge-maxunavailable, then cite the exact scenario/input/expectation contract kept for row 26.",
+        "Apply only the bounded model/view/status edits needed to keep path.virtualmachines.capacity-based-surge-maxunavailable truthful and distinct from adjacent VM prerelease siblings such as path.virtualmachines.capacity-based-surge, then rerun the relevant non-cloud validation/status and exact replay check commands and record outcomes.",
+        "Name the first future live-execute candidate plus the remaining non-cloud evidence ceiling for this exact row-26 branch without running cloud execution or broadening into unrelated VM prerelease rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:21:51.698Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620_20260620222151",
+        "assigned_at": "2026-06-20T22:21:51.751Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620_20260620222151",
+        "worker_started_at": "2026-06-20T22:22:00.271Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the maintained row-26 VM prerelease model slice for path.virtualmachines.capacity-based-surge-maxunavailable, updated model evidence/status to reflect the execute-gated replay reality, regenerated derived views, reran the exact row-26 replay check, and wrote a durable evidence note at evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T22:24:13.386Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:24:42.712Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the bounded row-26 reconcile artifact: mounted AKS RP source preserves the exact two-user-pool maxUnavailable contract, the maintained model/path-summary now truthfully mark path.virtualmachines.capacity-based-surge-maxunavailable as execute-gated blocked rather than passed, and the exact replay --check rerun is recorded as pass without broadening into unrelated model-health claims."
+      },
+      "session_id": "s_task_vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620"
+      ],
+      "result": "Reconciled the maintained row-26 VM prerelease model slice for path.virtualmachines.capacity-based-surge-maxunavailable, updated model evidence/status to reflect the execute-gated replay reality, regenerated derived views, reran the exact row-26 replay check, and wrote a durable evidence note at evidence/archive/vm-prerelease-capacity-based-surge-maxunavailable-model-reconcile-20260620.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:24:42.712Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the bounded row-26 reconcile artifact: mounted AKS RP source preserves the exact two-user-pool maxUnavailable contract, the maintained model/path-summary now truthfully mark path.virtualmachines.capacity-based-surge-maxunavailable as execute-gated blocked rather than passed, and the exact replay --check rerun is recorded as pass without broadening into unrelated model-health claims."
+      },
+      "status": "done"
+    }
+  ]
+}

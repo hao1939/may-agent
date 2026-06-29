@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:34:40.807Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 watchdog review closure accepted and archived the row-47 VirtualMachine CAS overscale mounted-source boundary map because its durable meaning now lives in the archive note plus parent context: mounted source fully defined the overscale input/expectation boundary and proved the remaining work is repo-local carrier repair only. The sole actionable frontier remains virtualmachine-cas-overscale-repo-local-carrier-repair-20260621 for specs/index.json registration and accepted knowledge-map/model/view exposure of path.cluster-autoscaler.vm-prerelease-overscale-node-stability, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 stays the single compressed external-human transport wait until real send/handoff/escalation proof or authoritative replies exist.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-cas-overscale-mounted-source-boundary-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: after the row-46 CAS minCount mounted-source boundary map finishes, use the mounted AKS RP handwritten e2ev3 VirtualMachine prerelease/checkin source plus referenced clusterautoscaler scenario definitions to map the adjacent row-47 overscale VirtualMachine branch, extracting the exact overscale input paths, expectation paths, and repo-local carrier linkage without cloud execution or external-human transport.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-cas-overscale-mounted-source-boundary-map-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted source files that place the row-47 overscale VirtualMachine scenario next to the row-46 CAS minCount branch in the VirtualMachine prerelease/checkin frontier and identifies the concrete scenario/plan files that define overscale behavior.",
+        "Archive note maps the exact input-path and expectation-path boundaries surfaced by the handwritten source for this VM prerelease CAS overscale branch to current repo-local coverage: what specs/features/replays/model/view carriers already exist, what is missing, and whether any gap is repo-local versus truly external.",
+        "If the mounted source review proves a concrete repo-local carrier/spec/model edit is needed, the note names the exact file/path to update and the validation/checks required; otherwise it explicitly records that no carrier edits were required and leaves one concrete next adjacent source-backed follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/virtualmachine"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T21:30:15.185Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-cas-overscale-mounted-source-boundary-map-20260621_20260621213049",
+        "assigned_at": "2026-06-21T21:30:49.157Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-cas-overscale-mounted-source-boundary-map-20260621",
+        "worker_started_attempt_id": "a_virtualmachine-cas-overscale-mounted-source-boundary-map-20260621_20260621213049",
+        "worker_started_at": "2026-06-21T21:30:50.264Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source boundary map for the VM prerelease row-47 CAS overscale branch at evidence/archive/virtualmachine-cas-overscale-mounted-source-boundary-map-20260621.md, proving the exact mounted source lineage, row-local input/expectation boundaries, existing repo-local carriers, and the current repo-local consistency gaps (specs/index.json plus missing accepted model/view exposure).",
+        "last_worker_completed_at": "2026-06-21T21:32:43.027Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:33:22.976Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/virtualmachine-cas-overscale-mounted-source-boundary-map-20260621.md proves the mounted AKS RP handwritten source fully defines row-47 CAS overscale inputs/expectations and local carrier linkage; the only remaining gaps are repo-local consistency repairs (missing specs/index.json registration plus absent accepted model/view path exposure), not source ambiguity or external transport."
+      },
+      "session_id": "s_task_virtualmachine-cas-overscale-mounted-source-boundary-map-20260621",
+      "session_history": [
+        "s_task_virtualmachine-cas-overscale-mounted-source-boundary-map-20260621"
+      ],
+      "result": "Created the requested mounted-source boundary map for the VM prerelease row-47 CAS overscale branch at evidence/archive/virtualmachine-cas-overscale-mounted-source-boundary-map-20260621.md, proving the exact mounted source lineage, row-local input/expectation boundaries, existing repo-local carriers, and the current repo-local consistency gaps (specs/index.json plus missing accepted model/view exposure).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:33:22.976Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/virtualmachine-cas-overscale-mounted-source-boundary-map-20260621.md proves the mounted AKS RP handwritten source fully defines row-47 CAS overscale inputs/expectations and local carrier linkage; the only remaining gaps are repo-local consistency repairs (missing specs/index.json registration plus absent accepted model/view path exposure), not source ambiguity or external transport."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:55:03.023Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 accepted the bounded row-25 VM prerelease capacity-based-surge run-ready packet from evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md: mounted prerelease/checkin source, exact row-25 inputs/assertions, truthful maintained spec/replay/index/model linkage, and the execute-gated replay surface are now preserved for path.virtualmachines.capacity-based-surge without cloud mutation. The live frontier stays intentionally narrow: three active VM prerelease run-ready packet leaves remain in flight for rows 26, 27, and 29, while the external human-transport proof family and the private-cluster shared-apiserver-subnet execution-approval wait remain the only blocked waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-capacity-based-surge-run-ready-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease/checkin source plus the maintained draft spec/replay surfaces to produce a bounded run-ready packet for path.virtualmachines.capacity-based-surge: pin the exact scenario inputs/assertions, confirm or repair the maintained spec/replay/index/model linkage for this row-25 branch only, and leave an exact execute command/gate note for future cloud approval without running the probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the authoritative mounted VirtualMachine prerelease/checkin source for the capacity-based surge scenario and enumerates the exact row-25 inputs plus the verdict-bearing assertions that the maintained branch must preserve.",
+        "Maintained carriers for this row-25 branch are reconciled truthfully: the task confirms or repairs the dedicated feature/spec/replay/index/model linkage for path.virtualmachines.capacity-based-surge without broadening into adjacent VM draft rows.",
+        "Artifact leaves one concrete future execute surface for this branch only, including the exact replay command and any probe gate/approval note needed for a later cloud run, while this task itself remains repo-local and non-mutating."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-based-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:50:37.206Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-capacity-based-surge-run-ready-packet-20260621_20260621115037",
+        "assigned_at": "2026-06-21T11:50:37.250Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-capacity-based-surge-run-ready-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-capacity-based-surge-run-ready-packet-20260621_20260621115037",
+        "worker_started_at": "2026-06-21T11:50:55.651Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-25 run-ready packet at evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md, reconciled the maintained model/view linkage for path.virtualmachines.capacity-based-surge to a truthful blocked execute-gated state, and verified the exact check/execute-gate replay surfaces without running cloud mutation.",
+        "last_worker_completed_at": "2026-06-21T11:53:09.758Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:54:13.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review against evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md: the packet cites mounted capacity_based_surge.go plus checkin/prerelease lineage, enumerates the exact row-25 inputs and four verdict-bearing assertions, reconciles spec/replay/index/model linkage for path.virtualmachines.capacity-based-surge, and leaves the exact execute command with the probe-specific cloud-mutation gate note without claiming a live verdict."
+      },
+      "session_id": "s_task_vmpr-capacity-based-surge-run-ready-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-capacity-based-surge-run-ready-packet-20260621"
+      ],
+      "result": "Produced the bounded row-25 run-ready packet at evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md, reconciled the maintained model/view linkage for path.virtualmachines.capacity-based-surge to a truthful blocked execute-gated state, and verified the exact check/execute-gate replay surfaces without running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:54:13.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review against evidence/archive/vmpr-capacity-based-surge-run-ready-packet-20260621.md: the packet cites mounted capacity_based_surge.go plus checkin/prerelease lineage, enumerates the exact row-25 inputs and four verdict-bearing assertions, reconciles spec/replay/index/model linkage for path.virtualmachines.capacity-based-surge, and leaves the exact execute command with the probe-specific cloud-mutation gate note without claiming a live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

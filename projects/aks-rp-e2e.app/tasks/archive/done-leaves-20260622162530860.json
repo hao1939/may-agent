@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T16:25:30.861Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 final VM prerelease compaction for this wake: row 55 standalone metadata repair is now archived because its durable meaning already lives in evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md and the parent rollup. The frontier remains intentionally narrow: active direct-model-linkage retry for rows 1,3-5,9; waiting storage-matrix linkage audit for rows 12-18 and 20-22 after the source conflict clears; and the single compressed external human-transport wait. Row 54 readiness retry has been accepted as the exact repo-local contract for any future mutation-gated live ask.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row55-standalone-metadata-packet-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or explicitly justify the row-55 VirtualMachine prerelease standalone ManagedSystem metadata split so mounted-source-backed coverage does not rely on a superseded standalone spec without an explicit current repo-local carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Starting from evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md and the current managedsystem feature/spec/replay surfaces, confirm whether row 55 should keep the standalone replay plus superseded spec split or gain an explicit non-superseded current metadata carrier.",
+        "Record the exact repo-local files inspected and updated, and either add the canonical current carrier or document the justified reason the superseded-spec split remains truthful, with one concrete next action if debt remains.",
+        "Keep the task repo-local only: no cloud execution and no reopening the compressed external wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T16:19:28.847Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T16:21:24.177Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row55-standalone-metadata-packet-repair-20260622_20260622162228",
+        "assigned_at": "2026-06-22T16:22:28.824Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row55-standalone-metadata-packet-repair-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row55-standalone-metadata-packet-repair-20260622_20260622162228",
+        "worker_started_at": "2026-06-22T16:22:30.235Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited VM prerelease row 55 repo-local ManagedSystem standalone metadata and wrote a repair packet concluding the superseded standalone spec split remains truthful because an explicit current non-superseded carrier already exists as execution variant metadata on specs/managedsystem-rest-add-existing.json.",
+        "last_worker_completed_at": "2026-06-22T16:23:49.211Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T16:24:11.995Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md cites the mounted-source plan, active spec/model/view carriers, and superseded standalone packet to show row 55 already has a truthful current execution-variant carrier on specs/managedsystem-rest-add-existing.json, so no further repo-local repair is required."
+      },
+      "session_id": "s_task_vm-prerelease-row55-standalone-metadata-packet-repair-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row55-standalone-metadata-packet-repair-20260622"
+      ],
+      "result": "Audited VM prerelease row 55 repo-local ManagedSystem standalone metadata and wrote a repair packet concluding the superseded standalone spec split remains truthful because an explicit current non-superseded carrier already exists as execution variant metadata on specs/managedsystem-rest-add-existing.json.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T16:24:11.995Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md cites the mounted-source plan, active spec/model/view carriers, and superseded standalone packet to show row 55 already has a truthful current execution-variant carrier on specs/managedsystem-rest-add-existing.json, so no further repo-local repair is required."
+      },
+      "status": "done"
+    }
+  ]
+}

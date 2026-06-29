@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:57:33.526Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review kept focus-mounted-source-coverage-closure-and-external-wait-20260623 compressed as the single truthful external-human wait; no repo-local work was reopened there. Repo-local regular-learning continues in the cluster-autoscaler VM prerelease mounted-source lane: profile-matrix, service-principal, spot, and autoscaling-base spec seeds are now accepted and archived as durable coverage progress; active work remains mincount-recovery plus newly assigned long-unregistered-nodes, with scale-from-zero siblings still available for bounded follow-up if capacity opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted row-125 mounted-source packet for path.cluster-autoscaler.vm-prerelease-service-principal into a bounded no-cloud design note for the narrowest future execute-gated live carrier, naming the exact replay/spec anchors, preserved service-principal identity and VM selector inputs, required mutation/env gate, and explicit non-goals against adjacent autoscaler siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626.md"
+      ],
+      "acceptance": [
+        "The note cites the accepted row-125 mounted-source packet plus the current spec/replay anchors and lists the minimum exact inputs that any future live carrier must preserve for this path, including VirtualMachines selector metadata, service-principal identity, managed_cluster_identity_type=None, autoscaling profile, and Delete-mode suite reuse.",
+        "The note defines the narrowest truthful future execute surface for this path only: whether a separate execute replay is required, the exact mutation/env gate it would need, what evidence it would be expected to return, and why the current check replay must remain no-cloud.",
+        "The note explicitly excludes adjacent VM prerelease autoscaler siblings and does not run cloud mutation, alter existing replays, or widen the path scope beyond path.cluster-autoscaler.vm-prerelease-service-principal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-service-principal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T13:50:08.090Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626_20260626135008",
+        "assigned_at": "2026-06-26T13:50:08.140Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-202606",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626_20260626135008",
+        "worker_started_at": "2026-06-26T13:50:23.869Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded no-cloud design note at evidence/archive/cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626.md, defining the narrowest future execute-gated live carrier for path.cluster-autoscaler.vm-prerelease-service-principal and verifying the current check-only carrier still passes.",
+        "last_worker_completed_at": "2026-06-26T13:51:53.242Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T13:52:38.679Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived design note cites the mounted row-125/service-principal anchors, preserves the exact VirtualMachines + managed_cluster_identity_type=None + Delete-mode autoscaler contract, keeps the current replay check-only, and truthfully scopes future live execution to a separate execute-gated carrier."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-202606",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-202606"
+      ],
+      "result": "Wrote the bounded no-cloud design note at evidence/archive/cluster-autoscaler-vm-prerelease-service-principal-execute-gated-live-carrier-design-note-20260626.md, defining the narrowest future execute-gated live carrier for path.cluster-autoscaler.vm-prerelease-service-principal and verifying the current check-only carrier still passes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T13:52:38.679Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived design note cites the mounted row-125/service-principal anchors, preserves the exact VirtualMachines + managed_cluster_identity_type=None + Delete-mode autoscaler contract, keeps the current replay check-only, and truthfully scopes future live execution to a separate execute-gated carrier."
+      },
+      "status": "done"
+    }
+  ]
+}

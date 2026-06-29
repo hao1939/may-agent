@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:22:28.975Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 blocked-frontier review accepted the dedicated VM prerelease row-50 readiness retry: the canonical mounted-source/spec/replay/model carrier still passes dry-run unchanged and is ready for its future execute gate, so the earlier failure is now classified as provider-finalization loss rather than a carrier defect. The focus branch now keeps exactly one truthful family-level blocked wait for the still-external approval/identity-return subset (row 33 plus shared-identity rows 75-76), while a new runnable evidence-refresh leaf restores the missing durable archive packet at that blocked wait's declared output path so future blocker reviews have inspectable repo-local proof. Rows 25, 40-43, and 50 remain intentionally out of the external-human wait family because their remaining work is local execute-gated/live-run follow-up, not missing human transport.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the missing durable repo-local readiness artifact for VM prerelease row 40 by rerunning the bounded Linux/Windows sibling dry-run checks unchanged, proving both maintained carriers still pass, and recording the exact next execution gate without inventing any new rewrite or shared-fixture scope.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the canonical row-40 mounted-source/spec/replay surfaces, records exact dry-run commands and passing outputs for both spec.node-pool-config.ssh-public-key-update-linux and spec.node-pool-config.ssh-public-key-update-windows, and explains why the prior row-40 failure was provider-429 finalization loss rather than a row-local carrier defect.",
+        "The artifact ends with a concrete owner-facing verdict on whether row 40 is ready for the unchanged future mutation gate, with no rewrite or external-human dependency introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-dry-run-readiness-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:17:07.907Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T20:17:47.650Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626_20260626201810",
+        "assigned_at": "2026-06-26T20:18:10.672Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626",
+        "worker_started_attempt_id": "a_vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626_20260626201810",
+        "worker_started_at": "2026-06-26T20:18:10.896Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-40 retry artifact at evidence/archive/vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626.md after rerunning both unchanged dry-run commands and confirming both Linux and Windows sibling carriers still pass.",
+        "last_worker_completed_at": "2026-06-26T20:19:15.018Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:20:42.339Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626.md cites the canonical mounted-source/spec/replay surfaces for both row-40 siblings, records exact unchanged Linux and Windows dry-run commands with passed outputs, and confirms the earlier miss was provider-429 finalization loss rather than a row-local carrier defect; future mutation gates remain unchanged and local focus stays on row50 plus private-cluster none-dns-zone-v3."
+      },
+      "session_id": "s_task_vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626",
+      "session_history": [
+        "s_task_vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626"
+      ],
+      "result": "Created the requested row-40 retry artifact at evidence/archive/vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626.md after rerunning both unchanged dry-run commands and confirming both Linux and Windows sibling carriers still pass.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:20:42.339Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row40-ssh-linux-windows-sibling-dry-run-readiness-retry-20260626.md cites the canonical mounted-source/spec/replay surfaces for both row-40 siblings, records exact unchanged Linux and Windows dry-run commands with passed outputs, and confirms the earlier miss was provider-429 finalization loss rather than a row-local carrier defect; future mutation gates remain unchanged and local focus stays on row50 plus private-cluster none-dns-zone-v3."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the missing durable repo-local readiness artifact for VM prerelease row 50 by rerunning the dedicated bounded dry-run unchanged, proving the maintained standalone carrier still passes, and recording the exact next execution gate without folding it back into the generic StatefulSet/PDB lane.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the canonical row-50 mounted-source/spec/replay surfaces, records the exact dry-run command and passing output for spec.cluster-autoscaler.vm-prerelease-statefulset-cordon-scale, and explains why the prior row-50 failure was provider-429 finalization loss rather than a row-local carrier defect.",
+        "The artifact ends with a concrete owner-facing verdict on whether row 50 is ready for the unchanged future mutation gate, with no rewrite or external-human dependency introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-dry-run-readiness-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T20:17:07.952Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T20:19:28.508Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626_20260626202012",
+        "assigned_at": "2026-06-26T20:20:12.026Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626",
+        "worker_started_attempt_id": "a_vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626_20260626202012",
+        "worker_started_at": "2026-06-26T20:20:12.368Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable row-50 readiness retry artifact at evidence/archive/vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626.md, documenting canonical mounted-source/spec/model surfaces, the exact passing dry-run, and the unchanged future mutation gate.",
+        "last_worker_completed_at": "2026-06-26T20:21:46.611Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T20:22:28.837Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact records the canonical row-50 mounted-source/spec/replay/model carrier, the exact passing dry-run command/output, and the unchanged future mutation gate, proving the earlier failure was provider-finalization loss rather than a row-local carrier defect."
+      },
+      "session_id": "s_task_vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626",
+      "session_history": [
+        "s_task_vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626"
+      ],
+      "result": "Produced the durable row-50 readiness retry artifact at evidence/archive/vmpr-row50-cas-statefulset-cordon-scale-dry-run-readiness-retry-20260626.md, documenting canonical mounted-source/spec/model surfaces, the exact passing dry-run, and the unchanged future mutation gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T20:22:28.837Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact records the canonical row-50 mounted-source/spec/replay/model carrier, the exact passing dry-run command/output, and the unchanged future mutation gate, proving the earlier failure was provider-finalization loss rather than a row-local carrier defect."
+      },
+      "status": "done"
+    }
+  ]
+}

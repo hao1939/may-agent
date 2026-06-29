@@ -1,0 +1,393 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T21:34:05.592Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "Accepted a new five-packet public-reference tranche: industry now has a reviewed draft showing the current packet is over-broad versus mounted Automatic/managed-namespace source, and the four ManagedSystem drafts now ground the public create-time, delete/migration, CLI add-existing, and CLI create-cluster surfaces with their remaining field/contract ambiguities. Archive these completed draft-collection leaves and keep the lane focused on the still-open repair families that promote or remap the packets.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-industry",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for industry.",
+      "inputs": [
+        "feature:industry",
+        "packet:features/industry.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:industry"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "industry",
+        "packetPath": "features/industry.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "industry-hipaa-compliance",
+          "industry-pci-dss-compliance",
+          "industry-soc2-compliance",
+          "industry-fedramp-compliance",
+          "industry-iso27001-baseline",
+          "industry-nist-controls",
+          "industry-secure-defaults",
+          "industry-network-policy-enforcement",
+          "industry-encryption-at-rest",
+          "industry-encryption-in-transit",
+          "industry-audit-logging",
+          "industry-rbac-enforcement",
+          "industry-image-policy",
+          "industry-pod-security",
+          "industry-privileged-container-deny",
+          "industry-node-restriction-compliance",
+          "industry-defender-integration",
+          "industry-compliance-profile-lifecycle"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted the industry public-reference draft: it records exact Learn/swagger citations, explicitly shows the current industry packet is over-broad versus mounted Automatic/managed-namespace source, and leaves repair-feature-reference-industry-mounted-source-remap-20260627 as the live successor for packet remap/promotion."
+      },
+      "trace": {
+        "created_at": "2026-06-27T19:09:35.694Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-27T19:12:38.665Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-industry",
+        "stale_active_requeued_at": "2026-06-27T19:12:38.430Z",
+        "stale_active_requeue_reason": "feature-reference loop found active collector child with no queued assignment and no worker start",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_collect-feature-reference-industry_20260627190935",
+        "current_attempt_id": "a_collect-feature-reference-industry_20260627191238",
+        "worker_started_attempt_id": "a_collect-feature-reference-industry_20260627191238",
+        "worker_started_at": "2026-06-27T19:14:24.991Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for industry: evidence/archive/feature-reference-industry-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:24:43.761Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:34:04.882Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the industry public-reference draft: it records exact Learn/swagger citations, explicitly shows the current industry packet is over-broad versus mounted Automatic/managed-namespace source, and leaves repair-feature-reference-industry-mounted-source-remap-20260627 as the live successor for packet remap/promotion."
+      },
+      "session_id": "s_task_collect-feature-reference-industry",
+      "session_history": [
+        "s_task_collect-feature-reference-industry"
+      ],
+      "result": "Collected official feature references for industry: evidence/archive/feature-reference-industry-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:34:04.882Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-managedsystem-create-time-initial-pool",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for managedsystem-create-time-initial-pool.",
+      "inputs": [
+        "feature:managedsystem-create-time-initial-pool",
+        "packet:features/managedsystem-pool/packets/create-time-initial-pool.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:managedsystem-create-time-initial-pool"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "managedsystem-create-time-initial-pool",
+        "packetPath": "features/managedsystem-pool/packets/create-time-initial-pool.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "managedsystem-pool",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted the create-time initial-pool draft: it proves ManagedSystem is a public create-time mode on agentPoolProfiles, records the generic-field ambiguity, and leaves the ManagedSystem placeholder-promotion repair family as the promotion successor."
+      },
+      "trace": {
+        "created_at": "2026-06-27T19:14:39.786Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-managedsystem-create-time-initial-pool_20260627191440",
+        "assigned_at": "2026-06-27T19:14:40.018Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-managedsystem-create-time-initial-pool",
+        "worker_started_attempt_id": "a_collect-feature-reference-managedsystem-create-time-initial-pool_20260627191440",
+        "worker_started_at": "2026-06-27T19:15:35.417Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for managedsystem-create-time-initial-pool: evidence/archive/feature-reference-managedsystem-create-time-initial-pool-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:25:31.610Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:34:04.960Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the create-time initial-pool draft: it proves ManagedSystem is a public create-time mode on agentPoolProfiles, records the generic-field ambiguity, and leaves the ManagedSystem placeholder-promotion repair family as the promotion successor."
+      },
+      "session_id": "s_task_collect-feature-reference-managedsystem-create-time-initial-pool",
+      "session_history": [
+        "s_task_collect-feature-reference-managedsystem-create-time-initial-pool"
+      ],
+      "result": "Collected official feature references for managedsystem-create-time-initial-pool: evidence/archive/feature-reference-managedsystem-create-time-initial-pool-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:34:04.960Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-managedsystem-disable-migration",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for managedsystem-disable-migration.",
+      "inputs": [
+        "feature:managedsystem-disable-migration",
+        "packet:features/managedsystem-pool/packets/disable-migration.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:managedsystem-disable-migration"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "managedsystem-disable-migration",
+        "packetPath": "features/managedsystem-pool/packets/disable-migration.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "managedsystem-pool",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted the disable-migration draft: it captures the public Automatic-only/unsupported-migration boundary and the delete-surface contradiction, while leaving later packet promotion to the open ManagedSystem repair family."
+      },
+      "trace": {
+        "created_at": "2026-06-27T19:14:39.803Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-managedsystem-disable-migration_20260627191440",
+        "assigned_at": "2026-06-27T19:14:40.034Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-managedsystem-disable-migration",
+        "worker_started_attempt_id": "a_collect-feature-reference-managedsystem-disable-migration_20260627191440",
+        "worker_started_at": "2026-06-27T19:15:45.139Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for managedsystem-disable-migration: evidence/archive/feature-reference-managedsystem-disable-migration-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:34:59.830Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:34:05.037Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the disable-migration draft: it captures the public Automatic-only/unsupported-migration boundary and the delete-surface contradiction, while leaving later packet promotion to the open ManagedSystem repair family."
+      },
+      "session_id": "s_task_collect-feature-reference-managedsystem-disable-migration",
+      "session_history": [
+        "s_task_collect-feature-reference-managedsystem-disable-migration"
+      ],
+      "result": "Collected official feature references for managedsystem-disable-migration: evidence/archive/feature-reference-managedsystem-disable-migration-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:34:05.037Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-managedsystem-pool-cli-add-existing",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for managedsystem-pool-cli-add-existing.",
+      "inputs": [
+        "feature:managedsystem-pool-cli-add-existing",
+        "packet:features/managedsystem-pool/packets/cli-add-existing.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:managedsystem-pool-cli-add-existing"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "managedsystem-pool-cli-add-existing",
+        "packetPath": "features/managedsystem-pool/packets/cli-add-existing.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "managedsystem-pool",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted the CLI add-existing draft: it grounds the agentPools PUT surface, one-ManagedSystem constraint, and missing public field-subset contract, with packet promotion still owned by the ManagedSystem repair family."
+      },
+      "trace": {
+        "created_at": "2026-06-27T19:18:20.211Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-managedsystem-pool-cli-add-existing_20260627191820",
+        "assigned_at": "2026-06-27T19:18:20.455Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-managedsystem-pool-cli-add-existing",
+        "worker_started_attempt_id": "a_collect-feature-reference-managedsystem-pool-cli-add-existing_20260627191820",
+        "worker_started_at": "2026-06-27T19:35:06.025Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for managedsystem-pool-cli-add-existing: evidence/archive/feature-reference-managedsystem-pool-cli-add-existing-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:50:34.552Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:34:05.111Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the CLI add-existing draft: it grounds the agentPools PUT surface, one-ManagedSystem constraint, and missing public field-subset contract, with packet promotion still owned by the ManagedSystem repair family."
+      },
+      "session_id": "s_task_collect-feature-reference-managedsystem-pool-cli-add-existing",
+      "session_history": [
+        "s_task_collect-feature-reference-managedsystem-pool-cli-add-existing"
+      ],
+      "result": "Collected official feature references for managedsystem-pool-cli-add-existing: evidence/archive/feature-reference-managedsystem-pool-cli-add-existing-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:34:05.111Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-managedsystem-pool-cli-create-cluster",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for managedsystem-pool-cli-create-cluster.",
+      "inputs": [
+        "feature:managedsystem-pool-cli-create-cluster",
+        "packet:features/managedsystem-pool/packets/cli-create-cluster.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:managedsystem-pool-cli-create-cluster"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "managedsystem-pool-cli-create-cluster",
+        "packetPath": "features/managedsystem-pool/packets/cli-create-cluster.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "managedsystem-pool",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted the CLI create-cluster draft: it grounds the az aks create --enable-managed-system-pool public surface plus the create-time ManagedSystem REST contract and preserves the remaining packet-promotion work for the ManagedSystem repair family."
+      },
+      "trace": {
+        "created_at": "2026-06-27T19:18:20.222Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-managedsystem-pool-cli-create-cluster_20260627191820",
+        "assigned_at": "2026-06-27T19:18:20.474Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-managedsystem-pool-cli-create-cluster",
+        "worker_started_attempt_id": "a_collect-feature-reference-managedsystem-pool-cli-create-cluster_20260627191820",
+        "worker_started_at": "2026-06-27T19:35:06.227Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for managedsystem-pool-cli-create-cluster: evidence/archive/feature-reference-managedsystem-pool-cli-create-cluster-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T19:50:46.129Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T21:34:05.185Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the CLI create-cluster draft: it grounds the az aks create --enable-managed-system-pool public surface plus the create-time ManagedSystem REST contract and preserves the remaining packet-promotion work for the ManagedSystem repair family."
+      },
+      "session_id": "s_task_collect-feature-reference-managedsystem-pool-cli-create-cluster",
+      "session_history": [
+        "s_task_collect-feature-reference-managedsystem-pool-cli-create-cluster"
+      ],
+      "result": "Collected official feature references for managedsystem-pool-cli-create-cluster: evidence/archive/feature-reference-managedsystem-pool-cli-create-cluster-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T21:34:05.185Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

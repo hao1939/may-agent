@@ -1,0 +1,444 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:15:13.465Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier owner pass accepted two review leaves after evidence review: ManagedSystem mounted-source narrative alignment is complete and preserves the exact caller-owned contract boundaries, and the network-cni overlay dual-stack migration execute-approval packet is complete and narrows the remaining gap to approval transport rather than replay authoring. The live frontier is now two active workspace leaves (VM prerelease dirty-workspace done-slice triage, plus network-cni approval dispatch-proof collection) and two exact blocked families (AddonV2 row-63 runtime/session reconciliation; shared external human send-proof family for VM prerelease and MachinesPreview asks).",
+  "archived": 9,
+  "tasks": [
+    {
+      "id": "vmpr-row76-aksconformance-tunnel-rerun-after-shared-identity-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the exact row-76 VirtualMachines/shared-identity/admin-kubeconfig tunnel replay for path.virtualmachine-prerelease.row76-aksconformance-tunnel only after the exact shared user-assigned identity resource id required by AKS_RP_E2E_ASSIGN_IDENTITY is supplied, so the accepted execute implementation plus first live blocker can advance to the first trustworthy product/runtime verdict without changing the carrier, mutation gate, or logs/exec/port-forward contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row76-aksconformance-tunnel-rerun-after-shared-identity-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact shared-identity prerequisite now present, the unchanged replay/spec/path/mutation-gate contract reused, and explicitly links the accepted 2026-06-21 blocked live rerun as the resumed boundary.",
+        "Artifact captures the first truthful terminal outcome of the resumed live rerun: either bounded admin-kubeconfig plus logs/exec/port-forward verdict evidence on the unchanged VirtualMachines/shared-identity carrier, or the next exact blocker/failure boundary with command/output evidence.",
+        "Task remains blocked until AKS_RP_E2E_ASSIGN_IDENTITY is available for the row-76 replay; it must not broaden into carrier changes, non-shared-identity variants, or unrelated environment diagnosis unless the rerun reaches a new bounded surface."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:42:48.557Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T10:12:24.640Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-76 authority search is complete and the only truthful next action is durable external send/reply on the shared-identity ask, already carried by the family wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:12:24.640Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-76 authority search is complete and the only truthful next action is durable external send/reply on the shared-identity ask, already carried by the family wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-accelerated-networking-live-rerun-gated-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the exact row-33 VirtualMachines accelerated-networking replay for path.virtualmachines.accelerated-networking only after explicit execute approval, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=virtualmachines-accelerated-networking, and clean Azure auth/subscription preflight are present, reusing the unchanged source-grounded carrier to capture the first truthful live verdict on mixedskupool VM discovery, NIC fetch, and per-SKU enableAcceleratedNetworking true/false assertions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-accelerated-networking-live-rerun-gated-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact execute approval/preflight/gate that made the run truthful, and explicitly links the unchanged feature/spec/replay/path carrier documented by vmpr-prerelease-next-nonblocked-row-lineage-20260621.",
+        "Artifact captures the first truthful row-33 live terminal boundary: either mixedskupool VM discovery plus NIC verdict evidence showing accelerated-capable SKU true and non-capable SKU false, or the next exact blocker/failure boundary on that unchanged carrier.",
+        "Task remains blocked until execute approval, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=virtualmachines-accelerated-networking, and clean Azure preflight are all present; it must not broaden into rows 31/32/34 or unrelated mixed-SKU variants."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:10:55.465Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T10:12:24.544Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-33 local readiness and unchanged carrier are already accepted; the only live blocker is missing human send/approval proof, so the family wait is the single useful representation until proof or reply arrives."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:12:24.544Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-33 local readiness and unchanged carrier are already accepted; the only live blocker is missing human send/approval proof, so the family wait is the single useful representation until proof or reply arrives."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row75-aksconformance-core-rerun-after-shared-identity-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the exact row-75 VirtualMachines/shared-identity/user-kubeconfig deployment+tunnel+metrics replay for path.virtualmachine-prerelease.row75-aksconformance-core only after one exact approved AKS_RP_E2E_ASSIGN_IDENTITY value is supplied, so the accepted execute implementation can advance from the current no-identity boundary to the first trustworthy live product/runtime verdict without changing the carrier, mutation gate, or composed assertion bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row75-aksconformance-core-rerun-after-shared-identity-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact shared-identity prerequisite now present, reuses the unchanged row-75 replay/spec/path/mutation-gate contract, and explicitly links the accepted no-identity execute evidence plus the row-75 family-linkage authority that reused the row-76 shared-identity ask packet.",
+        "Artifact captures the first truthful terminal outcome of the resumed live rerun: either bounded user-kubeconfig deployment+tunnel+metrics verdict evidence on the unchanged VirtualMachines/shared-identity carrier, or the next exact blocker/failure boundary with resume condition.",
+        "Task remains blocked until AKS_RP_E2E_ASSIGN_IDENTITY is available for the row-75 replay; it must not broaden into row-76 admin-kubeconfig execution, carrier changes, or unrelated VM prerelease families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:51:46.969Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T10:12:24.591Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-75 already narrowed to the exact shared-identity ask and no further local carrier work remains, so keeping a separate blocked leaf only duplicated the same external wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:12:24.591Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the family-level external-send-proof-dispatch-family-human-transport-proof-wait-20260621. Row-75 already narrowed to the exact shared-identity ask and no further local carrier work remains, so keeping a separate blocked leaf only duplicated the same external wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Continue from the accepted 2026-06-21 network-cni overlay dual-stack migration boundary-map outcome by promoting replays/network-cni-azure-overlay-dual-stack-migration.ts from check-only source-spec validation to an execute-capable, explicitly gated replay for path.network-cni-azure-overlay-dual-stack-migration, reusing the unchanged source-grounded migration carrier and adjacent Windows sibling replay patterns without launching cloud mutation from this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted 2026-06-21 migration boundary-map plus the current check-only replay, enumerates the exact operations/assertions that must survive promotion, and names the sibling replay pattern(s) reused so the unchanged migration carrier stays bounded to path.network-cni-azure-overlay-dual-stack-migration only.",
+        "Replay-local changes update replays/network-cni-azure-overlay-dual-stack-migration.ts to carry an execute-capable explicit mutation gate rather than runSourceSpecCheck only, while preserving the exact source-grounded migration path contract and recording any required repo-local companion updates plus targeted local verification output.",
+        "Artifact ends with one truthful next ceiling for this path only: either the replay is now locally ready for a future explicitly approved cloud run, or one exact remaining local replay/tooling gap is identified without launching cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:01:50.814Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621_20260621100150",
+        "assigned_at": "2026-06-21T10:01:50.863Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621_20260621100150",
+        "worker_started_at": "2026-06-21T10:02:00.606Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted replays/network-cni-azure-overlay-dual-stack-migration.ts from a check-only source-spec wrapper into an execute-capable, explicitly gated replay for the migration path only, and wrote a matching evidence artifact plus local check/gate verification outputs.",
+        "last_worker_completed_at": "2026-06-21T10:05:33.270Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:08:19.241Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the 2026-06-21 network-cni replay-promotion result after re-reading the evidence artifact and promoted replay file: the task truthfully converted replays/network-cni-azure-overlay-dual-stack-migration.ts from check-only lineage validation into an execute-capable replay with an explicit AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-azure-overlay-dual-stack-migration gate, preserved the exact source/spec/path migration contract, and stopped at the truthful next ceiling of future approved live execution only."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-migration-execute-replay-promotion-20260621"
+      ],
+      "result": "Promoted replays/network-cni-azure-overlay-dual-stack-migration.ts from a check-only source-spec wrapper into an execute-capable, explicitly gated replay for the migration path only, and wrote a matching evidence artifact plus local check/gate verification outputs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:08:19.241Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the 2026-06-21 network-cni replay-promotion result after re-reading the evidence artifact and promoted replay file: the task truthfully converted replays/network-cni-azure-overlay-dual-stack-migration.ts from check-only lineage validation into an execute-capable replay with an explicit AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-azure-overlay-dual-stack-migration gate, preserved the exact source/spec/path migration contract, and stopped at the truthful next ceiling of future approved live execution only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "external-send-proof-dispatch-family-owner-send-or-escalate-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the single shared external-send-proof family as one active owner-side human send/handoff/escalation action: send or escalate the already-prepared MachinesPreview handoff packet, VM prerelease rows-25-and-50 live-operator bundle, row-76 shared-identity ask, and row-33 execute-approval ask outside runtime, then capture durable repo-local proof with timestamp/channel/recipient linkage or authoritative replies for each covered packet without recreating duplicate per-branch waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalate-20260621.md"
+      ],
+      "acceptance": [
+        "Task records one durable repo-local proof artifact for the shared family covering the four existing packets and, for each covered ask, captures the exact send/handoff/escalation timestamp, channel, recipient or escalation path, sender/owner, and exact packet linkage, or links the authoritative direct reply that supersedes missing send proof.",
+        "If any covered ask receives a denial, redirect, or blocker instead of approval/execution, artifact records that exact returned boundary and links the affected blocked branches so the family can truthfully remain the single cross-branch carrier without recreating duplicate child waits.",
+        "Task stays scoped to the shared external-human transport ceiling only: it does not redraft the packets, does not launch cloud mutation, and does not broaden into local setup work already proven complete by the accepted 2026-06-21 handoff-proof audit."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:05:50.304Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T10:05:50.481Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-dispatch-family-owner-send-or-escalate-20260621_20260621100625",
+        "assigned_at": "2026-06-21T10:06:25.989Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-dispatch-family-owner-send-or-escalate-20260621",
+        "worker_started_attempt_id": "a_external-send-proof-dispatch-family-owner-send-or-escalate-20260621_20260621100625",
+        "worker_started_at": "2026-06-21T10:06:36.611Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable shared-family proof artifact `evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalate-20260621.md`, reconciling the four covered external asks and documenting that no repo-local send proof or authoritative reply exists yet, so one owner-side human send/escalation action remains the truthful next step.",
+        "last_worker_completed_at": "2026-06-21T10:07:54.033Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:08:46.326Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner rejected the worker's done claim because the artifact proves the opposite of acceptance: no durable repo-local send/handoff/escalation proof or authoritative reply exists yet for the four covered packets, so the review leaf cannot be accepted as completed. Its durable meaning is preserved by a blocked family-level successor that carries the exact outside-runtime human-transport wait and resume condition without recreating duplicate per-branch waits."
+      },
+      "session_id": "s_task_external-send-proof-dispatch-family-owner-send-or-escalate-20260621",
+      "session_history": [
+        "s_task_external-send-proof-dispatch-family-owner-send-or-escalate-20260621"
+      ],
+      "result": "Created the durable shared-family proof artifact `evidence/archive/external-send-proof-dispatch-family-owner-send-or-escalate-20260621.md`, reconciling the four covered external asks and documenting that no repo-local send proof or authoritative reply exists yet, so one owner-side human send/escalation action remains the truthful next step.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:08:46.326Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner rejected the worker's done claim because the artifact proves the opposite of acceptance: no durable repo-local send/handoff/escalation proof or authoritative reply exists yet for the four covered packets, so the review leaf cannot be accepted as completed. Its durable meaning is preserved by a blocked family-level successor that carries the exact outside-runtime human-transport wait and resume condition without recreating duplicate per-branch waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-pool-boundary-map-source-and-model-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the next bounded non-cloud ManagedSystem Pool learning slice: use mounted AKS RP handwritten e2ev3 cases plus existing model/docs to map the ManagedSystem pool boundary as a first worked example, covering accepted inputs, rejected inputs, expected behavior paths, observed/terminal evidence already on record, adjacent surfaces, and the most valuable missing probe candidates without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact handwritten e2ev3 source files/scenarios and current model paths used to map ManagedSystem pool behavior, and clearly separates accepted inputs, rejected/unsupported inputs, expected behavior, and already-observed evidence for the first worked example boundary.",
+        "Artifact links the existing terminal/path judgments that matter here (including create-time initial/default pool and VirtualMachines+ManagedSystem combined when relevant), identifies adjacent ManagedSystem surfaces that remain unmapped or weakly mapped, and names the next bounded probe or model-update candidates with rationale.",
+        "Task stays in the regular learning lane only: no cloud mutation, no external-human send work, and any model/view edits are limited to durable corrections justified by the cited source/evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:07:08.828Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-boundary-map-source-and-model-20260621_20260621100708",
+        "assigned_at": "2026-06-21T10:07:08.873Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-boundary-map-source-and-model-20260621",
+        "worker_started_attempt_id": "a_managedsystem-pool-boundary-map-source-and-model-20260621_20260621100708",
+        "worker_started_at": "2026-06-21T10:07:27.124Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable ManagedSystem Pool boundary-map artifact at evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md, grounded in mounted AKS RP handwritten source plus current accepted model/features/evidence, with accepted/rejected inputs, expected behavior, observed evidence, adjacent surfaces, and next bounded follow-up candidates.",
+        "last_worker_completed_at": "2026-06-21T10:08:44.239Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:10:19.685Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md cites the mounted nativerp and virtualmachine handwritten sources plus current managedsystem model/features/evidence, cleanly separates accepted inputs, rejected inputs, expected behavior, observed/terminal evidence, adjacent surfaces, and names the next bounded follow-up candidates without cloud mutation."
+      },
+      "session_id": "s_task_managedsystem-pool-boundary-map-source-and-model-20260621",
+      "session_history": [
+        "s_task_managedsystem-pool-boundary-map-source-and-model-20260621"
+      ],
+      "result": "Created a durable ManagedSystem Pool boundary-map artifact at evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md, grounded in mounted AKS RP handwritten source plus current accepted model/features/evidence, with accepted/rejected inputs, expected behavior, observed evidence, adjacent surfaces, and next bounded follow-up candidates.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:10:19.685Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-source-and-model-20260621.md cites the mounted nativerp and virtualmachine handwritten sources plus current managedsystem model/features/evidence, cleanly separates accepted inputs, rejected inputs, expected behavior, observed/terminal evidence, adjacent surfaces, and names the next bounded follow-up candidates without cloud mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-dualstack-migration-live-rerun-gated-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the exact path.network-cni-azure-overlay-dual-stack-migration replay only after explicit execute approval, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-azure-overlay-dual-stack-migration, and clean Azure auth/subscription preflight are present, reusing the newly promoted execute-capable replay carrier to capture the first truthful live create→dual-stack-update verdict for the migration path without broadening into the create-time Windows siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-migration-live-rerun-gated-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact execute approval, mutation gate, and preflight that made the run truthful, and explicitly links the accepted 2026-06-21 replay-promotion artifact plus the unchanged migration source/spec/path carrier.",
+        "Artifact captures the first truthful live terminal boundary for path.network-cni-azure-overlay-dual-stack-migration only: either bounded IPv4-only create, in-place IPv4→IPv6 migration, CNS/node-label, and post-migration IPv4+IPv6 datapath verdict evidence, or the next exact blocker/failure boundary on that unchanged carrier.",
+        "Task remains blocked until explicit execute approval, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-azure-overlay-dual-stack-migration, and clean Azure auth/subscription preflight are all present; it must not broaden into the Windows2022/Windows2025 create-time sibling paths or ungated cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:08:19.290Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T10:12:24.778Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by active task network-cni-overlay-dualstack-migration-execute-approval-packet-20260621. The live replay carrier is already locally execute-capable; the only remaining project-owned work is to make the approval/escalation packet explicit instead of leaving this path as a passive environment gate."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T10:12:24.778Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by active task network-cni-overlay-dualstack-migration-execute-approval-packet-20260621. The live replay carrier is already locally execute-capable; the only remaining project-owned work is to make the approval/escalation packet explicit instead of leaving this path as a passive environment gate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-mounted-source-narrative-contract-alignment-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP ManagedSystem handwritten source as the durable authority to audit and, where needed, correct repo-local ManagedSystem narrative/model docs so they consistently distinguish helper-internal source setup (count=0, type=nil) from the accepted caller-owned wire contract (name+mode only) and replace stale devbox-oriented source references.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-mounted-source-narrative-contract-alignment-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted ManagedSystem source files and the repo-local docs/features reviewed, and records where wording already matched versus where corrections were needed.",
+        "Any doc/model edits keep the maintained ManagedSystem contract exact: existing-pool add stays mode-only, create-time caller-owned shape stays name+mode only, and helper-internal count=0/type=nil wording is explicitly treated as source/setup detail rather than widened caller contract.",
+        "Task stays in the regular learning/model-update lane only: no cloud mutation, no external-human send work, and all claimed corrections are backed by cited source or accepted evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:10:19.920Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-mounted-source-narrative-contract-alignment-20260621_20260621101019",
+        "assigned_at": "2026-06-21T10:10:19.966Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-mounted-source-narrative-contract-alignment-20260621",
+        "worker_started_attempt_id": "a_managedsystem-mounted-source-narrative-contract-alignment-20260621_20260621101019",
+        "worker_started_at": "2026-06-21T10:10:31.667Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited ManagedSystem repo-local narrative/model surfaces against mounted AKS RP source, corrected one remaining contract wording gap, replaced stale devbox source paths with mounted-source paths, removed stale unmapped .claude references, and wrote the evidence artifact at evidence/archive/managedsystem-mounted-source-narrative-contract-alignment-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T10:14:05.144Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:15:13.285Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/managedsystem-mounted-source-narrative-contract-alignment-20260621.md: the artifact cites exact mounted AKS RP ManagedSystem authority, proves repo-local docs/specs were audited, and records the needed wording/path corrections while preserving the exact caller-owned contract boundaries (existing-pool add mode-only; create-time name+mode only; count=0/type=nil treated as internal source detail)."
+      },
+      "session_id": "s_task_managedsystem-mounted-source-narrative-contract-alignment-20260621",
+      "session_history": [
+        "s_task_managedsystem-mounted-source-narrative-contract-alignment-20260621"
+      ],
+      "result": "Audited ManagedSystem repo-local narrative/model surfaces against mounted AKS RP source, corrected one remaining contract wording gap, replaced stale devbox source paths with mounted-source paths, removed stale unmapped .claude references, and wrote the evidence artifact at evidence/archive/managedsystem-mounted-source-narrative-contract-alignment-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:15:13.285Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/managedsystem-mounted-source-narrative-contract-alignment-20260621.md: the artifact cites exact mounted AKS RP ManagedSystem authority, proves repo-local docs/specs were audited, and records the needed wording/path corrections while preserving the exact caller-owned contract boundaries (existing-pool add mode-only; create-time name+mode only; count=0/type=nil treated as internal source detail)."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-dualstack-migration-execute-approval-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the exact execute-approval packet and human handoff contract for path.network-cni-azure-overlay-dual-stack-migration so the current passive live-rerun gate becomes one concrete approval/escalation step: cite the accepted execute-capable replay carrier, list the exact mutation gate/env/preflight requirements, define the minimal approval ask payload, and record the intended human/operator transport path or exact missing transport proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-migration-execute-approval-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted 2026-06-21 replay-promotion evidence and preserves the exact path/replay contract for path.network-cni-azure-overlay-dual-stack-migration only, including the required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, execute command shape, and clean Azure auth/subscription preflight prerequisites.",
+        "Artifact includes the minimal human approval/handoff packet for this replay: what approval is requested, why this run closes a named model gap, what evidence will be produced, and the intended approver/operator transport path or an exact statement that transport is unavailable and must be escalated.",
+        "Task stays in the user-review/workspace lane only: no cloud mutation, no replay edits unless the packet reveals a textual contract defect, and any blocker conclusion is evidence-backed enough to replace the passive blocked rerun leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:12:24.687Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-migration-execute-approval-packet-20260621_20260621101224",
+        "assigned_at": "2026-06-21T10:12:24.732Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-migration-execute-approval-packet-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-migration-execute-approval-packet-20260621_20260621101224",
+        "worker_started_at": "2026-06-21T10:12:45.457Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the execute-approval packet for the overlay dual-stack migration path at evidence/archive/network-cni-overlay-dualstack-migration-execute-approval-packet-20260621.md, grounding it in the accepted replay-promotion evidence, exact mutation gate/command contract, preflight requirements, minimal approval ask, and documented human transport path.",
+        "last_worker_completed_at": "2026-06-21T10:14:10.919Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:15:13.330Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-cni-overlay-dualstack-migration-execute-approval-packet-20260621.md: the packet preserves the exact execute-capable replay/path/gate contract, cites non-mutating check and execute-gate proof, and truthfully narrows the remaining gap to human/operator approval transport rather than replay authoring or cloud execution."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-migration-execute-approval-packet-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-migration-execute-approval-packet-20260621"
+      ],
+      "result": "Produced the execute-approval packet for the overlay dual-stack migration path at evidence/archive/network-cni-overlay-dualstack-migration-execute-approval-packet-20260621.md, grounding it in the accepted replay-promotion evidence, exact mutation gate/command contract, preflight requirements, minimal approval ask, and documented human transport path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:15:13.330Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-cni-overlay-dualstack-migration-execute-approval-packet-20260621.md: the packet preserves the exact execute-capable replay/path/gate contract, cites non-mutating check and execute-gate proof, and truthfully narrows the remaining gap to human/operator approval transport rather than replay authoring or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

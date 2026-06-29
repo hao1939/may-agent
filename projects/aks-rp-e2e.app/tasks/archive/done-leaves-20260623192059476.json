@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:20:59.476Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review: no review claims needed acceptance, confirm-runnable remains empty, and the truthful live frontier is unchanged except for compaction. Keep traffic-api-proxy-normalized-carrier-gap-repair-20260623 as the single active repo-local validator/model repair slice; preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged until returned proof or the first owner review after 2026-06-26; preserve private-cluster-vnet-auth-service-tags-selected-host-ssh-environment-wait-20260623 unchanged until same-launcher SSH step-1 reachability or an authoritative endpoint/access update arrives. The archived done children below already have durable archive evidence and their branch meaning is now summarized at the project root, so compact them out of the visible frontier without reopening their local slices.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "model-validator-preexisting-failure-family-triage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the current knowledge-map validator against the repo-local model, capture one bounded archive artifact that groups the pre-existing non-private-cluster validation failures into concrete families, and identify the first truthful repo-local repair candidate or evidence-ceiling disposition for one family without reopening accepted private-cluster cleanup or any external/cloud waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/model-validator-preexisting-failure-family-triage-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records the exact validator command and current failure output, groups the observed pre-existing errors into named failure families with affected files/paths, and explicitly states which single family is the next truthful repo-local repair candidate versus which failures remain merely cataloged in this pass.",
+        "The work stays repo-local and bounded to model-validator failure-family triage: no cloud mutation, no reopening of the private-cluster egress cleanup or private-cluster-none-dns-zone-v3 external-wait branch, and no broad multi-family repair campaign in the same leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-validator-failure-families"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:12:56.406Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_model-validator-preexisting-failure-family-triage-20260623_20260623191259",
+        "assigned_at": "2026-06-23T19:12:59.167Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_model-validator-preexisting-failure-family-triage-20260623",
+        "worker_started_attempt_id": "a_model-validator-preexisting-failure-family-triage-20260623_20260623191259",
+        "worker_started_at": "2026-06-23T19:13:14.384Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reran the repo-local knowledge-map validator, grouped the current non-private-cluster failures into concrete families, and wrote a durable archive packet naming node-http-proxy missing-DAG wiring as the first truthful repo-local repair candidate.",
+        "last_worker_completed_at": "2026-06-23T19:14:39.434Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:15:19.121Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-23 triage artifact reran the validator, grouped the current non-private-cluster failures into concrete families, and truthfully selected the node-http-proxy missing input-DAG wiring subfamily as the first bounded repo-local repair candidate while leaving broader warning pools cataloged only. This completes the bounded triage leaf and justifies a concrete follow-on repair task."
+      },
+      "session_id": "s_task_model-validator-preexisting-failure-family-triage-20260623",
+      "session_history": [
+        "s_task_model-validator-preexisting-failure-family-triage-20260623"
+      ],
+      "result": "Reran the repo-local knowledge-map validator, grouped the current non-private-cluster failures into concrete families, and wrote a durable archive packet naming node-http-proxy missing-DAG wiring as the first truthful repo-local repair candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:15:19.121Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-23 triage artifact reran the validator, grouped the current non-private-cluster failures into concrete families, and truthfully selected the node-http-proxy missing input-DAG wiring subfamily as the first bounded repo-local repair candidate while leaving broader warning pools cataloged only. This completes the bounded triage leaf and justifies a concrete follow-on repair task."
+      },
+      "status": "done"
+    }
+  ]
+}

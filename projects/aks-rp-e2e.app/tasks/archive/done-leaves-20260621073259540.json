@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:32:59.540Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update accepted the private-endpoint-connections lifecycle landing: evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md now anchors a maintained sibling lifecycle path path.private-cluster-private-endpoint-connections-lifecycle sourced from mounted private_endpoint_connections.go, while the narrower path.private-cluster-private-endpoint-connections remains intact for list/read-only semantics. No refill is needed on this task-completed wake because the truthful active frontier is already at maxConcurrent=5 (secops-fips extension carrier, VM prerelease row 150 kube-proxy carrier authoring, autoscaling row-anchor reconciliation, App Routing row reconciliation, and network-family source disposition); keep addonv2 row-63 rerun, Windows-variant reconciliation, and AKSConformance alias packet as queued repo-local next work, and leave external-send-proof-dispatch-family-20260620 as the single exact external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the distinct sibling lifecycle path for private-endpoint-connections into the maintained knowledge-map surfaces using the already-authored source-backed spec/replay/evidence chain. Owner reconciled the stale-terminal warning: path.private-cluster-private-endpoint-connections is already final/pass and must remain untouched; this task is only to add path.private-cluster-private-endpoint-connections-lifecycle as a separate lifecycle branch, not to retry or widen the final generic path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted private-endpoint-connections source file plus the existing lifecycle spec, replay, feature, and live evidence carrier used for the model landing.",
+        "Task updates the maintained knowledge-map surfaces so path.private-cluster-private-endpoint-connections-lifecycle is present in model/knowledge-map/model.json and regenerated view outputs, while path.private-cluster-private-endpoint-connections remains the narrower sibling rather than being overwritten.",
+        "Artifact records the exact files changed, the resulting path/model identifiers now present, and any bounded leftover follow-up; no new cloud execution is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:23:56.512Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621_20260621072356",
+        "assigned_at": "2026-06-21T07:23:56.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621",
+        "worker_started_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621_20260621072356",
+        "worker_started_at": "2026-06-21T07:24:10.873Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the separate private-endpoint-connections lifecycle branch into model/knowledge-map/model.json and regenerated maintained views, plus wrote the requested evidence note at evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md. The broader sibling path.private-cluster-private-endpoint-connections remains intact as the list/read-only carrier.",
+        "last_worker_completed_at": "2026-06-21T07:30:20.372Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:31:02.054Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md cites the mounted private_endpoint_connections.go source plus the maintained lifecycle carrier set, and grep-confirmed model/knowledge-map/model.json and regenerated views now contain path.private-cluster-private-endpoint-connections-lifecycle while preserving the narrower sibling path.private-cluster-private-endpoint-connections. No new cloud execution was introduced."
+      },
+      "session_id": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621",
+      "session_history": [
+        "s_task_private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621"
+      ],
+      "result": "Landed the separate private-endpoint-connections lifecycle branch into model/knowledge-map/model.json and regenerated maintained views, plus wrote the requested evidence note at evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md. The broader sibling path.private-cluster-private-endpoint-connections remains intact as the list/read-only carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:31:02.054Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-landing-20260621.md cites the mounted private_endpoint_connections.go source plus the maintained lifecycle carrier set, and grep-confirmed model/knowledge-map/model.json and regenerated views now contain path.private-cluster-private-endpoint-connections-lifecycle while preserving the narrower sibling path.private-cluster-private-endpoint-connections. No new cloud execution was introduced."
+      },
+      "status": "done"
+    }
+  ]
+}

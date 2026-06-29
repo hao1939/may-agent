@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T08:42:24.601Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 blocked-frontier owner review preserved the single blocked family unchanged because all five waits remain exact external returned-proof dependencies before the 2026-06-26 follow-up window and the aad-rbac environment-overblock warning is still a false positive. Archive the remaining completed serverless witness-contract leaf because its durable meaning already lives in archive evidence and the project root summary, and make secops-fips-handwritten-scenario-coverage-matrix-20260625 the new active regular-learning lane so repo-local no-cloud progress continues while the external waits age.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-witness-contract-source-map-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded repo-local source-backed witness-contract map for the serverless virtual-nodes family that reconciles handwritten authority and adjacent mounted AKS RP sources into one exact selector/toleration/node-label tuple matrix, distinguishing authoritative tuple parts, source-equivalent evidence, repo-local conventions, and remaining gaps for the subnet-validation and multi-pod-burst paths without performing cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the mounted handwritten virtualnodes authority and the adjacent mounted AKS RP virtual-node/addon sources already referenced by the accepted retest-signal audits, then maps the exact witness tuple evidence (labels, taints/tolerations, node expectations, subnet/addon linkage) into authoritative vs source-equivalent vs repo-local-convention buckets for both path.serverless-virtual-nodes.subnet-validation and path.serverless-virtual-nodes.multi-pod-burst.",
+        "The artifact names the remaining exact-authority gaps that still block claim-grade witness certainty, explains what future source or runtime signal would close each gap, and does not reopen live execution, duplicate the external returned-proof family, or restate already-closed model wording without new synthesis."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:27:40.914Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-witness-contract-source-map-20260625_20260625082740",
+        "assigned_at": "2026-06-25T08:27:40.959Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-witness-contract-source-map-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-witness-contract-source-map-20260625_20260625082740",
+        "worker_started_at": "2026-06-25T08:27:59.086Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested witness-contract source map at evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md, reconciling mounted handwritten virtualnodes authority, adjacent mounted AKS RP sources, and repo-local subnet-validation/multi-pod-burst carriers into an authoritative vs source-equivalent vs repo-local tuple matrix with explicit remaining gaps.",
+        "last_worker_completed_at": "2026-06-25T08:29:50.722Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:30:35.453Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md: it truthfully keeps delegated ACI-subnet wiring and one-pod witness scheduling at mounted handwritten/source-equivalent family level while explicitly leaving kubernetes.io/role=virtual-kubelet, virtual-kubelet.io/provider=azure:NoSchedule, virtual-node-aci-linux, and burst cardinality as repo-local convention/gaps rather than handwritten authority."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-witness-contract-source-map-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-witness-contract-source-map-20260625"
+      ],
+      "result": "Produced the requested witness-contract source map at evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md, reconciling mounted handwritten virtualnodes authority, adjacent mounted AKS RP sources, and repo-local subnet-validation/multi-pod-burst carriers into an authoritative vs source-equivalent vs repo-local tuple matrix with explicit remaining gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T08:30:35.453Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/serverless-virtual-nodes-witness-contract-source-map-20260625.md: it truthfully keeps delegated ACI-subnet wiring and one-pod witness scheduling at mounted handwritten/source-equivalent family level while explicitly leaving kubernetes.io/role=virtual-kubelet, virtual-kubelet.io/provider=azure:NoSchedule, virtual-node-aci-linux, and burst cardinality as repo-local convention/gaps rather than handwritten authority."
+      },
+      "status": "done"
+    }
+  ]
+}

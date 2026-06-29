@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:08:02.744Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill: accepted VM prerelease adjacent-source frontier and ManagedSystem adjacent-boundary frontier as repo-local learning completions. The ManagedSystem frontier now explicitly fixes the first post-create-time boundary at path.managedsystem.runtime-isolation, proves that adjacent surface is already covered by maintained source/spec/replay/evidence carriers, and keeps the active follow-up limited to maintained-surface reconciliation rather than cloud execution or reopening the terminal create-time product-gap. The single external-send-proof family remains the only live blocked wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-adjacent-post-row36-source-frontier-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: use the mounted VM prerelease/checkin source plus current repo-local carriers to identify the first adjacent scenario after the accepted row-36 slice, pin its exact matrix row/input path/expectation path, and write a bounded source-frontier note that says what maintained follow-up should happen next without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-adjacent-post-row36-source-frontier-20260621.md"
+      ],
+      "acceptance": [
+        "Use /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and the relevant matrix/scenario definitions to identify the first truthful post-row36 adjacent VM prerelease scenario, quoting exact source anchors and row identity rather than guessing from old summaries.",
+        "Compare that scenario against existing repo-local carriers (model/spec/replay/evidence as applicable) and record whether the next gap is source authoring, maintained-surface reconciliation, execute-gated replay wiring, or already covered, citing exact files/evidence either way.",
+        "Write a durable evidence/archive frontier note that names the exact next bounded successor task the owner should keep or create for this adjacent surface, and confirm no cloud execution or external-human transport occurred in this leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/vmpr"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T21:02:32.951Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-adjacent-post-row36-source-frontier-20260621_20260621210232",
+        "assigned_at": "2026-06-21T21:02:32.997Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-adjacent-post-row36-source-frontier-20260621",
+        "worker_started_attempt_id": "a_vmpr-adjacent-post-row36-source-frontier-20260621_20260621210232",
+        "worker_started_at": "2026-06-21T21:02:47.728Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded frontier note `evidence/archive/vmpr-adjacent-post-row36-source-frontier-20260621.md`, proving row 37 / `Scenario_AAD_VirtualMachine` is the first truthful adjacent VM prerelease scenario after row 36 and that the next repo-local gap is maintained-surface reconciliation, not source or replay authoring.",
+        "last_worker_completed_at": "2026-06-21T21:04:48.550Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:05:27.623Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted archive note proves the first truthful post-row36 VM prerelease adjacent scenario is row 37 / Scenario_AAD_VirtualMachine backed by mounted Scenario_AAD, and it truthfully narrows the next repo-local gap to maintained-surface reconciliation rather than new source or replay authoring."
+      },
+      "session_id": "s_task_vmpr-adjacent-post-row36-source-frontier-20260621",
+      "session_history": [
+        "s_task_vmpr-adjacent-post-row36-source-frontier-20260621"
+      ],
+      "result": "Wrote the bounded frontier note `evidence/archive/vmpr-adjacent-post-row36-source-frontier-20260621.md`, proving row 37 / `Scenario_AAD_VirtualMachine` is the first truthful adjacent VM prerelease scenario after row 36 and that the next repo-local gap is maintained-surface reconciliation, not source or replay authoring.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:05:27.623Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted archive note proves the first truthful post-row36 VM prerelease adjacent scenario is row 37 / Scenario_AAD_VirtualMachine backed by mounted Scenario_AAD, and it truthfully narrows the next repo-local gap to maintained-surface reconciliation rather than new source or replay authoring."
+      },
+      "status": "done"
+    }
+  ]
+}

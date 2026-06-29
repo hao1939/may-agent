@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:48:23.444Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner rollup after the accepted VM prerelease row-37 adjacent-source triage: archive the completed source-gap leaf because its durable outcome is now captured in evidence/archive/vmpr-row37-adjacent-source-gap-triage-20260621.md and in the already-open successor. The project frontier stays intentionally narrow: row37-aad-managed-v2-model-view-reconciliation-20260621 is the concrete next repair for path.aad-rbac.managed-v2-lifecycle because the source-backed feature/spec/spec-index/replay family already exists and only the shared model/view maintained surfaces remain stale; vmpr-row26-regen-blast-radius-triage-20260621 remains the bounded repo-diff triage before any checkpoint decision; the external-send-proof family remains compressed to one truthful human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row37-adjacent-source-gap-triage-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/source-frontier lane: inspect the next adjacent VM prerelease scenario after the accepted row-36 slice using the mounted AKS RP VM prerelease source plus any existing checked-in feature/spec/replay carriers, then decide whether row 37 exposes a missing or stale repo-local maintained path/model surface worth repairing next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row37-adjacent-source-gap-triage-20260621.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted VM prerelease source scenario/steps/assertions for the adjacent row-37 slice together with any existing repo-local feature/spec/replay carriers so the row is grounded in source-backed evidence rather than planner guesswork.",
+        "Decide whether row 37 maps cleanly to an existing maintained path/status surface or reveals a concrete repo-local gap; if a gap exists, name the exact affected path/files and the bounded next repair to queue, and if no gap exists, explain why no repo-local repair is warranted yet.",
+        "Produce a bounded repo-local artifact summarizing the verdict, evidence consulted, and next action without cloud execution, without reopening the external-send-proof family, and without mutating unrelated VM prerelease branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row37-source-gap"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:45:18.806Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row37-adjacent-source-gap-triage-20260621_20260621174521",
+        "assigned_at": "2026-06-21T17:45:21.194Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row37-adjacent-source-gap-triage-20260621",
+        "worker_started_attempt_id": "a_vmpr-row37-adjacent-source-gap-triage-20260621_20260621174521",
+        "worker_started_at": "2026-06-21T17:45:37.022Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-37 adjacent-source triage artifact at evidence/archive/vmpr-row37-adjacent-source-gap-triage-20260621.md, grounding the exact mounted Scenario_AAD carrier and concluding that the remaining repo-local gap is a model/view reconciliation issue rather than a missing feature/spec/replay branch.",
+        "last_worker_completed_at": "2026-06-21T17:46:57.231Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:47:29.226Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded row-37 adjacent-source triage: the artifact grounds mounted Scenario_AAD plus existing feature/spec/replay carriers and shows the real next gap is a repo-local model/view reconciliation for path.aad-rbac.managed-v2-lifecycle rather than a missing branch."
+      },
+      "session_id": "s_task_vmpr-row37-adjacent-source-gap-triage-20260621",
+      "session_history": [
+        "s_task_vmpr-row37-adjacent-source-gap-triage-20260621"
+      ],
+      "result": "Produced the bounded row-37 adjacent-source triage artifact at evidence/archive/vmpr-row37-adjacent-source-gap-triage-20260621.md, grounding the exact mounted Scenario_AAD carrier and concluding that the remaining repo-local gap is a model/view reconciliation issue rather than a missing feature/spec/replay branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:47:29.226Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded row-37 adjacent-source triage: the artifact grounds mounted Scenario_AAD plus existing feature/spec/replay carriers and shows the real next gap is a repo-local model/view reconciliation for path.aad-rbac.managed-v2-lifecycle rather than a missing branch."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T18:19:47.259Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review remains unchanged on the external-send family: keep the single blocked wait until real human send/handoff/escalation proof or authoritative replies appear, and do not reopen duplicate asks before the 2026-06-22T10:08:46Z threshold. Archive the accepted row-37 carrier-separation audit because its durable meaning is already carried by evidence/archive/vmpr-row37-carrier-separation-for-row26-checkpoint-20260621.md and by the parent rollup; the only live repo-local lane remains managedsystem-create-time-source-lineage-tighten-20260621 for final verdict/model lineage tightening on path.managedsystem.create-time-initial-pool.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row37-carrier-separation-for-row26-checkpoint-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular evidence/model-update lane: perform the smallest repo-local separation/park of the current preserved row-37 AAD managed-v2 carrier from model.json, regenerate maintained views, and re-audit whether the seven-file maintained surface becomes a truthful row-26-only checkpoint candidate without reopening final verdict/execution work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row37-carrier-separation-for-row26-checkpoint-20260621.md"
+      ],
+      "acceptance": [
+        "Start from evidence/archive/vmpr-row26-checkpoint-diff-reattribution-after-row37-20260621.md and touch only the exact current row-37 carrier it identified: the five row-37 evidence ids, scenario.aad-rbac.managed-v2-lifecycle current carrier region, dag.aad-rbac.managed-v2-lifecycle.row37-baseline current carrier, path.aad-rbac.managed-v2-lifecycle current preserved row-37 region, and directly forced regenerated-view churn.",
+        "Write repo-local evidence showing one truthful outcome: (a) the current row-37 carrier can be cleanly parked/separated and the regenerated maintained seven-file diff is now row-26-only, or (b) exact row-37 regions/files still must remain and therefore no truthful row-26-only checkpoint candidate exists yet; in either case cite the next narrow repo-local action implied by the result.",
+        "Stay repo-local only: no checkpoint commit, no cloud execution, no external-send work, and no retry planning or verdict changes for path.aad-rbac.managed-v2-lifecycle; this is checkpoint-surface isolation only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T18:12:17.263Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row37-carrier-separation-for-row26-checkpoint-20260621_20260621181217",
+        "assigned_at": "2026-06-21T18:12:17.315Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row37-carrier-separation-for-row26-checkpoint-20260621",
+        "worker_started_attempt_id": "a_vmpr-row37-carrier-separation-for-row26-checkpoint-20260621_20260621181217",
+        "worker_started_at": "2026-06-21T18:12:33.942Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Wrote the requested repo-local audit artifact at evidence/archive/vmpr-row37-carrier-separation-for-row26-checkpoint-20260621.md. It proves the exact current row-37 carrier is separable in a temp candidate, but the maintained seven-file surface still is not a truthful row-26-only checkpoint because row-26 content plus private-cluster-derived maintained view catchup remain.",
+        "last_worker_completed_at": "2026-06-21T18:15:14.333Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T18:15:59.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted partial repo-local audit: the artifact proves the exact current row-37 carrier is cleanly separable in a temp candidate, but the maintained seven-file surface still is not a truthful row-26-only checkpoint because row-26 content plus private-cluster/public-FQDN regenerated-view catchup remain. This closes the row-37 isolation question without reopening path.aad-rbac.managed-v2-lifecycle verdict/execution work."
+      },
+      "session_id": "s_task_vmpr-row37-carrier-separation-for-row26-checkpoint-20260621",
+      "session_history": [
+        "s_task_vmpr-row37-carrier-separation-for-row26-checkpoint-20260621"
+      ],
+      "result": "Wrote the requested repo-local audit artifact at evidence/archive/vmpr-row37-carrier-separation-for-row26-checkpoint-20260621.md. It proves the exact current row-37 carrier is separable in a temp candidate, but the maintained seven-file surface still is not a truthful row-26-only checkpoint because row-26 content plus private-cluster-derived maintained view catchup remain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T18:15:59.729Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted partial repo-local audit: the artifact proves the exact current row-37 carrier is cleanly separable in a temp candidate, but the maintained seven-file surface still is not a truthful row-26-only checkpoint because row-26 content plus private-cluster/public-FQDN regenerated-view catchup remain. This closes the row-37 isolation question without reopening path.aad-rbac.managed-v2-lifecycle verdict/execution work."
+      },
+      "status": "done"
+    }
+  ]
+}

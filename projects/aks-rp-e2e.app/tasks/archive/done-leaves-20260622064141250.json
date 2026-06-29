@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:41:41.250Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner refresh: row-44 ipbased-lb-backend-pool remains accepted and preserved in archived branch history; the earlier row-51 maintained landing and the superseded bundled SGX rows57-59 repair are now summarized here instead of kept as open clutter. The only live maintained-surface repair is vmpr-row54-managedsystem-maintained-model-landing-repair-20260622, with per-row SGX maintained-surface follow-ons rows57-59 still queued behind the same model-knowledge-map-maintained-surface conflict. The single external human-transport proof wait remains the only truthful blocked family. To refill learning capacity without reopening the maintained-surface conflict, add one repo-local VirtualMachines prerelease row-26 source-packet task in a disjoint scope so mounted-source/spec/replay knowledge can advance while row54 stays active.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row51-maintained-model-landing-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the current canonical maintained model/path landing for VM prerelease row 51 long-unregistered-nodes so model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json truthfully expose the already-existing exact feature/spec/replay carrier for path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes, or record evidence-backed reasons why the canonical landing must remain adjacent-only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row51-maintained-model-landing-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Task uses the mounted AKS RP source row-51 contract plus the existing exact feature/spec/replay carriers to determine the truthful canonical outcome, then updates model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json if and only if the maintained surface should expose path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes.",
+        "Artifact names the exact path id, source anchors, model/view edits or refusal rationale, and the accepted-input, rejected-input, expectation, adjacent-surface, and unknown-edge boundaries needed to keep the maintained surface truthful for row 51.",
+        "Task stays repo-local and non-mutating: no human transport ask, no cloud execution, and no broader multi-row CAS repair beyond the exact row-51 maintained landing question."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:31:22.385Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row51-maintained-model-landing-repair-20260622_20260622063246",
+        "assigned_at": "2026-06-22T06:32:46.992Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row51-maintained-model-landing-repair-20260622",
+        "worker_started_attempt_id": "a_vmpr-row51-maintained-model-landing-repair-20260622_20260622063246",
+        "worker_started_at": "2026-06-22T06:32:47.949Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the canonical row-51 maintained landing by adding the dedicated VM-prerelease long-unregistered scenario/DAG/path to model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/vmpr-row51-maintained-model-landing-repair-20260622.md with the exact source anchors and boundary rationale.",
+        "last_worker_completed_at": "2026-06-22T06:39:19.677Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:39:58.148Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row51-maintained-model-landing-repair-20260622.md cites the mounted row-51 source anchors, exact spec/replay/coverage carriers, bounded maintained-surface edits, and repo-local replay/check plus model/view regeneration evidence showing path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes now has a truthful canonical landing."
+      },
+      "session_id": "s_task_vmpr-row51-maintained-model-landing-repair-20260622",
+      "session_history": [
+        "s_task_vmpr-row51-maintained-model-landing-repair-20260622"
+      ],
+      "result": "Repaired the canonical row-51 maintained landing by adding the dedicated VM-prerelease long-unregistered scenario/DAG/path to model/knowledge-map/model.json, regenerating maintained views, and writing evidence/archive/vmpr-row51-maintained-model-landing-repair-20260622.md with the exact source anchors and boundary rationale.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:39:58.148Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row51-maintained-model-landing-repair-20260622.md cites the mounted row-51 source anchors, exact spec/replay/coverage carriers, bounded maintained-surface edits, and repo-local replay/check plus model/view regeneration evidence showing path.cluster-autoscaler.vm-prerelease-long-unregistered-nodes now has a truthful canonical landing."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:13:53.734Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 metric-breach owner reconciliation repaired the spec-loop frontier by replacing a stale active placeholder. The previous preserved-order earlier net-integration queue leaf never yielded reviewed terminal queue facts: confirm-runnable returned no runnable work, .state/spec-loop/state.json still carried legacy loopTaskId retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626, and stale priority ordering still placed static-egress-vmss ahead of authorized-ip-ranges. The live next action is now refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626, which must re-establish reviewed progress on outbound-lb-custom-ip then authorized-ip-ranges then authorized-service-tags on the already accepted single-spec GitHub launcher surface before any nsg-control/static-egress-vmss sibling work or spec-loop metadata reconciliation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the already reviewed-safe single-spec GitHub launcher surface to consume the preserved-order earlier net-integration retry queue in order: spec.net-integration.outbound-lb-custom-ip, then spec.net-integration.authorized-ip-ranges, then spec.net-integration.authorized-service-tags; review each launch/result before moving to the next spec, and treat the current .state/spec-loop/state.json priority ordering as stale until this leaf updates it with reviewed facts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "verify-single-spec-gh-launcher-runtime-refresh-and-fallback-20260626 remains the accepted launcher gate before any queue retry launch.",
+        "The preserved-order retry queue for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags is consumed in that order, with each spec reviewed to pass, fail, blocked, or error and evidence/model updates recorded as needed.",
+        "Spec-loop state is updated for each earlier queue spec before any newer net-integration sibling launch, even if the pre-existing state file still advertises a legacy loopTaskId or lists static-egress-vmss ahead of authorized-ip-ranges or authorized-service-tags."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:59:26.874Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626_20260626115926",
+        "assigned_at": "2026-06-26T11:59:26.979Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog",
+        "worker_started_attempt_id": "a_retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626_20260626115926",
+        "worker_started_at": "2026-06-26T11:59:45.280Z",
+        "reviewed_at": "2026-06-26T12:13:53.494Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "2026-06-26 metric-breach owner review retired this leaf as a stale active placeholder and replaced it with a refreshed preserved-order queue leaf. Evidence: confirm-runnable returned [] even while this task was the sole active leaf, .state/spec-loop/state.json still carried legacy loopTaskId retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626 with stale static-egress-vmss ordering ahead of authorized-ip-ranges, and no reviewed terminal per-spec queue outcome was present after assignment."
+      },
+      "session_id": "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog",
+      "session_history": [
+        "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:13:53.494Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "2026-06-26 metric-breach owner review retired this leaf as a stale active placeholder and replaced it with a refreshed preserved-order queue leaf. Evidence: confirm-runnable returned [] even while this task was the sole active leaf, .state/spec-loop/state.json still carried legacy loopTaskId retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626 with stale static-egress-vmss ordering ahead of authorized-ip-ranges, and no reviewed terminal per-spec queue outcome was present after assignment."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,2332 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T17:27:17.109Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review compression: archived the recent pre-reconcile KMS verifier leaves and the stale duplicate private-cluster-private-kv retry because those carriers only proved artifact-routing-mismatch from the earlier single-spec route. The live truth-repair lane is reconcile-kms-post-routing-verdict-review-family-20260628, which now owns same-spec bundle validation plus any justified reruns. This branch also now carries accepted durable outcomes for the row51 capture-ceiling replay, the managed-HSM trustworthy rerun, the cloud-provider credential-provider post-hardening retry, and the VAP-upgrade API-version repair artifact; remaining live work is the smaller repair/review tail plus selected runnable retries.",
+  "archived": 33,
+  "tasks": [
+    {
+      "id": "replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run exactly spec.cluster-autoscaler.vm-prerelease-row51-long-unregistered-nodes as the bounded next repro for the VM-prerelease cluster-autoscaler create-stage HTTP 400 family, preserving the full managed-cluster create request plus the full ARM/RP error body, or stop early with a durable capture-ceiling note if those artifacts cannot be truthfully preserved.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628.md"
+      ],
+      "acceptance": [
+        "Leave a durable evidence note under evidence/archive that records the exact row51 command/run context, quotes the full create request body or closest truthful serialized body including the autoScalerProfile fragment plus preview-header/api-version context, and preserves the full failed managed-cluster create ARM/RP body or proves why that body could not be captured.",
+        "Classify the family next step truthfully: either stronger row51 create-stage evidence than the current family notes, or an explicit capture ceiling/resume condition showing why the family should stay blocked without more reruns."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-row51-long-unregistered-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:18:50.184Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628_20260628171850",
+        "assigned_at": "2026-06-28T17:18:50.270Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628",
+        "worker_started_attempt_id": "a_replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628_20260628171850",
+        "worker_started_at": "2026-06-28T17:19:04.737Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable evidence note at evidence/archive/replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628.md concluding the row51 rerun should stop early because the current carrier still truncates the failed ARM/RP body, and verified the row51 carrier in non-mutating --check mode.",
+        "last_worker_completed_at": "2026-06-28T17:21:20.613Z",
+        "last_worker_evidence": [
+          "evidence/archive/replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:24:20.084Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review as a truthful capture-ceiling outcome: the evidence note proves the current row51 carrier can preserve full request authoring context but still truncates failed managed-cluster create responses to bodySnippet, so the replay leaf is complete as family classification work and row51 live rerun is superseded by repair-spec-cluster-autoscaler-vm-prerelease-row51-full-create-failure-body-capture-20260628 before any new mutation attempt."
+      },
+      "session_id": "s_task_replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628",
+      "session_history": [
+        "s_task_replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628"
+      ],
+      "result": "Wrote a durable evidence note at evidence/archive/replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628.md concluding the row51 rerun should stop early because the current carrier still truncates the failed ARM/RP body, and verified the row51 carrier in non-mutating --check mode.",
+      "evidence": [
+        "evidence/archive/replay-spec-cluster-autoscaler-vm-prerelease-row51-create-http400-full-capture-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:24:20.084Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review as a truthful capture-ceiling outcome: the evidence note proves the current row51 carrier can preserve full request authoring context but still truncates failed managed-cluster create responses to bodySnippet, so the replay leaf is complete as family classification work and row51 live rerun is superseded by repair-spec-cluster-autoscaler-vm-prerelease-row51-full-create-failure-body-capture-20260628 before any new mutation attempt."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry spec.kms.v2-private-cluster-private-kv-lifecycle through the single-spec workflow using only post-2026-06-28 artifact-routing-repair evidence so the pre-fix untrusted bundle is replaced by a trustworthy classification.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "GitHub workflow rerun completes or produces a new concrete blocker after the artifact-routing repair.",
+        "result.json and summary artifacts are reviewed from the repaired routing path.",
+        "Spec status is reclassified with trustworthy post-fix evidence and the prior artifact-routing-mismatch review is no longer the live carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-private-cluster-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:21:48.890Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628_20260628172149",
+        "assigned_at": "2026-06-28T17:21:49.465Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628",
+        "worker_started_attempt_id": "a_retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628_20260628172149",
+        "worker_started_at": "2026-06-28T17:22:01.147Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote an owner-review artifact showing retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628 is stale duplicate work because same-spec post-fix run 28329279465 already yields a trustworthy blocked/environment verdict, with tree/state reconciliation as the real next step.",
+        "last_worker_completed_at": "2026-06-28T17:23:57.178Z",
+        "last_worker_evidence": [
+          "evidence/archive/retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:25:06.820Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner-review evidence: this retry leaf is stale duplicate work because same-spec post-fix run 28329279465 already carries a trustworthy blocked/environment verdict for spec.kms.v2-private-cluster-private-kv-lifecycle. Replaced by reconcile-kms-post-routing-verdict-review-family-20260628, which must repair the misleading prior done/review carriers rather than schedule another unchanged rerun."
+      },
+      "session_id": "s_task_retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628",
+      "session_history": [
+        "s_task_retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628"
+      ],
+      "result": "Wrote an owner-review artifact showing retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628 is stale duplicate work because same-spec post-fix run 28329279465 already yields a trustworthy blocked/environment verdict, with tree/state reconciliation as the real next step.",
+      "evidence": [
+        "evidence/archive/retry-spec-kms-v2-private-cluster-private-kv-lifecycle-after-artifact-routing-fix-20260628.md"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:25:06.820Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner-review evidence: this retry leaf is stale duplicate work because same-spec post-fix run 28329279465 already carries a trustworthy blocked/environment verdict for spec.kms.v2-private-cluster-private-kv-lifecycle. Replaced by reconcile-kms-post-routing-verdict-review-family-20260628, which must repair the misleading prior done/review carriers rather than schedule another unchanged rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-private-vnet-integration-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-private-vnet-integration-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-private-vnet-integration-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-private-vnet-integration-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.477Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T16:52:04.543Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle",
+        "stale_active_requeued_at": "2026-06-28T16:39:50.078Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; return leaf to backlog until reassigned",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle_20260628163540",
+        "promoted_at": "2026-06-28T16:51:51.258Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle_20260628165204",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle_20260628165204",
+        "worker_started_at": "2026-06-28T16:52:13.474Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-private-vnet-integration-public-kv-lifecycle workflow run 28329283226 classified as error. Loop key: verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle-a_verify-spec-kms-v2-priva. artifact-routing-mismatch for spec.kms.v2-private-vnet-integration-public-kv-lifecycle; run=28329283226; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329283226 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/test-results/single-kms-v2-private-vnet-integration-public-kv-lifecycle_234163/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/test-results/single-kms-v2-private-vnet-integration-public-kv-lifecycle_234163/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:52:47.977Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:00.625Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-private-vnet-integration-public-kv-lifecycle workflow run 28329283226 classified as error. Loop key: verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle-a_verify-spec-kms-v2-priva. artifact-routing-mismatch for spec.kms.v2-private-vnet-integration-public-kv-lifecycle; run=28329283226; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329283226 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/test-results/single-kms-v2-private-vnet-integration-public-kv-lifecycle_234163/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329283226/aks-rp-e2e-28329283226-spec-test-results/test-results/single-kms-v2-private-vnet-integration-public-kv-lifecycle_234163/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:00.625Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-public-cluster-private-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-public-cluster-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-public-cluster-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-public-cluster-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-public-cluster-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.499Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:51:51.258Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-public-cluster-private-kv-lifecycle_20260628165327",
+        "assigned_at": "2026-06-28T16:53:27.424Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-public-cluster-private-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-public-cluster-private-kv-lifecycle_20260628165327",
+        "worker_started_at": "2026-06-28T16:53:39.963Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-public-cluster-private-kv-lifecycle workflow run 28329319693 classified as error. Loop key: verify-spec-kms-v2-public-cluster-private-kv-lifecycle-a_verify-spec-kms-v2-public-cluster. artifact-routing-mismatch for spec.kms.v2-public-cluster-private-kv-lifecycle; run=28329319693; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329319693 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/test-results/single-kms-v2-public-cluster-private-kv-lifecycle_402814/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/test-results/single-kms-v2-public-cluster-private-kv-lifecycle_402814/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:54:13.374Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:00.712Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-public-cluster-private-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-public-cluster-private-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-public-cluster-private-kv-lifecycle workflow run 28329319693 classified as error. Loop key: verify-spec-kms-v2-public-cluster-private-kv-lifecycle-a_verify-spec-kms-v2-public-cluster. artifact-routing-mismatch for spec.kms.v2-public-cluster-private-kv-lifecycle; run=28329319693; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329319693 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/test-results/single-kms-v2-public-cluster-private-kv-lifecycle_402814/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329319693/aks-rp-e2e-28329319693-spec-test-results/test-results/single-kms-v2-public-cluster-private-kv-lifecycle_402814/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:00.712Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-public-cluster-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-public-cluster-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-public-cluster-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-public-cluster-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-public-cluster-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.524Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:51:51.258Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-public-cluster-public-kv-lifecycle_20260628165327",
+        "assigned_at": "2026-06-28T16:53:27.425Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-public-cluster-public-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-public-cluster-public-kv-lifecycle_20260628165327",
+        "worker_started_at": "2026-06-28T16:53:35.318Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-public-cluster-public-kv-lifecycle workflow run 28329317986 classified as error. Loop key: verify-spec-kms-v2-public-cluster-public-kv-lifecycle-a_verify-spec-kms-v2-public-cluster-. artifact-routing-mismatch for spec.kms.v2-public-cluster-public-kv-lifecycle; run=28329317986; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329317986 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/test-results/single-kms-v2-public-cluster-public-kv-lifecycle_355511/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/test-results/single-kms-v2-public-cluster-public-kv-lifecycle_355511/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:54:09.553Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:00.813Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-public-cluster-public-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-public-cluster-public-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-public-cluster-public-kv-lifecycle workflow run 28329317986 classified as error. Loop key: verify-spec-kms-v2-public-cluster-public-kv-lifecycle-a_verify-spec-kms-v2-public-cluster-. artifact-routing-mismatch for spec.kms.v2-public-cluster-public-kv-lifecycle; run=28329317986; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329317986 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/test-results/single-kms-v2-public-cluster-public-kv-lifecycle_355511/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329317986/aks-rp-e2e-28329317986-spec-test-results/test-results/single-kms-v2-public-cluster-public-kv-lifecycle_355511/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:00.813Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.549Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:51:51.258Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle_20260628165327",
+        "assigned_at": "2026-06-28T16:53:27.425Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle_20260628165327",
+        "worker_started_at": "2026-06-28T16:53:31.938Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle workflow run 28329316315 classified as error. Loop key: verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle-a_verify-spec-kms-v2-. artifact-routing-mismatch for spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle; run=28329316315; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329316315 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/test-results/single-kms-v2-trust-service-public-cluster-private-kv-lifecycle_401184/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/test-results/single-kms-v2-trust-service-public-cluster-private-kv-lifecycle_401184/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:54:06.866Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:00.903Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle workflow run 28329316315 classified as error. Loop key: verify-spec-kms-v2-trust-service-public-cluster-private-kv-lifecycle-a_verify-spec-kms-v2-. artifact-routing-mismatch for spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle; run=28329316315; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329316315 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/test-results/single-kms-v2-trust-service-public-cluster-private-kv-lifecycle_401184/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329316315/aks-rp-e2e-28329316315-spec-test-results/test-results/single-kms-v2-trust-service-public-cluster-private-kv-lifecycle_401184/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:00.903Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-vnet-integration-private-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-vnet-integration-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-vnet-integration-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-vnet-integration-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-vnet-integration-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.577Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:51:51.258Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle_20260628165327",
+        "assigned_at": "2026-06-28T16:53:27.425Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle_20260628165327",
+        "worker_started_at": "2026-06-28T16:53:28.580Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-vnet-integration-private-kv-lifecycle workflow run 28329314805 classified as error. Loop key: verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-a_verify-spec-kms-v2-vnet-integra. artifact-routing-mismatch for spec.kms.v2-vnet-integration-private-kv-lifecycle; run=28329314805; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329314805 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_350340/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_350340/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:54:04.034Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:00.996Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-vnet-integration-private-kv-lifecycle workflow run 28329314805 classified as error. Loop key: verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-a_verify-spec-kms-v2-vnet-integra. artifact-routing-mismatch for spec.kms.v2-vnet-integration-private-kv-lifecycle; run=28329314805; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329314805 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_350340/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329314805/aks-rp-e2e-28329314805-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_350340/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:00.996Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2-vnet-integration-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-vnet-integration-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-vnet-integration-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-vnet-integration-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-vnet-integration-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.603Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-vnet-integration-public-kv-lifecycle_20260628165429",
+        "assigned_at": "2026-06-28T16:54:29.171Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-vnet-integration-public-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-vnet-integration-public-kv-lifecycle_20260628165429",
+        "worker_started_at": "2026-06-28T16:54:36.619Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2-vnet-integration-public-kv-lifecycle workflow run 28329344535 classified as error. Loop key: verify-spec-kms-v2-vnet-integration-public-kv-lifecycle-a_verify-spec-kms-v2-vnet-integrat. artifact-routing-mismatch for spec.kms.v2-vnet-integration-public-kv-lifecycle; run=28329344535; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329344535 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/test-results/single-kms-v2-vnet-integration-public-kv-lifecycle_459003/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/test-results/single-kms-v2-vnet-integration-public-kv-lifecycle_459003/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:55:41.167Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.087Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-vnet-integration-public-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-vnet-integration-public-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2-vnet-integration-public-kv-lifecycle workflow run 28329344535 classified as error. Loop key: verify-spec-kms-v2-vnet-integration-public-kv-lifecycle-a_verify-spec-kms-v2-vnet-integrat. artifact-routing-mismatch for spec.kms.v2-vnet-integration-public-kv-lifecycle; run=28329344535; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329344535 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/test-results/single-kms-v2-vnet-integration-public-kv-lifecycle_459003/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329344535/aks-rp-e2e-28329344535-spec-test-results/test-results/single-kms-v2-vnet-integration-public-kv-lifecycle_459003/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.087Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-ccp-cert-rotation",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-ccp-cert-rotation through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-ccp-cert-rotation",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-ccp-cert-rotation"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-ccp-cert-rotation",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.627Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-ccp-cert-rotation_20260628165435",
+        "assigned_at": "2026-06-28T16:54:35.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-ccp-cert-rotation",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-ccp-cert-rotation_20260628165435",
+        "worker_started_at": "2026-06-28T16:54:39.985Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-ccp-cert-rotation workflow run 28329345970 classified as error. Loop key: verify-spec-kms-v2plus-ccp-cert-rotation-a_verify-spec-kms-v2plus-ccp-cert-rotation_202606. artifact-routing-mismatch for spec.kms.v2plus-ccp-cert-rotation; run=28329345970; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329345970 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/test-results/single-kms-v2plus-ccp-cert-rotation_511015/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/test-results/single-kms-v2plus-ccp-cert-rotation_511015/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:55:43.754Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.184Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-ccp-cert-rotation",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-ccp-cert-rotation"
+      ],
+      "result": "Spec spec.kms.v2plus-ccp-cert-rotation workflow run 28329345970 classified as error. Loop key: verify-spec-kms-v2plus-ccp-cert-rotation-a_verify-spec-kms-v2plus-ccp-cert-rotation_202606. artifact-routing-mismatch for spec.kms.v2plus-ccp-cert-rotation; run=28329345970; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329345970 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/test-results/single-kms-v2plus-ccp-cert-rotation_511015/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329345970/aks-rp-e2e-28329345970-spec-test-results/test-results/single-kms-v2plus-ccp-cert-rotation_511015/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.184Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.648Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_20260628165435",
+        "assigned_at": "2026-06-28T16:54:35.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_20260628165435",
+        "worker_started_at": "2026-06-28T16:54:43.105Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart workflow run 28329347453 classified as error. Loop key: verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart-a_verify-spec-kms-v2plus-chaos-pm. artifact-routing-mismatch for spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart; run=28329347453; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329347453 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/test-results/single-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_505331/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/test-results/single-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_505331/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:55:33.229Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.275Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart"
+      ],
+      "result": "Spec spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart workflow run 28329347453 classified as error. Loop key: verify-spec-kms-v2plus-chaos-pmk-kmsplugin-crash-restart-a_verify-spec-kms-v2plus-chaos-pm. artifact-routing-mismatch for spec.kms.v2plus-chaos-pmk-kmsplugin-crash-restart; run=28329347453; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329347453 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/test-results/single-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_505331/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329347453/aks-rp-e2e-28329347453-spec-test-results/test-results/single-kms-v2plus-chaos-pmk-kmsplugin-crash-restart_505331/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.275Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-custom-vnet",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-custom-vnet through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-custom-vnet",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-custom-vnet"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-custom-vnet",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.672Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-custom-vnet_20260628165435",
+        "assigned_at": "2026-06-28T16:54:35.988Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-custom-vnet_20260628165435",
+        "worker_started_at": "2026-06-28T16:54:47.539Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28329349113 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-custom-vnet; run=28329349113; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329349113 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_510068/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_510068/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:55:38.114Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.361Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-custom-vnet"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-custom-vnet workflow run 28329349113 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-custom-vnet-a_verify-spec-kms-v2plus-create-cmk-custom-v. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-custom-vnet; run=28329349113; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329349113 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_510068/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329349113/aks-rp-e2e-28329349113-spec-test-results/test-results/single-kms-v2plus-create-cmk-custom-vnet_510068/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.361Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.694Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle_20260628165611",
+        "assigned_at": "2026-06-28T16:56:11.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle_20260628165611",
+        "worker_started_at": "2026-06-28T16:56:12.671Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28329387424 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-private-kv-lifecycle; run=28329387424; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329387424 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_636222/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_636222/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:56:51.108Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.446Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-private-kv-lifecycle workflow run 28329387424 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-private-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-private-kv-lifecycle; run=28329387424; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329387424 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_636222/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329387424/aks-rp-e2e-28329387424-spec-test-results/test-results/single-kms-v2plus-create-cmk-private-kv-lifecycle_636222/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.446Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.718Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle_20260628165611",
+        "assigned_at": "2026-06-28T16:56:11.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle_20260628165611",
+        "worker_started_at": "2026-06-28T16:56:25.655Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28329392348 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk-. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-public-kv-lifecycle; run=28329392348; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329392348 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_654726/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_654726/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:05.879Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.530Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-public-kv-lifecycle workflow run 28329392348 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-lifecycle-a_verify-spec-kms-v2plus-create-cmk-. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-public-kv-lifecycle; run=28329392348; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329392348 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_654726/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329392348/aks-rp-e2e-28329392348-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-lifecycle_654726/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.530Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-create-cmk-public-kv-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-create-cmk-public-kv-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-create-cmk-public-kv-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.742Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration_20260628165611",
+        "assigned_at": "2026-06-28T16:56:11.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration_20260628165611",
+        "worker_started_at": "2026-06-28T16:56:16.181Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-create-cmk-public-kv-vnet-integration workflow run 28329388905 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration-a_verify-spec-kms-v2plus-crea. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-public-kv-vnet-integration; run=28329388905; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329388905 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-vnet-integration_640469/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-vnet-integration_640469/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:56:54.141Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.620Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-create-cmk-public-kv-vnet-integration workflow run 28329388905 classified as error. Loop key: verify-spec-kms-v2plus-create-cmk-public-kv-vnet-integration-a_verify-spec-kms-v2plus-crea. artifact-routing-mismatch for spec.kms.v2plus-create-cmk-public-kv-vnet-integration; run=28329388905; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329388905 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-vnet-integration_640469/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329388905/aks-rp-e2e-28329388905-spec-test-results/test-results/single-kms-v2plus-create-cmk-public-kv-vnet-integration_640469/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.620Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review spec.kms.v2plus-enable-cmk-from-v2-disabled-public within the shared single-spec artifact-routing-mismatch family: preserve this leaf in review until diagnose-spec-loop-artifact-routing-mismatch-family-20260628 determines whether run 28329390497 yields any trustworthy verdict or instead requires an exact post-fix retry, and do not treat the current worker result as spec-level evidence.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-disabled-public",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "If run 28329390497 remains an artifact-routing-mismatch, the leaf stays in review and records no product/spec verdict until diagnose-spec-loop-artifact-routing-mismatch-family-20260628 or an exact retry supersedes it."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-disabled-public"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-disabled-public",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.773Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public_20260628165611",
+        "assigned_at": "2026-06-28T16:56:11.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public_20260628165611",
+        "worker_started_at": "2026-06-28T16:56:20.022Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28329390497 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-disabled-public; run=28329390497; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329390497 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_640507/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_640507/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:56:56.985Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.706Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-disabled-public workflow run 28329390497 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-disabled-public; run=28329390497; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329390497 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_640507/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329390497/aks-rp-e2e-28329390497-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-disabled-public_640507/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.706Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-private",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-private through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-private",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-private"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-private",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.798Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-private_20260628165709",
+        "assigned_at": "2026-06-28T16:57:09.233Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-private_20260628165709",
+        "worker_started_at": "2026-06-28T16:57:27.811Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-private workflow run 28329411118 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-private-a_verify-spec-kms-v2plus-enable-cmk-from. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-private; run=28329411118; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results; top-level result specId=spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration does not match expected spec.kms.v2plus-enable-cmk-from-v2-private; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329411118 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:51.723Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.798Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-private workflow run 28329411118 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-private-a_verify-spec-kms-v2plus-enable-cmk-from. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-private; run=28329411118; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results; top-level result specId=spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration does not match expected spec.kms.v2plus-enable-cmk-from-v2-private; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329411118 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.798Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.823Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:54:29.049Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_20260628165709",
+        "assigned_at": "2026-06-28T16:57:09.233Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_20260628165709",
+        "worker_started_at": "2026-06-28T16:57:11.060Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration workflow run 28329411118 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration; run=28329411118; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329411118 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:45.854Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.884Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration workflow run 28329411118 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-private-vnet-integration; run=28329411118; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329411118 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329411118/aks-rp-e2e-28329411118-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-private-vnet-integration_731028/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.884Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-public",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-public through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-public",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:13.845Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public_20260628165709",
+        "assigned_at": "2026-06-28T16:57:09.233Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public_20260628165709",
+        "worker_started_at": "2026-06-28T16:57:33.153Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-public workflow run 28329413831 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-a_verify-spec-kms-v2plus-enable-cmk-from-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public; run=28329413831; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results; top-level result specId=spec.kms.v2plus-enable-cmk-from-v2-public-firewall does not match expected spec.kms.v2plus-enable-cmk-from-v2-public; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329413831 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:55.044Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:01.970Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-public workflow run 28329413831 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-a_verify-spec-kms-v2plus-enable-cmk-from-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public; run=28329413831; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results; top-level result specId=spec.kms.v2plus-enable-cmk-from-v2-public-firewall does not match expected spec.kms.v2plus-enable-cmk-from-v2-public; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329413831 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:01.970Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-public-firewall through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public-firewall",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public-firewall"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-public-firewall",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:31:52.471Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall_20260628165709",
+        "assigned_at": "2026-06-28T16:57:09.233Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall_20260628165709",
+        "worker_started_at": "2026-06-28T16:57:17.266Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-public-firewall workflow run 28329413831 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public-firewall; run=28329413831; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329413831 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:42.642Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.060Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-public-firewall workflow run 28329413831 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-firewall-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public-firewall; run=28329413831; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329413831 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329413831/aks-rp-e2e-28329413831-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-firewall_735520/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:02.060Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version using workflow run 28329412567 only as artifact-routing-mismatch family evidence, not as a trustworthy spec verdict; keep this leaf in review until the shared single-spec verifier run-selection repair or a bounded evidence-extraction path can truthfully classify the spec.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.590Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_20260628165709",
+        "assigned_at": "2026-06-28T16:57:09.233Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_20260628165709",
+        "worker_started_at": "2026-06-28T16:57:14.195Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version workflow run 28329412567 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version-a_verify-spec-kms-v2pl. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version; run=28329412567; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329412567 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_738540/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_738540/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:57:48.526Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.146Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version workflow run 28329412567 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-public-remove-key-version-a_verify-spec-kms-v2pl. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-public-remove-key-version; run=28329412567; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329412567 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_738540/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329412567/aks-rp-e2e-28329412567-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-public-remove-key-version_738540/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:02.146Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-from-v2-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-from-v2-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-from-v2-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.614Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration_20260628165812",
+        "assigned_at": "2026-06-28T16:58:12.801Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration_20260628165812",
+        "worker_started_at": "2026-06-28T16:58:18.689Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-from-v2-vnet-integration workflow run 28329439417 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-vnet-integration; run=28329439417; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329439417 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-vnet-integration_842071/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-vnet-integration_842071/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:58:51.237Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.242Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-from-v2-vnet-integration workflow run 28329439417 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-from-v2-vnet-integration; run=28329439417; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329439417 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-vnet-integration_842071/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329439417/aks-rp-e2e-28329439417-spec-test-results/test-results/single-kms-v2plus-enable-cmk-from-v2-vnet-integration_842071/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:02.242Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-private-kv-from-non-kms through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-private-kv-from-non-kms",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-private-kv-from-non-kms"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-private-kv-from-non-kms",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.636Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms_20260628165812",
+        "assigned_at": "2026-06-28T16:58:12.801Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms_20260628165812",
+        "worker_started_at": "2026-06-28T16:58:32.451Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-private-kv-from-non-kms workflow run 28329445495 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-private-kv-from-non-kms; run=28329445495; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329445495 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/test-results/single-kms-v2plus-enable-cmk-private-kv-from-non-kms_857252/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/test-results/single-kms-v2plus-enable-cmk-private-kv-from-non-kms_857252/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:59:03.160Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:02.342Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-private-kv-from-non-kms workflow run 28329445495 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-private-kv-from-non-kms-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-private-kv-from-non-kms; run=28329445495; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329445495 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/test-results/single-kms-v2plus-enable-cmk-private-kv-from-non-kms_857252/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329445495/aks-rp-e2e-28329445495-spec-test-results/test-results/single-kms-v2plus-enable-cmk-private-kv-from-non-kms_857252/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:02.342Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.658Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_20260628165812",
+        "assigned_at": "2026-06-28T16:58:12.802Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_20260628165812",
+        "worker_started_at": "2026-06-28T16:58:14.498Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms workflow run 28329437726 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms-a_verify-spec-kms-v2plus. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms; run=28329437726; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329437726 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_839753/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_839753/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:58:48.482Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.542Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms workflow run 28329437726 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms-a_verify-spec-kms-v2plus. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms; run=28329437726; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329437726 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_839753/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329437726/aks-rp-e2e-28329437726-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms_839753/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.542Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-cmk-public-kv-from-non-kms through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-cmk-public-kv-from-non-kms",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-cmk-public-kv-from-non-kms"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-cmk-public-kv-from-non-kms",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.682Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms_20260628165812",
+        "assigned_at": "2026-06-28T16:58:12.802Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms_20260628165812",
+        "worker_started_at": "2026-06-28T16:58:22.970Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-cmk-public-kv-from-non-kms workflow run 28329441219 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms-a_verify-spec-kms-v2plus-enable-c. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-public-kv-from-non-kms; run=28329441219; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329441219 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-from-non-kms_843217/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-from-non-kms_843217/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:58:57.799Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.626Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-cmk-public-kv-from-non-kms workflow run 28329441219 classified as error. Loop key: verify-spec-kms-v2plus-enable-cmk-public-kv-from-non-kms-a_verify-spec-kms-v2plus-enable-c. artifact-routing-mismatch for spec.kms.v2plus-enable-cmk-public-kv-from-non-kms; run=28329441219; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329441219 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-from-non-kms_843217/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329441219/aks-rp-e2e-28329441219-spec-test-results/test-results/single-kms-v2plus-enable-cmk-public-kv-from-non-kms_843217/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.626Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-non-kms through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-non-kms",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-non-kms"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-non-kms",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.708Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-non-kms_20260628165922",
+        "assigned_at": "2026-06-28T16:59:22.103Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-non-kms_20260628165922",
+        "worker_started_at": "2026-06-28T16:59:31.622Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28329471156 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-non-kms; run=28329471156; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329471156 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_954452/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_954452/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T17:00:03.894Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.714Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-non-kms"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-non-kms workflow run 28329471156 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-non-kms-a_verify-spec-kms-v2plus-enable-pmk-from-no. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-non-kms; run=28329471156; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329471156 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_954452/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329471156/aks-rp-e2e-28329471156-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-non-kms_954452/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.714Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-disabled-public through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-disabled-public",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-disabled-public"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-disabled-public",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.736Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public_20260628165922",
+        "assigned_at": "2026-06-28T16:59:22.103Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public_20260628165922",
+        "worker_started_at": "2026-06-28T16:59:38.892Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-disabled-public workflow run 28329473939 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-disabled-public; run=28329473939; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329473939 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-disabled-public_957977/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-disabled-public_957977/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T17:00:09.595Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.794Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-disabled-public workflow run 28329473939 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-disabled-public-a_verify-spec-kms-v2plus-enable-. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-disabled-public; run=28329473939; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329473939 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-disabled-public_957977/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329473939/aks-rp-e2e-28329473939-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-disabled-public_957977/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.794Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-private",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-private through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-private",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:33:22.761Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private_20260628165922",
+        "assigned_at": "2026-06-28T16:59:22.103Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private_20260628165922",
+        "worker_started_at": "2026-06-28T16:59:27.542Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-private workflow run 28329467538 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-a_verify-spec-kms-v2plus-enable-pmk-from. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private; run=28329467538; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results; top-level result specId=spec.kms.v2plus-enable-pmk-from-v2-private-disable-key does not match expected spec.kms.v2plus-enable-pmk-from-v2-private; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329467538 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T17:00:06.776Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.869Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-private workflow run 28329467538 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-a_verify-spec-kms-v2plus-enable-pmk-from. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private; run=28329467538; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results; top-level result specId=spec.kms.v2plus-enable-pmk-from-v2-private-disable-key does not match expected spec.kms.v2plus-enable-pmk-from-v2-private; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329467538 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.869Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-private-disable-key through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-disable-key",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-disable-key"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-private-disable-key",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:35:40.546Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key_20260628165922",
+        "assigned_at": "2026-06-28T16:59:22.103Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key_20260628165922",
+        "worker_started_at": "2026-06-28T16:59:23.878Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-disable-key workflow run 28329467538 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key-a_verify-spec-kms-v2plus-ena. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private-disable-key; run=28329467538; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329467538 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T16:59:57.034Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:35.945Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-disable-key workflow run 28329467538 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-disable-key-a_verify-spec-kms-v2plus-ena. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private-disable-key; run=28329467538; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329467538 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329467538/aks-rp-e2e-28329467538-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-disable-key_946341/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:35.945Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:35:40.574Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_20260628170017",
+        "assigned_at": "2026-06-28T17:00:17.985Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_20260628170017",
+        "worker_started_at": "2026-06-28T17:00:20.190Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28329495504 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration; run=28329495504; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329495504 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_042640/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_042640/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T17:00:51.314Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.029Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration workflow run 28329495504 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-private-vnet-integration-a_verify-spec-kms-v2plu. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-private-vnet-integration; run=28329495504; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329495504 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_042640/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329495504/aks-rp-e2e-28329495504-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-private-vnet-integration_042640/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:36.029Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2plus-enable-pmk-from-v2-vnet-integration through the single-spec workflow, treating failed run 28329499852 as unresolved verifier/artifact-routing evidence only; do not accept any KMS verdict from that attempt, and hold unchanged retry behind repair-spec-loop-single-spec-verifier-fail-closed-20260628 or an equivalent confirmed fix for the shared artifact-routing-mismatch family.",
+      "inputs": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-vnet-integration",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-enable-pmk-from-v2-vnet-integration"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2plus-enable-pmk-from-v2-vnet-integration",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "trace": {
+        "created_at": "2026-06-28T16:35:40.602Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T16:57:58.229Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration_20260628170017",
+        "assigned_at": "2026-06-28T17:00:17.986Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration_20260628170017",
+        "worker_started_at": "2026-06-28T17:00:26.950Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28329499852 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-vnet-integration; run=28329499852; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329499852 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_047760/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_047760/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T17:00:59.959Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T17:26:36.122Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replace this untrusted pre-reconcile KMS review carrier with reconcile-kms-post-routing-verdict-review-family-20260628: the worker summary only recorded artifact-routing-mismatch from the earlier single-spec path, and the active family task now owns same-spec bundle validation plus any truthful per-spec rerun need."
+      },
+      "session_id": "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration",
+      "session_history": [
+        "s_task_verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration"
+      ],
+      "result": "Spec spec.kms.v2plus-enable-pmk-from-v2-vnet-integration workflow run 28329499852 classified as error. Loop key: verify-spec-kms-v2plus-enable-pmk-from-v2-vnet-integration-a_verify-spec-kms-v2plus-enable. artifact-routing-mismatch for spec.kms.v2plus-enable-pmk-from-v2-vnet-integration; run=28329499852; bundle=/app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results; top-level result.json missing artifactRefs spec-runner result/status path Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28329499852 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_047760/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28329499852/aks-rp-e2e-28329499852-spec-test-results/test-results/single-kms-v2plus-enable-pmk-from-v2-vnet-integration_047760/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T17:26:36.122Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun and review spec.kms.v2plus-managed-hsm unchanged now that the shared single-spec verifier fail-closed repair is accepted, using run 28329507158 only as prior runner-infra family evidence and not as a trustworthy spec verdict.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "A new run-single-spec attempt for spec.kms.v2plus-managed-hsm completes after the accepted fail-closed verifier repair.",
+        "result.json, workflow metadata, and any spec-runner status/result artifacts are reviewed for the new attempt.",
+        "The spec is truthfully classified as pass, fail, blocked, or runner-infra error without reusing the older artifact-routing-mismatch run as the verdict.",
+        "Spec-loop state and any needed durable evidence/model updates are recorded."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2plus-managed-hsm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:04:41.410Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628_20260628170444",
+        "assigned_at": "2026-06-28T17:04:44.486Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628",
+        "worker_started_attempt_id": "a_retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628_20260628170444",
+        "worker_started_at": "2026-06-28T17:05:00.993Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed spec.kms.v2plus-managed-hsm after the accepted fail-closed verifier repair, archived and inspected the fresh trustworthy rerun 28329700305 plus prior-family run 28329507158, and recorded a durable blocked/environment verdict in evidence/archive/review-spec-kms-v2plus-managed-hsm-run-28329700305-after-fail-closed-fix-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T17:10:17.813Z",
+        "last_worker_evidence": [
+          "evidence/archive/review-spec-kms-v2plus-managed-hsm-run-28329700305-after-fail-closed-fix-20260628.md",
+          "evidence/archive/spec-kms-v2plus-managed-hsm-run-28329700305",
+          "evidence/archive/spec-kms-v2plus-managed-hsm-run-28329507158"
+        ],
+        "reviewed_at": "2026-06-28T17:27:17.022Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the managed-HSM rerun review: the worker archived trustworthy rerun 28329700305 plus prior-family evidence and recorded the durable blocked/environment verdict in the cited review artifact, so this leaf no longer needs owner review."
+      },
+      "session_id": "s_task_retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628",
+      "session_history": [
+        "s_task_retry-spec-kms-v2plus-managed-hsm-after-fail-closed-fix-20260628"
+      ],
+      "result": "Reviewed spec.kms.v2plus-managed-hsm after the accepted fail-closed verifier repair, archived and inspected the fresh trustworthy rerun 28329700305 plus prior-family run 28329507158, and recorded a durable blocked/environment verdict in evidence/archive/review-spec-kms-v2plus-managed-hsm-run-28329700305-after-fail-closed-fix-20260628.md.",
+      "evidence": [
+        "evidence/archive/review-spec-kms-v2plus-managed-hsm-run-28329700305-after-fail-closed-fix-20260628.md",
+        "evidence/archive/spec-kms-v2plus-managed-hsm-run-28329700305",
+        "evidence/archive/spec-kms-v2plus-managed-hsm-run-28329507158"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:27:17.022Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the managed-HSM rerun review: the worker archived trustworthy rerun 28329700305 plus prior-family evidence and recorded the durable blocked/environment verdict in the cited review artifact, so this leaf no longer needs owner review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-hardening-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix through the single-spec workflow now that the checked-in replay no longer hard-fails clean workspaces on missing virtualmachine-prerelease-coverage.json, and replace the old preflight-block evidence with a fresh post-hardening run verdict.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "Single-spec workflow run uses the repaired checked-in replay/workflow coupling for spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix and records the new run id plus artifact bundle.",
+        "Result classifies the post-hardening run truthfully as pass, fail, or blocker with evidence from the fresh run rather than the superseded clean-workspace ENOENT preflight defect.",
+        "If the run still cannot reach product verdict, output names the next exact blocker after preflight hardening without reusing the already-fixed missing-coverage-file explanation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:22:46.253Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-hardening-20260628_20260628172246",
+        "assigned_at": "2026-06-28T17:22:46.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-harde",
+        "worker_started_attempt_id": "a_retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-hardening-20260628_20260628172246",
+        "worker_started_at": "2026-06-28T17:22:57.490Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran a fresh single-spec GitHub Actions retry for spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix, archived run 28330113897, and wrote a reviewed evidence note showing the old ENOENT preflight defect is gone and the current truthful verdict is blocked/environment due to live capacity preflight cluster-count read failure.",
+        "last_worker_completed_at": "2026-06-28T17:26:07.473Z",
+        "last_worker_evidence": [
+          "evidence/archive/retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-hardening-20260628.md",
+          "evidence/archive/spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-run-28330113897/jobs-api.json",
+          "evidence/archive/spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-run-28330113897/aks-rp-e2e-28330113897-spec-test-results/"
+        ],
+        "reviewed_at": "2026-06-28T17:27:16.937Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the post-hardening retry review: the worker archived fresh run 28330113897 and showed the old ENOENT preflight defect is fixed; the truthful current outcome is a new blocked/environment verdict on live capacity preflight cluster-count read failure, not the superseded clean-workspace bug."
+      },
+      "session_id": "s_task_retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-harde",
+      "session_history": [
+        "s_task_retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-harde"
+      ],
+      "result": "Ran a fresh single-spec GitHub Actions retry for spec.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix, archived run 28330113897, and wrote a reviewed evidence note showing the old ENOENT preflight defect is gone and the current truthful verdict is blocked/environment due to live capacity preflight cluster-count read failure.",
+      "evidence": [
+        "evidence/archive/retry-spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-after-preflight-hardening-20260628.md",
+        "evidence/archive/spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-run-28330113897/jobs-api.json",
+        "evidence/archive/spec-cloud-provider-vm-prerelease-credential-provider-upgrade-matrix-run-28330113897/aks-rp-e2e-28330113897-spec-test-results/"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:27:16.937Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the post-hardening retry review: the worker archived fresh run 28330113897 and showed the old ENOENT preflight defect is fixed; the truthful current outcome is a new blocked/environment verdict on live capacity preflight cluster-count read failure, not the superseded clean-workspace bug."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair spec.deployment-safeguards.vap-upgrade-reconcile so deploymentSafeguards sub-resource operations use a supported API version instead of inheriting incompatible 2026-03-02-preview, then define the narrow changed-condition retry contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628.md"
+      ],
+      "acceptance": [
+        "The scenario/test source and accepted spec evidence are compared to show exactly where 2026-03-02-preview is injected and why it is incompatible for deploymentSafeguards in westus2.",
+        "The task leaves either a concrete source/config repair proposal or a bounded runtime blocker with exact supported-version evidence for this sub-resource path.",
+        "If a retry is proposed, it is explicitly conditioned on the repaired API-version selection and limited to revalidating the previously accepted pass path rather than blind rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.deployment-safeguards.vap-upgrade-reconcile"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T15:59:45.120Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T17:21:22.010Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628_20260628172436",
+        "assigned_at": "2026-06-28T17:24:36.930Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628",
+        "worker_started_attempt_id": "a_repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628_20260628172436",
+        "worker_started_at": "2026-06-28T17:24:37.625Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested evidence artifact documenting the VAP-upgrade-reconcile API-version injection path, supported-version evidence, repo-local repair state, and a narrow changed-condition retry contract.",
+        "last_worker_completed_at": "2026-06-28T17:26:21.907Z",
+        "last_worker_evidence": [
+          "evidence/archive/repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:27:16.844Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repair review: the worker produced the requested evidence artifact showing the incompatible 2026-03-02-preview injection path, supported-version evidence, repo-local repair state, and the narrow changed-condition retry contract for spec.deployment-safeguards.vap-upgrade-reconcile."
+      },
+      "session_id": "s_task_repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628",
+      "session_history": [
+        "s_task_repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628"
+      ],
+      "result": "Wrote the requested evidence artifact documenting the VAP-upgrade-reconcile API-version injection path, supported-version evidence, repo-local repair state, and a narrow changed-condition retry contract.",
+      "evidence": [
+        "evidence/archive/repair-spec-deployment-safeguards-vap-upgrade-reconcile-api-version-selection-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:27:16.844Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repair review: the worker produced the requested evidence artifact showing the incompatible 2026-03-02-preview injection path, supported-version evidence, repo-local repair state, and the narrow changed-condition retry contract for spec.deployment-safeguards.vap-upgrade-reconcile."
+      },
+      "status": "done"
+    }
+  ]
+}

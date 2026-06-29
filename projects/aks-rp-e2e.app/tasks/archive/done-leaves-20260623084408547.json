@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T08:44:08.547Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier refill archived three completed root leaves whose durable meaning is already captured in archive evidence and project context: the OIDC >=1.34 replay request-shape fix, the Network CNI Cilium adjacent-scenario gap inventory, and the SecOps FIPS mounted-source root inventory. The open frontier is now clearer and still repo-local/no-cloud: active work is private-cluster authorized-service-tags replay host-routing implementation, Network CNI Cilium per-minor lineage preservation, and a newly assigned SecOps FIPS root-config exactness reconcile leaf; the single family-level external-human proof wait remains unchanged and no duplicate waits or cloud execution were added.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-adjacent-scenario-gap-inventory-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory up to five remaining mounted-source Network CNI Cilium suite scenarios adjacent to the newly landed preview-upgrade branch, map each exact scenario to existing feature/spec/replay/model coverage status, and nominate the single next exact repo-local learning or model-landing leaf without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-adjacent-scenario-gap-inventory-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted Network CNI Cilium suite/plan files inspected, lists up to five exact handwritten scenario identifiers adjacent to the preview-upgrade carrier, and for each states whether accepted feature/spec/replay/model coverage already exists or the exact gap still missing.",
+        "The note nominates one bounded next leaf with exact path or source-carrier scope, keeps the project in the regular learning/model-feedback lane, and does not perform cloud mutation or create duplicate external-wait tasks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T08:37:02.289Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-adjacent-scenario-gap-inventory-20260623_20260623083714",
+        "assigned_at": "2026-06-23T08:37:14.584Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-adjacent-scenario-gap-inventory-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-adjacent-scenario-gap-inventory-20260623_20260623083714",
+        "worker_started_at": "2026-06-23T08:37:49.304Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable archive inventory at evidence/archive/network-cni-cilium-adjacent-scenario-gap-inventory-20260623.md that inspects mounted Cilium-suite neighbors around the landed preview-upgrade branch, maps five exact scenario identifiers to current feature/spec/replay/model coverage, corrects stale preview-upgrade frontier wording, and nominates the next bounded repo-local learning leaf.",
+        "last_worker_completed_at": "2026-06-23T08:40:53.816Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T08:41:21.250Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites exact mounted Network CNI Cilium suite and plan files, maps five adjacent handwritten scenario identifiers to current feature/spec/replay/model coverage, corrects the stale preview-upgrade frontier wording, and nominates one bounded next repo-local lineage-preservation leaf without cloud mutation or duplicate waits."
+      },
+      "session_id": "s_task_network-cni-cilium-adjacent-scenario-gap-inventory-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-adjacent-scenario-gap-inventory-20260623"
+      ],
+      "result": "Created a durable archive inventory at evidence/archive/network-cni-cilium-adjacent-scenario-gap-inventory-20260623.md that inspects mounted Cilium-suite neighbors around the landed preview-upgrade branch, maps five exact scenario identifiers to current feature/spec/replay/model coverage, corrects stale preview-upgrade frontier wording, and nominates the next bounded repo-local learning leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T08:41:21.250Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites exact mounted Network CNI Cilium suite and plan files, maps five adjacent handwritten scenario identifiers to current feature/spec/replay/model coverage, corrects the stale preview-upgrade frontier wording, and nominates one bounded next repo-local lineage-preservation leaf without cloud mutation or duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

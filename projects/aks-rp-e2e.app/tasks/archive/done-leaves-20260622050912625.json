@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:09:12.625Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner pass: accepted vmpr-row27-checkpoint-packaging-20260622 as durable checkpoint-slice guidance, so the project root now preserves row-27 packaging plus the earlier source/spec reconciliations in rollup rather than open done leaves. Remaining useful frontier is unchanged: cloudprovider-credential-provider-mounted-source-precision-landing-20260622 and vmpr-row29-mounted-source-replay-landing-20260622 stay as the only active repo-local mounted-source/spec-replay landing work, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful blocked family pending real human transport proof or authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "speculor-uncovered-scenario-source-inventory-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded regular-learning packet for one reopened uncovered family by inventorying the mounted AKS RP Go e2ev3 speculor scenarios, naming the exact suite/scenario source carriers, the current repo-local coverage state (model/spec/replay/evidence), and the next 1-2 smallest truthful follow-up leaves without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-uncovered-scenario-source-inventory-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source suite/scenario files under /app/sources/aks-rp/test/e2ev3/sigs that carry the speculor family, counts or lists the bounded uncovered scenarios inspected, and distinguishes already-covered versus still-unmapped scenario surfaces in repo-local carriers.",
+        "Artifact compares the inspected speculor source carriers against current repo-local model/spec/replay/evidence coverage, recording the exact gap shape and proposing at most 1-2 concrete next leaves with precise output targets rather than a broad family rewrite.",
+        "Artifact records repo-local validation/search commands with outcomes, performs no cloud mutation, and does not make task-tree edits from worker scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:01:45.016Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-uncovered-scenario-source-inventory-20260622_20260622050148",
+        "assigned_at": "2026-06-22T05:01:48.709Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-uncovered-scenario-source-inventory-20260622",
+        "worker_started_attempt_id": "a_speculor-uncovered-scenario-source-inventory-20260622_20260622050148",
+        "worker_started_at": "2026-06-22T05:02:36.644Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded speculor source-inventory artifact at evidence/archive/speculor-uncovered-scenario-source-inventory-20260622.md, narrowing the reopened family to mounted cloudprovider carriers, distinguishing already-covered versus weakly-mapped scenario surfaces, and proposing two smallest repo-local follow-up leaves without cloud execution.",
+        "last_worker_completed_at": "2026-06-22T05:05:17.165Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:06:01.714Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the artifact at evidence/archive/speculor-uncovered-scenario-source-inventory-20260622.md cites the exact mounted /app/sources cloudprovider suite and plan carriers, inventories all four inspected scenarios, distinguishes already-covered versus weakly-mapped repo-local surfaces, records the repo-local grep/find validation commands, and proposes two bounded no-cloud follow-ups. This satisfies the task’s bounded regular-learning acceptance without reopening the external human blocker or broad family rewrite."
+      },
+      "session_id": "s_task_speculor-uncovered-scenario-source-inventory-20260622",
+      "session_history": [
+        "s_task_speculor-uncovered-scenario-source-inventory-20260622"
+      ],
+      "result": "Produced the bounded speculor source-inventory artifact at evidence/archive/speculor-uncovered-scenario-source-inventory-20260622.md, narrowing the reopened family to mounted cloudprovider carriers, distinguishing already-covered versus weakly-mapped scenario surfaces, and proposing two smallest repo-local follow-up leaves without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:06:01.714Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the artifact at evidence/archive/speculor-uncovered-scenario-source-inventory-20260622.md cites the exact mounted /app/sources cloudprovider suite and plan carriers, inventories all four inspected scenarios, distinguishes already-covered versus weakly-mapped repo-local surfaces, records the repo-local grep/find validation commands, and proposes two bounded no-cloud follow-ups. This satisfies the task’s bounded regular-learning acceptance without reopening the external human blocker or broad family rewrite."
+      },
+      "status": "done"
+    }
+  ]
+}

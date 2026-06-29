@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:24:56.041Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace cleanup: the human-steering reference to user-review-send-ready-batch-owner-handoff-packet-20260620 is now conclusively historical, not a live leaf. The duplicate passive send-proof wait shapes are preserved only as archived branch history because planning replaced them with the active owner-action repair task user-review-send-ready-wave1-owner-handoff-proof-repair-20260620, which now carries the concrete proof/handoff work for the wave-1 family while row-scoped consume-proof and other external waits remain blocked only on their exact returned-proof or owner-disposition conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-send-ready-batch-owner-send-proof-family-wait-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one visible family-level external wait for the current 34-leaf packetized response-await cohort now that the durable wait contract is accepted, so the shared owner send/handoff proof gap is represented once in the tree without collapsing the preserved 14 special-routing waits and 20 remaining leaf-specific reply routes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-send-ready-batch-owner-send-proof-family-wait-20260620.md"
+      ],
+      "acceptance": [
+        "Blocked wait cites evidence/archive/user-review-send-ready-batch-owner-send-proof-family-wait-20260620.md plus the accepted queue-registry, proof-gap coordination, and owner batch handoff packet authorities, and states that the only shared missing input is one durable repo-local proof that the current 34-item batch was actually sent, handed off, or escalated.",
+        "Resume condition is precise: one accepted owner send/handoff proof artifact appears for the current 34-leaf batch, after which planning reviews affected waits using the preserved 14 special-routing and 20 leaf-specific downstream reply routes instead of collapsing them into one generic successor.",
+        "Task remains a user-review family wait only: no claim that any packet was sent, no cloud execution, no reopening of blocked execute/spec leaves, and no replacement of child waits whose distinct downstream routing still matters."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:send-ready-batch-owner-send-proof-family-wait"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:42:11.647Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T08:21:17.956Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the newer family-level carrier user-review-send-ready-wave1-proof-gap-family-wait-20260620. The archived batch wait contract remains durable evidence, but the wave1 proof-gap family wait is now the single truthful live send/handoff-proof blocker for the covered App Monitoring, App Routing, CCP, cloud-provider multiple-SLB, devinfra, KMS, and MachinesPreview waits."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T08:21:17.956Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the newer family-level carrier user-review-send-ready-wave1-proof-gap-family-wait-20260620. The archived batch wait contract remains durable evidence, but the wave1 proof-gap family wait is now the single truthful live send/handoff-proof blocker for the covered App Monitoring, App Routing, CCP, cloud-provider multiple-SLB, devinfra, KMS, and MachinesPreview waits."
+      },
+      "status": "done"
+    }
+  ]
+}

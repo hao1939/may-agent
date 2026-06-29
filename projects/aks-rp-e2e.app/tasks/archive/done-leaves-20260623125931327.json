@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T12:59:31.327Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review: the single external-human proof wait remains the only truthful blocker because repo-local dispatch/handoff proof already exists and no returned operator artifact has changed the resume condition. Archive the two safe completed leaves whose meaning is already preserved in the project rollup, keep the two active repo-local leaves in flight, and add one runnable private-cluster Addonv2 execute-readiness blueprint so spare capacity can stay in repo-local learning/runner planning rather than reopening blocked external work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-evidence-strength-gap-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular verification/evidence-feedback lane: produce a bounded repo-local packet for cloud-provider credential-provider that maps the exact remaining evidence-strength gap between the mounted-source baseline create-time contract and the accepted 2026-06-15 live artifact, so a future replay or proof-enrichment task can strengthen path.cloud-provider.credential-provider without reopening completed normalized-model work or widening to upgrade rows 189/214.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-evidence-strength-gap-packet-20260623.md"
+      ],
+      "acceptance": [
+        "Produce an archive note that links the mounted source, feature/spec/model surfaces, and accepted live run artifact, then enumerates the exact still-unproven behavior points for Linux credential-provider flags, Windows credential-provider flags, kubelet identity AcrPull effectiveness, Linux nginx pull, and Windows IIS pull.",
+        "Name the smallest credible next replay/evidence enrichment options for proving those missing stages, keep scope repo-local only with no cloud execution or broad validator cleanup, and state why the normalized-model branch now remains truthfully unknown until one of those bounded proof paths lands."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider.credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:54:40.103Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-evidence-strength-gap-packet-20260623_20260623125440",
+        "assigned_at": "2026-06-23T12:54:40.150Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-evidence-strength-gap-packet-20260623",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-evidence-strength-gap-packet-20260623_20260623125440",
+        "worker_started_at": "2026-06-23T12:55:07.891Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded archive note `evidence/archive/cloud-provider-credential-provider-evidence-strength-gap-packet-20260623.md`, linking mounted-source contract, current feature/spec/model surfaces, and the accepted 2026-06-15 live artifact to enumerate the exact remaining proof gaps and smallest bounded evidence-enrichment options for the baseline credential-provider path.",
+        "last_worker_completed_at": "2026-06-23T12:57:10.894Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T12:57:43.262Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note evidence/archive/cloud-provider-credential-provider-evidence-strength-gap-packet-20260623.md links mounted source, current feature/spec/model surfaces, and the accepted 2026-06-15 live artifact, then truthfully enumerates the five exact still-unproven baseline stages plus bounded next evidence-enrichment options without widening scope."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-evidence-strength-gap-packet-20260623",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-evidence-strength-gap-packet-20260623"
+      ],
+      "result": "Produced the bounded archive note `evidence/archive/cloud-provider-credential-provider-evidence-strength-gap-packet-20260623.md`, linking mounted-source contract, current feature/spec/model surfaces, and the accepted 2026-06-15 live artifact to enumerate the exact remaining proof gaps and smallest bounded evidence-enrichment options for the baseline credential-provider path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T12:57:43.262Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note evidence/archive/cloud-provider-credential-provider-evidence-strength-gap-packet-20260623.md links mounted source, current feature/spec/model surfaces, and the accepted 2026-06-15 live artifact, then truthfully enumerates the five exact still-unproven baseline stages plus bounded next evidence-enrichment options without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

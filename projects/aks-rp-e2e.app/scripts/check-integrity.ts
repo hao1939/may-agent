@@ -427,6 +427,24 @@ function workflowHandlerInputEvents(handler: WorkflowHandler): string[] {
     .filter((event): event is string => Boolean(event));
 }
 
+function selectorConflictKey(selector: EventSelector): string | null {
+  if (typeof selector === "string") return selector;
+  const type = eventTypeFromSelector(selector);
+  if (!type) return null;
+  const target = selector.target;
+  const targetParts = [
+    target?.project ? `project=${target.project}` : "",
+    target?.taskId ? `taskId=${target.taskId}` : "",
+  ].filter(Boolean);
+  const owner = selector.owner ? `owner=${selector.owner}` : "";
+  const actions =
+    Array.isArray(selector.actions) && selector.actions.length
+      ? `actions=${selector.actions.join("|")}`
+      : "";
+  const qualifiers = [...targetParts, owner, actions].filter(Boolean);
+  return qualifiers.length ? `${type} [${qualifiers.join(",")}]` : type;
+}
+
 function scheduleEvents(schedule: Schedule): Array<{ type?: string }> {
   return Array.isArray(schedule.emits)
     ? schedule.emits
@@ -515,15 +533,25 @@ function validateEventGraph(projectApp: ProjectApp): void {
   }
 
   const handlerConsumers = new Map<string, string[]>();
+  const handlerSelectorConsumers = new Map<string, string[]>();
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false) continue;
     for (const event of workflowHandlerInputEvents(handler)) {
       addMapValue(handlerConsumers, event, handler.name ?? "unnamed-handler");
     }
+    for (const selector of workflowHandlerSelectors(handler)) {
+      const key = selectorConflictKey(selector);
+      if (key)
+        addMapValue(
+          handlerSelectorConsumers,
+          key,
+          handler.name ?? "unnamed-handler",
+        );
+    }
   }
 
   const maxDirectHandlers = graph.limits?.maxHandlersPerEvent ?? 1;
-  for (const [event, handlers] of handlerConsumers) {
+  for (const [event, handlers] of handlerSelectorConsumers) {
     if (handlers.length > maxDirectHandlers) {
       fail(
         `event ${event} has ${handlers.length} generated handlers (${handlers.join(", ")}); max is ${maxDirectHandlers}`,

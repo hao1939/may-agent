@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:45:55.489Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner update: accepted the BYO DNS topology-exact model/path reconciliation as finished repo-local hygiene. The archive proves path.private-cluster-byo-dns-server-topology-exact stays canonically separate from the broad pass sibling, remains status unknown, and only needed bounded sourceRefs repair in specs/private-cluster-byo-dns-server-topology-exact.json plus specs/index.json with local wiring-check rerun. Earlier none-DNS-zone-v3 and private-cluster execute-plan review leaves remain done history, while the live frontier stays intentionally narrow: continue the active mounted-source VM prerelease boundary packet for rows 25+50, 40-43, 33, and 76, and keep one compressed external-human-transport family wait as the only blocked item until durable human/operator completion proof lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the knowledge-map/model linkage for the exact child path.private-cluster-byo-dns-server-topology-exact against the already-final broader sibling path.private-cluster-byo-dns-server: verify the exact child keeps its own non-terminal status and source/spec/path references, correct any stale parent-path association or verdict inheritance in durable model/output artifacts, and archive the evidence-backed distinction without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the exact child path id, the broader sibling path id, the current stale/ambiguous linkage or status surface, and the concrete repo-local correction or confirmed no-change rationale backed by cited model/spec/source locations.",
+        "Any required repo-local model/output update keeps path.private-cluster-byo-dns-server-topology-exact separate from the broader final pass, does not perform live execution, and leaves a clear next action for either user review packet consumption or later deliberate run evidence ingestion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-byo-dns-server-topology-exact"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:38:55.993Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622_20260622183919",
+        "assigned_at": "2026-06-22T18:39:19.023Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622",
+        "worker_started_attempt_id": "a_private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622_20260622183919",
+        "worker_started_at": "2026-06-22T18:39:20.202Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the BYO DNS topology-exact child against the broad pass sibling, archived the evidence, and fixed the remaining stale exact-child metadata linkage in specs/private-cluster-byo-dns-server-topology-exact.json and specs/index.json without changing canonical path verdicts.",
+        "last_worker_completed_at": "2026-06-22T18:42:41.076Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:43:27.238Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive evidence proves the exact child path remains canonically separate from the broad pass sibling, documents the bounded repo-local correction in specs/private-cluster-byo-dns-server-topology-exact.json and specs/index.json, and reruns local wiring validation without any cloud execution."
+      },
+      "session_id": "s_task_private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622",
+      "session_history": [
+        "s_task_private-cluster-byo-dns-server-topology-exact-model-path-reconciliation-20260622"
+      ],
+      "result": "Reconciled the BYO DNS topology-exact child against the broad pass sibling, archived the evidence, and fixed the remaining stale exact-child metadata linkage in specs/private-cluster-byo-dns-server-topology-exact.json and specs/index.json without changing canonical path verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:43:27.238Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive evidence proves the exact child path remains canonically separate from the broad pass sibling, documents the bounded repo-local correction in specs/private-cluster-byo-dns-server-topology-exact.json and specs/index.json, and reruns local wiring validation without any cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

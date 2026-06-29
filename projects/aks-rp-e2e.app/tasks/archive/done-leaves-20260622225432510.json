@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:54:32.510Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 metric-breach planning refresh: archived the two remaining safe done leaves because their durable meaning is already preserved in archive evidence and the project rollup. The live repo-local frontier now consists of app-routing VM prerelease selector/body-lineage audit, VM row45 autoscaled-vms-crud feature-crosswalk reconciliation, refreshed dirty-repo checkpoint slicing, and a new blocked-path-count delta audit created from the metric breach; keep the single external-human proof wait isolated and do not reopen repo-local work from that wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-dirty-repo-checkpoint-slicing-20260622b",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "User review workspace lane: audit the current dirty aks-rp-e2e repo against the live task tree so the next coherent checkpoint slice is explicit without committing active app-routing VM prerelease spec-path or VM prerelease suite-coverage work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-dirty-repo-checkpoint-slicing-20260622b.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/user-review-dirty-repo-checkpoint-slicing-20260622b.md groups the current git status/diff into: (a) files attributable to accepted/done task outputs, (b) files attributable to the two still-active VM prerelease repo-local leaves, and (c) stray or unexplained files needing follow-up.",
+        "The artifact names one truthful next checkpoint action: either a bounded commit-ready slice that excludes active work, or an explicit no-checkpoint-yet decision with the exact active files blocking a clean slice.",
+        "No commit, no cloud mutation, and no reopening of the single external-human wait are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review.dirty-repo.checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:46:20.773Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T22:46:20.822Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-dirty-repo-checkpoint-slicing-20260622b_20260622224623",
+        "assigned_at": "2026-06-22T22:46:23.358Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-dirty-repo-checkpoint-slicing-20260622b",
+        "worker_started_attempt_id": "a_user-review-dirty-repo-checkpoint-slicing-20260622b_20260622224623",
+        "worker_started_at": "2026-06-22T22:46:44.275Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the dirty aks-rp-e2e workspace against the live task tree and wrote evidence/archive/user-review-dirty-repo-checkpoint-slicing-20260622b.md grouping accepted/done outputs, active-leaf-attributable files, and mixed follow-up residue, with one explicit commit-ready evidence-only checkpoint slice that excludes both active VM prerelease leaves.",
+        "last_worker_completed_at": "2026-06-22T22:48:47.235Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:49:42.765Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence truthfully groups the dirty repo into accepted evidence-only files, active VM-prerelease leaf files, and mixed shared surfaces, and identifies one bounded commit-ready evidence-only slice that excludes both active VM-prerelease leaves."
+      },
+      "session_id": "s_task_user-review-dirty-repo-checkpoint-slicing-20260622b",
+      "session_history": [
+        "s_task_user-review-dirty-repo-checkpoint-slicing-20260622b"
+      ],
+      "result": "Audited the dirty aks-rp-e2e workspace against the live task tree and wrote evidence/archive/user-review-dirty-repo-checkpoint-slicing-20260622b.md grouping accepted/done outputs, active-leaf-attributable files, and mixed follow-up residue, with one explicit commit-ready evidence-only checkpoint slice that excludes both active VM prerelease leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:49:42.765Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence truthfully groups the dirty repo into accepted evidence-only files, active VM-prerelease leaf files, and mixed shared surfaces, and identifies one bounded commit-ready evidence-only slice that excludes both active VM-prerelease leaves."
+      },
+      "status": "done"
+    }
+  ]
+}

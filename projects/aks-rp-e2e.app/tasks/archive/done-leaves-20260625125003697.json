@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T12:50:03.697Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 blocked-frontier owner review preserves focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged as the single truthful family of six exact returned-proof waits because the 2026-06-26 bounded follow-up window has not yet opened and no new external reply evidence exists. Archive the accepted serverless schedulerctrl APIServerVNetIntegration boundary matrix into project history, keep serverless-virtual-nodes-multi-pod-burst-mounted-source-boundary-map-20260625 as the current active repo-local learning leaf, and add private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260625 as the next bounded no-cloud refill task so progress can continue outside the blocked family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted e2ev3 source plus current model/spec coverage to map the serverless schedulerctrl validating-webhook APIServerVNetIntegration-adjacent boundary, capturing how public/private/topology variants split today and whether any repo-local spec/model follow-up is warranted without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted source entry points and current local model/spec artifacts, then records the public/private/APIServerVNetIntegration sibling boundary for serverless schedulerctrl validating-webhook with accepted inputs, rejected/unknown edges, and which slices are already covered by exact waits or accepted repo-local artifacts.",
+        "The artifact ends with one concrete next safe repo-local action (or an evidence-backed no-new-action conclusion) for any uncovered adjacent slice, and no cloud mutation, approval resend, or duplicate blocked waits are introduced from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "analysis.serverless-schedulerctrl.validating-webhook.apiserver-vnetintegration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T12:44:32.073Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625_20260625124432",
+        "assigned_at": "2026-06-25T12:44:32.126Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-202",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625_20260625124432",
+        "worker_started_at": "2026-06-25T12:44:56.484Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested APIServerVNetIntegration boundary matrix at evidence/archive/serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625.md, grounding the public/private AVI split in mounted source plus current feature/spec/replay/model/view coverage and concluding no new repo-local split is needed.",
+        "last_worker_completed_at": "2026-06-25T12:47:17.596Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T12:48:20.920Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-25: evidence/archive/serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625.md cites the mounted serverless handwritten source, canonical specs/replays, and model/view carriers, confirms the truthful 4-topology-pair/8-leaf validating-webhook boundary, and supports the no-new-repo-local-action conclusion without widening or mutating."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-202",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-202"
+      ],
+      "result": "Produced the requested APIServerVNetIntegration boundary matrix at evidence/archive/serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625.md, grounding the public/private AVI split in mounted source plus current feature/spec/replay/model/view coverage and concluding no new repo-local split is needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T12:48:20.920Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-25: evidence/archive/serverless-schedulerctrl-validating-webhook-apiserver-vnetintegration-source-boundary-matrix-20260625.md cites the mounted serverless handwritten source, canonical specs/replays, and model/view carriers, confirms the truthful 4-topology-pair/8-leaf validating-webhook boundary, and supports the no-new-repo-local-action conclusion without widening or mutating."
+      },
+      "status": "done"
+    }
+  ]
+}

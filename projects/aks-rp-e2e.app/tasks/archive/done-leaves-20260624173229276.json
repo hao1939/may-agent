@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T17:32:29.276Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning update accepts the already-reviewed bootstrap-profile-managed-acr-lifecycle replay writeback: the shared repo-wide format frontier is now truthfully represented by one active bounded CCP-family nine-file slice expected to reduce the residual 71-warning replay-heavy gate without widening beyond the named CCP replay files. Keep the VirtualMachine prerelease coverage-ledger checkpoint as a separate root blocked only on a future green repo-wide bun run check, and preserve the compressed four-leaf external-wait branch unchanged until a returned authoritative reply or the first follow-up review on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact 2-file app-routing-default-domain replay-family frontier from the accepted 74-warning rerun, then rerun targeted verification for that same file set and refresh the repo-wide warning count without widening beyond that family, touching unrelated warned files, or attempting a checkpoint commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command(s) for the 2 app-routing-default-domain replay files, targeted verification output for the same file set, and the resulting git diff or equivalent proof showing only the intended app-routing-default-domain replay-family formatting changes.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no cloud execution, no formatting outside the accepted 2-file app-routing-default-domain family, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:25:58.487Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624_20260624172558",
+        "assigned_at": "2026-06-24T17:25:58.536Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624_20260624172558",
+        "worker_started_at": "2026-06-24T17:26:18.869Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to the two app-routing-default-domain replay files, verified both are clean in targeted checks, reran repo-wide bun check, and archived the evidence showing the warning count fell from 74 to 72 without widening scope.",
+        "last_worker_completed_at": "2026-06-24T17:27:51.373Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:28:31.041Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: archive evidence proves the exact 2-file app-routing-default-domain Prettier writeback stayed bounded, both targeted checks passed, and the repo-wide bun run check warning frontier dropped from 74 to 72 without widening scope."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-app-routing-default-domain-slice-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback only to the two app-routing-default-domain replay files, verified both are clean in targeted checks, reran repo-wide bun check, and archived the evidence showing the warning count fell from 74 to 72 without widening scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:28:31.041Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: archive evidence proves the exact 2-file app-routing-default-domain Prettier writeback stayed bounded, both targeted checks passed, and the repo-wide bun run check warning frontier dropped from 74 to 72 without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

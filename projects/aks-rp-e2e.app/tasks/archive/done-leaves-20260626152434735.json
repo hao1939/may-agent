@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T15:24:34.736Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner review accepts the two private-cluster mounted-source packets plus the egress scenario-metadata reconcile as durable no-cloud completions: the BYO DNS topology exact branch now feeds a truthfulness repair task that must first reconcile the stale terminal-warning linkage before replay gate repair, the shared API-server subnet branch feeds a posture-demotion task until an exact two-cluster carrier exists, and private-cluster egress remains intentionally unknown/inferred rather than source-backed. The single external-human proof wait remains the only truthful blocked frontier leaf, and the live owner frontier is the two private-cluster repo-local truthfulness repairs only.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the mounted AKS RP private-cluster source to map the exact handwritten/e2ev3 carrier for path.private-cluster-byo-dns-server-topology-exact, explicitly reconcile why the broad sibling path.private-cluster-byo-dns-server remains final pass while this topology-exact child stays distinct, and write one archive packet that names any single bounded no-cloud follow-on still needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626.md"
+      ],
+      "acceptance": [
+        "The archive packet cites the exact mounted source file(s)/scenario names for the BYO DNS server topology-exact child path, states the accepted inputs/expectations/topology handoff boundary, and records whether there is an exact handwritten carrier or only a bounded source-equivalent carrier for the exact child.",
+        "The packet also explains the relationship to the already-final broad sibling path.private-cluster-byo-dns-server, names the current repo-local spec/replay/model landing for path.private-cluster-byo-dns-server-topology-exact, says whether that exact child landing is already truthful or needs one bounded repo-local follow-on, and does not request cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "privatecluster-byo-dns-topology-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T15:17:59.282Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T15:17:59.372Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626_20260626151811",
+        "assigned_at": "2026-06-26T15:18:11.313Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626",
+        "worker_started_attempt_id": "a_privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626_20260626151811",
+        "worker_started_at": "2026-06-26T15:18:12.259Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive packet at evidence/archive/privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626.md, reconciling the mounted handwritten BYO-DNS topology-exact carrier with current repo-local feature/spec/replay/model surfaces and identifying one bounded no-cloud follow-on on replay mutation-gate enforcement.",
+        "last_worker_completed_at": "2026-06-26T15:20:26.899Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T15:23:13.422Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive packet as durable mounted-source evidence: it proves path.private-cluster-byo-dns-server-topology-exact has an exact handwritten two-cluster shared-VNet BYO-DNS carrier distinct from the broad sibling, while also truthfully surfacing one remaining bounded repo-local follow-on on replay mutation-gate enforcement."
+      },
+      "session_id": "s_task_privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626",
+      "session_history": [
+        "s_task_privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626"
+      ],
+      "result": "Created the requested archive packet at evidence/archive/privatecluster-byo-dns-server-topology-exact-mounted-source-packet-20260626.md, reconciling the mounted handwritten BYO-DNS topology-exact carrier with current repo-local feature/spec/replay/model surfaces and identifying one bounded no-cloud follow-on on replay mutation-gate enforcement.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T15:23:13.422Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive packet as durable mounted-source evidence: it proves path.private-cluster-byo-dns-server-topology-exact has an exact handwritten two-cluster shared-VNet BYO-DNS carrier distinct from the broad sibling, while also truthfully surfacing one remaining bounded repo-local follow-on on replay mutation-gate enforcement."
+      },
+      "status": "done"
+    }
+  ]
+}

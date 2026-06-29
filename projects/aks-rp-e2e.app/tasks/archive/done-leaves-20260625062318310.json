@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T06:23:18.310Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner review accepts and compacts the storage-csi-file-resize readiness slice into root history. Root understanding now preserves the exact mounted handwritten Azure File resize boundary, the accepted check-lane closure packet, the accepted mutation-gated verification packet, and the durable model/spec/view reconciliation showing path.storage-csi-file-resize as source-grounded execute-capable local readiness only behind --execute with AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, with no cloud mutation or live verdict accepted yet. The only remaining open work stays compressed under focus-mounted-source-coverage-closure-and-external-wait-20260623 as five exact returned-proof waits that should remain unchanged until authoritative returned proof arrives or the first bounded follow-up window opens on or after 2026-06-26.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "storage-csi-file-resize-check-lane-closure-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a no-cloud check-lane closure packet for path.storage-csi-file-resize that confirms the mounted handwritten source boundary, current canonical feature/spec/replay/model linkage, exact expected resize behavior, and the next mutation-gated verification boundary without widening beyond this path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-check-lane-closure-packet-20260625.md"
+      ],
+      "acceptance": [
+        "Archive packet records the exact mounted source-backed input and expectation boundary for path.storage-csi-file-resize, including the Bound PVC, file.csi.azure.com lineage, 100Gi→200Gi expansion, and resized mount proof contract, and cites the current canonical feature/spec/replay/model carriers or the exact repo-local gap that still needs repair.",
+        "Archive packet records the no-cloud validation result and names the next safe mutation-gated verification step for this exact path only, without running cloud mutation, reopening unrelated storage-csi siblings, or claiming a live product verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:03:30.440Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-check-lane-closure-packet-20260625_20260625060333",
+        "assigned_at": "2026-06-25T06:03:33.135Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-check-lane-closure-packet-20260625",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-check-lane-closure-packet-20260625_20260625060333",
+        "worker_started_at": "2026-06-25T06:03:57.272Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested no-cloud closure packet at evidence/archive/storage-csi-file-resize-check-lane-closure-packet-20260625.md, revalidating the mounted source boundary, canonical feature/spec/replay/model linkage, exact expected resize contract, and the next bounded mutation-gated verification step for path.storage-csi-file-resize only.",
+        "last_worker_completed_at": "2026-06-25T06:05:47.663Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T06:06:45.974Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/storage-csi-file-resize-check-lane-closure-packet-20260625.md: it reanchors the mounted Azure File resize source boundary, revalidates canonical feature/spec/replay/model linkage, records bounded no-cloud validation outcomes, and preserves the exact next mutation-gated step for path.storage-csi-file-resize without claiming any live product verdict."
+      },
+      "session_id": "s_task_storage-csi-file-resize-check-lane-closure-packet-20260625",
+      "session_history": [
+        "s_task_storage-csi-file-resize-check-lane-closure-packet-20260625"
+      ],
+      "result": "Authored the requested no-cloud closure packet at evidence/archive/storage-csi-file-resize-check-lane-closure-packet-20260625.md, revalidating the mounted source boundary, canonical feature/spec/replay/model linkage, exact expected resize contract, and the next bounded mutation-gated verification step for path.storage-csi-file-resize only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T06:06:45.974Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/storage-csi-file-resize-check-lane-closure-packet-20260625.md: it reanchors the mounted Azure File resize source boundary, revalidates canonical feature/spec/replay/model linkage, records bounded no-cloud validation outcomes, and preserves the exact next mutation-gated step for path.storage-csi-file-resize without claiming any live product verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-mutation-gated-verification-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author an exact future-live mutation-gated verification packet for path.storage-csi-file-resize that turns the accepted no-cloud closure into execution-ready replay guidance: required gates, source-equivalent step order, witness commands, cleanup contract, and the current live-implementation gap for this path only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-mutation-gated-verification-packet-20260625.md"
+      ],
+      "acceptance": [
+        "Archive packet cites the mounted handwritten/source-equivalent authorities and records the exact live proof contract for path.storage-csi-file-resize only: Bound PVC, file.csi.azure.com lineage, resize-pod mount at /mnt/datavolume, initial hello-world write/read, 100Gi->200Gi patch, df witness on /mnt/datavolume, <=2% drift rule, cleanup, and the explicit execute gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize.",
+        "Archive packet names the current replay implementation gap and the minimal replay/verification work needed before any live run, without running cloud mutation, widening into storage-csi siblings, or claiming a live product verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:06:46.023Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-mutation-gated-verification-packet-20260625_20260625060646",
+        "assigned_at": "2026-06-25T06:06:46.071Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-mutation-gated-verification-packet-20260625",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-mutation-gated-verification-packet-20260625_20260625060646",
+        "worker_started_at": "2026-06-25T06:07:12.425Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the future-live verification packet for path.storage-csi-file-resize at evidence/archive/storage-csi-file-resize-mutation-gated-verification-packet-20260625.md, grounded in mounted AKS RP source, current replay/spec carriers, and the latest blocked execute evidence.",
+        "last_worker_completed_at": "2026-06-25T06:08:06.266Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T06:08:57.006Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the authored future-live verification packet at evidence/archive/storage-csi-file-resize-mutation-gated-verification-packet-20260625.md: it cites mounted handwritten/source-equivalent authorities, preserves the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize gate plus ordered Bound/PV lineage/resize-pod/100Gi->200Gi/df<=2%/cleanup proof contract, and truthfully records that live execution is still blocked only on the missing source-equivalent execute body in replays/storage-csi-file-resize.ts."
+      },
+      "session_id": "s_task_storage-csi-file-resize-mutation-gated-verification-packet-20260625",
+      "session_history": [
+        "s_task_storage-csi-file-resize-mutation-gated-verification-packet-20260625"
+      ],
+      "result": "Authored the future-live verification packet for path.storage-csi-file-resize at evidence/archive/storage-csi-file-resize-mutation-gated-verification-packet-20260625.md, grounded in mounted AKS RP source, current replay/spec carriers, and the latest blocked execute evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T06:08:57.006Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the authored future-live verification packet at evidence/archive/storage-csi-file-resize-mutation-gated-verification-packet-20260625.md: it cites mounted handwritten/source-equivalent authorities, preserves the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize gate plus ordered Bound/PV lineage/resize-pod/100Gi->200Gi/df<=2%/cleanup proof contract, and truthfully records that live execution is still blocked only on the missing source-equivalent execute body in replays/storage-csi-file-resize.ts."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-execute-body-implementation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded source-equivalent execute-mode body for path.storage-csi-file-resize in replays/storage-csi-file-resize.ts so the replay can perform the exact Azure File resize branch behind --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, while default and --check stay non-mutating and the carrier stays scoped to this path only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/storage-csi-file-resize.ts"
+      ],
+      "acceptance": [
+        "Replay execute mode performs the exact ordered proof contract for path.storage-csi-file-resize only: create resize-pvc with azurefile-csi at 100Gi, wait Bound, prove bound PV csi.driver=file.csi.azure.com, create resize-pod mounted at /mnt/datavolume, prove hello-world write/read, patch 200Gi, run the df witness, apply the <=2% drift rule, and record bounded cleanup without widening into storage-csi siblings or claiming a product verdict from authoring alone.",
+        "Replay tests or bounded repo-local verification cover the repaired execute-path control flow and evidence emission shape, preserve the exact execute gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, keep default/--check non-mutating, and replace the current live-implementation-still-missing blocker with truthful implementation-ready behavior without running cloud mutation in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:08:57.054Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-execute-body-implementation-20260625_20260625060857",
+        "assigned_at": "2026-06-25T06:08:57.104Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-execute-body-implementation-20260625",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-execute-body-implementation-20260625_20260625060857",
+        "worker_started_at": "2026-06-25T06:09:20.730Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the bounded execute-mode body for storage-csi-file-resize in replays/storage-csi-file-resize.ts and expanded its Vitest coverage to verify the exact gate, ordered proof contract helpers, and df drift-rule evaluator without running cloud mutation.",
+        "last_worker_completed_at": "2026-06-25T06:13:10.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T06:14:16.369Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after explicit repo-local verification: replays/storage-csi-file-resize.test.ts now passes 5/5 Vitest checks covering the exact execute gate, bounded ordered proof contract surface, default/--check non-mutation, and the <=2% df drift evaluator for path.storage-csi-file-resize without running cloud mutation."
+      },
+      "session_id": "s_task_storage-csi-file-resize-execute-body-implementation-20260625",
+      "session_history": [
+        "s_task_storage-csi-file-resize-execute-body-implementation-20260625"
+      ],
+      "result": "Implemented the bounded execute-mode body for storage-csi-file-resize in replays/storage-csi-file-resize.ts and expanded its Vitest coverage to verify the exact gate, ordered proof contract helpers, and df drift-rule evaluator without running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T06:14:16.369Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted after explicit repo-local verification: replays/storage-csi-file-resize.test.ts now passes 5/5 Vitest checks covering the exact execute gate, bounded ordered proof contract surface, default/--check non-mutation, and the <=2% df drift evaluator for path.storage-csi-file-resize without running cloud mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-model-readiness-update-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.storage-csi-file-resize into the durable no-cloud readiness model after the execute-mode body landed: review the accepted check-lane packet, accepted mutation-gated verification packet, and accepted replay implementation evidence, then update the capability/model/spec/view state so this path is recorded as source-grounded execution-ready only behind --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, without claiming any live/cloud verdict or widening into storage-csi siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-model-readiness-update-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the accepted file-resize check-lane closure packet, the mutation-gated verification packet, and the explicit repo-local replay/test verification proving the bounded execute body now exists, and states the exact remaining live boundary for path.storage-csi-file-resize only.",
+        "Any needed repo-local reconciliation updates keep the feature/spec/replay/model/view linkage truthful for this path, preserve the exact gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize with --execute, and do not promote the path to live pass/fail or reopen blocked external families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:14:16.416Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-model-readiness-update-20260625_20260625061416",
+        "assigned_at": "2026-06-25T06:14:16.461Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-model-readiness-update-20260625",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-model-readiness-update-20260625_20260625061416",
+        "worker_started_at": "2026-06-25T06:14:31.862Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.storage-csi-file-resize into the durable readiness carriers by updating model/spec/index/view state for execute-capable local readiness, and archived the evidence note at evidence/archive/storage-csi-file-resize-model-readiness-update-20260625.md. Verified the replay check/test surfaces and regenerated maintained views while noting full-model validation still fails only on unrelated pre-existing issues.",
+        "last_worker_completed_at": "2026-06-25T06:22:15.133Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T06:23:10.397Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the archived readiness reconciliation: the durable note cites the accepted check-lane and mutation-gated packets plus repo-local replay/test verification, and the reconciled model/spec/view state truthfully records path.storage-csi-file-resize as source-grounded execute-capable local readiness only behind --execute with AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, with no live/cloud verdict claimed."
+      },
+      "session_id": "s_task_storage-csi-file-resize-model-readiness-update-20260625",
+      "session_history": [
+        "s_task_storage-csi-file-resize-model-readiness-update-20260625"
+      ],
+      "result": "Reconciled path.storage-csi-file-resize into the durable readiness carriers by updating model/spec/index/view state for execute-capable local readiness, and archived the evidence note at evidence/archive/storage-csi-file-resize-model-readiness-update-20260625.md. Verified the replay check/test surfaces and regenerated maintained views while noting full-model validation still fails only on unrelated pre-existing issues.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T06:23:10.397Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the archived readiness reconciliation: the durable note cites the accepted check-lane and mutation-gated packets plus repo-local replay/test verification, and the reconciled model/spec/view state truthfully records path.storage-csi-file-resize as source-grounded execute-capable local readiness only behind --execute with AKS_RP_E2E_ALLOW_CLOUD_MUTATION=storage-csi-file-resize, with no live/cloud verdict claimed."
+      },
+      "status": "done"
+    }
+  ]
+}

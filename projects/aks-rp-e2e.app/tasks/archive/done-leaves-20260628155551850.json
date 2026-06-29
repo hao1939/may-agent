@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T15:55:51.850Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner reconciliation checkpoint: accepted and archived repair-verifier-retry-liveness-regression-deployment-safeguards-20260628 as completed verifier-runtime session-contract work. The deployment-safeguards frontier is now intentionally split into one active owner reconciliation leaf, reconcile-deployment-safeguards-retry-frontier-after-liveness-contract-20260628, plus the currently running safe post-repair requeues verify-spec-deployment-safeguards-basic-enable-disable, verify-spec-deployment-safeguards-private-cluster-enable-disable, and verify-spec-deployment-safeguards-pss-level-change. Keep verify-spec-deployment-safeguards-level-change-warn-to-enforce, verify-spec-deployment-safeguards-vap-upgrade-reconcile, and verify-spec-deployment-safeguards-vpa-interop in review until the reconcile leaf classifies them against the repaired attempt+session heartbeat contract; do not blindly reset artifact-routing-mismatch or real claim-failure results as mere liveness victims.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-verifier-retry-liveness-regression-deployment-safeguards-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or precisely bound the verifier-runtime regression behind the 2026-06-28 deployment-safeguards stale-retry recurrence so the owner can truthfully reconcile the current deployment-safeguards active frontier before any new deployment-safeguards verifier backlog is started.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-verifier-retry-liveness-regression-deployment-safeguards-20260628.md"
+      ],
+      "acceptance": [
+        "Use the archived recurrence diagnosis plus current single-spec-verifier/watchdog code to confirm whether obsolete completions can still clobber live spec-loop liveness for a newer attempt, and cite the exact code path.",
+        "Decide and document one safe pre-run-id liveness contract for single-spec verifier retries: either watchdog trusts fresh running+sessionId heartbeat before activeWorkflowRunId exists, or the verifier must publish another early liveness surface/runtime session row; cite exact files/tests or blocker evidence.",
+        "End with one owner-ready outcome for the current deployment-safeguards stale-active family: either a landed repair with regression verification evidence that enables reconcile-deployment-safeguards-retry-frontier-after-liveness-contract-20260628 to classify verify-spec-deployment-safeguards-basic-enable-disable, verify-spec-deployment-safeguards-level-change-warn-to-enforce, verify-spec-deployment-safeguards-pss-level-change, verify-spec-deployment-safeguards-vap-upgrade-reconcile, and verify-spec-deployment-safeguards-vpa-interop, or an exact blocker stating why no safe retry contract can be restored yet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "verifier-runtime-session-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T15:44:01.207Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-verifier-retry-liveness-regression-deployment-safeguards-20260628_20260628154407",
+        "assigned_at": "2026-06-28T15:44:07.675Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-verifier-retry-liveness-regression-deployment-safeguards-20260628",
+        "worker_started_attempt_id": "a_repair-verifier-retry-liveness-regression-deployment-safeguards-20260628_20260628154407",
+        "worker_started_at": "2026-06-28T15:44:20.909Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the verifier retry liveness regression by changing watchdog to trust fresh matching attempt+session heartbeats before run-id discovery and by preventing obsolete single-spec completions from overwriting live spec-loop state. Added durable evidence at evidence/archive/repair-verifier-retry-liveness-regression-deployment-safeguards-20260628.md and regression tests covering obsolete-attempt heartbeat rejection.",
+        "last_worker_completed_at": "2026-06-28T15:53:40.076Z",
+        "last_worker_evidence": [
+          "projects/aks-rp-e2e.app/workflows/project-execution-watchdog.ts",
+          "projects/aks-rp-e2e.app/workflows/single-spec-verifier.ts",
+          "projects/aks-rp-e2e.app/workflows/project-execution-watchdog.test.ts",
+          "projects/aks-rp-e2e/evidence/archive/repair-verifier-retry-liveness-regression-deployment-safeguards-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T15:54:51.613Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker result: archived repair evidence plus passing watchdog/verifier regression tests show the stale-retry root cause is fixed by trusting fresh matching attempt+session heartbeats before run-id discovery and by rejecting obsolete completions from clobbering live spec-loop state."
+      },
+      "session_id": "s_task_repair-verifier-retry-liveness-regression-deployment-safeguards-20260628",
+      "session_history": [
+        "s_task_repair-verifier-retry-liveness-regression-deployment-safeguards-20260628"
+      ],
+      "result": "Repaired the verifier retry liveness regression by changing watchdog to trust fresh matching attempt+session heartbeats before run-id discovery and by preventing obsolete single-spec completions from overwriting live spec-loop state. Added durable evidence at evidence/archive/repair-verifier-retry-liveness-regression-deployment-safeguards-20260628.md and regression tests covering obsolete-attempt heartbeat rejection.",
+      "evidence": [
+        "projects/aks-rp-e2e.app/workflows/project-execution-watchdog.ts",
+        "projects/aks-rp-e2e.app/workflows/single-spec-verifier.ts",
+        "projects/aks-rp-e2e.app/workflows/project-execution-watchdog.test.ts",
+        "projects/aks-rp-e2e/evidence/archive/repair-verifier-retry-liveness-regression-deployment-safeguards-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T15:54:51.613Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker result: archived repair evidence plus passing watchdog/verifier regression tests show the stale-retry root cause is fixed by trusting fresh matching attempt+session heartbeats before run-id discovery and by rejecting obsolete completions from clobbering live spec-loop state."
+      },
+      "status": "done"
+    }
+  ]
+}

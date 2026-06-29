@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T00:17:45.877Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 blocked-frontier repair: the family-level external-send follow-up was already completed and archived as durable proof, so keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single remaining passive family wait. For the five exact waits whose first post-window review is now open and still show no returned proof in the packet, replace each passive wait with one bounded follow-up-or-escalation proof-capture leaf on the same exact branch. Do not reopen repo-local source/spec/setup/model closure or widen into sibling families; the next useful work is to execute the five bounded proof-capture leaves and resume only on returned authoritative artifacts.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "external-proof-family-owner-followup-or-escalation-postwindow-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "On or after 2026-06-26, re-run the six-wait external returned-proof owner follow-up pass, reuse the existing family-level dispatch wait first where truthful, and capture either any newly arrived authoritative reply proof or the next bounded family-level follow-up/escalation without reopening repo-local source/spec/setup/model work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-proof-family-owner-followup-or-escalation-postwindow-20260626.md"
+      ],
+      "acceptance": [
+        "An archive artifact dated on or after 2026-06-26 records the checked waits, timestamps/channels/owners/recipients, states whether authoritative reply proof arrived for any covered branch, and if silence persists captures the bounded family-level follow-up or escalation action with linked existing send-proof/packet artifacts and the next exact resume condition.",
+        "The pass keeps the six blocked waits compressed, reuses the existing family-level dispatch wait first where truthful, and does not reopen repo-local source/spec/setup/model closure, create duplicate path waits, or trigger cloud mutation from the follow-up task itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T18:06:08.879Z",
+        "created_by": "task-tree-tool",
+        "unblocked_at": "2026-06-26T00:08:05.517Z",
+        "unblocked_by": "task-tree-tool",
+        "unblock_reason": "2026-06-26 review window is now open; convert the dated family-level follow-up from passive wait into runnable owner work for one bounded returned-proof check or escalation pass.",
+        "current_attempt_id": "a_external-proof-family-owner-followup-or-escalation-postwindow-20260626_20260626000805",
+        "assigned_at": "2026-06-26T00:08:05.566Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-proof-family-owner-followup-or-escalation-postwindow-20260626",
+        "worker_started_attempt_id": "a_external-proof-family-owner-followup-or-escalation-postwindow-20260626_20260626000805",
+        "worker_started_at": "2026-06-26T00:08:14.358Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the assigned post-window external-proof family pass by writing evidence/archive/external-proof-family-owner-followup-or-escalation-postwindow-20260626.md, confirming no authoritative replies had arrived for the six covered waits, and sending one bounded family-level follow-up through the approval-dispatch lane.",
+        "last_worker_completed_at": "2026-06-26T00:11:01.437Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T00:11:48.737Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/external-proof-family-owner-followup-or-escalation-postwindow-20260626.md confirms the first truthful post-window family pass ran on 2026-06-26, found no newly arrived authoritative replies for the six covered waits, and sent one bounded family-level approval-dispatch follow-up without reopening repo-local closure or triggering cloud mutation."
+      },
+      "session_id": "s_task_external-proof-family-owner-followup-or-escalation-postwindow-20260626",
+      "session_history": [
+        "s_task_external-proof-family-owner-followup-or-escalation-postwindow-20260626"
+      ],
+      "result": "Completed the assigned post-window external-proof family pass by writing evidence/archive/external-proof-family-owner-followup-or-escalation-postwindow-20260626.md, confirming no authoritative replies had arrived for the six covered waits, and sending one bounded family-level follow-up through the approval-dispatch lane.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T00:11:48.737Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/external-proof-family-owner-followup-or-escalation-postwindow-20260626.md confirms the first truthful post-window family pass ran on 2026-06-26, found no newly arrived authoritative replies for the six covered waits, and sent one bounded family-level approval-dispatch follow-up without reopening repo-local closure or triggering cloud mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external approval/response wait for path.aad-rbac.managed-v2-lifecycle only until an authoritative owner/operator reply returns allow, deny, or redirect for the already-routed unchanged westus2 row-37 carrier and, if approved, durable proof of AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle; this branch is an exact external approval dependency and intentionally not a local environment/setup/diagnosis placeholder because the repo-local narrowing/packet closure already lives in evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md and must not be reopened from this wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel, sender/owner, recipient or escalation path, links the narrowing packet evidence/archive/aad-rbac-managed-v2-lifecycle-execution-approval-narrowing-20260623.md, and returns either approval plus the exact mutation-gate proof for the unchanged row-37 carrier or a bounded denial/blocker tied to that same carrier; if the first blocked-frontier owner review after 2026-06-26 still finds no returned proof, this same branch captures one bounded follow-up or escalation artifact instead of spawning a sibling wait.",
+        "This branch remains represented by one exact execution-approval wait only; no reopening of row-37 source/auth/tenant/quota discovery and no cloud mutation run occur from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:32:47.774Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T00:17:45.424Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "The first post-window owner review now has a truthful bounded next action, so the passive wait is replaced by aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626 on the same exact row-37 branch."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T00:17:45.424Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "The first post-window owner review now has a truthful bounded next action, so the passive wait is replaced by aad-rbac-managed-v2-lifecycle-execution-approval-followup-or-escalation-proof-capture-20260626 on the same exact row-37 branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "natgw-v2-migration-v2-to-none-live-execution-approval-returned-proof-wait-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external wait for the exact already-routed NAT Gateway V2 V2→none live-execution approval packet only until an authoritative human/operator reply returns explicit approval, redirect, or blocker proof for the unchanged path.net-integration.natgw-v2-migration-v2-to-none slice and gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none; if silence persists, the first owner review on or after 2026-06-26 must reuse this same branch for one bounded follow-up or escalation artifact rather than widening into the broader NAT Gateway outbound-migration product-constraint family or the V2→block/V2→LB siblings or running cloud mutation from this wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-returned-proof-wait-20260624.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md and evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624.md, and returns either explicit approve/redirect/blocker proof for the unchanged path.net-integration.natgw-v2-migration-v2-to-none carrier and, if approved, durable proof that the gate remains AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none.",
+        "This branch remains represented by one exact external wait only; no packet redrafting, no live execution, no widening into the broader NAT Gateway outbound-migration product-constraint family or the V2→block/V2→LB siblings, and no duplicate blocked NATGW sibling waits are introduced before a returned authoritative reply or the next bounded follow-up window."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T22:20:59.958Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T00:17:45.525Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "The post-2026-06-26 review window is open and no reply proof is present in the packet, so the passive wait is replaced by natgw-v2-migration-v2-to-none-live-execution-approval-followup-or-escalation-proof-capture-20260626 on the same exact approval branch."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T00:17:45.525Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "The post-2026-06-26 review window is open and no reply proof is present in the packet, so the passive wait is replaced by natgw-v2-migration-v2-to-none-live-execution-approval-followup-or-escalation-proof-capture-20260626 on the same exact approval branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external wait for path.private-cluster-vnet-integration-auth-service-tags only until an authoritative owner/operator reply returns against the already-routed devbox endpoint handoff packet and either restores same-launcher SSH reachability to devbox -> hayua@20.24.129.235:22 or supplies the corrected replacement endpoint tuple, after which the ordered selected-host preflight can resume from SSH step 1.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel, sender/owner, recipient or escalation path, links the already-routed packet evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-handoff-packet-20260623.md or its send-proof artifact, and returns proof that either restores same-launcher SSH to devbox -> hayua@20.24.129.235:22 or supplies the corrected replacement endpoint tuple for the selected non-local witness host.",
+        "This branch remains represented by one exact external wait only; the already-sent repo-local proof stays anchored in evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-send-proof-20260623.md, and no new repo-local setup/diagnosis leaf, source rediscovery, or cloud mutation is introduced before the returned proof changes the endpoint/reachability fact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-vnet-integration-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:10:37.094Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T00:17:45.622Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "The first post-window owner review now needs one bounded follow-up/escalation artifact on the same handoff branch, so the passive wait is replaced by private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T00:17:45.622Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "The first post-window owner review now needs one bounded follow-up/escalation artifact on the same handoff branch, so the passive wait is replaced by private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-public-approval-returned-proof-wait-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external wait for the exact already-routed serverless schedulerctrl validating-webhook public live-execution approval packet only until an authoritative human/operator reply returns explicit approval, redirect, or blocker proof for the unchanged public-only slice and gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-public; if silence persists, the first owner review on or after 2026-06-26 must reuse this same branch for one bounded follow-up or escalation artifact rather than widening into private or APIServerVNetIntegration siblings or running cloud mutation from this wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-public-approval-returned-proof-wait-20260624.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/serverless-schedulerctrl-validating-webhook-public-live-execution-approval-packet-20260624.md and evidence/archive/serverless-schedulerctrl-validating-webhook-public-approval-send-or-escalation-proof-capture-20260624.md, and returns either explicit approval for one bounded future public live run with the unchanged gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-public, or the exact redirect/blocker for that same packet.",
+        "This branch remains represented by one exact external wait only; no packet redrafting, no live execution, no private or APIServerVNetIntegration widening, and no duplicate blocked sibling waits are introduced before a returned authoritative reply or the next bounded follow-up window."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T06:59:27.998Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T00:17:45.725Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "The first post-window owner review now has a truthful bounded next action, so the passive public wait is replaced by serverless-schedulerctrl-validating-webhook-public-approval-followup-or-escalation-proof-capture-20260626 on the same exact branch."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T00:17:45.725Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "The first post-window owner review now has a truthful bounded next action, so the passive public wait is replaced by serverless-schedulerctrl-validating-webhook-public-approval-followup-or-escalation-proof-capture-20260626 on the same exact branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-private-approval-returned-proof-wait-20260625",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external wait for the exact already-routed serverless schedulerctrl validating-webhook private live-execution approval packet only until an authoritative human/operator reply returns explicit approval, redirect, or blocker proof for the unchanged private-only slice and gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-private; if silence persists, the first owner review on or after 2026-06-26 must reuse this same branch for one bounded follow-up or escalation artifact rather than widening into public or APIServerVNetIntegration siblings or running cloud mutation from this wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-returned-proof-wait-20260625.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625.md, evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-send-or-escalation-proof-capture-20260625.md, and evidence/archive/serverless-schedulerctrl-validating-webhook-private-approval-routing-surface-20260625.md, and returns explicit approve/redirect/blocker/deny proof for the unchanged private-only carrier and, if approved, durable proof that the gate remains AKS_RP_E2E_ALLOW_CLOUD_MUTATION=serverless-schedulerctrl-validating-webhook-private.",
+        "This branch remains represented by one exact external wait only; no packet redrafting, no live execution, no widening into public or APIServerVNetIntegration siblings, and no duplicate blocked sibling waits are introduced before a returned authoritative reply or the first bounded owner follow-up/escalation review after silence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T12:42:30.500Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T00:17:45.826Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "The first post-window owner review now has a truthful bounded next action, so the passive private wait is replaced by serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626 on the same exact branch."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T00:17:45.826Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "The first post-window owner review now has a truthful bounded next action, so the passive private wait is replaced by serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626 on the same exact branch."
+      },
+      "status": "done"
+    }
+  ]
+}

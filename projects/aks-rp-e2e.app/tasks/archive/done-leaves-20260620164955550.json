@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:49:55.550Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 task-completed review accepted the shared external-send dispatch family as durable provenance only: evidence/archive/external-send-proof-dispatch-family-20260620.md now records the two existing send-ready packets, their proof-capture authorities, recipient/channel classes, and the exact transport ceiling that prevents real outbound delivery from runtime. The live branch truth is now simpler: vm-prerelease-row26-metadata-alignment-20260620 remains the only active repo-local mover, while machinespreview-human-send-proof-or-authoritative-reply-wait-20260620 and vm-prerelease-human-send-proof-or-authoritative-reply-wait-20260620 remain the only truthful external waits because both families are still send-ready but send-unproven and reply-unreceived. Future wakes should not recreate packet-drafting or passive response-await tasks for these asks; reopen them only when durable send/handoff proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-send-proof-dispatch-family-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Drive one owner-visible send/handoff escalation slice for the unsent MachinesPreview and VM prerelease operator packets so the tree stops pretending those branches are passive response-await without real outbound proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact links both existing send-ready packets plus their accepted proof-capture artifacts, names the exact intended recipient/channel or escalation chain for each, and records the first truthful action taken toward real external delivery.",
+        "If a real send or handoff occurs, the artifact records durable repo-local proof with timestamp, channel, recipient, and packet linkage and the tree is ready to replace passive unsent waits with a truthful response-await or authoritative-reply state.",
+        "If no runtime channel exists, the artifact records that exact ceiling and produces the concrete human/owner handoff ask needed next so the family stays represented by one visible dispatch/escalation task rather than two silent passive waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:46:41.641Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T16:46:53.609Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-dispatch-family-20260620_20260620164653",
+        "assigned_at": "2026-06-20T16:46:53.659Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-dispatch-family-20260620",
+        "worker_started_attempt_id": "a_external-send-proof-dispatch-family-20260620_20260620164653",
+        "worker_started_at": "2026-06-20T16:47:12.929Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested dispatch-family artifact at evidence/archive/external-send-proof-dispatch-family-20260620.md, linking the existing MachinesPreview and VM prerelease send-ready packets to their proof-capture authorities, recipient/channel classes, truthful first dispatch action, and exact human-side next send/escalation ask.",
+        "last_worker_completed_at": "2026-06-20T16:48:06.391Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:49:55.508Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/external-send-proof-dispatch-family-20260620.md as sufficient owner-visible dispatch-family proof: it links both existing send-ready packets to their accepted proof-capture authorities, names the intended recipient/channel classes, records the truthful first action as repo-local dispatch synthesis, and explicitly preserves that no real external send/handoff proof or authoritative reply exists yet, so the two blocked leaves remain exact send-ready/send-unproven wait carriers rather than passive response-await."
+      },
+      "session_id": "s_task_external-send-proof-dispatch-family-20260620",
+      "session_history": [
+        "s_task_external-send-proof-dispatch-family-20260620"
+      ],
+      "result": "Created the requested dispatch-family artifact at evidence/archive/external-send-proof-dispatch-family-20260620.md, linking the existing MachinesPreview and VM prerelease send-ready packets to their proof-capture authorities, recipient/channel classes, truthful first dispatch action, and exact human-side next send/escalation ask.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:49:55.508Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/external-send-proof-dispatch-family-20260620.md as sufficient owner-visible dispatch-family proof: it links both existing send-ready packets to their accepted proof-capture authorities, names the intended recipient/channel classes, records the truthful first action as repo-local dispatch synthesis, and explicitly preserves that no real external send/handoff proof or authoritative reply exists yet, so the two blocked leaves remain exact send-ready/send-unproven wait carriers rather than passive response-await."
+      },
+      "status": "done"
+    }
+  ]
+}

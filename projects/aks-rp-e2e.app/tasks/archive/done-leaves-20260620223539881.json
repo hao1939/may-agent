@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:35:39.881Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update reconciled a stale watchdog review-pending wake for private-cluster-public-fqdn-toggle-model-feedback-20260620 without reopening completed work. The accepted replay-authoring and model-feedback slices for path.private-cluster-privatelink-public-fqdn-toggle are now archived as durable provenance: repo-local replay/spec validation is captured in ../aks-rp-e2e/evidence/archive/private-cluster-public-fqdn-toggle-replay-authoring-20260620.md and the maintained model linkage plus execute-gated next-step framing is captured in ../aks-rp-e2e/evidence/archive/private-cluster-public-fqdn-toggle-model-feedback-20260620.md. The truthful live frontier is intentionally narrow: keep private-cluster-public-fqdn-toggle-execute-readiness-packet-20260620 as the sole repo-local active next step to decide whether this path is execution-ready or blocked by a concrete preflight gap, and keep external-send-proof-dispatch-family-20260620 as the single shared external-human transport wait until durable send/escalation proof or an authoritative reply is captured. Do not recreate the accepted private-cluster model/replay leaves or reopen the unrelated send-proof family without contradictory new evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-public-fqdn-toggle-model-feedback-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consume the newly accepted private-cluster public-FQDN toggle replay + validation evidence into the knowledge map by checking whether path.private-cluster-privatelink-public-fqdn-toggle already has truthful spec/replay/observation linkage, then update model/views or write a bounded no-op evidence note so the next owner review knows whether any model feedback remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-public-fqdn-toggle-model-feedback-20260620.md"
+      ],
+      "acceptance": [
+        "Review the accepted replay artifact replays/private-cluster-privatelink-public-fqdn-toggle.ts, specs/private-cluster-privatelink-public-fqdn-toggle.json, and evidence/archive/private-cluster-public-fqdn-toggle-replay-validation-evidence-20260620.md against the current knowledge-map entry for path.private-cluster-privatelink-public-fqdn-toggle.",
+        "If the model or linked views are missing truthful coverage/judgment/spec linkage for this path, update the minimal required repo-local files and record exactly what changed; if they are already correct, record a bounded no-op evidence note saying why no model edit was needed.",
+        "Keep the work repo-local and bounded to evidence feedback/model linkage for this single private-cluster path; do not broaden into unrelated private-cluster discovery or live execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:30:37.948Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-public-fqdn-toggle-model-feedback-20260620_20260620223037",
+        "assigned_at": "2026-06-20T22:30:37.996Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-public-fqdn-toggle-model-feedback-20260620",
+        "worker_started_attempt_id": "a_private-cluster-public-fqdn-toggle-model-feedback-20260620_20260620223037",
+        "worker_started_at": "2026-06-20T22:30:53.797Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Attached the missing private-cluster public-FQDN toggle branch into the maintained knowledge map by updating model/knowledge-map/model.json, regenerating derived views, and writing evidence/archive/private-cluster-public-fqdn-toggle-model-feedback-20260620.md documenting the non-no-op model feedback.",
+        "last_worker_completed_at": "2026-06-20T22:34:13.078Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:35:03.622Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the evidence note truthfully explains the missing model linkage, documents the added maintained model/view entries for path.private-cluster-privatelink-public-fqdn-toggle, and records that the next useful step is bounded execution/evidence-promotion rather than more model splitting."
+      },
+      "session_id": "s_task_private-cluster-public-fqdn-toggle-model-feedback-20260620",
+      "session_history": [
+        "s_task_private-cluster-public-fqdn-toggle-model-feedback-20260620"
+      ],
+      "result": "Attached the missing private-cluster public-FQDN toggle branch into the maintained knowledge map by updating model/knowledge-map/model.json, regenerating derived views, and writing evidence/archive/private-cluster-public-fqdn-toggle-model-feedback-20260620.md documenting the non-no-op model feedback.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:35:03.622Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the evidence note truthfully explains the missing model linkage, documents the added maintained model/view entries for path.private-cluster-privatelink-public-fqdn-toggle, and records that the next useful step is bounded execution/evidence-promotion rather than more model splitting."
+      },
+      "status": "done"
+    }
+  ]
+}

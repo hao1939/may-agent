@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:25:35.450Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner aggressive-push reconciliation drains the weak review frontier into concrete diagnosis work instead of leaving generic blocked/error summaries. For spec.node-pool-config.ephemeral-disk, run 28361926105 currently says only that cluster creation ended with provisioningState=undefined; for spec.ppg.cluster-and-agentpool-placement, run 28361938522 currently says only that Scenario_PPG_VirtualMachine execute refused because reference preflight failed. Neither surface is specific enough to accept as a final blocker classification, so each review leaf is replaced by one exact artifact-diagnosis successor against the cited run. The same loop already carries the accepted VM prerelease baseline diagnosis for run 28361552076 plus the post-fix rerun after commit 2174d920; remaining active verifier work is otherwise unchanged.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "await-staging-westus2-cluster-count-preflight-family-recovery-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful shared returned-proof wait for the westus2 AKS cluster-count preflight family after the runner/operator dispatch has already been sent. Resume only on same-surface recovery proof, a durably reviewed replacement execution surface, or an authoritative reroute/decline.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-cluster-count-preflight-family-diagnosis-20260628.md"
+      ],
+      "acceptance": [
+        "Preserve one visible family-level blocker keyed to runner:staging-westus2-cluster-count-preflight so affected westus2 staging specs stay paused behind the shared preflight gate instead of being misclassified as reviewed product verdicts while the cluster-count capacity read remains unresolved.",
+        "Resume this family only on one of three durable returned signals: (1) same-surface recovery proof from the intended staging surface via a successful runner capacity line or direct success of the exact az rest / az resource list westus2 cluster-count reads; (2) a durably reviewed replacement execution surface naming the exact alternate subscription/region/endpoint and proving the same capacity-read path succeeds there; or (3) an authoritative runner/operator reroute or decline."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:staging-westus2-cluster-count-preflight"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T21:46:10.985Z",
+        "created_by": "task-tree-tool",
+        "resolved_at": "2026-06-29T09:09:26.687Z",
+        "resolved_by": "codex",
+        "resolution": "capacity read works again; stale rg-test/rg-plan cleanup queued; spec loop restarted with targetRunning=5"
+      },
+      "result": "replaced",
+      "completed_at": "2026-06-29T09:09:26.687Z",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cloud-provider-ccm-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cloud-provider.ccm-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cloud-provider.ccm-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.ccm-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cloud-provider.ccm-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Review outcome not accepted: the worker summary for run 28361383317 cites a shared-mode update anomaly but provides no artifact-backed surface classification, so this review leaf is replaced by diagnose-spec-cloud-provider-ccm-lifecycle-run-28361383317-artifacts for exact stdout/stderr/result analysis before any blocker or rerun decision."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:12:16.542Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-cloud-provider-ccm-lifecycle_20260629091345",
+        "assigned_at": "2026-06-29T09:13:45.728Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cloud-provider-ccm-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-cloud-provider-ccm-lifecycle_20260629091345",
+        "worker_started_at": "2026-06-29T09:13:47.293Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.cloud-provider.ccm-lifecycle workflow run 28361383317 classified as error. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. Shared-mode update did not succeed: HTTP 200; state=Succeeded; mode=ServiceNodePort Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361383317 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_414407/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361383317/aks-rp-e2e-28361383317-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361383317/aks-rp-e2e-28361383317-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_414407/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:23:28.349Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:25:17.549Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review outcome not accepted: the worker summary for run 28361383317 cites a shared-mode update anomaly but provides no artifact-backed surface classification, so this review leaf is replaced by diagnose-spec-cloud-provider-ccm-lifecycle-run-28361383317-artifacts for exact stdout/stderr/result analysis before any blocker or rerun decision."
+      },
+      "session_id": "s_task_verify-spec-cloud-provider-ccm-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-cloud-provider-ccm-lifecycle"
+      ],
+      "result": "Spec spec.cloud-provider.ccm-lifecycle workflow run 28361383317 classified as error. Loop key: verify-spec-cloud-provider-ccm-lifecycle-a_verify-spec-cloud-provider-ccm-lifecycle_202606. Shared-mode update did not succeed: HTTP 200; state=Succeeded; mode=ServiceNodePort Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361383317 Result: runs/test-results/single-cloud-provider-ccm-lifecycle_414407/artifacts/cloud-provider-ccm-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361383317/aks-rp-e2e-28361383317-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361383317/aks-rp-e2e-28361383317-spec-test-results/test-results/single-cloud-provider-ccm-lifecycle_414407/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:25:17.549Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28361395644 artifacts for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease and classify the exact blocker or failure surface before any rerun.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "stdout.log, stderr.log, and spec-runner/result.json from run 28361395644 were reviewed and cited.",
+        "The outcome is classified narrowly as a concrete environment blocker, product failure, runner issue, or other exact surface; generic environment_blocker is not enough.",
+        "If blocked, the task records an exact blocker and resume condition or links to a shared blocker family with evidence.",
+        "Spec-loop/model evidence is updated or a concrete follow-up task is created from the reviewed classification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replaced the weak generic blocked review with a concrete artifact-diagnosis leaf because run 28361552076 only proves scenario exit plus broad environment_blocker and does not satisfy acceptance for truthful classification."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:12:16.555Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-29T09:16:27.556Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_retry_20260629091627",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_20260629091627",
+        "worker_started_at": "2026-06-29T09:16:37.470Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28361552076 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-a_verify-spec-rp-cluster. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361552076 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_709991/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361552076/aks-rp-e2e-28361552076-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361552076/aks-rp-e2e-28361552076-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_709991/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:17:20.543Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-29T09:16:09.246Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "worker result only proves scenario exit plus broad environment_blocker; review cannot accept without a concrete blocker classification or reviewed result artifacts",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_20260629091345",
+        "promoted_at": "2026-06-29T09:16:09.344Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_20260629091627",
+        "reviewed_at": "2026-06-29T09:17:57.235Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the weak generic blocked review with a concrete artifact-diagnosis leaf because run 28361552076 only proves scenario exit plus broad environment_blocker and does not satisfy acceptance for truthful classification."
+      },
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease",
+        "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_retry_20260629091627"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28361552076 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-a_verify-spec-rp-cluster. Scenario test exited 1. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361552076 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_709991/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361552076/aks-rp-e2e-28361552076-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361552076/aks-rp-e2e-28361552076-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_709991/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_retry_20260629091627",
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:17:57.235Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-node-pool-config-ephemeral-disk",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-pool-config.ephemeral-disk through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-pool-config.ephemeral-disk",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-pool-config.ephemeral-disk",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Review outcome not accepted: run 28361926105 only reports cluster creation did not succeed with provisioningState=undefined, which is too weak for a final blocker or error classification without artifact-backed cause narrowing; replaced by diagnose-spec-node-pool-config-ephemeral-disk-run-28361926105-artifacts."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:22:00.917Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:22:05.871Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk_20260629092300",
+        "assigned_at": "2026-06-29T09:23:00.068Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-pool-config-ephemeral-disk",
+        "worker_started_attempt_id": "a_verify-spec-node-pool-config-ephemeral-disk_20260629092300",
+        "worker_started_at": "2026-06-29T09:23:01.682Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-pool-config.ephemeral-disk workflow run 28361926105 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-a_verify-spec-node-pool-config-ephemeral-disk_. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361926105 Result: runs/test-results/single-node-pool-config-ephemeral-disk_330136/artifacts/node-pool-config-ephemeral-disk/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361926105/aks-rp-e2e-28361926105-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361926105/aks-rp-e2e-28361926105-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_330136/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:24:06.915Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:25:35.172Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review outcome not accepted: run 28361926105 only reports cluster creation did not succeed with provisioningState=undefined, which is too weak for a final blocker or error classification without artifact-backed cause narrowing; replaced by diagnose-spec-node-pool-config-ephemeral-disk-run-28361926105-artifacts."
+      },
+      "session_id": "s_task_verify-spec-node-pool-config-ephemeral-disk",
+      "session_history": [
+        "s_task_verify-spec-node-pool-config-ephemeral-disk"
+      ],
+      "result": "Spec spec.node-pool-config.ephemeral-disk workflow run 28361926105 classified as error. Loop key: verify-spec-node-pool-config-ephemeral-disk-a_verify-spec-node-pool-config-ephemeral-disk_. Cluster creation did not succeed: provisioningState=undefined Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361926105 Result: runs/test-results/single-node-pool-config-ephemeral-disk_330136/artifacts/node-pool-config-ephemeral-disk/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361926105/aks-rp-e2e-28361926105-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361926105/aks-rp-e2e-28361926105-spec-test-results/test-results/single-node-pool-config-ephemeral-disk_330136/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:25:35.172Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-ppg-cluster-and-agentpool-placement",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.ppg.cluster-and-agentpool-placement through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.ppg.cluster-and-agentpool-placement",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ppg.cluster-and-agentpool-placement"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.ppg.cluster-and-agentpool-placement",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Review outcome not accepted: run 28361938522 only reports a reference-preflight refusal for Scenario_PPG_VirtualMachine, which is too generic to preserve as a final blocked/error verdict without artifact-backed diagnosis; replaced by diagnose-spec-ppg-cluster-and-agentpool-placement-run-28361938522-artifacts."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:22:00.927Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:22:05.871Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-ppg-cluster-and-agentpool-placement_20260629092300",
+        "assigned_at": "2026-06-29T09:23:00.069Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ppg-cluster-and-agentpool-placement",
+        "worker_started_attempt_id": "a_verify-spec-ppg-cluster-and-agentpool-placement_20260629092300",
+        "worker_started_at": "2026-06-29T09:23:15.854Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.ppg.cluster-and-agentpool-placement workflow run 28361938522 classified as error. Loop key: verify-spec-ppg-cluster-and-agentpool-placement-a_verify-spec-ppg-cluster-and-agentpool-pl. Scenario_PPG_VirtualMachine execute refused because reference preflight failed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361938522 Result: runs/test-results/single-ppg-cluster-and-agentpool-placement_336918/artifacts/ppg-cluster-and-agentpool-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361938522/aks-rp-e2e-28361938522-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361938522/aks-rp-e2e-28361938522-spec-test-results/test-results/single-ppg-cluster-and-agentpool-placement_336918/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:24:01.915Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:25:35.376Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review outcome not accepted: run 28361938522 only reports a reference-preflight refusal for Scenario_PPG_VirtualMachine, which is too generic to preserve as a final blocked/error verdict without artifact-backed diagnosis; replaced by diagnose-spec-ppg-cluster-and-agentpool-placement-run-28361938522-artifacts."
+      },
+      "session_id": "s_task_verify-spec-ppg-cluster-and-agentpool-placement",
+      "session_history": [
+        "s_task_verify-spec-ppg-cluster-and-agentpool-placement"
+      ],
+      "result": "Spec spec.ppg.cluster-and-agentpool-placement workflow run 28361938522 classified as error. Loop key: verify-spec-ppg-cluster-and-agentpool-placement-a_verify-spec-ppg-cluster-and-agentpool-pl. Scenario_PPG_VirtualMachine execute refused because reference preflight failed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361938522 Result: runs/test-results/single-ppg-cluster-and-agentpool-placement_336918/artifacts/ppg-cluster-and-agentpool-placement/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361938522/aks-rp-e2e-28361938522-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361938522/aks-rp-e2e-28361938522-spec-test-results/test-results/single-ppg-cluster-and-agentpool-placement_336918/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:25:35.376Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28361817517 stdout/stderr/spec-runner artifacts for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease and classify whether the post-afd5b104 rerun hit a runner/workflow issue, an environment gate, or a product-path failure before deciding on rerun or blocker family linkage.",
+      "inputs": [],
+      "outputs": [
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "stdout.log, stderr.log, and spec-runner/result.json for run 28361817517 are inspected and the first concrete failing surface is identified.",
+        "A durable repo-local summary records whether the run should be retried, linked to an existing blocker family, or converted into a new exact problem task.",
+        "No generic environment blocker is accepted without artifact-backed cause narrowing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:22:43.921Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts_20260629092300",
+        "assigned_at": "2026-06-29T09:23:00.069Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts",
+        "worker_started_attempt_id": "a_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts_20260629092300",
+        "worker_started_at": "2026-06-29T09:23:01.029Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run 28361817517: scenario passed source loading but failed before cluster creation because resolveLifecycleVersions expected body.orchestrators while ARM returns properties.orchestrators; fixed in dev commit 2174d920 and ready for one targeted rerun.",
+        "last_worker_completed_at": "2026-06-29T09:24:55.128Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-diagnosis.md"
+        ],
+        "reviewed_at": "2026-06-29T09:24:55.186Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted diagnosis for run 28361817517 and queued rerun after parser fix 2174d920."
+      },
+      "session_id": "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts",
+      "session_history": [
+        "s_task_diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-artifacts"
+      ],
+      "result": "Diagnosed run 28361817517: scenario passed source loading but failed before cluster creation because resolveLifecycleVersions expected body.orchestrators while ARM returns properties.orchestrators; fixed in dev commit 2174d920 and ready for one targeted rerun.",
+      "evidence": [
+        "evidence/archive/spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361817517-diagnosis.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:24:55.186Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted diagnosis for run 28361817517 and queued rerun after parser fix 2174d920."
+      },
+      "status": "done"
+    }
+  ]
+}

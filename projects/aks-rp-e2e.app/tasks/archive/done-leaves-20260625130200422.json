@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T13:02:00.422Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner reconciliation: archived private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625 as already accepted repo-local evidence (../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md), resolving the stale watchdog pending-review signal without reopening work. Active repo-local learning remains network-cni-mounted-source-suite-inventory-gap-shortlist-20260625; if that active slot clears, the next runnable repo-local follow-up is private-cluster-root-suite-carrier-truthfulness-reconcile-20260625. Keep the single blocked external-wait family unchanged until returned proof arrives or the 2026-06-26 follow-up window opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP private-cluster handwritten e2ev3 source entry points plus the current local feature/spec/model carriers to inventory what private-cluster scenario slices are already represented after the none-dns-zone-v3 closure, identify any still-unclear or uncatalogued private-cluster rows, and nominate exactly one bounded next repo-local boundary-map candidate outside the existing external-wait family if such a candidate exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted private-cluster suite entry points and the current local feature/spec/model carriers, then records which private-cluster scenario slices are already covered, which remain unclear or uncatalogued, and how that relates to the existing blocked external-wait family without reopening those waits or running cloud mutation.",
+        "The artifact ends with exactly one evidence-backed next repo-local candidate leaf for private-cluster source/model work, or an evidence-backed no-new-action conclusion if the remaining private-cluster frontier is only external/live-evidence gated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "analysis.private-cluster.source-inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T12:56:13.616Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625_20260625125613",
+        "assigned_at": "2026-06-25T12:56:13.667Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625_20260625125613",
+        "worker_started_at": "2026-06-25T12:56:39.538Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested private-cluster mounted-source suite inventory artifact at evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md. It maps mounted suite slices to current repo-local carriers, distinguishes already-covered vs still-partially-catalogued rows, preserves the existing auth-service-tags external wait, and ends with exactly one bounded next repo-local candidate.",
+        "last_worker_completed_at": "2026-06-25T13:00:04.414Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T13:01:18.119Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md cites the mounted private-cluster suite entry points plus current feature/spec/model carriers, shows every mounted APIVNET/PrivateLink/runner-only slice already has a repo-local landing or the existing auth-service-tags external wait, and ends with one bounded next repo-local candidate: private-cluster root suite carrier truthfulness reconciliation."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625"
+      ],
+      "result": "Produced the requested private-cluster mounted-source suite inventory artifact at evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md. It maps mounted suite slices to current repo-local carriers, distinguishes already-covered vs still-partially-catalogued rows, preserves the existing auth-service-tags external wait, and ends with exactly one bounded next repo-local candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T13:01:18.119Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-mounted-source-suite-inventory-gap-shortlist-20260625.md cites the mounted private-cluster suite entry points plus current feature/spec/model carriers, shows every mounted APIVNET/PrivateLink/runner-only slice already has a repo-local landing or the existing auth-service-tags external wait, and ends with one bounded next repo-local candidate: private-cluster root suite carrier truthfulness reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

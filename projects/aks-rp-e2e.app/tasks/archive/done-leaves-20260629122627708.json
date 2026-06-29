@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:26:27.708Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted workflow run 28371538742 as a real pass for spec.kms.v2-vnet-integration-private-kv-lifecycle: the reviewed result.json shows KMS v2 VNet integration + private Key Vault full lifecycle passed, so that retry no longer belongs in the live frontier. The loop now keeps active focus on the remaining in-flight single-spec verifications plus the bounded truth-repair families for AAD artifact recovery, private-KV RBAC blocker-surface repair, VM prerelease review, and shared Azure CLI/metricsserver follow-up work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-vnet-integration-private-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-vnet-integration-private-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-vnet-integration-private-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-vnet-integration-private-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted worker completion: workflow run 28371538742 result.json reports status passed for spec.kms.v2-vnet-integration-private-kv-lifecycle, so this retry truthfully closes as a passing spec-loop verification with reviewed artifact evidence."
+      },
+      "trace": {
+        "created_at": "2026-06-29T12:19:51.720Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1_20260629121951",
+        "assigned_at": "2026-06-29T12:19:51.744Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1",
+        "worker_started_attempt_id": "a_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1_20260629121951",
+        "worker_started_at": "2026-06-29T12:20:03.113Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.kms.v2-vnet-integration-private-kv-lifecycle workflow run 28371538742 classified as pass. Loop key: verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1-a_verify-spe. KMS v2 VNet integration + private KV full lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371538742 Result: runs/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_029461/artifacts/kms-v2-vnet-integration-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371538742/aks-rp-e2e-28371538742-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371538742/aks-rp-e2e-28371538742-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_029461/result.json",
+        "last_worker_completed_at": "2026-06-29T12:24:36.593Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T12:26:27.632Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted worker completion: workflow run 28371538742 result.json reports status passed for spec.kms.v2-vnet-integration-private-kv-lifecycle, so this retry truthfully closes as a passing spec-loop verification with reviewed artifact evidence."
+      },
+      "session_id": "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1",
+      "session_history": [
+        "s_task_verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1"
+      ],
+      "result": "Spec spec.kms.v2-vnet-integration-private-kv-lifecycle workflow run 28371538742 classified as pass. Loop key: verify-spec-kms-v2-vnet-integration-private-kv-lifecycle-retry-202606291219-1-a_verify-spe. KMS v2 VNet integration + private KV full lifecycle passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28371538742 Result: runs/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_029461/artifacts/kms-v2-vnet-integration-private-kv-lifecycle/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371538742/aks-rp-e2e-28371538742-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28371538742/aks-rp-e2e-28371538742-spec-test-results/test-results/single-kms-v2-vnet-integration-private-kv-lifecycle_029461/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:26:27.632Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

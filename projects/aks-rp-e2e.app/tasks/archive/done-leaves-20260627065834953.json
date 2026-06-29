@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T06:58:34.953Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier planning pass kept the two blocked leaves as exact external waits with unchanged resume conditions after reconfirming there is still no returned proof or operator reply. The private-cluster PrivateLink public-FQDN toggle local preparation chain is now compacted: the source boundary map and execution-gate packet are accepted and archived because their durable carrier/evidence details are captured in project rollups and repo-local artifacts, while the one remaining active local lane is private-cluster-privatelink-public-fqdn-toggle-live-approval-packet-20260627 to produce a bounded human/operator approval artifact for the same unchanged replay.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map path.private-cluster-privatelink-public-fqdn-toggle from mounted AKS RP handwritten e2ev3/source-equivalent artifacts into a repo-local boundary note so the project has an exact source-backed carrier for the create-with-public-FQDN then update-disable lifecycle, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-public-fqdn-toggle-boundary-map-20260627.md"
+      ],
+      "acceptance": [
+        "Identify the exact mounted source or checked-in source-equivalent scenario files that cover the private-cluster PrivateLink public-FQDN toggle lifecycle, and cite the create/update inputs plus the concrete assertions that prove the intended behavior boundary.",
+        "Archive a repo-local boundary note that records accepted inputs, expected transition behavior, adjacent private-cluster surfaces, and any still-unknown edge that prevents immediate spec/replay closure, with enough source detail that a later worker does not need to rediscover the carrier.",
+        "If the current knowledge-map attachment for path.private-cluster-privatelink-public-fqdn-toggle is stale or missing and the canonical carrier is unambiguous, update the directly coupled model/path-summary references; otherwise record the exact follow-up artifact needed instead of guessing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T06:48:58.423Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T06:49:03.003Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627_20260627065103",
+        "assigned_at": "2026-06-27T06:51:03.868Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627",
+        "worker_started_attempt_id": "a_private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627_20260627065103",
+        "worker_started_at": "2026-06-27T06:51:04.448Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a new source-backed boundary note for the PrivateLink public-FQDN toggle path and repaired directly coupled knowledge-map references so the canonical carrier now points to the existing feature-local probe instead of a nonexistent top-level replay path.",
+        "last_worker_completed_at": "2026-06-27T06:53:48.290Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T06:55:11.186Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-27: the archived boundary note cites the exact mounted handwritten suite, the checked-in spec/probe carrier, the four create→public-credential→disable lifecycle assertions, and the repaired coupled knowledge-map replayRefs, so the source-backed boundary for path.private-cluster-privatelink-public-fqdn-toggle is now durable and does not need rediscovery."
+      },
+      "session_id": "s_task_private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627",
+      "session_history": [
+        "s_task_private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627"
+      ],
+      "result": "Archived a new source-backed boundary note for the PrivateLink public-FQDN toggle path and repaired directly coupled knowledge-map references so the canonical carrier now points to the existing feature-local probe instead of a nonexistent top-level replay path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T06:55:11.186Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-27: the archived boundary note cites the exact mounted handwritten suite, the checked-in spec/probe carrier, the four create→public-credential→disable lifecycle assertions, and the repaired coupled knowledge-map replayRefs, so the source-backed boundary for path.private-cluster-privatelink-public-fqdn-toggle is now durable and does not need rediscovery."
+      },
+      "status": "done"
+    }
+  ]
+}

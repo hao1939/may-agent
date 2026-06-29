@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T01:40:41.618Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+  "summary": "This focus branch now locks in the accepted rows40-43 execute-carrier truth: the bounded five-singleton bundle is planner-ready and review-ready, but all five current replays remain check-only wrappers with 0/5 exact execute-capable equivalents. The carrier-gap map identified bounded reusable live control-surface fragments across the repo and narrowed the single best next repo-local action to a row-41 secure-TLS live-base implementation blueprint, because that base would also unlock bounded row-42 and row-43 follow-on extensions. The only open child here is vm-prerelease-row41-secure-tls-live-base-blueprint-20260622; the separate project-level external human-transport wait remains the sole live blocked family outside this focus branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows40-43-execute-carrier-gap-map-20260622",
+      "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact repo-local execution-carrier gap for the accepted VM prerelease rows40-43 bundle: for each of the five selected specs, verify whether an equivalent live execute-capable replay/control carrier already exists anywhere in the repo or mounted source, and if not, record the smallest truthful implementation/authoring delta needed before any cloud-execution approval request would be actionable.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows40-43-execute-carrier-gap-map-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted execution-review packet and inspects the current five replay wrappers plus any bounded repo-local or mounted-source candidate live carriers, stating per selected spec whether an execute-capable equivalent already exists, is reusable with bounded adaptation, or is absent.",
+        "Artifact records the minimal next repo-local action for each uncovered carrier gap (for example reuse path, exact replay authoring delta, or evidence that execution cannot proceed until a live carrier is implemented), without launching cloud mutation or requesting human transport.",
+        "Work stays repo-local and ends by naming the single best next bounded follow-up leaf if any implementation or adaptation work is justified for this bundle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-execute-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T01:37:35.535Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows40-43-execute-carrier-gap-map-20260622_20260622013735",
+        "assigned_at": "2026-06-22T01:37:35.584Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows40-43-execute-carrier-gap-map-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-rows40-43-execute-carrier-gap-map-20260622_20260622013735",
+        "worker_started_at": "2026-06-22T01:37:59.702Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the repo-local execute-carrier gap for the accepted VM prerelease rows40-43 bundle and wrote the durable artifact at evidence/archive/vm-prerelease-rows40-43-execute-carrier-gap-map-20260622.md. The artifact shows all five current replays are still source-spec-check wrappers, identifies nearest execute-capable reusable control carriers, and names row-41 secure-TLS live-base authoring as the best next bounded follow-up leaf.",
+        "last_worker_completed_at": "2026-06-22T01:40:37.254Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T01:40:41.466Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 carrier-gap map artifact proves all five rows40-43 singleton replays are still source-spec-check wrappers with 0/5 exact execute-capable equivalents, identifies bounded reusable live control surfaces for all five, and truthfully narrows the best next repo-local follow-up to authoring the row-41 secure-TLS live base carrier before any execution approval request."
+      },
+      "session_id": "s_task_vm-prerelease-rows40-43-execute-carrier-gap-map-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-rows40-43-execute-carrier-gap-map-20260622"
+      ],
+      "result": "Mapped the repo-local execute-carrier gap for the accepted VM prerelease rows40-43 bundle and wrote the durable artifact at evidence/archive/vm-prerelease-rows40-43-execute-carrier-gap-map-20260622.md. The artifact shows all five current replays are still source-spec-check wrappers, identifies nearest execute-capable reusable control carriers, and names row-41 secure-TLS live-base authoring as the best next bounded follow-up leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T01:40:41.466Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 carrier-gap map artifact proves all five rows40-43 singleton replays are still source-spec-check wrappers with 0/5 exact execute-capable equivalents, identifies bounded reusable live control surfaces for all five, and truthfully narrows the best next repo-local follow-up to authoring the row-41 secure-TLS live base carrier before any execution approval request."
+      },
+      "status": "done"
+    }
+  ]
+}

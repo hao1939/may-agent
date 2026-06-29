@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T15:05:04.990Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner refill after weighted-routing review: accepted the weighted-routing mounted-source carrier audit because the durable archive exists and model/knowledge-map/model.json now points path.traffic-managed-gateway-api.weighted-routing.specCoverage.probeRef at features/traffic-managed-gateway-api/tests/traffic-managed-gateway-api-weighted-routing.ts. The sole live repo-local no-cloud work remains traffic-managed-gateway-api-family-mounted-source-vs-repo-local-coverage-matrix-20260627, while focus-mounted-source-coverage-closure-and-external-wait-20260623 remains the single blocked branch carrying the two exact externally routed wait families (VM prerelease/shared-identity proof return and shared private-cluster operator response).",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the exact mounted-source and repo-local carrier boundary for path.traffic-managed-gateway-api.weighted-routing so the project has one truthful runnable no-cloud gap-closure leaf instead of a blocked-only frontier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627.md"
+      ],
+      "acceptance": [
+        "Identify the exact mounted AKS RP source slice(s), repo-local spec/replay/model attachments, and current evidence ceiling for path.traffic-managed-gateway-api.weighted-routing with exact file references and no cloud execution.",
+        "Conclude one concrete next state for the path: keep draft with bounded ceiling evidence, normalize to a more exact source-backed carrier, or split/fix the path/model linkage; update the relevant repo-local artifact(s) if the conclusion is strong enough."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-managed-gateway-api-weighted-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T15:00:19.416Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627_20260627150019",
+        "assigned_at": "2026-06-27T15:00:19.465Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627",
+        "worker_started_attempt_id": "a_traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627_20260627150019",
+        "worker_started_at": "2026-06-27T15:00:41.217Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the weighted-routing mounted-source carrier audit, wrote a durable evidence artifact, and repaired the accepted model’s stale probeRef to the real repo-local weighted-routing probe path.",
+        "last_worker_completed_at": "2026-06-27T15:03:33.728Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T15:04:02.938Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence archive documents the exact managedgatewayapi mounted-source boundary, confirms weighted-routing remains a truthful draft carrier with dry-run-only ceiling, and records the repaired repo-local probeRef linkage for path.traffic-managed-gateway-api.weighted-routing."
+      },
+      "session_id": "s_task_traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627",
+      "session_history": [
+        "s_task_traffic-managed-gateway-api-weighted-routing-mounted-source-carrier-audit-20260627"
+      ],
+      "result": "Completed the weighted-routing mounted-source carrier audit, wrote a durable evidence artifact, and repaired the accepted model’s stale probeRef to the real repo-local weighted-routing probe path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T15:04:02.938Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence archive documents the exact managedgatewayapi mounted-source boundary, confirms weighted-routing remains a truthful draft carrier with dry-run-only ceiling, and records the repaired repo-local probeRef linkage for path.traffic-managed-gateway-api.weighted-routing."
+      },
+      "status": "done"
+    }
+  ]
+}

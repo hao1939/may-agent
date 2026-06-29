@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T22:13:26.837Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog review refill: archived the already owner-accepted serverless-addonv2 row-62 canonical-path reconciliation because its durable meaning now lives in archive evidence plus the maintained model/view/spec/replay carriers. The live repo-local/no-cloud frontier is refilled with three active mounted-source reconciliation leaves—serverless-virtualnodes-standard-canonical-path-reconcile-20260623, serverless-schedulerctrl-validating-webhook-family-model-seed-20260623, and serverless-addonv2-aci-connector-mounted-vmss-lifecycle-canonical-path-reconcile-20260623—while the same three exact external returned-proof/approval waits remain compressed unchanged until returned proof arrives or the first blocked-frontier follow-up review on/after 2026-06-26. Do not reopen blocked local setup/auth/quota/source rediscovery or run cloud mutation from this refill pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-addonv2-aci-connector-canonical-path-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted serverless Addonv2 ACI connector handwritten source plus the existing canonical spec/replay/index and the accepted mounted-vmss sibling evidence to land the truthful maintained feature/scenario/input-DAG/path visibility for path.serverless-addonv2-aci-connector, keeping this generic Addonv2 path distinct from the already-modeled mounted-vmss lifecycle carrier and from VirtualNodes siblings, with repo-local evidence only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-addonv2-aci-connector-canonical-path-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted ACI connector source files plus the current canonical spec, replay, feature/index, and accepted mounted-vmss sibling carrier, then concludes exactly what maintained scenario/input-DAG/path surface should exist for path.serverless-addonv2-aci-connector without widening into VMSS lifecycle or VirtualNodes branches.",
+        "If model/knowledge-map/model.json, generated maintained views, feature packets, or spec/replay linkage files change, the update truthfully exposes path.serverless-addonv2-aci-connector, records whether it remains a source-grounded draft or aliases into a narrower carrier, and states the next bounded repo-local gap if any."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge.serverless-addonv2-aci-connector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T22:05:09.092Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-addonv2-aci-connector-canonical-path-reconcile-20260623_20260623220509",
+        "assigned_at": "2026-06-23T22:05:09.147Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-addonv2-aci-connector-canonical-path-reconcile-20260623",
+        "worker_started_attempt_id": "a_serverless-addonv2-aci-connector-canonical-path-reconcile-20260623_20260623220509",
+        "worker_started_at": "2026-06-23T22:05:33.881Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the canonical row-62 Addonv2 ACI connector path into a truthful source-grounded/check-proven/environment-blocked carrier, updated the serverless family wording, regenerated maintained views, and wrote archive evidence at evidence/archive/serverless-addonv2-aci-connector-canonical-path-reconcile-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T22:11:00.507Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T22:11:50.578Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves path.serverless-addonv2-aci-connector now remains the dedicated row-62 VirtualMachines/shared-identity Addonv2 branch, distinct from the mounted-vmss lifecycle sibling and VirtualNodes siblings, with repo-local model/view updates and an explicit environment-blocked resume condition."
+      },
+      "session_id": "s_task_serverless-addonv2-aci-connector-canonical-path-reconcile-20260623",
+      "session_history": [
+        "s_task_serverless-addonv2-aci-connector-canonical-path-reconcile-20260623"
+      ],
+      "result": "Reconciled the canonical row-62 Addonv2 ACI connector path into a truthful source-grounded/check-proven/environment-blocked carrier, updated the serverless family wording, regenerated maintained views, and wrote archive evidence at evidence/archive/serverless-addonv2-aci-connector-canonical-path-reconcile-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T22:11:50.578Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves path.serverless-addonv2-aci-connector now remains the dedicated row-62 VirtualMachines/shared-identity Addonv2 branch, distinct from the mounted-vmss lifecycle sibling and VirtualNodes siblings, with repo-local model/view updates and an explicit environment-blocked resume condition."
+      },
+      "status": "done"
+    }
+  ]
+}

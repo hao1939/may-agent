@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T03:27:57.646Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner reconciliation: the stale archived-child repair family is fully absorbed at the project root via the accepted bounded missing-child prune tooling result, so the prior problemKey no longer needs live planner attention. The truthful live frontier is now one active repo-local mounted-source learning leaf, speculor-mounted-source-first-slice-coverage-map-20260623, plus the unchanged single family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. Next useful project action remains finishing the bounded speculor source slice into a concrete knowledge-map artifact and follow-on repo-local leaves without reopening the covered external wait or any archived stale-child repair work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "task-tree-bounded-missing-child-prune-tooling-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add and then use a bounded task-tree repair path that prunes missing archived child ids from parent children arrays without reopening archived domain work, so project.children matches the truthful live frontier again.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/task-tree-bounded-missing-child-prune-tooling-20260623.md"
+      ],
+      "acceptance": [
+        "A supported bounded task-tree primitive or equivalent owner-level repair path is documented and used to remove missing child ids such as storage-csi-mounted-source-coverage-audit-20260623 and vm-prerelease-mounted-source-coverage-audit-20260623 from project.children, with before/after proof captured in repo-local evidence.",
+        "The repair changes only task-tree integrity state: it does not recreate archived tasks, reopen archived domain work, alter the managedsystem verdict, or change the single external-human wait resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "task-tree-integrity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T03:23:42.116Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_task-tree-bounded-missing-child-prune-tooling-20260623_20260623032342",
+        "assigned_at": "2026-06-23T03:23:42.165Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_task-tree-bounded-missing-child-prune-tooling-20260623",
+        "worker_started_attempt_id": "a_task-tree-bounded-missing-child-prune-tooling-20260623_20260623032342",
+        "worker_started_at": "2026-06-23T03:24:00.331Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Used the supported bounded task-tree primitive `prune-missing-children` to remove the two missing archived child ids from `project.children`, and wrote repo-local evidence documenting the tooling path, before/after state, and integrity-only impact.",
+        "last_worker_completed_at": "2026-06-23T03:26:41.799Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T03:27:15.162Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: repo-local evidence documents the supported prune-missing-children primitive, cites SDK/app/CLI surfaces plus passing tests, and shows project.children now matches the truthful live frontier without reopening archived domain work or changing blocker state."
+      },
+      "session_id": "s_task_task-tree-bounded-missing-child-prune-tooling-20260623",
+      "session_history": [
+        "s_task_task-tree-bounded-missing-child-prune-tooling-20260623"
+      ],
+      "result": "Used the supported bounded task-tree primitive `prune-missing-children` to remove the two missing archived child ids from `project.children`, and wrote repo-local evidence documenting the tooling path, before/after state, and integrity-only impact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T03:27:15.162Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: repo-local evidence documents the supported prune-missing-children primitive, cites SDK/app/CLI surfaces plus passing tests, and shows project.children now matches the truthful live frontier without reopening archived domain work or changing blocker state."
+      },
+      "status": "done"
+    }
+  ]
+}

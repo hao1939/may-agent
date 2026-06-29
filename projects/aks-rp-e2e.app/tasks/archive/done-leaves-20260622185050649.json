@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:50:50.650Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed follow-on review accepted the mounted-source VM prerelease worked-example boundary packet: rows 25+50, 40-43, 33, and 76 are now source-backed to exact repo-local carriers with no local repair needed. The live repo-local frontier stays narrowed to vm-prerelease-suite-row-carrier-matrix-20260622 for the remaining VirtualMachine prerelease/checkin suite rows, while the single external human-transport wait remains the only truthful blocker family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source to map the VirtualMachine prerelease worked-example rows already covered by the shared external-human-transport wait into exact repo-local source-backed boundaries: identify the scenario/spec files behind rows 25+50, 40-43, 33, and 76, summarize their input paths and expected behaviors, and record whether current repo-local carriers already distinguish those asks clearly enough for later execution review without any cloud run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus any directly referenced scenario definitions, maps rows 25+50, 40-43, 33, and 76 to exact source-backed scenario/input/expectation boundaries, and distinguishes what is already repo-local versus what still depends on the shared external-human-transport wait.",
+        "If the packet finds a repo-local model/spec/replay ambiguity, it names the exact carrier and the bounded next local follow-up; otherwise it records a cited no-change judgment. No live execution, external ask, or duplicate blocked wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:44:53.665Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622_20260622184453",
+        "assigned_at": "2026-06-22T18:44:53.736Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622_20260622184453",
+        "worker_started_at": "2026-06-22T18:45:19.842Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote `evidence/archive/virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622.md`, mapping VM prerelease rows 25+50, 40-43, 33, and 76 from mounted AKS RP source to exact repo-local carriers and concluding no repo-local repair is needed beyond existing external waits.",
+        "last_worker_completed_at": "2026-06-22T18:48:10.245Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:48:45.695Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive cites mounted AKS RP source for rows 25+50, 40-43, 33, and 76, maps each row to exact repo-local spec/replay/path carriers, and supports a no-change judgment that only the shared external-human-transport waits remain."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622"
+      ],
+      "result": "Wrote `evidence/archive/virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622.md`, mapping VM prerelease rows 25+50, 40-43, 33, and 76 from mounted AKS RP source to exact repo-local carriers and concluding no repo-local repair is needed beyond existing external waits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:48:45.695Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive cites mounted AKS RP source for rows 25+50, 40-43, 33, and 76, maps each row to exact repo-local spec/replay/path carriers, and supports a no-change judgment that only the shared external-human-transport waits remain."
+      },
+      "status": "done"
+    }
+  ]
+}

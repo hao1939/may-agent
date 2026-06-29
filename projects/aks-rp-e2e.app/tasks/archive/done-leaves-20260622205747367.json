@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T20:57:47.368Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-row50-hardening-and-external-wait-separation-20260622",
+  "summary": "2026-06-22 owner blocked-frontier review reconciled the stale hygiene summary with the actual tree state: vmpr-adjacent-ready-wording-boundary-audit-20260622 was already accepted and archived under the evidence-feedback/model-update lane, so there is no remaining repo-local VM prerelease audit leaf to restore. This focus branch now truthfully carries only the single exact family-level external-human wait for covered asks, with prior repo-local VMPR carrier hardening outcomes preserved in the archived evidence-feedback/model-update lane and no duplicate waits or reopened source/spec tasks added.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "lane-evidence-feedback-model-update",
+      "parent_id": "focus-vmpr-row50-hardening-and-external-wait-separation-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Maintain the evidence feedback/model-update lane: turn accepted repo-local packets into the smallest truthful carrier/model/view updates or explicit no-change judgments, without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/"
+      ],
+      "acceptance": [
+        "Lane holds concrete leaves that reconcile accepted evidence into maintained replay/spec/model carriers or archive a proof-backed no-change judgment.",
+        "No cloud mutation or duplicate external waits are introduced from this lane; work stays repo-local and bounded."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence-model-lane"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T20:10:33.670Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-22T20:55:48.778Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "result": "Child review pending: vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622, vmpr-row40-ssh-key-split-carrier-reconciliation-20260622.",
+      "context": {
+        "rollup_summary": "2026-06-22 owner review accepted vmpr-adjacent-ready-wording-boundary-audit-20260622: rows 46 and 47 maintained carriers were repaired from unsupported Ready-state wording to mounted-source-grounded exact 3-node count language, and row 50 was narrowed to exact 3→4→3 count wording in model/view carriers while spec/index stayed unchanged with explicit justification. This lane has no remaining open repo-local follow-up from that audit; the only live frontier item in the project is the separate family-level out-of-runtime external-human wait.",
+        "archived_done_leaf_count": 14,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260622205548778.json",
+            "archived": 1,
+            "at": "2026-06-22T20:55:48.778Z",
+            "summary": "2026-06-22 owner review accepted vmpr-adjacent-ready-wording-boundary-audit-20260622: rows 46 and 47 maintained carriers were repaired from unsupported Ready-state wording to mounted-source-grounded exact 3-node count language, and row 50 was narrowed to exact 3→4→3 count wording in model/view carriers while spec/index stayed unchanged with explicit justification. This lane has no remaining open repo-local follow-up from that audit; the only live frontier item in the project is the separate family-level out-of-runtime external-human wait.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-adjacent-ready-wording-boundary-audit-20260622"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260622204851435.json",
+            "archived": 1,
+            "at": "2026-06-22T20:48:51.435Z",
+            "summary": "2026-06-22 owner review accepted vmpr-row51-ready-wording-residual-repair-20260622: the archive note plus bounded repo-local grep proved active row-51 maintained spec/index/model/view carriers were repaired from source-overclaiming '3 Ready nodes' to the exact mounted-source 3-node-count wording, while remaining '3 Ready nodes' hits were confined to adjacent rows or intentional replay/historical surfaces. This lane now keeps one concrete repo-local leaf active: vmpr-adjacent-ready-wording-boundary-audit-20260622 to classify rows 46, 47, and 50 row-by-row as source-grounded, replay-only, or in need of the same bounded carrier repair, without opening cloud mutation or duplicate external waits.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-row51-ready-wording-residual-repair-20260622"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260622204405902.json",
+            "archived": 1,
+            "at": "2026-06-22T20:44:05.902Z",
+            "summary": "2026-06-22 owner review accepted vmpr-row51-long-unregistered-carrier-truthfulness-20260622: the archive note established that the maintained row-51 long-unregistered-nodes carrier/model/view surfaces were already truthful about the execute-gated unknown final Ready-state ceiling, so no direct repo-local carrier repair was required for that branch. The accepted audit exposed one narrower follow-on cleanup instead: repo-local maintained row-51 carriers/views that still overstate source proof as '3 Ready nodes' must be rewritten to the exact mounted-source 3-node-count wording. This lane is therefore intentionally reduced to one live repo-local repair leaf, vmpr-row51-ready-wording-residual-repair-20260622, while the single external-human transport wait remains a separate blocked sibling outside the lane.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-row51-long-unregistered-carrier-truthfulness-20260622"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260622203929233.json",
+            "archived": 1,
+            "at": "2026-06-22T20:39:29.233Z",
+            "summary": "2026-06-22 owner review accepted the completed private-cluster none-DNS-zone V3 carrier reconciliation: the archive note plus repo diff proved canonical feature/spec/replay/model/view surfaces already preserved the exact one-cluster system->none mounted contract, explicit execute gate, unknown execution ceiling, and shared external-wait boundary, so no further canonical repo-local repair is needed beyond the small historical frontier-summary wording cleanup already landed. This lane now carries one live repo-local leaf only: vmpr-row51-long-unregistered-carrier-truthfulness-20260622 for the dedicated VM prerelease cluster-autoscaler long-unregistered-nodes boundary, while the shared human-operator wait remains outside the lane as the single truthful external blocker.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "private-cluster-none-dns-zone-v3-carrier-reconciliation-20260622"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260622203343877.json",
+            "archived": 2,
+            "at": "2026-06-22T20:33:43.878Z",
+            "summary": "2026-06-22 owner review accepted two adjacent repo-local no-change judgments under this lane: the row-54 create-time ManagedSystem+VirtualMachines carrier remains truthfully separated from the explicit add-existing combined REST product-gap branch, and the completed row-50 statefulset/cordon-scale truthfulness note proved the misnamed review task actually audited the maintained row-50 carrier while current feature/spec/replay/model/view wording already stays within the source-grounded execute-gated unknown ceiling. This lane now keeps one concrete follow-up leaf active for the true row-51 long-unregistered-nodes carrier so the adjacent VM prerelease autoscaler branches remain explicitly separated without cloud mutation or duplicate external waits.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vmpr-row54-create-time-managedsystem-carrier-reconciliation-20260622",
+              "vmpr-row51-cluster-autoscaler-execute-gated-carrier-truthfulness-20260622"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

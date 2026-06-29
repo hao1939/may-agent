@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:47:07.085Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier refill: accepted the VM prerelease row-37 rerun-contract note and treat the row35/row37 mounted-source normalization slice as closed repo-local knowledge. The single external-human proof wait remains the only truthful blocked family, and the next capacity-filling no-cloud work is the new Serverless Virtual Nodes mounted-source coverage closure task to tighten source-backed carrier truth for path.serverless-virtual-nodes.subnet-validation before any execution planning.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the already-accepted row-35/row-37 mounted-source reconcile outcomes through the final repo-local normalization pass: remove unsupported stale row-35 source-holder/external-wait framing, reconcile canonical feature/path ids across feature/spec/model/view surfaces, upgrade scenario metadata from hypothesis to source-backed where mounted source proves it, and leave one truthful next-step status per affected VM prerelease row without cloud mutation or any new external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact repo files and model/view surfaces changed during the final row-35 normalization pass, with mounted-source citations showing why stale row-35 source-holder/external-wait framing was removed or retained and how the accepted row-37 environment-gated outcome is preserved.",
+        "The resulting repo-local story leaves no duplicate path ids or contradictory pass/blocked/hypothesis signals for the normalized VM prerelease rows, preserves row 37 as environment-gated rather than source-unknown, and does not reopen cloud execution or broaden the existing external-proof wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:34:15.986Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623_20260623103535",
+        "assigned_at": "2026-06-23T10:35:35.050Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623_20260623103535",
+        "worker_started_at": "2026-06-23T10:35:36.463Z",
+        "rolled_up_at": "2026-06-23T10:45:03.561Z",
+        "rolled_up_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T10:43:41.443Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Closed the row-35/row-37 mounted-source normalization batch: accepted review evidence shows the canonical repo-local carriers already hold one truthful row-35 blocked/source-backed path with the duplicate pass-oriented story removed, and row 37 stays represented as an environment-gated adjacent path."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-row35-row37-normalization-batch-20260623"
+      ],
+      "result": "Child review pending: virtualmachine-prerelease-row35-mounted-source-carrier-reconcile-successor-20260623.",
+      "context": {
+        "rollup_summary": "2026-06-23 owner hygiene rollup: the row-35 normalization child is already complete and its durable meaning is now represented at this parent. Mounted-source evidence and accepted repo-local carrier edits leave one truthful row-35 blocked/source-backed story with duplicate pass-oriented framing removed, while row 37 remains represented separately as an environment-gated rerun-contract path under active task virtualmachine-prerelease-row37-rerun-contract-20260623. This branch is fully closed and should not imply any remaining row-35 normalization work or reopen cloud/external-wait scope.",
+        "archived_done_leaf_count": 2,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260623104503560.json",
+            "archived": 1,
+            "at": "2026-06-23T10:45:03.561Z",
+            "summary": "2026-06-23 owner hygiene rollup: the row-35 normalization child is already complete and its durable meaning is now represented at this parent. Mounted-source evidence and accepted repo-local carrier edits leave one truthful row-35 blocked/source-backed story with duplicate pass-oriented framing removed, while row 37 remains represented separately as an environment-gated rerun-contract path under active task virtualmachine-prerelease-row37-rerun-contract-20260623. This branch is fully closed and should not imply any remaining row-35 normalization work or reopen cloud/external-wait scope.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "virtualmachine-prerelease-row35-repo-local-normalization-20260623"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260623104042054.json",
+            "archived": 1,
+            "at": "2026-06-23T10:40:42.054Z",
+            "summary": "Accepted the mounted-source successor review for row 35: the watchdog-triggered review leaf is complete and its durable outcome is that row 35 is not blocked on missing source or external wait but on a bounded repo-local normalization mismatch. The only remaining live work in this branch is virtualmachine-prerelease-row35-repo-local-normalization-20260623 to reconcile canonical row-35 carriers/status surfaces while preserving row 37 as environment-gated and avoiding new cloud or external-human work.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "virtualmachine-prerelease-row35-mounted-source-carrier-reconcile-successor-20260623"
+            ]
+          }
+        ],
+        "acceptance_note": "Closed the row-35/row-37 mounted-source normalization batch: accepted review evidence shows the canonical repo-local carriers already hold one truthful row-35 blocked/source-backed path with the duplicate pass-oriented story removed, and row 37 stays represented as an environment-gated adjacent path."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:43:41.443Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-row37-rerun-contract-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert VM prerelease row 37 from a passive environment-gated status into a rerun-ready repo-local contract: using mounted source plus accepted failure artifacts, pin the exact row-37 scenario/replay input path, the baseline cluster-create failure evidence, and any repo-local replay/model/view text needed so the next allowed execution is one exact source-aligned rerun without cloud mutation in this task or any new external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row37-rerun-contract-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted-source row-37 anchors, the accepted baseline create failure artifact(s), and the exact replay/spec/model/view carriers that currently define the row-37 rerun contract and execution ceiling.",
+        "Any repo-local replay/model/view/spec text needed to keep row 37 as one exact environment-gated path is updated so the next action names the same source-aligned rerun, preserves the existing environment gate, and does not revive broader source-unknown/reset-discriminator framing or add external-human wait work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:43:41.490Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row37-rerun-contract-20260623_20260623104341",
+        "assigned_at": "2026-06-23T10:43:41.542Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row37-rerun-contract-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row37-rerun-contract-20260623_20260623104341",
+        "worker_started_at": "2026-06-23T10:43:58.627Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a durable row-37 rerun-contract note at evidence/archive/virtualmachine-prerelease-row37-rerun-contract-20260623.md, tying the exact mounted-source Scenario_AAD anchors to the accepted 2026-06-19 create-ceiling artifact and confirming current spec/replay/feature/model/view carriers already preserve the single bounded rerun path with no repo-local edits needed.",
+        "last_worker_completed_at": "2026-06-23T10:46:08.125Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:46:55.003Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-37 rerun-contract archive note: it cites the exact mounted-source Scenario_AAD anchors, preserves the 2026-06-19 live artifact only as a baseline create ceiling, and confirms current spec/replay/feature/model/view carriers already keep one bounded environment-gated rerun path with no repo-local edits needed."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row37-rerun-contract-20260623",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row37-rerun-contract-20260623"
+      ],
+      "result": "Authored a durable row-37 rerun-contract note at evidence/archive/virtualmachine-prerelease-row37-rerun-contract-20260623.md, tying the exact mounted-source Scenario_AAD anchors to the accepted 2026-06-19 create-ceiling artifact and confirming current spec/replay/feature/model/view carriers already preserve the single bounded rerun path with no repo-local edits needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:46:55.003Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-37 rerun-contract archive note: it cites the exact mounted-source Scenario_AAD anchors, preserves the 2026-06-19 live artifact only as a baseline create ceiling, and confirms current spec/replay/feature/model/view carriers already keep one bounded environment-gated rerun path with no repo-local edits needed."
+      },
+      "status": "done"
+    }
+  ]
+}

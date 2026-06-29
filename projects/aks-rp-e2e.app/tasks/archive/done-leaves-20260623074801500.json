@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:48:01.500Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning-update confirmed the just-completed row-75 prerelease shared-identity preflight diagnosis is already accepted and should remain historical, not reopened: mounted old-suite/shared-identity source plus existing repo-local carriers establish that the remaining truthful residue for the VM shared-identity family is one returned approved control-plane UAI artifact in /userAssignedIdentities/cp-<n> form for AKS_RP_E2E_ASSIGN_IDENTITY. This rollup archives the completed VM row-75 contract and diagnosis leaves together with the superseded duplicate proof-wait leaf so the live frontier stays maximally clear. Current next action is unchanged: keep storage-csi-file-private-endpoint-mounted-source-envelope-20260623 as the sole active repo-local learning/model-feedback leaf, and keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level blocked wait until a returned approval/reply artifact arrives or an authoritative operator response changes the resume condition.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-row75-shared-identity-contract-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source, the existing row-75 replay/evidence set, and the current model gap to capture the exact shared-identity preflight contract for VirtualMachines prerelease row 75 (aksconformance core) and decide the next truthful repo-local unblock step without broadening into live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-row75-shared-identity-contract-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted-source or checked-in replay carriers for row 75, the required shared-identity inputs/env vars, and the accepted evidence showing where preflight currently stops before cloud mutation.",
+        "The note classifies whether the next truthful action is repo-local replay/spec/model repair, an environment/problem-family task, or an exact external ask, and names the concrete next step without reopening unrelated VirtualMachines rows.",
+        "No cloud mutation, no duplicate passive blocked waits, and no widening beyond the VirtualMachines/shared-identity/user-kubeconfig deployment+tunnel+metrics branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-shared-identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:38:02.756Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-row75-shared-identity-contract-reconcile-20260623_20260623073802",
+        "assigned_at": "2026-06-23T07:38:02.825Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-row75-shared-identity-contract-reconcile-20260623",
+        "worker_started_attempt_id": "a_virtualmachine-row75-shared-identity-contract-reconcile-20260623_20260623073802",
+        "worker_started_at": "2026-06-23T07:38:16.527Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a new row-75 shared-identity contract reconciliation note at evidence/archive/virtualmachine-row75-shared-identity-contract-reconcile-20260623.md, grounded in mounted AKS RP source, existing row-75 replay/evidence, and current maintained model/view state. It concludes the next truthful step is a shared-identity environment/family unblock, not more repo-local row-75 repair.",
+        "last_worker_completed_at": "2026-06-23T07:40:25.796Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:41:24.235Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note as sufficient repo-local evidence: mounted-source and existing replay artifacts prove row 75 is already contract-reconciled, stops before cloud mutation only because AKS_RP_E2E_ASSIGN_IDENTITY is unset, and its next truthful step is now represented by the visible shared-identity family blocker virtualmachine-shared-identity-cp-family-proof-wait-20260623 rather than misleadingly treating row 75 as fully resolved."
+      },
+      "session_id": "s_task_virtualmachine-row75-shared-identity-contract-reconcile-20260623",
+      "session_history": [
+        "s_task_virtualmachine-row75-shared-identity-contract-reconcile-20260623"
+      ],
+      "result": "Wrote a new row-75 shared-identity contract reconciliation note at evidence/archive/virtualmachine-row75-shared-identity-contract-reconcile-20260623.md, grounded in mounted AKS RP source, existing row-75 replay/evidence, and current maintained model/view state. It concludes the next truthful step is a shared-identity environment/family unblock, not more repo-local row-75 repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:41:24.235Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note as sufficient repo-local evidence: mounted-source and existing replay artifacts prove row 75 is already contract-reconciled, stops before cloud mutation only because AKS_RP_E2E_ASSIGN_IDENTITY is unset, and its next truthful step is now represented by the visible shared-identity family blocker virtualmachine-shared-identity-cp-family-proof-wait-20260623 rather than misleadingly treating row 75 as fully resolved."
+      },
+      "status": "done"
+    }
+  ]
+}

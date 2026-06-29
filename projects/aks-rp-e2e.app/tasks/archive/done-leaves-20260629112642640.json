@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:26:42.640Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review confirmed the spec-verification loop should keep draining active single-spec verification and reconcile/retry leaves while the external blocked frontier stays compressed. Archived completed leaves now capture four accepted slices: app-routing default-domain HTTP reachability, bootstrap-profile direct-to-cache transition, CCP Mariner V2 security patch, and the managed-ACR run-28368168658 reconciliation. Remaining work is the 13 active spec-loop leaves already in flight, including newer retry/reconcile items for aad-rbac managed-v2 lifecycle, rp-cluster new-vnet VM prerelease, bootstrap-profile direct-to-cache transition run 28367956111, CCP Mariner V2 single-spec nonlive verdict, and stale-active diagnosis retry for nonaad-to-aadv2 migration.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-app-routing-default-domain-http-reachability",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.app-routing.default-domain-http-reachability through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.app-routing.default-domain-http-reachability",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.app-routing.default-domain-http-reachability",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.default-domain-http-reachability workflow run 28368061000 classified as pass. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: setup.get-credentials failed with exitCode=127 Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368061000 Result: runs/test-results/single-app-routing-default-domain-http-reachability_617715/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_617715/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:14:35.759Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T11:14:57.066Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-app-routing-default-domain-http-reachability_20260629111555",
+        "assigned_at": "2026-06-29T11:15:55.924Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-app-routing-default-domain-http-reachability",
+        "worker_started_attempt_id": "a_verify-spec-app-routing-default-domain-http-reachability_20260629111555",
+        "worker_started_at": "2026-06-29T11:15:56.773Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.app-routing.default-domain-http-reachability workflow run 28368061000 classified as pass. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: setup.get-credentials failed with exitCode=127 Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368061000 Result: runs/test-results/single-app-routing-default-domain-http-reachability_617715/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_617715/result.json",
+        "last_worker_completed_at": "2026-06-29T11:22:39.687Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T11:22:41.599Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.app-routing.default-domain-http-reachability workflow run 28368061000 classified as pass. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: setup.get-credentials failed with exitCode=127 Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368061000 Result: runs/test-results/single-app-routing-default-domain-http-reachability_617715/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_617715/result.json"
+      },
+      "session_id": "s_task_verify-spec-app-routing-default-domain-http-reachability",
+      "session_history": [
+        "s_task_verify-spec-app-routing-default-domain-http-reachability"
+      ],
+      "result": "Spec spec.app-routing.default-domain-http-reachability workflow run 28368061000 classified as pass. Loop key: verify-spec-app-routing-default-domain-http-reachability-a_verify-spec-app-routing-default. tests error: setup.get-credentials failed with exitCode=127 Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368061000 Result: runs/test-results/single-app-routing-default-domain-http-reachability_617715/artifacts/app-routing-default-domain-http-reachability/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368061000/aks-rp-e2e-28368061000-spec-test-results/test-results/single-app-routing-default-domain-http-reachability_617715/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:22:41.599Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

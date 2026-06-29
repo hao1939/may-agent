@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T16:28:56.355Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier owner review reaffirmed that the feature/spec lane has no remaining repo-local MachinesPreview drafting or VM prerelease source-authoring work for this slice. The completed row-50 dedicated-carrier authoring leaf already established the exact source-backed path/spec/replay references and its durable meaning is preserved at lane level, so the only live child here remains machinespreview-human-send-proof-or-authoritative-reply-wait-20260620 as one exact external-human wait. Resume that family only when durable repo-local evidence proves a real send/handoff/escalation of the existing packet or an authoritative MachinesPreview reply arrives; otherwise all local motion stays in runner-and-replays through row-50 live replay implementation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row50-dedicated-carrier-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the dedicated repo-local VM prerelease row50 carrier for Scenario_CAS_Stateful_Set_VirtualMachine so row50 no longer reuses the untruthful generic statefulset-pdb mapping and instead preserves the exact mounted mixed substrate plus cordon/uncordon scale behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row50-dedicated-carrier-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "The evidence note cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and /app/sources/aks-rp/test/e2ev3/sigs/autoscale/clusterautoscaler/plans/statefulset.go, and the landed dedicated carrier preserves the row50 VM prerelease envelope, kubeVersion 1.33 row mutators, added autoscaled sspool VMSS user pool, dual StatefulSet anti-affinity flow, and cordon->scale 3 to 4->uncordon->scale back to 3 behavior without inventing a PDB contract.",
+        "Repo-local dedicated carrier files are landed and linked truthfully for row50 only: add a dedicated spec/replay pair plus required specs/index.json, knowledge-map, and virtualmachine-prerelease coverage updates so row50 stops pointing at spec.cluster-autoscaler.statefulset-pdb while the generic PDB carrier remains available only for the broader non-row50 family it actually describes.",
+        "The evidence note records the exact local validation command and successful check-mode result for the dedicated row50 replay/check wrapper, and no cloud mutation or planner/tree edits are performed by the worker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T16:07:51.973Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row50-dedicated-carrier-authoring-20260620_20260620160753",
+        "assigned_at": "2026-06-20T16:07:53.840Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row50-dedicated-carrier-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row50-dedicated-carrier-authoring-20260620_20260620160753",
+        "worker_started_at": "2026-06-20T16:08:08.507Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored and wired a dedicated VM prerelease row-50 StatefulSet cordon/scale carrier, updated the reviewed coverage/model surfaces to point row 50 at the new spec/replay/path, and validated the new replay in check mode without any cloud mutation or tree edits.",
+        "last_worker_completed_at": "2026-06-20T16:15:24.924Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T16:15:55.303Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable evidence file names the exact mounted source anchors, dedicated row50 spec/replay/path, coverage/model linkage updates, and successful local --check validation; planner verified the new spec, replay, and check artifact exist repo-locally and the row50 dedicated carrier identifiers are wired into the referenced linkage surfaces."
+      },
+      "session_id": "s_task_vm-prerelease-row50-dedicated-carrier-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row50-dedicated-carrier-authoring-20260620"
+      ],
+      "result": "Authored and wired a dedicated VM prerelease row-50 StatefulSet cordon/scale carrier, updated the reviewed coverage/model surfaces to point row 50 at the new spec/replay/path, and validated the new replay in check mode without any cloud mutation or tree edits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T16:15:55.303Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable evidence file names the exact mounted source anchors, dedicated row50 spec/replay/path, coverage/model linkage updates, and successful local --check validation; planner verified the new spec, replay, and check artifact exist repo-locally and the row50 dedicated carrier identifiers are wired into the referenced linkage surfaces."
+      },
+      "status": "done"
+    }
+  ]
+}

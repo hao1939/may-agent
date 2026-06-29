@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:43:03.561Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner accepted the VM prerelease secure-TLS adjacent-row boundary matrix with a row-envelope correction: the secure-TLS family is rows 41-43 (basic, API-server VNet integration, network-isolated) and row 44 remains the adjacent cloud-provider stop line. Repo-local secure-TLS carriers/model were already source-faithful, so no new live verdict was claimed. The only live blocker remains the shared external human-transport proof wait, while active local work stays on the mounted standard virtual-nodes extension-lifecycle matrix for serverless/source coverage.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-source-coverage-matrix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: map the handwritten Go e2ev3 serverless-virtual-nodes scenarios to current repo-local model/spec/replay coverage so the project can distinguish the already terminal-blocked subnet-validation path from any still-unmapped source-backed branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted-source serverless-virtual-nodes handwritten cases plus current repo-local carriers/model/spec coverage and write evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md listing each source scenario or assertion branch, the matching model path/spec/replay when present, and any exact uncovered or conflated branch that still needs repo-local follow-up.",
+        "If the current repo-local carrier/model text collapses distinct serverless-virtual-nodes branches into the single existing subnet-validation blocker, update the relevant carrier/model-facing artifact so the blocked path stays precise without claiming a new live verdict.",
+        "Keep the task repo-local only: no cloud mutation, no external asks, and no expansion beyond the serverless-virtual-nodes source-coverage and boundary-mapping slice needed to name the next safe follow-up leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes-source-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:36:48.541Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-source-coverage-matrix-20260621_20260621143648",
+        "assigned_at": "2026-06-21T14:36:48.588Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-source-coverage-matrix-20260621",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-source-coverage-matrix-20260621_20260621143648",
+        "worker_started_at": "2026-06-21T14:37:00.652Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote `evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md` mapping mounted `Scenario_Standard_VirtualNodes` branches to current repo-local serverless virtual-nodes coverage, and tightened `features/serverless.yaml` so the DNS family carrier explicitly splits the already-covered internal-DNS branch from the blocked external-DNS sibling instead of implying a single unresolved branch.",
+        "last_worker_completed_at": "2026-06-21T14:40:33.225Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:41:10.299Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md and the features/serverless.yaml diff: the artifact faithfully maps mounted sigs/virtualnodes Scenario_Standard_VirtualNodes to current repo-local serverless carriers, explicitly preserves the subnet-validation blocker as narrow, and corrects family authority/DNS split without overstating exact mounted extension-plane coverage."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-source-coverage-matrix-20260621",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-source-coverage-matrix-20260621"
+      ],
+      "result": "Wrote `evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md` mapping mounted `Scenario_Standard_VirtualNodes` branches to current repo-local serverless virtual-nodes coverage, and tightened `features/serverless.yaml` so the DNS family carrier explicitly splits the already-covered internal-DNS branch from the blocked external-DNS sibling instead of implying a single unresolved branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:41:10.299Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/serverless-virtual-nodes-source-coverage-matrix-20260621.md and the features/serverless.yaml diff: the artifact faithfully maps mounted sigs/virtualnodes Scenario_Standard_VirtualNodes to current repo-local serverless carriers, explicitly preserves the subnet-validation blocker as narrow, and corrects family authority/DNS split without overstating exact mounted extension-plane coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: map the adjacent VM prerelease rows 40-41 SSH public-key update scenarios into one repo-local boundary matrix so future work keeps the row-39 Disable SSH lifecycle separate from Linux/Windows key-rotation behavior and can name the next exact follow-up without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect mounted-source VM prerelease/checkin rows 40 and 41 plus current repo-local feature/spec/replay/model carriers and write evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md mapping each row's accepted inputs, expected update behavior, row-local separators, current evidence ceiling, and next safe rerun gate.",
+        "If current repo-local carriers conflate the row-40/41 SSH key-update paths with row-39 Disable SSH or with each other, update the relevant carrier/model-facing artifact so the distinctions stay source-faithful without claiming a new live verdict.",
+        "Keep the task repo-local only: no cloud mutation, no external asks, and no expansion beyond the adjacent VM prerelease row-40/41 SSH key-update boundary family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-ssh-adjacent-rows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:38:13.997Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621_20260621143816",
+        "assigned_at": "2026-06-21T14:38:16.574Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621_20260621143816",
+        "worker_started_at": "2026-06-21T14:38:36.855Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-40/41 SSH key-update boundary matrix at evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md and tightened features/node-pool-config.yaml so the source-order row-40/41 Linux/Windows split is explicit while preserving the coarse pipeline row-40 umbrella.",
+        "last_worker_completed_at": "2026-06-21T14:40:50.107Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:42:01.614Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-21 review: evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md source-faithfully separates row 39 disable-SSH from source-order row 40 Linux and row 41 Windows SSH public-key update variants, and features/node-pool-config.yaml now preserves that split while retaining the coarse pipeline row-40 umbrella without claiming a new live verdict."
+      },
+      "session_id": "s_task_vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621",
+      "session_history": [
+        "s_task_vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621"
+      ],
+      "result": "Produced the requested row-40/41 SSH key-update boundary matrix at evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md and tightened features/node-pool-config.yaml so the source-order row-40/41 Linux/Windows split is explicit while preserving the coarse pipeline row-40 umbrella.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:42:01.614Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-21 review: evidence/archive/vmpr-rows40-41-ssh-key-update-boundary-matrix-20260621.md source-faithfully separates row 39 disable-SSH from source-order row 40 Linux and row 41 Windows SSH public-key update variants, and features/node-pool-config.yaml now preserves that split while retaining the coarse pipeline row-40 umbrella without claiming a new live verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: map the adjacent VM prerelease secure-TLS-bootstrap rows 42-44 into one repo-local boundary matrix so future work keeps the Linux/Windows basic, API-server VNet integration, and network-isolated branches separate and can name the next exact follow-up without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect mounted-source VM prerelease/checkin secure-TLS-bootstrap rows 42-44 plus current repo-local feature/spec/replay/model carriers and write evidence/archive/vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621.md mapping each row's accepted inputs, key positive/negative expectation branches, exact row separations, current evidence ceiling, and next safe rerun gate.",
+        "If current repo-local carriers conflate the row-42/43/44 secure-TLS-bootstrap paths with each other or with non-VM adjacent surfaces, update the relevant carrier/model-facing artifact so the distinctions stay source-faithful without claiming a new live verdict.",
+        "Keep the task repo-local only: no cloud mutation, no external asks, and no expansion beyond the adjacent VM prerelease secure-TLS-bootstrap boundary family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-secure-tls-adjacent-rows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:39:42.139Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621_20260621143942",
+        "assigned_at": "2026-06-21T14:39:42.186Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621_20260621143942",
+        "worker_started_at": "2026-06-21T14:40:01.383Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested repo-local boundary matrix at evidence/archive/vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621.md. The artifact corrects the row envelope to secure-TLS rows 41-43 with row 44 as the adjacent non-secure-TLS stop line, and records check-mode validation for the three secure-TLS carriers.",
+        "last_worker_completed_at": "2026-06-21T14:42:06.580Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:43:03.513Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: artifact is source-faithful and materially complete after correcting the requested envelope from rows 42-44 to the truthful secure-TLS family rows 41-43, with row 44 preserved as the adjacent non-secure-TLS stop line. Check-mode validation stayed green for the three secure-TLS carriers and no repo-local model/spec conflation remained to fix."
+      },
+      "session_id": "s_task_vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621",
+      "session_history": [
+        "s_task_vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621"
+      ],
+      "result": "Wrote the requested repo-local boundary matrix at evidence/archive/vmpr-rows42-44-secure-tls-bootstrap-boundary-matrix-20260621.md. The artifact corrects the row envelope to secure-TLS rows 41-43 with row 44 as the adjacent non-secure-TLS stop line, and records check-mode validation for the three secure-TLS carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:43:03.513Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: artifact is source-faithful and materially complete after correcting the requested envelope from rows 42-44 to the truthful secure-TLS family rows 41-43, with row 44 preserved as the adjacent non-secure-TLS stop line. Check-mode validation stayed green for the three secure-TLS carriers and no repo-local model/spec conflation remained to fix."
+      },
+      "status": "done"
+    }
+  ]
+}

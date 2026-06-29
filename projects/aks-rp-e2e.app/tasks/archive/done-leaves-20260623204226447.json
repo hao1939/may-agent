@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:42:26.447Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: accepted the NATGW V2 dual-stack BYO IPv4-prefix+IPv6 mounted-source reconcile after validating that the archive artifact cites the exact mounted source plus repo-local carriers and that model wording remains bounded at the publicIPPrefixes/publicIPAddresses mapping layer. The only preserved wait remains the single external-human proof branch unchanged until returned proof arrives or the first owner review after 2026-06-26. To avoid an all-blocked frontier, refill active capacity with one new repo-local diagnosis leaf for path.network-cni-cilium-preview-upgrade so the current create-time HTTP 400 environment ceiling can be narrowed from existing evidence without any cloud rerun.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile the exact path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip boundary: identify the precise handwritten/source slice, determine whether the current spec/replay/model wording is exact-source-backed or must stay explicitly bounded, and archive repo-local evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus any touched repo-local feature/spec/replay/model carriers for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip, and records whether the current claim is exact-source-backed or must remain explicitly bounded/draft.",
+        "Carrier and model updates remain claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit bounded wording instead of borrowing neighboring NATGW V2 dual-stack evidence.",
+        "The work stays repo-local and narrowly scoped to path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip only: no cloud mutation, no blocked-wait follow-up, and no widening into unrelated net-integration families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-ds-byoip-v4prefix-v6ip"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:32:38.036Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623_20260623203243",
+        "assigned_at": "2026-06-23T20:32:43.118Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623_20260623203243",
+        "worker_started_at": "2026-06-23T20:33:19.304Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived mounted-source carrier reconciliation for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip and updated model.json to mark the scenario as source-backed while keeping the repo-local REST carrier wording explicitly bounded rather than exact-source-backed.",
+        "last_worker_completed_at": "2026-06-23T20:37:28.939Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:41:35.176Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-23: archive evidence cites the exact mounted source file (managed_natgatewayv2.go) plus repo-local feature/spec/replay/model carriers, and the reviewed model update keeps only the scenario/pairing source-backed while preserving the repo-local publicIPPrefixes/publicIPAddresses wording as explicitly bounded rather than exact-source-backed."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-ds-byoip-v4prefix-v6ip-mounted-source-carrier-reconcile-20260623"
+      ],
+      "result": "Archived mounted-source carrier reconciliation for path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip and updated model.json to mark the scenario as source-backed while keeping the repo-local REST carrier wording explicitly bounded rather than exact-source-backed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:41:35.176Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-23: archive evidence cites the exact mounted source file (managed_natgatewayv2.go) plus repo-local feature/spec/replay/model carriers, and the reviewed model update keeps only the scenario/pairing source-backed while preserving the repo-local publicIPPrefixes/publicIPAddresses wording as explicitly bounded rather than exact-source-backed."
+      },
+      "status": "done"
+    }
+  ]
+}

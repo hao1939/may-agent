@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:53:11.309Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner review: compact-loop durable meaning remains captured at the parent. Earlier accepted compact packages for network-isolated, node-confidential-vm, node-custom-ca-trust, and node-pool-config still stand. network-cni is now accepted as explicit partial/ready-enough compact coverage: the package keeps spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack in scope, generated check mode truthfully statically validates then skips them because runner/vitest-runtime/steps.ts still lacks live inline ARM dispatch, and this must not be interpreted as live/product-verdict coverage. Keep compact-feature-azure-keyvault-secrets-provider in review for owner acceptance; any future inline-ARM execution or scenario-fallback work should be filed separately as tooling follow-up rather than reopening this boundary decision.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "bound-network-cni-inline-arm-check-gap-20260628",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound the remaining network-cni compact generated-check gap for spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack by deciding whether inline ARM dispatch needs app/runtime support, package-local exclusion, or an explicit long-term partial classification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-inline-arm-check-gap-boundary-20260628.md"
+      ],
+      "acceptance": [
+        "A durable boundary note names the exact failing generated-check specs, the current runtime limitation, and the highest-value next action among app/runtime support, package-local exclusion, or accepted partial coverage.",
+        "If app/runtime support is required, the note names the concrete app surface or helper that must change and links the package-local evidence so a follow-up tooling task can be filed without rediscovery.",
+        "If exclusion or accepted partial coverage is the truthful outcome, the note records the exact condition under which the package may be treated as ready-enough despite those two ILPIP specs remaining non-runnable in check mode."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T13:47:52.411Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_bound-network-cni-inline-arm-check-gap-20260628_20260628134758",
+        "assigned_at": "2026-06-28T13:47:58.312Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_bound-network-cni-inline-arm-check-gap-20260628",
+        "worker_started_attempt_id": "a_bound-network-cni-inline-arm-check-gap-20260628_20260628134758",
+        "worker_started_at": "2026-06-28T13:48:24.082Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Bounded the network-cni compact ILPIP generated-check gap and wrote a durable archive note concluding the truthful outcome is accepted partial/ready-enough compact coverage, with exact evidence for the two failing specs, current runtime limitation, and future app/runtime follow-up surfaces.",
+        "last_worker_completed_at": "2026-06-28T13:50:50.935Z",
+        "last_worker_evidence": [
+          "evidence/archive/network-cni-inline-arm-check-gap-boundary-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T13:53:11.248Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/network-cni-inline-arm-check-gap-boundary-20260628.md truthfully bounds the remaining network-cni compact gap to spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack, confirms generated check mode now statically validates then skips them because runner/vitest-runtime/steps.ts lacks live inline ARM dispatch, and supports partial/ready-enough compact coverage rather than full compact executability or package-local exclusion."
+      },
+      "session_id": "s_task_bound-network-cni-inline-arm-check-gap-20260628",
+      "session_history": [
+        "s_task_bound-network-cni-inline-arm-check-gap-20260628"
+      ],
+      "result": "Bounded the network-cni compact ILPIP generated-check gap and wrote a durable archive note concluding the truthful outcome is accepted partial/ready-enough compact coverage, with exact evidence for the two failing specs, current runtime limitation, and future app/runtime follow-up surfaces.",
+      "evidence": [
+        "evidence/archive/network-cni-inline-arm-check-gap-boundary-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T13:53:11.248Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/network-cni-inline-arm-check-gap-boundary-20260628.md truthfully bounds the remaining network-cni compact gap to spec.network-cni.azure-overlay-ilpip and spec.network-cni.azure-overlay-ilpip-dualstack, confirms generated check mode now statically validates then skips them because runner/vitest-runtime/steps.ts lacks live inline ARM dispatch, and supports partial/ready-enough compact coverage rather than full compact executability or package-local exclusion."
+      },
+      "status": "done"
+    }
+  ]
+}

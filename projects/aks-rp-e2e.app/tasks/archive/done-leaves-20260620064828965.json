@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:48:28.965Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace now has the accepted repo-local send-proof repair slice fully reconciled: the four 2026-06-20 response-await proof tasks were reviewed and accepted, and their durable meaning is that App Monitoring row 63, App Routing rows 82/83/84/89/85, CCP admin-group/source-semantics, cloud-provider multiple SLB, go-e2ev3 devinfra, KMS feature-capability gating, and MachinesPreview gating now each have truthful response-await notes that distinguish send-ready-only from proof-of-send/handoff and preserve exact reply-routing back to the existing blocked leaves. Remaining live work in this lane is the external waits themselves plus consolidation of repeated send-ready-only owner/source-holder coordination, not more repo-local proof-repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-response-await-proof-ccp-admin-and-source-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-20 send-proof audit plus the existing CCP ask/handoff packets, materialize or repair the missing response-await proof notes for the CCP admin-group OID wait and the CCP source-semantics wait so both CCP external asks have explicit repo-local send-proof state and exact reply-routing destinations.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-response-await-proof-ccp-admin-and-source-20260620.md"
+      ],
+      "acceptance": [
+        "Creates or repairs evidence/archive/ccp-connected-cluster-proxy-auth-admin-group-oid-response-await-20260619.md and evidence/archive/ccp-connected-cluster-proxy-auth-source-semantics-response-await-20260620.md using only repo-local evidence.",
+        "The admin-group note cites the accepted operator handoff packet and the source-semantics note cites the accepted ask packet, handoff packet, and 2026-06-20 send-proof audit; each note states truthfully whether the current state is send-ready-only, handed off with proof, or still awaiting explicit handoff proof.",
+        "Both notes preserve one exact resume condition and route any returned proof/value back into the existing blocked execute/feature leaves without cloud execution or reopening broader CCP rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:external-response-await-proof-ccp"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:44:53.437Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-response-await-proof-ccp-admin-and-source-20260620_20260620064453",
+        "assigned_at": "2026-06-20T06:44:53.654Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-response-await-proof-ccp-admin-and-source-20260620",
+        "worker_started_attempt_id": "a_external-response-await-proof-ccp-admin-and-source-20260620_20260620064453",
+        "worker_started_at": "2026-06-20T06:45:18.934Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the missing CCP response-await proof notes for admin-group OID and source semantics, plus a task-level repair summary, all grounded in existing repo-local handoff/ask/audit evidence and preserving exact reply-routing destinations.",
+        "last_worker_completed_at": "2026-06-20T06:46:21.300Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:47:09.078Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: task summary plus both CCP response-await notes exist, the admin-group note is truthfully send-ready-only, the source-semantics note is truthfully ask/handoff-ready without proof-of-send, and both preserve the exact resume conditions and routing back to the existing execute/semantics leaves."
+      },
+      "session_id": "s_task_external-response-await-proof-ccp-admin-and-source-20260620",
+      "session_history": [
+        "s_task_external-response-await-proof-ccp-admin-and-source-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:47:09.078Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: task summary plus both CCP response-await notes exist, the admin-group note is truthfully send-ready-only, the source-semantics note is truthfully ask/handoff-ready without proof-of-send, and both preserve the exact resume conditions and routing back to the existing execute/semantics leaves."
+      },
+      "status": "done"
+    }
+  ]
+}

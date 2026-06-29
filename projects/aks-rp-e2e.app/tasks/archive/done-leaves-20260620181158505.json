@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:11:58.505Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 stale watchdog-review-pending wake reconciled: private-cluster-shared-source-truthfulness-repair-20260620 and the cited VM prerelease checkpoint review are already owner-reviewed and accepted, so no review frontier remains from the trigger. The live project frontier is intentionally small and truthful: vm-prerelease-draft-promotion-owner-linkage-repair-20260620 is the single active repo-local next step to repair accepted owner linkage for the 20-file draft-promotion subpartition so bounded domain:checkpoint review can attach those artifacts without reopening the excluded MachinesPreview or seven-file shared-model blocked slices, while focus-vm-prerelease-pipeline-replacement-20260620 preserves the single blocked external-send family external-send-proof-dispatch-family-20260620 as the only human-transport wait. Future wakes should continue the owner-linkage repair, leave the blocked send-proof family unchanged until durable human send/escalation proof or authoritative reply exists, and not recreate duplicate review or blocker leaves from this stale watchdog signal.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-shared-source-truthfulness-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the private-cluster-byo-vnet-privatelink repo-local spec, replay, and model surfaces so they match the mounted-source ceiling established by the audit: shared-source-derived lineage from Scenario_Private_Cluster plus the private-cluster leg of Scenario_PrivateLink_BYO_DNS_Server, with no implication of a standalone handwritten BYO-VNet-only scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/private-cluster-byo-vnet-privatelink.json",
+        "../aks-rp-e2e/replays/private-cluster-byo-vnet-privatelink.ts",
+        "../aks-rp-e2e/specs/index.json",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/evidence/archive/private-cluster-source-coverage-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Branch spec/replay wording and metadata are updated so they explicitly describe private-cluster-byo-vnet-privatelink as shared-source-derived, cite the mounted source ceiling accurately, and stop implying an exact standalone handwritten mounted scenario.",
+        "Model/path-summary entries for the private-cluster-byo-vnet-privatelink scenario/path are reconciled with the mounted-source ceiling and no longer overstate pass/source-direct status beyond the available evidence.",
+        "The evidence artifact is updated to name every repaired repo-local file, preserve accepted inputs/expectation path/adjacent surfaces/unknown edges, and confirm that no cloud mutation was run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-lineage-repair"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:02:16.691Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-shared-source-truthfulness-repair-20260620_20260620180216",
+        "assigned_at": "2026-06-20T18:02:16.741Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-shared-source-truthfulness-repair-20260620",
+        "worker_started_attempt_id": "a_private-cluster-shared-source-truthfulness-repair-20260620_20260620180216",
+        "worker_started_at": "2026-06-20T18:03:07.180Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the private-cluster-byo-vnet-privatelink spec, replay, spec index, model, path summary, and audit artifact so they now truthfully describe shared-source-derived lineage from mounted AKS RP source instead of implying a standalone handwritten BYO-VNet PrivateLink scenario.",
+        "last_worker_completed_at": "2026-06-20T18:09:13.580Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:10:53.194Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the private-cluster shared-source truthfulness repair: the audit artifact and repaired spec/replay/model/path-summary surfaces now consistently describe private-cluster-byo-vnet-privatelink as a repo-local shared-source-derived branch bounded by Scenario_Private_Cluster plus the private-cluster leg of Scenario_PrivateLink_BYO_DNS_Server, with no standalone handwritten mounted BYO-VNet-only scenario implied and no cloud mutation run."
+      },
+      "session_id": "s_task_private-cluster-shared-source-truthfulness-repair-20260620",
+      "session_history": [
+        "s_task_private-cluster-shared-source-truthfulness-repair-20260620"
+      ],
+      "result": "Repaired the private-cluster-byo-vnet-privatelink spec, replay, spec index, model, path summary, and audit artifact so they now truthfully describe shared-source-derived lineage from mounted AKS RP source instead of implying a standalone handwritten BYO-VNet PrivateLink scenario.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:10:53.194Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the private-cluster shared-source truthfulness repair: the audit artifact and repaired spec/replay/model/path-summary surfaces now consistently describe private-cluster-byo-vnet-privatelink as a repo-local shared-source-derived branch bounded by Scenario_Private_Cluster plus the private-cluster leg of Scenario_PrivateLink_BYO_DNS_Server, with no standalone handwritten mounted BYO-VNet-only scenario implied and no cloud mutation run."
+      },
+      "status": "done"
+    }
+  ]
+}

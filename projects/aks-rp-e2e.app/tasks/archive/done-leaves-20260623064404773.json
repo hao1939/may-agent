@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:44:04.773Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completion refill: accepted mounted-source audit progress remains bounded and clear. network-cni-mounted-source-coverage-audit-20260623 is preserved as completed source-backed coverage mapping that narrowed the next exact gap to Scenario_Cilium_Connectivity_K8s_Upgrade_To_Preview, now carried by active successor network-cni-cilium-preview-upgrade-mounted-source-landing-20260623. private-cluster-authorized-service-tags-exact-evidence-gap-map-20260623 remains accepted as the exact execution-evidence ceiling and minimum future same-cluster witness contract. Live frontier stays minimal: continue the active network-cni preview-upgrade landing and secops-fips mounted-source audit in parallel, while keeping the single external-human proof wait unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-coverage-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit mounted AKS RP Go e2ev3 network-cni handwritten scenarios against current repo-local carriers so the project has a bounded network-cni coverage map with one exact next source-backed packet/model slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-coverage-audit-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted network-cni suite/scenario files reviewed under /app/sources/aks-rp/test/e2ev3 plus the current repo-local feature/spec/model carriers checked, and summarizes which mounted network-cni scenarios are already represented versus missing or only coarsely represented.",
+        "The note identifies one bounded next repo-local successor slice (specific file/path/family target) for network-cni coverage closure, or records evidence-backed proof that no narrower next slice is justified yet.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no external-send/escalation work, and no reopening of the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:38:26.042Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-coverage-audit-20260623_20260623063826",
+        "assigned_at": "2026-06-23T06:38:26.099Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-coverage-audit-20260623",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-coverage-audit-20260623_20260623063826",
+        "worker_started_at": "2026-06-23T06:38:45.179Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed a repo-local mounted-source coverage audit for network-cni and wrote `evidence/archive/network-cni-mounted-source-coverage-audit-20260623.md`, identifying exact represented scenarios, coarse/decomposed carriers, and one exact next source-backed slice: `Scenario_Cilium_Connectivity_K8s_Upgrade_To_Preview`.",
+        "last_worker_completed_at": "2026-06-23T06:42:01.140Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:42:54.696Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note evidence/archive/network-cni-mounted-source-coverage-audit-20260623.md cites the exact mounted suite and plan files, maps current repo-local feature/spec/replay/model carriers, classifies exact vs coarse/decomposed coverage, and identifies one bounded next source-backed slice: Scenario_Cilium_Connectivity_K8s_Upgrade_To_Preview."
+      },
+      "session_id": "s_task_network-cni-mounted-source-coverage-audit-20260623",
+      "session_history": [
+        "s_task_network-cni-mounted-source-coverage-audit-20260623"
+      ],
+      "result": "Completed a repo-local mounted-source coverage audit for network-cni and wrote `evidence/archive/network-cni-mounted-source-coverage-audit-20260623.md`, identifying exact represented scenarios, coarse/decomposed carriers, and one exact next source-backed slice: `Scenario_Cilium_Connectivity_K8s_Upgrade_To_Preview`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:42:54.696Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note evidence/archive/network-cni-mounted-source-coverage-audit-20260623.md cites the exact mounted suite and plan files, maps current repo-local feature/spec/replay/model carriers, classifies exact vs coarse/decomposed coverage, and identifies one bounded next source-backed slice: Scenario_Cilium_Connectivity_K8s_Upgrade_To_Preview."
+      },
+      "status": "done"
+    }
+  ]
+}

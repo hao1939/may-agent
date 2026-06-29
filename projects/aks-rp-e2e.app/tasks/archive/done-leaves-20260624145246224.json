@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T14:52:46.224Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 task-completed owner review accepted both storage-csi mounted contract checks as durable repo-local no-cloud knowledge: disk and file resize now each have archive evidence proving their exact mounted source carriers, canonical spec/index/model/view linkage, bounded check commands, and minimal truthful replay/spec repair where needed. Archive those completed storage-csi contract leaves so the visible frontier returns to the same four exact external waits only (aad-rbac managed-v2 row-37 approval return, shared external dispatch-family return, private-cluster auth-service-tags devbox-endpoint return, and serverless schedulerctrl validating-webhook public approval return) until returned proof arrives or the first bounded follow-up window opens on or after 2026-06-26; do not reopen local source/spec/setup work or widen into live execution from this owner pass.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the exact mounted-source/spec/replay/model contract for path.storage-csi-disk-resize, run only the bounded non-mutating check path, and decide whether the current draft verdict text and evidence links remain truthful or need repair.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624.md"
+      ],
+      "acceptance": [
+        "An archive artifact records the exact mounted source carrier, canonical spec/replay/index/model links, the non-mutating check command(s) used, and the observed outcome for the current draft path.",
+        "If the current spec/replay/model/view wording or evidence linkage is inaccurate or incomplete for path.storage-csi-disk-resize, the task lands the minimal repo-local repair and validates it with bun run check; otherwise the artifact explains why no repo change was needed.",
+        "No live execution, no AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, and no widening into adjacent storage-csi resize/clone/xfs paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T14:43:51.244Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624_20260624144351",
+        "assigned_at": "2026-06-24T14:43:51.330Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624_20260624144351",
+        "worker_started_at": "2026-06-24T14:44:19.936Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the storage-csi disk-resize repo-local contract by adding missing source-grounded observed markers in model.json, fixing the dedicated replay test to expect execute gating, and writing the requested archive artifact with exact mounted-source/spec/replay/model/check evidence.",
+        "last_worker_completed_at": "2026-06-24T14:48:22.634Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T14:49:18.593Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact evidence/archive/storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624.md records the exact mounted-source/spec/replay/model/check contract for path.storage-csi-disk-resize, and the task-local diff shows the claimed minimal repairs landed in model/knowledge-map/model.json and replays/storage-csi-disk-resize.test.ts so execute mode now stays truthfully gated instead of falsely passing."
+      },
+      "session_id": "s_task_storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624"
+      ],
+      "result": "Repaired the storage-csi disk-resize repo-local contract by adding missing source-grounded observed markers in model.json, fixing the dedicated replay test to expect execute gating, and writing the requested archive artifact with exact mounted-source/spec/replay/model/check evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T14:49:18.593Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact evidence/archive/storage-csi-disk-resize-mounted-carrier-and-check-contract-20260624.md records the exact mounted-source/spec/replay/model/check contract for path.storage-csi-disk-resize, and the task-local diff shows the claimed minimal repairs landed in model/knowledge-map/model.json and replays/storage-csi-disk-resize.test.ts so execute mode now stays truthfully gated instead of falsely passing."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-resize-mounted-carrier-and-check-contract-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the exact mounted-source/spec/replay/model contract for path.storage-csi-file-resize, run only the bounded non-mutating check path, and decide whether the current draft verdict text and evidence links remain truthful or need repair.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-resize-mounted-carrier-and-check-contract-20260624.md"
+      ],
+      "acceptance": [
+        "An archive artifact records the exact mounted source carrier, canonical spec/replay/index/model links, the non-mutating check command(s) used, and the observed outcome for the current draft path.",
+        "If the current spec/replay/model/view wording or evidence linkage is inaccurate or incomplete for path.storage-csi-file-resize, the task lands the minimal repo-local repair and validates it with bun run check; otherwise the artifact explains why no repo change was needed.",
+        "No live execution, no AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, and no widening into adjacent storage-csi resize/clone/raw-block paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-file-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T14:43:51.287Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T14:47:56.305Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-resize-mounted-carrier-and-check-contract-20260624_20260624144826",
+        "assigned_at": "2026-06-24T14:48:26.245Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-resize-mounted-carrier-and-check-contract-20260624",
+        "worker_started_attempt_id": "a_storage-csi-file-resize-mounted-carrier-and-check-contract-20260624_20260624144826",
+        "worker_started_at": "2026-06-24T14:48:29.383Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the mounted-source/spec/replay/model contract for path.storage-csi-file-resize, wrote a durable archive note, repaired stale resize test/spec wording, and verified the bounded non-mutating check path plus the updated dedicated test.",
+        "last_worker_completed_at": "2026-06-24T14:51:47.491Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T14:52:46.176Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/storage-csi-file-resize-mounted-carrier-and-check-contract-20260624.md captures the exact mounted Azure File resize carrier, canonical spec/index/model/view links, and bounded non-mutating check outcome; repo-local diffs in replays/storage-csi-file-resize.test.ts and specs/storage-csi-file-resize.json match the claimed stale-contract repairs, and the artifact records the dedicated replay check plus repaired test pass. bun run check remains blocked at unrelated repo-wide formatter debt, so no further path.storage-csi-file-resize-specific repair is required from this leaf."
+      },
+      "session_id": "s_task_storage-csi-file-resize-mounted-carrier-and-check-contract-20260624",
+      "session_history": [
+        "s_task_storage-csi-file-resize-mounted-carrier-and-check-contract-20260624"
+      ],
+      "result": "Audited the mounted-source/spec/replay/model contract for path.storage-csi-file-resize, wrote a durable archive note, repaired stale resize test/spec wording, and verified the bounded non-mutating check path plus the updated dedicated test.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T14:52:46.176Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/storage-csi-file-resize-mounted-carrier-and-check-contract-20260624.md captures the exact mounted Azure File resize carrier, canonical spec/index/model/view links, and bounded non-mutating check outcome; repo-local diffs in replays/storage-csi-file-resize.test.ts and specs/storage-csi-file-resize.json match the claimed stale-contract repairs, and the artifact records the dedicated replay check plus repaired test pass. bun run check remains blocked at unrelated repo-wide formatter debt, so no further path.storage-csi-file-resize-specific repair is required from this leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

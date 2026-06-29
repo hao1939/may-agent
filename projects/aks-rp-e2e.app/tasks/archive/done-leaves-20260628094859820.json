@@ -1,0 +1,2378 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:48:59.820Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review accepted four more repaired branch packets: oidc-issuer-default-enabled-signing-key-rotation, planned-maintenance-security-patch-prod-mtc, private-cluster-vnet-integration-update-private-second-hop, and secops-fips-windows now each have exact official citations plus explicit public-boundary/ceiling notes. The trust-gated review slice for these branches is closed; the remaining live feature-reference frontier is the four already-active repair leaves for secops-identity-reset-sp-vm-prerelease, serverless-schedulerctrl-validating-webhook, serverless-virtual-nodes-network-connectivity, and serverless-virtual-nodes-upgrade-survival.",
+  "archived": 34,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-loop-state-sync-under-active-contract-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using evidence/archive/repair-feature-reference-loop-owner-authorized-state-reconciliation-20260628.md as the pre-state witness and under the current truthful contract that pending feature-reference entries still count as active loop backlog, repair the live loop metadata mismatch by clearing archived collector residues still marked running in .state/feature-reference-loop/state.json, recomputing aks-feature-reference-loop workflowProgress to match the repaired state, and archiving exact pre/post proof plus integrity output.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-feature-reference-loop-state-sync-under-active-contract-20260628.md"
+      ],
+      "acceptance": [
+        "Archive exact pre/post counts for .state/feature-reference-loop/state.json and aks-feature-reference-loop context.workflowProgress, naming the repaired running/done/openChildren values.",
+        "Use the archived owner-authorized reconciliation blocker packet as the before-state witness and show which stale archived-running bindings it identified were cleared, or record the exact app-local reason a claimed residue could not be cleared safely.",
+        "The lane remains non-terminal unless pending and running both truly reach zero under current controller semantics; do not relabel the latent 77 pending entries as closed backlog without an explicit tooling/schema change.",
+        "Quote the post-repair app integrity check command and result showing the loop state/tree snapshot is internally consistent."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:31:02.587Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-loop-state-sync-under-active-contract-20260628_20260628093102",
+        "assigned_at": "2026-06-28T09:31:02.638Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-loop-state-sync-under-active-contract-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-loop-state-sync-under-active-contract-20260628_20260628093102",
+        "worker_started_at": "2026-06-28T09:31:21.023Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the feature-reference loop under the active pending-contract by clearing 24 stale archived running bindings in the app loop state, pulsing the supported controller to recompute workflowProgress, and archiving exact pre/post proof plus integrity output in evidence/archive/repair-feature-reference-loop-state-sync-under-active-contract-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:28.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:47:56.329Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after the shared completion-evidence trust gate was resolved: evidence/archive/repair-feature-reference-loop-state-sync-under-active-contract-20260628.md captures exact pre/post counts for .state/feature-reference-loop/state.json and aks-feature-reference-loop workflowProgress, names the 24 stale archived running bindings cleared, quotes the supported controller pulse, and records the truthful post-repair active frontier. The previous blocker was trust-only, so this state-sync repair closes without rerun."
+      },
+      "session_id": "s_task_repair-feature-reference-loop-state-sync-under-active-contract-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-loop-state-sync-under-active-contract-20260628"
+      ],
+      "result": "Repaired the feature-reference loop under the active pending-contract by clearing 24 stale archived running bindings in the app loop state, pulsing the supported controller to recompute workflowProgress, and archiving exact pre/post proof plus integrity output in evidence/archive/repair-feature-reference-loop-state-sync-under-active-contract-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:47:56.329Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after the shared completion-evidence trust gate was resolved: evidence/archive/repair-feature-reference-loop-state-sync-under-active-contract-20260628.md captures exact pre/post counts for .state/feature-reference-loop/state.json and aks-feature-reference-loop workflowProgress, names the 24 stale archived running bindings cleared, quotes the supported controller pulse, and records the truthful post-repair active frontier. The previous blocker was trust-only, so this state-sync repair closes without rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-node-http-proxy",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for node-http-proxy.",
+      "inputs": [
+        "feature:node-http-proxy",
+        "packet:features/node-http-proxy.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-http-proxy"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "node-http-proxy",
+        "packetPath": "features/node-http-proxy.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "node-http-proxy-create",
+          "node-http-proxy-update",
+          "node-http-proxy-trusted-ca"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-node-http-proxy-20260628.md already records exact Learn/spec citations, supported fields, and truthful public boundaries, so the old completion-evidence trust gate is removed without rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.215Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-node-http-proxy_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.464Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-node-http-proxy",
+        "worker_started_attempt_id": "a_collect-feature-reference-node-http-proxy_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.364Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for node-http-proxy: evidence/archive/feature-reference-node-http-proxy-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:14.831Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.536Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-node-http-proxy-20260628.md already records exact Learn/spec citations, supported fields, and truthful public boundaries, so the old completion-evidence trust gate is removed without rerun."
+      },
+      "session_id": "s_task_collect-feature-reference-node-http-proxy",
+      "session_history": [
+        "s_task_collect-feature-reference-node-http-proxy"
+      ],
+      "result": "Collected official feature references for node-http-proxy: evidence/archive/feature-reference-node-http-proxy-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.536Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-node-restriction",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for node-restriction.",
+      "inputs": [
+        "feature:node-restriction",
+        "packet:features/node-restriction.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:node-restriction"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "node-restriction",
+        "packetPath": "features/node-restriction.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "node-restriction-disable-contract",
+          "node-restriction-runtime-default",
+          "node-restriction-tag-only-patch-shape"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-node-restriction-20260628.md plus evidence/archive/node-restriction-public-official-reference-20260628.md land the public boundary and downgrade earlier overclaims, so no rerun is needed."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.223Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-node-restriction_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.487Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-node-restriction",
+        "worker_started_attempt_id": "a_collect-feature-reference-node-restriction_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.009Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for node-restriction: evidence/archive/feature-reference-node-restriction-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:39.439Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.594Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-node-restriction-20260628.md plus evidence/archive/node-restriction-public-official-reference-20260628.md land the public boundary and downgrade earlier overclaims, so no rerun is needed."
+      },
+      "session_id": "s_task_collect-feature-reference-node-restriction",
+      "session_history": [
+        "s_task_collect-feature-reference-node-restriction"
+      ],
+      "result": "Collected official feature references for node-restriction: evidence/archive/feature-reference-node-restriction-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.594Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for oidc-issuer-default-enabled-signing-key-rotation.",
+      "inputs": [
+        "feature:oidc-issuer-default-enabled-signing-key-rotation",
+        "packet:features/oidc-issuer/packets/default-enabled-signing-key-rotation.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:oidc-issuer-default-enabled-signing-key-rotation"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "oidc-issuer-default-enabled-signing-key-rotation",
+        "packetPath": "features/oidc-issuer/packets/default-enabled-signing-key-rotation.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "oidc-issuer",
+        "coveredFeatureIds": [
+          "oidc-issuer-default-enabled-signing-key-rotation"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is cleared, but the wrapper-only archive is replaced by repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260628 for branch-level official citations and public ceiling repair."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.231Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.508Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation",
+        "worker_started_attempt_id": "a_collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.473Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for oidc-issuer-default-enabled-signing-key-rotation: evidence/archive/feature-reference-oidc-issuer-default-enabled-signing-key-rotation-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:37.932Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.508Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is cleared, but the wrapper-only archive is replaced by repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260628 for branch-level official citations and public ceiling repair."
+      },
+      "session_id": "s_task_collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation",
+      "session_history": [
+        "s_task_collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation"
+      ],
+      "result": "Collected official feature references for oidc-issuer-default-enabled-signing-key-rotation: evidence/archive/feature-reference-oidc-issuer-default-enabled-signing-key-rotation-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.508Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for planned-maintenance-autoupgrade-scheduling-timing.",
+      "inputs": [
+        "feature:planned-maintenance-autoupgrade-scheduling-timing",
+        "packet:features/planned-maintenance/packets/autoupgrade-scheduling-timing-resolved.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:planned-maintenance-autoupgrade-scheduling-timing"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "planned-maintenance-autoupgrade-scheduling-timing",
+        "packetPath": "features/planned-maintenance/packets/autoupgrade-scheduling-timing-resolved.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "planned-maintenance",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-planned-maintenance-autoupgrade-scheduling-timing-20260628.md plus evidence/archive/public-reference-planned-maintenance-autoupgrade-scheduling-timing-20260626.md already capture official references and the public ceiling."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.239Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.529Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing",
+        "worker_started_attempt_id": "a_collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.663Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for planned-maintenance-autoupgrade-scheduling-timing: evidence/archive/feature-reference-planned-maintenance-autoupgrade-scheduling-timing-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:34.426Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.665Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-planned-maintenance-autoupgrade-scheduling-timing-20260628.md plus evidence/archive/public-reference-planned-maintenance-autoupgrade-scheduling-timing-20260626.md already capture official references and the public ceiling."
+      },
+      "session_id": "s_task_collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing",
+      "session_history": [
+        "s_task_collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing"
+      ],
+      "result": "Collected official feature references for planned-maintenance-autoupgrade-scheduling-timing: evidence/archive/feature-reference-planned-maintenance-autoupgrade-scheduling-timing-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.665Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-planned-maintenance-security-patch-prod-mtc",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for planned-maintenance-security-patch-prod-mtc.",
+      "inputs": [
+        "feature:planned-maintenance-security-patch-prod-mtc",
+        "packet:features/planned-maintenance/packets/security-patch-prod-mtc-fail.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:planned-maintenance-security-patch-prod-mtc"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "planned-maintenance-security-patch-prod-mtc",
+        "packetPath": "features/planned-maintenance/packets/security-patch-prod-mtc-fail.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "planned-maintenance",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is cleared, and content repair now moves to repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-20260628 instead of leaving this review leaf open."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.248Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-planned-maintenance-security-patch-prod-mtc_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.557Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-planned-maintenance-security-patch-prod-mtc",
+        "worker_started_attempt_id": "a_collect-feature-reference-planned-maintenance-security-patch-prod-mtc_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.530Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for planned-maintenance-security-patch-prod-mtc: evidence/archive/feature-reference-planned-maintenance-security-patch-prod-mtc-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:35.426Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.562Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is cleared, and content repair now moves to repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-20260628 instead of leaving this review leaf open."
+      },
+      "session_id": "s_task_collect-feature-reference-planned-maintenance-security-patch-prod-mtc",
+      "session_history": [
+        "s_task_collect-feature-reference-planned-maintenance-security-patch-prod-mtc"
+      ],
+      "result": "Collected official feature references for planned-maintenance-security-patch-prod-mtc: evidence/archive/feature-reference-planned-maintenance-security-patch-prod-mtc-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.562Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-ppg",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for ppg.",
+      "inputs": [
+        "feature:ppg",
+        "packet:features/ppg.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:ppg"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "ppg",
+        "packetPath": "features/ppg.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "ppg"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-ppg-20260628.md plus evidence/archive/ppg-public-official-reference-packet-20260628.md capture the VMSS-only public contract and node-pool scope without trust-gate dependence."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.256Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-ppg_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.579Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-ppg",
+        "worker_started_attempt_id": "a_collect-feature-reference-ppg_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.589Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for ppg: evidence/archive/feature-reference-ppg-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:02.177Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-ppg-20260628.md plus evidence/archive/ppg-public-official-reference-packet-20260628.md capture the VMSS-only public contract and node-pool scope without trust-gate dependence."
+      },
+      "session_id": "s_task_collect-feature-reference-ppg",
+      "session_history": [
+        "s_task_collect-feature-reference-ppg"
+      ],
+      "result": "Collected official feature references for ppg: evidence/archive/feature-reference-ppg-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.729Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-private-cluster-machines-private-cluster-dns-variants",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for private-cluster-machines-private-cluster-dns-variants.",
+      "inputs": [
+        "feature:private-cluster-machines-private-cluster-dns-variants",
+        "packet:features/private-cluster/packets/machines-private-cluster-dns-variants.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-machines-private-cluster-dns-variants"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "private-cluster-machines-private-cluster-dns-variants",
+        "packetPath": "features/private-cluster/packets/machines-private-cluster-dns-variants.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "private-cluster",
+        "coveredFeatureIds": [
+          "private-cluster-privatelink-create",
+          "private-cluster-none-dns-zone-v3",
+          "private-cluster-private-dns-zone",
+          "private-cluster-fqdn-subdomain"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the paired archives evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-20260628.md and evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-public-official-20260628.md already contain the branch-specific public boundary."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.265Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-private-cluster-machines-private-cluster-dns-variants_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.600Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-private-cluster-machines-private-cluster-dns-variants",
+        "worker_started_attempt_id": "a_collect-feature-reference-private-cluster-machines-private-cluster-dns-variants_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.069Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for private-cluster-machines-private-cluster-dns-variants: evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:54.911Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.782Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the paired archives evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-20260628.md and evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-public-official-20260628.md already contain the branch-specific public boundary."
+      },
+      "session_id": "s_task_collect-feature-reference-private-cluster-machines-private-cluster-dns-variants",
+      "session_history": [
+        "s_task_collect-feature-reference-private-cluster-machines-private-cluster-dns-variants"
+      ],
+      "result": "Collected official feature references for private-cluster-machines-private-cluster-dns-variants: evidence/archive/feature-reference-private-cluster-machines-private-cluster-dns-variants-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.782Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-private-cluster-vnet-integration-cni-overlay",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for private-cluster-vnet-integration-cni-overlay.",
+      "inputs": [
+        "feature:private-cluster-vnet-integration-cni-overlay",
+        "packet:features/private-cluster/packets/private-cluster-vnet-integration-cni-overlay.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-cni-overlay"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "private-cluster-vnet-integration-cni-overlay",
+        "packetPath": "features/private-cluster/packets/private-cluster-vnet-integration-cni-overlay.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "private-cluster",
+        "coveredFeatureIds": [
+          "private-cluster-vnet-integration-cni-overlay"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-cni-overlay-20260628.md already names the relevant REST fields and Learn docs while keeping runtime claims bounded."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.275Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-cni-overlay_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.622Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-private-cluster-vnet-integration-cni-overlay",
+        "worker_started_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-cni-overlay_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.762Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for private-cluster-vnet-integration-cni-overlay: evidence/archive/feature-reference-private-cluster-vnet-integration-cni-overlay-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:53.139Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.836Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-cni-overlay-20260628.md already names the relevant REST fields and Learn docs while keeping runtime claims bounded."
+      },
+      "session_id": "s_task_collect-feature-reference-private-cluster-vnet-integration-cni-overlay",
+      "session_history": [
+        "s_task_collect-feature-reference-private-cluster-vnet-integration-cni-overlay"
+      ],
+      "result": "Collected official feature references for private-cluster-vnet-integration-cni-overlay: evidence/archive/feature-reference-private-cluster-vnet-integration-cni-overlay-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.836Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-private-cluster-vnet-integration-shared-subnet",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for private-cluster-vnet-integration-shared-subnet.",
+      "inputs": [
+        "feature:private-cluster-vnet-integration-shared-subnet",
+        "packet:features/private-cluster/packets/private-cluster-vnet-integration-shared-subnet.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-shared-subnet"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "private-cluster-vnet-integration-shared-subnet",
+        "packetPath": "features/private-cluster/packets/private-cluster-vnet-integration-shared-subnet.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "private-cluster",
+        "coveredFeatureIds": [
+          "private-cluster-vnet-integration-shared-subnet"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-shared-subnet-20260628.md plus its public-official companion already land the branch-specific constraints without rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.285Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-shared-subnet_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.645Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-private-cluster-vnet-integration-shared-subnet",
+        "worker_started_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-shared-subnet_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.962Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for private-cluster-vnet-integration-shared-subnet: evidence/archive/feature-reference-private-cluster-vnet-integration-shared-subnet-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:06.239Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.890Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-shared-subnet-20260628.md plus its public-official companion already land the branch-specific constraints without rerun."
+      },
+      "session_id": "s_task_collect-feature-reference-private-cluster-vnet-integration-shared-subnet",
+      "session_history": [
+        "s_task_collect-feature-reference-private-cluster-vnet-integration-shared-subnet"
+      ],
+      "result": "Collected official feature references for private-cluster-vnet-integration-shared-subnet: evidence/archive/feature-reference-private-cluster-vnet-integration-shared-subnet-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.890Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-private-cluster-vnet-integration-update-private",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for private-cluster-vnet-integration-update-private.",
+      "inputs": [
+        "feature:private-cluster-vnet-integration-update-private",
+        "packet:features/private-cluster/packets/update-private.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-update-private"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "private-cluster-vnet-integration-update-private",
+        "packetPath": "features/private-cluster/packets/update-private.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "private-cluster",
+        "coveredFeatureIds": [
+          "private-cluster-vnet-integration-update-private"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-20260628.md already captures CreateOrUpdate fields, one-way/restart behavior, and unproven cleanup assumptions truthfully."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.295Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-update-private_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.668Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private",
+        "worker_started_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-update-private_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.908Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for private-cluster-vnet-integration-update-private: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:35.952Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.941Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-20260628.md already captures CreateOrUpdate fields, one-way/restart behavior, and unproven cleanup assumptions truthfully."
+      },
+      "session_id": "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private",
+      "session_history": [
+        "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private"
+      ],
+      "result": "Collected official feature references for private-cluster-vnet-integration-update-private: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.941Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for private-cluster-vnet-integration-update-private-second-hop.",
+      "inputs": [
+        "feature:private-cluster-vnet-integration-update-private-second-hop",
+        "packet:features/private-cluster/packets/update-private-second-hop.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-update-private-second-hop"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "private-cluster-vnet-integration-update-private-second-hop",
+        "packetPath": "features/private-cluster/packets/update-private-second-hop.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "private-cluster",
+        "coveredFeatureIds": [
+          "private-cluster-vnet-integration-update-private-second-hop"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is removed and the remaining branch-specific second-hop boundary defect is carried by repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-boundary-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.304Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.692Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop",
+        "worker_started_attempt_id": "a_collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.713Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for private-cluster-vnet-integration-update-private-second-hop: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-second-hop-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:11.988Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.615Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is removed and the remaining branch-specific second-hop boundary defect is carried by repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-boundary-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop",
+      "session_history": [
+        "s_task_collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop"
+      ],
+      "result": "Collected official feature references for private-cluster-vnet-integration-update-private-second-hop: evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-second-hop-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.615Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-fips-windows",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-fips-windows.",
+      "inputs": [
+        "feature:secops-fips-windows",
+        "packet:features/secops/packets/fips-windows.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-fips-windows"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-fips-windows",
+        "packetPath": "features/secops/packets/fips-windows.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the wrapper-only FIPS+Windows archive is replaced by repair-feature-reference-secops-fips-windows-public-reference-packet-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.313Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-fips-windows_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.713Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-fips-windows",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-fips-windows_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.608Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-fips-windows: evidence/archive/feature-reference-secops-fips-windows-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:20.830Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.678Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the wrapper-only FIPS+Windows archive is replaced by repair-feature-reference-secops-fips-windows-public-reference-packet-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-fips-windows",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-fips-windows"
+      ],
+      "result": "Collected official feature references for secops-fips-windows: evidence/archive/feature-reference-secops-fips-windows-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.678Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-identity-binding-kubelet-identity",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-identity-binding-kubelet-identity.",
+      "inputs": [
+        "feature:secops-identity-binding-kubelet-identity",
+        "packet:features/secops/packets/identity-binding-kubelet-identity.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-identity-binding-kubelet-identity"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-identity-binding-kubelet-identity",
+        "packetPath": "features/secops/packets/identity-binding-kubelet-identity.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secops-identity-binding-kubelet-identity-20260628.md already contains concrete public refs, supported inputs, and bounded unsupported/internal claims."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.323Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-identity-binding-kubelet-identity_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.733Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-identity-binding-kubelet-identity",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-identity-binding-kubelet-identity_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.525Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-identity-binding-kubelet-identity: evidence/archive/feature-reference-secops-identity-binding-kubelet-identity-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:40.560Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:11.995Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secops-identity-binding-kubelet-identity-20260628.md already contains concrete public refs, supported inputs, and bounded unsupported/internal claims."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-identity-binding-kubelet-identity",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-identity-binding-kubelet-identity"
+      ],
+      "result": "Collected official feature references for secops-identity-binding-kubelet-identity: evidence/archive/feature-reference-secops-identity-binding-kubelet-identity-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:11.995Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-identity-binding-system-assigned",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-identity-binding-system-assigned.",
+      "inputs": [
+        "feature:secops-identity-binding-system-assigned",
+        "packet:features/secops/packets/identity-binding-system-assigned.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-identity-binding-system-assigned"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-identity-binding-system-assigned",
+        "packetPath": "features/secops/packets/identity-binding-system-assigned.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secops-identity-binding-system-assigned-20260628.md already cites stable/preview identity surfaces and marks runtime attachment checks as non-public."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.332Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-identity-binding-system-assigned_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.756Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-identity-binding-system-assigned",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-identity-binding-system-assigned_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:56.066Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-identity-binding-system-assigned: evidence/archive/feature-reference-secops-identity-binding-system-assigned-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:15.290Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.053Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secops-identity-binding-system-assigned-20260628.md already cites stable/preview identity surfaces and marks runtime attachment checks as non-public."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-identity-binding-system-assigned",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-identity-binding-system-assigned"
+      ],
+      "result": "Collected official feature references for secops-identity-binding-system-assigned: evidence/archive/feature-reference-secops-identity-binding-system-assigned-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.053Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-identity-migrate-from-spn-to-msi-vm-prerelease.",
+      "inputs": [
+        "feature:secops-identity-migrate-from-spn-to-msi-vm-prerelease",
+        "packet:features/secops/packets/identity-migrate-from-spn-to-msi-vm-prerelease.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-identity-migrate-from-spn-to-msi-vm-prerelease"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-identity-migrate-from-spn-to-msi-vm-prerelease",
+        "packetPath": "features/secops/packets/identity-migrate-from-spn-to-msi-vm-prerelease.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the main archive plus evidence/archive/feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease-public-official-20260628.md already land the migration public boundary without requiring a rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.341Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.777Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.169Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-identity-migrate-from-spn-to-msi-vm-prerelease: evidence/archive/feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:40.921Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.110Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the main archive plus evidence/archive/feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease-public-official-20260628.md already land the migration public boundary without requiring a rerun."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease"
+      ],
+      "result": "Collected official feature references for secops-identity-migrate-from-spn-to-msi-vm-prerelease: evidence/archive/feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.110Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-identity-reset-sp-vm-prerelease",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-identity-reset-sp-vm-prerelease.",
+      "inputs": [
+        "feature:secops-identity-reset-sp-vm-prerelease",
+        "packet:features/secops/packets/identity-reset-sp-vm-prerelease.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-identity-reset-sp-vm-prerelease"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-identity-reset-sp-vm-prerelease",
+        "packetPath": "features/secops/packets/identity-reset-sp-vm-prerelease.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the remaining reset-service-principal citation gap now lives in repair-feature-reference-secops-identity-reset-sp-vm-prerelease-public-reference-packet-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.351Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-identity-reset-sp-vm-prerelease_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.798Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-identity-reset-sp-vm-prerelease",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-identity-reset-sp-vm-prerelease_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.771Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-identity-reset-sp-vm-prerelease: evidence/archive/feature-reference-secops-identity-reset-sp-vm-prerelease-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:49.000Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.741Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the remaining reset-service-principal citation gap now lives in repair-feature-reference-secops-identity-reset-sp-vm-prerelease-public-reference-packet-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-identity-reset-sp-vm-prerelease",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-identity-reset-sp-vm-prerelease"
+      ],
+      "result": "Collected official feature references for secops-identity-reset-sp-vm-prerelease: evidence/archive/feature-reference-secops-identity-reset-sp-vm-prerelease-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.741Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secops-identity-user-assigned-lifecycle-vm-prerelease.",
+      "inputs": [
+        "feature:secops-identity-user-assigned-lifecycle-vm-prerelease",
+        "packet:features/secops/packets/identity-user-assigned-lifecycle-vm-prerelease.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-identity-user-assigned-lifecycle-vm-prerelease"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secops-identity-user-assigned-lifecycle-vm-prerelease",
+        "packetPath": "features/secops/packets/identity-user-assigned-lifecycle-vm-prerelease.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "secops",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the main archive plus evidence/archive/feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease-public-official-refresh-20260628.md already capture the public stop/start and identity ceiling truthfully."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.361Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.820Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease",
+        "worker_started_attempt_id": "a_collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secops-identity-user-assigned-lifecycle-vm-prerelease: evidence/archive/feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:36:04.515Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.163Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the main archive plus evidence/archive/feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease-public-official-refresh-20260628.md already capture the public stop/start and identity ceiling truthfully."
+      },
+      "session_id": "s_task_collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease",
+      "session_history": [
+        "s_task_collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease"
+      ],
+      "result": "Collected official feature references for secops-identity-user-assigned-lifecycle-vm-prerelease: evidence/archive/feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.163Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-secure-tls-bootstrap",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for secure-tls-bootstrap.",
+      "inputs": [
+        "feature:secure-tls-bootstrap",
+        "packet:features/secure-tls-bootstrap.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secure-tls-bootstrap"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "secure-tls-bootstrap",
+        "packetPath": "features/secure-tls-bootstrap.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "secure-tls-bootstrap-basic-lifecycle",
+          "secure-tls-bootstrap-vnet-integration",
+          "secure-tls-bootstrap-network-isolated",
+          "secure-tls-bootstrap-arm64",
+          "secure-tls-bootstrap",
+          "tlsbootstrap-vm-prerelease-upgrade-matrix"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secure-tls-bootstrap-20260628.md plus evidence/archive/public-secure-tls-bootstrap-official-references-20260628.md already state the indirect public contract and source-only ceiling."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.370Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-secure-tls-bootstrap_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.844Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-secure-tls-bootstrap",
+        "worker_started_attempt_id": "a_collect-feature-reference-secure-tls-bootstrap_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.855Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for secure-tls-bootstrap: evidence/archive/feature-reference-secure-tls-bootstrap-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:42.816Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.222Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-secure-tls-bootstrap-20260628.md plus evidence/archive/public-secure-tls-bootstrap-official-references-20260628.md already state the indirect public contract and source-only ceiling."
+      },
+      "session_id": "s_task_collect-feature-reference-secure-tls-bootstrap",
+      "session_history": [
+        "s_task_collect-feature-reference-secure-tls-bootstrap"
+      ],
+      "result": "Collected official feature references for secure-tls-bootstrap: evidence/archive/feature-reference-secure-tls-bootstrap-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.222Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-security-profile",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for security-profile.",
+      "inputs": [
+        "feature:security-profile",
+        "packet:features/security-profile.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:security-profile"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "security-profile",
+        "packetPath": "features/security-profile.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "security-profile",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-security-profile-20260628.md already separates strong Image Cleaner evidence from weak preview-only Node Restriction support and removes overclaim risk."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.380Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-security-profile_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.865Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-security-profile",
+        "worker_started_attempt_id": "a_collect-feature-reference-security-profile_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.832Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for security-profile: evidence/archive/feature-reference-security-profile-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:18.699Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.278Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-security-profile-20260628.md already separates strong Image Cleaner evidence from weak preview-only Node Restriction support and removes overclaim risk."
+      },
+      "session_id": "s_task_collect-feature-reference-security-profile",
+      "session_history": [
+        "s_task_collect-feature-reference-security-profile"
+      ],
+      "result": "Collected official feature references for security-profile: evidence/archive/feature-reference-security-profile-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.278Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-serverless",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless.",
+      "inputs": [
+        "feature:serverless",
+        "packet:features/serverless.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless",
+        "packetPath": "features/serverless.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "serverless",
+        "coveredFeatureIds": [
+          "serverless-virtual-nodes-enable",
+          "serverless-virtual-nodes-lifecycle",
+          "serverless-virtual-nodes-pod-scheduling",
+          "serverless-virtual-nodes-upgrade-survival",
+          "serverless-virtual-nodes-network-connectivity",
+          "serverless-virtual-nodes-subnet-validation",
+          "serverless-virtual-nodes-reenablement",
+          "serverless-virtual-nodes-multi-pod-burst",
+          "serverless-virtual-nodes-dns-resolution",
+          "serverless-virtual-nodes-dns-resolution-external-from-aci",
+          "serverless-virtual-nodes-virtual-node-addon",
+          "serverless-addonv2-aci-connector",
+          "serverless-addonv2-aci-connector-mounted-vmss-lifecycle",
+          "serverless-virtualnodes-standard"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-serverless-20260628.md plus evidence/archive/serverless-public-official-references-20260628.md already define the root public family boundary and document where public proof stops."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.389Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.893Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.119Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless: evidence/archive/feature-reference-serverless-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:34.676Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.334Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-serverless-20260628.md plus evidence/archive/serverless-public-official-references-20260628.md already define the root public family boundary and document where public proof stops."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless"
+      ],
+      "result": "Collected official feature references for serverless: evidence/archive/feature-reference-serverless-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.334Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-serverless-schedulerctrl-validating-webhook",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless-schedulerctrl-validating-webhook.",
+      "inputs": [
+        "feature:serverless-schedulerctrl-validating-webhook",
+        "packet:features/serverless-schedulerctrl-validating-webhook.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless-schedulerctrl-validating-webhook"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless-schedulerctrl-validating-webhook",
+        "packetPath": "features/serverless-schedulerctrl-validating-webhook.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "serverless-schedulerctrl-validating-webhook-allow-public",
+          "serverless-schedulerctrl-validating-webhook-disallow-public",
+          "serverless-schedulerctrl-validating-webhook-allow-private",
+          "serverless-schedulerctrl-validating-webhook-disallow-private",
+          "serverless-schedulerctrl-validating-webhook-allow-apiserver-vnet-integration-public",
+          "serverless-schedulerctrl-validating-webhook-disallow-apiserver-vnet-integration-public",
+          "serverless-schedulerctrl-validating-webhook-allow-apiserver-vnet-integration-private",
+          "serverless-schedulerctrl-validating-webhook-disallow-apiserver-vnet-integration-private",
+          "serverless-schedulerctrl-validating-webhook"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is removed and the missing branch-level public boundary work is replaced by repair-feature-reference-serverless-schedulerctrl-validating-webhook-public-boundary-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.398Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless-schedulerctrl-validating-webhook_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.914Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless-schedulerctrl-validating-webhook",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless-schedulerctrl-validating-webhook_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.421Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless-schedulerctrl-validating-webhook: evidence/archive/feature-reference-serverless-schedulerctrl-validating-webhook-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:19.471Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.798Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the former trust gate is removed and the missing branch-level public boundary work is replaced by repair-feature-reference-serverless-schedulerctrl-validating-webhook-public-boundary-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless-schedulerctrl-validating-webhook",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless-schedulerctrl-validating-webhook"
+      ],
+      "result": "Collected official feature references for serverless-schedulerctrl-validating-webhook: evidence/archive/feature-reference-serverless-schedulerctrl-validating-webhook-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.798Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-serverless-virtual-nodes-network-connectivity",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless-virtual-nodes-network-connectivity.",
+      "inputs": [
+        "feature:serverless-virtual-nodes-network-connectivity",
+        "packet:features/serverless/packets/network-connectivity.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless-virtual-nodes-network-connectivity"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless-virtual-nodes-network-connectivity",
+        "packetPath": "features/serverless/packets/network-connectivity.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "serverless",
+        "coveredFeatureIds": [
+          "serverless-virtual-nodes-network-connectivity"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and branch-specific public-boundary repair moves to repair-feature-reference-serverless-virtual-nodes-network-connectivity-public-boundary-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.408Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-network-connectivity_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.935Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless-virtual-nodes-network-connectivity",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-network-connectivity_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.263Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless-virtual-nodes-network-connectivity: evidence/archive/feature-reference-serverless-virtual-nodes-network-connectivity-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:18.875Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.859Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and branch-specific public-boundary repair moves to repair-feature-reference-serverless-virtual-nodes-network-connectivity-public-boundary-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless-virtual-nodes-network-connectivity",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless-virtual-nodes-network-connectivity"
+      ],
+      "result": "Collected official feature references for serverless-virtual-nodes-network-connectivity: evidence/archive/feature-reference-serverless-virtual-nodes-network-connectivity-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.859Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-serverless-virtual-nodes-reenablement",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless-virtual-nodes-reenablement.",
+      "inputs": [
+        "feature:serverless-virtual-nodes-reenablement",
+        "packet:features/serverless/packets/reenablement.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless-virtual-nodes-reenablement"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless-virtual-nodes-reenablement",
+        "packetPath": "features/serverless/packets/reenablement.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "serverless",
+        "coveredFeatureIds": [
+          "serverless-virtual-nodes-reenablement"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-serverless-virtual-nodes-reenablement-20260628.md truthfully captures the enable/disable public contract and the unproven restoration-sequence ceiling."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.418Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-reenablement_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.956Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless-virtual-nodes-reenablement",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-reenablement_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:55.215Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless-virtual-nodes-reenablement: evidence/archive/feature-reference-serverless-virtual-nodes-reenablement-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:34:52.112Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.390Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-serverless-virtual-nodes-reenablement-20260628.md truthfully captures the enable/disable public contract and the unproven restoration-sequence ceiling."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless-virtual-nodes-reenablement",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless-virtual-nodes-reenablement"
+      ],
+      "result": "Collected official feature references for serverless-virtual-nodes-reenablement: evidence/archive/feature-reference-serverless-virtual-nodes-reenablement-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.390Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-serverless-virtual-nodes-upgrade-survival",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless-virtual-nodes-upgrade-survival.",
+      "inputs": [
+        "feature:serverless-virtual-nodes-upgrade-survival",
+        "packet:features/serverless/packets/upgrade-survival.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless-virtual-nodes-upgrade-survival"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless-virtual-nodes-upgrade-survival",
+        "packetPath": "features/serverless/packets/upgrade-survival.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "serverless",
+        "coveredFeatureIds": [
+          "serverless-virtual-nodes-upgrade-survival"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the missing explicit upgrade-survival public ceiling is replaced by repair-feature-reference-serverless-virtual-nodes-upgrade-survival-public-ceiling-20260628."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.428Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-upgrade-survival_20260628093335",
+        "assigned_at": "2026-06-28T09:33:35.978Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless-virtual-nodes-upgrade-survival",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless-virtual-nodes-upgrade-survival_20260628093335",
+        "worker_started_at": "2026-06-28T09:33:54.890Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless-virtual-nodes-upgrade-survival: evidence/archive/feature-reference-serverless-virtual-nodes-upgrade-survival-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:38.054Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.913Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive-defect finding from evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: the trust gate is cleared and the missing explicit upgrade-survival public ceiling is replaced by repair-feature-reference-serverless-virtual-nodes-upgrade-survival-public-ceiling-20260628."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless-virtual-nodes-upgrade-survival",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless-virtual-nodes-upgrade-survival"
+      ],
+      "result": "Collected official feature references for serverless-virtual-nodes-upgrade-survival: evidence/archive/feature-reference-serverless-virtual-nodes-upgrade-survival-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.913Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-storage-csi",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for storage-csi.",
+      "inputs": [
+        "feature:storage-csi",
+        "packet:features/storage-csi.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:storage-csi"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "storage-csi",
+        "packetPath": "features/storage-csi.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "storage-csi",
+        "coveredFeatureIds": [
+          "storage-csi-disk-driver-enable",
+          "storage-csi-file-driver-enable",
+          "storage-csi-blob-driver-enable",
+          "storage-csi-snapshot-controller",
+          "storage-csi-disk-driver-disable",
+          "storage-csi-file-driver-disable",
+          "storage-csi-blob-driver-disable",
+          "storage-csi-disk-pvc-dynamic",
+          "storage-csi-file-pvc-dynamic",
+          "storage-csi-volume-snapshot-restore",
+          "storage-csi-disk-v2-driver",
+          "storage-csi-upgrade-survival",
+          "storage-csi-windows-base",
+          "storage-csi-ultrassd",
+          "storage-csi-encryption-at-host",
+          "storage-csi-byok",
+          "storage-csi-byok-ephemeral-os",
+          "storage-csi-full-cache-os-disk",
+          "storage-csi-full-cache-os-disk-negative",
+          "storage-csi-mcr-mirror-monitor",
+          "storage-csi-file-private-endpoint",
+          "storage-csi-file-resize",
+          "storage-csi-file-clone",
+          "storage-csi-file-nfs-unmount-boundary",
+          "storage-csi-disk-resize",
+          "storage-csi-disk-clone",
+          "storage-csi-disk-raw-block",
+          "storage-csi-disk-xfs",
+          "storage-csi-blob-verify-nfs",
+          "storage-csi-blob-fuse2-clone",
+          "storage-csi-csidrivers",
+          "storage-csi-vm-prerelease-linux-matrix",
+          "storage-csi-blob-pvc-dynamic"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-storage-csi-20260628.md already records exact storageProfile public surfaces, defaults, contradictions, and strength judgments."
+      },
+      "trace": {
+        "created_at": "2026-06-28T09:33:35.439Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-storage-csi_20260628093336",
+        "assigned_at": "2026-06-28T09:33:36.000Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-storage-csi",
+        "worker_started_attempt_id": "a_collect-feature-reference-storage-csi_20260628093336",
+        "worker_started_at": "2026-06-28T09:33:55.311Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for storage-csi: evidence/archive/feature-reference-storage-csi-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T09:35:40.582Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T09:46:12.451Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md: evidence/archive/feature-reference-storage-csi-20260628.md already records exact storageProfile public surfaces, defaults, contradictions, and strength judgments."
+      },
+      "session_id": "s_task_collect-feature-reference-storage-csi",
+      "session_history": [
+        "s_task_collect-feature-reference-storage-csi"
+      ],
+      "result": "Collected official feature references for storage-csi: evidence/archive/feature-reference-storage-csi-20260628.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.451Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review the first post-proof archive batch for collect-feature-reference-node-http-proxy, collect-feature-reference-node-restriction, collect-feature-reference-oidc-issuer-default-enabled-signing-key-rotation, collect-feature-reference-ppg, collect-feature-reference-secure-tls-bootstrap, and collect-feature-reference-serverless, using only their existing archive artifacts unless one is missing or contradictory.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "For each of the six named collect-feature-reference-* review leaves, the owner either marks it done with an evidence-backed review summary from the existing archive artifact or replaces it with one concrete content-fix successor naming the defect.",
+        "Does not rerun collectors as a first response; any reopened work names the exact archive defect that prevented acceptance.",
+        "Leaves a clear handoff summary on this batch and ensures none of the six named leaves remain open only because of the former completion-evidence trust gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:40:33.102Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628_20260628094033",
+        "assigned_at": "2026-06-28T09:40:33.154Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628",
+        "worker_started_attempt_id": "a_re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628_20260628094033",
+        "worker_started_at": "2026-06-28T09:40:55.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the full trust-gated feature-reference archive batch and wrote an owner-action packet at evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md. The packet classifies 25 leaves into 17 closable-without-rerun leaves and 8 concrete content-defect successors, clearing the former trust gate truthfully without editing the task tree.",
+        "last_worker_completed_at": "2026-06-28T09:45:27.894Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T09:46:12.968Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md and applied it: 17 trust-gated collect-feature-reference review leaves were closed from existing archives, 8 wrapper-only leaves were replaced by concrete repair successors, and no feature-reference review leaf remains open only because of the former completion-evidence trust gate."
+      },
+      "session_id": "s_task_re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628",
+      "session_history": [
+        "s_task_re-review-feature-reference-trust-gated-archive-batch-after-proof-20260628"
+      ],
+      "result": "Reviewed the full trust-gated feature-reference archive batch and wrote an owner-action packet at evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md. The packet classifies 25 leaves into 17 closable-without-rerun leaves and 8 concrete content-defect successors, clearing the former trust gate truthfully without editing the task tree.",
+      "evidence": [
+        "evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:12.968Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md and applied it: 17 trust-gated collect-feature-reference review leaves were closed from existing archives, 8 wrapper-only leaves were replaced by concrete repair successors, and no feature-reference review leaf remains open only because of the former completion-evidence trust gate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-feature-reference-archive-batch-remainder-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review any remaining collect-feature-reference-* review leaves still held only by the former completion-evidence trust gate after the named foundation, private-cluster, and secops/maintenance batches are addressed, using their existing archive artifacts first.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Covers every remaining trust-gated collect-feature-reference review leaf not already named in the other 2026-06-28 archive-review batches.",
+        "For each remaining leaf, either closes it with an evidence-backed owner summary from the existing archive artifact or replaces it with one concrete content-defect successor naming the exact acceptance failure.",
+        "Leaves the feature-reference lane with no review leaf still open only because of the former completion-evidence propagation trust gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch:remainder"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:45:28.255Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T09:46:13.131Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already covered the remaining trust-gated feature-reference leaves, so this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:13.131Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already covered the remaining trust-gated feature-reference leaves, so this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-feature-reference-archive-batch-secops-and-maintenance-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review the existing archive artifacts for collect-feature-reference-planned-maintenance-autoupgrade-scheduling-timing, collect-feature-reference-planned-maintenance-security-patch-prod-mtc, collect-feature-reference-secops-fips-windows, collect-feature-reference-secops-identity-binding-kubelet-identity, collect-feature-reference-secops-identity-binding-system-assigned, collect-feature-reference-secops-identity-migrate-from-spn-to-msi-vm-prerelease, collect-feature-reference-secops-identity-reset-sp-vm-prerelease, collect-feature-reference-secops-identity-user-assigned-lifecycle-vm-prerelease, and collect-feature-reference-security-profile after the trust gate was resolved.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "For each named maintenance/secops review leaf, either mark it done with an evidence-backed owner summary from the current archive artifact or replace it with one concrete content-defect successor that names the exact missing/overclaimed reference.",
+        "Keeps reruns out of scope unless an artifact is actually missing or self-contradictory.",
+        "Leaves no named maintenance/secops review leaf open only because of the former completion-evidence propagation gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch:secops-maintenance"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:45:28.306Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T09:46:13.076Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already reviewed these secops/maintenance leaves and this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:13.076Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already reviewed these secops/maintenance leaves and this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-feature-reference-archive-batch-private-cluster-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Owner-review the existing archive artifacts for collect-feature-reference-private-cluster-machines-private-cluster-dns-variants, collect-feature-reference-private-cluster-vnet-integration-cni-overlay, collect-feature-reference-private-cluster-vnet-integration-shared-subnet, collect-feature-reference-private-cluster-vnet-integration-update-private, and collect-feature-reference-private-cluster-vnet-integration-update-private-second-hop after the completion-evidence proof was accepted.",
+      "inputs": [],
+      "outputs": [
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "For each named private-cluster collect-feature-reference review leaf, close it with an evidence-backed owner summary from the existing archive artifact or replace it with one concrete content-defect successor naming the missing or contradictory official reference.",
+        "Uses the existing archive artifacts as first-class evidence and does not rerun collectors unless an artifact is actually missing or unusable.",
+        "Removes the former trust-gate reason from this private-cluster review batch so no named leaf stays open only because of completion-evidence propagation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-review-batch:private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:45:28.358Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T09:46:13.022Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already reviewed these private-cluster leaves and this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:46:13.022Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "No separate batch pass needed: the completed owner-action packet evidence/archive/feature-reference-trust-gated-archive-rereview-batch-20260628.md already reviewed these private-cluster leaves and this placeholder backlog branch is superseded by the applied owner review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the archive for oidc-issuer-default-enabled-signing-key-rotation by producing one branch-level feature-reference packet with exact Microsoft Learn and Azure REST citations plus the explicit public ceiling for default-enabled/signing-key-rotation behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-oidc-issuer-default-enabled-signing-key-rotation-20260628.md"
+      ],
+      "acceptance": [
+        "Archive records exact official Learn/spec citations rather than wrapper-only claims and states the branch-level public contract or no-public-proof ceiling.",
+        "Explains how the repair relates to the existing repair note evidence/archive/oidc-issuer-default-enabled-signing-key-rotation-public-contract-repair-20260628.md without overclaiming support.",
+        "Leaves the successor ready for owner review and allows the original trust-gated collect leaf to stay closed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:oidc-issuer-default-enabled-signing-key-rotation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:46:11.079Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260628_20260628094613",
+        "assigned_at": "2026-06-28T09:46:13.238Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260",
+        "worker_started_attempt_id": "a_repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260628_20260628094613",
+        "worker_started_at": "2026-06-28T09:46:35.870Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the repaired branch-level feature reference packet for oidc-issuer default-enabled signing-key rotation with exact Azure REST and Microsoft Learn citations, explicit public-contract ceiling, and linkage back to the prior repair note.",
+        "last_worker_completed_at": "2026-06-28T09:48:28.581Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-oidc-issuer-default-enabled-signing-key-rotation-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T09:48:59.584Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive now contains exact Azure REST and Microsoft Learn citations plus an explicit public-contract ceiling for default-enabled OIDC issuer and signing-key rotation, satisfying the branch repair acceptance."
+      },
+      "session_id": "s_task_repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260",
+      "session_history": [
+        "s_task_repair-feature-reference-oidc-issuer-default-enabled-signing-key-rotation-public-citations-20260"
+      ],
+      "result": "Produced the repaired branch-level feature reference packet for oidc-issuer default-enabled signing-key rotation with exact Azure REST and Microsoft Learn citations, explicit public-contract ceiling, and linkage back to the prior repair note.",
+      "evidence": [
+        "evidence/archive/feature-reference-oidc-issuer-default-enabled-signing-key-rotation-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:48:59.584Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive now contains exact Azure REST and Microsoft Learn citations plus an explicit public-contract ceiling for default-enabled OIDC issuer and signing-key rotation, satisfying the branch repair acceptance."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the archive for planned-maintenance-security-patch-prod-mtc by writing a branch-level packet with exact official API/doc citations, supported inputs, and a truthful public-versus-local boundary for SecurityPatch maintenance behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-planned-maintenance-security-patch-prod-mtc-20260628.md"
+      ],
+      "acceptance": [
+        "Archive records actual Learn/spec citations and feature-specific public constraints instead of wrapper-only text.",
+        "States the exact public ceiling for the branch, including any unproven runtime or live-patch expectations.",
+        "Leaves the successor ready for owner review and allows the original trust-gated collect leaf to stay closed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:planned-maintenance-security-patch-prod-mtc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:46:11.130Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-20260628_20260628094613",
+        "assigned_at": "2026-06-28T09:46:13.184Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-202",
+        "worker_started_attempt_id": "a_repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-20260628_20260628094613",
+        "worker_started_at": "2026-06-28T09:46:35.839Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the planned-maintenance-security-patch-prod-mtc archive packet with exact Microsoft Learn and Azure REST citations, plus an explicit public-vs-local boundary for SecurityPatch maintenance behavior.",
+        "last_worker_completed_at": "2026-06-28T09:47:58.457Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-planned-maintenance-security-patch-prod-mtc-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T09:48:59.645Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive now records exact official REST/Learn citations, supported SecurityPatch inputs, and a truthful public-versus-local boundary for planned-maintenance behavior, satisfying the repair acceptance."
+      },
+      "session_id": "s_task_repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-202",
+      "session_history": [
+        "s_task_repair-feature-reference-planned-maintenance-security-patch-prod-mtc-public-reference-packet-202"
+      ],
+      "result": "Repaired the planned-maintenance-security-patch-prod-mtc archive packet with exact Microsoft Learn and Azure REST citations, plus an explicit public-vs-local boundary for SecurityPatch maintenance behavior.",
+      "evidence": [
+        "evidence/archive/feature-reference-planned-maintenance-security-patch-prod-mtc-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:48:59.645Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive now records exact official REST/Learn citations, supported SecurityPatch inputs, and a truthful public-versus-local boundary for planned-maintenance behavior, satisfying the repair acceptance."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-boundary-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the archive for private-cluster-vnet-integration-update-private-second-hop by adding branch-specific official references or an explicit no-public-proof ceiling for second-hop behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-second-hop-20260628.md"
+      ],
+      "acceptance": [
+        "Archive either cites exact public docs/spec fields relevant to second-hop behavior or explicitly states that reviewed public authorities do not prove the branch-level second-hop contract.",
+        "Distinguishes second-hop-specific truth from the already-accepted update-private archive so the branch is not carried only by sibling evidence.",
+        "Leaves the successor ready for owner review and allows the original trust-gated collect leaf to stay closed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:private-cluster-vnet-integration-update-private-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:46:11.181Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-boundary-20260628_20260628094635",
+        "assigned_at": "2026-06-28T09:46:35.651Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-bound",
+        "worker_started_attempt_id": "a_repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-boundary-20260628_20260628094635",
+        "worker_started_at": "2026-06-28T09:46:37.393Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the private-cluster reverse second-hop feature-reference archive with branch-specific public API/doc references and an explicit public-proof ceiling, so the branch no longer relies only on sibling evidence.",
+        "last_worker_completed_at": "2026-06-28T09:48:07.865Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-second-hop-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T09:48:59.698Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive now carries branch-specific official API/doc references and an explicit preview/public-proof ceiling for the reverse APIVNET second-hop behavior, so the placeholder repair acceptance is met without overclaiming."
+      },
+      "session_id": "s_task_repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-bound",
+      "session_history": [
+        "s_task_repair-feature-reference-private-cluster-vnet-integration-update-private-second-hop-public-bound"
+      ],
+      "result": "Repaired the private-cluster reverse second-hop feature-reference archive with branch-specific public API/doc references and an explicit public-proof ceiling, so the branch no longer relies only on sibling evidence.",
+      "evidence": [
+        "evidence/archive/feature-reference-private-cluster-vnet-integration-update-private-second-hop-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:48:59.698Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive now carries branch-specific official API/doc references and an explicit preview/public-proof ceiling for the reverse APIVNET second-hop behavior, so the placeholder repair acceptance is met without overclaiming."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-feature-reference-secops-fips-windows-public-reference-packet-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the archive for secops-fips-windows by writing a branch-level packet with exact official Learn/spec citations and a truthful public-versus-local boundary for Windows plus FIPS behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-reference-secops-fips-windows-20260628.md"
+      ],
+      "acceptance": [
+        "Archive records explicit official citations and the branch-specific public boundary instead of wrapper-only text.",
+        "Summarizes any public gaps or contradictions between FIPS and Windows expectations without overclaiming support.",
+        "Leaves the successor ready for owner review and allows the original trust-gated collect leaf to stay closed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:secops-fips-windows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T09:46:11.230Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-secops-fips-windows-public-reference-packet-20260628_20260628094635",
+        "assigned_at": "2026-06-28T09:46:35.651Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-secops-fips-windows-public-reference-packet-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-secops-fips-windows-public-reference-packet-20260628_20260628094635",
+        "worker_started_at": "2026-06-28T09:46:37.279Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the secops-fips-windows archive packet at evidence/archive/feature-reference-secops-fips-windows-20260628.md, replacing placeholder sections with exact public spec/Learn citations and a clear public-vs-source boundary for Windows FIPS behavior.",
+        "last_worker_completed_at": "2026-06-28T09:47:56.589Z",
+        "last_worker_evidence": [
+          "evidence/archive/feature-reference-secops-fips-windows-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T09:48:59.759Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive now replaces wrapper-only text with exact stable-spec/Learn citations and a truthful public-versus-local boundary for Windows plus FIPS semantics, including the public gaps that remain source-only."
+      },
+      "session_id": "s_task_repair-feature-reference-secops-fips-windows-public-reference-packet-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-secops-fips-windows-public-reference-packet-20260628"
+      ],
+      "result": "Repaired the secops-fips-windows archive packet at evidence/archive/feature-reference-secops-fips-windows-20260628.md, replacing placeholder sections with exact public spec/Learn citations and a clear public-vs-source boundary for Windows FIPS behavior.",
+      "evidence": [
+        "evidence/archive/feature-reference-secops-fips-windows-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T09:48:59.759Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive now replaces wrapper-only text with exact stable-spec/Learn citations and a truthful public-versus-local boundary for Windows plus FIPS semantics, including the public gaps that remain source-only."
+      },
+      "status": "done"
+    }
+  ]
+}

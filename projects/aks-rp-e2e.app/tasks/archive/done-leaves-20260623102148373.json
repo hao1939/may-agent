@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:21:48.373Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier review: accepted and archived the private-cluster none-dns-zone-v3 execution-readiness packet alongside the earlier auth-service-tags witness-host attestation packet. Repo-local private-cluster source/spec/replay/model closure is now preserved in durable archive evidence; the truthful live frontier is reduced to the single family-level external human/operator proof wait under focus-mounted-source-coverage-closure-and-external-wait-20260623, and stale waiting/conflict notes against the already-done auth-service-tags packet should no longer drive planning.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the next bounded execution-readiness packet for path.private-cluster-none-dns-zone-v3 by consolidating the accepted source/spec/replay/archive evidence into an exact future-run readiness contract: required starting state, trustworthy witnesses, stop conditions, and the precise unknown that still prevents a product verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the existing mounted source, specs, replay contract, and status-reconciliation evidence for path.private-cluster-none-dns-zone-v3 and states the exact starting checkpoint, future witness set, and stop conditions needed for a trustworthy execution attempt.",
+        "The packet preserves the current unknown/model stance unless repo-local evidence proves otherwise, names only the narrowest remaining verification gap for this path, and avoids cloud mutation or reopening completed private-cluster source/spec/model tasks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:17:30.352Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623_20260623102023",
+        "assigned_at": "2026-06-23T10:20:23.611Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623_20260623102023",
+        "worker_started_at": "2026-06-23T10:20:49.500Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable execution-readiness packet for private-cluster none-dns-zone-v3 and verified the existing spec/replay remain exact-lifecycle execute-ready via fresh replay --check and spec-runner --dry-run evidence, with runtime authorization identified as the only remaining prerequisite.",
+        "last_worker_completed_at": "2026-06-23T10:20:49.530Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:21:48.327Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the durable archive packet: it cites the mounted source, exact spec/replay/model carriers, fresh replay --check and spec-runner --dry-run evidence, preserves the path's unknown stance, and narrows the remaining gap to authorized live observation of the same-cluster system->none lifecycle without reopening repo-local carrier work."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-execution-readiness-packet-20260623"
+      ],
+      "result": "Created the durable execution-readiness packet for private-cluster none-dns-zone-v3 and verified the existing spec/replay remain exact-lifecycle execute-ready via fresh replay --check and spec-runner --dry-run evidence, with runtime authorization identified as the only remaining prerequisite.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:21:48.327Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the durable archive packet: it cites the mounted source, exact spec/replay/model carriers, fresh replay --check and spec-runner --dry-run evidence, preserves the path's unknown stance, and narrows the remaining gap to authorized live observation of the same-cluster system->none lifecycle without reopening repo-local carrier work."
+      },
+      "status": "done"
+    }
+  ]
+}

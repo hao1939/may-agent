@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T20:55:53.744Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning reconciled the stale watchdog-review-pending wake without reopening completed work. The accepted VirtualMachine prerelease mounted-source coverage delta is now durable history: it proved the mounted prerelease/checkin rows 52-53 already map to exact LocalDNS-bearing source/spec carriers closely enough to narrow the remaining repo-local question to maintained-surface foregrounding only. The only live local branch is virtualmachine-prerelease-localdns-maintained-surface-exactness-20260624, which must audit whether current model/view/index surfaces visibly foreground those exact VM-prerelease LocalDNS carriers or record the evidence-backed reason the broader generic LocalDNS carriers remain sufficient. Keep the four blocked external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until returned proof arrives or the first owner follow-up window on or after 2026-06-26; do not reopen packet/source/setup work or invent cloud mutation from this stale review event.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-coverage-delta-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source (test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go) plus current repo-local model/spec coverage to produce a bounded coverage-delta artifact: list the prerelease/checkin scenarios already represented, identify any still-unmapped or weakly-mapped scenario/path candidates that can be advanced without cloud mutation, and name the exact next local follow-up per uncovered slice without reopening existing external-wait branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-coverage-delta-20260624.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the mounted source entry files reviewed, enumerates the exact prerelease/checkin scenario coverage state against current model/spec artifacts, and distinguishes already-covered scenarios from unmapped or weakly-mapped candidates.",
+        "For each uncovered or weakly-mapped slice, the artifact names one concrete repo-local next action (for example model/spec/feature packet work) or an evidence-backed reason no new local task is warranted; no cloud mutation, no reopening of the four exact external waits, and no duplicate wait tasks are introduced from this leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease.source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T20:51:24.890Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-delta-20260624_20260624205124",
+        "assigned_at": "2026-06-24T20:51:24.939Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-coverage-delta-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-coverage-delta-20260624_20260624205124",
+        "worker_started_at": "2026-06-24T20:51:49.096Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested coverage-delta artifact at evidence/archive/virtualmachine-prerelease-mounted-source-coverage-delta-20260624.md after reviewing mounted prerelease/checkin source, current coverage ledgers, and existing model/spec artifacts; concluded there are no unmapped prerelease/checkin scenarios and identified only repo-local LocalDNS exactness and optional row-55 discoverability follow-ups.",
+        "last_worker_completed_at": "2026-06-24T20:54:05.607Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T20:54:54.021Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: archive artifact cites mounted prerelease/checkin source, confirms there are no fully unmapped prerelease/checkin scenarios in current repo-local coverage, narrows the only meaningful local follow-up to LocalDNS rows 52-53 maintained-surface exactness, and explicitly preserves the four existing external waits unchanged with no cloud mutation."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-coverage-delta-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-coverage-delta-20260624"
+      ],
+      "result": "Produced the requested coverage-delta artifact at evidence/archive/virtualmachine-prerelease-mounted-source-coverage-delta-20260624.md after reviewing mounted prerelease/checkin source, current coverage ledgers, and existing model/spec artifacts; concluded there are no unmapped prerelease/checkin scenarios and identified only repo-local LocalDNS exactness and optional row-55 discoverability follow-ups.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T20:54:54.021Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: archive artifact cites mounted prerelease/checkin source, confirms there are no fully unmapped prerelease/checkin scenarios in current repo-local coverage, narrows the only meaningful local follow-up to LocalDNS rows 52-53 maintained-surface exactness, and explicitly preserves the four existing external waits unchanged with no cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

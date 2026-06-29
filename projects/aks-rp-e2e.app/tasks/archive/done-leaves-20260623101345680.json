@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:13:45.680Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner rollup: accepted the stale follow-up audit for the shared external-send family. No new authoritative operator reply or transport-proof upgrade exists beyond the already archived approval-dispatch evidence, so the completed follow-up leaf is now represented by branch context and archive evidence. This focus branch should again present only one truthful live residue: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, waiting for returned out-of-runtime human/operator proof or an authoritative response that changes the ask/resume condition. Do not reopen completed repo-local private-cluster or VM/source/spec/model closure from this branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-send-proof-dispatch-family-stale-followup-or-escalation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the already-routed external approval-dispatch family for stale follow-up and produce one durable next-step artifact: either authoritative returned proof, durable follow-up/escalation evidence for the same ask, or a refreshed exact wait note with a concrete next review trigger, without reopening completed VM/private-cluster source/spec/model closure or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-dispatch-family-stale-followup-or-escalation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact existing handoff/wait artifacts reviewed, states whether any authoritative human/operator reply or later transport proof now exists, and records the exact resulting state for the covered ask family (returned proof, renewed follow-up/escalation, or unchanged truthful wait).",
+        "If no new returned proof exists, the note records one precise follow-up owner/path/timestamp expectation or next review trigger for the same already-routed ask; it must not reopen completed mounted-source/spec/replay/model work, create duplicate blocked waits, or authorize cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:10:34.903Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-dispatch-family-stale-followup-or-escalation-20260623_20260623101038",
+        "assigned_at": "2026-06-23T10:10:38.834Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-dispatch-family-stale-followup-or-escalation-20260623",
+        "worker_started_attempt_id": "a_external-send-proof-dispatch-family-stale-followup-or-escalation-20260623_20260623101038",
+        "worker_started_at": "2026-06-23T10:10:53.278Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the shared external send-proof family, confirmed there is still no authoritative reply or later out-of-runtime transport proof beyond the existing approval-dispatch ledger entries, and wrote a durable refreshed wait note at evidence/archive/external-send-proof-dispatch-family-stale-followup-or-escalation-20260623.md with the exact unchanged owner path and event-driven re-review trigger.",
+        "last_worker_completed_at": "2026-06-23T10:12:31.640Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:13:45.632Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable stale-followup audit: it re-checked the exact shared external-send artifacts and runtime ledgers, found no later human/operator reply or transport-proof upgrade, and truthfully preserves the unchanged single family-level external wait with an event-driven re-review trigger only."
+      },
+      "session_id": "s_task_external-send-proof-dispatch-family-stale-followup-or-escalation-20260623",
+      "session_history": [
+        "s_task_external-send-proof-dispatch-family-stale-followup-or-escalation-20260623"
+      ],
+      "result": "Audited the shared external send-proof family, confirmed there is still no authoritative reply or later out-of-runtime transport proof beyond the existing approval-dispatch ledger entries, and wrote a durable refreshed wait note at evidence/archive/external-send-proof-dispatch-family-stale-followup-or-escalation-20260623.md with the exact unchanged owner path and event-driven re-review trigger.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:13:45.632Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable stale-followup audit: it re-checked the exact shared external-send artifacts and runtime ledgers, found no later human/operator reply or transport-proof upgrade, and truthfully preserves the unchanged single family-level external wait with an event-driven re-review trigger only."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:59:09.819Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed owner update accepts the already-landed MultiNIC DualStack maintained model/view branch and compacts stale done siblings whose durable meaning is now carried at the project root. The only remaining repo-local active branch is netintegration-multinic-dualstack-live-execution-packet-20260622, which should finish a send-ready, execute-gated ask packet for path.net-integration.multinic-dualstack without claiming cloud mutation or product verdict. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful blocked family and should resume only on durable human transport proof or authoritative replies, not more local packet/source/setup work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row27-execution-readiness-decision-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide whether VM prerelease row 27 mixed-SKU upgrade should stay repo-local only or advance to an explicit live-execution approval ask, using the accepted evidence/archive/vm-prerelease-row27-mixed-sku-upgrade-live-replay-authoring-20260622.md carrier plus the mounted runner/source caveats to produce a bounded go/no-go decision without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted 2026-06-22 row-27 live-replay-authoring evidence and the mounted runner/source caveats, and states the exact execute gate, auth/subscription preflight expectations, and the CRP ARM VM state mismatch or reimage caveat that governs any live run decision.",
+        "Artifact ends with a concrete owner decision among: keep repo-local only for now, request explicit human live-execution approval, or classify a sharper blocker; it must preserve truthful separation between local carrier readiness and unobserved live product behavior.",
+        "If the decision is to request approval, the artifact names the exact ask packet fields or approval conditions needed next; if the decision is no-go, it records the exact evidence-backed reason and retest trigger."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:52:47.057Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row27-execution-readiness-decision-20260622_20260622055247",
+        "assigned_at": "2026-06-22T05:52:47.108Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row27-execution-readiness-decision-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row27-execution-readiness-decision-20260622_20260622055247",
+        "worker_started_at": "2026-06-22T05:53:18.949Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-27 execution-readiness decision artifact at evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md, concluding the branch is ready for an explicit human live-execution approval ask but not autonomous execution, with exact gate, preflight, and CRP ARM VM state mismatch/reimage caveats documented.",
+        "last_worker_completed_at": "2026-06-22T05:54:53.807Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:55:32.135Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 decision artifact review: evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md cites the accepted row-27 authoring/check/gate carriers, preserves the repo-local-vs-live separation, records the exact execute/preflight and CRP ARM VM state mismatch or reimage caveat, and truthfully concludes the next step is an explicit human approval ask rather than autonomous execution."
+      },
+      "session_id": "s_task_vm-prerelease-row27-execution-readiness-decision-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row27-execution-readiness-decision-20260622"
+      ],
+      "result": "Wrote the row-27 execution-readiness decision artifact at evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md, concluding the branch is ready for an explicit human live-execution approval ask but not autonomous execution, with exact gate, preflight, and CRP ARM VM state mismatch/reimage caveats documented.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:55:32.135Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 decision artifact review: evidence/archive/vm-prerelease-row27-execution-readiness-decision-20260622.md cites the accepted row-27 authoring/check/gate carriers, preserves the repo-local-vs-live separation, records the exact execute/preflight and CRP ARM VM state mismatch or reimage caveat, and truthfully concludes the next step is an explicit human approval ask rather than autonomous execution."
+      },
+      "status": "done"
+    }
+  ]
+}

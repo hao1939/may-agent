@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:47:26.818Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 stale watchdog-review-pending reconciliation: virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624 was already accepted, so archive that completed review leaf into the project rollup instead of reopening duplicate review work. Its durable outcome is that mounted source plus coverage ledger evidence now prove VirtualMachine prerelease rows inherit from CheckIn and narrow the next truthful repo-local/no-cloud slice to the active keda-vm-prerelease-shared-carrier-crosswalk-20260624 task, which should normalize rows 145/146/147 onto their shared maintained carrier while preserving row-local distinctions. Keep runnable backlog empty beyond that active KEDA follow-up because maxConcurrent=1 is already consumed, and preserve the four existing blocked leaves unchanged as the single exact external waits until returned proof arrives or the 2026-06-26 follow-up window opens.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a repo-local mounted-source coverage matrix for the VirtualMachine PreRelease suite inheritance so the project can reopen safe learning work while external waits remain blocked: capture that prerelease.go reuses CheckIn mutators/scenarios, map the currently visible VM prerelease draft/blocked paths from status --gaps into exact shared-carrier vs adjacent-only buckets, and name one next bounded normalization/evidence target without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the mounted VirtualMachine prerelease suite inheritance evidence, including the exact prerelease.go relationship to CheckIn, and explains how that affects interpretation of current VM prerelease draft/blocked paths.",
+        "Artifact maps the currently surfaced VM prerelease gap paths into at least shared-carrier, exact-row-carried, or adjacent-only buckets and names one concrete next repo-local follow-up slice that does not require cloud mutation or external approval."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease.coverage-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:42:18.835Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T07:42:27.328Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624_20260624074227",
+        "assigned_at": "2026-06-24T07:42:27.381Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624_20260624074227",
+        "worker_started_at": "2026-06-24T07:42:52.818Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local archive artifact `evidence/archive/virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624.md`, proving VirtualMachine prerelease suite inheritance from CheckIn and mapping current VM prerelease gap paths into exact-row-carried, shared-carrier, and adjacent-only buckets with one bounded no-cloud follow-up target.",
+        "last_worker_completed_at": "2026-06-24T07:45:50.752Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:46:31.527Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact proves /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go reuses CheckIn mutators/scenarios, buckets surfaced VM prerelease gaps into exact-row-carried/shared-carrier/adjacent-only, and names KEDA rows 145/146/147 shared-carrier normalization as the next bounded no-cloud slice."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624"
+      ],
+      "result": "Produced the requested repo-local archive artifact `evidence/archive/virtualmachine-prerelease-suite-inheritance-coverage-matrix-20260624.md`, proving VirtualMachine prerelease suite inheritance from CheckIn and mapping current VM prerelease gap paths into exact-row-carried, shared-carrier, and adjacent-only buckets with one bounded no-cloud follow-up target.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:46:31.527Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact proves /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go reuses CheckIn mutators/scenarios, buckets surfaced VM prerelease gaps into exact-row-carried/shared-carrier/adjacent-only, and names KEDA rows 145/146/147 shared-carrier normalization as the next bounded no-cloud slice."
+      },
+      "status": "done"
+    }
+  ]
+}

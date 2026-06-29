@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:00:16.397Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier planning pass: no worker review claims needed acceptance, the external-send-proof-dispatch-family-human-transport-proof-wait-20260621 leaf remains the single truthful family-level external-human-transport wait with an exact resume trigger, and vmpr-row34-vmas-to-vms-migration-slb-source-spec-reconcile-20260622 remains intentionally queued behind the active vmpr-rows31-32-auto-zone-model-view-refresh-20260622 virtualmachines task rather than promoted into parallel conflicting work. Archived the remaining safe done VM prerelease leaves because their durable meaning is already preserved in linked evidence and prior owner review. No new parallel refill was added in this wake because the current lane stays one-by-one unless a disjoint repo-local output slice is proven.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row33-accelerated-networking-source-spec-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VM prerelease source to reconcile VM prerelease row 33 (accelerated networking) into a bounded repo-local source/spec/replay readiness packet that states the exact accepted contract, expected assertions, current carriers, and the smallest truthful next move without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-accelerated-networking-source-spec-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source locations under /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or referenced helpers for row 33, restates the concrete accelerated-networking input and verification surfaces, and distinguishes create/update assertions if both appear.",
+        "Artifact compares that source-grounded contract against the current repo-local carriers for path.virtualmachines.accelerated-networking, recording whether existing spec/replay/model wiring is already sufficient or exactly what bounded repo-local delta remains next.",
+        "Artifact records repo-local validation commands with outcomes, performs no cloud mutation, and does not do task-tree edits from worker scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:54:50.573Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-accelerated-networking-source-spec-reconcile-20260622_20260622045450",
+        "assigned_at": "2026-06-22T04:54:50.670Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-accelerated-networking-source-spec-reconcile-20260622",
+        "worker_started_attempt_id": "a_vmpr-row33-accelerated-networking-source-spec-reconcile-20260622_20260622045450",
+        "worker_started_at": "2026-06-22T04:55:08.413Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-33 accelerated-networking reconcile artifact at evidence/archive/vmpr-row33-accelerated-networking-source-spec-reconcile-20260622.md, grounding the exact mounted-source contract, comparing it against current spec/replay/feature/model carriers, and identifying the only remaining repo-local delta as model/path-summary wording sync. Verified the unchanged replay in local check mode and performed no cloud mutation or task-tree edits.",
+        "last_worker_completed_at": "2026-06-22T04:56:59.116Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:57:23.819Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-22: evidence/archive/vmpr-row33-accelerated-networking-source-spec-reconcile-20260622.md satisfies the bounded row-33 packet goal by grounding the exact mounted-source contract, confirming current spec/replay/feature carriers are already sufficient, recording local validation, and limiting the remaining gap to optional maintained model/path-summary wording sync or later execute approval evidence rather than further source/spec reconciliation."
+      },
+      "session_id": "s_task_vmpr-row33-accelerated-networking-source-spec-reconcile-20260622",
+      "session_history": [
+        "s_task_vmpr-row33-accelerated-networking-source-spec-reconcile-20260622"
+      ],
+      "result": "Produced the bounded row-33 accelerated-networking reconcile artifact at evidence/archive/vmpr-row33-accelerated-networking-source-spec-reconcile-20260622.md, grounding the exact mounted-source contract, comparing it against current spec/replay/feature/model carriers, and identifying the only remaining repo-local delta as model/path-summary wording sync. Verified the unchanged replay in local check mode and performed no cloud mutation or task-tree edits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:57:23.819Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-22: evidence/archive/vmpr-row33-accelerated-networking-source-spec-reconcile-20260622.md satisfies the bounded row-33 packet goal by grounding the exact mounted-source contract, confirming current spec/replay/feature carriers are already sufficient, recording local validation, and limiting the remaining gap to optional maintained model/path-summary wording sync or later execute approval evidence rather than further source/spec reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

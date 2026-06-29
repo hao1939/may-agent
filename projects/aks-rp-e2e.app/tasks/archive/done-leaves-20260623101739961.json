@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:17:39.961Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning refresh: accepted and archived private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623 after reviewing its durable archive note and replay source; the path now has an exact probe-specific execute gate plus bounded no-cloud preflight/witness scaffolding, but no live product verdict. The live repo-local frontier should now center on one active auth-service-tags witness-host attestation packet and one queued none-dns-zone-v3 execution-readiness packet, while the single external-send-proof family wait remains the only truthful blocked residue pending returned operator proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the explicit execute gate and bounded preflight/witness scaffolding in replays/private-cluster-vnet-integration-update-public-second-hop.ts for path.private-cluster-vnet-integration-update-public-second-hop, preserving current check-mode validation and keeping this task repo-local only unless a future execute run is separately authorized.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623.md"
+      ],
+      "acceptance": [
+        "The dedicated replay file adds an execute path gated only by --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=private-cluster-vnet-integration-update-public-second-hop, with preflight assumptions, witness expectations, and stop conditions aligned to the accepted second-hop contract, without performing cloud mutation in this task.",
+        "A durable archive note cites the replay changes and the exact post-change check-mode command/result proving replays/private-cluster-vnet-integration-update-public-second-hop.ts still passes bounded repo-local validation, and it names the remaining live-only unknowns without widening into adjacent private-cluster paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:13:45.778Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623_20260623101345",
+        "assigned_at": "2026-06-23T10:13:45.827Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-202",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623_20260623101345",
+        "worker_started_at": "2026-06-23T10:14:09.301Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an explicit execute-gated scaffold in replays/private-cluster-vnet-integration-update-public-second-hop.ts and added a durable archive note documenting the change, the passing post-change check-mode command, and the remaining live-only unknowns.",
+        "last_worker_completed_at": "2026-06-23T10:16:59.820Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:17:30.154Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker result: evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623.md cites the exact gated replay changes, a passing post-change --check run (exit 0 with 14 assertions), and an execute-gate proof that stops before mutation; replays/private-cluster-vnet-integration-update-public-second-hop.ts now enforces the exact probe-specific cloud-mutation gate plus bounded preflight/witness scaffolding required by acceptance."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-202",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-202"
+      ],
+      "result": "Implemented an explicit execute-gated scaffold in replays/private-cluster-vnet-integration-update-public-second-hop.ts and added a durable archive note documenting the change, the passing post-change check-mode command, and the remaining live-only unknowns.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:17:30.154Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker result: evidence/archive/private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623.md cites the exact gated replay changes, a passing post-change --check run (exit 0 with 14 assertions), and an execute-gate proof that stops before mutation; replays/private-cluster-vnet-integration-update-public-second-hop.ts now enforces the exact probe-specific cloud-mutation gate plus bounded preflight/witness scaffolding required by acceptance."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:53:35.659Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner-heartbeat review: no worker review claims are pending, and the frontier remains intentionally non-runnable rather than starved. Keep storage-csi-source-gap-map-batch1-20260621 as the sole active source-workspace regular-learning lane; secops-fips-source-gap-map-batch1-20260621 stays waiting behind that exact source-workspace conflict and should not be started concurrently. Keep vmpr-network-cni-enterprise-separation-batch7-20260621 as the sole active repo-workspace bounded separation pass from evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md, with success defined by regenerated maintained views plus an updated truthful count of whether the VM-only maintained blocker subset shrinks after removing network-cni-cilium-enterprise-addon-lifecycle co-carriage. Preserve external-send-proof-dispatch-family-20260620 as the single truthful external-human transport ceiling for the MachinesPreview registration-state packet and the VM prerelease rows-25-and-50 live-operator bundle; resume that blocker only on durable repo-local send proof, escalation proof, or an authoritative reply. Archive vmpr-privatecluster-separation-batch6-20260621 because its durable meaning is now captured here: the private-cluster maintained material was successfully separated, which narrowed the remaining VM-maintained mixed-carrier blocker to network-cni-cilium-enterprise-addon-lifecycle rather than private-cluster.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-privatecluster-separation-batch6-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use evidence/archive/vmpr-model-row26-separation-batch5-20260621.md as the exact starting point for one bounded model-first repo-workspace separation pass in model/knowledge-map/model.json, removing or relocating only the private-cluster maintained additions that currently co-carry with the target VM maintained checkpoint material in the five-file blocker family; then regenerate the affected maintained views, re-run validator-baseline evidence, and record whether the truthful VM-only maintained blocker subset shrinks without claiming any checkpoint or commit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-model-row26-separation-batch5-20260621.md and the current repo diff, then names exactly which remaining private-cluster model.json hunks were separated or explains with diff evidence why one of those supposedly separable private-cluster hunks could not be isolated cleanly.",
+        "The worker updates model/knowledge-map/model.json only for the private-cluster maintained material identified from the batch5 blocker set, regenerates the affected maintained views (evidence-matrix.json, graph-view.json, path-summary.json, status-summary.json), and records regeneration plus validator-baseline evidence without claiming repo checks pass unless that claim becomes newly true.",
+        "The archive note states whether the five-file maintained blocker family shrank after regeneration, naming the exact remaining mixed carriers or hunks that still prevent a truthful VM-only maintained checkpoint slice and whether any non-VM maintained co-carriage remains beyond private-cluster."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:47:51.276Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-privatecluster-separation-batch6-20260621_20260621044751",
+        "assigned_at": "2026-06-21T04:47:51.343Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-privatecluster-separation-batch6-20260621",
+        "worker_started_attempt_id": "a_vmpr-privatecluster-separation-batch6-20260621_20260621044751",
+        "worker_started_at": "2026-06-21T04:48:07.369Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Removed the batch5 private-cluster maintained sibling family from model/knowledge-map/model.json, regenerated the maintained views, and recorded the updated blocker truth in evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md. The five-file blocker family did not disappear because the remaining mixed carriers now co-carry a different non-VM family: network-cni-cilium-enterprise-addon-lifecycle.",
+        "last_worker_completed_at": "2026-06-21T04:52:13.097Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:52:48.480Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md and repo diff evidence: the worker removed the batch5 private-cluster maintained sibling family from model/knowledge-map/model.json, regenerated the affected maintained views, and truthfully recorded that the five-file VM-maintained checkpoint blocker did not disappear because the remaining mixed carriers now co-carry network-cni-cilium-enterprise-addon-lifecycle rather than the removed private-cluster family."
+      },
+      "session_id": "s_task_vmpr-privatecluster-separation-batch6-20260621",
+      "session_history": [
+        "s_task_vmpr-privatecluster-separation-batch6-20260621"
+      ],
+      "result": "Removed the batch5 private-cluster maintained sibling family from model/knowledge-map/model.json, regenerated the maintained views, and recorded the updated blocker truth in evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md. The five-file blocker family did not disappear because the remaining mixed carriers now co-carry a different non-VM family: network-cni-cilium-enterprise-addon-lifecycle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:52:48.480Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vmpr-privatecluster-separation-batch6-20260621.md and repo diff evidence: the worker removed the batch5 private-cluster maintained sibling family from model/knowledge-map/model.json, regenerated the affected maintained views, and truthfully recorded that the five-file VM-maintained checkpoint blocker did not disappear because the remaining mixed carriers now co-carry network-cni-cilium-enterprise-addon-lifecycle rather than the removed private-cluster family."
+      },
+      "status": "done"
+    }
+  ]
+}

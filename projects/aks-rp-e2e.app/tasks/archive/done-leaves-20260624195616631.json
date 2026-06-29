@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:56:16.631Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 blocked-frontier owner review confirms the only truthful live project branch is focus-mounted-source-coverage-closure-and-external-wait-20260623. The bounded private-cluster-none-dns-zone-v3 mounted-source coverage map is accepted durable history: it proves the exact System→None private DNS zone v3 lifecycle is already source-backed repo-locally and the remaining gap is execution breadth under existing external approval/wait lanes, not a new local spec/model task. Keep the four blocked waits unchanged until returned proof arrives or the first owner follow-up window on or after 2026-06-26; if silence persists, reuse the family-level dispatch wait first for one bounded follow-up or escalation before touching per-path waits. Do not reopen local source/spec/setup/model work or invent cloud mutation from this review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source plus handwritten e2ev3 private-cluster cases to map the exact input path, lifecycle steps, and expected behavior for path.private-cluster-none-dns-zone-v3 without cloud mutation, so the project can decide whether the current unknown model state should become a source-backed spec/model task or a bounded external gap.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the exact mounted-source and handwritten e2ev3 files inspected, quotes the scenario/steps/assertions that correspond to System→None private DNS zone v3 lifecycle behavior, and states the selected input path boundary, expected behavior path, and any adjacent surfaces intentionally excluded.",
+        "The result names the next truthful repo-local successor for path.private-cluster-none-dns-zone-v3: either a concrete source-backed spec/model update task with target files, or an exact blocker/coverage ceiling with evidence showing why no bounded local successor remains; no cloud mutation or approval wait is introduced from this learning leaf alone."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T19:49:28.916Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624_20260624194928",
+        "assigned_at": "2026-06-24T19:49:28.965Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624_20260624194928",
+        "worker_started_at": "2026-06-24T19:49:45.431Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive evidence map for path.private-cluster-none-dns-zone-v3, using mounted AKS RP source plus maintained repo-local carriers to show the exact System→None lifecycle boundary and conclude the remaining gap is an execution ceiling, not a new local spec/model task.",
+        "last_worker_completed_at": "2026-06-24T19:52:37.403Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T19:53:25.052Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624.md proves the exact mounted handwritten source and maintained repo-local spec/replay/model carriers already cover the one-cluster System→None private DNS zone v3 lifecycle; no new repo-local source/spec/model successor is truthful, so the path remains unknown only because accepted live execution breadth is still missing and any future work belongs under the existing external approval/wait family."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624"
+      ],
+      "result": "Produced the requested archive evidence map for path.private-cluster-none-dns-zone-v3, using mounted AKS RP source plus maintained repo-local carriers to show the exact System→None lifecycle boundary and conclude the remaining gap is an execution ceiling, not a new local spec/model task.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T19:53:25.052Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-map-20260624.md proves the exact mounted handwritten source and maintained repo-local spec/replay/model carriers already cover the one-cluster System→None private DNS zone v3 lifecycle; no new repo-local source/spec/model successor is truthful, so the path remains unknown only because accepted live execution breadth is still missing and any future work belongs under the existing external approval/wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

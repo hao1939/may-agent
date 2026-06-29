@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:54:15.687Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease repo-local frontier follow-through is now absorbed through source-order row 51 / maintained row 50: the accepted CAS StatefulSet frontier-proof packet preserves exact row-numbering truth, cites mounted prerelease/checkin adjacency, and proves dedicated row-50 canonical carriers already cover that branch without new model/spec/replay authoring or cloud execution. The single shared external-human-transport family remains the only truthful blocked wait, unchanged until fresh proof arrives or the 2026-06-22 re-review threshold is crossed. The live regular-learning frontier remains the active source-order row 52 / maintained row 51 CAS long-unregistered-nodes evidence-reuse packet, and the next backlog follow-up should continue from whatever exact adjacent VM prerelease sibling or source-backed stop line that packet proves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/evidence-feedback lane: produce a bounded source-order row-51 CAS StatefulSet frontier-proof packet that ties the exact next adjacent VM prerelease branch after the accepted CAS scale-from-zero taints CriticalAddonsOnly frontier packet to its already-landed canonical repo-local carriers by source/evidence reuse only, without reopening CAS model/spec/replay authoring or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing the exact mounted checkin/prerelease source-order adjacency for source-order row 51 and the CAS StatefulSet plan, with exact row-numbering truth preserved (source-order row 51 versus maintained pipeline numbering if different).",
+        "Reuse and cite the existing canonical CAS StatefulSet feature/spec/replay/model/evidence carriers to prove no new CAS model/spec/replay authoring is needed, and explicitly bound this task to evidence/alias reuse only.",
+        "Name the next truthful follow-up boundary after this packet (the exact adjacent sibling or a source-backed stop line), while making no model/knowledge-map edits and no cloud mutation claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:49:37.151Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621_20260621194937",
+        "assigned_at": "2026-06-21T19:49:37.199Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621_20260621194937",
+        "worker_started_at": "2026-06-21T19:50:03.158Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded frontier-proof evidence packet at evidence/archive/vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621.md, proving source-order row 51 vs maintained pipeline row 50 adjacency for CAS StatefulSet and reusing existing canonical carriers without model/spec/replay/cloud changes.",
+        "last_worker_completed_at": "2026-06-21T19:52:41.240Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:53:15.415Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621.md satisfies the bounded frontier-proof acceptance by proving source-order row 51 vs maintained pipeline row 50 CAS StatefulSet adjacency from mounted source, reusing existing canonical path/spec/replay/coverage carriers only, and naming source-order row 52 / maintained pipeline row 51 CAS long-unregistered nodes as the next truthful boundary without model/spec/replay/cloud changes."
+      },
+      "session_id": "s_task_vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621"
+      ],
+      "result": "Produced the bounded frontier-proof evidence packet at evidence/archive/vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621.md, proving source-order row 51 vs maintained pipeline row 50 adjacency for CAS StatefulSet and reusing existing canonical carriers without model/spec/replay/cloud changes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:53:15.415Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-post-row50-row51-cas-stateful-set-frontier-proof-20260621.md satisfies the bounded frontier-proof acceptance by proving source-order row 51 vs maintained pipeline row 50 CAS StatefulSet adjacency from mounted source, reusing existing canonical path/spec/replay/coverage carriers only, and naming source-order row 52 / maintained pipeline row 51 CAS long-unregistered nodes as the next truthful boundary without model/spec/replay/cloud changes."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:44:57.416Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review: the single external human-transport family wait remains truthful and unchanged because no new send/handoff/reply proof has arrived beyond the accepted 2026-06-21/2026-06-22 audit artifacts. Live repo-local execution should stay focused on the two active disjoint leaves: row54 managedsystem maintained-surface landing, which gates SGX rows57-59 through the shared model-knowledge-map-maintained-surface conflict, and row26 spec maxSurge input-variable repair in its own scope. SGX rows57-59 remain correct as waiting backlog rather than duplicate blocker leaves; spare concurrency is intentionally underfilled until row54 clears or a truly independent repo-local leaf is added.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the mounted-source-backed request/expectation boundary packet for VM prerelease row 26 capacity-based-surge-maxunavailable so evidence/archive truthfully captures the exact scenario contract, source anchors, adjacent carriers, and next repo-local replay/model work without touching the maintained-surface branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP source anchors for the row-26 scenario (starting from prerelease.go/checkin.go and any referenced helpers) and records the accepted inputs, rejected/forbidden inputs, ordered lifecycle steps, expected surge/maxUnavailable behavior, adjacent surfaces, and unknown edges for path.virtualmachines.capacity-based-surge-maxunavailable.",
+        "Artifact names the current exact spec/replay/model carriers or missing carriers for the row-26 path and ends with one bounded repo-local next-action recommendation that does not depend on cloud execution or human transport.",
+        "Task stays repo-local and non-mutating: no az/kubectl execute, no human-send ask, and no edits to the shared maintained-surface row54/rows57-59 branch while that conflict scope is active."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row26-source-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:41:41.299Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622_20260622064141",
+        "assigned_at": "2026-06-22T06:41:41.350Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622",
+        "worker_started_attempt_id": "a_vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622_20260622064141",
+        "worker_started_at": "2026-06-22T06:42:05.858Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-26 mounted-source boundary packet at evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622.md, grounding the exact source anchors, request/expectation boundaries, current carriers, adjacent surfaces, unknown edges, and one bounded repo-local next action.",
+        "last_worker_completed_at": "2026-06-22T06:43:29.697Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:43:59.156Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622.md provides mounted-source-backed row-26 boundaries, exact carrier inventory, and a concrete repo-local next step; acceptance satisfied without touching the maintained-surface branch."
+      },
+      "session_id": "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622",
+      "session_history": [
+        "s_task_vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622"
+      ],
+      "result": "Created the requested row-26 mounted-source boundary packet at evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622.md, grounding the exact source anchors, request/expectation boundaries, current carriers, adjacent surfaces, unknown edges, and one bounded repo-local next action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:43:59.156Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row26-capacity-based-surge-maxunavailable-source-packet-20260622.md provides mounted-source-backed row-26 boundaries, exact carrier inventory, and a concrete repo-local next step; acceptance satisfied without touching the maintained-surface branch."
+      },
+      "status": "done"
+    }
+  ]
+}

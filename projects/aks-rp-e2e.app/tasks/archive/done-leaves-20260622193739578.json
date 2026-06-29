@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:37:39.578Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the KSCR row-9 execute-gated replay authoring as completed repo-local groundwork: the authoring leaf is now archived because its durable meaning is already carried by the remaining active maintained-model landing task, which owns the row-9 carrier/spec/model reconciliation and the explicit no-cloud-verdict execute gate. The stale private-cluster watchdog review pointer remains a bookkeeping artifact only; path.private-cluster-none-dns-zone-v3 stays unknown, no duplicate blocked wait is created, and the single family-level external-human wait remains the only blocked sibling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "kscr-row9-execute-gated-replay-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Upgrade the row-9 KSCR rotation matrix replay from source/check-only into an execute-capable gated replay that preserves the mounted-source kubelet-serving-certificate rotation contract without performing cloud execution in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kscr-row9-execute-gated-replay-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Replay code and archive evidence cite the exact mounted row-9 source/plan anchors, preserve the kubelet-serving CSR approval plus enabled-pool and opted-out-pool certificate rotation expectations, and document the execute gate for later bounded live verification without claiming a cloud verdict.",
+        "The task stays repo-local and non-mutating: no cloud run is executed, no duplicate external-human wait is created, and canonical feature/spec/path/replay references for row 9 remain consistent."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime-container-kscr-row9"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:24:08.346Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kscr-row9-execute-gated-replay-authoring-20260622_20260622192408",
+        "assigned_at": "2026-06-22T19:24:08.399Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kscr-row9-execute-gated-replay-authoring-20260622",
+        "worker_started_attempt_id": "a_kscr-row9-execute-gated-replay-authoring-20260622_20260622192408",
+        "worker_started_at": "2026-06-22T19:24:28.642Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Upgraded row-9 KSCR replay authoring into an execute-capable gated replay, added canonical mutationGate metadata in the spec/index carriers, and wrote durable archive evidence plus check/gated proof artifacts without any cloud execution.",
+        "last_worker_completed_at": "2026-06-22T19:35:50.871Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:36:10.082Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker result: archive evidence shows the row-9 KSCR replay is now execute-capable but still gate-protected, cites exact mounted source anchors, preserves kubelet-serving CSR plus enabled-versus-opted-out certificate expectations, records matching mutationGate metadata in spec/index carriers, and proves both check-mode success and gated execute refusal without any cloud mutation."
+      },
+      "session_id": "s_task_kscr-row9-execute-gated-replay-authoring-20260622",
+      "session_history": [
+        "s_task_kscr-row9-execute-gated-replay-authoring-20260622"
+      ],
+      "result": "Upgraded row-9 KSCR replay authoring into an execute-capable gated replay, added canonical mutationGate metadata in the spec/index carriers, and wrote durable archive evidence plus check/gated proof artifacts without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:36:10.082Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker result: archive evidence shows the row-9 KSCR replay is now execute-capable but still gate-protected, cites exact mounted source anchors, preserves kubelet-serving CSR plus enabled-versus-opted-out certificate expectations, records matching mutationGate metadata in spec/index carriers, and proves both check-mode success and gated execute refusal without any cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

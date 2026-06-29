@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:53:12.495Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review accepted the VM prerelease/checkin mounted-source matrix: the archive note proves rows 35-38 are now canonically source-linked to maintained repo-local feature/spec/replay/model carriers, with row 38 already live-verified and row 37 remaining execution/environment-blocked only. That leaves virtualmachines-manual-scale-policy-mounted-source-linkage-repair-20260623 as the single active repo-local closure leaf, while external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the one truthful family-level blocked wait until returned proof arrives or the first owner blocked-frontier review after 2026-06-26. Optional future queue-hygiene cleanup may remove stale row-36 wait-family prose, but no new wait, cloud execution, or duplicate source-holder work is justified from this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a durable mounted-source coverage matrix for the VirtualMachine prerelease/checkin branch set using the accepted row-37 linkage and the current maintained manual-scale-policy carriers so the project has one archive-canonical inventory of source scenarios, maintained feature/spec/replay/model carriers, and the next exact repo-local closure candidates without reopening cloud execution or the external-human wait. If the manual-scale-policy linkage repair has not landed yet, treat that row as an explicit remaining closure candidate rather than waiting on it.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive matrix enumerates the mounted VirtualMachine prerelease/checkin scenarios relevant to the current focus slice, cites the exact source files/carriers, and maps each row to the current maintained feature/spec/replay/model anchors or an explicit source-equivalent gap.",
+        "The matrix names the exact remaining repo-local closure candidates or states that the current focus slice is fully linked apart from the existing family-level external wait, and it does not reopen cloud execution, packet rediscovery, or duplicate blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-mounted-source-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:47:47.986Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-23T16:49:51.496Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623_20260623164951",
+        "worker_started_at": "2026-06-23T16:49:54.524Z",
+        "stale_active_requeued_at": "2026-06-23T16:48:55.432Z",
+        "stale_active_requeue_reason": "Owner sequencing repair: goal explicitly says this matrix is built after the manual-scale-policy and row-37 linkage repairs, so returning it to backlog makes the frontier truthful and avoids parallel work against incomplete carriers.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623_20260623164750",
+        "promoted_at": "2026-06-23T16:49:00.970Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623_20260623164951",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive-canonical mounted-source matrix at evidence/archive/virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623.md, enumerating the current VM prerelease/checkin row-35/36/37/38 carriers, their maintained feature/spec/replay/model anchors, and the exact remaining repo-local closure candidates (manual-scale-policy canonicalization plus optional stale row-36 wait-family prose cleanup).",
+        "last_worker_completed_at": "2026-06-23T16:52:22.386Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:53:12.445Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623.md satisfies both acceptance clauses by citing the exact mounted prerelease/checkin source carriers for VM rows 35-38, mapping each row to maintained feature/spec/replay/model anchors, and naming the only remaining repo-local closure candidate as manual-scale-policy canonicalization (with optional row-36 stale wait-family prose cleanup only). No cloud execution or duplicate blocked waits were reopened."
+      },
+      "session_id": "s_task_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623",
+      "session_history": [
+        "s_task_virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623"
+      ],
+      "result": "Produced the requested archive-canonical mounted-source matrix at evidence/archive/virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623.md, enumerating the current VM prerelease/checkin row-35/36/37/38 carriers, their maintained feature/spec/replay/model anchors, and the exact remaining repo-local closure candidates (manual-scale-policy canonicalization plus optional stale row-36 wait-family prose cleanup).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:53:12.445Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/virtualmachines-prerelease-mounted-source-feature-matrix-canonicalization-20260623.md satisfies both acceptance clauses by citing the exact mounted prerelease/checkin source carriers for VM rows 35-38, mapping each row to maintained feature/spec/replay/model anchors, and naming the only remaining repo-local closure candidate as manual-scale-policy canonicalization (with optional row-36 stale wait-family prose cleanup only). No cloud execution or duplicate blocked waits were reopened."
+      },
+      "status": "done"
+    }
+  ]
+}

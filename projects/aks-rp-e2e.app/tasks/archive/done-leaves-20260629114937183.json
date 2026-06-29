@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:49:37.183Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the Windows 2022 prod MTC non-live verdict: run 28369488135 excluded spec.ccp-security-patch.windows2022-prod-mtc from execution, current mounted e2ev3 CCP source has no Scenario_SecurityPatch_Prod_Windows2022, and the checked-in replay still lacks a Windows 2022 pool plus the real MTC/patch lifecycle operations. That review is now archived, and repair-spec-ccp-security-patch-windows2022-live-contract-20260629 carries the concrete repo-local next step to realign source grounding, feature-packet claims, and replay/runner expectations before any future verifier can imply live coverage. Other active verifier/retry leaves remain unchanged, while the blocked human/operator family is still truthfully represented by its two checkpoint-governed waits outside this lane.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review workflow run 28369488135 for spec.ccp-security-patch.windows2022-prod-mtc, confirm whether the single-spec runner produced only a skipped/non-live classification or truthful terminal coverage, and decide the next repo-local action before trusting the current auto-accepted terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-ccp-security-patch-windows2022-single-spec-nonlive-review-20260629.md"
+      ],
+      "acceptance": [
+        "Run 28369488135 result.json, summary, and steps are reviewed and the exact skip/non-live or terminal classification reason is quoted.",
+        "Mounted or checked-in source/spec/replay artifacts are consulted enough to classify whether this path is truly source/check-only, requires an existing/shared-cluster carrier, or instead exposes a replay/runner completeness gap.",
+        "A durable review note records the classification, evidence refs, and the next truthful action (model/spec update, bounded follow-up leaf, or terminal non-live verdict), and the task tree no longer relies only on the auto-accepted verifier summary for this spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-security-patch.windows2022-prod-mtc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T11:44:12.185Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629_20260629114422",
+        "assigned_at": "2026-06-29T11:44:22.534Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629_20260629114422",
+        "worker_started_at": "2026-06-29T11:44:45.674Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed workflow run 28369488135 plus mounted source/spec/replay artifacts and wrote a durable verdict note showing spec.ccp-security-patch.windows2022-prod-mtc was only skipped/non-live, with overstated source grounding and incomplete replay wiring rather than truthful terminal coverage.",
+        "last_worker_completed_at": "2026-06-29T11:47:32.024Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-ccp-security-patch-windows2022-single-spec-nonlive-review-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T11:49:37.063Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/spec-ccp-security-patch-windows2022-single-spec-nonlive-review-20260629.md: workflow run 28369488135 only skipped/excluded spec.ccp-security-patch.windows2022-prod-mtc, mounted e2ev3 source lacks Scenario_SecurityPatch_Prod_Windows2022, and the checked-in replay does not even create a Windows 2022 pool or patch lifecycle, so the auto-terminal verifier result is not truthful coverage."
+      },
+      "session_id": "s_task_reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-ccp-security-patch-windows2022-prod-mtc-single-spec-nonlive-verdict-20260629"
+      ],
+      "result": "Reviewed workflow run 28369488135 plus mounted source/spec/replay artifacts and wrote a durable verdict note showing spec.ccp-security-patch.windows2022-prod-mtc was only skipped/non-live, with overstated source grounding and incomplete replay wiring rather than truthful terminal coverage.",
+      "evidence": [
+        "evidence/archive/spec-ccp-security-patch-windows2022-single-spec-nonlive-review-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T11:49:37.063Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/spec-ccp-security-patch-windows2022-single-spec-nonlive-review-20260629.md: workflow run 28369488135 only skipped/excluded spec.ccp-security-patch.windows2022-prod-mtc, mounted e2ev3 source lacks Scenario_SecurityPatch_Prod_Windows2022, and the checked-in replay does not even create a Windows 2022 pool or patch lifecycle, so the auto-terminal verifier result is not truthful coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

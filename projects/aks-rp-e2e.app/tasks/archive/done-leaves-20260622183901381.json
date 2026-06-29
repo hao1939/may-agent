@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:39:01.381Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 planner blocked-frontier review keeps one truthful external-human-transport family wait only, leaves the active exact-child private-cluster BYO DNS topology user-review packet in flight, and adds a repo-local follow-up leaf to reconcile the stale broader-vs-exact model-path warning once the current same-scope packet completes. Archived children capture the ManagedSystem worked-example boundary map plus completed private-cluster execute-surface/run-plan packets; remaining useful work is the exact-child packet, the queued exact-child model/path reconciliation, and the single shared human proof wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-root-feature-create-time-status-alignment-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the root ManagedSystem feature packet with the already-maintained create-time truth by changing the create-time sibling metadata in features/managedsystem-pool.yaml from stale fail-environment-gated wording to the current product-gap / product-gap-sku-defaulting classification already supported by the create-time packet, spec, path-summary view, and accepted evidence, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-root-feature-create-time-status-alignment-20260622.md"
+      ],
+      "acceptance": [
+        "features/managedsystem-pool.yaml no longer labels the create-time ManagedSystem sibling as fail-environment-gated and instead matches the maintained product-gap / product-gap-sku-defaulting diagnosis used by features/managedsystem-pool/create-time-initial-pool.yaml, specs/managedsystem-create-time-initial-pool.json, and model/knowledge-map/views/path-summary.json.",
+        "The archive note cites the exact changed lines and local validation/check evidence, or records one exact repo-local blocker if the alignment cannot be made without contradicting other maintained carriers; no cloud execution or duplicate external wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-pool-boundary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:34:10.407Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-root-feature-create-time-status-alignment-20260622_20260622183410",
+        "assigned_at": "2026-06-22T18:34:10.458Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-root-feature-create-time-status-alignment-20260622",
+        "worker_started_attempt_id": "a_managedsystem-root-feature-create-time-status-alignment-20260622_20260622183410",
+        "worker_started_at": "2026-06-22T18:34:35.482Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned the ManagedSystem root feature create-time sibling metadata in features/managedsystem-pool.yaml from stale fail-environment-gated wording to the current product-gap / product-gap-sku-defaulting classification, and wrote an archive note documenting exact changed lines and repo-local validation evidence.",
+        "last_worker_completed_at": "2026-06-22T18:35:42.441Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:36:37.249Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note cites the exact root-feature line change in features/managedsystem-pool.yaml, aligns the stale create-time sibling from fail-environment-gated to the maintained product-gap / product-gap-sku-defaulting diagnosis, and the repo-local grep evidence confirms the feature/spec/view carriers now agree without introducing cloud execution or a new wait."
+      },
+      "session_id": "s_task_managedsystem-root-feature-create-time-status-alignment-20260622",
+      "session_history": [
+        "s_task_managedsystem-root-feature-create-time-status-alignment-20260622"
+      ],
+      "result": "Aligned the ManagedSystem root feature create-time sibling metadata in features/managedsystem-pool.yaml from stale fail-environment-gated wording to the current product-gap / product-gap-sku-defaulting classification, and wrote an archive note documenting exact changed lines and repo-local validation evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:36:37.249Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note cites the exact root-feature line change in features/managedsystem-pool.yaml, aligns the stale create-time sibling from fail-environment-gated to the maintained product-gap / product-gap-sku-defaulting diagnosis, and the repo-local grep evidence confirms the feature/spec/view carriers now agree without introducing cloud execution or a new wait."
+      },
+      "status": "done"
+    }
+  ]
+}

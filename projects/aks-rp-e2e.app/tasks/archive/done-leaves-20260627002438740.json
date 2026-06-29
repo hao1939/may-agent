@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T00:24:38.740Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog review reconciliation: the requested Swift v1 dual-stack canonical authoring review was not accepted as terminal because the worker output still needed repo-local format/check repair, so the branch now truthfully advances through the already-assigned network-cni-swiftv1-dualstack-basic-datapath-check-format-repair-20260627 leaf. The other active repo-local lane remains virtualmachines-auto-zone-environment-family-model-normalization-20260627, and the only blocked frontier items remain the two already-proven external waits (shared external send-proof family plus private-cluster operator decision wait). Archive the six completed storage/source-coverage/cleanup children because their durable meaning is now represented at the project root and no extra runnable backlog should be invented while these two active repairs are in flight.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Establish the Swift v1 dual-stack canonical landing pattern repo-locally by authoring the basic-datapath family only: add the draft/source-grounded basic-datapath spec, placeholder probe/test files, normalized model records, and attached .windows/.overlake execution variants exactly as proposed, with no cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/network-cni/specs/network-swift-v1-vnetscale-dual-stack-basic-datapath.json"
+      ],
+      "acceptance": [
+        "Add the basic-datapath canonical landing across features/network-cni.yaml, a draft/source-grounded spec, placeholder probe/test files, and normalized model entries for Scenario_VnetScale_DualStack_Basic_Datapath, preserving the mounted Swift v1 + VNetScale + dual-stack + Cilium substrate and metadata.noExecutionCoverageClaim=true.",
+        "Represent Scenario_VnetScale_DualStack_Basic_Datapath_Windows and _Overlake only as attached execution variants of the canonical path/spec, not as separate canonical features or paths, with exact mounted source references and request/expectation delta notes.",
+        "Keep all work repo-local with no cloud mutation, and leave durable evidence in the changed spec/model/test artifacts sufficient for later sibling-family repetition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-swiftv1-dualstack-basic-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:08:37.359Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-27T00:08:51.303Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627",
+        "worker_started_attempt_id": "a_network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627_20260627000851",
+        "worker_started_at": "2026-06-27T00:08:51.741Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the repo-local Swift v1 VNetScale dual-stack basic-datapath canonical landing: added the new source-grounded spec, non-mutating placeholder probe/test, network-cni.yaml canonical + execution-variant entries, model normalization records, and a durable authoring evidence note.",
+        "last_worker_completed_at": "2026-06-27T00:21:45.999Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-27T00:23:34.260Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner review found acceptance not yet met: bun run check currently fails format validation and specifically lists features/network-cni/tests/network-swift-v1-vnetscale-dual-stack-basic-datapath.ts among the unformatted files. The canonical/spec/model/evidence wiring looks structurally correct, but the slice needs a bounded repo-local format/check repair before this authoring task can be accepted.",
+        "review_reject_fresh_session": false,
+        "previous_attempt_id": "a_network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627_20260627000851",
+        "reviewed_at": "2026-06-27T00:23:41.078Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected acceptance because bun run check still fails formatting and specifically lists features/network-cni/tests/network-swift-v1-vnetscale-dual-stack-basic-datapath.ts. Structural canonical/spec/model/evidence wiring is preserved, so this attempt is replaced by the narrower follow-up leaf network-cni-swiftv1-dualstack-basic-datapath-check-format-repair-20260627 for bounded repo-local format/check repair."
+      },
+      "session_id": "s_task_network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627",
+      "session_history": [
+        "s_task_network-cni-swiftv1-dualstack-basic-datapath-canonical-batch1-authoring-20260627"
+      ],
+      "result": "Authored the repo-local Swift v1 VNetScale dual-stack basic-datapath canonical landing: added the new source-grounded spec, non-mutating placeholder probe/test, network-cni.yaml canonical + execution-variant entries, model normalization records, and a durable authoring evidence note.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T00:23:41.078Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review rejected acceptance because bun run check still fails formatting and specifically lists features/network-cni/tests/network-swift-v1-vnetscale-dual-stack-basic-datapath.ts. Structural canonical/spec/model/evidence wiring is preserved, so this attempt is replaced by the narrower follow-up leaf network-cni-swiftv1-dualstack-basic-datapath-check-format-repair-20260627 for bounded repo-local format/check repair."
+      },
+      "status": "done"
+    }
+  ]
+}

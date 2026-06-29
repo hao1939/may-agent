@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:48:44.662Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 blocked-frontier review kept the MachinesPreview preview-registration dependency as one exact external-send wait only: the send-ready packet exists, but no durable human send/handoff proof or authoritative reply has been captured, so machinespreview-external-owner-send-wait-carrier-20260620 remains the single live blocker for the unchanged westus2/local rerun contract. Repo-local progress in this lane is now narrowed to vm-prerelease-rows46-47-52-53-exactness-reconcile-20260620, which should determine whether rows 46, 47, 52, and 53 stay exact VM-prerelease variants or get downgraded to candidate-only/generic-adjacent coverage claims using mounted source plus current coverage artifacts.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-source-suite-inventory-and-gap-map-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the mounted AKS RP VirtualMachine prerelease/checkin Go suites into one source-backed coverage note that maps scenario intent to current project replay/model coverage and identifies the next repo-local non-cloud follow-up after the row-25 operator-gated wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-source-suite-inventory-and-gap-map-20260620.md"
+      ],
+      "acceptance": [
+        "The note cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and lists the relevant scenario or test names reviewed there.",
+        "The note maps each reviewed scenario to current known project coverage status: already modeled/replayed, blocked by the row-25 execute gate, or still missing a source-backed project artifact/spec.",
+        "The note names at least one concrete next repo-local follow-up task or spec candidate that does not require cloud mutation and is distinct from the existing row-25 external operator wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:44:25.002Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-suite-inventory-and-gap-map-20260620_20260620144426",
+        "assigned_at": "2026-06-20T14:44:26.802Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-suite-inventory-and-gap-map-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-source-suite-inventory-and-gap-map-20260620_20260620144426",
+        "worker_started_at": "2026-06-20T14:44:53.095Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new source-backed inventory note at evidence/archive/vm-prerelease-source-suite-inventory-and-gap-map-20260620.md that maps mounted VirtualMachine prerelease/checkin scenarios to current repo-local coverage state, isolates the row-25 execute-gated wait, and proposes the next non-cloud exactness-reconcile follow-up.",
+        "last_worker_completed_at": "2026-06-20T14:47:47.927Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:48:07.279Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-source-suite-inventory-and-gap-map-20260620.md cites the mounted prerelease/checkin suite files, enumerates the reviewed VirtualMachine scenarios, maps each current frontier row to modeled/replayed vs row-25 execute-gated vs missing exact source-backed artifact state, and identifies rows 46/47/52/53 exactness reconciliation as the next repo-local non-cloud follow-up distinct from the row-25 external wait."
+      },
+      "session_id": "s_task_vm-prerelease-source-suite-inventory-and-gap-map-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-source-suite-inventory-and-gap-map-20260620"
+      ],
+      "result": "Created a new source-backed inventory note at evidence/archive/vm-prerelease-source-suite-inventory-and-gap-map-20260620.md that maps mounted VirtualMachine prerelease/checkin scenarios to current repo-local coverage state, isolates the row-25 execute-gated wait, and proposes the next non-cloud exactness-reconcile follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:48:07.279Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-source-suite-inventory-and-gap-map-20260620.md cites the mounted prerelease/checkin suite files, enumerates the reviewed VirtualMachine scenarios, maps each current frontier row to modeled/replayed vs row-25 execute-gated vs missing exact source-backed artifact state, and identifies rows 46/47/52/53 exactness reconciliation as the next repo-local non-cloud follow-up distinct from the row-25 external wait."
+      },
+      "status": "done"
+    }
+  ]
+}

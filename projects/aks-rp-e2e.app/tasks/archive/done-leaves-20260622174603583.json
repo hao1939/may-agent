@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:46:03.583Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier refill review accepted the row-63 repo-local landing repair as durable knowledge: the bounded VM prerelease frontier no longer needs that completed leaf visible. Keep the frontier truthful and minimal with exactly two active repo-local source/spec/model follow-ups—vmpr-cluster-autoscaler-rows46to51-direct-linkage-audit-20260622 and vmpr-row61-core-addon-compatibility-maintained-landing-20260622—plus the single family-level external-human transport wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. No duplicate blocked waits or ungated cloud execution should be introduced while these repo-local carrier audits are in flight.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the row-63 Azure Monitor Metrics repo-local discoverability surface so the current maintained spec/index/replay metadata clearly communicates the corrected Azure Monitor Metrics branch meaning rather than a legacy app-monitoring landing label, without cloud mutation or broad rename churn.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622.md"
+      ],
+      "acceptance": [
+        "The work updates the row-63 maintained carriers in specs/app-monitoring-addonv2-azure-monitor-metrics.json, the matching specs/index.json entry, and replays/app-monitoring-addonv2-azure-monitor-metrics.ts or documents the minimal bounded equivalent if one surface must stay stable, and the archive artifact cites the mounted/prior accepted row-63 source semantics evidence.",
+        "The result stays repo-local metadata/discoverability repair only: no cloud execution, no reopening of row-55 or direct-link closure, no duplicate external-human wait, and no broad generated-surface rename batch beyond the bounded row-63 carrier cluster."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row63-metadata"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:41:39.877Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622_20260622174139",
+        "assigned_at": "2026-06-22T17:41:39.928Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622",
+        "worker_started_attempt_id": "a_vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622_20260622174139",
+        "worker_started_at": "2026-06-22T17:42:01.700Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-63 Azure Monitor Metrics repo-local discoverability surface in the maintained spec, matching specs/index entry, and replay header comments; added an archive artifact documenting the bounded metadata repair and mounted-source evidence basis.",
+        "last_worker_completed_at": "2026-06-22T17:43:28.711Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:44:20.666Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the repo-local row-63 metadata repair: the archive packet documents the bounded discoverability-only scope and grep validation confirms the maintained spec, specs/index entry, and replay header now explicitly present Azure Monitor Metrics as the row-63 branch meaning while keeping the app-monitoring carrier only as a stability route."
+      },
+      "session_id": "s_task_vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622",
+      "session_history": [
+        "s_task_vmpr-row63-azure-monitor-metrics-legacy-landing-metadata-repair-20260622"
+      ],
+      "result": "Repaired the row-63 Azure Monitor Metrics repo-local discoverability surface in the maintained spec, matching specs/index entry, and replay header comments; added an archive artifact documenting the bounded metadata repair and mounted-source evidence basis.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:44:20.666Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the repo-local row-63 metadata repair: the archive packet documents the bounded discoverability-only scope and grep validation confirms the maintained spec, specs/index entry, and replay header now explicitly present Azure Monitor Metrics as the row-63 branch meaning while keeping the app-monitoring carrier only as a stability route."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T08:28:26.486Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 watchdog-review-pending was stale bookkeeping, not missing review work: both serverless retest-signal audits are already accepted and can be archived under the root while preserving their archive evidence and no-rerun closures. Keep serverless-virtual-nodes-witness-contract-source-map-20260625 as the sole active repo-local no-cloud leaf so the next useful work is one bounded source-backed witness tuple map for subnet-validation and multi-pod-burst, and leave the five exact external returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until the first bounded follow-up/escalation window on or after 2026-06-26 or earlier authoritative replies.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded repo-local retest-signal audit for path.serverless-virtual-nodes.multi-pod-burst that states exactly which new source/spec/replay/runtime signals would justify reopening the dedicated 3-pod cloud probe, and which common changes still do not justify a rerun, without performing cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the current model status/next-action posture, the completed multi-pod-burst boundary/closure evidence, and the mounted handwritten/source-equivalent virtual-nodes surfaces, then classifies concrete reopen signals versus non-signals for this exact burst-to-ACI path.",
+        "The artifact names the minimum future proof bundle required before any rerun request is truthful for the exact 3-pod burst carrier, and it does not reopen live execution or duplicate the existing external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.multi-pod-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:22:24.039Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625_20260625082224",
+        "assigned_at": "2026-06-25T08:22:24.091Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625_20260625082224",
+        "worker_started_at": "2026-06-25T08:22:52.764Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded retest-signal audit for path.serverless-virtual-nodes.multi-pod-burst under evidence/archive, classifying exact reopen signals versus non-signals and naming the minimum proof bundle required before any truthful 3-pod rerun request.",
+        "last_worker_completed_at": "2026-06-25T08:25:14.252Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:26:17.625Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625.md satisfies the bounded repo-local audit acceptance by citing the current unknown/source-grounded posture, classifying exact reopen signals versus non-signals, and naming the minimum future proof bundle without reopening cloud execution."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625"
+      ],
+      "result": "Produced the bounded retest-signal audit for path.serverless-virtual-nodes.multi-pod-burst under evidence/archive, classifying exact reopen signals versus non-signals and naming the minimum proof bundle required before any truthful 3-pod rerun request.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T08:26:17.625Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-virtual-nodes-multi-pod-burst-retest-signal-audit-20260625.md satisfies the bounded repo-local audit acceptance by citing the current unknown/source-grounded posture, classifying exact reopen signals versus non-signals, and naming the minimum future proof bundle without reopening cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded repo-local retest-signal audit for path.serverless-virtual-nodes.subnet-validation that states exactly which new source/spec/replay/runtime signals would justify reopening the dedicated subnet-validation cloud probe, and which common changes still do not justify a rerun, without performing cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625.md"
+      ],
+      "acceptance": [
+        "An archive artifact cites the current model status/next-action posture, the accepted subnet-validation boundary/closure evidence, and the mounted handwritten/source-equivalent virtual-nodes surfaces, then classifies concrete reopen signals versus non-signals for this exact delegated-subnet witness path.",
+        "The artifact names the minimum future proof bundle required before any rerun request is truthful for the exact subnet-validation carrier, and it does not reopen live execution or duplicate any existing external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.subnet-validation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:26:17.674Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625_20260625082617",
+        "assigned_at": "2026-06-25T08:26:17.718Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625_20260625082617",
+        "worker_started_at": "2026-06-25T08:26:39.216Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local retest-signal audit at evidence/archive/serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625.md, classifying exact reopen signals vs non-signals for path.serverless-virtual-nodes.subnet-validation without cloud mutation.",
+        "last_worker_completed_at": "2026-06-25T08:26:39.230Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:27:40.866Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625.md cites the current blocked/runtime-surface posture, preserves the delegated-subnet pass vs placement-blocked boundary, classifies concrete reopen signals versus non-signals, and names the minimum future proof bundle without reopening cloud execution or duplicating any external-wait family."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625"
+      ],
+      "result": "Produced the requested repo-local retest-signal audit at evidence/archive/serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625.md, classifying exact reopen signals vs non-signals for path.serverless-virtual-nodes.subnet-validation without cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T08:27:40.866Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-virtual-nodes-subnet-validation-retest-signal-audit-20260625.md cites the current blocked/runtime-surface posture, preserves the delegated-subnet pass vs placement-blocked boundary, classifies concrete reopen signals versus non-signals, and names the minimum future proof bundle without reopening cloud execution or duplicating any external-wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

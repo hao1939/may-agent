@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T11:58:05.096Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning finished the current reconciliation pass by removing newly respawned duplicate verifier leaves and advancing the accepted KMS follow-up into active repo-local work. The spec loop had recreated backlog verifier leaves for cloud-provider multiple-SLB and KMS private-vnet/public-KV immediately after rollup because their underlying specs remain pending, but those reruns are not the next truthful actions: cloud-provider multiple-SLB is still owned by active contract/model reconciliation, and KMS private-vnet/public-KV is now actively owned by repair-kms-v2-private-vnet-integration-public-kv-top-level-blocker-classification-20260629 after the accepted runner-host Azure CLI blocker review. This leaves the frontier with no review leaves and no misleading same-spec verifier backlog from this event; remaining active work is the real next project action until either current repo-local repairs complete or the controller has genuine free capacity for unrelated specs.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-kms-v2-private-vnet-integration-public-kv-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.kms.v2-private-vnet-integration-public-kv-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.kms.v2-private-vnet-integration-public-kv-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-private-vnet-integration-public-kv-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.kms.v2-private-vnet-integration-public-kv-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replaced fresh verifier leaf: the accepted owner review for run 28369874033 proved the next truthful action is repo-local blocker-classification repair, now carried by repair-kms-v2-private-vnet-integration-public-kv-top-level-blocker-classification-20260629, before any rerun of spec.kms.v2-private-vnet-integration-public-kv-lifecycle."
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:57:31.193Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T11:58:04.923Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced fresh verifier leaf: the accepted owner review for run 28369874033 proved the next truthful action is repo-local blocker-classification repair, now carried by repair-kms-v2-private-vnet-integration-public-kv-top-level-blocker-classification-20260629, before any rerun of spec.kms.v2-private-vnet-integration-public-kv-lifecycle."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T11:58:04.923Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cloud-provider-multiple-slb",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cloud-provider.multiple-slb through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cloud-provider.multiple-slb",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.multiple-slb"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cloud-provider.multiple-slb",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Replaced duplicate verifier leaf again after controller refill: active task reconcile-spec-cloud-provider-multiple-slb-contract-and-model-gap-20260629 still owns the same spec's next truthful action, so another waiting verifier leaf would only misstate the runnable frontier."
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:57:31.183Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T11:58:04.985Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced duplicate verifier leaf again after controller refill: active task reconcile-spec-cloud-provider-multiple-slb-contract-and-model-gap-20260629 still owns the same spec's next truthful action, so another waiting verifier leaf would only misstate the runnable frontier."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T11:58:04.985Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

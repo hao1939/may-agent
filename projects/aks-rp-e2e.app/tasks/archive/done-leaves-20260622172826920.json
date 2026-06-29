@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:28:26.920Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review keeps the tree compressed and truthful: the VM prerelease mounted-source metadata repair and the private-cluster mounted-source contract repair are accepted as durable repo-local knowledge already reflected in archive evidence and parent context, so they no longer need to stay as visible done leaves. The live frontier now stays intentionally small: one active repo-local replay truthfulness repair (private-cluster-private-dns-zone-replay-contract-reconcile-20260622) plus one exact family-level external-human wait (external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622). No new blocker family or cloud-execution leaf is needed until the replay repair finishes or later external proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-mounted-source-metadata-path-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair evidence/pipelines/virtualmachine-prerelease.json top-level source authority metadata so sourceSuite, sourcePipeline, and sourceMatrix cite the mounted /app/sources/aks-rp authorities actually used by the maintained VM prerelease knowledge map, and record the exact before/after rationale in archive evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-mounted-source-metadata-path-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Update evidence/pipelines/virtualmachine-prerelease.json so sourceSuite, sourcePipeline, and sourceMatrix no longer point at stale devbox:/home/hayua/... authorities and instead cite the mounted /app/sources/aks-rp paths or the exact mounted-equivalent authority used for the current inventory.",
+        "Create ../aks-rp-e2e/evidence/archive/vmpr-mounted-source-metadata-path-repair-20260622.md quoting the prior stale metadata, the mounted authorities adopted, and why this change closes the repo-local truthfulness gap identified by the accepted virtualmachine prerelease mounted-source frontier packet.",
+        "Do not run cloud mutation, do not reopen the external-human wait family, and do not re-audit already covered rows 25, 33, 40-43, or 50 beyond what is needed to justify the metadata repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-inventory-metadata"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:23:28.960Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-mounted-source-metadata-path-repair-20260622_20260622172329",
+        "assigned_at": "2026-06-22T17:23:29.011Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-mounted-source-metadata-path-repair-20260622",
+        "worker_started_attempt_id": "a_vmpr-mounted-source-metadata-path-repair-20260622_20260622172329",
+        "worker_started_at": "2026-06-22T17:23:59.625Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired stale devbox source authority metadata in evidence/pipelines/virtualmachine-prerelease.json to mounted /app/sources/aks-rp paths and added archive evidence documenting the exact before/after rationale tied to the accepted mounted-source frontier packet.",
+        "last_worker_completed_at": "2026-06-22T17:24:54.179Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:25:26.145Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/pipelines/virtualmachine-prerelease.json now cites mounted /app/sources/aks-rp authorities for sourceSuite/sourcePipeline/sourceMatrix, and evidence/archive/vmpr-mounted-source-metadata-path-repair-20260622.md quotes the exact stale devbox values replaced plus the scope-limited rationale without reopening row audits or external waits."
+      },
+      "session_id": "s_task_vmpr-mounted-source-metadata-path-repair-20260622",
+      "session_history": [
+        "s_task_vmpr-mounted-source-metadata-path-repair-20260622"
+      ],
+      "result": "Repaired stale devbox source authority metadata in evidence/pipelines/virtualmachine-prerelease.json to mounted /app/sources/aks-rp paths and added archive evidence documenting the exact before/after rationale tied to the accepted mounted-source frontier packet.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:25:26.145Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/pipelines/virtualmachine-prerelease.json now cites mounted /app/sources/aks-rp authorities for sourceSuite/sourcePipeline/sourceMatrix, and evidence/archive/vmpr-mounted-source-metadata-path-repair-20260622.md quotes the exact stale devbox values replaced plus the scope-limited rationale without reopening row audits or external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

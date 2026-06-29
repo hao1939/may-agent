@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T23:22:43.147Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner blocked-frontier review keeps the live frontier compressed to one repo-local mounted-source/model linkage task plus three exact external waits. The completed private-cluster-none-dns-zone-v3 mounted-source/model-linkage repair is now durably represented by evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md and the maintained repo-local carriers, so its standalone done leaf can be archived while the remaining frontier stays focused on VM prerelease blocking-PDB source normalization, the single shared external-send family wait, the row-37 approval wait, and the private-cluster auth-service-tags endpoint reply wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert the exact mounted source carrier for path.private-cluster-none-dns-zone-v3 into a maintained repo-local knowledge branch by tracing the authoritative Go e2ev3 scenario/suite slice, then adding or repairing the canonical feature/scenario/input-DAG/feature-path/spec/replay linkage, source refs, and any narrow model/index/view notes needed so this private-cluster DNS-zone lifecycle path stops depending on an underexplained unknown stub.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md"
+      ],
+      "acceptance": [
+        "Repo diff is repo-local only and truthfully links path.private-cluster-none-dns-zone-v3 through explicit mounted-source-backed feature/scenario/input-DAG/feature-path/spec/replay carriers, with any touched model/index/view notes kept narrow to the exact System→None private DNS zone lifecycle boundary and not widened into private-cluster auth-service-tags or sibling DNS-zone paths.",
+        "Archive note records the exact mounted source authority, the maintained carriers touched, the boundary preserved against adjacent private-cluster lifecycle siblings, and the resulting next-step posture as source-grounded draft/verification-ready/terminal classification without claiming cloud execution from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T23:17:34.728Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623_20260623231734",
+        "assigned_at": "2026-06-23T23:17:34.777Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623_20260623231734",
+        "worker_started_at": "2026-06-23T23:17:57.539Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a bounded archive note at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md confirming the exact mounted source authority and that the existing repo-local scenario/feature/DAG/path/spec/replay linkage for path.private-cluster-none-dns-zone-v3 is already complete and narrowly scoped to the System→None V3 lifecycle.",
+        "last_worker_completed_at": "2026-06-23T23:20:13.970Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T23:21:08.319Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md truthfully confirms the mounted-source authority and that the repo-local scenario/feature/DAG/path/spec/replay chain for path.private-cluster-none-dns-zone-v3 was already complete and narrowly scoped; no model promotion or new external wait is justified from this closure."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623"
+      ],
+      "result": "Created a bounded archive note at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md confirming the exact mounted source authority and that the existing repo-local scenario/feature/DAG/path/spec/replay linkage for path.private-cluster-none-dns-zone-v3 is already complete and narrowly scoped to the System→None V3 lifecycle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T23:21:08.319Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-model-linkage-20260623.md truthfully confirms the mounted-source authority and that the repo-local scenario/feature/DAG/path/spec/replay chain for path.private-cluster-none-dns-zone-v3 was already complete and narrowly scoped; no model promotion or new external wait is justified from this closure."
+      },
+      "status": "done"
+    }
+  ]
+}

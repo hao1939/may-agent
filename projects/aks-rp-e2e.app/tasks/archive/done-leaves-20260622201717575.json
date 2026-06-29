@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T20:17:17.575Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "lane-evidence-feedback-model-update",
+  "summary": "2026-06-22 owner review has now accepted the completed VM prerelease reconciliation work under this lane. Row 40 carries durable no-change proof that mounted-source Linux/Windows SSH public-key update scenarios already match maintained feature/spec/replay/model/view carriers exactly. Row 50 carries durable small-change proof that only the dedicated model/view wording needed repair from inherited statefulset-pdb residue to the exact statefulset-cordon-scale branch, with derived views regenerated and status kept unknown/execute-gated. The only live repo-local child that remains in this lane is vmpr-row49-carrier-reconciliation-from-gated-authoring-20260622 for bounded cluster-autoscaler execute-gated surface truthfulness, without cloud mutation or duplicate external waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622",
+      "parent_id": "lane-evidence-feedback-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted VM prerelease row-50 execution-hardening packet to decide whether maintained carrier/model/view surfaces need only small wording cleanup for path.cluster-autoscaler.vm-prerelease-statefulset-cordon-scale, especially any inherited statefulset-pdb wording residue, or record proof that no maintained repo-local change is warranted yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-carrier-reconciliation-20260622.md"
+      ],
+      "acceptance": [
+        "Produce an archive note that cites evidence/archive/vmpr-row50-execution-hardening-packet-20260622.md and records exactly whether maintained carrier/model/view files still contain inherited statefulset-pdb or similarly generic wording that should be tightened to the actual row-50 statefulset-cordon-scale contract, or proves the current maintained wording already matches and no repo-local change is needed.",
+        "If maintained carrier/model/view files are updated, regenerate any required derived views, record touched files plus validation/check evidence in the archive note, and keep the row-50 verdict truthfully unknown/execute-gated without creating cloud mutation or duplicate blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-row50"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T20:10:33.723Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622_20260622201033",
+        "assigned_at": "2026-06-22T20:10:33.777Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622",
+        "worker_started_attempt_id": "a_vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622_20260622201033",
+        "worker_started_at": "2026-06-22T20:10:53.258Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the smallest truthful row-50 model/view wording repair for the VM prerelease StatefulSet cordon/scale branch, regenerated maintained views, and archived the reconciliation note with validation evidence.",
+        "last_worker_completed_at": "2026-06-22T20:15:15.315Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T20:16:08.049Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note proves row 50 only needed a small model/view wording repair from inherited statefulset-pdb residue to the exact statefulset-cordon-scale branch, with derived views regenerated and execute-gated status kept truthful."
+      },
+      "session_id": "s_task_vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622",
+      "session_history": [
+        "s_task_vmpr-row50-carrier-reconciliation-from-hardening-packet-20260622"
+      ],
+      "result": "Applied the smallest truthful row-50 model/view wording repair for the VM prerelease StatefulSet cordon/scale branch, regenerated maintained views, and archived the reconciliation note with validation evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T20:16:08.049Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note proves row 50 only needed a small model/view wording repair from inherited statefulset-pdb residue to the exact statefulset-cordon-scale branch, with derived views regenerated and execute-gated status kept truthful."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T08:01:38.575Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner planning-update confirmed the refreshed addonv2 row-63 D2_v4 rerun is the only live child on this focus branch: the reissued rerun worker session is now actually running, the earlier retry leaf is historical branch evidence only, and the exact bounded Standard_D2_v4 contract plus prior terminal boundary remain preserved in the archived artifact slice while the new reissue carries the next verdict.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-retry-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute one bounded fresh row-63 replay using the accepted Standard_D2_v4 Linux and Windows VM-size overrides so the project has current post-Standard_D4s_v4 evidence for Scenario_Addonv2_Azure_Monitor_Metrics after the prior stale-active recycle, without widening beyond properties.azureMonitorProfile.metrics.enabled plus the existing create/upgrade runtime bundle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-20260621.md",
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-20260621.json"
+      ],
+      "acceptance": [
+        "Replay command uses the accepted bounded row-63 contract and sets AKS_RP_E2E_NODE_VM_SIZE=Standard_D2_v4 plus AKS_RP_E2E_WINDOWS_NODE_VM_SIZE=Standard_D2_v4 with a fresh run id, citing the selection note as the justification for those exact overrides.",
+        "Artifacts capture the exact replay command, effective config/request body, and the first terminal success/failure boundary reached after replacing Standard_D4s_v4 with the evidence-backed Standard_D2_v4 overrides.",
+        "If the rerun is blocked before or during execution, the artifact records the exact blocker/evidence ceiling and whether it supersedes or confirms the prior older D2_v4 row-local replay evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:43:31.623Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:43:44.667Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-retry-20260621_20260621074344",
+        "assigned_at": "2026-06-21T07:43:44.718Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-retry-20260621",
+        "reviewed_at": "2026-06-21T07:46:26.155Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog found the assigned session no longer running and no durable row-63 rerun artifact exists under evidence/archive for the declared outputs, so this stale active attempt is replaced by a fresh reissue leaf rather than inferred complete."
+      },
+      "session_id": "s_task_addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-retry-20260621",
+      "session_history": [
+        "s_task_addonv2-azure-monitor-metrics-row63-d2v4-rerun-refresh-retry-20260621"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-21T07:46:26.155Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog found the assigned session no longer running and no durable row-63 rerun artifact exists under evidence/archive for the declared outputs, so this stale active attempt is replaced by a fresh reissue leaf rather than inferred complete."
+      },
+      "status": "done"
+    }
+  ]
+}

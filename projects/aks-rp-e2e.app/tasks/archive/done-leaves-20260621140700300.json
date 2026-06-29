@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:07:00.300Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 final compaction for this wake preserves the accepted private-cluster exact live-run packet on the parent: the mounted deny-all -> AzureCloud contract is documented, the packet truthfully identified a repo-local --check defect rather than a source gap, and the active follow-up is the dedicated private-cluster check-logic repair leaf. Remaining open work is now cleanly represented by three repo-local active leaves plus the single family-level external transport blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-authorized-service-tags-exact-live-run-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular verification / runner-replays lane: turn the repaired path.private-cluster-vnet-integration-auth-service-tags replay into an exact live execution packet by documenting the concrete replay invocation, required staging/witness prerequisites, expected deny-all -> AzureCloud observations, and the bounded execution gate for a future cloud run, without performing cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-authorized-service-tags-exact-live-run-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Write evidence/archive/private-cluster-authorized-service-tags-exact-live-run-packet-20260621.md that cites the repaired replay/spec/source carriers and captures the exact live run contract: create with authorizedIPRanges=[\"0.0.0.0/32\"], witness blocked access before update, update to [\"AzureCloud\"], witness allowed access after update, with the concrete maintained replay entrypoint/inputs a future executor should use.",
+        "Document the repo-local preflight needed for that exact run (environment variables, staging assets, kube access/witness method, expected command lines or harness entrypoint, and any known prerequisites/limits) and distinguish what is already available locally from what still requires environment readiness, without mutating Azure.",
+        "State a truthful execution-gate verdict for this exact path: either the replay is ready for a future executor with bounded prerequisites, or the artifact records the exact remaining blocker/resume condition; no cloud execution, no external ask redrafting, and no speculative pass claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:03:50.833Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-authorized-service-tags-exact-live-run-packet-20260621_20260621140350",
+        "assigned_at": "2026-06-21T14:03:50.878Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-authorized-service-tags-exact-live-run-packet-20260621",
+        "worker_started_attempt_id": "a_private-cluster-authorized-service-tags-exact-live-run-packet-20260621_20260621140350",
+        "worker_started_at": "2026-06-21T14:04:01.972Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the exact live-run packet for private-cluster authorized service tags under evidence/archive and verified it against mounted source, maintained spec/replay carriers, and a fresh local --check run that truthfully exposed a remaining replay preflight defect.",
+        "last_worker_completed_at": "2026-06-21T14:05:36.009Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:06:38.878Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: evidence/archive/private-cluster-authorized-service-tags-exact-live-run-packet-20260621.md captures the exact deny-all -> AzureCloud live-run contract, documents local prerequisites and witness expectations, and truthfully records that a replay --check defect still blocks execution-readiness."
+      },
+      "session_id": "s_task_private-cluster-authorized-service-tags-exact-live-run-packet-20260621",
+      "session_history": [
+        "s_task_private-cluster-authorized-service-tags-exact-live-run-packet-20260621"
+      ],
+      "result": "Wrote the exact live-run packet for private-cluster authorized service tags under evidence/archive and verified it against mounted source, maintained spec/replay carriers, and a fresh local --check run that truthfully exposed a remaining replay preflight defect.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:06:38.878Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: evidence/archive/private-cluster-authorized-service-tags-exact-live-run-packet-20260621.md captures the exact deny-all -> AzureCloud live-run contract, documents local prerequisites and witness expectations, and truthfully records that a replay --check defect still blocks execution-readiness."
+      },
+      "status": "done"
+    }
+  ]
+}

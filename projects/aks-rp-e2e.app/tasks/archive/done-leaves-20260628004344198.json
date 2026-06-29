@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T00:43:44.198Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review accepts the final orphaned AAD RBAC spec-loop child and restores this lane to a truthful blocked-only frontier. The three AAD RBAC orphaned-review leaves are complete and their durable meaning already lives in accepted archive evidence: managed-v2-lifecycle remains environment-blocked at the VM prerelease row-37 helper-VM SKU ceiling, azure-rbac-authorization remains environment-blocked on the returned external prerequisite proof already carried by the focus branch, and azure-rbac-automatic-sku is terminal because run 28288238773 was accepted as local source-drift and the accepted repair/pass chain already exists. Keep only the two exact App Routing waits visible here: the existing-cluster operator-response family until a returned reply or its recorded owner-review trigger, and run 28298043331 until a truthful terminal workflow/artifact signal appears. Do not invent new cloud execution, duplicate operator asks, or replacement spec-review leaves while those resume signals remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the orphaned spec-loop result for spec.aad-rbac-managed-v2-lifecycle and restore one truthful visible child outcome for this spec: accepted terminal evidence, one exact retry, or one exact wait backed by current captured workflow/artifact state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628.md"
+      ],
+      "acceptance": [
+        "Use current spec-loop/captured evidence for spec.aad-rbac-managed-v2-lifecycle to produce one durable archive note and end with exactly one truthful disposition: accepted terminal status, one concrete retry leaf, or one exact blocked wait with explicit resume signal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac-managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T00:38:47.714Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628_20260628003847",
+        "assigned_at": "2026-06-28T00:38:47.863Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628",
+        "worker_started_attempt_id": "a_review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628_20260628003847",
+        "worker_started_at": "2026-06-28T00:39:37.972Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the orphaned spec-loop state for spec.aad-rbac.managed-v2-lifecycle and wrote a durable archive note concluding that workflow run 28290019089 is the truthful terminal visible child outcome, superseding retry/wait as the current frontier.",
+        "last_worker_completed_at": "2026-06-28T00:41:14.101Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T00:41:41.682Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive review: captured workflow run 28290019089 is the truthful current visible child outcome for spec.aad-rbac.managed-v2-lifecycle because it completed cleanly in westus2, reached row-37 product assertions, and localized the only failed claim to assert.aad.admin-groups-tenant-updated HTTP 409, so no retry/wait is a better frontier."
+      },
+      "session_id": "s_task_review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628",
+      "session_history": [
+        "s_task_review-spec-aad-rbac-managed-v2-lifecycle-orphaned-spec-loop-result-20260628"
+      ],
+      "result": "Reviewed the orphaned spec-loop state for spec.aad-rbac.managed-v2-lifecycle and wrote a durable archive note concluding that workflow run 28290019089 is the truthful terminal visible child outcome, superseding retry/wait as the current frontier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T00:41:41.682Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive review: captured workflow run 28290019089 is the truthful current visible child outcome for spec.aad-rbac.managed-v2-lifecycle because it completed cleanly in westus2, reached row-37 product assertions, and localized the only failed claim to assert.aad.admin-groups-tenant-updated HTTP 409, so no retry/wait is a better frontier."
+      },
+      "status": "done"
+    }
+  ]
+}

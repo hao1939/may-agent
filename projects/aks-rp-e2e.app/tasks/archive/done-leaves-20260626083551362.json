@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T08:35:51.362Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review reconfirmed the tree should stay compressed to one truthful external-human wait only. Accepted repo-local addonv2 private-cluster core-addons tightening work is already summarized in project context/evidence, and no new runnable local source/spec/model/replay work emerged from this wake. Remaining live work stays under focus-mounted-source-coverage-closure-and-external-wait-20260623 and resumes only on returned human/operator proof or new steering.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-private-cluster-coreaddons-spec-input-tighten-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Tighten the dedicated spec summary for path.private-cluster-addonv2.coreaddons-privatecluster so the spec explicitly carries the sixth private-access boundary input (jumpbox/tunnel required when created) and still matches the existing source packet/model/replay contract without widening scope or opening cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/private-cluster-addonv2-coreaddons-privatecluster.json"
+      ],
+      "acceptance": [
+        "specs/private-cluster-addonv2-coreaddons-privatecluster.json explicitly names the sixth input boundary privateAccess.jumpboxOrTunnel=required-when-created alongside the existing private-cluster, private-kubeconfig, Azure CNI, Azure network policy, and addonv2 core-addons inputs.",
+        "A repo-local check or equivalent maintained-surface validation confirms the dedicated spec/replay/path family still coheres after the edit, and the task records any evidence artifact updated or produced without reopening cloud mutation or broader addonv2 work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-knowledge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T08:26:52.315Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-private-cluster-coreaddons-spec-input-tighten-20260626_20260626082652",
+        "assigned_at": "2026-06-26T08:26:52.365Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-private-cluster-coreaddons-spec-input-tighten-20260626",
+        "worker_started_attempt_id": "a_addonv2-private-cluster-coreaddons-spec-input-tighten-20260626_20260626082652",
+        "worker_started_at": "2026-06-26T08:27:02.371Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened the dedicated private-cluster Addonv2 core-addons spec to explicitly carry the sixth private-access boundary input and updated the replay’s maintained-surface check to enforce that six-input contract. Verified coherence by running the repo-local replay check, which passed and wrote fresh evidence under evidence/archive/.",
+        "last_worker_completed_at": "2026-06-26T08:28:08.529Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T08:28:48.379Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from archive evidence: specs/private-cluster-addonv2-coreaddons-privatecluster.json now explicitly preserves the sixth private-access boundary privateAccess.jumpboxOrTunnel=required-when-created, and evidence/archive/private-cluster-addonv2-coreaddons-privatecluster-check-addonv2-private-cluster-coreaddons-spec-input-tighten-20260626.json passed repo-local check mode while keeping execute blocked and model impact at check-only-no-model-change."
+      },
+      "session_id": "s_task_addonv2-private-cluster-coreaddons-spec-input-tighten-20260626",
+      "session_history": [
+        "s_task_addonv2-private-cluster-coreaddons-spec-input-tighten-20260626"
+      ],
+      "result": "Tightened the dedicated private-cluster Addonv2 core-addons spec to explicitly carry the sixth private-access boundary input and updated the replay’s maintained-surface check to enforce that six-input contract. Verified coherence by running the repo-local replay check, which passed and wrote fresh evidence under evidence/archive/.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T08:28:48.379Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from archive evidence: specs/private-cluster-addonv2-coreaddons-privatecluster.json now explicitly preserves the sixth private-access boundary privateAccess.jumpboxOrTunnel=required-when-created, and evidence/archive/private-cluster-addonv2-coreaddons-privatecluster-check-addonv2-private-cluster-coreaddons-spec-input-tighten-20260626.json passed repo-local check mode while keeping execute blocked and model impact at check-only-no-model-change."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T20:56:03.515Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier review: accepted the NAT Gateway V2 V2→block wording repair, which now makes the maintained model/view surfaces truthfully state that the exact execute-capable repo-local lane already exists behind --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block while keeping live verdicts authorization-gated. This branch also retains accepted repo-local repairs for Azure CNI overlay ILPIP dual-stack carrier/sourceRefs, LocalDNS VM prerelease row54/55 replay parity, and private-cluster privatelink/public-FQDN-toggle carrier truth; active work remains the row94 execute-gate audit, while the remaining blocked leaves are mostly truthful human:operator response waits due for the shared 2026-06-29 checkpoint.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact mixed-OS IPv4+IPv6 ILPIP dual-stack boundary from mounted source into the maintained repo-local carrier set for path.network-cni-azure-overlay-ilpip-dualstack so the branch stops borrowing generic overlay or base ILPIP conclusions and has an exact bounded source/spec/replay/model statement.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628.md"
+      ],
+      "acceptance": [
+        "Evidence names the exact mounted source files plus current repo-local specs/replays/model/view entries for both the base ILPIP branch and the dual-stack refinement, and documents the precise overlap vs separation.",
+        "Maintained repo-local spec/replay/model/view files are updated or an exact authoring gap is recorded so the dual-stack branch is kept distinct from the base IPv4 ILPIP path and from generic overlay/node-public-ip coverage.",
+        "A repo-local validation command and outcome are recorded in the artifact, leaving a concrete next step for any future live verification without claiming product evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-map:path.network-cni-azure-overlay-ilpip-dualstack"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T20:50:13.642Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628_20260628205033",
+        "assigned_at": "2026-06-28T20:50:33.903Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628",
+        "worker_started_attempt_id": "a_normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628_20260628205033",
+        "worker_started_at": "2026-06-28T20:50:34.526Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the Azure CNI overlay ILPIP dual-stack boundary into a new durable evidence artifact, updated both maintained ILPIP spec sourceRefs to cite it, and verified the base/dual-stack repo-local carriers still pass check-mode validation.",
+        "last_worker_completed_at": "2026-06-28T20:53:30.088Z",
+        "last_worker_evidence": [
+          "evidence/archive/normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628.md",
+          "features/network-cni/specs/network-cni-azure-overlay-ilpip.json",
+          "features/network-cni/specs/network-cni-azure-overlay-ilpip-dualstack.json",
+          "runner/generated/spec-catalog.json"
+        ],
+        "reviewed_at": "2026-06-28T20:54:15.492Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived evidence is source-grounded, repairs both maintained ILPIP spec sourceRefs to a real 20260628 artifact, preserves the exact base-vs-dual-stack carrier split, and records passing repo-local check/spec-catalog regeneration without overstating live product validation."
+      },
+      "session_id": "s_task_normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628",
+      "session_history": [
+        "s_task_normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628"
+      ],
+      "result": "Normalized the Azure CNI overlay ILPIP dual-stack boundary into a new durable evidence artifact, updated both maintained ILPIP spec sourceRefs to cite it, and verified the base/dual-stack repo-local carriers still pass check-mode validation.",
+      "evidence": [
+        "evidence/archive/normalize-network-cni-azure-overlay-ilpip-dualstack-carrier-boundary-20260628.md",
+        "features/network-cni/specs/network-cni-azure-overlay-ilpip.json",
+        "features/network-cni/specs/network-cni-azure-overlay-ilpip-dualstack.json",
+        "runner/generated/spec-catalog.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T20:54:15.492Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived evidence is source-grounded, repairs both maintained ILPIP spec sourceRefs to a real 20260628 artifact, preserves the exact base-vs-dual-stack carrier split, and records passing repo-local check/spec-catalog regeneration without overstating live product validation."
+      },
+      "status": "done"
+    }
+  ]
+}

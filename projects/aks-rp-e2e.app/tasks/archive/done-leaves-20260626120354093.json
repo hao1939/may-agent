@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:03:54.093Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 metric-recovered owner check confirmed the no-work alert is resolved by one truthful live execution branch: retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626 is now the sole active preserved-order retry leaf on the reviewed single-spec launcher surface and must consume outbound-lb-custom-ip, authorized-ip-ranges, then authorized-service-tags in order. The superseded predecessor retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626 adds no further live meaning beyond stale-active recovery evidence and is archived. verify-newer-net-integration-single-spec-siblings-after-earlier-retry-queue-20260626 remains the only blocked successor for nsg-control then static-egress-vmss until the active earlier queue is reviewed complete. No new branch is needed from this recovery wake, and the external human-proof family wait remains parked outside this lane.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the currently executing single-spec GitHub launcher surface is reviewed safe again, use that reviewed launcher to consume the preserved-order earlier net-integration retry queue first: spec.net-integration.outbound-lb-custom-ip, then spec.net-integration.authorized-ip-ranges, then spec.net-integration.authorized-service-tags.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "verify-single-spec-gh-launcher-runtime-refresh-and-fallback-20260626 was reviewed accepted before any queue retry launch.",
+        "The preserved-order retry queue for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags was consumed in that order, with each spec reviewed to pass, fail, blocked, or error and evidence/model updates recorded as needed.",
+        "Spec-loop state was updated for each earlier queue spec before any newer net-integration sibling launch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:40:42.649Z",
+        "created_by": "task-tree-tool",
+        "unblocked_at": "2026-06-26T11:42:29.706Z",
+        "unblocked_by": "task-tree-tool",
+        "unblock_reason": "Launcher review accepted: durable live proof shows the current single-spec launcher no longer dead-ends on loop_key 422 because retry without loop_key reaches a pollable run surface. Resume the preserved-order earlier retry queue before any newer sibling launch.",
+        "assigned_at": "2026-06-26T11:58:35.037Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_retry_20260626115835",
+        "worker_started_attempt_id": "a_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_20260626115835",
+        "worker_started_at": "2026-06-26T11:58:51.099Z",
+        "stale_active_requeued_at": "2026-06-26T11:58:34.987Z",
+        "stale_active_requeue_reason": "Metric-breach stale-active recovery: prior worker session s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626 remained running but lastActivityAt stalled at 1782474274305 with no reviewable queue-consumption evidence, so requeue the preserved-order retry leaf for a clean fresh-session retry instead of assuming partial progress.",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_20260626114229",
+        "current_attempt_id": "a_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_20260626115835",
+        "reviewed_at": "2026-06-26T11:59:26.823Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog stale-active review found no reviewable queue-consumption output after worker_started_at 2026-06-26T11:58:51Z: no newer spec-loop state, run results, or archive artifacts exist after assignment, so this active leaf was ghost activity and is replaced by a fresh retry leaf rather than treated as progress."
+      },
+      "session_history": [
+        "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626",
+        "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_retry_20260626115835"
+      ],
+      "session_id": "s_task_retry-preserved-order-earlier-net-integration-single-spec-queue-after-launcher-proof-20260626_retry_20260626115835",
+      "resolution": "replaced",
+      "done_at": "2026-06-26T11:59:26.823Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog stale-active review found no reviewable queue-consumption output after worker_started_at 2026-06-26T11:58:51Z: no newer spec-loop state, run results, or archive artifacts exist after assignment, so this active leaf was ghost activity and is replaced by a fresh retry leaf rather than treated as progress."
+      },
+      "status": "done"
+    }
+  ]
+}

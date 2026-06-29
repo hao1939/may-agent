@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T16:42:50.412Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the bounded VM prerelease row-44 source packet into durable project memory: the maintained knowledge/spec/model view now carries the secure-TLS network-isolated-cluster adjacent contract with mounted-source citations only, and the next useful work remains the already-active row-45 cloud-provider IP-based load-balancer backend-pool row-local packet. The visible frontier stays intentionally compressed to one active regular-learning leaf plus the single external-human transport proof family wait; no reopen of that blocker family or cloud execution work is needed from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row44-next-adjacent-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: extract the exact next adjacent VirtualMachine prerelease source packet after the accepted row-43 secure-TLS API Server VNet Integration contract, preserving the row-local boundary for the secure-TLS network-isolated-cluster branch without broad secure-TLS-family rewrites or execution work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row44-next-adjacent-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP source plus checked-in row-local carriers to identify the exact scenario immediately after the accepted row-43 secure-TLS API Server VNet Integration contract, with exact cited files/paths showing which maintained feature/spec/replay/model surfaces already carry or still miss that next row-local contract.",
+        "Write one bounded row-44 packet that records accepted inputs, rejected or adjacent edges, expected assertions, and the exact next follow-up needed for that row only, with no cloud execution and no unsupported product verdict claims.",
+        "Keep scope bounded to the exact next row after the accepted row-43 contract: no broad secure-TLS-family normalization sweep, no reopening the external-send-proof family, and no mutation or live execute work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row44-model-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T16:39:05.486Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row44-next-adjacent-source-packet-20260621_20260621163907",
+        "assigned_at": "2026-06-21T16:39:07.695Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row44-next-adjacent-source-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row44-next-adjacent-source-packet-20260621_20260621163907",
+        "worker_started_at": "2026-06-21T16:39:29.662Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-44 adjacent source packet at evidence/archive/vmpr-row44-next-adjacent-source-packet-20260621.md, tying the accepted secure-TLS API Server VNet Integration contract to the exact next network-isolated VM prerelease branch with mounted-source and maintained-surface citations only.",
+        "last_worker_completed_at": "2026-06-21T16:40:56.332Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T16:41:17.721Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row44-next-adjacent-source-packet-20260621.md cites mounted checkin/prerelease ordering plus networkisolatedcluster.go and shows the exact next adjacent branch after row-43 is the secure-TLS network-isolated lifecycle, while also proving the maintained feature/spec/replay/model carriers already cover the canonical path without broad secure-TLS-family rewrites or cloud execution."
+      },
+      "session_id": "s_task_vmpr-row44-next-adjacent-source-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row44-next-adjacent-source-packet-20260621"
+      ],
+      "result": "Produced the bounded row-44 adjacent source packet at evidence/archive/vmpr-row44-next-adjacent-source-packet-20260621.md, tying the accepted secure-TLS API Server VNet Integration contract to the exact next network-isolated VM prerelease branch with mounted-source and maintained-surface citations only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T16:41:17.721Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row44-next-adjacent-source-packet-20260621.md cites mounted checkin/prerelease ordering plus networkisolatedcluster.go and shows the exact next adjacent branch after row-43 is the secure-TLS network-isolated lifecycle, while also proving the maintained feature/spec/replay/model carriers already cover the canonical path without broad secure-TLS-family rewrites or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

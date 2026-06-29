@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:56:39.740Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update accepted vmpr-row54-managedsystem-combined-metadata-sync-20260621 after reviewing both its artifact and the maintained repo surfaces: the dedicated managedsystem-combined branch now consistently carries mounted-source-backed terminal product-gap metadata across the dedicated spec, spec index, model/path-summary, and replay header without reopening execution. The other completed children already have durable meaning preserved here and in linked evidence: the ManagedSystem boundary map established the accepted/rejected/adjacent surface for the first worked example; the VM prerelease mounted-source reconciliation established the current local authority for rows 27 and 54; and the private-cluster same-subnet repair plus shared-subnet run-ready packet established the local shared-subnet source/spec/replay contract up to the explicit execute-approval ceiling. Open frontier is now clearer: vmpr-row27-coverage-prose-sync-20260621 remains the single active non-cloud truthfulness repair for stale row-27 coverage wording, while the only truthful waits remain the external human-transport proof family and the explicit execution-approval wait for the privatecluster shared API-server subnet success branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-shared-apiserver-subnet-run-ready-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded run-ready packet for path.private-cluster-vnet-integration-shared-apiserver-subnet by reconciling the mounted/shared-subnet source contract, current repo-local spec/replay surfaces, and the exact missing execute-surface delta without claiming a live product verdict or broadening into the adjacent same-subnet negative branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted or checked-in source carrier for Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3, preserving the two-cluster shared API-server subnet topology, separate node subnet, and ordered cluster0-then-cluster1 teardown contract.",
+        "Artifact audits the current repo-local spec/replay surface for this exact path, states whether an execute-capable replay already exists, and names the smallest truthful missing delta if it does not; any claimed gap is tied to specific local files or behaviors rather than a generic source-holder blocker.",
+        "Artifact ends with one bounded next action only: either the exact replay/spec patch needed to make the path run-ready, or a justified evidence-ceiling verdict proving no additional bounded local packet work remains before an execution-approval wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-integration-shared-apiserver-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:34:19.528Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-shared-apiserver-subnet-run-ready-packet-20260621_20260621103424",
+        "assigned_at": "2026-06-21T10:34:24.917Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-shared-apiserver-subnet-run-ready-packet-20260621",
+        "worker_started_attempt_id": "a_privatecluster-shared-apiserver-subnet-run-ready-packet-20260621_20260621103424",
+        "worker_started_at": "2026-06-21T10:35:06.698Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the run-ready packet at evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md, reconciling mounted source, local feature/spec/replay surfaces, and confirming there is no remaining local execute-surface authoring gap before execution approval.",
+        "last_worker_completed_at": "2026-06-21T10:36:11.893Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:36:38.098Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md cites the mounted shared_subnet.go carrier, confirms the dedicated feature/spec/index/replay surfaces already implement an execute-capable two-cluster shared API-server subnet path, and truthfully concludes there is no remaining local authoring gap before an execution-approval wait."
+      },
+      "session_id": "s_task_privatecluster-shared-apiserver-subnet-run-ready-packet-20260621",
+      "session_history": [
+        "s_task_privatecluster-shared-apiserver-subnet-run-ready-packet-20260621"
+      ],
+      "result": "Created the run-ready packet at evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md, reconciling mounted source, local feature/spec/replay surfaces, and confirming there is no remaining local execute-surface authoring gap before execution approval.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:36:38.098Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/privatecluster-shared-apiserver-subnet-run-ready-packet-20260621.md cites the mounted shared_subnet.go carrier, confirms the dedicated feature/spec/index/replay surfaces already implement an execute-capable two-cluster shared API-server subnet path, and truthfully concludes there is no remaining local authoring gap before an execution-approval wait."
+      },
+      "status": "done"
+    }
+  ]
+}

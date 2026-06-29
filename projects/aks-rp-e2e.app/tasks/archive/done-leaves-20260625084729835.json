@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T08:47:29.835Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 task-completed review accepted the SecOps FIPS handwritten coverage matrix and preserves it as durable archive evidence; keep secops-fips-base-carrier-mounted-source-anchor-repair-20260625 as the sole active regular-learning leaf so the next repo-local no-cloud step is to replace the four legacy SecOps FIPS base-carrier source buckets with precise mounted Scenario_Cluster_FIPS anchors, while focus-mounted-source-coverage-closure-and-external-wait-20260623 remains the single compressed five-wait external frontier unchanged until the 2026-06-26 follow-up window or earlier authoritative returned proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-handwritten-scenario-coverage-matrix-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the handwritten secops-fips e2ev3 scenarios from mounted AKS RP source into one source-backed coverage matrix that maps each scenario to current model/spec/replay coverage, captures the exact feature/expectation intent at a high level, and names the next bounded no-cloud gap-closing tasks worth doing next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-handwritten-scenario-coverage-matrix-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact secops-fips handwritten source files or suites inspected, enumerates the bounded scenario set reviewed, and maps each scenario to current model/spec/replay coverage status with exact ids or an explicit missing/gap note.",
+        "The artifact identifies the highest-value next repo-local no-cloud follow-up leaves for this family (for example source packet, spec authoring, or replay-shape repair) and explains why they are next, without running cloud mutation or treating source inventory as an execution verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T08:42:02.237Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-handwritten-scenario-coverage-matrix-20260625_20260625084205",
+        "assigned_at": "2026-06-25T08:42:05.162Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-handwritten-scenario-coverage-matrix-20260625",
+        "worker_started_attempt_id": "a_secops-fips-handwritten-scenario-coverage-matrix-20260625_20260625084205",
+        "worker_started_at": "2026-06-25T08:42:39.031Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable source-backed coverage matrix at evidence/archive/secops-fips-handwritten-scenario-coverage-matrix-20260625.md that inventories all 10 mounted secops/clusterfips handwritten scenarios, maps each to current repo-local feature/spec/replay/model coverage, and names the next bounded no-cloud follow-up tasks.",
+        "last_worker_completed_at": "2026-06-25T08:45:32.556Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T08:46:35.297Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/secops-fips-handwritten-scenario-coverage-matrix-20260625.md: it cites the exact mounted clusterfips source files, inventories all 10 handwritten scenarios, maps each to current feature/spec/replay/model carriers, and correctly scopes itself as repo-local coverage inventory only rather than cloud execution evidence."
+      },
+      "session_id": "s_task_secops-fips-handwritten-scenario-coverage-matrix-20260625",
+      "session_history": [
+        "s_task_secops-fips-handwritten-scenario-coverage-matrix-20260625"
+      ],
+      "result": "Created a durable source-backed coverage matrix at evidence/archive/secops-fips-handwritten-scenario-coverage-matrix-20260625.md that inventories all 10 mounted secops/clusterfips handwritten scenarios, maps each to current repo-local feature/spec/replay/model coverage, and names the next bounded no-cloud follow-up tasks.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T08:46:35.297Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/secops-fips-handwritten-scenario-coverage-matrix-20260625.md: it cites the exact mounted clusterfips source files, inventories all 10 handwritten scenarios, maps each to current feature/spec/replay/model carriers, and correctly scopes itself as repo-local coverage inventory only rather than cloud execution evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

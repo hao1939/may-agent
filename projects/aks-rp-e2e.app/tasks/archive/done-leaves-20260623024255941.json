@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T02:42:55.941Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful family-level wait because the archive evidence still proves owner-send/handoff/escalation path and no newer out-of-runtime reply/send/approval/execution proof exists; no local source/spec/model rediscovery should be reopened from that blocker. The fresh active repo-local lane remains vm-prerelease-row38-azure-rbac-source-packet-20260623, and one bounded adjacent backlog seed now preserves immediate next repo-local VM prerelease coverage work once row 38 lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row37-managed-aad-source-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded mounted-source packet for VM prerelease row 37 managed AAD lifecycle that names the exact handwritten carrier files, scenario selectors, assertions, current repo-local spec/model/replay surfaces, and the minimal rerun gate once baseline cluster create is available again.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted AKS RP source files and scenario definitions for the row-37 managed AAD/adminUsers carrier, including enough detail to distinguish it from adjacent VM prerelease rows.",
+        "The note links the current repo-local spec/model/replay carriers or gaps for path.aad-rbac.managed-v2-lifecycle and records the exact existing baseline-create blocker plus one bounded rerun trigger without opening cloud execution or widening scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-mounted-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T02:38:54.526Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row37-managed-aad-source-packet-20260623_20260623023854",
+        "assigned_at": "2026-06-23T02:38:54.577Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row37-managed-aad-source-packet-20260623",
+        "worker_started_attempt_id": "a_vm-prerelease-row37-managed-aad-source-packet-20260623_20260623023854",
+        "worker_started_at": "2026-06-23T02:39:17.104Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-37 managed AAD mounted-source packet at evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260623.md, tying exact handwritten source files and pipeline selectors to the current repo-local spec/model/replay surfaces and the existing baseline-create rerun gate.",
+        "last_worker_completed_at": "2026-06-23T02:40:52.224Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T02:41:46.634Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the bounded row-37 managed AAD mounted-source packet after verifying the archive note names the exact mounted Scenario_AAD / Scenario_AAD_VirtualMachine carriers, preserves the repo-local feature/spec/replay/model linkage for path.aad-rbac.managed-v2-lifecycle, and keeps the same baseline-create rerun gate without widening scope or opening cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-row37-managed-aad-source-packet-20260623",
+      "session_history": [
+        "s_task_vm-prerelease-row37-managed-aad-source-packet-20260623"
+      ],
+      "result": "Produced the bounded row-37 managed AAD mounted-source packet at evidence/archive/vm-prerelease-row37-managed-aad-source-packet-20260623.md, tying exact handwritten source files and pipeline selectors to the current repo-local spec/model/replay surfaces and the existing baseline-create rerun gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T02:41:46.634Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the bounded row-37 managed AAD mounted-source packet after verifying the archive note names the exact mounted Scenario_AAD / Scenario_AAD_VirtualMachine carriers, preserves the repo-local feature/spec/replay/model linkage for path.aad-rbac.managed-v2-lifecycle, and keeps the same baseline-create rerun gate without widening scope or opening cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

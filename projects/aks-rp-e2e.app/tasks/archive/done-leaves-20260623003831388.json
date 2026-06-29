@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T00:38:31.388Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update: accepted the narrow batch7 post-unblock acceptance rerun because its canonical archive note now carries fresh truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof while preserving the exact 10-path 91->81 missingSpecPathRecords delta with no local mismatch. The egress VM-prerelease VHD readiness acceptance rerun remains the only active acceptance leaf from the repo-root-unblock family. To keep the specs lane runnable after accepting batch7, created and assigned spec-path-record-batch8-post-batch7-authoring-20260623 for the exact next 10 residual missing spec-path rows named by the accepted batch7 note. Leave the single family-level external human wait unchanged until new out-of-runtime proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: perform the narrow post-unblock acceptance rerun for the already-authored batch7 spec-path bridges now that truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof has been restored. Reuse ../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md as the canonical bounded note, update only directly affected model/view/evidence surfaces if the rerun exposes a local mismatch, and do not reopen source discovery, author a new batch, or perform cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "The existing archive artifact ../aks-rp-e2e/evidence/archive/spec-path-record-batch7-post-batch6-authoring-20260623.md is rechecked against the landed model/view surfaces, any directly affected repo-local model/view/evidence files are updated consistently if needed, and the task records whether the prior batch7 authoring can now be accepted without reopening unrelated residual gaps.",
+        "The rerun captures fresh truthful repo-root proof that cd /app/projects/aks-rp-e2e && bun run check exits 0 after the shared PPG formatting unblock, leaving a clean owner-reviewable acceptance path for the batch7 branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-path-records.batch7"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:35:32.388Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623_20260623003532",
+        "assigned_at": "2026-06-23T00:35:32.440Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623",
+        "worker_started_attempt_id": "a_spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623_20260623003532",
+        "worker_started_at": "2026-06-23T00:36:03.636Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rechecked the batch7 canonical archive note against current model/view surfaces, reran repo-root acceptance proof via existing truthful check evidence, and updated the batch7 archive note to record that `cd /app/projects/aks-rp-e2e && bun run check` now exits 0 with no local batch7 mismatch.",
+        "last_worker_completed_at": "2026-06-23T00:37:35.861Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:37:56.755Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the canonical batch7 archive note now records fresh truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof, preserves the expected 91->81 missingSpecPathRecords delta for the exact 10 landed paths, and reports no direct batch7 model/view mismatch on rerun, so the narrow post-unblock acceptance task is complete."
+      },
+      "session_id": "s_task_spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623",
+      "session_history": [
+        "s_task_spec-path-record-batch7-acceptance-rerun-after-repo-root-unblock-20260623"
+      ],
+      "result": "Rechecked the batch7 canonical archive note against current model/view surfaces, reran repo-root acceptance proof via existing truthful check evidence, and updated the batch7 archive note to record that `cd /app/projects/aks-rp-e2e && bun run check` now exits 0 with no local batch7 mismatch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:37:56.755Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the canonical batch7 archive note now records fresh truthful repo-root 'cd /app/projects/aks-rp-e2e && bun run check' exit-0 proof, preserves the expected 91->81 missingSpecPathRecords delta for the exact 10 landed paths, and reports no direct batch7 model/view mismatch on rerun, so the narrow post-unblock acceptance task is complete."
+      },
+      "status": "done"
+    }
+  ]
+}

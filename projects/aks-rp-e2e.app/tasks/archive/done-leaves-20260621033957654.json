@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:39:57.654Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease maintained-slice planning on 2026-06-21 now has a closed local isolation chain: the shared-carrier residue map identified row-26/private-cluster/serverless contamination across model.json and the regenerated maintained views, the checkpoint preflight confirmed the current worktree could not produce a target-only maintained checkpoint from the mixed local slice, and the accepted one-pass local clean/regenerate attempt proved specs/index.json could stay excluded while the six regenerated views became clean but model/knowledge-map/model.json still retained forbidden row-26/private-cluster/serverless changed-line residue. That accepted result satisfies the fallback trigger from evidence/archive/vmpr-maintained-shared-carrier-isolation-plan-20260621.md, so the active next owner action is the clean-worktree/cherry-pick fallback task vmpr-maintained-slice-clean-worktree-cherrypick-fallback-20260621; if it succeeds, only then should the maintained slice move to bounded checkpoint/preflight follow-up. In parallel, private-endpoint-connections-lifecycle-bounded-execute-20260621 remains the separate live execution lane for the narrower lifecycle subpath only, while external-send-proof-dispatch-family-20260620 remains the single blocked family-level carrier for the human outbound transport ceiling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-maintained-shared-carrier-residue-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded diff-backed residue map for the VM prerelease maintained-surface shared carriers that blocked the 2026-06-21 checkpoint preflight: inspect model/knowledge-map/model.json, the generated knowledge-map views, and specs/index.json, classify each relevant change as target rows 27/29/30/31/32/33/34 vs excluded row 26 vs unrelated private-cluster/serverless residue, and record the smallest truthful split/revert sequence needed before any future maintained-slice checkpoint attempt.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-maintained-shared-carrier-residue-map-20260621.md"
+      ],
+      "acceptance": [
+        "The archive note cites exact diff evidence from model/knowledge-map/model.json, the generated knowledge-map view files, and specs/index.json, and classifies the relevant edits into target VM prerelease rows 27/29/30/31/32/33/34, excluded row 26, and unrelated private-cluster/serverless residue without guesses.",
+        "The note names the minimum file-by-file split or revert sequence needed to make the shared carrier set checkpoint-truthful for the target VM prerelease rows, or proves that a smaller bounded split is impossible with current local evidence.",
+        "The note states whether row-local replay/spec ownership repair can wait until after shared-carrier isolation, using checkpoint-helper/domain-check evidence rather than broad planning claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-maintained-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:25:23.484Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-maintained-shared-carrier-residue-map-20260621_20260621032523",
+        "assigned_at": "2026-06-21T03:25:23.530Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-maintained-shared-carrier-residue-map-20260621",
+        "worker_started_attempt_id": "a_vmpr-maintained-shared-carrier-residue-map-20260621_20260621032523",
+        "worker_started_at": "2026-06-21T03:25:35.648Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded residue map at evidence/archive/vmpr-maintained-shared-carrier-residue-map-20260621.md, classifying current shared-carrier diffs into target VM prerelease rows 27/29/30/31/32/33/34, excluded row 26, and unrelated private-cluster/serverless residue, and naming the minimum truthful split/revert sequence before any maintained-slice checkpoint retry.",
+        "last_worker_completed_at": "2026-06-21T03:30:33.918Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:31:44.300Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after planner review of evidence/archive/vmpr-maintained-shared-carrier-residue-map-20260621.md: the note cites shared-carrier diffs showing target VM prerelease rows 27/29/30/31/32/33/34, excluded row 26, unrelated private-cluster/serverless residue, and the minimum truthful split/revert ordering before any maintained-slice checkpoint retry, including excluding specs/index.json unless a clean workspace proves target-only scope."
+      },
+      "session_id": "s_task_vmpr-maintained-shared-carrier-residue-map-20260621",
+      "session_history": [
+        "s_task_vmpr-maintained-shared-carrier-residue-map-20260621"
+      ],
+      "result": "Produced the bounded residue map at evidence/archive/vmpr-maintained-shared-carrier-residue-map-20260621.md, classifying current shared-carrier diffs into target VM prerelease rows 27/29/30/31/32/33/34, excluded row 26, and unrelated private-cluster/serverless residue, and naming the minimum truthful split/revert sequence before any maintained-slice checkpoint retry.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:31:44.300Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after planner review of evidence/archive/vmpr-maintained-shared-carrier-residue-map-20260621.md: the note cites shared-carrier diffs showing target VM prerelease rows 27/29/30/31/32/33/34, excluded row 26, unrelated private-cluster/serverless residue, and the minimum truthful split/revert ordering before any maintained-slice checkpoint retry, including excluding specs/index.json unless a clean workspace proves target-only scope."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T16:25:03.560Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 VM prerelease repo-local follow-up stays centered on two active retries and one waiting storage audit. Archive the three safe done children because their durable meaning already lives in parent rollup plus evidence: row 25 feature packet repair remains accepted and archived; row 55 standalone metadata review is accepted with evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md proving the current non-superseded carrier already exists as variant.standalone-e2ev3 on specs/managedsystem-rest-add-existing.json; and the original row-54 execute-readiness leaf remains rejected historical context only because it ended in worker error/blocked with no evidence and is superseded by active retry vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622. Open work remains active row-54 managedsystem create-time readiness retry, active direct-model-linkage audit retry for rows 1,3-5,9, waiting storage-matrix linkage audit for rows 12-18 and 20-22 once the direct audit releases the source conflict, plus the single compressed external human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row25-feature-packet-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or explicitly justify the missing row-25 VirtualMachine prerelease capacity-based-surge feature packet so the mounted-source-backed scenario carrier is discoverable as a dedicated repo-local feature surface rather than only through the adjacent row-26 maxUnavailable packet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row25-feature-packet-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Use the mounted source coverage packet plus repo-local feature/spec files to confirm whether featureId virtualmachines-capacity-based-surge should have its own packet or an explicit alias note, then add/update the repo-local carrier accordingly.",
+        "Record durable evidence showing the exact files inspected/updated and state whether row 25 now has a dedicated feature surface or an explicit justified alias.",
+        "Keep work repo-local only: no cloud execution and no external-human transport work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T16:18:31.707Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row25-feature-packet-repair-20260622_20260622161831",
+        "assigned_at": "2026-06-22T16:18:31.803Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row25-feature-packet-repair-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row25-feature-packet-repair-20260622_20260622161831",
+        "worker_started_at": "2026-06-22T16:18:52.467Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the missing dedicated row-25 feature packet at features/virtualmachines-capacity-based-surge.yaml and wrote durable repair evidence at evidence/archive/vm-prerelease-row25-feature-packet-repair-20260622.md, confirming row 25 should be a standalone repo-local feature surface rather than only an alias/adjacency to row 26.",
+        "last_worker_completed_at": "2026-06-22T16:20:46.094Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T16:21:45.314Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/vm-prerelease-row25-feature-packet-repair-20260622.md plus features/virtualmachines-capacity-based-surge.yaml show row 25 now has its own canonical repo-local feature packet, with mounted-source-backed lineage and exact row-25 boundary separated from adjacent row 26."
+      },
+      "session_id": "s_task_vm-prerelease-row25-feature-packet-repair-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row25-feature-packet-repair-20260622"
+      ],
+      "result": "Created the missing dedicated row-25 feature packet at features/virtualmachines-capacity-based-surge.yaml and wrote durable repair evidence at evidence/archive/vm-prerelease-row25-feature-packet-repair-20260622.md, confirming row 25 should be a standalone repo-local feature surface rather than only an alias/adjacency to row 26.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T16:21:45.314Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/vm-prerelease-row25-feature-packet-repair-20260622.md plus features/virtualmachines-capacity-based-surge.yaml show row 25 now has its own canonical repo-local feature packet, with mounted-source-backed lineage and exact row-25 boundary separated from adjacent row 26."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T00:32:43.687Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner planning pass: archived the completed serverless multi-pod burst readiness packet because its durable meaning is now represented at the project root and in evidence/archive/serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626.md. Current live frontier stays intentionally narrow: one active regular-verification leaf for path.serverless-virtual-nodes.multi-pod-burst to capture the first bounded 3-pod live observation using the already-proven execute contract, plus one single truthful family-level blocked external wait for already-routed human/operator approval-reply proof. No new runnable backlog was added in this wake because maxConcurrent=1 is already occupied by the fresh serverless live leaf, and reopening source/spec/model closure or splitting the external wait would be incorrect until either the live run returns evidence or the external family receives a real reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a repo-local execution-contract readiness packet for path.serverless-virtual-nodes.multi-pod-burst by mapping the handwritten/e2ev3 intent, current replay/spec/model linkage, expected witnesses, and exact no-cloud execution gate so the project knows whether this unknown path can advance without waiting on the external approval family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact identifies the exact handwritten/source/replay/spec/model authorities for path.serverless-virtual-nodes.multi-pod-burst, summarizes accepted inputs and expected behavior/witnesses, and states the exact next execution gate or evidence ceiling for this path using repo-local evidence only.",
+        "The task stays outside the external-human-transport blocked family and performs no cloud mutation, no live execution, and no widening into unrelated serverless paths."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.multi-pod-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T00:27:55.937Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626_20260626002755",
+        "assigned_at": "2026-06-26T00:27:55.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626_20260626002755",
+        "worker_started_at": "2026-06-26T00:28:07.651Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable readiness packet at evidence/archive/serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626.md that maps mounted source authority, repo-local spec/replay/model linkage, accepted burst witnesses, and the exact no-cloud/live execution gate for path.serverless-virtual-nodes.multi-pod-burst.",
+        "last_worker_completed_at": "2026-06-26T00:29:46.294Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T00:30:36.812Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-26 archive packet after review: it cites mounted handwritten/source authority, aligned repo-local feature/spec/replay/model carriers, exact 3-pod witness and cardinality contract, passing --check evidence, and makes the key owner decision that this path is execution-contract ready without waiting on the external approval family while truthfully remaining unknown until a bounded live run exists."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626"
+      ],
+      "result": "Produced a durable readiness packet at evidence/archive/serverless-virtual-nodes-multi-pod-burst-replay-execute-contract-readiness-packet-20260626.md that maps mounted source authority, repo-local spec/replay/model linkage, accepted burst witnesses, and the exact no-cloud/live execution gate for path.serverless-virtual-nodes.multi-pod-burst.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T00:30:36.812Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-26 archive packet after review: it cites mounted handwritten/source authority, aligned repo-local feature/spec/replay/model carriers, exact 3-pod witness and cardinality contract, passing --check evidence, and makes the key owner decision that this path is execution-contract ready without waiting on the external approval family while truthfully remaining unknown until a bounded live run exists."
+      },
+      "status": "done"
+    }
+  ]
+}

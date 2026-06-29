@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:06:56.240Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted and archived the completed VM prerelease adjacent-row refill decision after the row-37 slice. Durable evidence now proves row 38 (Scenario_Azure_RBAC / Scenario_Azure_RBAC_VirtualMachine) is the exact next mounted carrier after row 37, that repo-local feature/spec/replay/index/evidence carriers already exist for path.aad-rbac.azure-rbac-authorization, and that the maintained model/view surfaces remain stale/generic. The live frontier intentionally stays narrow: one active repo-local row-38 model/view reconciliation leaf to repair the maintained knowledge-map/view truth for the exact VirtualMachines + VMsAgentPoolAutoscalePreview Azure RBAC authorization contract, plus the single compressed external human-transport wait. Do not activate row 39 ahead of row 38 unless new evidence changes the adjacent-carrier ordering or proves row-38 maintained coverage terminal.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/spec lane: audit the mounted VM prerelease source immediately adjacent to the reconciled row-37 slice and map the exact next row-local carrier or terminal reason so the project can refill with the next bounded repo-local VM prerelease task after row 37, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-next-adjacent-source-carrier-map-post-row37-20260621.md"
+      ],
+      "acceptance": [
+        "Cite the exact mounted prerelease/checkin source lines or scenario carrier that identify the next adjacent VM prerelease row or scenario after the row-37 slice as the correct repo-local follow-up candidate.",
+        "Inventory existing repo-local carriers for that candidate across features/specs/replays/model/views/evidence, and state whether a dedicated row-local reconciliation leaf is needed or whether the branch is already terminally covered.",
+        "Produce durable evidence naming the concrete follow-up reconciliation leaf or terminal reason so the planner can activate the next bounded repo-local task after vmpr-row37-model-view-reconciliation-20260621, without changing the external-send blocked family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr/post-row37-adjacent-source-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:03:53.678Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621_20260621190353",
+        "assigned_at": "2026-06-21T19:03:53.726Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621",
+        "worker_started_attempt_id": "a_vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621_20260621190353",
+        "worker_started_at": "2026-06-21T19:04:01.812Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced evidence/archive/vmpr-next-adjacent-source-carrier-map-post-row37-20260621.md establishing row 38 (Scenario_Azure_RBAC / Scenario_Azure_RBAC_VirtualMachine) as the exact adjacent VM-prerelease carrier after row 37 and documenting that a dedicated row-38 model/view reconciliation leaf is still needed.",
+        "last_worker_completed_at": "2026-06-21T19:05:50.456Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:06:20.535Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted adjacent-source audit evidence: archive/vmpr-next-adjacent-source-carrier-map-post-row37-20260621.md cites mounted checkin/prerelease ordering and azure_rbac.go lines proving row 38 (Scenario_Azure_RBAC / Scenario_Azure_RBAC_VirtualMachine) is the exact next VM prerelease carrier after row 37, inventories existing repo-local carriers, and shows maintained model/view surfaces are still stale so a dedicated row-38 reconciliation leaf is the truthful bounded refill."
+      },
+      "session_id": "s_task_vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621",
+      "session_history": [
+        "s_task_vmpr-next-adjacent-source-carrier-map-post-row37-queued-20260621"
+      ],
+      "result": "Produced evidence/archive/vmpr-next-adjacent-source-carrier-map-post-row37-20260621.md establishing row 38 (Scenario_Azure_RBAC / Scenario_Azure_RBAC_VirtualMachine) as the exact adjacent VM-prerelease carrier after row 37 and documenting that a dedicated row-38 model/view reconciliation leaf is still needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:06:20.535Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted adjacent-source audit evidence: archive/vmpr-next-adjacent-source-carrier-map-post-row37-20260621.md cites mounted checkin/prerelease ordering and azure_rbac.go lines proving row 38 (Scenario_Azure_RBAC / Scenario_Azure_RBAC_VirtualMachine) is the exact next VM prerelease carrier after row 37, inventories existing repo-local carriers, and shows maintained model/view surfaces are still stale so a dedicated row-38 reconciliation leaf is the truthful bounded refill."
+      },
+      "status": "done"
+    }
+  ]
+}

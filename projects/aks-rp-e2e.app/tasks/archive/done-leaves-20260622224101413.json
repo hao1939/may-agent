@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T22:41:01.413Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the upgrade-nodeimage boundary/status reconcile alongside the earlier add-remove reconcile, so the RP nodepool lifecycle family now preserves two source-grounded reusable substrate branches as done repairs while one bounded scale-manual reconcile remains the live repo-local follow-up. The single family-level external-human proof wait stays unchanged and continues to represent only later out-of-runtime send/approval/reply evidence for the covered VM/private-cluster asks.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model-update lane: reconcile the maintained status/boundary for path.rp-nodepool-lifecycle.add-remove so the reusable add/remove substrate is truthfully represented as its own source-grounded RP nodepool lifecycle path, clearly distinct from the blocked combined row-3 agentpool-operations replay, and no stale wording or missing linkage remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622.md cites the mounted/source-equivalent RP nodepool lifecycle carriers, explains the exact relationship between the reusable add/remove substrate and the broader row-3 agentpool-operations contract, and records the truthful maintained status boundary for path.rp-nodepool-lifecycle.add-remove.",
+        "Maintained model/view/report surfaces are updated only as needed so path.rp-nodepool-lifecycle.add-remove no longer relies on ambiguous draft/boundary wording and remains clearly distinct from adjacent RP nodepool lifecycle paths, and bun run check passes after the bounded repair.",
+        "No cloud mutation, no new external-human wait, and no scope broadening beyond the add/remove substrate boundary/status reconciliation are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "rp-nodepool-lifecycle.add-remove.status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:32:03.713Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622_20260622223203",
+        "assigned_at": "2026-06-22T22:32:03.761Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622",
+        "worker_started_attempt_id": "a_rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622_20260622223203",
+        "worker_started_at": "2026-06-22T22:32:31.576Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the standalone RP nodepool add/remove substrate boundary and status by adding a durable archive note, updating feature/spec/model/index surfaces to mark it blocked rather than draft, and regenerating maintained views with successful `bun run check`.",
+        "last_worker_completed_at": "2026-06-22T22:38:25.923Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:39:56.955Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive artifact documents the mounted row-3 nativerp source boundary, explains why add/remove remains a sibling reusable substrate rather than a substitute for agentpool-operations, and the maintained feature/spec/model/path-summary surfaces now render path.rp-nodepool-lifecycle.add-remove as blocked instead of stale draft wording. Repo-local verification succeeded with bun run check and no cloud mutation or new external wait was introduced."
+      },
+      "session_id": "s_task_rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622",
+      "session_history": [
+        "s_task_rp-nodepool-lifecycle-add-remove-draft-boundary-reconcile-20260622"
+      ],
+      "result": "Reconciled the standalone RP nodepool add/remove substrate boundary and status by adding a durable archive note, updating feature/spec/model/index surfaces to mark it blocked rather than draft, and regenerating maintained views with successful `bun run check`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:39:56.955Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive artifact documents the mounted row-3 nativerp source boundary, explains why add/remove remains a sibling reusable substrate rather than a substitute for agentpool-operations, and the maintained feature/spec/model/path-summary surfaces now render path.rp-nodepool-lifecycle.add-remove as blocked instead of stale draft wording. Repo-local verification succeeded with bun run check and no cloud mutation or new external wait was introduced."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model-update lane: reconcile the maintained status/boundary for path.rp-nodepool-lifecycle.upgrade-nodeimage so the reusable node-image-upgrade substrate is truthfully represented as its own source-grounded RP nodepool lifecycle path, clearly distinct from the blocked row-4 agentpool-upgrade-resume replay, and no stale wording or missing linkage remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622.md cites the mounted/source-equivalent RP nodepool lifecycle carriers, explains the exact relationship between the reusable node-image-upgrade substrate and the broader row-4 agentpool-upgrade-resume contract, and records the truthful maintained status boundary for path.rp-nodepool-lifecycle.upgrade-nodeimage.",
+        "Maintained model/view/report surfaces are updated only as needed so path.rp-nodepool-lifecycle.upgrade-nodeimage no longer relies on ambiguous draft/boundary wording and remains clearly distinct from adjacent RP nodepool lifecycle paths, and bun run check passes after the bounded repair.",
+        "No cloud mutation, no new external-human wait, and no scope broadening beyond the node-image-upgrade substrate boundary/status reconciliation are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "rp-nodepool-lifecycle.upgrade-nodeimage.status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:33:15.565Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622_20260622223341",
+        "assigned_at": "2026-06-22T22:33:41.692Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622",
+        "worker_started_attempt_id": "a_rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622_20260622223341",
+        "worker_started_at": "2026-06-22T22:33:43.756Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled rp-nodepool-lifecycle upgrade-nodeimage boundary/status by grounding it to mounted RP sources, changing the reusable substrate from draft to blocked across spec/feature/model surfaces, adding a durable archive note, and regenerating views/checks successfully.",
+        "last_worker_completed_at": "2026-06-22T22:40:35.097Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:41:01.359Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted RP carriers for standalone UpgradeNodeImageVersion versus row-4 agentpool-upgrade-resume, records the sibling-not-substitute boundary, and the worker reports the bounded spec/index/model repairs plus successful check regeneration needed to move path.rp-nodepool-lifecycle.upgrade-nodeimage from stale draft wording to a truthful blocked reusable substrate."
+      },
+      "session_id": "s_task_rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622",
+      "session_history": [
+        "s_task_rp-nodepool-lifecycle-upgrade-nodeimage-draft-boundary-reconcile-20260622"
+      ],
+      "result": "Reconciled rp-nodepool-lifecycle upgrade-nodeimage boundary/status by grounding it to mounted RP sources, changing the reusable substrate from draft to blocked across spec/feature/model surfaces, adding a durable archive note, and regenerating views/checks successfully.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:41:01.359Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted RP carriers for standalone UpgradeNodeImageVersion versus row-4 agentpool-upgrade-resume, records the sibling-not-substitute boundary, and the worker reports the bounded spec/index/model repairs plus successful check regeneration needed to move path.rp-nodepool-lifecycle.upgrade-nodeimage from stale draft wording to a truthful blocked reusable substrate."
+      },
+      "status": "done"
+    }
+  ]
+}

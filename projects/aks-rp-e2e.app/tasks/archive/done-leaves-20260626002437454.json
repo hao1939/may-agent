@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T00:24:37.454Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 stale-watchdog reconciliation: the runnable-backlog refill wake is superseded by newer tree state because serverless-schedulerctrl-validating-webhook-private-approval-followup-or-escalation-proof-capture-20260626 is already assigned active. Archive the completed private-cluster auth service tags follow-up proof-capture so this branch cleanly shows one single family-level external wait, one active private validating-webhook follow-up leaf, and one conflict-gated public validating-webhook sibling waiting behind the same family scope. Do not assign new work from this branch until the active private follow-up finishes or new authoritative external proof arrives; do not reopen repo-local source/spec/model closure, widen sibling families, or introduce cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture one bounded post-window follow-up or escalation artifact for the already-routed devbox endpoint handoff on path.private-cluster-vnet-integration-auth-service-tags, or record an authoritative endpoint restore/replacement reply that arrived before the follow-up was sent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records timestamp, channel, sender/owner, recipient or escalation path, links evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-handoff-packet-20260623.md and evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-send-proof-20260623.md, and captures either the bounded follow-up/escalation or an authoritative restored/corrected endpoint reply.",
+        "The exact selected-host handoff scope remains unchanged: no local setup/source rediscovery, no SSH retry from the planner, and no sibling private-cluster path widening is introduced from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-vnet-integration-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T00:17:45.574Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T00:21:05.313Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626_20260626002148",
+        "assigned_at": "2026-06-26T00:21:48.939Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626_20260626002148",
+        "worker_started_at": "2026-06-26T00:22:17.027Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured a durable post-window follow-up proof artifact for the private-cluster devbox endpoint wait, showing no authoritative endpoint reply was visible and that the existing family-level approval-dispatch follow-up covered this exact path without widening scope.",
+        "last_worker_completed_at": "2026-06-26T00:23:33.412Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T00:23:54.254Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626.md durably records that no authoritative endpoint reply arrived before the first valid 2026-06-26 post-window review and proves the exact path was covered by the already-routed family-level approval-dispatch follow-up without widening scope."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626"
+      ],
+      "result": "Captured a durable post-window follow-up proof artifact for the private-cluster devbox endpoint wait, showing no authoritative endpoint reply was visible and that the existing family-level approval-dispatch follow-up covered this exact path without widening scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T00:23:54.254Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-auth-service-tags-devbox-endpoint-followup-or-escalation-proof-capture-20260626.md durably records that no authoritative endpoint reply arrived before the first valid 2026-06-26 post-window review and proves the exact path was covered by the already-routed family-level approval-dispatch follow-up without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

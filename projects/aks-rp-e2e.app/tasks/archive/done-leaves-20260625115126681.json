@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T11:51:26.681Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner refill preserves the five exact external returned-proof waits unchanged through the first bounded follow-up window on or after 2026-06-26, archives the three accepted serverless virtual-nodes done leaves as durable history, and restores a truthful regular-learning frontier with private-cluster-none-dns-zone-v3-mounted-source-closure-20260625. That new leaf is the bounded no-cloud next step: use mounted source and existing repo-local artifacts to map the exact System→None Private DNS Zone V3 carrier, expected behavior, and the next safe spec/model/verification action without touching the external wait family.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-family-status-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted 2026-06-25 serverless virtual-nodes repo-local audits into one family-level status note that states the exact current ceilings for path.serverless-virtual-nodes.multi-pod-burst and path.serverless-virtual-nodes.subnet-validation, confirms whether model/view text needs any bounded repair, and names the single next safe verification candidate or evidence ceiling without reopening cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-family-status-reconcile-20260625.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the accepted 2026-06-25 family audit surfaces/evidence and states the current exact status/ceiling for both serverless virtual-nodes paths, including which repo-local check carriers exist today and which live/runtime observations remain unknown or blocked.",
+        "If model/knowledge-map/views/path-summary.json or adjacent model text already matches the accepted ceilings, artifact says so explicitly; if one bounded repo-local wording/model repair is needed, artifact names the exact file/field and reason without performing cloud execution.",
+        "Artifact names one single next safe successor for the family after reconciliation (for example a bounded model/view repair or a future verification trigger), while preserving the five external returned-proof waits unchanged through the 2026-06-26 follow-up window and not claiming product pass/fail from repo-local audit work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T11:12:14.978Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-family-status-reconcile-20260625_20260625111215",
+        "assigned_at": "2026-06-25T11:12:15.030Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-family-status-reconcile-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-family-status-reconcile-20260625_20260625111215",
+        "worker_started_at": "2026-06-25T11:12:40.681Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/serverless-virtual-nodes-family-status-reconcile-20260625.md`, reconciling the 2026-06-25 serverless virtual-nodes family audits into one family-level note. It confirms multi-pod-burst stays unknown, subnet-validation stays blocked/runtime-surface-blocked, no maintained model/view/spec repair is needed, and the only safe optional successor is the non-mutating burst replay check.",
+        "last_worker_completed_at": "2026-06-25T11:14:08.893Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T11:14:43.247Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-virtual-nodes-family-status-reconcile-20260625.md cites the accepted 2026-06-25 family audit surfaces, preserves multi-pod-burst as maintained unknown and subnet-validation as runtime-surface-blocked, confirms no bounded model/view/spec repair is needed, and limits the only optional successor to the non-mutating burst --check replay while leaving the five external returned-proof waits unchanged through the 2026-06-26 follow-up window."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-family-status-reconcile-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-family-status-reconcile-20260625"
+      ],
+      "result": "Created `evidence/archive/serverless-virtual-nodes-family-status-reconcile-20260625.md`, reconciling the 2026-06-25 serverless virtual-nodes family audits into one family-level note. It confirms multi-pod-burst stays unknown, subnet-validation stays blocked/runtime-surface-blocked, no maintained model/view/spec repair is needed, and the only safe optional successor is the non-mutating burst replay check.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T11:14:43.247Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-virtual-nodes-family-status-reconcile-20260625.md cites the accepted 2026-06-25 family audit surfaces, preserves multi-pod-burst as maintained unknown and subnet-validation as runtime-surface-blocked, confirms no bounded model/view/spec repair is needed, and limits the only optional successor to the non-mutating burst --check replay while leaving the five external returned-proof waits unchanged through the 2026-06-26 follow-up window."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the existing serverless virtual-nodes multi-pod burst replay in repo-local check mode only, confirm the family remains execute-capable without cloud mutation, and archive the exact command/result plus any bounded follow-up needed before a future gated live probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625.md"
+      ],
+      "acceptance": [
+        "Archive artifact records the exact non-mutating command(s), environment gate state, and resulting check-mode output for replays/serverless-virtual-nodes-multi-pod-burst.ts without running live cloud mutation.",
+        "Artifact confirms whether the current replay/spec/model stack still agrees with the family audit's selected next safe verification candidate and names any bounded repo-local repair if the check fails.",
+        "Artifact leaves path.serverless-virtual-nodes.multi-pod-burst truthful as unknown/unobserved unless direct accepted runtime evidence is produced; do not claim product pass/fail from check mode alone."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T11:04:57.033Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625_20260625110459",
+        "assigned_at": "2026-06-25T11:04:59.367Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625_20260625110459",
+        "worker_started_at": "2026-06-25T11:05:12.466Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the existing serverless virtual-nodes multi-pod burst replay in repo-local check mode, archived both the JSON check evidence and a markdown proof note, and confirmed the path must remain unknown/unobserved absent gated live runtime evidence.",
+        "last_worker_completed_at": "2026-06-25T11:08:14.257Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T11:09:20.269Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived proof records the exact non-mutating replay check commands, closed mutation gate, pass result with commands: 0, and preserves path.serverless-virtual-nodes.multi-pod-burst as unknown/unobserved absent live runtime evidence."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-check-replay-proof-20260625"
+      ],
+      "result": "Ran the existing serverless virtual-nodes multi-pod burst replay in repo-local check mode, archived both the JSON check evidence and a markdown proof note, and confirmed the path must remain unknown/unobserved absent gated live runtime evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T11:09:20.269Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived proof records the exact non-mutating replay check commands, closed mutation gate, pass result with commands: 0, and preserves path.serverless-virtual-nodes.multi-pod-burst as unknown/unobserved absent live runtime evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the current repo-local subnet-validation carrier for the serverless virtual-nodes family, determining whether an exact non-mutating replay/check surface exists today or whether the maintained ceiling is spec/model-only, and archive the next bounded repo-local step without reopening live cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625.md"
+      ],
+      "acceptance": [
+        "Archive artifact cites the exact repo-local subnet-validation spec/replay/model/view surfaces and any mounted-source family references needed to judge whether a current replay/check carrier exists.",
+        "Artifact states whether an exact non-mutating replay/check can be run today for path.serverless-virtual-nodes.subnet-validation; if not, it names one bounded repo-local authoring or evidence-ceiling successor without changing the path's blocked runtime status.",
+        "Artifact preserves the existing truthful boundary for subnet-validation: do not claim product pass/fail from repo-local audit work, do not reopen cloud mutation, and do not disturb the five external returned-proof waits before the 2026-06-26 follow-up window."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T11:09:20.322Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625_20260625110920",
+        "assigned_at": "2026-06-25T11:09:20.373Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625_20260625110920",
+        "worker_started_at": "2026-06-25T11:09:38.936Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a repo-local readiness audit for serverless virtual-nodes subnet-validation and proved the exact non-mutating `--check` replay carrier exists today by rerunning `replays/serverless-virtual-nodes-subnet-validation.ts --check` and writing fresh evidence.",
+        "last_worker_completed_at": "2026-06-25T11:11:24.369Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T11:12:14.928Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-25 repo-local audit: archived evidence proves the exact non-mutating subnet-validation carrier exists today via replays/serverless-virtual-nodes-subnet-validation.ts --check with fresh pass JSON, while preserving the truthful boundary that only live placement observation remains runtime-blocked and no external returned-proof waits are disturbed before the 2026-06-26 follow-up window."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-replay-readiness-audit-20260625"
+      ],
+      "result": "Archived a repo-local readiness audit for serverless virtual-nodes subnet-validation and proved the exact non-mutating `--check` replay carrier exists today by rerunning `replays/serverless-virtual-nodes-subnet-validation.ts --check` and writing fresh evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T11:12:14.928Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-25 repo-local audit: archived evidence proves the exact non-mutating subnet-validation carrier exists today via replays/serverless-virtual-nodes-subnet-validation.ts --check with fresh pass JSON, while preserving the truthful boundary that only live placement observation remains runtime-blocked and no external returned-proof waits are disturbed before the 2026-06-26 follow-up window."
+      },
+      "status": "done"
+    }
+  ]
+}

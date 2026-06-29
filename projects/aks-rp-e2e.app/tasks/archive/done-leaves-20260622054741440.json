@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:47:41.440Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted two repo-local authoring slices: the missing speculor/netintegration Scenario_MultiNIC_DualStack carrier set now exists with mounted-source-backed feature/spec/replay/index wiring and non-mutating check-mode proof, and VM prerelease row 39 now has an execute-gated disable-SSH live carrier that truthfully maps the mounted Linux+Windows disable→LocalUser→node-image-upgrade→re-enable lifecycle without claiming cloud evidence. The single external-human-transport blocked family remains the only truthful live wait. Active next work is (1) finish VM prerelease row 25 capacity-based surge live replay authoring and (2) land the dedicated maintained model/view carrier for path.net-integration.multinic-dualstack so the new source-grounded sibling appears in accepted knowledge-map surfaces without overstating live validation.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the missing mounted-source-backed repo-local carrier set for speculor/netintegration Scenario_MultiNIC_DualStack by capturing the exact checkin entrypoint and request/validation contract in a durable artifact, then adding the corresponding spec and replay scaffolds without attempting cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-netintegration-multinic-dualstack-carrier-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/netintegration/plans/multinic.go, plans/plans.go, and suites/checkin.go, preserving the exact Scenario_MultiNIC_DualStack request shape, suite routing, and validation expectations.",
+        "Repo-local carriers are added for the missing sibling, including a dedicated spec and replay scaffold for net-integration MultiNIC DualStack that stay explicitly source-grounded and execute-gated rather than claiming live evidence.",
+        "Artifact distinguishes what was authored locally from any still-unexecuted dual-stack validation and ends with the exact next model/evidence follow-up if additional repo-local work remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/speculor-netintegration-multinic-dualstack-carrier-authoring-20260622.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:42:11.625Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622_20260622054211",
+        "assigned_at": "2026-06-22T05:42:11.676Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622",
+        "worker_started_attempt_id": "a_speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622_20260622054211",
+        "worker_started_at": "2026-06-22T05:42:32.486Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the missing repo-local MultiNIC DualStack carrier set from mounted AKS RP source by adding a new feature packet, spec, replay scaffold, spec-index registration, and a durable evidence artifact under evidence/archive.",
+        "last_worker_completed_at": "2026-06-22T05:46:34.143Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:47:35.748Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22: evidence/archive/speculor-netintegration-multinic-dualstack-carrier-authoring-20260622.md cites mounted speculor netintegration source, preserves Scenario_MultiNIC_DualStack request and validation contract, and records the new repo-local feature/spec/replay/index carrier plus successful non-mutating check-mode verification."
+      },
+      "session_id": "s_task_speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622",
+      "session_history": [
+        "s_task_speculor-netintegration-multinic-dualstack-carrier-authoring-parallel-safe-20260622"
+      ],
+      "result": "Authored the missing repo-local MultiNIC DualStack carrier set from mounted AKS RP source by adding a new feature packet, spec, replay scaffold, spec-index registration, and a durable evidence artifact under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:47:35.748Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22: evidence/archive/speculor-netintegration-multinic-dualstack-carrier-authoring-20260622.md cites mounted speculor netintegration source, preserves Scenario_MultiNIC_DualStack request and validation contract, and records the new repo-local feature/spec/replay/index carrier plus successful non-mutating check-mode verification."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the current row-39 disable-SSH source/spec wrapper with an execute-gated live replay body grounded in mounted AKS RP source, preserving the exact Linux+Windows disable/update/upgrade/reenable lifecycle from the VM prerelease/checkin suite without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row39-live-replay-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/security/ssh/plans/disablessh.go and the VM suite row-39 anchor in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, mapping each mounted lifecycle step to the replay changes made.",
+        "replays/node-pool-config-disable-ssh-lifecycle.ts is upgraded from a source/spec-check wrapper to an execute-gated live replay carrier that covers disable verification for Linux and Windows, the SSHAccess=LocalUser update, node image upgrade, and post-upgrade SSH-enabled verification, while preserving explicit execute gating and cleanup expectations.",
+        "Artifact distinguishes what was authored locally from any still-unexecuted cloud-mutation evidence, and ends with the exact next review or execution-readiness follow-up if further repo-local work remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:38:57.647Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T05:40:47.925Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622_20260622054108",
+        "assigned_at": "2026-06-22T05:41:08.474Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622_20260622054108",
+        "worker_started_at": "2026-06-22T05:41:27.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new execute-gated row-39 live replay carrier (`replays/lib/disable-ssh-live-carrier.ts`), rewired `replays/node-pool-config-disable-ssh-lifecycle.ts` to use it, updated spec/index metadata to execution-ready with a mutation gate, and wrote the requested evidence artifact documenting the mounted-source-to-replay mapping and next execution step.",
+        "last_worker_completed_at": "2026-06-22T05:46:59.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:47:35.798Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22: evidence/archive/vm-prerelease-row39-live-replay-authoring-20260622.md maps mounted disable-SSH lifecycle source into the new execute-gated live carrier, updates replay/spec/index readiness truthfully, and leaves live cloud evidence explicitly unclaimed pending an approved execute run."
+      },
+      "session_id": "s_task_vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row39-disable-ssh-live-replay-authoring-20260622"
+      ],
+      "result": "Authored a new execute-gated row-39 live replay carrier (`replays/lib/disable-ssh-live-carrier.ts`), rewired `replays/node-pool-config-disable-ssh-lifecycle.ts` to use it, updated spec/index metadata to execution-ready with a mutation gate, and wrote the requested evidence artifact documenting the mounted-source-to-replay mapping and next execution step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:47:35.798Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22: evidence/archive/vm-prerelease-row39-live-replay-authoring-20260622.md maps mounted disable-SSH lifecycle source into the new execute-gated live carrier, updates replay/spec/index readiness truthfully, and leaves live cloud evidence explicitly unclaimed pending an approved execute run."
+      },
+      "status": "done"
+    }
+  ]
+}

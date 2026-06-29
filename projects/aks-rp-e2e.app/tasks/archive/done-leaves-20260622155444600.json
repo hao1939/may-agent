@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T15:54:44.600Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 follow-on hygiene after stale secops-fips problem-unknown wake: archive the remaining four safe done leaves because their durable meaning already lives in accepted archive artifacts and maintained repo-local carriers. The frontier stays unchanged and intentionally minimal: one active repo-local row-82 App Routing VM prerelease verdict-contract retry, plus one shared external human-transport wait. No new decomposition or blocker family is needed from the stale secops-fips event.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source under /app/sources/aks-rp/test/e2ev3/sigs/secops/clusterfips/plans to reconcile the bounded handwritten secops-fips Scenario_Cluster_FIPS_Backwards_Compat slice into repo-local source/spec/replay/index carriers so the secops-fips lane keeps moving with repo-local knowledge work while external-human transport waits stay compressed elsewhere.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c.md"
+      ],
+      "acceptance": [
+        "Inspect the bounded Backwards Compat handwritten slice from mounted source and any directly referenced scenario definitions, then write the archive artifact summarizing the concrete input paths, expected behavior paths, repo-local carrier state before/after, and the exact source anchors used.",
+        "If the mounted-source review shows stale or missing repo-local carriers for this secops-fips slice, update the directly coupled feature/spec/replay/index files and run the needed non-mutating validation so maintained carriers truthfully preserve the slice without claiming live execution evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips-mounted-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T15:48:30.193Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c_20260622154830",
+        "assigned_at": "2026-06-22T15:48:30.239Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c",
+        "worker_started_attempt_id": "a_secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c_20260622154830",
+        "worker_started_at": "2026-06-22T15:48:54.575Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-22T15:52:18.964Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T15:52:59.338Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact and fresh check-mode replay evidence show Scenario_Cluster_FIPS_Backwards_Compat now has truthful repo-local feature/spec/replay/index carriers, with the narrow authoring fixes landed and no live-execution claims added."
+      },
+      "session_id": "s_task_secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c",
+      "session_history": [
+        "s_task_secops-fips-mounted-source-backwards-compat-bounded-slice-reconcile-20260622c"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T15:52:59.338Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact and fresh check-mode replay evidence show Scenario_Cluster_FIPS_Backwards_Compat now has truthful repo-local feature/spec/replay/index carriers, with the narrow authoring fixes landed and no live-execution claims added."
+      },
+      "status": "done"
+    }
+  ]
+}

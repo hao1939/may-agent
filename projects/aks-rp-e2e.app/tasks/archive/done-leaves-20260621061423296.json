@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:14:23.296Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after stale watchdog review clearance: the watchdog-requested row30 review was already accepted, so repo-local progress now rolls up the two newly completed VM prerelease source/spec leaves. The source-backed boundary map remains accepted as proof that prerelease/checkin lineage is understood and that remaining work is feature/model refinement rather than missing source discovery or cloud execution; the row30 mixed-SKU deallocate packet remains accepted as the durable feature carrier for its exact spec/path/scenario/replay contract and row29-vs-row30 boundary. Live project work is intentionally reduced to one active repo-local forward path, vm-mixed-sku-upgrade-feature-packet-20260621, plus the single family-level external-human send/escalation-proof wait; no duplicate review, retry, or blocked leaves should be recreated from the stale watchdog event.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-source-spec-boundary-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the handwritten AKS RP VirtualMachine prerelease e2ev3 source into a bounded source-backed knowledge/spec packet: enumerate the prerelease scenario intent, selected inputs, expected behaviors, current modeled feature-path coverage, and the exact gaps that still need model/spec updates without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-source-spec-boundary-map-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any directly referenced scenario definitions/checkin companions needed to explain prerelease intent.",
+        "Artifact maps at least one concrete VirtualMachine prerelease scenario to existing knowledge-map feature-path or spec coverage, and names any missing or stale model/spec links with exact ids or proposed ids.",
+        "Task stays non-cloud and source/spec-only, leaves a clear next step for either model update or replay authoring, and does not reopen the external-human send wait unless new contradictory evidence appears."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:07:57.557Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-spec-boundary-map-20260621_20260621060757",
+        "assigned_at": "2026-06-21T06:07:57.605Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-spec-boundary-map-20260621",
+        "worker_started_attempt_id": "a_vm-prerelease-source-spec-boundary-map-20260621_20260621060757",
+        "worker_started_at": "2026-06-21T06:08:07.089Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested source/spec boundary-map artifact at evidence/archive/vm-prerelease-source-spec-boundary-map-20260621.md, grounding VM prerelease intent in mounted AKS RP source and mapping row-30 mixed-SKU deallocate coverage plus exact remaining non-cloud gaps.",
+        "last_worker_completed_at": "2026-06-21T06:09:37.057Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:10:08.945Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-source-spec-boundary-map-20260621.md cites mounted prerelease/checkin/plan sources, proves row-30 mixed-SKU deallocate already has exact spec/replay/model linkage, and narrows remaining work to repo-local feature/model refinement rather than missing source discovery or cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-source-spec-boundary-map-20260621",
+      "session_history": [
+        "s_task_vm-prerelease-source-spec-boundary-map-20260621"
+      ],
+      "result": "Produced the requested source/spec boundary-map artifact at evidence/archive/vm-prerelease-source-spec-boundary-map-20260621.md, grounding VM prerelease intent in mounted AKS RP source and mapping row-30 mixed-SKU deallocate coverage plus exact remaining non-cloud gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:10:08.945Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-source-spec-boundary-map-20260621.md cites mounted prerelease/checkin/plan sources, proves row-30 mixed-SKU deallocate already has exact spec/replay/model linkage, and narrows remaining work to repo-local feature/model refinement rather than missing source discovery or cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-mixed-sku-deallocate-feature-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the missing durable feature packet for VM prerelease row 30 by adding features/virtualmachines-mixed-sku-deallocate.yaml, grounding the mounted mixed_sku_deallocate.go contract, row-29 vs row-30 boundary, and the existing spec/replay/model ids without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachines-mixed-sku-deallocate.yaml"
+      ],
+      "acceptance": [
+        "Feature packet cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/mixed_sku_deallocate.go plus prerelease/checkin lineage needed to show row-30 provenance.",
+        "Feature packet binds featureId virtualmachines-mixed-sku-deallocate to spec.virtualmachines.mixed-sku-deallocate, path.virtualmachines.mixed-sku-deallocate, scenario.virtualmachines-mixed-sku-deallocate, and replay replays/virtualmachines-mixed-sku-deallocate.ts with execute-gated wording only.",
+        "Packet explicitly preserves the delete-vs-deallocate boundary against virtualmachines-mixed-sku-lifecycle and leaves any deeper DAG enrichment as later follow-up rather than broadening into cloud execution or external-human wait work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:10:08.999Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-mixed-sku-deallocate-feature-packet-20260621_20260621061009",
+        "assigned_at": "2026-06-21T06:10:09.048Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-mixed-sku-deallocate-feature-packet-20260621",
+        "worker_started_attempt_id": "a_vm-mixed-sku-deallocate-feature-packet-20260621_20260621061009",
+        "worker_started_at": "2026-06-21T06:10:18.550Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the missing durable feature packet for VM prerelease row 30 at features/virtualmachines-mixed-sku-deallocate.yaml, grounding mounted source lineage, row-29 vs row-30 boundary, and existing spec/replay/model IDs without cloud execution.",
+        "last_worker_completed_at": "2026-06-21T06:11:36.303Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:12:54.034Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/virtualmachines-mixed-sku-deallocate.yaml now durably grounds mounted mixed_sku_deallocate.go plus prerelease/checkin lineage, binds spec/path/scenario/replay IDs, and preserves the row-29 delete-vs-row-30 deallocate boundary without claiming live cloud execution."
+      },
+      "session_id": "s_task_vm-mixed-sku-deallocate-feature-packet-20260621",
+      "session_history": [
+        "s_task_vm-mixed-sku-deallocate-feature-packet-20260621"
+      ],
+      "result": "Authored the missing durable feature packet for VM prerelease row 30 at features/virtualmachines-mixed-sku-deallocate.yaml, grounding mounted source lineage, row-29 vs row-30 boundary, and existing spec/replay/model IDs without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:12:54.034Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/virtualmachines-mixed-sku-deallocate.yaml now durably grounds mounted mixed_sku_deallocate.go plus prerelease/checkin lineage, binds spec/path/scenario/replay IDs, and preserves the row-29 delete-vs-row-30 deallocate boundary without claiming live cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

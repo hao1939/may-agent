@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:38:17.650Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed wake accepted the AddonV2 row-63 runtime/tooling escalation packet as durable owner-routing history. The packet preserves the exact stale-writer facts (PID 674019 still owning the replaced run id, stale running session rows, and a still-mutating exact-prefix output surface) and narrows the issue to a may-agent runtime ownership ceiling only: agent:may, may-agent.app/tech-lead, and Hao's local runtime are the relevant owner surfaces, but there is still no durable send/handoff proof, no runtime reconciliation evidence, and no cloud rerun authorization. The live frontier remains intentionally minimal: keep addonv2-row63-runtime-tooling-escalation-wait-20260621 as the single carrier until durable runtime repair evidence plus a repo-local quiescence recheck exist; the separate external-send and privatecluster execution-approval waits remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-row63-runtime-tooling-escalation-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded runtime/tooling escalation packet for the AddonV2 row-63 stale-writer blocker by restating the accepted stale PID/session/output-mutation facts, identifying the exact may-agent runtime owner or escalation route, and recording the smallest truthful local handoff or ownership ceiling needed before the blocked rerun family can move again.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-row63-runtime-tooling-escalation-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites evidence/archive/addonv2-row63-stale-writer-reconcile-or-runtime-bug-20260621.md and preserves the exact blocked facts for path.app-monitoring-addonv2-azure-monitor-metrics: orphaned replay PID 674019 still owns the replaced run id, stale row-63 sessions remain running without terminal cleanup, and the exact row-63 after-reconcile output prefix was still mutating after replacement.",
+        "Artifact names the exact may-agent runtime/tooling owner surface or escalation route available from repo-local evidence and records one bounded result only: either durable local handoff/escalation proof toward that owner, or a precise ownership/tooling ceiling showing why no further truthful local escalation packet/handoff can be completed yet.",
+        "Artifact ends with one next action for the existing blocked wait only; it does not reinterpret the row-63 state as product diagnosis, does not authorize a cloud rerun, and does not duplicate the separate external-send family blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:35:44.073Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T10:35:47.450Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-row63-runtime-tooling-escalation-packet-20260621_20260621103547",
+        "assigned_at": "2026-06-21T10:35:47.505Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-row63-runtime-tooling-escalation-packet-20260621",
+        "worker_started_attempt_id": "a_addonv2-row63-runtime-tooling-escalation-packet-20260621_20260621103547",
+        "worker_started_at": "2026-06-21T10:36:05.215Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested bounded runtime/tooling escalation packet at evidence/archive/addonv2-row63-runtime-tooling-escalation-packet-20260621.md, preserving the accepted row-63 stale-writer facts and identifying the repo-local may-agent ownership/escalation ceiling without claiming an unsent handoff.",
+        "last_worker_completed_at": "2026-06-21T10:36:58.789Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:37:23.629Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded escalation packet as durable owner-routing evidence: it preserves the exact row-63 stale-writer/session facts, identifies the repo-local runtime/tooling owner surfaces (agent:may, may-agent.app/tech-lead, Hao local runtime ceiling), and truthfully stops at an ownership ceiling rather than claiming an unsent handoff, runtime repair, or product diagnosis."
+      },
+      "session_id": "s_task_addonv2-row63-runtime-tooling-escalation-packet-20260621",
+      "session_history": [
+        "s_task_addonv2-row63-runtime-tooling-escalation-packet-20260621"
+      ],
+      "result": "Produced the requested bounded runtime/tooling escalation packet at evidence/archive/addonv2-row63-runtime-tooling-escalation-packet-20260621.md, preserving the accepted row-63 stale-writer facts and identifying the repo-local may-agent ownership/escalation ceiling without claiming an unsent handoff.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:37:23.629Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded escalation packet as durable owner-routing evidence: it preserves the exact row-63 stale-writer/session facts, identifies the repo-local runtime/tooling owner surfaces (agent:may, may-agent.app/tech-lead, Hao local runtime ceiling), and truthfully stops at an ownership ceiling rather than claiming an unsent handoff, runtime repair, or product diagnosis."
+      },
+      "status": "done"
+    }
+  ]
+}

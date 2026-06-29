@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:32:37.291Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update confirmed the watchdog-review-pending event was stale: private-cluster-auth-service-tags-model-carrier-update-from-runner-vantage-ceiling-20260621 had already been accepted and no review frontier exists. The project remains in a truthful two-front shape. The only live local work is aad-rbac-managed-v2-lifecycle-execute-gate-packet-20260621, which should produce a repo-local execute-gate packet for VM prerelease row 37 by reconciling mounted-source contract, current carrier/model text, and existing evidence without cloud mutation or cross-row expansion. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621, preserving the shared off-runtime human transport ceiling for the four already prepared and repo-locally dispatched asks until durable real-world send/handoff/escalation proof or authoritative replies arrive. Archived done child preserved here: vmpr-row39-disable-ssh-source-spec-model-packet-20260621 remains complete in linked evidence/model artifacts. No extra refill leaf is needed on this wake because the active row-37 AAD lifecycle packet is already assigned and is the highest-value repo-local next action.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row39-disable-ssh-source-spec-model-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: use mounted /app/sources/aks-rp source plus repo-local carriers to pin the exact VM prerelease row-39 disable-SSH lifecycle contract, reconcile the maintained spec/replay/model/path carriers for path.node-pool-config.disable-ssh-lifecycle, and preserve status unknown until a dedicated live execute exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Write evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md citing the exact mounted source files and any existing repo-local feature/spec/replay/model carriers used to explain the Scenario_Disable_SSH / Scenario_Disable_SSH_VirtualMachine contract, including Linux and Windows disabled-state checks, LocalUser persistence, node-image-upgrade behavior, and post-upgrade enabled-state expectations.",
+        "Update any directly affected repo-local carrier(s) so path.node-pool-config.disable-ssh-lifecycle truthfully reflects the row-39 source-backed contract and remains unknown/source-backed rather than claiming a fresh cloud verdict.",
+        "Perform repo-local validation only and record the exact next bounded follow-up needed to move this path beyond unknown, including whether the next step is check-mode verification repair or a separately gated live execute."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-pool-config-row39-disable-ssh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:23:01.576Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row39-disable-ssh-source-spec-model-packet-20260621_20260621142301",
+        "assigned_at": "2026-06-21T14:23:01.628Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row39-disable-ssh-source-spec-model-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-row39-disable-ssh-source-spec-model-packet-20260621_20260621142301",
+        "worker_started_at": "2026-06-21T14:23:22.403Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-39 Disable SSH evidence packet at evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md and verified repo-local source/spec/model alignment remains truthfully unknown/source-grounded, with a fresh --check artifact proving wiring passes.",
+        "last_worker_completed_at": "2026-06-21T14:24:50.026Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:25:04.544Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md cites mounted AKS RP source files, shows the row-39 Disable SSH contract, confirms repo-local feature/spec/replay/model carriers already match, and records a successful check-mode replay validation while truthfully keeping path.node-pool-config.disable-ssh-lifecycle unknown until a dedicated live execute exists."
+      },
+      "session_id": "s_task_vmpr-row39-disable-ssh-source-spec-model-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-row39-disable-ssh-source-spec-model-packet-20260621"
+      ],
+      "result": "Wrote the requested row-39 Disable SSH evidence packet at evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md and verified repo-local source/spec/model alignment remains truthfully unknown/source-grounded, with a fresh --check artifact proving wiring passes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:25:04.544Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row39-disable-ssh-source-spec-model-packet-20260621.md cites mounted AKS RP source files, shows the row-39 Disable SSH contract, confirms repo-local feature/spec/replay/model carriers already match, and records a successful check-mode replay validation while truthfully keeping path.node-pool-config.disable-ssh-lifecycle unknown until a dedicated live execute exists."
+      },
+      "status": "done"
+    }
+  ]
+}

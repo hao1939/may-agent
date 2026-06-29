@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:18:09.768Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621: the completed artifact truthfully proves the exact execute-approval packet is send-ready and the app documents a real human:operator approval channel, but there is still no durable repo-local dispatch record or worker-local supported emission path for this exact ask. The live network-cni branch therefore remains the active owner-handoff-proof-or-app-gap follow-up, and it must stay distinct from the shared external-send blocked family until one exact handoff proof exists. Other live work remains vmpr-row27-34 done-slice isolation plus the separate addonv2 runtime-tooling and shared external-send waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted execute-approval packet for path.network-cni-azure-overlay-dual-stack-migration into a truthful next-state record by proving one actual approval dispatch/handoff through the documented human:operator channel or by documenting the exact local emission/tooling gap that still prevents dispatch, with enough evidence to justify either a real external wait or a follow-up app-tooling ask.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted execute-approval packet plus the project-app approval channel docs and records either durable dispatch proof (timestamp, channel/event path, sender/owner, recipient/escalation target, and packet linkage) or exact evidence that the current local workflow cannot actually emit/record that approval handoff yet.",
+        "Artifact ends with one concrete state transition for path.network-cni-azure-overlay-dual-stack-migration only: either the path can now wait on an external human reply/approval with a precise resume condition, or a bounded app/tooling follow-up is named because dispatch is still locally impossible.",
+        "Task stays in the user-review/workspace lane only: no cloud mutation, no replay scope widening, and no packet redrafting unless a cited contract defect is discovered during dispatch-proof collection."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:15:13.375Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621_20260621101513",
+        "assigned_at": "2026-06-21T10:15:13.419Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621_20260621101513",
+        "worker_started_at": "2026-06-21T10:15:30.501Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested approval-dispatch proof artifact for the network-cni overlay dual-stack migration path. The artifact proves the packet is send-ready and the app has a documented human approval channel, but there is no durable repo-local dispatch record for this exact ask and the worker lane does not expose a proven way to emit that handoff itself.",
+        "last_worker_completed_at": "2026-06-21T10:17:02.139Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:17:28.850Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621.md truthfully proves the exact packet is send-ready, the project app documents a real human:operator approval channel, and there is still no durable dispatch record or worker-local emission path for this exact ask, so the review leaf satisfied acceptance by narrowing the path to a local dispatch gap rather than an external wait."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621"
+      ],
+      "result": "Wrote the requested approval-dispatch proof artifact for the network-cni overlay dual-stack migration path. The artifact proves the packet is send-ready and the app has a documented human approval channel, but there is no durable repo-local dispatch record for this exact ask and the worker lane does not expose a proven way to emit that handoff itself.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:17:28.850Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-dualstack-migration-approval-dispatch-proof-20260621.md truthfully proves the exact packet is send-ready, the project app documents a real human:operator approval channel, and there is still no durable dispatch record or worker-local emission path for this exact ask, so the review leaf satisfied acceptance by narrowing the path to a local dispatch gap rather than an external wait."
+      },
+      "status": "done"
+    }
+  ]
+}

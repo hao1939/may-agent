@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T02:30:10.393Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner rollup preserved the durable feature-reference meaning on this parent. The repaired outbound none-to-lb packet-shape gating leaf is now archived because its result is already captured here: the feature-reference batch accepted fourteen collector drafts archived without contradiction for user-assigned NAT gateway, ACNS variants, Swift V2 add/remove, node artifact streaming, and node autoprovision surfaces, and the Swift V2 repair replaced the placeholder posture with a bounded public-reference note. One active child remains: map-none-to-lb-compliant-network-isolated-carrier-gap-20260628 is still the live carrier for the remaining compliant-source-shape gap before any future live verification claim on that branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair features/net-integration/packets/outbound-migration-none-to-lb.yaml so its packet stance matches the accepted 2026-06-28 none→LB reconciliation: replace the stale blanket product-constraint framing with a shape-gated/source-grounded boundary that preserves the invalid-source-shape rejection evidence without overstating the whole path as terminal.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628.md"
+      ],
+      "acceptance": [
+        "Update features/net-integration/packets/outbound-migration-none-to-lb.yaml so sourceScenario/spec linkage and verdict wording no longer claim the whole none→LB path is terminally infeasible; explicitly distinguish compliant network-isolated source shape from the invalid public-shape rejection subcase.",
+        "Ground the packet with the same mounted source/public-reference lineage already accepted for the spec, or explicitly qualify any remaining packet fields that still rely on weaker lineage.",
+        "Write a durable archive note citing evidence/archive/feature-reference-outbound-packet-spec-reconciliation-20260628.md and naming every packet field/file changed or intentionally left unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-repair:net-integration-outbound-migration-none-to-lb-packet:20260628"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:24:59.314Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T02:25:04.331Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628_20260628022529",
+        "assigned_at": "2026-06-28T02:25:29.616Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628_20260628022529",
+        "worker_started_at": "2026-06-28T02:25:30.932Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the none→LB packet to a shape-gated conditional-support stance in features/net-integration/packets/outbound-migration-none-to-lb.yaml and added a durable archive note documenting every changed or unchanged field/file.",
+        "last_worker_completed_at": "2026-06-28T02:27:23.696Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T02:27:57.394Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/net-integration/packets/outbound-migration-none-to-lb.yaml now uses a shape-gated conditional-support stance, upgrades lineage to mounted source, and the archive note truthfully inventories changed vs unchanged fields while preserving compliant-shape support as source-grounded rather than execution-verified."
+      },
+      "session_id": "s_task_repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-outbound-migration-none-to-lb-packet-shape-gating-20260628"
+      ],
+      "result": "Repaired the none→LB packet to a shape-gated conditional-support stance in features/net-integration/packets/outbound-migration-none-to-lb.yaml and added a durable archive note documenting every changed or unchanged field/file.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T02:27:57.394Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/net-integration/packets/outbound-migration-none-to-lb.yaml now uses a shape-gated conditional-support stance, upgrades lineage to mounted source, and the archive note truthfully inventories changed vs unchanged fields while preserving compliant-shape support as source-grounded rather than execution-verified."
+      },
+      "status": "done"
+    }
+  ]
+}

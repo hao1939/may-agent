@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:12:33.255Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner watchdog review accepted the rows26-34 adjacent-boundary matrix and the MultiNIC DualStack replay implementation as durable completed slices. Live open work is now narrowly focused on the active row-25 proof-and-isolation pass, which must inspect actual workspace files before the separate row-25 replay-implementation review can be accepted or sent back. The single external-human-transport wait remains the only truthful blocked family for asks that still require real human send/reply proof outside runtime.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a mounted-source boundary matrix for VM prerelease rows 26-34 so the project has a concrete repo-local knowledge artifact that distinguishes row 25 capacity-based-surge from its adjacent VirtualMachine prerelease scenarios without reopening external-human-transport waits or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus any directly referenced helper/scenario definitions and records, for each mounted-source row 26-34 scenario, the exact request/input knobs, operation sequence, and principal assertions in a compact comparison matrix.",
+        "Artifact explicitly contrasts rows 26-34 against active row-25 capacity-based-surge work: which behaviors are adjacent versus distinct, which rows already have repo-local replay/spec/live-ask coverage, and which rows remain source-only or externally gated, without claiming product verdicts beyond cited source/evidence.",
+        "Artifact ends with one bounded next-step recommendation for this family that preserves truthful scope for future planner passes (for example a concrete replay/spec/model slice or a proof that no new local slice is warranted yet)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:08:15.631Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622_20260622060815",
+        "assigned_at": "2026-06-22T06:08:15.679Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622_20260622060815",
+        "worker_started_at": "2026-06-22T06:08:30.923Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested mounted-source comparison artifact at evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md, contrasting rows 26-34 against row 25 with exact source knobs, operation sequences, assertions, current repo-local carrier state, and one bounded next-step recommendation.",
+        "last_worker_completed_at": "2026-06-22T06:10:55.344Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:11:30.392Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after bounded artifact review: evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md cites mounted-source prerelease/checkin/plan files for rows 26-34, contrasts each row against row 25 without overclaiming product verdicts, records current repo-local carrier/gating state, and ends with one bounded next-step recommendation (row 28 maintained-surface decision only)."
+      },
+      "session_id": "s_task_vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622"
+      ],
+      "result": "Authored the requested mounted-source comparison artifact at evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md, contrasting rows 26-34 against row 25 with exact source knobs, operation sequences, assertions, current repo-local carrier state, and one bounded next-step recommendation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:11:30.392Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after bounded artifact review: evidence/archive/vm-prerelease-rows26-34-adjacent-boundary-matrix-20260622.md cites mounted-source prerelease/checkin/plan files for rows 26-34, contrasts each row against row 25 without overclaiming product verdicts, records current repo-local carrier/gating state, and ends with one bounded next-step recommendation (row 28 maintained-surface decision only)."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T15:53:54.641Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 watchdog blocked-frontier review revalidated that all six blocked children under focus-mounted-source-coverage-closure-and-external-wait-20260623 are still truthful exact returned-proof waits with no bounded local follow-up before the 2026-06-26 review window, including the AAD-RBAC environment-overblock warning that remains a false positive because repo-local narrowing/send proof is already complete. To keep the root readable while no-cloud progress continues, archive the completed VM prerelease source/ledger/audit leaves as durable regular-learning history and leave private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625 as the single active repo-local next action.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-suite-source-inventory-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the mounted AKS RP VirtualMachine prerelease/checkin suite source into one durable knowledge artifact that proves prerelease is an alias of CheckIn, captures the suite-level mutators, enumerates the handwritten scenarios currently carried by the suite, and identifies one bounded next repo-local coverage/model follow-up worth doing next without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-suite-source-inventory-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, explicitly proves the PreRelease alias/reuse relationship, and records the suite-level mutators that shape all covered scenarios.",
+        "Archive evidence groups or enumerates the mounted handwritten scenarios in the suite with enough fidelity to support feature/input/expectation mapping and calls out at least one concrete uncovered or weakly represented repo-local follow-up slice that stays inside the regular-learning lane.",
+        "No cloud mutation, approval-send, or devbox execution is attempted; the output is durable repo-local source knowledge that can drive later feature/spec/model work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T14:49:13.958Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-suite-source-inventory-20260625_20260625144916",
+        "assigned_at": "2026-06-25T14:49:16.392Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-suite-source-inventory-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-suite-source-inventory-20260625_20260625144916",
+        "worker_started_at": "2026-06-25T14:49:35.960Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable source-inventory artifact at evidence/archive/virtualmachine-prerelease-suite-source-inventory-20260625.md proving PreRelease aliases CheckIn, documenting suite-wide mutators, enumerating the 58 carried handwritten scenarios, and naming a bounded repo-local follow-up to reconcile stale 56-row prerelease coverage artifacts.",
+        "last_worker_completed_at": "2026-06-25T14:51:41.790Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T14:52:37.527Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves PreRelease aliases CheckIn from mounted source, records the three suite-wide mutators, enumerates the current 58 carried scenarios, and identifies the bounded no-cloud follow-up to reconcile stale 56-row prerelease coverage artifacts."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-suite-source-inventory-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-suite-source-inventory-20260625"
+      ],
+      "result": "Created a durable source-inventory artifact at evidence/archive/virtualmachine-prerelease-suite-source-inventory-20260625.md proving PreRelease aliases CheckIn, documenting suite-wide mutators, enumerating the 58 carried handwritten scenarios, and naming a bounded repo-local follow-up to reconcile stale 56-row prerelease coverage artifacts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T14:52:37.527Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves PreRelease aliases CheckIn from mounted source, records the three suite-wide mutators, enumerates the current 58 carried scenarios, and identifies the bounded no-cloud follow-up to reconcile stale 56-row prerelease coverage artifacts."
+      },
+      "status": "done"
+    }
+  ]
+}

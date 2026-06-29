@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:30:05.109Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner accepted the SecOps FIPS base Phase 3a unaligned-pools rejection source landing: the repo now has the exact no-cloud packet/spec/source-grounded wrapper/model carrier for attempt_enable_cluster_fips_without_agentpool_fips with the canonical validator substring and explicit non-overlap from adjacent secops carriers. Review also exposed one concrete local successor rather than a new external wait: the landed feature-local .test.ts wrapper is not currently discovered by the repo's Vitest include pattern, so secops-feature-vitest-discovery-surface-repair-20260627 is now the single runnable repo-local follow-up while the two existing external waits remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-base-unaligned-pools-rejection-source-landing-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact repo-local no-cloud carrier for the mounted base secops-fips Phase 3a rejection boundary by adding the Linux-only unaligned-pools rejection packet, canonical spec, source-grounded test/probe wrapper, and normalized model objects separated from enabled-cluster-create, windows, and advanced carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-base-unaligned-pools-rejection-source-landing-20260627.md"
+      ],
+      "acceptance": [
+        "Add features/secops/packets/fips-base-unaligned-pools-rejection.yaml and features/secops/specs/secops-fips-base-unaligned-pools-rejection.json with mounted source refs to Scenario_Cluster_FIPS step attempt_enable_cluster_fips_without_agentpool_fips and the exact validator substring all existing agent pools must have .properties.enableFIPS set to true.",
+        "Add the matching source-grounded secops test/probe carrier and normalize scenario/dag/path objects for secops-fips.base-unaligned-pools-rejection without making any cloud execution claim.",
+        "Update repo-local evidence/model context so the new carrier is explicitly non-overlapping with enabled-cluster-create, windows, advanced, and root-config-preservation, and record the landed files plus verification commands in the output artifact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips-base-phase3a-rejection"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:20:17.933Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-base-unaligned-pools-rejection-source-landing-20260627_20260627052017",
+        "assigned_at": "2026-06-27T05:20:17.986Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-base-unaligned-pools-rejection-source-landing-20260627",
+        "worker_started_attempt_id": "a_secops-fips-base-unaligned-pools-rejection-source-landing-20260627_20260627052017",
+        "worker_started_at": "2026-06-27T05:20:34.675Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the new SecOps FIPS base Phase 3a unaligned-pools rejection carrier across packet/spec/probe/model/evidence files, regenerated the spec catalog and knowledge-map views, and verified the new replay passes in check mode while execute remains intentionally gated.",
+        "last_worker_completed_at": "2026-06-27T05:28:47.630Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:30:04.953Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/secops-fips-base-unaligned-pools-rejection-source-landing-20260627.md: the task landed the requested packet/spec/source-grounded wrapper/model objects for the mounted Phase 3a Linux-only rejection boundary, recorded explicit non-overlap with enabled-cluster-create/windows/advanced/root-config-preservation, and verified repo-local linkage in check mode while keeping execute intentionally gated."
+      },
+      "session_id": "s_task_secops-fips-base-unaligned-pools-rejection-source-landing-20260627",
+      "session_history": [
+        "s_task_secops-fips-base-unaligned-pools-rejection-source-landing-20260627"
+      ],
+      "result": "Landed the new SecOps FIPS base Phase 3a unaligned-pools rejection carrier across packet/spec/probe/model/evidence files, regenerated the spec catalog and knowledge-map views, and verified the new replay passes in check mode while execute remains intentionally gated.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:30:04.953Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/secops-fips-base-unaligned-pools-rejection-source-landing-20260627.md: the task landed the requested packet/spec/source-grounded wrapper/model objects for the mounted Phase 3a Linux-only rejection boundary, recorded explicit non-overlap with enabled-cluster-create/windows/advanced/root-config-preservation, and verified repo-local linkage in check mode while keeping execute intentionally gated."
+      },
+      "status": "done"
+    }
+  ]
+}

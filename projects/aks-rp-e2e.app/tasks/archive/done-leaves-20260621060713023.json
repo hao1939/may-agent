@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:07:13.023Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review refresh: the row25 and row50 VM prerelease draft-status reconciliations are accepted as completed repo-local maintenance that converted their dedicated maintained paths from stale draft to truthful execute-gated blocked/live-ready status with bounded evidence. Open project work is now intentionally reduced to one blocked family-level external-human send/escalation-proof wait for the send-ready MachinesPreview handoff packet and the VM prerelease live-operator bundle; no active repo-local row25 work remains, no duplicate send waits should be recreated, and resume requires durable repo-local send/escalation proof or an authoritative reply for one of the two prepared packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row25-draft-status-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Do one bounded repo-local reconciliation for the dedicated row-25 VM prerelease path path.virtualmachines.capacity-based-surge: starting from the current status --gaps evidence and the existing row-25 source-grounding/archive artifacts, identify the exact maintained spec/replay carriers, determine whether the current draft verdict remains truthful or should be converted to an execute-gated blocked/live-ready status, and if a smallest supported repo-local repair exists apply it and rerun bounded status/checkpoint evidence for only the row-25 branch; otherwise capture the exact missing artifact or owner decision still required. Do not run cloud execution, broad family expansion, commit, or unrelated replay edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row25-draft-status-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current gaps status for path.virtualmachines.capacity-based-surge, names the exact maintained carrier files/artifacts it inspected, and explains why draft is or is not still the truthful state for the dedicated row-25 branch.",
+        "If a supported repo-local repair exists, archive note records the exact repair command(s)/file(s) plus bounded post-repair status or domain:checkpoint evidence for only the row-25 branch; otherwise it records the exact missing artifact/evidence ceiling and the owner or gate still required.",
+        "Archive note explicitly states that no cloud execution, commit, or unrelated feature-family edits were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:01:12.601Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T06:01:15.442Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row25-draft-status-reconciliation-20260621_20260621060117",
+        "assigned_at": "2026-06-21T06:01:17.296Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row25-draft-status-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-row25-draft-status-reconciliation-20260621_20260621060117",
+        "worker_started_at": "2026-06-21T06:01:30.943Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the dedicated row-25 VM prerelease branch from stale draft to truthful execute-gated blocked state by updating `model/knowledge-map/model.json`, regenerating views, rerunning bounded row-25 check/gate evidence, and writing `evidence/archive/vmpr-row25-draft-status-reconciliation-20260621.md`.",
+        "last_worker_completed_at": "2026-06-21T06:04:50.732Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:05:30.787Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after archive note and maintained carriers showed row-25 path.virtualmachines.capacity-based-surge was truthfully reconciled from stale draft to execute-gated blocked, with bounded row-25 check evidence, bounded execute-gate evidence, and no unrelated family/cloud edits claimed."
+      },
+      "session_id": "s_task_vmpr-row25-draft-status-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-row25-draft-status-reconciliation-20260621"
+      ],
+      "result": "Reconciled the dedicated row-25 VM prerelease branch from stale draft to truthful execute-gated blocked state by updating `model/knowledge-map/model.json`, regenerating views, rerunning bounded row-25 check/gate evidence, and writing `evidence/archive/vmpr-row25-draft-status-reconciliation-20260621.md`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:05:30.787Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after archive note and maintained carriers showed row-25 path.virtualmachines.capacity-based-surge was truthfully reconciled from stale draft to execute-gated blocked, with bounded row-25 check evidence, bounded execute-gate evidence, and no unrelated family/cloud edits claimed."
+      },
+      "status": "done"
+    }
+  ]
+}

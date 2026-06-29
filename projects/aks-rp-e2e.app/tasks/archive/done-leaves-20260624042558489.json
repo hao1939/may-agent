@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T04:25:58.489Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 owner planning repaired this focus branch so it matches the live frontier: earlier frontier-268 and post-frontier-267 captures remain accepted durable history, the weak no-evidence frontier-327 completion claim stays rejected/replaced, one exact mounted-source retry leaf remains active for inputDags[327].nodes[0][0].value with enable_addon_v2=true, one same-conflict post-frontier-327 maintained-view capture leaf is seeded behind it, and the single family-level external-human wait remains unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the next single repo-local shared-model-validator frontier residual at inputDags[327].nodes[0][0].value for enable_addon_v2=true, using mounted source/spec/replay/model evidence to decide whether the current assignment should be narrowed into the existing domain, expanded into a truthful bounded domain update, or concluded as a bounded final disposition, then rerun the repo-local validator just enough to prove whether this exact residual clears without repairing later residuals, reopening frontier-268, or doing any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted source/spec/replay/model inputs for inputDags[327].nodes[0][0].value, records the chosen bounded repo-local repair or final disposition for enable_addon_v2=true, and includes a fresh validator check proving this exact residual is removed or truthfully superseded.",
+        "This task stays on the single shared-model-validator frontier: it does not repair later residuals, reopen already accepted frontier-268 work, widen into unrelated paths, or start any cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:21:48.304Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624_20260624042153",
+        "assigned_at": "2026-06-24T04:21:53.927Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624_20260624042153",
+        "worker_started_at": "2026-06-24T04:22:12.616Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-24T04:24:11.521Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:24:56.839Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after owner review of the only worker attempt found result=error with no evidence artifact and no validator proof, so the review claim is not acceptable as completion or blocker evidence. Use the tighter mounted-source retry leaf for the same frontier-327 residual instead."
+      },
+      "session_id": "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-domain-repair-slice-20260624"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-24T04:24:56.839Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after owner review of the only worker attempt found result=error with no evidence artifact and no validator proof, so the review claim is not acceptable as completion or blocker evidence. Use the tighter mounted-source retry leaf for the same frontier-327 residual instead."
+      },
+      "status": "done"
+    }
+  ]
+}

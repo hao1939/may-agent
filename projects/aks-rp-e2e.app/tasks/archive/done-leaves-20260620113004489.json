@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:30:04.490Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 stale-active reconciliation: recycled the abandoned vm-prerelease mixed-SKU promotion attempt after watchdog confirmed its session was no longer running and no review artifact existed. The live mixed-SKU work is now vm-prerelease-mixed-sku-promotion-retry-20260620 as an active runnable retry, while machinespreview-mounted-source-reconcile-20260620 remains the model/source cleanup owner for path.nap-default-machines-pool-cleanup-full.source-equivalent-gated. The only remaining MachinesPreview blocked wait is execute availability for path.machines-agentpool-api-crud.machine-crud-blocked; source/model reconciliation is no longer part of that wait. After the MachinesPreview reconcile task clears the model:knowledge-map conflict, the next queued VM prerelease promotion slices are vm-prerelease-autozone-surge-promotion-20260620 and vm-prerelease-network-migration-promotion-20260620.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-draft-promotion-batch-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote the VirtualMachine prerelease mixed-SKU group (upgrade, lifecycle, and deallocate draft paths) from draft to pass or blocked with evidence justification and model updates.",
+      "inputs": [
+        "model/knowledge-map/model.json",
+        "evidence/pipelines/virtualmachine-prerelease-coverage.json"
+      ],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "The mixed-SKU prerelease upgrade, lifecycle, and deallocate draft paths each have a non-draft status with evidence justification."
+      ],
+      "conflict_scope": [],
+      "trace": {
+        "promoted_at": "2026-06-20T11:21:29.736Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-draft-promotion-batch-20260620_20260620112213",
+        "assigned_at": "2026-06-20T11:22:13.712Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-draft-promotion-batch-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-draft-promotion-batch-20260620_20260620112213",
+        "worker_started_at": "2026-06-20T11:22:44.556Z",
+        "reviewed_at": "2026-06-20T11:29:38.625Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced stale active attempt after watchdog reported session-not-running and no review artifact or acceptance evidence existed; vm-prerelease-mixed-sku-promotion-retry-20260620 now carries the runnable retry."
+      },
+      "session_id": "s_task_vm-prerelease-draft-promotion-batch-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-draft-promotion-batch-20260620"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T11:29:38.625Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced stale active attempt after watchdog reported session-not-running and no review artifact or acceptance evidence existed; vm-prerelease-mixed-sku-promotion-retry-20260620 now carries the runnable retry."
+      },
+      "status": "done"
+    }
+  ]
+}

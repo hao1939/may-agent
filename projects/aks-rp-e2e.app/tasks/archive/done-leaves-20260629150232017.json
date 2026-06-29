@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:02:32.017Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner planning update accepts verify-spec-network-cni-swift-v2-pod-subnet as a completed pass from run 28381081526: the top-level result.json corroborates a real single-spec pass for the Swift V2 podSubnetID contract, so no retry, problem task, or follow-up leaf is justified. The spec-verification lane stays intentionally execution-saturated without refill because the active verifier/implementation frontier already exceeds the target window. Blocked-warning hygiene was handled on the westus2 cluster-count family first: keep wait-shared-westus2-cluster-count-preflight-family-recovery-20260629 as the only truthful live environment-family wait, now with an explicit 2026-06-29T20:00:00Z owner recheck, because reviewed same-surface evidence still stops at liveCapacityPreflight before any spec assertion and no source-backed alternate live surface has been proven. The existing AAD-RBAC remote-artifact wait remains the other exact spec-loop blocked leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-network-cni-swift-v2-pod-subnet",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.swift-v2-pod-subnet through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.swift-v2-pod-subnet",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.swift-v2-pod-subnet"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.swift-v2-pod-subnet",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-cni.swift-v2-pod-subnet workflow run 28381081526 classified as pass. Loop key: verify-spec-network-cni-swift-v2-pod-subnet-a_verify-spec-network-cni-swift-v2-pod-subnet_. Swift V2 pod subnet validation passed: 5/5 claim assertions OK. Cluster created with podSubnetID (Swift V2), 2 nodes. GET confirmed podSubnetID persisted, pods from 10.225.0.0/16, nodes from 10.224.0.0/24. Subnet separation and cross-node connectivity validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381081526 Result: runs/test-results/single-network-cni-swift-v2-pod-subnet_342954/artifacts/network-cni-swift-v2-pod-subnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/test-results/single-network-cni-swift-v2-pod-subnet_342954/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T14:53:08.234Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-swift-v2-pod-subnet_20260629145308",
+        "assigned_at": "2026-06-29T14:53:08.252Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-swift-v2-pod-subnet",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-swift-v2-pod-subnet_20260629145308",
+        "worker_started_at": "2026-06-29T14:53:15.373Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.network-cni.swift-v2-pod-subnet workflow run 28381081526 classified as pass. Loop key: verify-spec-network-cni-swift-v2-pod-subnet-a_verify-spec-network-cni-swift-v2-pod-subnet_. Swift V2 pod subnet validation passed: 5/5 claim assertions OK. Cluster created with podSubnetID (Swift V2), 2 nodes. GET confirmed podSubnetID persisted, pods from 10.225.0.0/16, nodes from 10.224.0.0/24. Subnet separation and cross-node connectivity validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381081526 Result: runs/test-results/single-network-cni-swift-v2-pod-subnet_342954/artifacts/network-cni-swift-v2-pod-subnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/test-results/single-network-cni-swift-v2-pod-subnet_342954/result.json",
+        "last_worker_completed_at": "2026-06-29T14:59:06.267Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T14:59:16.956Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-cni.swift-v2-pod-subnet workflow run 28381081526 classified as pass. Loop key: verify-spec-network-cni-swift-v2-pod-subnet-a_verify-spec-network-cni-swift-v2-pod-subnet_. Swift V2 pod subnet validation passed: 5/5 claim assertions OK. Cluster created with podSubnetID (Swift V2), 2 nodes. GET confirmed podSubnetID persisted, pods from 10.225.0.0/16, nodes from 10.224.0.0/24. Subnet separation and cross-node connectivity validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381081526 Result: runs/test-results/single-network-cni-swift-v2-pod-subnet_342954/artifacts/network-cni-swift-v2-pod-subnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/test-results/single-network-cni-swift-v2-pod-subnet_342954/result.json"
+      },
+      "session_id": "s_task_verify-spec-network-cni-swift-v2-pod-subnet",
+      "session_history": [
+        "s_task_verify-spec-network-cni-swift-v2-pod-subnet"
+      ],
+      "result": "Spec spec.network-cni.swift-v2-pod-subnet workflow run 28381081526 classified as pass. Loop key: verify-spec-network-cni-swift-v2-pod-subnet-a_verify-spec-network-cni-swift-v2-pod-subnet_. Swift V2 pod subnet validation passed: 5/5 claim assertions OK. Cluster created with podSubnetID (Swift V2), 2 nodes. GET confirmed podSubnetID persisted, pods from 10.225.0.0/16, nodes from 10.224.0.0/24. Subnet separation and cross-node connectivity validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28381081526 Result: runs/test-results/single-network-cni-swift-v2-pod-subnet_342954/artifacts/network-cni-swift-v2-pod-subnet/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28381081526/aks-rp-e2e-28381081526-spec-test-results/test-results/single-network-cni-swift-v2-pod-subnet_342954/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:59:16.956Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

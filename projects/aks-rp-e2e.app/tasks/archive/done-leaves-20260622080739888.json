@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:07:39.888Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update: accepted the private-cluster custom DNS zone split lineage repair and the VirtualMachines row-29 mounted-source landing decision. Mounted source now confirms row-29 already has an exact dedicated scenario carrier plus existing maintained feature/spec/replay/coverage landing; the only new repo-local follow-up is a bounded row-29 knowledge-map/view truthfulness sync so model prose stops claiming the replay implementation remains separate. The shared external human-transport proof wait remains the single live blocked family with no fresh send/reply evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP private-cluster custom_dns_zone handwritten source plus the accepted 2026-06-22 coverage-decision artifacts to repair maintained split-coverage lineage for Scenario_PrivateLink_Custom_DNS_Zone, making it explicit that the mounted contract is intentionally covered by the existing private-dns-zone plus fqdn-subdomain maintained carriers without creating a duplicate child path or running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted source file /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/custom_dns_zone.go and the accepted 2026-06-22 reconcile/coverage-decision artifacts, and states the exact contract elements that are covered by path.private-cluster-private-dns-zone versus path.private-cluster-fqdn-subdomain.",
+        "Maintained repo-local carriers are updated only as needed to make that split explicit and source-grounded (for example stale devbox sourceRef replacement and bounded lineage wording in the relevant spec/feature/model notes), and the evidence names each touched carrier plus the exact maintained landing decision.",
+        "No new private-cluster behavior path is created, no cloud mutation or external-human wait is introduced, and no churn is made outside the dedicated custom-dns-zone split-lineage branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:02:32.712Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b_20260622080232",
+        "assigned_at": "2026-06-22T08:02:32.764Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b",
+        "worker_started_attempt_id": "a_private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b_20260622080232",
+        "worker_started_at": "2026-06-22T08:02:46.551Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired private-cluster custom-DNS split-coverage lineage by updating the maintained carriers and writing evidence/archive/private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b.md. The repair replaces stale devbox source refs with the mounted custom_dns_zone.go authority and makes the accepted no-new-child split explicit across the private-dns-zone and fqdn-subdomain carriers.",
+        "last_worker_completed_at": "2026-06-22T08:05:59.504Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:06:51.325Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted 2026-06-22b repair: evidence/archive/private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b.md cites mounted /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/custom_dns_zone.go and the accepted 2026-06-22 decision artifacts, and repo files specs/private-cluster-private-dns-zone.json, specs/index.json, features/private-cluster.yaml, and features/private-cluster/privatelink.yaml now explicitly land Scenario_PrivateLink_Custom_DNS_Zone on the existing private-dns-zone plus fqdn-subdomain carriers without creating a duplicate private-cluster child path."
+      },
+      "session_id": "s_task_private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b",
+      "session_history": [
+        "s_task_private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b"
+      ],
+      "result": "Repaired private-cluster custom-DNS split-coverage lineage by updating the maintained carriers and writing evidence/archive/private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b.md. The repair replaces stale devbox source refs with the mounted custom_dns_zone.go authority and makes the accepted no-new-child split explicit across the private-dns-zone and fqdn-subdomain carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:06:51.325Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted 2026-06-22b repair: evidence/archive/private-cluster-custom-dns-zone-split-coverage-lineage-repair-20260622b.md cites mounted /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/privatelink/custom_dns_zone.go and the accepted 2026-06-22 decision artifacts, and repo files specs/private-cluster-private-dns-zone.json, specs/index.json, features/private-cluster.yaml, and features/private-cluster/privatelink.yaml now explicitly land Scenario_PrivateLink_Custom_DNS_Zone on the existing private-dns-zone plus fqdn-subdomain carriers without creating a duplicate private-cluster child path."
+      },
+      "status": "done"
+    }
+  ]
+}

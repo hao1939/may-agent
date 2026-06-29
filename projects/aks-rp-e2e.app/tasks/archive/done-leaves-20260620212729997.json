@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:27:29.997Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update: treated watchdog review task private-cluster-byo-dns-server-topology-model-path-authoring-20260620 as a stale pointer because the task is already absent from the live tree and its mounted-source BYO DNS topology landing was previously accepted in the project rollup. Reconciled the stale-terminal warning on private-cluster Private Endpoint Connections by confirming the live active task is explicitly scoped to a distinct lifecycle-specific exact child landing beside, not over, the already-final broad sibling path.private-cluster-private-endpoint-connections. Archived the remaining safe done ACNS Retina upgrade leaf now that its durable meaning is represented by project knowledge. Live frontier is now two assigned repo-local exact-authoring slices (private-cluster Private Endpoint Connections lifecycle child landing and VM prerelease secure-TLS rows 42-43 exactness) plus the single family-level external send-proof dispatch blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact repo-local feature/spec/replay/model carrier for mounted Scenario_Retina_Enterprise_K8s_Upgrade from test/e2ev3/sigs/network/plans/acns/retina_enterprise_k8s_upgrades.go, keeping it distinct from adjacent create-time enterprise observability coverage and from Cilium-observability/policy branches, with no cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Use mounted source retina_enterprise_k8s_upgrades.go plus current repo-local adjacent ACNS/network surfaces to land one exact feature/spec/replay/model path for Scenario_Retina_Enterprise_K8s_Upgrade, preserving the create->verify->Kubernetes-upgrade->reverify lifecycle and execute-gated wording without running cloud probes.",
+        "Document the exact input path, expectation path, and adjacency/nonequivalence to path.network-acns-enterprise-tier, path.network-acns-cilium-observability, and any nearby performance/update branches so the new carrier is source-backed and not overgeneralized.",
+        "Regenerate directly affected maintained knowledge-map views, validate them locally, and conclude with durable evidence stating whether the local authoring slice is complete and what, if anything, remains gated on future authorized execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:19:17.627Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620_20260620211917",
+        "assigned_at": "2026-06-20T21:19:17.675Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620_20260620211917",
+        "worker_started_at": "2026-06-20T21:19:32.987Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the exact repo-local carrier for mounted Scenario_Retina_Enterprise_K8s_Upgrade across feature/spec/replay/model surfaces, plus durable evidence in evidence/archive/network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620.md. Local source-spec check passed, and affected knowledge-map views were regenerated; full-model validation still reports unrelated pre-existing errors outside this slice.",
+        "last_worker_completed_at": "2026-06-20T21:26:20.906Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:26:42.036Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable evidence shows the exact mounted Scenario_Retina_Enterprise_K8s_Upgrade carrier landed across feature/spec/replay/model surfaces with explicit nonequivalence to adjacent create-time, Cilium-observability, policy, and update branches; the local non-mutating source/spec replay wiring check passed, and the remaining work is execution-gated only."
+      },
+      "session_id": "s_task_network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620"
+      ],
+      "result": "Authored the exact repo-local carrier for mounted Scenario_Retina_Enterprise_K8s_Upgrade across feature/spec/replay/model surfaces, plus durable evidence in evidence/archive/network-acns-retina-enterprise-k8s-upgrade-authoring-from-mounted-source-20260620.md. Local source-spec check passed, and affected knowledge-map views were regenerated; full-model validation still reports unrelated pre-existing errors outside this slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:26:42.036Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable evidence shows the exact mounted Scenario_Retina_Enterprise_K8s_Upgrade carrier landed across feature/spec/replay/model surfaces with explicit nonequivalence to adjacent create-time, Cilium-observability, policy, and update branches; the local non-mutating source/spec replay wiring check passed, and the remaining work is execution-gated only."
+      },
+      "status": "done"
+    }
+  ]
+}

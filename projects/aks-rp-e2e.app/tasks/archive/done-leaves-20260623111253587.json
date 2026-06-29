@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T11:12:53.587Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner accepted two bounded private-cluster review leaves. The authorized-service-tags selected-host preflight rerun now durably proves the caller-side gap still fails immediately at ssh reachability to devbox (20.24.129.235:22), so that path stays environment-blocked with the same narrow resume condition and no new local blocker branch. The update-public second-hop execution-readiness packet is also accepted: source/spec/replay/model lineage is already well bounded, the exact unknown remains the mounted same-cluster updateMC2->checkMC2 hop, and the immediate local successor is one runnable replay-carrier repair leaf to fix the checkOnly initialization regression and re-verify branch-local --check readiness. Preserve the single external-human wait unchanged; do not reopen completed repo-local closure beyond that dedicated replay repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture a durable caller-side selected-host preflight proof packet for path.private-cluster-vnet-integration-auth-service-tags by rerunning the ordered devbox host-reachability, Azure auth, kubectl client, and archive-root checks, recording either the first exact failing step or a full pass, and stating whether the trustworthy AzureCloud witness-host gate is now satisfied without any cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623.md"
+      ],
+      "acceptance": [
+        "Archive packet cites the existing witness-host attestation and selected-host preflight authorities, records the exact ordered caller-side commands and observed outcomes for ssh hostname/pwd, az account show, kubectl version --client, and archive-root writability, and truthfully states whether the selected-host SSH/preflight gap is still open or closed.",
+        "If the first failing step remains SSH reachability, the packet preserves the exact command, timeout/failure text, and the narrowest resume condition; if all preflight steps pass, the packet states that the trustworthy witness-host gate is now pre-execute-ready. No cloud mutation, no mounted-source rediscovery, and no duplicate blocked wait are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T11:09:47.297Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623_20260623110947",
+        "assigned_at": "2026-06-23T11:09:47.342Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623_20260623110947",
+        "worker_started_at": "2026-06-23T11:10:08.414Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the selected-host preflight rerun packet at evidence/archive/private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623.md after rerunning the ordered SSH/Azure/kubectl/archive-root checks from the caller environment. The rerun confirmed the first failing step remains SSH reachability to devbox (20.24.129.235:22), so the trustworthy witness-host gate is still open and the path is not pre-execute-ready.",
+        "last_worker_completed_at": "2026-06-23T11:11:46.384Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T11:12:53.376Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet reran the exact ordered caller-side ssh/az/kubectl/archive-root preflight, preserved the repeated ssh timeout to devbox (20.24.129.235:22) as the first failing step, and recorded the narrowest truthful resume condition with no cloud mutation or duplicate blocker work."
+      },
+      "session_id": "s_task_private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623"
+      ],
+      "result": "Captured the selected-host preflight rerun packet at evidence/archive/private-cluster-vnet-auth-service-tags-selected-host-preflight-rerun-20260623.md after rerunning the ordered SSH/Azure/kubectl/archive-root checks from the caller environment. The rerun confirmed the first failing step remains SSH reachability to devbox (20.24.129.235:22), so the trustworthy witness-host gate is still open and the path is not pre-execute-ready.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T11:12:53.376Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet reran the exact ordered caller-side ssh/az/kubectl/archive-root preflight, preserved the repeated ssh timeout to devbox (20.24.129.235:22) as the first failing step, and recorded the narrowest truthful resume condition with no cloud mutation or duplicate blocker work."
+      },
+      "status": "done"
+    }
+  ]
+}

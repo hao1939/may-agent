@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:45:40.090Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+  "summary": "2026-06-22 planner rollup: this VM prerelease readiness branch now carries accepted rows40/42/43 refresh context plus the accepted row-41 upgrade-through-post-upgrade-CSR carrier as archived branch knowledge. The only live child is vm-prerelease-row41-later-phase-carrier-authoring-20260622, which extends the maintained secure-TLS basic-lifecycle execute carrier from the accepted post-upgrade CSR checkpoint through rotate-certificates, credential refresh, post-refresh CSR validation, stop/start, and post-stop/start CSR validation. No duplicate blocker lives here; external human-transport waiting remains compressed at the shared project-level family leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622",
+      "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extend the maintained row-41 secure-TLS basic-lifecycle execute carrier from the accepted create+initial-CSR live base through the next mounted checkpoint only: discover a truthful upgrade target, perform the managed-cluster plus agent-pool upgrade, and validate the post-upgrade CSR checkpoint without claiming later rotate-cert or stop/start phases.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/secure-tls-bootstrap-basic-lifecycle.ts",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Replay and evidence cite the mounted row-41 source workflow plus the accepted row-41 full-lifecycle gap packet, extend the maintained execute path to cover upgrade target discovery, managed-cluster upgrade with agent-pool intent preserved, cluster readback, and post-upgrade CSR validation, and keep later rotate-cert/credential-refresh/stop-start phases explicitly out of scope unless they are also implemented truthfully.",
+        "Artifact states the exact row-41 lifecycle coverage after the change, names any remaining later-phase gap still open after upgrade+CSR lands, and references local validation output (for example bun run check or replay-local validation) proving the maintained carrier remains repo-local and check-clean.",
+        "Work stays repo-local and cloud-free: mounted-source inspection, maintained replay/runtime/spec edits if needed, local validation, and evidence write-up only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-bundle-readiness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:37:51.083Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622_20260622023755",
+        "assigned_at": "2026-06-22T02:37:55.453Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622_20260622023755",
+        "worker_started_at": "2026-06-22T02:38:15.779Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Extended replays/secure-tls-bootstrap-basic-lifecycle.ts from the accepted create+CSR live base through the mounted upgrade + post-upgrade CSR checkpoint and wrote evidence/archive/vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622.md documenting exact new coverage and remaining later-phase gaps. Local bun --check validation passed before and after the change, with the final replay summary confirming create+CSR+upgrade+post-upgrade-CSR scope only.",
+        "last_worker_completed_at": "2026-06-22T02:41:39.472Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:43:33.173Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622.md cites mounted row-41 source, documents the maintained replay extension through upgrade plus post-upgrade CSR only, and records successful repo-local validation via bun replays/secure-tls-bootstrap-basic-lifecycle.ts --check with later rotate-cert and stop/start phases still explicitly out of scope."
+      },
+      "session_id": "s_task_vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622"
+      ],
+      "result": "Extended replays/secure-tls-bootstrap-basic-lifecycle.ts from the accepted create+CSR live base through the mounted upgrade + post-upgrade CSR checkpoint and wrote evidence/archive/vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622.md documenting exact new coverage and remaining later-phase gaps. Local bun --check validation passed before and after the change, with the final replay summary confirming create+CSR+upgrade+post-upgrade-CSR scope only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:43:33.173Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/vm-prerelease-row41-upgrade-csr-carrier-authoring-20260622.md cites mounted row-41 source, documents the maintained replay extension through upgrade plus post-upgrade CSR only, and records successful repo-local validation via bun replays/secure-tls-bootstrap-basic-lifecycle.ts --check with later rotate-cert and stop/start phases still explicitly out of scope."
+      },
+      "status": "done"
+    }
+  ]
+}

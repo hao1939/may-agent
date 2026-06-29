@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:21:31.010Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review keeps the frontier compressed and truthful: external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single live blocked family because the accepted 2026-06-21 audit plus local-dispatch artifacts already prove packet preparation and repo-local dispatch proof for the covered MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity asks, leaving only real human transport or authoritative reply outside runtime as the resume condition. The accepted row-40 Linux SSH public-key maintained landing is now summarized at the project root and archived; active repo-local capacity stays on vmpr-row41-securetls-basic-maintained-model-view-landing-post-row40-20260622 as the next bounded mounted-source/model reconciliation slice, without widening to row 42/43 or reopening the external-send family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land only VM prerelease row 40 by reconciling the mounted-source Linux SSH public-key update scenario into maintained knowledge-map/model/view surfaces, using existing repo-local feature/spec/replay carriers and exact source lineage without widening to row 41 Windows, secure-TLS follow-on, cloud execution, or external-human-transport work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260622.md"
+      ],
+      "acceptance": [
+        "Update the maintained knowledge-map/model/view surfaces so row 40 is represented as the exact Linux SSH public-key update carrier with source-backed lineage to Scenario_Update_SSH_Public_Key_Linux under coarse VM prerelease alias Scenario_Update_SSH_Public_Key_VirtualMachine, and preserve exact row ordering after the accepted row-39 landing.",
+        "Record one evidence note citing the mounted source anchors plus the existing repo-local row-40 feature/spec/replay carriers, and state exactly what maintained surfaces changed for this row-only landing.",
+        "Keep scope bounded to row 40 Linux maintained reconciliation only: do not land row 41 Windows, do not reopen secure-TLS follow-on, do not run cloud execution, and do not reopen the shared external-human-transport blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:14:48.933Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622_20260622001448",
+        "assigned_at": "2026-06-22T00:14:48.982Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622",
+        "worker_started_attempt_id": "a_vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622_20260622001448",
+        "worker_started_at": "2026-06-22T00:15:09.029Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the maintained row-40 Linux SSH public-key update carrier into model/knowledge-map/model.json, regenerated maintained views, and wrote the bounded evidence note at evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T00:20:12.712Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:20:48.399Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260622.md cites mounted Linux SSH public-key source anchors, names the repo-local carriers, and records the maintained model/view surfaces updated for the row-40-only landing without widening scope."
+      },
+      "session_id": "s_task_vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622",
+      "session_history": [
+        "s_task_vmpr-row40-linux-ssh-public-key-maintained-landing-post-row39-20260622"
+      ],
+      "result": "Landed the maintained row-40 Linux SSH public-key update carrier into model/knowledge-map/model.json, regenerated maintained views, and wrote the bounded evidence note at evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:20:48.399Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row40-linux-ssh-public-key-maintained-model-view-landing-post-row39-20260622.md cites mounted Linux SSH public-key source anchors, names the repo-local carriers, and records the maintained model/view surfaces updated for the row-40-only landing without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

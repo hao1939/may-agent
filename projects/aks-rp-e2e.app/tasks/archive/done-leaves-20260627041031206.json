@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T04:10:31.206Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner accepted two repo-local Windows VM prerelease knowledge/evidence updates and archived their low-value done leaves: (1) the mounted coverage matrix branch now preserves source-backed row/spec visibility with local verification, and (2) the shared windows-vm-prerelease-matrix wrapper now emits row-appropriate specId/pathIds for custom-kubelet, GPU, and Calico check artifacts without claiming any new live/cloud verdicts. The root frontier is therefore compressed back to only the same two truthful blocked external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623: the narrowed VM prerelease/shared-identity proof family wait and the private-cluster system->none operator decision wait. No new runnable backlog is created from the generic overblock heuristic alone.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a mounted-source-backed coverage matrix for the Windows VirtualMachines prerelease draft family so the project has one durable repo-local map of exact rows, canonical carriers, and current model state for rows 205, 206, 212, 213, 216, 217, and 218 without claiming any live product verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted Windows VirtualMachines prerelease/checkin sources or linked scenario definitions for each covered row/path and distinguishes row-specific behavior from adjacent umbrella coverage.",
+        "Artifact maps each covered row/path to the current canonical spec, replay/test carrier, and model path/status, explicitly calling out shared carriers versus exact row-specific carriers.",
+        "Artifact ends with either no-local-gap confirmation or at most two concrete repo-local follow-up leaves justified by missing linkage/normalization evidence; it must not invent cloud execution or reopen the existing external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-windows-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T04:03:43.940Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627_20260627040343",
+        "assigned_at": "2026-06-27T04:03:43.990Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627",
+        "worker_started_attempt_id": "a_virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627_20260627040343",
+        "worker_started_at": "2026-06-27T04:03:59.785Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested mounted-source-backed Windows VirtualMachines prerelease coverage matrix at evidence/archive/virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627.md, mapping rows 205/206/212/213/216/217/218 to exact source scenarios, canonical specs/replays, and current model/path states without claiming new live verdicts.",
+        "last_worker_completed_at": "2026-06-27T04:07:24.901Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T04:08:01.351Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-27 owner review: the archived matrix cites exact mounted Windows sources/scenarios for rows 205/206/212/213/216/217/218, maps each row to its canonical spec/replay/model path, clearly separates dedicated versus shared carriers, and ends with bounded repo-local follow-up options only. No live verdicts were claimed and no external-wait family was reopened."
+      },
+      "session_id": "s_task_virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627",
+      "session_history": [
+        "s_task_virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627"
+      ],
+      "result": "Built the requested mounted-source-backed Windows VirtualMachines prerelease coverage matrix at evidence/archive/virtualmachines-windows-prerelease-mounted-coverage-matrix-20260627.md, mapping rows 205/206/212/213/216/217/218 to exact source scenarios, canonical specs/replays, and current model/path states without claiming new live verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T04:08:01.351Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-27 owner review: the archived matrix cites exact mounted Windows sources/scenarios for rows 205/206/212/213/216/217/218, maps each row to its canonical spec/replay/model path, clearly separates dedicated versus shared carriers, and ends with bounded repo-local follow-up options only. No live verdicts were claimed and no external-wait family was reopened."
+      },
+      "status": "done"
+    },
+    {
+      "id": "windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the shared Windows VM prerelease matrix wrapper so check-mode evidence serializes the requested specId and pathIds for each row-specific carrier instead of always emitting the custom-kubelet values, then capture repo-local verification without claiming any new live verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627.md"
+      ],
+      "acceptance": [
+        "The shared wrapper or its evidence-writing path is updated so row-206 custom-kubelet, row-212/213 GPU, and row-216 Calico requests no longer serialize the same hard-coded specId/pathIds in check artifacts.",
+        "Durable repo-local evidence shows at least one non-custom-kubelet row and one custom-kubelet/baseline row emitting the expected distinct spec/path metadata after the repair.",
+        "The task updates only repo-local wrapper/evidence-normalization surfaces and does not claim new cloud/live verdicts or reopen the existing external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease-windows-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T04:08:12.058Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627_20260627040814",
+        "assigned_at": "2026-06-27T04:08:14.073Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627",
+        "worker_started_attempt_id": "a_windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627_20260627040814",
+        "worker_started_at": "2026-06-27T04:08:31.196Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the shared Windows VM prerelease matrix wrapper to emit requested spec/path metadata in check artifacts, and added durable repo-local evidence showing distinct custom-kubelet, GPU, and Calico outputs after the fix.",
+        "last_worker_completed_at": "2026-06-27T04:10:06.530Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T04:10:31.145Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the durable evidence: the repo-local wrapper/evidence-only fix now preserves distinct specId/pathIds for custom-kubelet, GPU, and Calico check artifacts, and the artifact explicitly avoids any new live/cloud verdicts or external-wait changes."
+      },
+      "session_id": "s_task_windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627",
+      "session_history": [
+        "s_task_windows-vm-prerelease-matrix-wrapper-evidence-normalization-20260627"
+      ],
+      "result": "Repaired the shared Windows VM prerelease matrix wrapper to emit requested spec/path metadata in check artifacts, and added durable repo-local evidence showing distinct custom-kubelet, GPU, and Calico outputs after the fix.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T04:10:31.145Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the durable evidence: the repo-local wrapper/evidence-only fix now preserves distinct specId/pathIds for custom-kubelet, GPU, and Calico check artifacts, and the artifact explicitly avoids any new live/cloud verdicts or external-wait changes."
+      },
+      "status": "done"
+    }
+  ]
+}

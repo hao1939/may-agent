@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T07:57:37.939Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner blocked-frontier review keeps the project frontier compressed to four exact external waits only until the first follow-up window on/after 2026-06-26 unless returned proof arrives sooner. Repo-local closure for the VM prerelease/KEDA slice is already accepted: the DAG completion audit and replay empty-DAG diagnostic normalization confirm rows 145/146/147 stay anchored to the maintained executable carrier spec.workload-autoscaler.keda-vm-prerelease-matrix plus the accepted crosswalk evidence, so those low-value done leaves are archived while the parent continues to carry the durable knowledge and remaining live waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize replays/workload-autoscaler-keda-vm-prerelease-matrix.ts so future readers stop inheriting the stale empty-DAG assumption for rows 146/147: use the accepted audit artifact plus current model/path-summary to remove or invert the model-empty-dags-flagged-for-repair diagnostic for path.workload-autoscaler.keda-vm-prerelease.mariner-variant and .multiple-external-metric-servers, while keeping verdicts execution-pending and avoiding any cloud mutation or broad KEDA family rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/workload-autoscaler-keda-vm-prerelease-matrix.ts"
+      ],
+      "acceptance": [
+        "The replay no longer teaches that the Mariner and multiple-external-metric-server accepted DAGs are empty: the stale model-empty-dags-flagged-for-repair assertion is removed, renamed, or inverted so it matches the populated DAGs documented in evidence/archive/keda-vm-prerelease-dag-node-completion-audit-20260624.md and the current accepted model/path-summary, with exact row-local path ids preserved.",
+        "A bounded local validation step records the exact command/result proving the updated replay/spec/model contract is internally consistent, and the task summary/evidence explicitly preserves the unchanged execution-pending verdict boundary; no cloud mutation, no model verdict promotion, and no broad family rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.workload-autoscaler.keda-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T07:52:39.822Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624_20260624075239",
+        "assigned_at": "2026-06-24T07:52:39.871Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624",
+        "worker_started_attempt_id": "a_keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624_20260624075239",
+        "worker_started_at": "2026-06-24T07:52:55.788Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the stale empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts to assert populated DAGs while preserving draft/claim-safe execution boundaries, then validated the replay locally with --check and captured fresh archive evidence.",
+        "last_worker_completed_at": "2026-06-24T07:53:44.178Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T07:54:42.180Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/workload-autoscaler-keda-vm-prerelease-matrix-1782287603085-workload-autoscaler-keda-vm-prerelease-matrix.md records a passing bounded local check, preserves draft/claim-safe execution-pending statuses for the three KEDA VM prerelease paths, and proves rows 146/147 now preserve populated DAG nodes instead of the stale empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts."
+      },
+      "session_id": "s_task_keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624",
+      "session_history": [
+        "s_task_keda-vm-prerelease-replay-empty-dag-diagnostic-normalization-20260624"
+      ],
+      "result": "Normalized the stale empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts to assert populated DAGs while preserving draft/claim-safe execution boundaries, then validated the replay locally with --check and captured fresh archive evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T07:54:42.180Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/workload-autoscaler-keda-vm-prerelease-matrix-1782287603085-workload-autoscaler-keda-vm-prerelease-matrix.md records a passing bounded local check, preserves draft/claim-safe execution-pending statuses for the three KEDA VM prerelease paths, and proves rows 146/147 now preserve populated DAG nodes instead of the stale empty-DAG diagnostic in replays/workload-autoscaler-keda-vm-prerelease-matrix.ts."
+      },
+      "status": "done"
+    }
+  ]
+}

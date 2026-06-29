@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T05:32:32.976Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Frontier-138 same-path follow-up is now durable accepted history through five bounded repo-local steps: after earlier repairs cleared featurePaths[138].behavior[3].observed, featurePaths[138].behavior[0].variable, featurePaths[138].behavior[2].variable, and featurePaths[138].behavior[4].observed, the exact shared-model-validator frontier advanced again without opening cloud work. The active same-conflict residual is now featurePaths[138].behavior[5].variable for path.aad-rbac.managed-v2-lifecycle (aadProfile.adminGroupObjectIDs.removed), where the current validator reports an unknown expectation variable and the active leaf will truthfully repair or classify only that bounded residual. Preserve the single family-level external-human wait unchanged, keep this whole branch repo-local/no-cloud, and queue one exact post-repair validator/view capture leaf behind the active residual so the branch stays executable when the current task lands.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or truthfully classify the next exact shared-model-validator frontier after the accepted auth.loginVM.kubectlAccess variable remap by reconciling featurePaths[138].behavior[2].observed for path.aad-rbac.managed-v2-lifecycle / auth.loginVM.kubectlAccess: inspect the maintained model entry, linked replay evidence, mounted source sequencing, and repo-local observed/domain conventions needed to decide whether observed='not reached (create LRO Canceled)' should map to an existing allowed observed value, be represented via note/alignment differently, or stay as a truthful non-repairable residual, then make only the bounded repo-local repair/classification and rerun validator/view generation to prove what changed for this exact residual without widening into sibling residuals, approval waits, or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted auth.loginVM.kubectlAccess variable-remap frontier artifact as the source of the new residual, records the exact model/view entry, linked replay evidence, mounted source sequencing, and repo-local observed/domain conventions inspected for featurePaths[138].behavior[2].observed, and either documents the truthful bounded repair or captures the exact same-scope reason no repair could be made.",
+        "If a bounded repair is made, the evidence records the exact edits plus validator and maintained-view commands/results showing featurePaths[138].behavior[2].observed no longer appears as the current frontier residual; the task stays within shared-model-validator-frontier, does not modify sibling residuals or blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T05:22:54.249Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624_20260624052254",
+        "assigned_at": "2026-06-24T05:22:54.296Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-front",
+        "worker_started_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624_20260624052254",
+        "worker_started_at": "2026-06-24T05:23:08.638Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact `featurePaths[138].behavior[2].observed` frontier by removing the invalid blocked observed token from `model/knowledge-map/model.json`, regenerated maintained views, and wrote a bounded evidence artifact documenting why omission is the truthful repo-local representation.",
+        "last_worker_completed_at": "2026-06-24T05:26:48.354Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T05:27:37.415Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624.md shows the exact featurePaths[138].behavior[2].observed residual was truthfully repaired by removing the invalid observed token, rerunning validator and maintained-view generation, and proving the frontier advanced to later same-path sibling residuals without widening scope or reopening blocked waits."
+      },
+      "session_id": "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-front",
+      "session_history": [
+        "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-front"
+      ],
+      "result": "Repaired the exact `featurePaths[138].behavior[2].observed` frontier by removing the invalid blocked observed token from `model/knowledge-map/model.json`, regenerated maintained views, and wrote a bounded evidence artifact documenting why omission is the truthful repo-local representation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T05:27:37.415Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-observed-not-reached-frontier-followup-20260624.md shows the exact featurePaths[138].behavior[2].observed residual was truthfully repaired by removing the invalid observed token, rerunning validator and maintained-view generation, and proving the frontier advanced to later same-path sibling residuals without widening scope or reopening blocked waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-reached-frontier-followup-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or truthfully classify the next exact shared-model-validator same-path frontier after the accepted auth.loginVM.kubectlAccess observed cleanup by reconciling featurePaths[138].behavior[4].observed for path.aad-rbac.managed-v2-lifecycle / aadProfile.adminGroupObjectIDs.updated: inspect the maintained model entry, linked replay evidence, mounted source sequencing, and repo-local observed/domain conventions needed to decide whether observed='not reached (create LRO Canceled)' should map to an allowed observed value, move into note/alignment only, or stay as a truthful non-repairable residual, then make only the bounded repo-local repair/classification and rerun validator/view generation to prove what changed for this exact residual without widening into sibling residuals, approval waits, or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-reached-frontier-followup-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted auth.loginVM.kubectlAccess observed-cleanup artifact as the source of the new residual, records the exact model/view entry, linked replay evidence, mounted source sequencing, and repo-local observed/domain conventions inspected for featurePaths[138].behavior[4].observed, and either documents the truthful bounded repair or captures the exact same-scope reason no repair could be made.",
+        "If a bounded repair is made, the evidence records the exact edits plus validator and maintained-view commands/results showing featurePaths[138].behavior[4].observed no longer appears as the current frontier residual; the task stays within shared-model-validator-frontier, does not modify sibling residuals or blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T05:27:37.466Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-reached-frontier-followup-20260624_20260624052737",
+        "assigned_at": "2026-06-24T05:27:37.511Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-r",
+        "worker_started_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-reached-frontier-followup-20260624_20260624052737",
+        "worker_started_at": "2026-06-24T05:28:02.855Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Removed the invalid observed token from featurePaths[138].behavior[4] in model/knowledge-map/model.json, regenerated maintained views, and wrote a bounded evidence artifact proving the next same-path frontier moved past aadProfile.adminGroupObjectIDs.updated.",
+        "last_worker_completed_at": "2026-06-24T05:30:36.115Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T05:31:34.569Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the archive artifact shows the bounded model repair removed the invalid observed token from featurePaths[138].behavior[4], reran validator and maintained-view generation, and proved the same-path frontier moved on to later sibling residuals without cloud or blocked-wait widening."
+      },
+      "session_id": "s_task_shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-r",
+      "session_history": [
+        "s_task_shared-model-validator-aad-rbac-managed-v2-aadprofile-admingroupobjectids-updated-observed-not-r"
+      ],
+      "result": "Removed the invalid observed token from featurePaths[138].behavior[4] in model/knowledge-map/model.json, regenerated maintained views, and wrote a bounded evidence artifact proving the next same-path frontier moved past aadProfile.adminGroupObjectIDs.updated.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T05:31:34.569Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the archive artifact shows the bounded model repair removed the invalid observed token from featurePaths[138].behavior[4], reran validator and maintained-view generation, and proved the same-path frontier moved on to later sibling residuals without cloud or blocked-wait widening."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Immediately after the active path.aad-rbac.managed-v2-lifecycle / aadProfile.adminGroupObjectIDs.updated observed-residual task lands, rerun the bounded shared-model-validator and maintained-view generation, capture whether featurePaths[138].behavior[4].observed is cleared and identify the exact next same-path frontier residual or clean pass, then record only that repo-local next-step truth without widening into sibling residual repairs, approval waits, or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted aadProfile.adminGroupObjectIDs.updated residual task/artifact, records the exact validator and maintained-view commands/results, and states whether featurePaths[138].behavior[4].observed is gone, still present, or replaced by a new same-path residual for path.aad-rbac.managed-v2-lifecycle.",
+        "If a new same-path frontier residual appears, the evidence names the exact model/view location and truthful next bounded repair/classification target; if the validator passes cleanly for this path, the evidence records that clean state. No cloud execution, approval handling, or unrelated residual work is opened from this leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T05:30:19.997Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624_20260624053052",
+        "assigned_at": "2026-06-24T05:30:52.892Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624_20260624053052",
+        "worker_started_at": "2026-06-24T05:30:57.778Z",
+        "reviewed_at": "2026-06-24T05:31:34.619Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Completed by review acceptance: the accepted aadProfile.adminGroupObjectIDs.updated artifact already performed the post-landing validator/view rerun, proved featurePaths[138].behavior[4].observed cleared, and named the next same-path frontier residuals, so no separate capture leaf remains."
+      },
+      "session_id": "s_task_shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-post-aadprofile-admingroupobjectids-updated-frontier-capture-20260624"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-24T05:31:34.619Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Completed by review acceptance: the accepted aadProfile.adminGroupObjectIDs.updated artifact already performed the post-landing validator/view rerun, proved featurePaths[138].behavior[4].observed cleared, and named the next same-path frontier residuals, so no separate capture leaf remains."
+      },
+      "status": "done"
+    }
+  ]
+}

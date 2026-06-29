@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T01:22:48.542Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 planner wake reconciliation: the watchdog review pointer names a nonexistent second-hop model/replay review leaf, but current tree state shows that scope already absorbed into the active private-cluster update-private second-hop boundary reconciliation task. The accepted VM-prerelease ASM linkage leaf is now durable in archive evidence plus maintained model/view surfaces, so archive that completed child under the project rollup. Live frontier stays intentionally narrow: one active repo-local private-cluster boundary reconciliation leaf and three exact external waits that remain compressed until returned proof or the first owner blocked-frontier review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the exact VM-prerelease AddonV2 ASM lifecycle-matrix carrier into maintained archive/model/view surfaces by reconciling the canonical spec declaration, mounted source lineage, replay linkage, and current model status without claiming a live verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624.md"
+      ],
+      "acceptance": [
+        "evidence/archive/traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624.md cites the exact mounted source/spec/replay carriers for path.traffic-azure-service-mesh.vm-prerelease-addonv2-lifecycle-matrix and records the bounded source-grounded status without inflating execution claims.",
+        "model/knowledge-map/model.json and any regenerated view surface touched by this work, including model/knowledge-map/views/path-summary.json when needed, expose normalized feature/scenario/DAG/path linkage for path.traffic-azure-service-mesh.vm-prerelease-addonv2-lifecycle-matrix consistent with the maintained carrier set.",
+        "This remains repo-local evidence/model maintenance only: no cloud execution, no duplicate blocker leaf, and no widening into unrelated ASM branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature.traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T01:12:24.652Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624_20260624011224",
+        "assigned_at": "2026-06-24T01:12:24.700Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624",
+        "worker_started_attempt_id": "a_traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624_20260624011224",
+        "worker_started_at": "2026-06-24T01:12:46.522Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the VM-prerelease AddonV2 ASM lifecycle-matrix carrier into the accepted model and archive evidence by replacing the thin placeholder linkage with mounted-source-backed feature/scenario/DAG/path wiring and regenerated the derived views. No cloud execution or task-tree changes were made.",
+        "last_worker_completed_at": "2026-06-24T01:21:28.436Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T01:21:58.939Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: archive evidence documents the exact spec/replay/mounted-source carrier split for path.traffic-azure-service-mesh.vm-prerelease-addonv2-lifecycle-matrix, and model/knowledge-map/model.json plus views/path-summary.json now expose normalized feature/scenario/DAG/path linkage without claiming a live verdict. The stale watchdog review pointer was not this task; follow-up work is now the new active private-cluster update-private second-hop boundary reconciliation leaf."
+      },
+      "session_id": "s_task_traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624",
+      "session_history": [
+        "s_task_traffic-azure-service-mesh-vm-prerelease-addonv2-lifecycle-matrix-linkage-20260624"
+      ],
+      "result": "Normalized the VM-prerelease AddonV2 ASM lifecycle-matrix carrier into the accepted model and archive evidence by replacing the thin placeholder linkage with mounted-source-backed feature/scenario/DAG/path wiring and regenerated the derived views. No cloud execution or task-tree changes were made.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T01:21:58.939Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker output: archive evidence documents the exact spec/replay/mounted-source carrier split for path.traffic-azure-service-mesh.vm-prerelease-addonv2-lifecycle-matrix, and model/knowledge-map/model.json plus views/path-summary.json now expose normalized feature/scenario/DAG/path linkage without claiming a live verdict. The stale watchdog review pointer was not this task; follow-up work is now the new active private-cluster update-private second-hop boundary reconciliation leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

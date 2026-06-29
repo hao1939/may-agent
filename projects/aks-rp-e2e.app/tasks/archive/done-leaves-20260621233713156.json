@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:37:13.156Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review keeps the tree intentionally narrow while preserving the next repo-local VM prerelease sequence. The single truthful blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621 because accepted 2026-06-21 audit artifacts already prove repo-local packet prep plus local dispatch proof for MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity packaging; only real human transport or authoritative human reply outside runtime can resume those branches. Repo-local forward work stays in the VirtualMachines source/model lane: row 30 mixed-SKU deallocate is now durably captured in parent knowledge, row 31 auto-zone single-SKU remains the only active leaf, and row 32 auto-zone mixed-SKU is recorded as the next bounded follow-on landing so the feature:virtualmachines branch has a concrete post-row31 leaf without reopening blocked execution or duplicating the external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row30-mixed-sku-deallocate-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land VM prerelease row 30 mixed-SKU deallocate behavior into the maintained knowledge map as a dedicated VirtualMachines path using mounted source plus existing spec/replay lineage, while keeping the branch separate from row 29 mixed-SKU lifecycle, row 31 auto-zone single-SKU, and generic stop/start or deallocate coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row30-mixed-sku-deallocate-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP VM prerelease source plus existing repo-local spec/replay/index authorities to add a truthful dedicated maintained landing for the exact row-30 mixed-SKU deallocate contract in model/knowledge-map/model.json and regenerate affected views.",
+        "Keep the landing narrowly row-scoped: preserve the exact deallocate-mode create, stop, scale-down, and scale-up semantics and document why it stays separate from row 29 mixed-SKU lifecycle, row 31 auto-zone single-SKU, and generic VirtualMachines lifecycle coverage.",
+        "Write one durable repo-local evidence packet summarizing the maintained landing and reused authorities only; no cloud execution, no new external-human wait handling, and no product pass/fail claim beyond source/spec/model grounding."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:28:07.818Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-model-landing-20260621_20260621233207",
+        "assigned_at": "2026-06-21T23:32:07.607Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row30-mixed-sku-deallocate-model-landing-20260621",
+        "worker_started_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-model-landing-20260621_20260621233207",
+        "worker_started_at": "2026-06-21T23:32:23.436Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the maintained row-30 mixed-SKU deallocate carrier in model/knowledge-map/model.json, regenerated maintained views, and wrote the durable evidence packet at evidence/archive/vmpr-row30-mixed-sku-deallocate-model-landing-20260621.md. Verified the row now reads as a source-grounded unknown with row-local deallocate semantics kept separate from row 29 lifecycle, row 31 auto-zone single-SKU, and generic VirtualMachines coverage; local replay check passed and no cloud execution occurred.",
+        "last_worker_completed_at": "2026-06-21T23:35:28.702Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:36:01.547Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row30-mixed-sku-deallocate-model-landing-20260621.md documents the maintained row-30 landing, grep verification shows model/knowledge-map/model.json plus views/path-summary.json now carry path.virtualmachines.mixed-sku-deallocate with row-30-specific statusReason/resumeCondition/evidence linkage, and the canonical replay local check passed without cloud execution."
+      },
+      "session_id": "s_task_vmpr-row30-mixed-sku-deallocate-model-landing-20260621",
+      "session_history": [
+        "s_task_vmpr-row30-mixed-sku-deallocate-model-landing-20260621"
+      ],
+      "result": "Landed the maintained row-30 mixed-SKU deallocate carrier in model/knowledge-map/model.json, regenerated maintained views, and wrote the durable evidence packet at evidence/archive/vmpr-row30-mixed-sku-deallocate-model-landing-20260621.md. Verified the row now reads as a source-grounded unknown with row-local deallocate semantics kept separate from row 29 lifecycle, row 31 auto-zone single-SKU, and generic VirtualMachines coverage; local replay check passed and no cloud execution occurred.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:36:01.547Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row30-mixed-sku-deallocate-model-landing-20260621.md documents the maintained row-30 landing, grep verification shows model/knowledge-map/model.json plus views/path-summary.json now carry path.virtualmachines.mixed-sku-deallocate with row-30-specific statusReason/resumeCondition/evidence linkage, and the canonical replay local check passed without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

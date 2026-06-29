@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T05:10:24.429Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-29 owner review accepted the row-33 mounted-source closure note: VM prerelease row 33 is now source-bounded to Scenario_VMs_AcceleratedNetworking on the shared VirtualMachines + VMsAgentPoolAutoscalePreview carrier with the mixedskupool two-entry manual mixed-SKU system-pool input and per-SKU NIC EnableAcceleratedNetworking true/false expectation. That closes repo-local source ambiguity for row 33 without reopening execution. This focus branch is now purely an external-wait compression branch: the single human/operator latency checkpoint wait remains the truthful timer-gated family hold, and the external send-proof family remains the only live blocker for returned approval/proof on row 33 plus the already-routed shared-identity artifact requests.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "map-vm-prerelease-mounted-source-coverage-row33-20260629",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin Go source plus referenced scenario definitions to map the exact row-33 input and expectation boundary, then decide whether repo-local source-backed evidence can narrow or replace any remaining external-proof dependence for that VM prerelease family.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/map-vm-prerelease-mounted-source-coverage-row33-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites exact mounted source files and scenario identifiers from prerelease.go/checkin.go (and referenced definitions when needed) that bound the row-33 carrier and adjacent VirtualMachine prerelease expectations.",
+        "The note states whether repo-local source-backed evidence can narrow, replace, or confirm the remaining VM prerelease row-33 external-proof wait without cloud execution.",
+        "The note proposes the next concrete tree action for the VM prerelease family: model/spec update, follow-up review leaf, or confirmation that the external wait remains truthful."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "mounted-source:virtualmachine-prerelease-row33"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:08:06.723Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-vm-prerelease-mounted-source-coverage-row33-20260629_20260629050808",
+        "assigned_at": "2026-06-29T05:08:08.971Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-vm-prerelease-mounted-source-coverage-row33-20260629",
+        "worker_started_attempt_id": "a_map-vm-prerelease-mounted-source-coverage-row33-20260629_20260629050808",
+        "worker_started_at": "2026-06-29T05:08:24.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested row-33 mounted-source coverage note at evidence/archive/map-vm-prerelease-mounted-source-coverage-row33-20260629.md, tying prerelease/checkin.go and vms_accelerated_networking.go to the maintained row-33 spec and concluding the remaining wait is still a truthful external-proof dependency.",
+        "last_worker_completed_at": "2026-06-29T05:09:35.019Z",
+        "last_worker_evidence": [
+          "evidence/archive/map-vm-prerelease-mounted-source-coverage-row33-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T05:10:24.356Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source note: it cites prerelease.go/checkin.go plus vms_accelerated_networking.go and the maintained row-33 spec to bound the exact Scenario_VMs_AcceleratedNetworking carrier, shows mounted source narrows but does not replace the remaining execute/send-proof dependency, and confirms the family-level external-proof wait remains the truthful next state."
+      },
+      "session_id": "s_task_map-vm-prerelease-mounted-source-coverage-row33-20260629",
+      "session_history": [
+        "s_task_map-vm-prerelease-mounted-source-coverage-row33-20260629"
+      ],
+      "result": "Authored the requested row-33 mounted-source coverage note at evidence/archive/map-vm-prerelease-mounted-source-coverage-row33-20260629.md, tying prerelease/checkin.go and vms_accelerated_networking.go to the maintained row-33 spec and concluding the remaining wait is still a truthful external-proof dependency.",
+      "evidence": [
+        "evidence/archive/map-vm-prerelease-mounted-source-coverage-row33-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T05:10:24.356Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source note: it cites prerelease.go/checkin.go plus vms_accelerated_networking.go and the maintained row-33 spec to bound the exact Scenario_VMs_AcceleratedNetworking carrier, shows mounted source narrows but does not replace the remaining execute/send-proof dependency, and confirms the family-level external-proof wait remains the truthful next state."
+      },
+      "status": "done"
+    }
+  ]
+}

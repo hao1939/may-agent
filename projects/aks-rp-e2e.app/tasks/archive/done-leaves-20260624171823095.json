@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T17:18:23.095Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning update rejects the watchdog review trigger as stale because the referenced serverless schedulerctrl writeback slice is already accepted history. The truthful local frontier is one active repo-wide rerun/frontier-refresh task that must rerun bun run check, capture the exact remaining warning frontier or a green result, and name the next exact remediation slice for the shared format gate; the VirtualMachine prerelease checkpoint gate stays blocked behind that result, while the four external waits remain intentionally compressed and unchanged until returned proof or the 2026-06-26 follow-up window.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun repo-wide `cd /app/projects/aks-rp-e2e && bun run check` now that the runner slice and replay slice format writebacks are complete, then capture whether the gate is fully green or, if still red, the exact remaining failing/dirty frontier that still blocks the VirtualMachine prerelease coverage-ledger checkpoint gate without widening into unrelated feature work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact repo-wide bun run check command and its outcome after the completed runner and replay writeback slices.",
+        "If the check is still non-green, the artifact names the exact remaining failing/dirty file frontier or check stage that still blocks landing and ties it back to the checkpoint gate; if the check is green, it states that truth explicitly and points to the next landing action.",
+        "The task stays bounded to repo-wide gate verification/frontier refresh only; it does not widen into cloud execution, unrelated feature authoring, or opportunistic cleanup beyond evidence of the remaining gate truth."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:05:44.495Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624_20260624170544",
+        "assigned_at": "2026-06-24T17:05:44.542Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624_20260624170544",
+        "worker_started_at": "2026-06-24T17:06:05.077Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reran repo-wide `bun run check` after the completed runner/replay slice writebacks and wrote a new archive artifact showing the gate is still red in `format`, now narrowed to an exact 148-file replay-only Prettier frontier blocking the VM prerelease coverage-ledger checkpoint gate.",
+        "last_worker_completed_at": "2026-06-24T17:08:11.554Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:09:12.539Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624.md records the exact repo-wide bun run check rerun and proves the gate is still red only in format, narrowed to a replay-only 148-file Prettier frontier outside the current dirty diff, so the old frontier-refresh review question is fully answered."
+      },
+      "session_id": "s_task_repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624"
+      ],
+      "result": "Reran repo-wide `bun run check` after the completed runner/replay slice writebacks and wrote a new archive artifact showing the gate is still red in `format`, now narrowed to an exact 148-file replay-only Prettier frontier blocking the VM prerelease coverage-ledger checkpoint gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:09:12.539Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624.md records the exact repo-wide bun run check rerun and proves the gate is still red only in format, narrowed to a replay-only 148-file Prettier frontier outside the current dirty diff, so the old frontier-refresh review question is fully answered."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one more bounded replay-only writeback slice by formatting only the exact remaining serverless schedulerctrl warned replay files from the refreshed post-VM/prerelease frontier, then rerunning targeted Prettier --check on that same exact slice and recording the before/after file list plus the resulting repo-wide warning count without widening into other replay families, cloud execution, or checkpoint landing work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact remaining serverless schedulerctrl warned replay file slice from the current post-VM/prerelease frontier, records the exact Prettier write/check commands run on only that slice, and shows whether those files became clean.",
+        "The artifact records the fresh repo-wide impact needed for owner planning: at minimum the updated warning count or an exact reason the slice could not be cleaned, tied back to the VirtualMachine prerelease checkpoint gate.",
+        "The task stays bounded to one exact replay-family format slice; it does not widen into non-selected replay families, cloud execution, or checkpoint commit attempts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:12:32.862Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624_20260624171232",
+        "assigned_at": "2026-06-24T17:12:32.962Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624_20260624171232",
+        "worker_started_at": "2026-06-24T17:12:54.820Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Formatted the exact eight-file serverless schedulerctrl replay frontier slice, verified those files are now Prettier-clean, and recorded the repo-wide gate impact in a new archive artifact showing the warning count dropped from 148 to 89 while format still fails repo-wide.",
+        "last_worker_completed_at": "2026-06-24T17:14:39.795Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:15:46.067Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-24 serverless schedulerctrl replay slice writeback: archive evidence proves the exact eight warned files were the only formatted slice, targeted Prettier --check turned that slice green, and repo-wide bun run check improved the shared format gate from 148 to 89 warnings without widening into cloud execution or checkpoint work."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-serverless-schedulerctrl-slice-writeback-20260624"
+      ],
+      "result": "Formatted the exact eight-file serverless schedulerctrl replay frontier slice, verified those files are now Prettier-clean, and recorded the repo-wide gate impact in a new archive artifact showing the warning count dropped from 148 to 89 while format still fails repo-wide.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:15:46.067Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-24 serverless schedulerctrl replay slice writeback: archive evidence proves the exact eight warned files were the only formatted slice, targeted Prettier --check turned that slice green, and repo-wide bun run check improved the shared format gate from 148 to 89 warnings without widening into cloud execution or checkpoint work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded replay-only writeback slice by running Prettier --write on the exact VM/prerelease-named warned replay files from evidence/archive/repo-wide-bun-check-post-slice-rerun-and-frontier-refresh-20260624.md, then rerun targeted Prettier --check on that same exact slice and record the before/after file list plus the new repo-wide warning count without widening into unrelated replay families or checkpoint landing work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the exact warned VM/prerelease-named replay file slice selected from the 2026-06-24 replay-only frontier artifact, records the exact Prettier write/check commands run on only that slice, and shows whether those files became clean.",
+        "The artifact records the fresh repo-wide impact needed for owner planning: at minimum the updated warning count or an exact reason the slice could not be cleaned, tied back to the VirtualMachine prerelease checkpoint gate.",
+        "The task stays bounded to one exact replay-family format slice; it does not widen into non-selected replay families, cloud execution, or checkpoint commit attempts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:09:12.586Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624_20260624170912",
+        "assigned_at": "2026-06-24T17:09:12.635Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624_20260624170912",
+        "worker_started_at": "2026-06-24T17:09:34.713Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded VM/prerelease replay Prettier writeback slice and recorded evidence in evidence/archive/repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624.md. The exact 51-file selected slice is now Prettier-clean, and repo-wide format warnings dropped from 148 to 97 while remaining red in format.",
+        "last_worker_completed_at": "2026-06-24T17:11:36.669Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:12:32.813Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624.md proves the exact 51-file VM/prerelease replay slice was formatted with bounded prettier --write/--check commands, became slice-clean, and reduced the repo-wide format warning count from 148 to 97 without widening scope."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624"
+      ],
+      "result": "Completed the bounded VM/prerelease replay Prettier writeback slice and recorded evidence in evidence/archive/repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624.md. The exact 51-file selected slice is now Prettier-clean, and repo-wide format warnings dropped from 148 to 97 while remaining red in format.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:12:32.813Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/repo-wide-bun-check-replay-frontier-vm-prerelease-slice-writeback-20260624.md proves the exact 51-file VM/prerelease replay slice was formatted with bounded prettier --write/--check commands, became slice-clean, and reduced the repo-wide format warning count from 148 to 97 without widening scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-slice-prettier-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply exact-file Prettier writeback to the remaining replay-family dirty warned files from the repo-wide bun run check diagnosis — replays/net-integration-natgw-v2-migration-v2-to-block.ts, replays/net-integration-natgw-v2-migration-v2-to-none.ts, and replays/windows-node-pool-create-virtualmachines-gen2.ts — then capture bounded post-write verification showing whether this replay slice stops contributing targeted format warnings without widening into unrelated cleanup or claiming the full repo-wide gate is green.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-slice-prettier-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact Prettier/writeback command(s) for those three replay files only and shows post-write git status plus targeted prettier --check truth for that same exact slice.",
+        "The artifact keeps this as one bounded replay remediation slice derived from the repo-wide gate diagnosis; it does not widen into runner files, VM ledger authoring, or unrelated repo cleanup.",
+        "The task may report whether these three files stop contributing format warnings and may note any remaining repo-wide gate blockers, but it must not claim full repo-wide bun run check success unless the evidence actually shows that."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:03:54.747Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-slice-prettier-writeback-20260624_20260624170354",
+        "assigned_at": "2026-06-24T17:03:54.797Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-slice-prettier-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-slice-prettier-writeback-20260624_20260624170354",
+        "worker_started_at": "2026-06-24T17:04:12.757Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied exact-file Prettier writeback to the three assigned replay files and archived bounded verification in evidence/archive/repo-wide-bun-check-replay-slice-prettier-writeback-20260624.md showing the slice now passes targeted prettier --check without claiming repo-wide gate success.",
+        "last_worker_completed_at": "2026-06-24T17:04:59.903Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:05:44.448Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/repo-wide-bun-check-replay-slice-prettier-writeback-20260624.md records exact-file Prettier --write for the three assigned replay files and shows targeted post-write prettier --check passes for that same slice without claiming repo-wide bun run check closure."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-slice-prettier-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-slice-prettier-writeback-20260624"
+      ],
+      "result": "Applied exact-file Prettier writeback to the three assigned replay files and archived bounded verification in evidence/archive/repo-wide-bun-check-replay-slice-prettier-writeback-20260624.md showing the slice now passes targeted prettier --check without claiming repo-wide gate success.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:05:44.448Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/repo-wide-bun-check-replay-slice-prettier-writeback-20260624.md records exact-file Prettier --write for the three assigned replay files and shows targeted post-write prettier --check passes for that same slice without claiming repo-wide bun run check closure."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-runner-slice-prettier-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the accepted runner-only remediation split by running exact-file Prettier writeback on runner/dag-compact.ts, runner/dag-compact.test.ts, runner/execute-vitest-plan.ts, and runner/vitest-runtime/shared-clusters.ts, then capture bounded post-write verification showing whether this runner slice is now clean while preserving the two-packet land/review split (DAG compaction pair vs executor/shared-cluster hardening pair).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-runner-slice-prettier-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact Prettier/writeback command(s), preserves the exact four runner files, and shows post-write git status and targeted format-check truth for those files only.",
+        "The artifact restates and preserves the accepted two-packet split: packet A runner/dag-compact.{ts,test.ts}, packet B runner/execute-vitest-plan.ts plus runner/vitest-runtime/shared-clusters.ts; it does not merge the residues or widen into replay-family edits.",
+        "The task may report whether the four-file runner slice stops contributing format warnings and may note any remaining repo-wide gate blockers, but it must not claim the full repo-wide bun run check is fixed unless the evidence actually shows that."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T17:01:35.764Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-runner-slice-prettier-writeback-20260624_20260624170138",
+        "assigned_at": "2026-06-24T17:01:38.151Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-runner-slice-prettier-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-runner-slice-prettier-writeback-20260624_20260624170138",
+        "worker_started_at": "2026-06-24T17:01:53.090Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied exact-file Prettier writeback to the four assigned runner files and wrote evidence at evidence/archive/repo-wide-bun-check-runner-slice-prettier-writeback-20260624.md showing targeted post-write status and Prettier-clean verification while preserving the accepted two-packet split.",
+        "last_worker_completed_at": "2026-06-24T17:03:12.992Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:03:54.700Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded runner-slice evidence: archive proves exact four-file Prettier writeback, targeted prettier --check is clean for those files, packet-A bun test still passes, and the artifact explicitly avoids claiming repo-wide bun run check is fixed."
+      },
+      "session_id": "s_task_repo-wide-bun-check-runner-slice-prettier-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-runner-slice-prettier-writeback-20260624"
+      ],
+      "result": "Applied exact-file Prettier writeback to the four assigned runner files and wrote evidence at evidence/archive/repo-wide-bun-check-runner-slice-prettier-writeback-20260624.md showing targeted post-write status and Prettier-clean verification while preserving the accepted two-packet split.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:03:54.700Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded runner-slice evidence: archive proves exact four-file Prettier writeback, targeted prettier --check is clean for those files, packet-A bun test still passes, and the artifact explicitly avoids claiming repo-wide bun run check is fixed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-runner-slice-remediation-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using evidence/archive/repo-wide-bun-check-dirty-warning-slice-routing-20260624.md as the accepted routing baseline, analyze exactly the four dirty runner files (runner/dag-compact.test.ts, runner/dag-compact.ts, runner/execute-vitest-plan.ts, and runner/vitest-runtime/shared-clusters.ts) and produce one bounded runner-only remediation packet that states whether they are one coherent change or separate residues, records the minimal truthful next land/revert split, and defines the smallest runner-local action that could clear this portion of the repo-wide bun run check format gate without touching unrelated replay families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-runner-slice-remediation-packet-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites evidence/archive/repo-wide-bun-check-dirty-warning-slice-routing-20260624.md, preserves the exact four runner files, and records file-level diff/intent findings sufficient to classify the slice as one coherent runner change or separated residues.",
+        "The artifact ends with one concrete bounded next step for the runner slice only: targeted land-together proposal, smaller split proposal, or explicit revert/exclude recommendation tied to the observed runner diffs; it does not claim the repo-wide format gate is fully fixed.",
+        "This task stays in runner/repo-local routing space only: no replay-family edits, no cloud execution, no reopening of the accepted VirtualMachine prerelease coverage-ledger content work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T16:58:20.622Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-runner-slice-remediation-packet-20260624_20260624165820",
+        "assigned_at": "2026-06-24T16:58:20.667Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-runner-slice-remediation-packet-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-runner-slice-remediation-packet-20260624_20260624165820",
+        "worker_started_at": "2026-06-24T16:58:50.095Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested runner-only remediation packet at evidence/archive/repo-wide-bun-check-runner-slice-remediation-packet-20260624.md, classifying the four dirty runner files into two coherent residues and defining the smallest truthful next split/action for this format-gate slice.",
+        "last_worker_completed_at": "2026-06-24T17:00:30.696Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T17:01:17.770Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/repo-wide-bun-check-runner-slice-remediation-packet-20260624.md preserves the exact four dirty runner files, classifies them into two coherent runner residues, and gives the bounded next step of exact-file Prettier writeback with packet-A/packet-B split preserved."
+      },
+      "session_id": "s_task_repo-wide-bun-check-runner-slice-remediation-packet-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-runner-slice-remediation-packet-20260624"
+      ],
+      "result": "Produced the requested runner-only remediation packet at evidence/archive/repo-wide-bun-check-runner-slice-remediation-packet-20260624.md, classifying the four dirty runner files into two coherent residues and defining the smallest truthful next split/action for this format-gate slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T17:01:17.770Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/repo-wide-bun-check-runner-slice-remediation-packet-20260624.md preserves the exact four dirty runner files, classifies them into two coherent runner residues, and gives the bounded next step of exact-file Prettier writeback with packet-A/packet-B split preserved."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T18:19:45.717Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "triage-p1-single-spec-review-family-20260626",
+  "summary": "2026-06-26 owner review accepted evidence/archive/p1-single-spec-review-family-triage-20260626.md as the durable repo-local truth for the three stale single-spec review leaves. The branch now knows: machines-agentpool-api-crud is a real existing-run HTTP 400/state=Unknown blocker to diagnose from run 28253322988 rather than rerun; new-vnet-lifecycle-vm-prerelease is still source/check-only and needs a mounted-source live-gap map before verification can resume; storage-csi-file-pvc-dynamic-provision is a runner/result-ingest mismatch on run 28252830212 and should be repaired from artifacts rather than cloud-rerun. Successor leaves were created under aks-spec-verification-loop for those three bounded follow-ups.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "retry-triage-p1-single-spec-review-family-artifact-20260626",
+      "parent_id": "triage-p1-single-spec-review-family-20260626",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the downloaded repo-local artifacts for runs 28253322988, 28255052316, and 28252830212 and author evidence/archive/p1-single-spec-review-family-triage-20260626.md with the artifact-truth status, decisive result.json/spec-runner/result.json quotes, and smallest truthful next action for each of the three review leaves after the failed no-evidence triage attempt.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/p1-single-spec-review-family-triage-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact quotes the decisive repo-local result status for runs 28253322988, 28255052316, and 28252830212 and classifies each as pass, real nonpass, or environment/runner blockage.",
+        "For verify-spec-machines-agentpool-api-crud, verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease, and verify-spec-storage-csi-file-pvc-dynamic-provision, the writeup names the smallest truthful next branch action without cloud rerun or duplicate blocker creation.",
+        "The writeup explains why triage-p1-single-spec-review-family-20260626 could not be accepted from the prior worker attempt (error/no evidence) and leaves durable repo-local evidence for owner review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-p1-triage-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:13:24.240Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T18:13:28.909Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-triage-p1-single-spec-review-family-artifact-20260626_20260626181354",
+        "assigned_at": "2026-06-26T18:13:54.886Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-triage-p1-single-spec-review-family-artifact-20260626",
+        "worker_started_attempt_id": "a_retry-triage-p1-single-spec-review-family-artifact-20260626_20260626181354",
+        "worker_started_at": "2026-06-26T18:13:55.847Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored evidence/archive/p1-single-spec-review-family-triage-20260626.md with repo-local artifact truth for runs 28253322988, 28255052316, and 28252830212, including decisive result/spec-runner quotes, classification, and smallest next action for each review leaf.",
+        "last_worker_completed_at": "2026-06-26T18:16:32.491Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:19:12.770Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the triage artifact because it quotes decisive repo-local result.json and spec-runner/result.json evidence for runs 28253322988, 28255052316, and 28252830212 and names the smallest truthful next action for each pending single-spec review leaf."
+      },
+      "session_id": "s_task_retry-triage-p1-single-spec-review-family-artifact-20260626",
+      "session_history": [
+        "s_task_retry-triage-p1-single-spec-review-family-artifact-20260626"
+      ],
+      "result": "Authored evidence/archive/p1-single-spec-review-family-triage-20260626.md with repo-local artifact truth for runs 28253322988, 28255052316, and 28252830212, including decisive result/spec-runner quotes, classification, and smallest next action for each review leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:19:12.770Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the triage artifact because it quotes decisive repo-local result.json and spec-runner/result.json evidence for runs 28253322988, 28255052316, and 28252830212 and names the smallest truthful next action for each pending single-spec review leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

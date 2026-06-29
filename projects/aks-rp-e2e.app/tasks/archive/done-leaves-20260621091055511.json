@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:10:55.511Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 blocked-frontier owner review converted the passive row-63 runtime/session wait into one active problem-solving leaf: addonv2-row63-runtime-owner-reconcile-or-escalate-20260621 now owns the single truthful next decision for the stale sessions s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 and s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621 plus orphaned execute PID 650824. This focus branch remains bounded to Scenario_Addonv2_Azure_Monitor_Metrics and should create a fresh unchanged Standard_D2_v4 rerun only after runtime reconciliation evidence or an exact owner/operator escalation-handoff is produced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-row63-runtime-session-reconcile-wait-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single shared row-63 runtime/session blocker for path.app-monitoring-addonv2-azure-monitor-metrics until the two stale running sessions and the orphaned execute process identified by the accepted owner-repair note are reconciled, so a fresh unchanged Standard_D2_v4 row-63 rerun is only created after the runtime precondition is truthfully safe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-row63-runtime-session-reconcile-wait-20260621.md"
+      ],
+      "acceptance": [
+        "Task cites the accepted stale-session owner-repair artifact plus the exact stale session ids s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 and s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621, and the orphaned execute PID 650824 observed for the retry-after-stale-attempt run id.",
+        "Task remains the single live carrier for this shared runtime/session blocker and does not create or assign a fresh row-63 rerun leaf until the runtime precondition is resolved.",
+        "Resume only when no orphaned row-63 replay process remains for the stale retry and both stale session ids are no longer left as running or are explicitly reconciled/quarantined by the runtime owner; at that point the next owner action is one fresh unchanged row-63 rerun leaf using the same accepted execute contract."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:04:18.158Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T09:10:39.657Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive row-63 runtime/session wait with explicit problem-solving task addonv2-row63-runtime-owner-reconcile-or-escalate-20260621 so the stale sessions and orphaned PID are actively reconciled or escalated instead of remaining as an unowned blocked leaf."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T09:10:39.657Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive row-63 runtime/session wait with explicit problem-solving task addonv2-row63-runtime-owner-reconcile-or-escalate-20260621 so the stale sessions and orphaned PID are actively reconciled or escalated instead of remaining as an unowned blocked leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

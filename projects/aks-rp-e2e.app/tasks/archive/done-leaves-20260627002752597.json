@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T00:27:52.597Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 task-completed reconciliation: accepted the completed VirtualMachines auto-zone family normalization and preserved the current truthful frontier shape. Repo-local execution remains focused on the single active network-cni azure-overlay ILPIP dual-stack carrier-authoring task, while the only other live leaves stay compressed to two externally satisfied waits: the routed private-cluster none-dns-zone-v3 operator decision wait and the shared external send-proof/operator artifact-return family wait. Rolled up completed storage and VM knowledge-map repairs so the root branch records their durable value without keeping six low-value done leaves expanded.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the stale full-cache negative knowledge-map summaries so model/knowledge-map/model.json no longer contradicts the mounted Scenario_Full_Cache_OsDisk_Negative canonical boundary repaired in the spec/replay/packet carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/evidence/archive/storage-speculor-full-cache-negative-model-repair-20260627.md"
+      ],
+      "acceptance": [
+        "Replace or explicitly reframe the stale Standard_B2s-era full-cache negative summaries in model/knowledge-map/model.json so the canonical boundary matches the mounted 4-vCPU EnableOSDiskFullCaching=true rejection shape and FullCacheVMSizeNotInCandidateList expectation.",
+        "Preserve any still-useful historical execution evidence only as clearly labeled stale/non-canonical context, not as the current path summary for the repaired full-cache negative carrier.",
+        "Write a durable evidence note with exact model.json paths/lineage showing how the contradiction was resolved repo-locally, without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-full-cache-negative-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:10:04.504Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627_20260627001032",
+        "assigned_at": "2026-06-27T00:10:32.000Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627",
+        "worker_started_attempt_id": "a_storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627_20260627001032",
+        "worker_started_at": "2026-06-27T00:10:32.550Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the stale full-cache negative knowledge-map carriers in model/knowledge-map/model.json and added a durable evidence note documenting how the canonical mounted 4-vCPU FullCacheVMSizeNotInCandidateList boundary now supersedes the old Standard_B2s summaries.",
+        "last_worker_completed_at": "2026-06-27T00:14:49.833Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:15:35.441Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence note and model.json now reframe stale Standard_B2s summaries as non-canonical history and restore the mounted 4-vCPU EnableOSDiskFullCaching=true / FullCacheVMSizeNotInCandidateList rejection boundary as the canonical full-cache negative path."
+      },
+      "session_id": "s_task_storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627",
+      "session_history": [
+        "s_task_storage-speculor-full-cache-negative-model-knowledge-map-repair-20260627"
+      ],
+      "result": "Repaired the stale full-cache negative knowledge-map carriers in model/knowledge-map/model.json and added a durable evidence note documenting how the canonical mounted 4-vCPU FullCacheVMSizeNotInCandidateList boundary now supersedes the old Standard_B2s summaries.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:15:35.441Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence note and model.json now reframe stale Standard_B2s summaries as non-canonical history and restore the mounted 4-vCPU EnableOSDiskFullCaching=true / FullCacheVMSizeNotInCandidateList rejection boundary as the canonical full-cache negative path."
+      },
+      "status": "done"
+    }
+  ]
+}

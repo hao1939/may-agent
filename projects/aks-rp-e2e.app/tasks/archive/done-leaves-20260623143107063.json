@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:31:07.063Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the private-cluster VNet authorized-service-tags witness-host attestation packet as durable repo-local closure: mounted/private-cluster source, maintained feature/spec/replay carriers, and accepted model/view state now explicitly preserve that this path's decisive AzureCloud allow claim is a same-cluster host-vantage kube-access observation, not an ARM-persistence-only fact. The remaining non-cloud gap is narrowed to restoring selected-host SSH/preflight success plus durable justification that the selected host is the trustworthy AzureCloud witness; no private-cluster none-dns-zone-v3 work is reopened. With that review accepted, the only live frontier is the single family-level external-human wait for returned operator/runtime proof under focus-mounted-source-coverage-closure-and-external-wait-20260623.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a bounded repo-local attestation packet for the VNet Integration Authorized Service Tags path that defines the exact trustworthy AzureCloud witness-host criteria from mounted/private-cluster sources and existing archive evidence, and classify the narrowest remaining gap without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted/private-cluster source/spec/replay/evidence carriers used to infer AzureCloud witness-host expectations for path.private-cluster-vnet-integration-auth-service-tags and states the trustworthy criteria without claiming a live verdict.",
+        "The note classifies the narrowest remaining gap as repo-local closure complete, future verification gap, or external/runtime dependency, and recommends the next truthful follow-up task or retest condition without reopening completed private-cluster none-dns-zone-v3 closure or splitting the external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:29:07.289Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623_20260623142907",
+        "assigned_at": "2026-06-23T14:29:07.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623_20260623142907",
+        "worker_started_at": "2026-06-23T14:30:02.335Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested durable archive packet at evidence/archive/private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623.md, grounding the trustworthy AzureCloud witness-host rule in mounted source/spec/replay/model and narrowing the remaining gap to selected-host preflight without any new cloud mutation.",
+        "last_worker_completed_at": "2026-06-23T14:30:02.348Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:31:07.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623.md: the packet cites exact mounted private-cluster source/spec/replay/model carriers, defines the trustworthy AzureCloud witness-host criteria without claiming live verification, and narrows the remaining gap to selected-host SSH/preflight plus durable host-trust justification rather than any new source/spec reshaping or reopening none-dns-zone-v3."
+      },
+      "session_id": "s_task_private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623"
+      ],
+      "result": "Authored the requested durable archive packet at evidence/archive/private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623.md, grounding the trustworthy AzureCloud witness-host rule in mounted source/spec/replay/model and narrowing the remaining gap to selected-host preflight without any new cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:31:07.016Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/private-cluster-vnet-auth-service-tags-witness-host-attestation-packet-20260623.md: the packet cites exact mounted private-cluster source/spec/replay/model carriers, defines the trustworthy AzureCloud witness-host criteria without claiming live verification, and narrows the remaining gap to selected-host SSH/preflight plus durable host-trust justification rather than any new source/spec reshaping or reopening none-dns-zone-v3."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:29:09.319Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted and archived the bounded row-42 secure-TLS VNet-integration maintained landing: mounted VM prerelease/checkin lineage plus existing repo-local canonical carrier/check artifacts now truthfully place row 42 under the existing secure-TLS branch in the maintained model/view surfaces, and the worker-reported validate noise was explicitly limited to pre-existing unrelated model errors outside this slice. The live repo-local frontier is now the already-assigned single adjacent follow-on leaf vmpr-post-row42-next-adjacent-securetls-maintained-landing-20260622, which should confirm exactly one next row/variant after row 42 from mounted source before landing any further maintained updates. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the only truthful blocked family, still waiting only on durable real human transport proof or authoritative replies outside runtime for the covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Now that row-41 secure-TLS basic maintained reconciliation has landed, reconcile only VM prerelease row 42 into the maintained knowledge-map/model/view surfaces by using the mounted VM prerelease/checkin secure-TLS lineage plus the existing repo-local canonical carrier artifacts, preserving row 42 as the exact adjacent secure-TLS follow-on under the existing secure-tls-basic branch without widening to row 43, cloud execution, or external-human-transport work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622.md"
+      ],
+      "acceptance": [
+        "Update the maintained knowledge-map/model/view surfaces so row 42 is represented truthfully under the existing secure TLS branch as the exact VM-prerelease follow-on variant, citing mounted source lineage from the VM prerelease/checkin suites plus the existing repo-local row-42 carrier/check artifacts.",
+        "Record one evidence note that names the mounted source anchors and the existing repo-local row-42 canonical-carrier/check artifacts, and states exactly which maintained surfaces changed for this row-42-only reconciliation.",
+        "Keep scope bounded to row 42 maintained reconciliation only: do not widen to row 43 or other secure-TLS follow-ons, do not launch cloud execution, do not reopen the shared external-human-transport blocker family, and do not replace the existing secure-tls-basic branch shape unless the mounted source lineage requires an exact correction."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:22:22.083Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622_20260622002554",
+        "assigned_at": "2026-06-22T00:25:54.661Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622",
+        "worker_started_attempt_id": "a_vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622_20260622002554",
+        "worker_started_at": "2026-06-22T00:25:55.654Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Updated the maintained secure-TLS row-42 VM prerelease VNet-integration model/view surfaces and wrote the required evidence note. Validation still reports many pre-existing unrelated model errors, so the full validate command did not pass even though the targeted row-42 surfaces were regenerated and verified.",
+        "last_worker_completed_at": "2026-06-22T00:28:19.370Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:28:57.937Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted row-42 maintained reconciliation: the evidence artifact shows the mounted VM prerelease/checkin lineage, reused bounded repo-local canonical carrier/check artifacts, and identifies the exact maintained model/view surfaces updated for row 42 only. The worker-reported validate failure is not a task blocker because the acceptance for this leaf required truthful row-42 maintained landing plus evidence, and the failure was explicitly limited to pre-existing unrelated model validation errors outside the bounded row-42 slice."
+      },
+      "session_id": "s_task_vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622",
+      "session_history": [
+        "s_task_vmpr-row42-securetls-followon-maintained-model-view-landing-post-row41-20260622"
+      ],
+      "result": "Updated the maintained secure-TLS row-42 VM prerelease VNet-integration model/view surfaces and wrote the required evidence note. Validation still reports many pre-existing unrelated model errors, so the full validate command did not pass even though the targeted row-42 surfaces were regenerated and verified.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:28:57.937Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted row-42 maintained reconciliation: the evidence artifact shows the mounted VM prerelease/checkin lineage, reused bounded repo-local canonical carrier/check artifacts, and identifies the exact maintained model/view surfaces updated for row 42 only. The worker-reported validate failure is not a task blocker because the acceptance for this leaf required truthful row-42 maintained landing plus evidence, and the failure was explicitly limited to pre-existing unrelated model validation errors outside the bounded row-42 slice."
+      },
+      "status": "done"
+    }
+  ]
+}

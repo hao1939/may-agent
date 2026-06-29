@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T12:26:17.198Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 owner review accepts the row-56 ManagedSystem VM-prerelease linkage repair as completed hygiene work: both accepted model surfaces now point path.virtualmachines.managedsystem-agentpool-vm-prerelease at the extant features/virtualmachines-agentpool/tests/virtualmachines-managedsystem-agentpool-vm-prerelease.ts carrier, the missing legacy replays path is no longer referenced, and the path verdict remains unchanged (status/classification unknown, lastRunStatus pass, verdictFinal false). The truthful live frontier remains blocked-only and unchanged after this acceptance: App Routing existing-cluster operator response, private-cluster public-FQDN-toggle live-run authorization, LocalDNS VM-prerelease selected-host proof return, and the older VM-prerelease/shared-identity proof-return family stay as the only exact waits until a returned reply/proof or recorded checkpoint materially changes one carrier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the accepted row-56 ManagedSystem VM-prerelease carrier linkage so path.virtualmachines.managedsystem-agentpool-vm-prerelease points at the extant replay/test file instead of the missing legacy replays path, then archive a concise evidence note without changing the product verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628.md"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json both update path.virtualmachines.managedsystem-agentpool-vm-prerelease specCoverage.probeRef from missing replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts to extant features/virtualmachines-agentpool/tests/virtualmachines-managedsystem-agentpool-vm-prerelease.ts, matching the existing owning spec.",
+        "Archive one durable evidence note under evidence/archive citing the exact before/after accepted-surface linkage, confirming the target test file exists, the legacy replays path is absent, and no product/status verdict for row 56 changed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-knowledge:virtualmachine-prerelease-managedsystem-linkage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T12:24:02.727Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628_20260628122402",
+        "assigned_at": "2026-06-28T12:24:02.779Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628",
+        "worker_started_attempt_id": "a_repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628_20260628122402",
+        "worker_started_at": "2026-06-28T12:24:12.553Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-56 ManagedSystem VM-prerelease accepted probeRef linkage in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, and archived a durable evidence note at evidence/archive/repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628.md without changing the path verdict.",
+        "last_worker_completed_at": "2026-06-28T12:25:32.447Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "evidence/archive/repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T12:26:07.184Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted narrow review: archived evidence and accepted surfaces both show row-56 ManagedSystem VM-prerelease probeRef now points at the extant features/virtualmachines-agentpool/tests/virtualmachines-managedsystem-agentpool-vm-prerelease.ts carrier instead of the missing legacy replays path, and the path verdict remains unchanged (status unknown, classification unknown, lastRunStatus pass, verdictFinal false)."
+      },
+      "session_id": "s_task_repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628",
+      "session_history": [
+        "s_task_repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628"
+      ],
+      "result": "Repaired the row-56 ManagedSystem VM-prerelease accepted probeRef linkage in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, and archived a durable evidence note at evidence/archive/repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628.md without changing the path verdict.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "evidence/archive/repair-vm-prerelease-row56-managedsystem-proberef-linkage-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T12:26:07.184Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted narrow review: archived evidence and accepted surfaces both show row-56 ManagedSystem VM-prerelease probeRef now points at the extant features/virtualmachines-agentpool/tests/virtualmachines-managedsystem-agentpool-vm-prerelease.ts carrier instead of the missing legacy replays path, and the path verdict remains unchanged (status unknown, classification unknown, lastRunStatus pass, verdictFinal false)."
+      },
+      "status": "done"
+    }
+  ]
+}

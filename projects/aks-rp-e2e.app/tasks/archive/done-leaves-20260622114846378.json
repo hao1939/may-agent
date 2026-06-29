@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:48:46.378Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner pass keeps the single truthful external-human-transport wait compressed at external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 while active repo-local work remains three narrow leaves: ACNS Retina Enterprise replay/index sync, MultiNIC dual-stack maintained-carrier audit, and NATGW v2 dual-stack BYO v4prefix+v6ip terminal-carrier reconciliation. The completed network terminal carrier matrix is now summarized at the project level: it covered 10 finalized non-passing net-integration paths and showed one remaining exact repo-local mismatch on path.net-integration.natgw-v2-ds-byoip-v4prefix-v6ip, which is now carried by the dedicated reconciliation leaf instead of a vague retry.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-terminal-carrier-matrix-batch1-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded repo-local carrier matrix for the currently finalized net-integration non-passing paths by matching each path's verdict/retest condition to exact maintained model/view evidence and any mounted-source or public-doc carrier that already explains the contract, so the project can see which network terminal verdicts are already well-carried and which still need one narrow follow-up without touching cloud execution or the external-human-transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-terminal-carrier-matrix-batch1-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence covers one bounded batch of current net-integration non-passing paths from model_status_summary and, for each covered path, records the exact path id, current verdict/retest condition, and the maintained carrier(s) already present in repo-local model/views plus any exact mounted-source or public-doc carrier used to justify the contract.",
+        "The artifact ends with either (a) a statement that the covered network terminal verdicts already have truthful maintained carriers, or (b) one or more concrete repo-local follow-up leaves for exact missing carrier/model work; it must not reopen external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 or schedule cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-terminal-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:44:17.610Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-terminal-carrier-matrix-batch1-20260622_20260622114417",
+        "assigned_at": "2026-06-22T11:44:17.659Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-terminal-carrier-matrix-batch1-20260622",
+        "worker_started_attempt_id": "a_network-terminal-carrier-matrix-batch1-20260622_20260622114417",
+        "worker_started_at": "2026-06-22T11:44:47.128Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the bounded network terminal carrier matrix and wrote it to evidence/archive/network-terminal-carrier-matrix-batch1-20260622.md, covering 10 finalized non-passing net-integration terminal paths with exact maintained carriers and mounted-source contract anchors.",
+        "last_worker_completed_at": "2026-06-22T11:47:22.318Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:47:49.585Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/network-terminal-carrier-matrix-batch1-20260622.md covers a bounded batch of 10 finalized non-passing net-integration terminal paths, records each path's exact verdict/retest condition plus maintained model/spec/source carriers, and ends with one narrow repo-local follow-up for the remaining v4prefix-v6ip carrier mismatch without reopening external-send or cloud mutation."
+      },
+      "session_id": "s_task_network-terminal-carrier-matrix-batch1-20260622",
+      "session_history": [
+        "s_task_network-terminal-carrier-matrix-batch1-20260622"
+      ],
+      "result": "Built the bounded network terminal carrier matrix and wrote it to evidence/archive/network-terminal-carrier-matrix-batch1-20260622.md, covering 10 finalized non-passing net-integration terminal paths with exact maintained carriers and mounted-source contract anchors.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:47:49.585Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/network-terminal-carrier-matrix-batch1-20260622.md covers a bounded batch of 10 finalized non-passing net-integration terminal paths, records each path's exact verdict/retest condition plus maintained model/spec/source carriers, and ends with one narrow repo-local follow-up for the remaining v4prefix-v6ip carrier mismatch without reopening external-send or cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

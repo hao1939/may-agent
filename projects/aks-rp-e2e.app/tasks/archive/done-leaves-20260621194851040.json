@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T19:48:51.040Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "VM prerelease repo-local frontier follow-through is now absorbed through source-order row 49 / maintained row 48: the accepted CAS scale-from-zero labels FIPS frontier-proof packet preserves exact row-numbering truth, cites mounted prerelease/checkin adjacency, and proves dedicated row-48 carriers already cover the branch without new model/spec/replay authoring or cloud execution. The only live regular-learning frontier remains vmpr-post-row49-row50-cas-scale-from-zero-taints-criticaladdonsonly-frontier-proof-20260621. The only live blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621, which stays as the single truthful external-human-transport wait because no newer real send/handoff/escalation proof or authoritative reply exists and the blocker itself already carries the 2026-06-22T10:08:46Z re-review threshold.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/evidence-feedback lane: produce a bounded source-order row-49 CAS scale-from-zero labels FIPS frontier-proof packet that ties the exact next adjacent VM prerelease branch after the accepted CAS overscale node-stability frontier packet to its already-landed canonical repo-local carriers by source/evidence reuse only, without reopening CAS model/spec/replay authoring or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Produce durable evidence citing the exact mounted checkin/prerelease source-order adjacency for source-order row 49 and the CAS scale-from-zero labels FIPS plan, with exact row-numbering truth preserved (source-order row 49 versus maintained pipeline row 48).",
+        "Reuse and cite the existing canonical CAS scale-from-zero labels FIPS feature/spec/replay/model/evidence carriers to prove no new CAS model/spec/replay authoring is needed, and explicitly bound this task to evidence/alias reuse only.",
+        "Name the next truthful follow-up boundary after this packet (the exact adjacent sibling or a source-backed stop line), while making no model/knowledge-map edits and no cloud mutation claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T19:45:19.580Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621_20260621194519",
+        "assigned_at": "2026-06-21T19:45:19.654Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621_20260621194519",
+        "worker_started_at": "2026-06-21T19:45:40.260Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded frontier-proof evidence packet at evidence/archive/vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621.md, proving source-order row 49 / maintained pipeline row 48 adjacency for CAS scale-from-zero labels FIPS and reusing existing canonical carriers without model/spec/replay or cloud changes.",
+        "last_worker_completed_at": "2026-06-21T19:46:52.093Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T19:47:13.263Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after reading evidence/archive/vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621.md: it proves the exact mounted-source adjacency after CAS overscale, preserves source-order row 49 versus maintained row 48 alias truth, cites already-landed canonical labels-FIPS carriers as reuse-only support, and names the next truthful boundary as source-order row 50 / maintained row 49 CAS scale-from-zero taints CriticalAddonsOnly with no model/spec/replay/cloud changes."
+      },
+      "session_id": "s_task_vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621"
+      ],
+      "result": "Produced the bounded frontier-proof evidence packet at evidence/archive/vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621.md, proving source-order row 49 / maintained pipeline row 48 adjacency for CAS scale-from-zero labels FIPS and reusing existing canonical carriers without model/spec/replay or cloud changes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T19:47:13.263Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after reading evidence/archive/vmpr-post-row48-row49-cas-scale-from-zero-labels-fips-frontier-proof-20260621.md: it proves the exact mounted-source adjacency after CAS overscale, preserves source-order row 49 versus maintained row 48 alias truth, cites already-landed canonical labels-FIPS carriers as reuse-only support, and names the next truthful boundary as source-order row 50 / maintained row 49 CAS scale-from-zero taints CriticalAddonsOnly with no model/spec/replay/cloud changes."
+      },
+      "status": "done"
+    }
+  ]
+}

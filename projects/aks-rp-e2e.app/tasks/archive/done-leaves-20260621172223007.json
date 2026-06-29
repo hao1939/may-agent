@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:22:23.007Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "The live frontier remains intentionally compressed to one exact external-human-transport family wait plus two repo-local VM prerelease learning leaves. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 stays the single truthful blocked carrier until durable proof of real human send/handoff/escalation or authoritative replies appears, or until the 2026-06-22T10:08:46Z re-review threshold passes without such proof. Active repo-local work stays on vmpr-row54-exact-maintained-surface-repair-20260621 and vmpr-row55-maintained-attachment-repair-after-source-extraction-20260621; no duplicate unblock work or new local/source tasks are warranted from this blocked-frontier review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-next-adjacent-source-contract-extraction-after-row54-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning/source lane: inspect the mounted VM prerelease source immediately after the accepted row-54 ManagedSystem+VirtualMachine contract and extract the next exact adjacent scenario contract into a durable packet, preserving the true scenario/row identity, accepted input path, expected assertions, adjacent surfaces that must stay separate, and any repo-local attachment gap it reveals.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-next-adjacent-source-contract-extraction-after-row54-20260621.md"
+      ],
+      "acceptance": [
+        "Produce one bounded evidence packet that names the exact next adjacent VM prerelease scenario/row from mounted source after row 54, quotes the governing source file locations, and records the create/update/assertion contract without guessing from older model text.",
+        "Map the extracted contract to existing repo-local feature/spec/replay/model/view surfaces, explicitly distinguishing already-covered equivalent carriers from any missing or misattached maintained surface so the next follow-on leaf is obvious.",
+        "Keep the task repo-local only: no cloud execute, no external-send-proof edits, and no broad VM frontier expansion beyond the single next adjacent source-backed scenario."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-adjacent-source-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:18:53.164Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-next-adjacent-source-contract-extraction-after-row54-20260621_20260621171853",
+        "assigned_at": "2026-06-21T17:18:53.212Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-next-adjacent-source-contract-extraction-after-row54-20260621",
+        "worker_started_attempt_id": "a_vmpr-next-adjacent-source-contract-extraction-after-row54-20260621_20260621171853",
+        "worker_started_at": "2026-06-21T17:19:14.512Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded row-55 adjacent VM-prerelease source contract packet at evidence/archive/vmpr-next-adjacent-source-contract-extraction-after-row54-20260621.md, identifying Scenario_ManagedSystemPool_Enable_VirtualMachine as the exact next row after row 54 and documenting the repo-local attachment gap to the normalized source-backed ManagedSystem enable carrier.",
+        "last_worker_completed_at": "2026-06-21T17:21:14.580Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:21:48.500Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-next-adjacent-source-contract-extraction-after-row54-20260621.md proves row 55 is the exact next VM prerelease scenario after row 54, quotes mounted source and pipeline ordering, and identifies the bounded repo-local maintained-attachment gap to the existing source-backed ManagedSystem enable carrier without broadening scope."
+      },
+      "session_id": "s_task_vmpr-next-adjacent-source-contract-extraction-after-row54-20260621",
+      "session_history": [
+        "s_task_vmpr-next-adjacent-source-contract-extraction-after-row54-20260621"
+      ],
+      "result": "Produced the bounded row-55 adjacent VM-prerelease source contract packet at evidence/archive/vmpr-next-adjacent-source-contract-extraction-after-row54-20260621.md, identifying Scenario_ManagedSystemPool_Enable_VirtualMachine as the exact next row after row 54 and documenting the repo-local attachment gap to the normalized source-backed ManagedSystem enable carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:21:48.500Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-next-adjacent-source-contract-extraction-after-row54-20260621.md proves row 55 is the exact next VM prerelease scenario after row 54, quotes mounted source and pipeline ordering, and identifies the bounded repo-local maintained-attachment gap to the existing source-backed ManagedSystem enable carrier without broadening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

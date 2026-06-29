@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:02:11.894Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review confirmed the frontier remains truthful and minimal: the accepted row-36 Azure Monitor AAD auth maintained landing is now summarized at the project root, the single active repo-local mounted-source task remains the next exact post-row-36 VM prerelease maintained landing, and the only live blocker remains the external human-transport/reply family pending durable send/handoff/escalation proof or authoritative reply outside runtime for the covered MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the mounted AKS RP VM prerelease row-36 Azure Monitor AAD auth source plus any existing repo-local feature/spec/replay/model artifacts, establish or repair the exact repo-local maintained landing for this row so the knowledge map and derived views truthfully preserve the source-backed contract without claiming live cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Write one evidence note that cites the mounted /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and/or checkin.go row-36 Azure Monitor AAD auth carrier plus any existing repo-local row-36 feature/spec/replay/model or view artifacts, and summarize the exact inputs, expected behavior, and current repo-local coverage state.",
+        "Update the maintained knowledge-map/model/view surfaces for the exact row-36 Azure Monitor AAD auth path only as needed so status, statusReason, coverageState, evidence links, nextAction, and any execute-gate or resumeCondition wording match current repo-local truth.",
+        "Do not run cloud mutation, do not create a new human-transport blocker, and do not broaden into generic identitybinding or unrelated VM prerelease rows; this slice is limited to repo-local source/spec/model truthfulness for the exact row-36 carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:azure-monitor-aad-auth"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:56:49.278Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T23:56:49.377Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621_20260621235651",
+        "assigned_at": "2026-06-21T23:56:51.596Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621",
+        "worker_started_attempt_id": "a_vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621_20260621235651",
+        "worker_started_at": "2026-06-21T23:57:12.396Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the maintained row-36 Azure Monitor AAD-auth knowledge-map landing in model/view surfaces, wrote the requested evidence note at evidence/archive/vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621.md, and re-verified the row-36 source/spec/replay linkage with a fresh non-cloud check run.",
+        "last_worker_completed_at": "2026-06-22T00:01:02.640Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:01:21.608Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of the evidence note at ../aks-rp-e2e/evidence/archive/vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621.md: it cites mounted checkin/prerelease plus security/msi plan source, confirms the existing row-36 feature/spec/replay carriers, documents the exact maintained model/path-summary landing, and records a fresh non-cloud --check replay revalidation without broadening scope or creating a new blocker."
+      },
+      "session_id": "s_task_vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621",
+      "session_history": [
+        "s_task_vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621"
+      ],
+      "result": "Added the maintained row-36 Azure Monitor AAD-auth knowledge-map landing in model/view surfaces, wrote the requested evidence note at evidence/archive/vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621.md, and re-verified the row-36 source/spec/replay linkage with a fresh non-cloud check run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:01:21.608Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of the evidence note at ../aks-rp-e2e/evidence/archive/vmpr-row36-azure-monitor-aad-auth-maintained-source-spec-model-landing-20260621.md: it cites mounted checkin/prerelease plus security/msi plan source, confirms the existing row-36 feature/spec/replay carriers, documents the exact maintained model/path-summary landing, and records a fresh non-cloud --check replay revalidation without broadening scope or creating a new blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

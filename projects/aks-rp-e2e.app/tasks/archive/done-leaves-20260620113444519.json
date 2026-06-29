@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T11:34:44.519Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 regular-learning owner update: no review claims were present, so the live plan remains three active leaves and one exact MachinesPreview wait. The MachinesPreview family is now explicitly split into (1) machinespreview-mounted-source-reconcile-20260620, which must clear the stale-terminal mismatch for path.nap-default-machines-pool-cleanup-full.source-equivalent-gated and release the model:knowledge-map conflict before queued VM prerelease promotion leaves can run, and (2) machinespreview-environment-gate-options-followup-20260620, which is the active check on whether the existing MachinesPreview execute wait can be replaced by bounded setup, alternate environment, or exact escalation. The blocked carrier machinespreview-registration-gate-wait-carrier-20260620 remains the single truthful external wait for path.machines-agentpool-api-crud.machine-crud-blocked, but its blocker text now records that it should be replaced if the active follow-up proves a better mover. Until the reconcile task finishes, vm-prerelease-autozone-surge-promotion-20260620 and vm-prerelease-network-migration-promotion-20260620 stay queued only because of the live model conflict; do not add more concurrent feature-lane work in this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "machinespreview-environment-gate-options-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the remaining MachinesPreview execution gate using the existing westus2/devbox blocker packet and local artifacts to decide whether any bounded non-cloud environment setup, alternate environment, or exact escalation path exists beyond the current passive wait for path.machines-agentpool-api-crud.machine-crud-blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machinespreview-environment-gate-options-20260620.md"
+      ],
+      "acceptance": [
+        "The artifact cites the current blocker carrier and problem-resolution evidence and states whether a bounded local setup/diagnosis, alternate environment path, or exact owner escalation can move path.machines-agentpool-api-crud.machine-crud-blocked.",
+        "If a concrete mover exists, the result names the exact follow-up action or escalation target and why it is better than leaving only a passive wait; if not, it records an evidence-backed ceiling that confirms the existing wait carrier remains the truthful live blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T11:33:48.620Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T11:33:56.048Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Superseded immediately by machinespreview-environment-gate-options-followup-20260620 because the original task used conflict-scope none, which overlapped with the active mixed-SKU retry and prevented assignment; the replacement preserves the same bounded environment-audit goal under a distinct scope."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-20T11:33:56.048Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Superseded immediately by machinespreview-environment-gate-options-followup-20260620 because the original task used conflict-scope none, which overlapped with the active mixed-SKU retry and prevented assignment; the replacement preserves the same bounded environment-audit goal under a distinct scope."
+      },
+      "status": "done"
+    }
+  ]
+}

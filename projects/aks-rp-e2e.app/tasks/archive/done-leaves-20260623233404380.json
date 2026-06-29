@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T23:34:04.380Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepts the VM prerelease deprecated-API mounted-source/model linkage as durably represented by its archive note and maintained repo-local carriers, so the standalone done leaf can be archived. The live frontier now stays compressed to two active mounted-source normalization leaves (TLS bootstrap prerelease upgrade matrix and maxUnavailable prerelease upgrade) plus three exact external waits: the shared external-human transport family, the AAD RBAC managed-v2 approval return, and the private-cluster auth-service-tags devbox endpoint return. The AAD RBAC environment-overblock warning remains heuristic noise because repo-local narrowing, launcher ARM auth, tenant/group input capture, and quota diagnosis are already complete; next owner action before 2026-06-26 is to let the active source-backed normalization leaves run rather than reopen closed setup work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Trace the exact mounted Go e2ev3 authority for path.upgrade.vm-prerelease-deprecated-api-detection from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and any referenced scenario helpers, then repair or add the canonical repo-local scenario/feature/input-DAG/feature-path/spec/replay linkage plus a narrow archive note so the accepted model stops carrying this VM prerelease upgrade branch as an unnormalized draft placeholder.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623.md"
+      ],
+      "acceptance": [
+        "Repo-local carriers truthfully link path.upgrade.vm-prerelease-deprecated-api-detection through explicit mounted-source-backed scenario/feature/input-DAG/feature-path/spec/replay references, preserving the exact deprecated-API-detection VM prerelease upgrade boundary without widening into sibling upgrade rows or claiming live verification.",
+        "Archive note records the exact mounted source file/anchors, maintained carriers touched, any model/view status reconciliation performed, and the resulting next-step posture as source-grounded draft/verification-ready/terminal classification without claiming cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.upgrade.vm-prerelease-deprecated-api-detection"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T23:23:59.154Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623_20260623232401",
+        "assigned_at": "2026-06-23T23:24:01.638Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623",
+        "worker_started_attempt_id": "a_vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623_20260623232401",
+        "worker_started_at": "2026-06-23T23:24:20.420Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-202 VM prerelease deprecated-API-detection carrier across the accepted model, spec/index linkage, and archive note, replacing the empty draft placeholder with mounted-source-backed scenario/DAG/path/behavior details and regenerated views.",
+        "last_worker_completed_at": "2026-06-23T23:31:46.628Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T23:32:32.223Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623.md documents the mounted-source authority split (e2ev3 prerelease/checkin umbrella plus legacy row-202 deprecated API packet), records maintained carrier updates across model/spec/index/views, and preserves the branch as source-grounded draft/verification-ready without claiming cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623",
+      "session_history": [
+        "s_task_vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623"
+      ],
+      "result": "Repaired the row-202 VM prerelease deprecated-API-detection carrier across the accepted model, spec/index linkage, and archive note, replacing the empty draft placeholder with mounted-source-backed scenario/DAG/path/behavior details and regenerated views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T23:32:32.223Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/vm-prerelease-deprecated-api-detection-mounted-source-model-linkage-20260623.md documents the mounted-source authority split (e2ev3 prerelease/checkin umbrella plus legacy row-202 deprecated API packet), records maintained carrier updates across model/spec/index/views, and preserves the branch as source-grounded draft/verification-ready without claiming cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

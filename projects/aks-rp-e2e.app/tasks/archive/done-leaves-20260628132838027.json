@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:28:38.027Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner heartbeat review accepted four more compact-package results: network-isolated, node-confidential-vm, node-custom-ca-trust, and node-pool-config now have ready compact artifacts plus passing generated check-mode evidence recorded on the done leaves. network-cni review was not accepted because the generated package fails only on azure-overlay-ilpip and azure-overlay-ilpip-dualstack due to an inline ARM dispatch runtime gap; follow-up now lives in repair-compact-network-cni-inline-arm-dispatch and that family should remain active until the package truthfully records partial/repair status or a bounded fix lands. Keep the existing compact backlog/frontier moving; external blocked families remain unchanged and truthful.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "compact-feature-network-isolated",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate and verify the network-isolated feature compact package.",
+      "inputs": [
+        "feature:network-isolated",
+        "specs:features/network-isolated/specs",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/feature-compact-loop/state.json",
+        "features/network-isolated/compact/staging.plan.json",
+        "features/network-isolated/compact/staging.summary.md",
+        "features/network-isolated/compact/staging.diagnostics.json"
+      ],
+      "acceptance": [
+        "Feature compact package was generated or a concrete blocker was recorded.",
+        "Generated check-mode Vitest tests were run.",
+        "Feature compact loop state was updated as ready, partial, blocked, or error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:network-isolated"
+      ],
+      "workflow": "feature-compact-planner",
+      "context": {
+        "featureKey": "network-isolated",
+        "capabilityId": "network-isolated",
+        "packetPath": "features/network-isolated.yaml",
+        "specsDir": "features/network-isolated/specs",
+        "specCount": 1,
+        "target": "staging",
+        "checkParallel": 50,
+        "stateRef": ".state/feature-compact-loop/state.json",
+        "loopTaskId": "aks-feature-compact-loop",
+        "acceptance_note": "Owner accepted review: worker produced a ready network-isolated compact package with plan/summary/diagnostics under features/network-isolated/compact and check-mode run runs/test-results/feature-compact-network-isolated-staging_626212 passed for the single generated spec/cluster."
+      },
+      "trace": {
+        "created_at": "2026-06-28T13:26:01.679Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_compact-feature-network-isolated_20260628132601",
+        "assigned_at": "2026-06-28T13:26:01.981Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_compact-feature-network-isolated",
+        "worker_started_attempt_id": "a_compact-feature-network-isolated_20260628132601",
+        "worker_started_at": "2026-06-28T13:26:25.869Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Feature compact package ready for network-isolated. Plan: features/network-isolated/compact/staging.plan.json. Summary: features/network-isolated/compact/staging.summary.md. Diagnostics: features/network-isolated/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-network-isolated-staging_626212. Specs=1, clusters=1, saved=0.",
+        "last_worker_completed_at": "2026-06-28T13:26:28.149Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T13:28:06.473Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted review: worker produced a ready network-isolated compact package with plan/summary/diagnostics under features/network-isolated/compact and check-mode run runs/test-results/feature-compact-network-isolated-staging_626212 passed for the single generated spec/cluster."
+      },
+      "session_id": "s_task_compact-feature-network-isolated",
+      "session_history": [
+        "s_task_compact-feature-network-isolated"
+      ],
+      "result": "Feature compact package ready for network-isolated. Plan: features/network-isolated/compact/staging.plan.json. Summary: features/network-isolated/compact/staging.summary.md. Diagnostics: features/network-isolated/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-network-isolated-staging_626212. Specs=1, clusters=1, saved=0.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T13:28:06.473Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

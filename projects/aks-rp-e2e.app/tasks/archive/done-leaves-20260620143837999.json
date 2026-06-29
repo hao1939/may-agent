@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:38:37.999Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog stale-review cleanup: this lane has no remaining review or runnable work. MachinesPreview remains the single truthful live external-send wait until a human outside runtime records durable send/handoff proof or an authoritative preview-registration reply for the unchanged westus2/local rerun contract. The accepted row-150 and row-25/26/27/29/30/31/32/33 repo-local reconciliations are durable knowledge now represented by this lane summary and archived evidence: row 25 stays execute-gated/environment-blocked with a live replay implementation and rows 26/27/29/30/31/32/33 remain check-only; row 150 remains evidence-ceiling provenance rather than open frontier work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the row-150 exact-source blocker with a bounded repo-local evidence-ceiling/spec reconciliation packet that preserves the proven kubeProxyConfig lifecycle, documents the missing VirtualMachines + shared-identity substrate proof exactly, and decides the truthful non-blocked repo-local disposition for path.virtualmachines.kubeproxy row 150.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the existing mounted-source packets evidence/archive/vm-prerelease-row150-kubeproxy-iptables-authoring-20260620.md and evidence/archive/vm-prerelease-row150-vm-substrate-source-equivalent-search-20260620.md, restates the exact row-150 lifecycle contract, and names the exact substrate facts still unproven for VirtualMachines + use_shared_identity=true.",
+        "The task either lands the bounded repo-local updates needed to represent row 150 truthfully without an exact-source blocker (spec/model/coverage/path or equivalent documented surfaces), or records a precise evidence-backed reason why one specific surface must remain unresolved and what exact source-equivalent fact would reopen it.",
+        "The packet ends with one concrete next state for row 150: accepted source-equivalent partial coverage, a narrower remaining mismatch/gap, or one exact external/source-equivalent ask; it must not leave the old generic exact-source blocker unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row150-kubeproxy"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:31:21.428Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620_20260620143121",
+        "assigned_at": "2026-06-20T14:31:21.563Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620_20260620143121",
+        "worker_started_at": "2026-06-20T14:31:46.725Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-150 reconciliation packet at evidence/archive/vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620.md. It closes the old semantic blocker, preserves strict missing-spec status for row 150, and narrows the only remaining gap to VM/shared-identity substrate proof.",
+        "last_worker_completed_at": "2026-06-20T14:34:55.259Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:35:26.641Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted artifact-only review: evidence/archive/vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620.md cites the mounted-source packets, closes the old generic exact-source blocker, confirms the maintained coverage ledger already carries the truthful narrowed row-150 disposition, and leaves only the exact VirtualMachines + use_shared_identity=true substrate-proof gap before any canonical spec/path landing."
+      },
+      "session_id": "s_task_vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620"
+      ],
+      "result": "Wrote the row-150 reconciliation packet at evidence/archive/vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620.md. It closes the old semantic blocker, preserves strict missing-spec status for row 150, and narrows the only remaining gap to VM/shared-identity substrate proof.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:35:26.641Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted artifact-only review: evidence/archive/vm-prerelease-row150-kubeproxy-evidence-ceiling-reconcile-20260620.md cites the mounted-source packets, closes the old generic exact-source blocker, confirms the maintained coverage ledger already carries the truthful narrowed row-150 disposition, and leaves only the exact VirtualMachines + use_shared_identity=true substrate-proof gap before any canonical spec/path landing."
+      },
+      "status": "done"
+    }
+  ]
+}

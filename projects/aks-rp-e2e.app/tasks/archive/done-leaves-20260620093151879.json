@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:31:51.879Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "VM prerelease execution lane is completed provenance for this wake: row 34 now has both accepted execute-readiness evidence and a landed execute-capable replay implementation, with local validation showing execute mode reaches real mutation/credential gates instead of the former not-implemented ceiling. Archive the finished row 34 implementation/readiness leaves with the earlier rows 25-33 readiness slices; live forward motion for this project now sits in feature-knowledge/spec truth maintenance (row 34 prose refresh) and mounted-source lineage mapping for rows 57-61, while any future live row 34 mutation remains explicitly environment-gated.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row31-32-autozone-execute-readiness-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VirtualMachines prerelease rows 31 and 32 into one bounded execute-readiness slice by proving the auto-zone single/mixed SKU pair already has stable mounted-source/spec/replay/plan coverage and by recording the exact non-cloud replay contract to use once execution environment access exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row31-32-autozone-execute-readiness-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the row 31 and row 32 mounted-source scenarios, their spec/replay carriers, and the accepted row25-34 execute-candidate packet, then records why they are one coherent promotion batch rather than separate draft leaves.",
+        "The note reproduces bounded local readiness evidence for the pair (plan/check commands and outcomes only, no cloud mutation) and names the exact replay/spec contract that should be run when environment access is available.",
+        "Any remaining ceiling is stated as the shared execution-environment blocker, not a new source-authority gap, and the note does not perform cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row31-32-autozone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:17:37.814Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row31-32-autozone-execute-readiness-20260620_20260620091750",
+        "assigned_at": "2026-06-20T09:17:50.400Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row31-32-autozone-execute-readiness-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row31-32-autozone-execute-readiness-20260620_20260620091750",
+        "worker_started_at": "2026-06-20T09:17:50.592Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-20T09:18:02.514Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:18:36.068Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the review leaf after project.problem.unknown returned only a bare error summary with no worker evidence or validated blocker. The live project work is now vm-prerelease-row31-32-autozone-readiness-retry-20260620, which requires rebuilding the bounded non-cloud readiness note or capturing a precise evidenced blocker."
+      },
+      "session_id": "s_task_vm-prerelease-row31-32-autozone-execute-readiness-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row31-32-autozone-execute-readiness-20260620"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-20T09:18:36.068Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the review leaf after project.problem.unknown returned only a bare error summary with no worker evidence or validated blocker. The live project work is now vm-prerelease-row31-32-autozone-readiness-retry-20260620, which requires rebuilding the bounded non-cloud readiness note or capturing a precise evidenced blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row31-32-autozone-readiness-retry-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the row31-32 autozone execute-readiness slice after the prior worker returned an unsupported error by rebuilding the bounded non-cloud readiness note from mounted source, accepted execute-candidate packet, and local plan/check evidence only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row31-32-autozone-readiness-retry-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the row 31 and row 32 mounted-source scenarios, their spec/replay carriers, and the accepted row25-34 execute-candidate packet, then records why they are one coherent auto-zone execute-readiness batch.",
+        "The note reproduces bounded local readiness evidence for the pair (plan/check commands and outcomes only, no cloud mutation), names the exact replay/spec contract to run when environment access exists, and records any reproduced local failure with command/output evidence instead of a bare error summary.",
+        "If readiness still cannot be completed, the note states the precise proven blocker with evidence; otherwise any remaining ceiling is stated only as the shared execution-environment blocker, not a new source-authority gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row31-32-autozone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:18:32.251Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row31-32-autozone-readiness-retry-20260620_20260620091836",
+        "assigned_at": "2026-06-20T09:18:36.120Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row31-32-autozone-readiness-retry-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row31-32-autozone-readiness-retry-20260620_20260620091836",
+        "worker_started_at": "2026-06-20T09:18:47.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded non-cloud readiness note at evidence/archive/vm-prerelease-row31-32-autozone-readiness-retry-20260620.md, rebuilding the row31/32 auto-zone execute-readiness slice from mounted source, accepted execute-candidate evidence, and reproduced local plan/check results only.",
+        "last_worker_completed_at": "2026-06-20T09:19:49.485Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:20:46.235Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded non-cloud readiness retry: evidence/archive/vm-prerelease-row31-32-autozone-readiness-retry-20260620.md cites mounted-source row31/32 scenario bodies, the accepted row25-34 execute-candidate packet, reproduced local plan/check results, and narrows the only remaining ceiling to the shared execution-environment blocker."
+      },
+      "session_id": "s_task_vm-prerelease-row31-32-autozone-readiness-retry-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row31-32-autozone-readiness-retry-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:20:46.235Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded non-cloud readiness retry: evidence/archive/vm-prerelease-row31-32-autozone-readiness-retry-20260620.md cites mounted-source row31/32 scenario bodies, the accepted row25-34 execute-candidate packet, reproduced local plan/check results, and narrows the only remaining ceiling to the shared execution-environment blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VM prerelease rows 27, 29, and 30 into one bounded mixed-SKU execute-readiness batch by rebuilding the non-cloud readiness note from mounted source, accepted execute-candidate evidence, the accepted row28 pass anchor, and local plan/check evidence only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the row 27, 29, and 30 mounted-source scenarios, their spec/replay carriers, the accepted row25-34 execute-candidate packet, and the accepted row28 pass anchor, then records why they are one coherent mixed-SKU execute-readiness batch.",
+        "The note reproduces bounded local readiness evidence for the trio (grouped bun run plan plus per-replay --check outcomes only, no cloud mutation), names the exact replay/spec contract to run when environment access exists, and records any reproduced local failure with command/output evidence instead of a bare error summary.",
+        "If readiness still cannot be completed, the note states the precise proven blocker with evidence; otherwise any remaining ceiling is stated only as the shared execution-environment blocker, not a new source-authority gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row27-30-mixedsku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:20:46.283Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620_20260620092046",
+        "assigned_at": "2026-06-20T09:20:46.333Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620_20260620092046",
+        "worker_started_at": "2026-06-20T09:21:04.707Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the archive note `evidence/archive/vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620.md` showing rows 27/29/30 are one source-grounded mixed-SKU execute-readiness batch, backed by mounted-source scenario carriers, a grouped local plan, per-replay `--check` passes, the accepted row28 pass anchor, and the existing environment blocker.",
+        "last_worker_completed_at": "2026-06-20T09:22:15.190Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:23:42.790Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note in evidence/archive/vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620.md cites mounted-source carriers for rows 27/29/30, ties them to the accepted row25-34 packet plus row28 anchor, reproduces grouped plan and per-replay --check evidence, and keeps only the shared execution-environment blocker as the remaining live ceiling."
+      },
+      "session_id": "s_task_vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:23:42.790Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note in evidence/archive/vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620.md cites mounted-source carriers for rows 27/29/30, ties them to the accepted row25-34 packet plus row28 anchor, reproduces grouped plan and per-replay --check evidence, and keeps only the shared execution-environment blocker as the remaining live ceiling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row33-accelerated-networking-execute-readiness-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VM prerelease row 33 into a bounded accelerated-networking execute-readiness leaf by rebuilding the source/spec/replay contract, reproducing local plan and --check evidence, and recording the exact future live execute contract without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row33-accelerated-networking-execute-readiness-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted-source row33 scenario carrier plus its spec/replay/model carriers, explains what accelerated-networking behavior this row adds, and links the accepted row25-34 execute-candidate packet as the promotion rationale.",
+        "The note reproduces bounded local readiness evidence for row33 (single-spec bun run plan plus replay --check only), names the exact execute contract to use when environment access exists, and records any reproduced local diagnostic warning or failure with evidence.",
+        "If readiness cannot be completed, the note states the precise proven blocker with evidence; otherwise any remaining ceiling is stated only as the shared execution-environment blocker, not a new source-authority gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row33-accelerated-networking"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:23:03.794Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row33-accelerated-networking-execute-readiness-20260620_20260620092303",
+        "assigned_at": "2026-06-20T09:23:03.894Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row33-accelerated-networking-execute-readiness-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row33-accelerated-networking-execute-readiness-20260620_20260620092303",
+        "worker_started_at": "2026-06-20T09:23:19.327Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-33 accelerated-networking execute-readiness archive note at evidence/archive/vm-prerelease-row33-accelerated-networking-execute-readiness-20260620.md, backed by mounted-source inspection plus reproduced local plan and replay --check evidence.",
+        "last_worker_completed_at": "2026-06-20T09:24:25.628Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:26:35.663Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted bounded repo-local execute-readiness: archive note cites mounted source plus spec/replay/model carriers, reproduces singleton plan and replay --check evidence, and correctly limits the remaining ceiling to the shared live execution environment gate rather than a new source or implementation blocker."
+      },
+      "session_id": "s_task_vm-prerelease-row33-accelerated-networking-execute-readiness-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row33-accelerated-networking-execute-readiness-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:26:35.663Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted bounded repo-local execute-readiness: archive note cites mounted source plus spec/replay/model carriers, reproduces singleton plan and replay --check evidence, and correctly limits the remaining ceiling to the shared live execution environment gate rather than a new source or implementation blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote VM prerelease row 34 into a bounded VMAS-to-VMS migration SLB execute-readiness leaf by rebuilding the mounted-source/spec/replay contract, reproducing the single-spec local plan and --check evidence, and classifying the known diagnosticClean=false signal without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted-source row34 scenario carrier plus its spec/replay/model carriers, explains the migration+SLB behavior this row adds, and links the accepted row25-34 execute-candidate packet as the promotion rationale.",
+        "The note reproduces bounded local readiness evidence for row34 (single-spec bun run plan plus replay --check only), records the exact observed diagnosticClean=false or other local planning signal with evidence, and names the exact execute contract to use when environment access exists.",
+        "If local evidence shows a row-specific readiness blocker, the note states that blocker precisely with evidence; otherwise any remaining ceiling is stated only as the shared execution-environment blocker, not a new source-authority gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row34-vmas-vms-migration-slb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:23:03.843Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620_20260620092303",
+        "assigned_at": "2026-06-20T09:23:03.946Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620_20260620092303",
+        "worker_started_at": "2026-06-20T09:23:19.384Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-34 execute-readiness archive note at evidence/archive/vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620.md, backed by fresh local plan, replay --check, and execute-requested blocker evidence showing the row-local missing live replay implementation.",
+        "last_worker_completed_at": "2026-06-20T09:25:05.291Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:25:45.643Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620.md cites mounted-source/spec/replay/model carriers, reproduces bounded single-spec plan plus replay --check evidence, and precisely classifies the current row-local blocker as the missing live execute implementation rather than a new source or environment gap."
+      },
+      "session_id": "s_task_vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:25:45.643Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620.md cites mounted-source/spec/replay/model carriers, reproduces bounded single-spec plan plus replay --check evidence, and precisely classifies the current row-local blocker as the missing live execute implementation rather than a new source or environment gap."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the live replay execute path for VM prerelease row 34 (VMAS→VMS migration with Standard Load Balancer preservation) so the source-grounded spec can advance from check-only readiness into a truthful execute-capable replay.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620.md"
+      ],
+      "acceptance": [
+        "Replay code for replays/virtualmachines-vmas-to-vms-migration-slb.ts (and any required helpers/spec wiring) implements the row-34 live execute contract from mounted source instead of returning the current 'live replay is not implemented yet' message.",
+        "A fresh bounded local validation proves the implementation surface is wired: replay --check still passes, and an execute-requested local probe now advances to the real preflight/credential gate or equivalent live-run entrypoint rather than the not-implemented ceiling.",
+        "Archive note records the exact source-backed operation mapping, files changed, commands run, and the new remaining ceiling if execution still cannot proceed locally without subscription/token access."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:25:45.694Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620_20260620092545",
+        "assigned_at": "2026-06-20T09:25:45.743Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620_20260620092545",
+        "worker_started_at": "2026-06-20T09:26:03.264Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a real execute path for row 34 in replays/virtualmachines-vmas-to-vms-migration-slb.ts and archived the source-backed mapping/validation note proving execute mode now reaches mutation/environment gates instead of the former not-implemented ceiling.",
+        "last_worker_completed_at": "2026-06-20T09:29:41.582Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:30:23.999Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: replay file now implements the row-34 live execute path, bounded validation proves --check still passes and execute mode advances to the real mutation/environment gates instead of the former 'live replay is not implemented yet' ceiling, and the archive note records the mounted-source operation mapping, commands run, emitted evidence files, and remaining local credential/subscription ceiling."
+      },
+      "session_id": "s_task_vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:30:23.999Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: replay file now implements the row-34 live execute path, bounded validation proves --check still passes and execute mode advances to the real mutation/environment gates instead of the former 'live replay is not implemented yet' ceiling, and the archive note records the mounted-source operation mapping, commands run, emitted evidence files, and remaining local credential/subscription ceiling."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:56:49.325Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Accepted and archived the completed repo-local model/linkage siblings so this focus branch now reads cleanly: cloud-provider-credential-provider-model-residue-reconciliation-20260623 confirmed the maintained model no longer carries stale credential-provider residue, net-integration-mounted-variant-linkage-reconciliation-20260623 established the canonical source/spec linkage for the managed NAT Gateway Automatic SKU and Static Egress VM AzureLinux net-integration variants, and private-cluster-update-private-second-hop-model-view-reconciliation-20260623 exposed the mounted-source-grounded private-cluster update-private second-hop path in the maintained model/path summary. Open work is now explicit and bounded: net-integration-mounted-variant-model-reconciliation-20260623 remains the sole active knowledge-map-model leaf, replay-automation-selected-host-preflight-contract-reconciliation-20260623 is the next runnable repo-local documentation follow-up once model work clears, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful external-human wait with the same resume condition.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-model-residue-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the bounded normalized-model residue for the mounted Speculor cloud-provider credential-provider baseline so the canonical model/view surfaces match the now-hardened Linux+Windows plus ACR-pull spec contract without opening live execution or upgrade-variant scope.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-model-residue-reconciliation-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "scenario.cloud-provider.credential-provider, its inputDag/path assertions, and any required evidence ids are updated or truthfully bounded so the normalized model explicitly preserves Azure CNI + Standard LB, Linux system pool, Windows 2022 pool, kubelet-identity AcrPull, Linux nginx pull, and Windows IIS pull expectations from mounted source.",
+        "The archive note names the exact mounted/source-spec anchors used, records any still-preexisting model-validator ceiling precisely, and no live run or VM prerelease duplicate spec is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:48:07.139Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-model-residue-reconciliation-20260623_20260623144839",
+        "assigned_at": "2026-06-23T14:48:39.837Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-model-residue-reconciliation-20260623",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-model-residue-reconciliation-20260623_20260623144839",
+        "worker_started_at": "2026-06-23T14:48:42.646Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the remaining cloud-provider credential-provider model residue by adding the missing ccp-credprov-check-20260615 evidence entry to model/knowledge-map/model.json, regenerating maintained views, and writing a bounded archive note at evidence/archive/cloud-provider-credential-provider-model-residue-reconciliation-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T14:51:41.086Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:52:20.111Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note documents the bounded evidence-catalog repair, model.json now contains the missing ccp-credprov-check-20260615 evidence entry plus scenario/path anchors, maintained views were regenerated, and the remaining validator issues are recorded as pre-existing global ceilings outside this branch."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-model-residue-reconciliation-20260623",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-model-residue-reconciliation-20260623"
+      ],
+      "result": "Reconciled the remaining cloud-provider credential-provider model residue by adding the missing ccp-credprov-check-20260615 evidence entry to model/knowledge-map/model.json, regenerating maintained views, and writing a bounded archive note at evidence/archive/cloud-provider-credential-provider-model-residue-reconciliation-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:52:20.111Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note documents the bounded evidence-catalog repair, model.json now contains the missing ccp-credprov-check-20260615 evidence entry plus scenario/path anchors, maintained views were regenerated, and the remaining validator issues are recorded as pre-existing global ceilings outside this branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "net-integration-mounted-variant-linkage-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the exact mounted-source variant-linkage gaps for managed NAT Gateway Automatic SKU and Static Egress VM AzureLinux across the canonical net-integration feature/spec surfaces and archive evidence without reopening outbound-control execution or taking a shared knowledge-map model write in this slice.",
+      "inputs": [
+        "../aks-rp-e2e/evidence/archive/speculor-uncovered-scenario-batch2-source-inventory-20260623.md",
+        "../aks-rp-e2e/features/net-integration/static-egress.yaml",
+        "../aks-rp-e2e/specs/net-integration-outbound-nat-gateway.json",
+        "../aks-rp-e2e/specs/net-integration-static-egress-vmss.json",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-mounted-variant-linkage-reconciliation-20260623.md",
+        "../aks-rp-e2e/features/net-integration/static-egress.yaml",
+        "../aks-rp-e2e/specs/net-integration-outbound-nat-gateway.json",
+        "../aks-rp-e2e/specs/net-integration-static-egress-vmss.json"
+      ],
+      "acceptance": [
+        "The canonical net-integration feature/spec surfaces explicitly attach Scenario_Managed_NATGateway_Automatic_SKU as an execution variant and Scenario_Static_Egress_VM_AzureLinux as the mounted ENV variant, or the note records the minimal remaining gap precisely.",
+        "This slice stays repo-local and evidence-backed, does not invent a new spec or replay when canonical variant attachment is sufficient, does not start live execution, and defers any follow-on knowledge-map model write to a separate serialized reconciliation task if later needed."
+      ],
+      "forbidden": [
+        "Do not widen this task into a new broad net-integration inventory pass."
+      ],
+      "depends_on": [],
+      "context": {
+        "lane": "source discovery -> feature extraction -> spec generation -> model feedback",
+        "source": "Speculor outbound-control batch 2",
+        "acceptance_note": "Accepted after owner review: evidence/archive/net-integration-mounted-variant-linkage-reconciliation-20260623.md documents both bounded mounted-source attachments, specs/net-integration-outbound-nat-gateway.json now carries Scenario_Managed_NATgateway_Automatic_SKU as execution-variant metadata, and features/net-integration/static-egress.yaml plus specs/net-integration-static-egress-vmss.json now carry Scenario_Static_Egress_VM_AzureLinux as env-variant metadata without creating duplicate runnable specs or reopening execution."
+      },
+      "trace": {
+        "created_at": "2026-06-23T15:05:00Z",
+        "created_by": "focus-plan-review",
+        "promoted_at": "2026-06-23T14:47:25.538Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-mounted-variant-linkage-reconciliation-20260623_20260623144816",
+        "assigned_at": "2026-06-23T14:48:16.464Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-mounted-variant-linkage-reconciliation-20260623",
+        "worker_started_attempt_id": "a_net-integration-mounted-variant-linkage-reconciliation-20260623_20260623144816",
+        "worker_started_at": "2026-06-23T14:48:39.801Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Closed the bounded net-integration mounted variant-linkage task by attaching Scenario_Managed_NATgateway_Automatic_SKU and Scenario_Static_Egress_VM_AzureLinux to canonical maintained carriers, updating the relevant feature/spec/model files and writing a reconciliation note without creating duplicate runnable specs or running cloud execution.",
+        "last_worker_completed_at": "2026-06-23T14:53:34.497Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:54:58.117Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/net-integration-mounted-variant-linkage-reconciliation-20260623.md documents both bounded mounted-source attachments, specs/net-integration-outbound-nat-gateway.json now carries Scenario_Managed_NATgateway_Automatic_SKU as execution-variant metadata, and features/net-integration/static-egress.yaml plus specs/net-integration-static-egress-vmss.json now carry Scenario_Static_Egress_VM_AzureLinux as env-variant metadata without creating duplicate runnable specs or reopening execution."
+      },
+      "session_id": "s_task_net-integration-mounted-variant-linkage-reconciliation-20260623",
+      "session_history": [
+        "s_task_net-integration-mounted-variant-linkage-reconciliation-20260623"
+      ],
+      "result": "Closed the bounded net-integration mounted variant-linkage task by attaching Scenario_Managed_NATgateway_Automatic_SKU and Scenario_Static_Egress_VM_AzureLinux to canonical maintained carriers, updating the relevant feature/spec/model files and writing a reconciliation note without creating duplicate runnable specs or running cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:54:58.117Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-update-private-second-hop-model-view-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Expose the already-grounded private-cluster update-private second-hop carrier in the maintained model/view surfaces so path.private-cluster-vnet-integration-update-private-second-hop is discoverable without reopening live execution or adjacent private-cluster branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-update-private-second-hop-model-view-reconciliation-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "The maintained model and derived path summary contain a truthful entry for path.private-cluster-vnet-integration-update-private-second-hop grounded in the mounted update_private.go second-hop contract and the canonical source-spec-check pair, or the note records the exact bounded reason they still cannot.",
+        "The task stays repo-local, keeps this second-hop branch distinct from the first-hop update-private and reverse update-public-second-hop siblings, and does not start cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:48:07.087Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T14:51:51.433Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-update-private-second-hop-model-view-reconciliation-20260623_20260623145220",
+        "assigned_at": "2026-06-23T14:52:20.059Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-update-private-second-hop-model-view-reconciliation-20260623",
+        "worker_started_attempt_id": "a_private-cluster-update-private-second-hop-model-view-reconciliation-20260623_20260623145220",
+        "worker_started_at": "2026-06-23T14:52:47.541Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added accepted-model coverage for the private-cluster update-private second-hop branch in model/knowledge-map/model.json, regenerated maintained views so path-summary now exposes the new path, and wrote the reconciliation artifact evidence/archive/private-cluster-update-private-second-hop-model-view-reconciliation-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T14:52:47.560Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:53:38.644Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the archive note grounds the mounted update_private.go second-hop contract and canonical source-spec-check pair, and repo-local grep confirms path.private-cluster-vnet-integration-update-private-second-hop is now present in both model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json without reopening execution."
+      },
+      "session_id": "s_task_private-cluster-update-private-second-hop-model-view-reconciliation-20260623",
+      "session_history": [
+        "s_task_private-cluster-update-private-second-hop-model-view-reconciliation-20260623"
+      ],
+      "result": "Added accepted-model coverage for the private-cluster update-private second-hop branch in model/knowledge-map/model.json, regenerated maintained views so path-summary now exposes the new path, and wrote the reconciliation artifact evidence/archive/private-cluster-update-private-second-hop-model-view-reconciliation-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:53:38.644Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the archive note grounds the mounted update_private.go second-hop contract and canonical source-spec-check pair, and repo-local grep confirms path.private-cluster-vnet-integration-update-private-second-hop is now present in both model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json without reopening execution."
+      },
+      "status": "done"
+    }
+  ]
+}

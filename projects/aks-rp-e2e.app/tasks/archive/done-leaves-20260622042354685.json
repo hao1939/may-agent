@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:23:54.685Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier review kept the single external-human-transport wait intact because no new send/reply proof exists beyond the accepted 2026-06-21 audit artifacts. Archived the completed private-cluster source inventory leaf because its durable meaning is now preserved here: the mounted source inventory identified the exact Scenario_PrivateLink_BYO_DNS_Server topology slice and the repo-local carriers needed for the follow-on model landing. The live frontier stays truthful and compact: one active private-cluster model-refinement task to split the exact source-backed BYO-DNS topology from the already-passing broad sibling path without cloud rerun, plus one blocked family-level external wait covering MachinesPreview, VM prerelease rows 25+50, row-33 approval, and row-76 shared identity.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-source-inventory-packet-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map one bounded private-cluster source slice from mounted AKS RP e2ev3 into a durable repo-local inventory packet: identify the exact handwritten scenarios in /app/sources/aks-rp that are still uncovered or weakly covered, summarize their input/expectation intent, link any existing feature/spec/replay artifacts, and name the highest-value next knowledge-model task without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-source-inventory-packet-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted private-cluster Go source files/scenarios reviewed and summarizes the concrete input path plus expected behavior for each bounded scenario in scope.",
+        "Artifact cross-links existing repo-local features/specs/replays/model paths for that source slice and clearly distinguishes covered, partially covered, and uncovered scenarios without guessing.",
+        "Artifact ends with one concrete next repo-local task recommendation that would improve the knowledge map or execution readiness for the chosen private-cluster slice, without launching cloud mutation or broad family-wide replanning."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:19:40.070Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-source-inventory-packet-20260622_20260622041940",
+        "assigned_at": "2026-06-22T04:19:40.121Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-source-inventory-packet-20260622",
+        "worker_started_attempt_id": "a_private-cluster-source-inventory-packet-20260622_20260622041940",
+        "worker_started_at": "2026-06-22T04:19:58.866Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested inventory artifact at evidence/archive/private-cluster-source-inventory-packet-20260622.md, mapping the mounted PrivateLink private-cluster source slice to current repo-local carriers and identifying the exact BYO-DNS topology model-landing as the highest-value next task.",
+        "last_worker_completed_at": "2026-06-22T04:22:41.845Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:22:58.152Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review on 2026-06-22: evidence/archive/private-cluster-source-inventory-packet-20260622.md cites the exact mounted PrivateLink private-cluster source files/scenarios reviewed, cross-links current repo-local spec/feature/replay/model carriers, distinguishes strong vs weak/uncovered coverage without guessing, and identifies private-cluster-byo-dns-server-topology-exact model landing as the single highest-value next repo-local task."
+      },
+      "session_id": "s_task_private-cluster-source-inventory-packet-20260622",
+      "session_history": [
+        "s_task_private-cluster-source-inventory-packet-20260622"
+      ],
+      "result": "Produced the requested inventory artifact at evidence/archive/private-cluster-source-inventory-packet-20260622.md, mapping the mounted PrivateLink private-cluster source slice to current repo-local carriers and identifying the exact BYO-DNS topology model-landing as the highest-value next task.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:22:58.152Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review on 2026-06-22: evidence/archive/private-cluster-source-inventory-packet-20260622.md cites the exact mounted PrivateLink private-cluster source files/scenarios reviewed, cross-links current repo-local spec/feature/replay/model carriers, distinguishes strong vs weak/uncovered coverage without guessing, and identifies private-cluster-byo-dns-server-topology-exact model landing as the single highest-value next repo-local task."
+      },
+      "status": "done"
+    }
+  ]
+}

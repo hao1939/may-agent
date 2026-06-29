@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T00:33:25.206Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 task-completed reconciliation: accepted the network-cni azure-overlay ILPIP base carrier-authoring review after confirming the existing canonical base carrier already covers the exact mixed-OS IPv4 enableNodePublicIP branch, and the earlier dual-stack sibling acceptance still stands as a separate no-cloud carrier closure. The durable repo-local value now captured at the project root is: the base and dual-stack ILPIP branches each have exact mounted-source lineage, dedicated spec/replay/test wiring, local check-mode wrappers, and accepted bounded verification evidence that keeps the IPv4 base branch separate from the dual-stack refinement without claiming live Azure datapath behavior. With those repo-local authoring gaps closed, the truthful live frontier collapses back to only two exact external waits: the shared out-of-runtime human/operator proof-return family and the already-routed private-cluster none-dns-zone-v3 operator decision wait. Do not invent new local busywork from this wake; reopen work only when one of those waits resolves or a new source-backed gap is deliberately selected.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the storage Speculor carrier for Scenario_Mirror_Site_And_MCR_Image_Monitor so the canonical spec/packet/replay/model preserve the mounted non-cluster contract: direct mirror-site HTTP validation plus MCR image validation, without AKS cluster creation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/specs/storage-csi-mcr-mirror-monitor.json",
+        "../aks-rp-e2e/features/storage-csi/tests/storage-csi-mcr-mirror-monitor.ts",
+        "../aks-rp-e2e/features/storage-csi/packets/mcr-mirror-monitor.yaml"
+      ],
+      "acceptance": [
+        "Update the canonical storage-csi mcr-mirror-monitor spec/packet/replay/model surfaces to cite mounted source at /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/mirror_mcr_monitor.go and describe the handwritten contract as a non-cluster monitor, not cluster create + kube-system pod inspection.",
+        "Remove the current cluster-create/resource-group contract from the repo-local carrier and replace it with bounded repo-local validation steps/claims that preserve the mounted HTTP mirror-site + image-pull monitor intent, with exact file-path evidence for every changed surface.",
+        "Record any unavoidable replay limitation or substitute validation clearly in the packet/model so the branch is source-faithful and does not overclaim execution parity."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-mcr-mirror-monitor"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T00:03:22.960Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627_20260627000323",
+        "assigned_at": "2026-06-27T00:03:23.094Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627",
+        "worker_started_attempt_id": "a_storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627_20260627000323",
+        "worker_started_at": "2026-06-27T00:03:39.042Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the storage-csi mcr-mirror-monitor carrier from a mis-modeled AKS cluster workflow into a mounted-source-faithful non-cluster monitor across spec, packet, replay, test, evidence note, and knowledge-model/path surfaces. Verified the new replay passes --check, execute stays non-cluster and blocks only on the explicit crane.Pull() substitute limitation, and regenerated the spec catalog plus knowledge-map views.",
+        "last_worker_completed_at": "2026-06-27T00:17:03.600Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T00:20:00.486Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the repaired packet/spec/replay/test/evidence surfaces now preserve the mounted non-cluster contract for Scenario_Mirror_Site_And_MCR_Image_Monitor, and the worker already verified the canonical replay stays repo-local and passes check without reintroducing AKS cluster-create overclaim."
+      },
+      "session_id": "s_task_storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627",
+      "session_history": [
+        "s_task_storage-speculor-mcr-mirror-monitor-mounted-contract-repair-20260627"
+      ],
+      "result": "Repaired the storage-csi mcr-mirror-monitor carrier from a mis-modeled AKS cluster workflow into a mounted-source-faithful non-cluster monitor across spec, packet, replay, test, evidence note, and knowledge-model/path surfaces. Verified the new replay passes --check, execute stays non-cluster and blocks only on the explicit crane.Pull() substitute limitation, and regenerated the spec catalog plus knowledge-map views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T00:20:00.486Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the repaired packet/spec/replay/test/evidence surfaces now preserve the mounted non-cluster contract for Scenario_Mirror_Site_And_MCR_Image_Monitor, and the worker already verified the canonical replay stays repo-local and passes check without reintroducing AKS cluster-create overclaim."
+      },
+      "status": "done"
+    }
+  ]
+}

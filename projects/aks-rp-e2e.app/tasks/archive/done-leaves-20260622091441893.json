@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T09:14:41.893Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner blocked-frontier review accepted vm-prerelease-source-coverage-map-20260622 as the completed mounted-source discovery slice: the prerelease suite is exactly the checkin suite, rows 25/50/54 are direct source-backed carriers, and rows 61/75/76 are source-backed current-preview rows that still need repo-local normalized model/view landing rather than more source discovery. Live tree remains intentionally compressed to one exact external-human-transport wait (external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622) while vm-prerelease-source-coverage-model-landing-20260622 is the only in-flight repo-local leaf and should land rows 61/75/76 plus bounded no-new-local-work verdicts for rows 25/50/54 without cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-source-coverage-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the VirtualMachine prerelease and checkin Go e2ev3 scenarios into durable source-backed input/expectation coverage so the knowledge map can advance without waiting on the external-human transport family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-source-coverage-map-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go plus any directly referenced scenario definitions, and enumerates the covered prerelease/checkin scenario intents, key inputs, and expected behaviors relevant to the current VM prerelease/preview rows.",
+        "The artifact distinguishes what is already source-backed and runnable from what still genuinely depends on the external-human/operator wait, and names any concrete follow-up model/spec/replay leaves needed next without invoking cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map:virtualmachines:prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T09:09:31.222Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-coverage-map-20260622_20260622090931",
+        "assigned_at": "2026-06-22T09:09:31.276Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-coverage-map-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-source-coverage-map-20260622_20260622090931",
+        "worker_started_at": "2026-06-22T09:09:46.794Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive artifact `evidence/archive/virtualmachine-prerelease-source-coverage-map-20260622.md`, mapping VM prerelease/checkin source coverage for rows 25/50/54/61/75/76 and distinguishing direct e2ev3 carriers from old-suite composite preview carriers plus true external-wait blockers.",
+        "last_worker_completed_at": "2026-06-22T09:12:09.600Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T09:12:43.423Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from the archive artifact itself: evidence/archive/virtualmachine-prerelease-source-coverage-map-20260622.md cites prerelease.go/checkin.go and referenced scenario sources, maps rows 25/50/54/61/75/76, separates true external waits (25/50 operator-send proof; 75/76 shared-identity rerun dependency) from repo-local model landing work, and confirms row 54 is already locally landed."
+      },
+      "session_id": "s_task_vm-prerelease-source-coverage-map-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-source-coverage-map-20260622"
+      ],
+      "result": "Wrote the requested archive artifact `evidence/archive/virtualmachine-prerelease-source-coverage-map-20260622.md`, mapping VM prerelease/checkin source coverage for rows 25/50/54/61/75/76 and distinguishing direct e2ev3 carriers from old-suite composite preview carriers plus true external-wait blockers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T09:12:43.423Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from the archive artifact itself: evidence/archive/virtualmachine-prerelease-source-coverage-map-20260622.md cites prerelease.go/checkin.go and referenced scenario sources, maps rows 25/50/54/61/75/76, separates true external waits (25/50 operator-send proof; 75/76 shared-identity rerun dependency) from repo-local model landing work, and confirms row 54 is already locally landed."
+      },
+      "status": "done"
+    }
+  ]
+}

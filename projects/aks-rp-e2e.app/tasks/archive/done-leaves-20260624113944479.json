@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T11:39:44.479Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner planning update archives the accepted private-cluster k8s-validation progression and VM prerelease reconciliation as durable history: mounted-source-backed replay work is now accepted through private-link-service-id and RunCommand node-JSON, and the only live repo-local work remains private-cluster-privatelink-create-k8s-validation-post-run-command-next-deferred-source-slice-20260624 selecting the next smallest truthful deferred op/assert pair. Preserve the four exact external waits unchanged; the aad-rbac environment-overblock warning remains intentionally rejected because approval-narrowing already closed all truthful repo-local setup/diagnosis/spec work, so no new local unblock task exists before a returned external reply or the on/after 2026-06-26 follow-up window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit VirtualMachine prerelease/checkin row 44 current carrier/status surfaces against stale 2026-06-20 promotion notes, then archive one repo-local evidence-ceiling reconciliation stating whether spec.cloud-provider.ipbased-lb-backend-pool is now fully represented in the maintained prerelease coverage/selector story and exactly which older row-44 pending notes are superseded or still inconsistent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260624.md, the current row-44 carrier evidence and any directly relevant older 2026-06-20 row-44 pending/promotion notes, then states whether the maintained row-44 carrier and selector coverage are already complete or identifies one exact remaining repo-local inconsistency.",
+        "The result stays no-cloud and no-approval, explains why this row-44 reconciliation is the first useful non-wait follow-up after the mounted-source matrix, and does not reopen rows already parked on the shared external-send wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachines.prerelease-source-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T11:20:53.654Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624_20260624112208",
+        "assigned_at": "2026-06-24T11:22:08.588Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624",
+        "worker_started_attempt_id": "a_vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624_20260624112208",
+        "worker_started_at": "2026-06-24T11:22:11.542Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a new row-44 evidence-ceiling reconciliation at evidence/archive/vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624.md, showing that spec.cloud-provider.ipbased-lb-backend-pool is already fully represented in the maintained prerelease selector/coverage story and identifying the older 2026-06-20 pending notes as superseded.",
+        "last_worker_completed_at": "2026-06-24T11:24:16.730Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T11:25:36.376Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624.md proves row 44 stale repo-local accounting is reconciled because the maintained selector, prerelease coverage ledgers, and spec index already carry spec.cloud-provider.ipbased-lb-backend-pool, superseding the 2026-06-20 missing-spec/promotion notes; this closes stale-history coverage accounting only and explicitly leaves the separate live NodeIPConfiguration execute-verdict question open."
+      },
+      "session_id": "s_task_vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624",
+      "session_history": [
+        "s_task_vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624"
+      ],
+      "result": "Archived a new row-44 evidence-ceiling reconciliation at evidence/archive/vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624.md, showing that spec.cloud-provider.ipbased-lb-backend-pool is already fully represented in the maintained prerelease selector/coverage story and identifying the older 2026-06-20 pending notes as superseded.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T11:25:36.376Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-row44-stale-history-evidence-ceiling-reconciliation-20260624.md proves row 44 stale repo-local accounting is reconciled because the maintained selector, prerelease coverage ledgers, and spec index already carry spec.cloud-provider.ipbased-lb-backend-pool, superseding the 2026-06-20 missing-spec/promotion notes; this closes stale-history coverage accounting only and explicitly leaves the separate live NodeIPConfiguration execute-verdict question open."
+      },
+      "status": "done"
+    }
+  ]
+}

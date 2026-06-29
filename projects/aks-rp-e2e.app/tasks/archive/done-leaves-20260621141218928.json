@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:12:18.928Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier/refill review keeps the single external-send-proof wait unchanged because the only missing evidence is still off-runtime human transport proof or authoritative replies. Archived three already-accepted repo-local done leaves whose meaning is preserved on the parent: the AAD/RBAC mounted-source path-normalization remainder, the private-cluster authorized-service-tags check-logic repair slice, and the VM prerelease row-38 exact live packet. The live frontier is now represented by three assigned repo-local active repair/packet leaves plus one new ManagedSystem boundary-mapping refill leaf, with no duplicate blocker families reopened.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-root-mounted-source-path-normalization-remainder-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: normalize the remaining unrelated AAD scenario goSourcePath/devbox references in features/aad-rbac.yaml to mounted /app/sources/aks-rp paths where the mounted source already answers the scenario, keeping row-36/37/38 semantics separated and avoiding cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md"
+      ],
+      "acceptance": [
+        "Update only the remaining non-row37/38 source-path/reference drift in features/aad-rbac.yaml that can be truthfully converted from stale devbox-style paths to mounted /app/sources/aks-rp references using checked source files, without changing unrelated behavioral claims.",
+        "Write evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md listing the exact scenarios/paths normalized, the mounted source files consulted, validation performed, and any still-unmapped residual drift that remains intentionally untouched.",
+        "Leave the root carrier more source-local and reviewable without introducing speculative semantics or reopening already-accepted row-37/row-38 work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-root-summary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:06:38.685Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-root-mounted-source-path-normalization-remainder-20260621_20260621140638",
+        "assigned_at": "2026-06-21T14:06:38.730Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-root-mounted-source-path-normalization-remainder-20260621",
+        "worker_started_attempt_id": "a_aad-rbac-root-mounted-source-path-normalization-remainder-20260621_20260621140638",
+        "worker_started_at": "2026-06-21T14:07:29.773Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the remaining stale devbox goSourcePath references in features/aad-rbac.yaml to mounted /app/sources/aks-rp paths for four non-row37/38 scenarios, and wrote evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md documenting source validation and intentionally untouched semantic drift.",
+        "last_worker_completed_at": "2026-06-21T14:08:43.408Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:09:11.639Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md: four remaining non-row37/38 devbox goSourcePath entries in features/aad-rbac.yaml were normalized to mounted /app/sources/aks-rp files, plans.go/source symbols were checked, and residual semantic drift was explicitly left out of scope."
+      },
+      "session_id": "s_task_aad-rbac-root-mounted-source-path-normalization-remainder-20260621",
+      "session_history": [
+        "s_task_aad-rbac-root-mounted-source-path-normalization-remainder-20260621"
+      ],
+      "result": "Normalized the remaining stale devbox goSourcePath references in features/aad-rbac.yaml to mounted /app/sources/aks-rp paths for four non-row37/38 scenarios, and wrote evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md documenting source validation and intentionally untouched semantic drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:09:11.639Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from evidence/archive/aad-rbac-root-mounted-source-path-normalization-remainder-20260621.md: four remaining non-row37/38 devbox goSourcePath entries in features/aad-rbac.yaml were normalized to mounted /app/sources/aks-rp files, plans.go/source symbols were checked, and residual semantic drift was explicitly left out of scope."
+      },
+      "status": "done"
+    }
+  ]
+}

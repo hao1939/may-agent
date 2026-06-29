@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T14:37:12.367Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner focus reconciliation: approved the current no-cloud VM prerelease packet-batch direction as the truthful frontier. Durable completed work now includes SGX Icelake row 58 plus legacy-addon row 60 and core-addon compatibility row 61, alongside the already-rolled-up ManagedSystem row 56 context. The only live repo-local learning leaves are row 57 Coffeelake out-of-proc and row 59 in-proc quote-helper-disabled SGX packets, while the single external-human approval/reply family remains the only truthful blocked wait. Do not reopen row 58/60/61 or introduce live/cloud verification from this focus window; if the SGX packet pair drains, refill stays in adjacent VM prerelease mounted-source/source-grounding work first.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.sgx-addon.vm-prerelease.icelake-out-of-proc, turn the mounted VM prerelease row-58 carrier into a bounded source-backed packet that captures the exact Icelake out-of-proc SGX addon contract, keeps the work no-cloud, and separates it from adjacent Coffeelake, in-proc, or generic SGX lifecycle families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted source anchors for row 58 from prerelease.go/checkin.go and any referenced scenario/helper definitions that describe the Icelake out-of-proc SGX addon branch.",
+        "Repo-local feature/spec/replay/model carriers are created or updated so the path truthfully captures the selected inputs, expected SGX behavior, scenario-key wording, and any explicit no-cloud execution ceiling without broadening into row 57, row 59, or generic SGX addon families.",
+        "The archive note records the exact files changed plus repo-local validation command(s) and outcomes proving the packet is internally consistent and ready for later replay/execution work if needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.sgx-addon.vm-prerelease.icelake-out-of-proc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:31:19.271Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T14:31:26.836Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626_20260626143138",
+        "assigned_at": "2026-06-26T14:31:38.331Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626_20260626143138",
+        "worker_started_at": "2026-06-26T14:31:39.068Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded row-58 Icelake SGX mounted-source packet at evidence/archive/virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626.md and validated the canonical shared SGX spec with a passing dry-run; repo-wide check is still blocked by unrelated existing formatting drift.",
+        "last_worker_completed_at": "2026-06-26T14:34:25.940Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:35:21.455Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet cites the mounted row-58 Icelake SGX handwritten and matrix anchors, confirms the existing feature/spec/replay/model carriers already preserve the exact VirtualMachines shared-identity out-of-proc branch with a no-cloud ceiling, and records a passing targeted spec dry-run plus the unrelated repo-wide bun run check formatting blocker."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626"
+      ],
+      "result": "Created the bounded row-58 Icelake SGX mounted-source packet at evidence/archive/virtualmachine-prerelease-row58-sgx-icelake-mounted-source-packet-20260626.md and validated the canonical shared SGX spec with a passing dry-run; repo-wide check is still blocked by unrelated existing formatting drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:35:21.455Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet cites the mounted row-58 Icelake SGX handwritten and matrix anchors, confirms the existing feature/spec/replay/model carriers already preserve the exact VirtualMachines shared-identity out-of-proc branch with a no-cloud ceiling, and records a passing targeted spec dry-run plus the unrelated repo-wide bun run check formatting blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

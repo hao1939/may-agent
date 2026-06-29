@@ -1,0 +1,1065 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T16:51:00.945Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 scheduled blocked-frontier owner review kept the single blocked family under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged because all six children still truthfully wait on already-routed returned proof and their first bounded follow-up/escalation window remains 2026-06-26 or later; the AAD-RBAC environment-overblock warning was revalidated again as a false positive because repo-local narrowing/send-proof closure already exists. To keep the root readable while no-cloud progress continues, archive the completed VM prerelease, private-cluster, and network-cni preparatory leaves as durable history and leave network-cni-overlay-ilpip-family-coverage-feedback-20260625 as the single active repo-local next action.",
+  "archived": 19,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-coverage-ledger-refresh-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the repo-local VirtualMachine prerelease coverage-ledger artifacts so evidence/pipelines/virtualmachine-prerelease-coverage.json and evidence/pipelines/virtualmachine-prerelease-coverage.md match the mounted-source current truth that PreRelease aliases CheckIn and carries 58 scenarios, including the explicit network-isolated row and the Linux/Windows SSH split, without flattening the important row-local overlays.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-coverage-ledger-refresh-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence names and updates evidence/pipelines/virtualmachine-prerelease-coverage.json and evidence/pipelines/virtualmachine-prerelease-coverage.md, and proves both now align to the mounted-source current suite truth of 58 carried scenarios under the PreRelease=CheckIn alias relationship rather than the stale 56-row model.",
+        "The refreshed ledger preserves the row-local distinctions that matter for later feature/input/expectation mapping, including the network-isolated suite member, separate Linux and Windows SSH rows, the VMAS->VMS AvailabilitySet overlay, Windows secure-TLS bootstrap overlays, and the kube-1.33 autoscale pins.",
+        "Work stays repo-local only: no cloud mutation, no approval-send, no devbox execution, and no reopening of the blocked external-wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T14:58:36.546Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-refresh-20260625_20260625145836",
+        "assigned_at": "2026-06-25T14:58:36.601Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-coverage-ledger-refresh-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-coverage-ledger-refresh-20260625_20260625145836",
+        "worker_started_at": "2026-06-25T14:59:02.105Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the VirtualMachine prerelease coverage ledger surfaces to the mounted-source 58-row truth by updating evidence/pipelines/virtualmachine-prerelease-coverage.json, .md, and the aligned selector file; also archived a repo-local evidence packet documenting the CheckIn alias proof, row remap, and preserved overlays.",
+        "last_worker_completed_at": "2026-06-25T15:10:59.384Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:11:42.799Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: archived evidence proves the mounted PreRelease=CheckIn alias, confirms the 58-scenario suite truth, and documents aligned repo-local updates to evidence/pipelines/virtualmachine-prerelease-coverage.json, evidence/pipelines/virtualmachine-prerelease-coverage.md, and the selector surface while preserving the explicit network-isolated row plus Linux/Windows SSH split without reopening any blocked external waits."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-coverage-ledger-refresh-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-coverage-ledger-refresh-20260625"
+      ],
+      "result": "Refreshed the VirtualMachine prerelease coverage ledger surfaces to the mounted-source 58-row truth by updating evidence/pipelines/virtualmachine-prerelease-coverage.json, .md, and the aligned selector file; also archived a repo-local evidence packet documenting the CheckIn alias proof, row remap, and preserved overlays.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T15:11:42.799Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: archived evidence proves the mounted PreRelease=CheckIn alias, confirms the 58-scenario suite truth, and documents aligned repo-local updates to evidence/pipelines/virtualmachine-prerelease-coverage.json, evidence/pipelines/virtualmachine-prerelease-coverage.md, and the selector surface while preserving the explicit network-isolated row plus Linux/Windows SSH split without reopening any blocked external waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-post-refresh-gap-shortlist-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the refreshed 58-row VirtualMachine prerelease coverage ledger as the authoritative starting point to produce a repo-local shortlist of the highest-value remaining VirtualMachine prerelease model/feature gaps, naming the exact mounted-source row carriers, current path/model status, and the next bounded repo-local task candidate for each shortlisted gap without proposing cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-post-refresh-gap-shortlist-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence enumerates the refreshed VirtualMachine prerelease suite rows from the maintained 58-row ledger that still carry draft/unknown/blocked model gaps or weak canonical carriers, and for each shortlisted candidate names the exact mounted-source scenario or row, current path/model status, and why it is the next best repo-local learning target.",
+        "The shortlist explicitly distinguishes repo-local learnable gaps from branches that are already exact external waits or terminal verdicts, so it does not reopen the six-leaf blocked approval family or reclassify settled product/environment conclusions.",
+        "Work stays repo-local only: no cloud mutation, no approval-send, no devbox execution, and no direct task-tree surgery beyond reporting the shortlist artifact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:11:42.851Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-post-refresh-gap-shortlist-20260625_20260625151142",
+        "assigned_at": "2026-06-25T15:11:42.908Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-post-refresh-gap-shortlist-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-post-refresh-gap-shortlist-20260625_20260625151142",
+        "worker_started_at": "2026-06-25T15:12:17.123Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/virtualmachine-prerelease-post-refresh-gap-shortlist-20260625.md`, a repo-local shortlist based on the refreshed 58-row VM prerelease ledger that ranks the top remaining learnable gaps and explicitly excludes existing external waits and settled terminal verdicts.",
+        "last_worker_completed_at": "2026-06-25T15:16:43.479Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:17:28.534Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/virtualmachine-prerelease-post-refresh-gap-shortlist-20260625.md is a repo-local shortlist grounded in the refreshed 58-row VM prerelease ledger, names exact mounted-source carriers and path/spec status for five remaining learnable gaps, and explicitly excludes the six external-wait leaves plus settled terminal verdicts as required."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-post-refresh-gap-shortlist-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-post-refresh-gap-shortlist-20260625"
+      ],
+      "result": "Created `evidence/archive/virtualmachine-prerelease-post-refresh-gap-shortlist-20260625.md`, a repo-local shortlist based on the refreshed 58-row VM prerelease ledger that ranks the top remaining learnable gaps and explicitly excludes existing external waits and settled terminal verdicts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T15:17:28.534Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/virtualmachine-prerelease-post-refresh-gap-shortlist-20260625.md is a repo-local shortlist grounded in the refreshed 58-row VM prerelease ledger, names exact mounted-source carriers and path/spec status for five remaining learnable gaps, and explicitly excludes the six external-wait leaves plus settled terminal verdicts as required."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit refreshed VM prerelease rows 12-18 and 20-22 end to end against mounted source, maintained spec/replay/model carriers, and current path wording to decide whether the existing aggregate storage CSI Linux matrix should remain one canonical carrier or split into one or two more row-exact normalized carriers without changing live execution verdicts or proposing cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence lists refreshed rows 12-18 and 20-22 with exact mounted-source scenario definitions and the current maintained spec/replay/model carriers, then states where row-level auditability is currently lost or preserved.",
+        "The audit makes one bounded repo-local recommendation: keep the aggregate carrier as-is with explicit rationale, or define the minimal truthful split shape (including proposed carrier ids/path impacts) needed to improve row exactness, while preserving current unknown/live-verdict posture.",
+        "Work stays repo-local only: no cloud execution, no approval transport, no environment setup, and no task-tree changes beyond reporting the audit artifact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:17:28.587Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625_20260625151728",
+        "assigned_at": "2026-06-25T15:17:28.637Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625_20260625151728",
+        "worker_started_at": "2026-06-25T15:17:45.948Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-25T15:19:39.945Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:20:33.040Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Rejected the review because the worker attempt ended in result=error/claim=blocked with zero evidence and no archive artifact; replaced by virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625 as the single truthful repo-local recovery leaf."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-25T15:20:33.040Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Rejected the review because the worker attempt ended in result=error/claim=blocked with zero evidence and no archive artifact; replaced by virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625 as the single truthful repo-local recovery leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-run the VM prerelease storage CSI Linux aggregate row exactness audit for refreshed rows 12-18 and 20-22, producing the missing archive artifact and repo-local evidence from mounted source plus maintained spec/replay/model carriers; if the prior attempt failed before writing output, state the exact repo-local failure point and still finish with a complete audit recommendation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence lists refreshed rows 12-18 and 20-22 with exact mounted-source scenario definitions and the current maintained spec/replay/model carriers, then states where row-level auditability is currently lost or preserved.",
+        "The audit makes one bounded repo-local recommendation: keep the aggregate carrier as-is with explicit rationale, or define the minimal truthful split shape (including proposed carrier ids/path impacts) needed to improve row exactness, while preserving current unknown/live-verdict posture; if the earlier worker attempt failed locally before output, the artifact names that failure and shows the completed replacement audit.",
+        "Work stays repo-local only: no cloud execution, no approval transport, no environment setup, and no task-tree changes beyond reporting the audit artifact and any exact repo-local failure note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.virtualmachine-prerelease-suite"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:20:32.927Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625_20260625152032",
+        "assigned_at": "2026-06-25T15:20:32.987Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625_20260625152032",
+        "worker_started_at": "2026-06-25T15:20:56.445Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Re-verified and updated the archive audit at evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md, confirming the mounted-source/spec/replay/model evidence for rows 12-18 and 20-22 and adding a precise prior-attempt failure note.",
+        "last_worker_completed_at": "2026-06-25T15:22:46.349Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:24:49.807Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-25: evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md substantively re-verifies rows 12-18 and 20-22, preserves the aggregate carrier as canonical for now, and truthfully limits the prior-attempt note to missing preserved failure proof rather than a confirmed earlier diagnosis."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-retry-20260625"
+      ],
+      "result": "Re-verified and updated the archive audit at evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md, confirming the mounted-source/spec/replay/model evidence for rows 12-18 and 20-22 and adding a precise prior-attempt failure note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T15:24:49.807Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-25: evidence/archive/virtualmachine-prerelease-storage-linux-aggregate-row-exactness-audit-20260625.md substantively re-verifies rows 12-18 and 20-22, preserves the aggregate carrier as canonical for now, and truthfully limits the prior-attempt note to missing preserved failure proof rather than a confirmed earlier diagnosis."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local mounted-source and handwritten-e2ev3 coverage packet for path.private-cluster-none-dns-zone-v3 that maps the exact scenario/input/expectation boundary, identifies any existing specs/replays/evidence, records adjacent private-cluster DNS-zone siblings, and recommends the next safe model/spec action without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence identifies the relevant mounted-source and handwritten e2ev3 files or proves their absence, extracts the concrete lifecycle/input/expectation claims for private DNS zone system->none V3 behavior, and cites exact file paths/lines or packet references.",
+        "The packet states whether path.private-cluster-none-dns-zone-v3 can be advanced by model/spec authoring now or remains blocked on a narrower missing-input question, and names the next safe repo-local task without running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:52:36.404Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625_20260625155236",
+        "assigned_at": "2026-06-25T15:52:36.461Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625_20260625155236",
+        "worker_started_at": "2026-06-25T15:53:02.918Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source coverage packet at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md. The packet confirms the exact handwritten V3 system→none lifecycle boundary, existing repo-local/spec/replay/model coverage, adjacent DNS-zone siblings, and that the next safe action is metadata-only rather than new model/spec authoring or cloud mutation.",
+        "last_worker_completed_at": "2026-06-25T15:54:57.341Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:55:40.326Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md satisfies both acceptance points by citing the exact handwritten V3 mounted-source boundary, matching repo-local feature/spec/replay/model carriers, adjacent DNS-zone siblings, and a no-cloud next step of metadata-only status/citation rather than duplicate authoring or mutation."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625"
+      ],
+      "result": "Created the requested mounted-source coverage packet at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md. The packet confirms the exact handwritten V3 system→none lifecycle boundary, existing repo-local/spec/replay/model coverage, adjacent DNS-zone siblings, and that the next safe action is metadata-only rather than new model/spec authoring or cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T15:55:40.326Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md satisfies both acceptance points by citing the exact handwritten V3 mounted-source boundary, matching repo-local feature/spec/replay/model carriers, adjacent DNS-zone siblings, and a no-cloud next step of metadata-only status/citation rather than duplicate authoring or mutation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-none-dns-zone-v3-status-ceiling-note-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture a metadata-only status ceiling note for path.private-cluster-none-dns-zone-v3 that cites the 2026-06-25 mounted-source coverage packet, records why the path remains truthfully unknown despite exact source/spec/replay alignment, and names the exact future evidence needed before any pass/block verdict change.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-status-ceiling-note-20260625.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-coverage-packet-20260625.md plus the maintained repo-local carrier(s), states that no additional model/spec/replay authoring is justified now, and preserves the exact system->none same-cluster lifecycle boundary.",
+        "The note records the current truthful verdict ceiling for path.private-cluster-none-dns-zone-v3, including which expectations still lack accepted live evidence and what exact future authorized lifecycle observation would be needed before changing model status from unknown."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:55:40.376Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-status-ceiling-note-20260625_20260625155540",
+        "assigned_at": "2026-06-25T15:55:40.427Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-status-ceiling-note-20260625",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-status-ceiling-note-20260625_20260625155540",
+        "worker_started_at": "2026-06-25T15:55:56.492Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested metadata-only status ceiling note at evidence/archive/private-cluster-none-dns-zone-v3-status-ceiling-note-20260625.md, citing the 2026-06-25 mounted-source coverage packet, maintained repo-local carriers, the preserved system→none same-cluster boundary, and the exact future live evidence needed before any verdict change.",
+        "last_worker_completed_at": "2026-06-25T15:56:56.973Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T15:57:32.404Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note at evidence/archive/private-cluster-none-dns-zone-v3-status-ceiling-note-20260625.md cites the mounted-source coverage packet and maintained repo-local carriers, preserves the exact same-cluster system->none boundary, keeps path.private-cluster-none-dns-zone-v3 truthfully at unknown, and names the exact future authorized live lifecycle evidence required before any verdict change."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-status-ceiling-note-20260625",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-status-ceiling-note-20260625"
+      ],
+      "result": "Wrote the requested metadata-only status ceiling note at evidence/archive/private-cluster-none-dns-zone-v3-status-ceiling-note-20260625.md, citing the 2026-06-25 mounted-source coverage packet, maintained repo-local carriers, the preserved system→none same-cluster boundary, and the exact future live evidence needed before any verdict change.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T15:57:32.404Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note at evidence/archive/private-cluster-none-dns-zone-v3-status-ceiling-note-20260625.md cites the mounted-source coverage packet and maintained repo-local carriers, preserves the exact same-cluster system->none boundary, keeps path.private-cluster-none-dns-zone-v3 truthfully at unknown, and names the exact future authorized live lifecycle evidence required before any verdict change."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-mounted-source-remainder-shortlist-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a bounded repo-local private-cluster mounted-source remainder shortlist that identifies the next handwritten e2ev3 private-cluster scenario(s) worth mapping after the none-dns-zone-v3 status-ceiling closure, with exact source anchors, current carrier coverage state, and one recommended next executable follow-up leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-remainder-shortlist-20260625.md"
+      ],
+      "acceptance": [
+        "Archive note cites exact mounted private-cluster source/plan carriers plus current repo-local feature/spec/replay/model coverage, and truthfully distinguishes already-closed scenarios from remaining unmapped or weakly represented private-cluster scenarios.",
+        "The shortlist names one recommended next private-cluster follow-up leaf that would add new input/expectation coverage without cloud mutation, and explains why that candidate is the best next regular-learning move."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T15:57:50.216Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-remainder-shortlist-20260625_20260625155750",
+        "assigned_at": "2026-06-25T15:57:50.265Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-remainder-shortlist-20260625",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-remainder-shortlist-20260625_20260625155750",
+        "worker_started_at": "2026-06-25T15:58:10.103Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested private-cluster remainder shortlist at evidence/archive/private-cluster-mounted-source-remainder-shortlist-20260625.md. The note uses mounted source plus current repo-local carriers to distinguish already-closed scenarios from the one best remaining no-cloud mapping candidate: Scenario_Private_Cluster expectation-delta mapping.",
+        "last_worker_completed_at": "2026-06-25T16:01:47.491Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:02:30.381Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-25: evidence/archive/private-cluster-mounted-source-remainder-shortlist-20260625.md cites exact mounted private-cluster source anchors, distinguishes already-closed carriers from the remaining weakly represented Scenario_Private_Cluster expectation bundle, and recommends one bounded no-cloud successor leaf for canonical privatelink-create expectation-delta mapping."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-remainder-shortlist-20260625",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-remainder-shortlist-20260625"
+      ],
+      "result": "Produced the requested private-cluster remainder shortlist at evidence/archive/private-cluster-mounted-source-remainder-shortlist-20260625.md. The note uses mounted source plus current repo-local carriers to distinguish already-closed scenarios from the one best remaining no-cloud mapping candidate: Scenario_Private_Cluster expectation-delta mapping.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:02:30.381Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-25: evidence/archive/private-cluster-mounted-source-remainder-shortlist-20260625.md cites exact mounted private-cluster source anchors, distinguishes already-closed carriers from the remaining weakly represented Scenario_Private_Cluster expectation bundle, and recommends one bounded no-cloud successor leaf for canonical privatelink-create expectation-delta mapping."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-privatelink-create-mounted-expectation-delta-map-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact handwritten Scenario_Private_Cluster expectation bundle from mounted source onto the current canonical private-cluster privatelink-create carriers, identifying which expectations already live on the base path or attached variants and which source-backed points remain unexposed in repo-local spec/model surfaces without creating duplicate runnable paths or new product verdicts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-create-mounted-expectation-delta-map-20260625.md"
+      ],
+      "acceptance": [
+        "Archive note cites exact private_cluster.go source anchors for HasOnePrivateLinkServiceID, jumpbox/private reachability preconditions, scale continuity, and upgrade continuity, then maps each expectation against current repo-local carriers: spec.private-cluster.privatelink-create, path.private-cluster-privatelink-create, path.private-cluster-privatelink-create.k8s-validation, and runner-v3 lineage metadata in features/private-cluster/privatelink.yaml.",
+        "The note truthfully distinguishes expectations already represented versus source-backed gaps still unexposed in current spec/path/model surfaces, recommends the correct carrier placement for any gap, and preserves the existing rule that runner-v3 remains metadata-only rather than a duplicate canonical runnable path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:02:30.433Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-privatelink-create-mounted-expectation-delta-map-20260625_20260625160230",
+        "assigned_at": "2026-06-25T16:02:30.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-privatelink-create-mounted-expectation-delta-map-20260625",
+        "worker_started_attempt_id": "a_private-cluster-privatelink-create-mounted-expectation-delta-map-20260625_20260625160230",
+        "worker_started_at": "2026-06-25T16:02:45.331Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive note mapping mounted `Scenario_Private_Cluster` expectations onto the current canonical/attached/private-cluster carriers, with exact source anchors and a clear delta showing scale continuity as the remaining unexposed source-backed point.",
+        "last_worker_completed_at": "2026-06-25T16:05:56.232Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:06:44.839Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note cites the requested mounted private_cluster.go anchors, truthfully maps HasOnePrivateLinkServiceID/jumpbox reachability/upgrade continuity onto the existing canonical-versus-attached carriers, keeps runner-v3 metadata-only, and isolates scale continuity as the only remaining unexposed source-backed expectation."
+      },
+      "session_id": "s_task_private-cluster-privatelink-create-mounted-expectation-delta-map-20260625",
+      "session_history": [
+        "s_task_private-cluster-privatelink-create-mounted-expectation-delta-map-20260625"
+      ],
+      "result": "Produced the requested archive note mapping mounted `Scenario_Private_Cluster` expectations onto the current canonical/attached/private-cluster carriers, with exact source anchors and a clear delta showing scale continuity as the remaining unexposed source-backed point.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:06:44.839Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note cites the requested mounted private_cluster.go anchors, truthfully maps HasOnePrivateLinkServiceID/jumpbox reachability/upgrade continuity onto the existing canonical-versus-attached carriers, keeps runner-v3 metadata-only, and isolates scale continuity as the only remaining unexposed source-backed expectation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-privatelink-scale-continuity-carrier-surface-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Expose the mounted Scenario_Private_Cluster 1->3->1 scale continuity expectation on the existing private-cluster privatelink-create carrier family without creating a duplicate runnable path, using the 2026-06-25 delta map to choose the smallest truthful repo-local carrier edits and validate the resulting model/view contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-scale-continuity-carrier-surface-20260625.md"
+      ],
+      "acceptance": [
+        "The work cites the mounted source and the accepted delta note, updates the minimal truthful repo-local carrier surfaces so scale continuity is no longer source-only lineage for the private-cluster privatelink-create family, and records exactly which canonical-versus-attached carrier now owns that expectation.",
+        "No new canonical runnable path, no runner-v3 promotion, and no cloud execution are introduced; repo-local validation/check output confirms the updated carrier/model surfaces remain consistent."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:06:44.888Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-privatelink-scale-continuity-carrier-surface-20260625_20260625160644",
+        "assigned_at": "2026-06-25T16:06:44.937Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-privatelink-scale-continuity-carrier-surface-20260625",
+        "worker_started_attempt_id": "a_private-cluster-privatelink-scale-continuity-carrier-surface-20260625_20260625160644",
+        "worker_started_at": "2026-06-25T16:07:01.673Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Surfaced mounted Scenario_Private_Cluster VMSS 1->3->1 scale continuity on the canonical private-cluster PrivateLink create carrier family, clarified that the attached K8S-validation variant does not own that expectation, regenerated path-summary, and wrote the task evidence note.",
+        "last_worker_completed_at": "2026-06-25T16:12:38.393Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:13:48.380Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the private-cluster PrivateLink scale continuity carrier repair: the task evidence plus targeted file checks confirm path.private-cluster-privatelink-create now surfaces mounted VMSS 1->3->1 scale continuity as source-grounded lineage, the attached k8s-validation variant explicitly does not own that expectation, no duplicate runnable path or runner-v3 promotion was introduced, and the regenerated path-summary matches the updated model/spec split."
+      },
+      "session_id": "s_task_private-cluster-privatelink-scale-continuity-carrier-surface-20260625",
+      "session_history": [
+        "s_task_private-cluster-privatelink-scale-continuity-carrier-surface-20260625"
+      ],
+      "result": "Surfaced mounted Scenario_Private_Cluster VMSS 1->3->1 scale continuity on the canonical private-cluster PrivateLink create carrier family, clarified that the attached K8S-validation variant does not own that expectation, regenerated path-summary, and wrote the task evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:13:48.380Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the private-cluster PrivateLink scale continuity carrier repair: the task evidence plus targeted file checks confirm path.private-cluster-privatelink-create now surfaces mounted VMSS 1->3->1 scale continuity as source-grounded lineage, the attached k8s-validation variant explicitly does not own that expectation, no duplicate runnable path or runner-v3 promotion was introduced, and the regenerated path-summary matches the updated model/spec split."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-mounted-source-remainder-priority-shortlist-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus current repo-local feature/spec/model surfaces to produce a bounded shortlist of the next network-cni handwritten or mounted-suite scenario(s) worth mapping repo-locally after the private-cluster carrier closure, identifying the smallest truthful no-cloud follow-up leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-remainder-priority-shortlist-20260625.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted source files and the current repo-local feature/spec/model surfaces it compared, then names the highest-value network-cni scenario or family gap(s) with source anchors, current coverage state, and why they are the next truthful repo-local learning target.",
+        "The note stays repo-local only: no cloud execution, no runner-v3 promotion, no duplicate canonical path invention, and it recommends one concrete follow-up leaf with durable output path and conflict scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:13:48.432Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-remainder-priority-shortlist-20260625_20260625161348",
+        "assigned_at": "2026-06-25T16:13:48.484Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-remainder-priority-shortlist-20260625",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-remainder-priority-shortlist-20260625_20260625161348",
+        "worker_started_at": "2026-06-25T16:14:14.571Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested repo-local network-cni remainder shortlist at evidence/archive/network-cni-mounted-source-remainder-priority-shortlist-20260625.md, comparing mounted AKS RP source against current feature/spec/model surfaces and recommending ILPIP as the next bounded no-cloud leaf after eliminating already-carried ACNS/Cilium/Retina work.",
+        "last_worker_completed_at": "2026-06-25T16:18:00.895Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:18:36.834Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites exact mounted source files and current repo-local feature/spec/model surfaces, rules out already-carried ACNS/Cilium/Retina work, and truthfully recommends the bounded next no-cloud follow-up leaf on overlay ILPIP with durable output/conflict scope."
+      },
+      "session_id": "s_task_network-cni-mounted-source-remainder-priority-shortlist-20260625",
+      "session_history": [
+        "s_task_network-cni-mounted-source-remainder-priority-shortlist-20260625"
+      ],
+      "result": "Produced the requested repo-local network-cni remainder shortlist at evidence/archive/network-cni-mounted-source-remainder-priority-shortlist-20260625.md, comparing mounted AKS RP source against current feature/spec/model surfaces and recommending ILPIP as the next bounded no-cloud leaf after eliminating already-carried ACNS/Cilium/Retina work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:18:36.834Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites exact mounted source files and current repo-local feature/spec/model surfaces, rules out already-carried ACNS/Cilium/Retina work, and truthfully recommends the bounded next no-cloud follow-up leaf on overlay ILPIP with durable output/conflict scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-mounted-source-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP overlay ILPIP source plus current overlay canonicals to decide the truthful repo-local representation for Scenario_Azure_CNI_Overlay_ILPIP and Scenario_Azure_CNI_Overlay_ILPIP_DualStack, recording exact request/expectation deltas and the smallest next model/spec action without cloud execution or duplicate canonical invention.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-mounted-source-packet-20260625.md"
+      ],
+      "acceptance": [
+        "The archive note cites test/e2e/suites/networkoverlay/ilpip.go plus the mounted matrix scenario ids for ILPIP and ILPIP_DualStack, then compares them against the current repo-local adjacent overlay canonicals/specs/models to identify exact overlap and exact missing deltas.",
+        "The note concludes whether ILPIP should be represented as a dedicated overlay sibling, execution-variant metadata on existing overlay canonicals, or a split base/dual-stack treatment, and it records one smallest truthful next repo-local follow-up step without cloud execution, replay promotion, or duplicate canonical invention."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:18:36.883Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-mounted-source-packet-20260625_20260625161836",
+        "assigned_at": "2026-06-25T16:18:36.933Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-mounted-source-packet-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-mounted-source-packet-20260625_20260625161836",
+        "worker_started_at": "2026-06-25T16:18:48.258Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested ILPIP mounted-source packet under evidence/archive, comparing mounted `ilpip.go` and matrix scenario IDs against current overlay canonicals and concluding ILPIP should land as dedicated base/dual-stack overlay siblings rather than variant metadata on existing overlay specs.",
+        "last_worker_completed_at": "2026-06-25T16:21:08.962Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:21:54.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-ilpip-mounted-source-packet-20260625.md cites mounted ilpip.go plus matrix scenario ids, compares them against current overlay canonicals, and truthfully concludes ILPIP belongs as dedicated base and dual-stack overlay siblings rather than execution-variant metadata."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-mounted-source-packet-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-mounted-source-packet-20260625"
+      ],
+      "result": "Wrote the requested ILPIP mounted-source packet under evidence/archive, comparing mounted `ilpip.go` and matrix scenario IDs against current overlay canonicals and concluding ILPIP should land as dedicated base/dual-stack overlay siblings rather than variant metadata on existing overlay specs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:21:54.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-ilpip-mounted-source-packet-20260625.md cites mounted ilpip.go plus matrix scenario ids, compares them against current overlay canonicals, and truthfully concludes ILPIP belongs as dedicated base and dual-stack overlay siblings rather than execution-variant metadata."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-base-canonical-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the no-cloud base Azure CNI overlay ILPIP canonical packet that turns the mounted ILPIP source findings into one exact repo-local base sibling boundary, preserving request inputs, Windows pool metadata, egress expectations, and the explicit separation from the future dual-stack sibling without replay promotion or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-base-canonical-packet-20260625.md"
+      ],
+      "acceptance": [
+        "The archive note cites test/e2e/suites/networkoverlay/ilpip.go create, mutate, Windows pool, and egress steps plus the current overlay canonicals, then records the exact base ILPIP canonical boundary: overlay plus enable_node_public_ip=true, required Windows pool add metadata, shared-identity row metadata, and Linux/Windows IPv4 egress expectations.",
+        "The note explicitly distinguishes the base ILPIP canonical from both generic overlay and the future ILPIP dual-stack sibling, including what belongs on the base carrier now versus what must stay reserved for a later dual-stack sibling follow-up, and names the smallest next repo-local spec/model action without cloud execution or replay promotion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:21:55.000Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-base-canonical-packet-20260625_20260625162155",
+        "assigned_at": "2026-06-25T16:21:55.048Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-base-canonical-packet-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-base-canonical-packet-20260625_20260625162155",
+        "worker_started_at": "2026-06-25T16:22:06.907Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested no-cloud Azure CNI overlay ILPIP base canonical packet at evidence/archive/network-cni-overlay-ilpip-base-canonical-packet-20260625.md, grounded in mounted ILPIP source and adjacent overlay canonicals, with explicit base-vs-dual-stack boundary separation and next spec/model action.",
+        "last_worker_completed_at": "2026-06-25T16:23:05.848Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:23:56.049Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/network-cni-overlay-ilpip-base-canonical-packet-20260625.md accurately cites mounted source test/e2e/suites/networkoverlay/ilpip.go and overlay matrix metadata, preserves the exact base overlay+enable_node_public_ip=true boundary with required Windows pool/shared-identity metadata, and cleanly reserves dual-stack/IPv6 behavior for a later sibling."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-base-canonical-packet-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-base-canonical-packet-20260625"
+      ],
+      "result": "Authored the requested no-cloud Azure CNI overlay ILPIP base canonical packet at evidence/archive/network-cni-overlay-ilpip-base-canonical-packet-20260625.md, grounded in mounted ILPIP source and adjacent overlay canonicals, with explicit base-vs-dual-stack boundary separation and next spec/model action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:23:56.049Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/network-cni-overlay-ilpip-base-canonical-packet-20260625.md accurately cites mounted source test/e2e/suites/networkoverlay/ilpip.go and overlay matrix metadata, preserves the exact base overlay+enable_node_public_ip=true boundary with required Windows pool/shared-identity metadata, and cleanly reserves dual-stack/IPv6 behavior for a later sibling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-base-spec-sibling-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the repo-local Azure CNI overlay ILPIP base spec/model sibling anchored to Scenario_Azure_CNI_Overlay_ILPIP so the mounted-source base boundary becomes executable project knowledge without cloud execution: preserve overlay + enable_node_public_ip=true, shared-identity row metadata, required post-create Windows pool metadata, Linux/Windows IPv4 ILPIP egress expectations, and an explicit note that the dual-stack row remains a separate follow-up sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/network-cni-azure-overlay-ilpip.json",
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-base-spec-sibling-20260625.md"
+      ],
+      "acceptance": [
+        "A new repo-local spec/model sibling exists for the base ILPIP branch, grounded in Scenario_Azure_CNI_Overlay_ILPIP and the mounted source packet, with first-class inputs for networkPlugin=azure, networkPluginMode=overlay, enable_node_public_ip=true, plus the required Windows pool add and shared-identity row metadata rather than collapsing the branch into generic overlay coverage.",
+        "The authored sibling claims only the base IPv4 ILPIP expectation surface (Linux/Windows ILPIP egress plus Linux/Windows CNS readiness prerequisites as applicable), explicitly records that dual-stack input/IPv6 expectations stay reserved for a later sibling, and leaves the project in a validation-ready no-cloud state without replay promotion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:23:56.101Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-base-spec-sibling-20260625_20260625162356",
+        "assigned_at": "2026-06-25T16:23:56.155Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-base-spec-sibling-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-base-spec-sibling-20260625_20260625162356",
+        "worker_started_at": "2026-06-25T16:24:20.548Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new repo-local base ILPIP spec sibling at specs/network-cni-azure-overlay-ilpip.json plus an evidence note at evidence/archive/network-cni-overlay-ilpip-base-spec-sibling-20260625.md, grounded in mounted Scenario_Azure_CNI_Overlay_ILPIP source and preserving overlay + enable_node_public_ip=true, shared-identity row metadata, required post-create Windows pool metadata, and IPv4-only Linux/Windows ILPIP expectations.",
+        "last_worker_completed_at": "2026-06-25T16:27:23.069Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:27:58.779Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of specs/network-cni-azure-overlay-ilpip.json and evidence/archive/network-cni-overlay-ilpip-base-spec-sibling-20260625.md: the repo-local sibling is source-grounded to Scenario_Azure_CNI_Overlay_ILPIP, preserves overlay + enableNodePublicIP=true + shared-identity metadata + required Windows profile/post-create Windows pool, and explicitly reserves dual-stack IPv6 expectations for a later sibling."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-base-spec-sibling-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-base-spec-sibling-20260625"
+      ],
+      "result": "Authored a new repo-local base ILPIP spec sibling at specs/network-cni-azure-overlay-ilpip.json plus an evidence note at evidence/archive/network-cni-overlay-ilpip-base-spec-sibling-20260625.md, grounded in mounted Scenario_Azure_CNI_Overlay_ILPIP source and preserving overlay + enable_node_public_ip=true, shared-identity row metadata, required post-create Windows pool metadata, and IPv4-only Linux/Windows ILPIP expectations.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:27:58.779Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of specs/network-cni-azure-overlay-ilpip.json and evidence/archive/network-cni-overlay-ilpip-base-spec-sibling-20260625.md: the repo-local sibling is source-grounded to Scenario_Azure_CNI_Overlay_ILPIP, preserves overlay + enableNodePublicIP=true + shared-identity metadata + required Windows profile/post-create Windows pool, and explicitly reserves dual-stack IPv6 expectations for a later sibling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-dualstack-spec-sibling-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the repo-local Azure CNI overlay ILPIP dual-stack spec/model sibling anchored to Scenario_Azure_CNI_Overlay_ILPIP_DualStack so the mounted-source dual-stack boundary becomes executable project knowledge without cloud execution: preserve overlay + enable_node_public_ip=true, shared-identity row metadata, explicit dual-stack input policy, required post-create Windows pool metadata, and the Linux/Windows IPv4+IPv6 ILPIP egress expectation split that must stay distinct from the base IPv4 sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/network-cni-azure-overlay-ilpip-dualstack.json",
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-dualstack-spec-sibling-20260625.md"
+      ],
+      "acceptance": [
+        "A new repo-local spec/model sibling exists for the dual-stack ILPIP branch, grounded in Scenario_Azure_CNI_Overlay_ILPIP_DualStack and mounted source, with first-class inputs for networkPlugin=azure, networkPluginMode=overlay, enable_node_public_ip=true, and the explicit dual-stack/ip_family_policy=dualStack carrier plus required shared-identity row metadata and Windows pool add contract.",
+        "The authored sibling claims the bounded dual-stack expectation surface only: Linux and Windows ILPIP egress for both IPv4 and IPv6 as carried by the mounted suite, keeps CNS readiness and Windows prerequisite metadata explicit, and stays separate from the base IPv4 ILPIP sibling without promoting replay execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:27:58.834Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-dualstack-spec-sibling-20260625_20260625162758",
+        "assigned_at": "2026-06-25T16:27:58.886Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-dualstack-spec-sibling-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-dualstack-spec-sibling-20260625_20260625162758",
+        "worker_started_at": "2026-06-25T16:28:21.631Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new dual-stack Azure CNI overlay ILPIP spec sibling at specs/network-cni-azure-overlay-ilpip-dualstack.json and a matching evidence note at evidence/archive/network-cni-overlay-ilpip-dualstack-spec-sibling-20260625.md, both grounded in mounted source and kept distinct from the base IPv4 ILPIP sibling.",
+        "last_worker_completed_at": "2026-06-25T16:30:41.969Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:31:39.500Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the dual-stack ILPIP sibling after checking specs/network-cni-azure-overlay-ilpip-dualstack.json and evidence/archive/network-cni-overlay-ilpip-dualstack-spec-sibling-20260625.md: the repo-local spec is mounted-source grounded on Scenario_Azure_CNI_Overlay_ILPIP_DualStack, preserves overlay+enableNodePublicIP, shared-identity metadata, explicit dualStack/ipFamilies=IPv4+IPv6 inputs, required Windows profile plus post-create Windows pool metadata, and bounded Linux/Windows IPv4+IPv6 ILPIP egress expectations distinct from the base IPv4 sibling."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-dualstack-spec-sibling-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-dualstack-spec-sibling-20260625"
+      ],
+      "result": "Authored the new dual-stack Azure CNI overlay ILPIP spec sibling at specs/network-cni-azure-overlay-ilpip-dualstack.json and a matching evidence note at evidence/archive/network-cni-overlay-ilpip-dualstack-spec-sibling-20260625.md, both grounded in mounted source and kept distinct from the base IPv4 ILPIP sibling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:31:39.500Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the dual-stack ILPIP sibling after checking specs/network-cni-azure-overlay-ilpip-dualstack.json and evidence/archive/network-cni-overlay-ilpip-dualstack-spec-sibling-20260625.md: the repo-local spec is mounted-source grounded on Scenario_Azure_CNI_Overlay_ILPIP_DualStack, preserves overlay+enableNodePublicIP, shared-identity metadata, explicit dualStack/ipFamilies=IPv4+IPv6 inputs, required Windows profile plus post-create Windows pool metadata, and bounded Linux/Windows IPv4+IPv6 ILPIP egress expectations distinct from the base IPv4 sibling."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide the exact capability-model landing for the newly authored Azure CNI overlay ILPIP dual-stack sibling by reconciling specs/network-cni-azure-overlay-ilpip-dualstack.json against the existing base ILPIP, overlay dual-stack, and generic node-public-ip carriers, then either promote one bounded no-cloud model path/feature update or write the durable defer rationale that keeps this sibling spec-only for now.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "A durable archive note compares the new dual-stack ILPIP sibling against the existing base ILPIP, generic overlay-dual-stack, and generic node-public-ip carriers, and records one exact recommendation: distinct normalized path/feature promotion, adjacency-only attachment, or explicit defer. The reasoning must keep the accepted input/expectation boundary bounded to overlay + enable_node_public_ip=true + dualStack + mixed Linux/Windows ILPIP egress and explicitly reject collapsing the branch into the base IPv4 sibling or generic adjacent coverage.",
+        "If the decision is promotion, all touched knowledge-map artifacts are updated consistently with source-grounded/no-cloud evidence linkage and the new bounded path/feature label. If the decision is defer/adjacency-only, the archive note must name the exact missing condition or evidence ceiling and leave the current normalized model truthful without inventing replay or execution coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:31:39.552Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625_20260625163139",
+        "assigned_at": "2026-06-25T16:31:39.603Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625_20260625163139",
+        "worker_started_at": "2026-06-25T16:31:54.160Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable defer-rationale note at evidence/archive/network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625.md and concluded the new overlay ILPIP dual-stack sibling should remain spec-only for now; model.json and path-summary.json were intentionally left unchanged to avoid implying unsupported normalized ILPIP coverage.",
+        "last_worker_completed_at": "2026-06-25T16:34:00.698Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:34:52.885Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625.md truthfully compares the new dual-stack ILPIP sibling against the base ILPIP, generic overlay-dual-stack, and generic node-public-ip carriers, records an explicit defer/spec-only decision, and correctly leaves model/knowledge-map/model.json plus views/path-summary.json unchanged because no accepted normalized ILPIP family exists yet."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625"
+      ],
+      "result": "Wrote a durable defer-rationale note at evidence/archive/network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625.md and concluded the new overlay ILPIP dual-stack sibling should remain spec-only for now; model.json and path-summary.json were intentionally left unchanged to avoid implying unsupported normalized ILPIP coverage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:34:52.885Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-ilpip-dualstack-model-linkage-decision-20260625.md truthfully compares the new dual-stack ILPIP sibling against the base ILPIP, generic overlay-dual-stack, and generic node-public-ip carriers, records an explicit defer/spec-only decision, and correctly leaves model/knowledge-map/model.json plus views/path-summary.json unchanged because no accepted normalized ILPIP family exists yet."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-family-normalization-slice-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the Azure CNI overlay ILPIP family in one bounded no-cloud slice by reconciling specs/network-cni-azure-overlay-ilpip.json and specs/network-cni-azure-overlay-ilpip-dualstack.json into a truthful base ILPIP carrier plus an explicit dual-stack refinement, distinct from the generic overlay-dual-stack and node-public-ip carriers, then update the accepted knowledge map only if the bounded family vocabulary is source-grounded and non-duplicative.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-family-normalization-slice-20260625.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "A durable archive note defines the exact accepted-input/expectation boundary for the base overlay ILPIP carrier and its dual-stack refinement, cites the sibling specs plus adjacent normalized carriers used for comparison, and explains why the resulting family stays distinct from generic overlay-dual-stack and generic node-public-ip coverage.",
+        "If the bounded normalization is supported, model/knowledge-map/model.json and views/path-summary.json are updated consistently to add the ILPIP family without implying replay or execution coverage beyond the mounted-source/spec evidence; if the evidence still proves insufficient, the archive note records the exact remaining evidence ceiling and the model remains unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:34:52.938Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-family-normalization-slice-20260625_20260625163452",
+        "assigned_at": "2026-06-25T16:34:52.995Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-family-normalization-slice-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-family-normalization-slice-20260625_20260625163452",
+        "worker_started_at": "2026-06-25T16:35:14.207Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the Azure CNI overlay ILPIP family into two accepted source-grounded unknown paths in model/knowledge-map/model.json, regenerated path-summary.json, and wrote a durable archive note documenting the exact base-vs-dual-stack boundary and adjacency rationale.",
+        "last_worker_completed_at": "2026-06-25T16:39:21.482Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:40:54.959Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note now defines the exact base-vs-dual-stack overlay ILPIP boundary with mounted-source/spec citations, and model/knowledge-map/model.json plus views/path-summary.json consistently add the two distinct source-grounded unknown ILPIP paths without overstating execution coverage."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-family-normalization-slice-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-family-normalization-slice-20260625"
+      ],
+      "result": "Normalized the Azure CNI overlay ILPIP family into two accepted source-grounded unknown paths in model/knowledge-map/model.json, regenerated path-summary.json, and wrote a durable archive note documenting the exact base-vs-dual-stack boundary and adjacency rationale.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:40:54.959Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note now defines the exact base-vs-dual-stack overlay ILPIP boundary with mounted-source/spec citations, and model/knowledge-map/model.json plus views/path-summary.json consistently add the two distinct source-grounded unknown ILPIP paths without overstating execution coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-verification-gap-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the newly normalized Azure CNI overlay ILPIP family to the current replay/execution surface in one bounded no-cloud packet by checking whether base and dual-stack ILPIP branches already have truthful distinct replay or run artifacts, or whether they remain pure source/spec/model knowledge with an explicit execution ceiling and next gated verification leaves.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-ilpip-verification-gap-packet-20260625.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the accepted normalization note plus the relevant replay/spec/model artifacts, separates the base ILPIP and ILPIP dual-stack branches, and records for each branch whether repo-local replay/run evidence already exists or the branch remains execution-gap unknown.",
+        "The note names the exact minimal next successor for each uncovered branch (for example a distinct replay authoring leaf, a bounded execution-plan leaf, or a shared evidence ceiling) without running cloud mutation, reopening the completed normalization slice, or implying verdict inheritance from generic overlay-dual-stack or generic node-public-ip carriers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:40:55.012Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-verification-gap-packet-20260625_20260625164058",
+        "assigned_at": "2026-06-25T16:40:58.488Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-verification-gap-packet-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-verification-gap-packet-20260625_20260625164058",
+        "worker_started_at": "2026-06-25T16:41:15.446Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a durable ILPIP verification-gap packet under evidence/archive that separates base and dual-stack branches, confirms both remain source/spec/model-only with no exact replay or run artifacts, and proposes the minimal next replay-authoring successors for each branch.",
+        "last_worker_completed_at": "2026-06-25T16:42:38.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:43:18.814Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-overlay-ilpip-verification-gap-packet-20260625.md truthfully separates base and dual-stack ILPIP, confirms both branches remain source/spec/model-only with no exact repo-local replay or run artifacts, and names replay-authoring as the minimal bounded successor for each branch."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-verification-gap-packet-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-verification-gap-packet-20260625"
+      ],
+      "result": "Authored a durable ILPIP verification-gap packet under evidence/archive that separates base and dual-stack branches, confirms both remain source/spec/model-only with no exact replay or run artifacts, and proposes the minimal next replay-authoring successors for each branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:43:18.814Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-overlay-ilpip-verification-gap-packet-20260625.md truthfully separates base and dual-stack ILPIP, confirms both branches remain source/spec/model-only with no exact repo-local replay or run artifacts, and names replay-authoring as the minimal bounded successor for each branch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-dualstack-replay-authoring-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the first exact repo-local replay carrier for path.network-cni-azure-overlay-ilpip-dualstack by translating the accepted mounted-source/spec/model boundary into one branch-local no-cloud replay that keeps the dual-stack refinement explicit and does not widen into base-only ILPIP, generic overlay dual-stack, or generic node-public-ip semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/network-cni-azure-overlay-ilpip-dualstack.ts"
+      ],
+      "acceptance": [
+        "A new exact replay file exists at replays/network-cni-azure-overlay-ilpip-dualstack.ts and is scoped to the normalized dual-stack ILPIP refinement: the full base ILPIP trunk plus ip_family_policy=dualStack, networkProfile.ipFamilies=IPv4,IPv6, and Linux/Windows IPv6 ILPIP egress expectations in addition to the IPv4 checks from the accepted source/spec/model boundary.",
+        "The replay authoring note or inline comments cite the exact source/spec/model anchors used, and the task does not introduce cloud execution, collapse the dual-stack refinement back into the base branch, or inherit verdicts from adjacent generic overlay-dual-stack or node-public-ip carriers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:43:18.865Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-dualstack-replay-authoring-20260625_20260625164542",
+        "assigned_at": "2026-06-25T16:45:42.204Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-dualstack-replay-authoring-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-dualstack-replay-authoring-20260625_20260625164542",
+        "worker_started_at": "2026-06-25T16:45:45.358Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new no-cloud replay carrier at replays/network-cni-azure-overlay-ilpip-dualstack.ts, grounded to the mounted ILPIP dual-stack source/spec/model boundary and verified it passes repo-local --check validation.",
+        "last_worker_completed_at": "2026-06-25T16:48:44.933Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:49:36.390Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: replays/network-cni-azure-overlay-ilpip-dualstack.ts now exists as the exact no-cloud dual-stack ILPIP replay carrier, stays anchored to the mounted source/spec/model boundary, and passed repo-local --check without widening into live-cloud execution or adjacent generic overlay/node-public-ip semantics."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-dualstack-replay-authoring-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-dualstack-replay-authoring-20260625"
+      ],
+      "result": "Authored the new no-cloud replay carrier at replays/network-cni-azure-overlay-ilpip-dualstack.ts, grounded to the mounted ILPIP dual-stack source/spec/model boundary and verified it passes repo-local --check validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:49:36.390Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: replays/network-cni-azure-overlay-ilpip-dualstack.ts now exists as the exact no-cloud dual-stack ILPIP replay carrier, stays anchored to the mounted source/spec/model boundary, and passed repo-local --check without widening into live-cloud execution or adjacent generic overlay/node-public-ip semantics."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-ilpip-base-replay-authoring-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the first exact repo-local replay carrier for path.network-cni-azure-overlay-ilpip by translating the accepted mounted-source/spec/model boundary into one branch-local no-cloud replay that covers only the base IPv4 Azure CNI overlay ILPIP carrier and does not widen into generic overlay, generic node-public-ip, or dual-stack semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/network-cni-azure-overlay-ilpip.ts"
+      ],
+      "acceptance": [
+        "A new exact replay file exists at replays/network-cni-azure-overlay-ilpip.ts and is scoped to the normalized base ILPIP branch: Azure CNI overlay, enableNodePublicIP=true, IPv4-only carrier, required post-create Windows pool step, and Linux/Windows IPv4 ILPIP egress expectations sourced from the accepted mounted-source/spec/model artifacts.",
+        "The replay authoring note or inline comments cite the exact source/spec/model anchors used, and the task does not introduce cloud execution, dual-stack assertions, or verdict inheritance from adjacent generic overlay or node-public-ip carriers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T16:43:18.916Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-ilpip-base-replay-authoring-20260625_20260625164322",
+        "assigned_at": "2026-06-25T16:43:22.388Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-ilpip-base-replay-authoring-20260625",
+        "worker_started_attempt_id": "a_network-cni-overlay-ilpip-base-replay-authoring-20260625_20260625164322",
+        "worker_started_at": "2026-06-25T16:43:46.480Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new no-cloud replay carrier at replays/network-cni-azure-overlay-ilpip.ts and verified it passes local check-mode validation against the mounted source, spec, and accepted model for the exact base IPv4 ILPIP branch.",
+        "last_worker_completed_at": "2026-06-25T16:45:37.446Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T16:46:15.658Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: replays/network-cni-azure-overlay-ilpip.ts exists as the exact base IPv4 Azure CNI overlay ILPIP no-cloud carrier, and local validation via 'cd /app/projects/aks-rp-e2e && bun run replays/network-cni-azure-overlay-ilpip.ts --check' passed all source/spec/model linkage assertions without widening into dual-stack or generic overlay semantics."
+      },
+      "session_id": "s_task_network-cni-overlay-ilpip-base-replay-authoring-20260625",
+      "session_history": [
+        "s_task_network-cni-overlay-ilpip-base-replay-authoring-20260625"
+      ],
+      "result": "Authored the new no-cloud replay carrier at replays/network-cni-azure-overlay-ilpip.ts and verified it passes local check-mode validation against the mounted source, spec, and accepted model for the exact base IPv4 ILPIP branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T16:46:15.658Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: replays/network-cni-azure-overlay-ilpip.ts exists as the exact base IPv4 Azure CNI overlay ILPIP no-cloud carrier, and local validation via 'cd /app/projects/aks-rp-e2e && bun run replays/network-cni-azure-overlay-ilpip.ts --check' passed all source/spec/model linkage assertions without widening into dual-stack or generic overlay semantics."
+      },
+      "status": "done"
+    }
+  ]
+}

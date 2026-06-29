@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:38:34.094Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog review confirmed vmpr-covered-asks-mounted-source-classification-20260622 is accepted: mounted AKS RP source narrows the covered external family to true later human/operator proof only, while the only remaining repo-local follow-up is vmpr-row76-model-landing-reconcile-20260622 to land path.virtualmachine-prerelease.row76-aksconformance-tunnel into accepted model/views and explicitly preserve the exact cp-<n> AKS_RP_E2E_ASSIGN_IDENTITY value as the sole remaining row-76 external residue. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single compressed external-human wait for later durable send/handoff/approval/reply/identity/registration/execution proof across the covered ask family; do not expand duplicate blocked leaves or invent new source/spec/model work beyond the bounded row-76 reconcile and any later tiny evidence repair justified by mounted-source readback.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-canonical-status-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining maintained-carrier mismatch for path.private-cluster-none-dns-zone-v3 by reconciling canonical model.json path status/finality with the regenerated unknown execution-ceiling view, so no maintained planning surface still marks the exact V3 contract as a final pass.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-canonical-status-repair-20260622.md"
+      ],
+      "acceptance": [
+        "The task cites the exact maintained carrier(s) still showing pass/final for path.private-cluster-none-dns-zone-v3 and confirms whether model/knowledge-map/model.json, generated views, or both are stale.",
+        "The repair updates the canonical repo-local carriers so planning-visible maintained surfaces consistently represent the exact mounted system→none lifecycle as below full-proof ceiling unless full same-cluster system→none execution evidence exists.",
+        "The archive artifact records the mismatch, exact file/command repair performed, and the post-repair status/finality shown by the maintained carriers, with no cloud mutation and no duplicate private-cluster blocker leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:34:34.520Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-canonical-status-repair-20260622_20260622133434",
+        "assigned_at": "2026-06-22T13:34:34.566Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-canonical-status-repair-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-canonical-status-repair-20260622_20260622133434",
+        "worker_started_at": "2026-06-22T13:35:11.538Z",
+        "reviewed_at": "2026-06-22T13:35:51.130Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Superseded by the now-proven private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622 repair: its archive artifact and regenerated maintained carriers now bound path.private-cluster-none-dns-zone-v3 at execution-ceiling unknown instead of pass/final, so this follow-on canonical-status leaf is duplicate stale active work rather than remaining domain work."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-canonical-status-repair-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-canonical-status-repair-20260622"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T13:35:51.130Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Superseded by the now-proven private-cluster-none-dns-zone-v3-exact-model-view-reconcile-20260622 repair: its archive artifact and regenerated maintained carriers now bound path.private-cluster-none-dns-zone-v3 at execution-ceiling unknown instead of pass/final, so this follow-on canonical-status leaf is duplicate stale active work rather than remaining domain work."
+      },
+      "status": "done"
+    }
+  ]
+}

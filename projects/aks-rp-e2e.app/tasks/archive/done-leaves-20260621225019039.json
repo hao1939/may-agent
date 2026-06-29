@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T22:50:19.039Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner rollup accepts the VM prerelease mounted-source cleanup through row 55: row 53 LocalDNS model/view consistency, the ManagedSystem combined source verdict packet, and the historical matrix repairs now preserve the exact carrier split where row 54 maps to virtualmachines-managedsystem-agentpool-vm-prerelease and row 55 preserves both standalone enable and adjacent REST request-shape carriers. The live repo-local frontier is intentionally narrow: finish the active wording/model-truth repair for features/virtualmachines-managedsystem-combined.yaml so maintained text matches the final unsupported combined PUT verdict, while keeping all human-side send/reply dependencies compressed to the single external human-transport family wait.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "vmpr-managedsystem-combined-source-verdict-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease source plus current repo-local verdict surfaces to write a source-backed packet for path.virtualmachines.managedsystem-combined, confirming the exact unsupported-input or rejection contract for VirtualMachines + ManagedSystem and what maintained model wording should preserve.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-managedsystem-combined-source-verdict-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP VirtualMachine prerelease suite/scenario or referenced plan surfaces that answer whether VirtualMachines + ManagedSystem is intentionally unsupported in api-version 2025-04-02-preview, using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, checkin.go, or directly referenced scenario definitions before relying on older blocker language.",
+        "Artifact maps the current path.virtualmachines.managedsystem-combined final verdict to the checked-in source/spec/evidence surfaces, states whether the current product-gap/product_constraint framing remains truthful, and records any precise repo-local wording or evidence gap without running cloud mutation.",
+        "Artifact ends with one concrete next bounded repo-local follow-up such as a model wording repair or explicit no-op confirmation, and does not reopen the external-human-transport wait or duplicate the active ManagedSystem adjacent-source packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:45:59.147Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T22:46:18.589Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621 because the original broad conflict scope evidence/archive unnecessarily serialized unrelated evidence-file work and prevented assignment during blocked-frontier refill."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T22:46:18.589Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621 because the original broad conflict scope evidence/archive unnecessarily serialized unrelated evidence-file work and prevented assignment during blocked-frontier refill."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease source plus current repo-local verdict surfaces to write a source-backed reconciliation packet for path.virtualmachines.managedsystem-combined, confirming the exact unsupported-input or rejection contract for VirtualMachines + ManagedSystem and whether the current final no-retest model wording should be tightened but not reopened for new execution planning.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-managedsystem-combined-source-verdict-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP VirtualMachine prerelease suite/scenario or referenced plan surfaces that answer whether VirtualMachines + ManagedSystem is intentionally unsupported in api-version 2025-04-02-preview, using /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and any directly referenced scenario definitions.",
+        "Artifact maps the current path.virtualmachines.managedsystem-combined final verdict to the checked-in source/spec/evidence surfaces, states whether the current product-gap/product_constraint framing remains truthful, and records any precise repo-local wording repair needed for the final model/retestCondition without proposing a fresh execution retry.",
+        "Artifact ends with one concrete next bounded repo-local follow-up such as a model wording repair or explicit no-op confirmation, and does not reopen the external-human-transport wait, does not duplicate the active ManagedSystem adjacent-source packet, and does not turn this final-verdict path into retry planning absent a new support signal."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vmpr-managedsystem-combined-source-verdict-packet-20260621.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:46:18.496Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621_20260621224618",
+        "assigned_at": "2026-06-21T22:46:18.543Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621",
+        "worker_started_attempt_id": "a_vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621_20260621224618",
+        "worker_started_at": "2026-06-21T22:46:44.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested source-backed verdict packet at evidence/archive/vmpr-managedsystem-combined-source-verdict-packet-20260621.md, tying the mounted VM prerelease source to the current repo-local unsupported-combination verdict for path.virtualmachines.managedsystem-combined without any cloud execution.",
+        "last_worker_completed_at": "2026-06-21T22:48:33.587Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:49:01.341Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-21 verdict packet cites mounted prerelease/checkin/mutator source plus accepted live 400 InvalidParameter evidence, proves the explicit caller PUT type=VirtualMachines + mode=ManagedSystem is still unsupported in 2025-04-02-preview, and narrows the remaining work to one repo-local wording repair without reopening execution."
+      },
+      "session_id": "s_task_vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621",
+      "session_history": [
+        "s_task_vmpr-managedsystem-combined-source-verdict-packet-scopefix-20260621"
+      ],
+      "result": "Created the requested source-backed verdict packet at evidence/archive/vmpr-managedsystem-combined-source-verdict-packet-20260621.md, tying the mounted VM prerelease source to the current repo-local unsupported-combination verdict for path.virtualmachines.managedsystem-combined without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:49:01.341Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-21 verdict packet cites mounted prerelease/checkin/mutator source plus accepted live 400 InvalidParameter evidence, proves the explicit caller PUT type=VirtualMachines + mode=ManagedSystem is still unsupported in 2025-04-02-preview, and narrows the remaining work to one repo-local wording repair without reopening execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-post-row53-managedsystem-adjacent-source-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the mounted AKS RP VirtualMachine prerelease source immediately after the active LocalDNS row-53 slice and write the next adjacent source packet for the ManagedSystem pool carriers so the frontier has one concrete repo-local follow-up once row 53 finishes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-post-row53-managedsystem-adjacent-source-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact adjacent scenario order from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go showing the post-LocalDNS ManagedSystem pool carriers (Scenario_ManagedSystem_AgentPool, Scenario_ManagedSystemPool_Enable, Scenario_ManagedSystemPool_Disable) and explains why they are the next truthful bounded frontier after row 53.",
+        "Artifact maps the immediate source/spec/replay/model surfaces already present for the ManagedSystem pool carriers, including any exact plan or scenario files that define accepted inputs, expected behavior, and obvious maintained-surface gaps, without running cloud execution.",
+        "Artifact ends with one concrete next bounded repo-local follow-up leaf for ManagedSystem pool maintained surfaces or coverage repair, and stays out of external-send waits, packet redrafting, and unrelated VM prerelease rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:44:48.778Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-post-row53-managedsystem-adjacent-source-packet-20260621_20260621224448",
+        "assigned_at": "2026-06-21T22:44:48.832Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-post-row53-managedsystem-adjacent-source-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-post-row53-managedsystem-adjacent-source-packet-20260621_20260621224448",
+        "worker_started_at": "2026-06-21T22:45:04.429Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested ManagedSystem adjacent-source packet at evidence/archive/vmpr-post-row53-managedsystem-adjacent-source-packet-20260621.md, proving the exact post-row53 suite order (rows 54-56), mapping the current row 54/55/56 source/spec/replay/model surfaces, and ending with one bounded repo-local follow-up leaf to repair the stale historical coverage matrix.",
+        "last_worker_completed_at": "2026-06-21T22:47:36.135Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:48:05.236Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the packet cites mounted checkin/prerelease order for rows 54-56, maps the current row-54/55/56 source/spec/replay/model carriers without cloud execution, and ends with one truthful bounded repo-local follow-up to repair the stale historical coverage matrix rather than reopening execution or the external wait."
+      },
+      "session_id": "s_task_vmpr-post-row53-managedsystem-adjacent-source-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-post-row53-managedsystem-adjacent-source-packet-20260621"
+      ],
+      "result": "Wrote the requested ManagedSystem adjacent-source packet at evidence/archive/vmpr-post-row53-managedsystem-adjacent-source-packet-20260621.md, proving the exact post-row53 suite order (rows 54-56), mapping the current row 54/55/56 source/spec/replay/model surfaces, and ending with one bounded repo-local follow-up leaf to repair the stale historical coverage matrix.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:48:05.236Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the packet cites mounted checkin/prerelease order for rows 54-56, maps the current row-54/55/56 source/spec/replay/model carriers without cloud execution, and ends with one truthful bounded repo-local follow-up to repair the stale historical coverage matrix rather than reopening execution or the external wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row53-localdns-model-view-consistency-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Verify and, if needed, minimally repair knowledge-map exposure for path.localdns.enable-disable-lifecycle so the row-53 VM prerelease LocalDNS enable/disable carrier is visibly attached in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json while preserving the generic base lifecycle mapping.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row53-localdns-model-view-consistency-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current checked-in path.localdns.enable-disable-lifecycle state plus the exact existing row-53 source/spec/replay surfaces and states whether a repair was needed.",
+        "If the maintained surfaces were missing the row-53 exact carrier, the task lands the smallest truthful repair so path.localdns.enable-disable-lifecycle visibly carries attachedSpecIds/replays/localdns-enable-disable-vm-prerelease.ts and row-53 specCoverage or equivalent lineage without replacing the canonical spec.localdns.lifecycle base mapping.",
+        "Repo-local validation succeeds for the touched maintained surfaces (for example bun run check or the narrower model/view validator), and the task does not expand into cloud execution, external asks, or unrelated VM prerelease rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:43:49.555Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row53-localdns-model-view-consistency-20260621_20260621224349",
+        "assigned_at": "2026-06-21T22:43:49.610Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row53-localdns-model-view-consistency-20260621",
+        "worker_started_attempt_id": "a_vmpr-row53-localdns-model-view-consistency-20260621_20260621224349",
+        "worker_started_at": "2026-06-21T22:44:12.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-53 LocalDNS maintained-surface visibility by attaching the VM prerelease exact carrier to path.localdns.enable-disable-lifecycle in model/knowledge-map/model.json, regenerated path-summary, and wrote a verification artifact under evidence/archive.",
+        "last_worker_completed_at": "2026-06-21T22:46:37.404Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:47:17.428Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via the archived verification artifact: it cites the mounted row-53 VirtualMachine LocalDNS source/spec/replay lineage, records the minimal maintained-surface repair on path.localdns.enable-disable-lifecycle, and reports successful repo-local validation (derived view regeneration plus replay check mode) without expanding scope."
+      },
+      "session_id": "s_task_vmpr-row53-localdns-model-view-consistency-20260621",
+      "session_history": [
+        "s_task_vmpr-row53-localdns-model-view-consistency-20260621"
+      ],
+      "result": "Repaired row-53 LocalDNS maintained-surface visibility by attaching the VM prerelease exact carrier to path.localdns.enable-disable-lifecycle in model/knowledge-map/model.json, regenerated path-summary, and wrote a verification artifact under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:47:17.428Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via the archived verification artifact: it cites the mounted row-53 VirtualMachine LocalDNS source/spec/replay lineage, records the minimal maintained-surface repair on path.localdns.enable-disable-lifecycle, and reports successful repo-local validation (derived view regeneration plus replay check mode) without expanding scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows54-55-mounted-coverage-matrix-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the stale historical VM-prerelease mounted-source coverage matrix rows 54-55 so it matches the accepted ManagedSystem carrier split: row 54 must point to the exact create-time VM+ManagedSystem carrier, and row 55 must preserve both the exact source-backed standalone enable carrier and the adjacent REST request-shape carrier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows54-55-mounted-coverage-matrix-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact updates evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260620.md with exact row-54 mappings to features/virtualmachines-managedsystem-agentpool-vm-prerelease.yaml, specs/virtualmachines-managedsystem-agentpool-vm-prerelease.json, replays/virtualmachines-managedsystem-agentpool-vm-prerelease.ts, and path.virtualmachines.managedsystem-agentpool-vm-prerelease, replacing the stale combined-only mapping.",
+        "Artifact updates the same matrix so row 55 explicitly preserves both the exact source-backed standalone enable carrier (path.managedsystem.standalone-e2ev3-enable.pass / replays/managedsystem-standalone-e2ev3-enable.ts) and the adjacent REST request-shape carrier, with citations to the already accepted 2026-06-21 row-55 repair evidence.",
+        "Artifact records the diff and rationale in a bounded repo-local proof note, stays out of cloud execution and external-send waits, and does not reopen row-56 terminal verdict work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260620.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T22:48:05.287Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows54-55-mounted-coverage-matrix-repair-20260621_20260621224835",
+        "assigned_at": "2026-06-21T22:48:35.440Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows54-55-mounted-coverage-matrix-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows54-55-mounted-coverage-matrix-repair-20260621_20260621224835",
+        "worker_started_at": "2026-06-21T22:48:36.608Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the stale historical VM prerelease coverage matrix rows 54-55 in evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260620.md and added a bounded proof note documenting the exact row-54 carrier, row-55 split, and rationale without touching row 56.",
+        "last_worker_completed_at": "2026-06-21T22:49:36.977Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T22:49:56.688Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the worker proof note documents the exact row-54 carrier repair to virtualmachines-managedsystem-agentpool-vm-prerelease, preserves row-55's split between standalone enable and adjacent REST request-shape carriers, and keeps row 56 untouched, satisfying the bounded repo-local matrix-repair acceptance."
+      },
+      "session_id": "s_task_vmpr-rows54-55-mounted-coverage-matrix-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-rows54-55-mounted-coverage-matrix-repair-20260621"
+      ],
+      "result": "Repaired the stale historical VM prerelease coverage matrix rows 54-55 in evidence/archive/vm-prerelease-mounted-source-coverage-matrix-20260620.md and added a bounded proof note documenting the exact row-54 carrier, row-55 split, and rationale without touching row 56.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T22:49:56.688Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the worker proof note documents the exact row-54 carrier repair to virtualmachines-managedsystem-agentpool-vm-prerelease, preserves row-55's split between standalone enable and adjacent REST request-shape carriers, and keeps row 56 untouched, satisfying the bounded repo-local matrix-repair acceptance."
+      },
+      "status": "done"
+    }
+  ]
+}

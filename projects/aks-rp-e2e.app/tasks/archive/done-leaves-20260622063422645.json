@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:34:22.645Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the rows56-60 mounted-source coverage matrix from evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md: row 56 is already canonically covered, rows 57-60 have exact repo-local carriers but remain adjacent under the current maintained-surface rule, and there are no missing carriers in that slice. The active repo-local work remains the bounded row-44 and row-51 maintained-model landing repairs. The next queued follow-up stays vmpr-rows57-59-sgx-canonical-landing-repair-20260622, which is intentionally backlog-only until the overlapping row-51 maintained-surface edits clear. The single external-human-transport family wait remains the only truthful blocked frontier item.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-rows56-60-source-coverage-matrix-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map VM prerelease rows 56-60 from the mounted AKS RP source into current repo-local spec/replay/model carriers, explicitly distinguishing exact coverage from adjacent-only evidence so the project has the next bounded repo-local slice queued after the active row-44 landing repair and rows51-55 matrix work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted-source VM prerelease suite definitions for rows 56-60, then maps each row to current repo-local spec/replay/model or accepted evidence carriers with exact file references and a truthful covered/adjacent/missing classification.",
+        "Artifact records accepted-input, rejected-input, expectation, adjacent-surface, and unknown-edge boundaries for rows 56-60 at a bounded matrix level, using already-accepted neighboring row decisions only as evidence references rather than reopening them.",
+        "Task stays repo-local and non-mutating: no human transport ask, no cloud execution, and no broadening beyond rows 56-60 except for exact carrier references needed to classify coverage and name the smallest truthful follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:30:09.361Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows56-60-source-coverage-matrix-20260622_20260622063027",
+        "assigned_at": "2026-06-22T06:30:27.056Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows56-60-source-coverage-matrix-20260622",
+        "worker_started_attempt_id": "a_vmpr-rows56-60-source-coverage-matrix-20260622_20260622063027",
+        "worker_started_at": "2026-06-22T06:30:27.328Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested repo-local audit artifact `evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md`, mapping mounted-source VM prerelease rows 56-60 to current feature/spec/replay/model carriers with covered/adjacent classifications and a single bounded next follow-up leaf.",
+        "last_worker_completed_at": "2026-06-22T06:32:44.887Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:33:15.722Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 after owner review of evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md: the artifact cites mounted AKS RP source anchors for rows 56-60, truthfully classifies row 56 as covered and rows 57-60 as adjacent under the canonical maintained-surface rule, records bounded input/expectation edges for each row, and identifies the smallest truthful repo-local follow-up as canonical landing repair for the shared SGX rows 57-59 paths."
+      },
+      "session_id": "s_task_vmpr-rows56-60-source-coverage-matrix-20260622",
+      "session_history": [
+        "s_task_vmpr-rows56-60-source-coverage-matrix-20260622"
+      ],
+      "result": "Created the requested repo-local audit artifact `evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md`, mapping mounted-source VM prerelease rows 56-60 to current feature/spec/replay/model carriers with covered/adjacent classifications and a single bounded next follow-up leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:33:15.722Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 after owner review of evidence/archive/vmpr-rows56-60-source-coverage-matrix-20260622.md: the artifact cites mounted AKS RP source anchors for rows 56-60, truthfully classifies row 56 as covered and rows 57-60 as adjacent under the canonical maintained-surface rule, records bounded input/expectation edges for each row, and identifies the smallest truthful repo-local follow-up as canonical landing repair for the shared SGX rows 57-59 paths."
+      },
+      "status": "done"
+    }
+  ]
+}

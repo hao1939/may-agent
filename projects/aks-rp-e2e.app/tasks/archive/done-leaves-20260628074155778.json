@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T07:41:55.778Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner pass accepts the shared LocalDNS VM-prerelease host-preflight verdict, preserves the two truthful open waits in this lane, and repairs the environment-overblock by introducing a concrete Azure-ready host-proof dispatch successor. Archived row-54/row-55 preparation and the shared host-preflight review together establish that the exact live carrier shapes are unchanged and repo-local design work is complete; current LocalDNS progress is blocked only on sending/handing off the Azure-ready host ask and then receiving durable selected-host proof, while App Routing existing-cluster remains a separate already-dispatched operator-response wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "establish-live-host-preflight-localdns-vm-prerelease-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Establish one shared live-host readiness verdict for the LocalDNS VM-prerelease family by checking whether a selected execution host has AKS_RP_E2E_SUBSCRIPTION_ID, working ARM auth/az, kubectl, and the exact mutation-gate launch shape needed to move row54 azurelinux and row55 enable-disable from repo-local readiness into bounded live execution, or archive the exact external wait/escalation if no eligible host is available.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/establish-live-host-preflight-localdns-vm-prerelease-family-20260628.md"
+      ],
+      "acceptance": [
+        "Archive captures the selected host context and exact command/output evidence for subscription/env presence, ARM auth or az fallback, kubectl availability, and the concrete launch shape needed for LocalDNS VM-prerelease live probes.",
+        "Archive ends with one truthful family disposition: ready host identified for row54 and/or row55 follow-up, or an exact external owner/wait condition that explains why no eligible host can currently run the already-validated carriers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-host:localdns-vm-prerelease-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:38:49.668Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_establish-live-host-preflight-localdns-vm-prerelease-family-20260628_20260628073849",
+        "assigned_at": "2026-06-28T07:38:49.717Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_establish-live-host-preflight-localdns-vm-prerelease-family-20260628",
+        "worker_started_attempt_id": "a_establish-live-host-preflight-localdns-vm-prerelease-family-20260628_20260628073849",
+        "worker_started_at": "2026-06-28T07:39:08.827Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a shared LocalDNS VM-prerelease family host-preflight verdict at evidence/archive/establish-live-host-preflight-localdns-vm-prerelease-family-20260628.md, concluding the current host is not Azure-ready for row 54 or row 55 and documenting the exact unchanged live launch shapes plus resume conditions.",
+        "last_worker_completed_at": "2026-06-28T07:40:04.499Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T07:40:52.976Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted shared host-preflight evidence: the exact row-54 and row-55 carriers and launch shapes are already established, but the checked launcher host lacks subscription env, az, ARM token proof, and kubectl, so this task truthfully resolves to one family-level external Azure-ready host wait rather than LocalDNS product verification progress."
+      },
+      "session_id": "s_task_establish-live-host-preflight-localdns-vm-prerelease-family-20260628",
+      "session_history": [
+        "s_task_establish-live-host-preflight-localdns-vm-prerelease-family-20260628"
+      ],
+      "result": "Archived a shared LocalDNS VM-prerelease family host-preflight verdict at evidence/archive/establish-live-host-preflight-localdns-vm-prerelease-family-20260628.md, concluding the current host is not Azure-ready for row 54 or row 55 and documenting the exact unchanged live launch shapes plus resume conditions.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T07:40:52.976Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted shared host-preflight evidence: the exact row-54 and row-55 carriers and launch shapes are already established, but the checked launcher host lacks subscription env, az, ARM token proof, and kubectl, so this task truthfully resolves to one family-level external Azure-ready host wait rather than LocalDNS product verification progress."
+      },
+      "status": "done"
+    }
+  ]
+}

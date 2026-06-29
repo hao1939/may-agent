@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T01:56:13.637Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 owner approval-state reconciliation and refill: serverless virtualnodes standard remains intentionally narrow. The approval-send proof leaf is accepted and archived as durable evidence that the bounded live-attempt ask was routed through the out-of-runtime path; the prior live-idle truth artifacts are also archived because their meaning is now captured here. Open work is now exactly (1) one active repo-local truth artifact to classify whether path.serverless-virtualnodes.standard is honestly approval-waiting versus missing an already-approved bounded live candidate after the proved send/handoff, and (2) one family-level blocked external wait covering the other already-routed approval/reply asks until returned durable proof or steering changes the escalation path. No sibling serverless expansion or cloud mutation is authorized from this branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture durable repo-local proof that the exact human approval ask for one bounded live verification attempt on spec.serverless-virtualnodes.standard / path.serverless-virtualnodes.standard has either already been sent through the correct out-of-runtime path or is now routed/escalated, without executing cloud mutation and without widening into sibling serverless surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact approval packet or equivalent request path for this bounded live attempt, including timestamp, sender/owner, external or handoff channel, intended recipient or escalation path, and exact linked packet path or bundle id, or proves that the ask was already routed with equivalent durable evidence.",
+        "If an authoritative reply already exists, the artifact classifies it precisely (approval, denial, redirect, or other blocker) and names the exact next leaf to create or resume; if no reply exists yet, the artifact captures the concrete local send/handoff/escalation proof needed so any later wait is truthful.",
+        "No cloud mutation, replay execution, sibling serverless expansion, or reopened mounted-source/spec/model closure occurs from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T01:47:54.137Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626_20260626014756",
+        "assigned_at": "2026-06-26T01:47:56.302Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626_20260626014756",
+        "worker_started_at": "2026-06-26T01:49:48.651Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured durable repo-local approval-send proof for the bounded VirtualNodes standard live-execution ask by authoring the exact approval packet and documenting its successful routing through the app approval-dispatch lane with runtime event IDs and ledger evidence.",
+        "last_worker_completed_at": "2026-06-26T01:54:38.310Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T01:54:58.309Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 review: the archive artifact proves the exact bounded VirtualNodes standard approval packet was authored and routed through the app approval-dispatch lane, with accepted runtime event rows 1955544/1955545/1955548 and an approval-dispatch ledger message.created row at 2026-06-26T01:53:50.536Z. This satisfies the required repo-local send/handoff proof without claiming any approval reply or cloud mutation."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-approval-send-or-escalation-proof-capture-20260626"
+      ],
+      "result": "Captured durable repo-local approval-send proof for the bounded VirtualNodes standard live-execution ask by authoring the exact approval packet and documenting its successful routing through the app approval-dispatch lane with runtime event IDs and ledger evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T01:54:58.309Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 review: the archive artifact proves the exact bounded VirtualNodes standard approval packet was authored and routed through the app approval-dispatch lane, with accepted runtime event rows 1955544/1955545/1955548 and an approval-dispatch ledger message.created row at 2026-06-26T01:53:50.536Z. This satisfies the required repo-local send/handoff proof without claiming any approval reply or cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

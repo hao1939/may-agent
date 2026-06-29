@@ -168,7 +168,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P3",
     description:
-      "Impact signal: blocked model paths should become unblock or human-decision tasks. Threshold 14→45, P2→P3: metric counts both terminal structural blocks (5) and transient WIP blocks from active staging batches (32 as of calibration). The spike 11→38 was caused by localdns ARM-auth failures (15 paths), storage-csi/net-integration replay body WIP (12 paths), and misc staging gating (5 paths). Threshold 45 accommodates normal staging wave volume; review when staging completes. Calibrated 2026-06-15.",
+      "Impact signal: repo-local path.status=blocked entries should become unblock or human-decision tasks. This metric intentionally excludes path.status=blocked-infra because structural terminal infra gates are tracked separately and should not breach the blocked-path counter. Threshold 14→45, P2→P3 reflects normal transient staging-wave blocked volume; review when blocked path volume alone exceeds that lane. Measurement contract clarified 2026-06-28.",
   },
   {
     id: "aks-rp-e2e.feature.unknown-count",

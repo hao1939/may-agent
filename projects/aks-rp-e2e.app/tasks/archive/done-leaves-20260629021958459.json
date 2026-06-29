@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T02:19:58.459Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-29 task-completed owner review accepts the mounted-source closure for path.virtualmachines.managedsystem-combined: exact mounted AKS RP source confirms only adjacent separate ManagedSystem and VirtualMachines carriers, not a same-pool explicit mode=ManagedSystem + type=VirtualMachines + virtualMachinesProfile caller contract. Archive that completed child because the semantic verdict is now preserved in accepted evidence, and refill capacity with one bounded active citation-hygiene successor to reconcile stale/missing spec/model evidence-file references without reopening the settled product boundary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "upgrade-vm-managedsystem-combined-mounted-source-closure-20260629",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source and existing repo-local carriers to close the exact repo-local truth gap for path.virtualmachines.managedsystem-combined: determine whether mounted VirtualMachine/ManagedSystem lineage contains any same-pool ManagedSystem+VirtualMachines scenario or whether source only provides adjacent separate coverage, then land a truthful source-backed linkage note and any bounded model/carrier follow-up needed by that result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/upgrade-vm-managedsystem-combined-mounted-source-closure-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence note cites the exact mounted suite/scenario/source references reviewed for VirtualMachine and ManagedSystem coverage and states whether any same-pool combined contract exists in mounted source or only adjacent separate scenarios do.",
+        "If mounted source disproves or sharpens the current repo-local understanding, the task records the exact bounded follow-up needed for model/spec/carrier maintenance; if not, it records why no further repo-local action is truthful."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:virtualmachines.managedsystem-combined"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T02:17:28.884Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_upgrade-vm-managedsystem-combined-mounted-source-closure-20260629_20260629021728",
+        "assigned_at": "2026-06-29T02:17:28.933Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_upgrade-vm-managedsystem-combined-mounted-source-closure-20260629",
+        "worker_started_attempt_id": "a_upgrade-vm-managedsystem-combined-mounted-source-closure-20260629_20260629021728",
+        "worker_started_at": "2026-06-29T02:18:01.445Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source closure note at evidence/archive/upgrade-vm-managedsystem-combined-mounted-source-closure-20260629.md, confirming mounted AKS RP source has only adjacent separate ManagedSystem/VirtualMachines coverage and no same-pool combined caller contract.",
+        "last_worker_completed_at": "2026-06-29T02:19:23.072Z",
+        "last_worker_evidence": [
+          "evidence/archive/upgrade-vm-managedsystem-combined-mounted-source-closure-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T02:19:58.301Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the mounted-source closure note as satisfying the task question: exact AKS RP source citations show only adjacent separate ManagedSystem and VirtualMachines carriers, no same-pool explicit mode=ManagedSystem + type=VirtualMachines + virtualMachinesProfile contract. The current product-constraint verdict for path.virtualmachines.managedsystem-combined remains truthful; only bounded citation-hygiene follow-up may remain."
+      },
+      "session_id": "s_task_upgrade-vm-managedsystem-combined-mounted-source-closure-20260629",
+      "session_history": [
+        "s_task_upgrade-vm-managedsystem-combined-mounted-source-closure-20260629"
+      ],
+      "result": "Produced the requested mounted-source closure note at evidence/archive/upgrade-vm-managedsystem-combined-mounted-source-closure-20260629.md, confirming mounted AKS RP source has only adjacent separate ManagedSystem/VirtualMachines coverage and no same-pool combined caller contract.",
+      "evidence": [
+        "evidence/archive/upgrade-vm-managedsystem-combined-mounted-source-closure-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T02:19:58.301Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the mounted-source closure note as satisfying the task question: exact AKS RP source citations show only adjacent separate ManagedSystem and VirtualMachines carriers, no same-pool explicit mode=ManagedSystem + type=VirtualMachines + virtualMachinesProfile contract. The current product-constraint verdict for path.virtualmachines.managedsystem-combined remains truthful; only bounded citation-hygiene follow-up may remain."
+      },
+      "status": "done"
+    }
+  ]
+}

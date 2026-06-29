@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:05:12.137Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner blocked-frontier reconciliation (2026-06-20): the project has no runnable or review backlog, and the only truthful live frontier is the repo-local blocked carrier shared-knowledge-map-seven-file-checkpoint-current-carrier-20260620 under evidence-feedback-and-model-update. Spec runner/replay work, user review workspace, and the VM prerelease feature-set replacement branch are now provenance-only at the root level; current project movement resumes only when the helper releases the shared project/model gate on model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json and those gate files no longer cohabit the maintained seven-file batch.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "spec-runner-and-replays",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "goal": "Turn specs into stable runnable replay scripts and runner flows, execute gated specs, and harden scripts until they run smoothly and diagnostically.",
+      "inputs": [
+        "specs/",
+        "suites/",
+        "replays/",
+        "runner/",
+        "runs/"
+      ],
+      "outputs": [
+        "replays/",
+        "suites/",
+        "runner/",
+        "runs/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Specs selected for execution have deterministic replay scripts or a clear implementation task.",
+        "Runner failures are classified and fixed before product conclusions are made.",
+        "Live staging execution only happens through explicit gates and records cleanup/result evidence."
+      ],
+      "forbidden": [
+        "Do not classify a product gap from a broken script or runner failure.",
+        "Do not run live staging mutation without an explicit satisfied gate."
+      ],
+      "updated_at": "2026-06-16T19:57:01.388921+00:00",
+      "children": [],
+      "context": {
+        "throughput_rule": "Keep smart execution-frontier selection active: one task chooses high-ROI existing specs/suites and creates/activates runner leaves; runner leaves execute through native spec-runner/suite machinery with precise conflict scopes.",
+        "user_steering_20260609_smart_execution": {
+          "ts": "2026-06-09T15:57:39.979Z",
+          "summary": "User steering: push the project toward real test execution and feedback, but do not bypass the project system. The project already supports plan/spec/suite execution; use those capabilities instead of building another runner or manually executing tests from outside the task engine.",
+          "principles": [
+            "Use existing bun run plan/spec/suite/generate capabilities as the execution substrate.",
+            "Tests are slow, so select high-ROI specs and amortize compatible specs into shared cluster lifecycles.",
+            "Run independent specs/suites in parallel only when conflict scopes, resource groups, feature flags, and cleanup scopes do not overlap.",
+            "Every real run must produce runs/executions artifacts, evidence/archive artifacts, diagnosis, cleanup state, and model/spec feedback.",
+            "Do not confuse dry-run/local check/runner resolution with real e2e verification."
+          ]
+        },
+        "archived_done_leaf_count": 1153,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620093151879.json",
+            "archived": 6,
+            "at": "2026-06-20T09:31:51.880Z",
+            "summary": "VM prerelease execution lane is completed provenance for this wake: row 34 now has both accepted execute-readiness evidence and a landed execute-capable replay implementation, with local validation showing execute mode reaches real mutation/credential gates instead of the former not-implemented ceiling. Archive the finished row 34 implementation/readiness leaves with the earlier rows 25-33 readiness slices; live forward motion for this project now sits in feature-knowledge/spec truth maintenance (row 34 prose refresh) and mounted-source lineage mapping for rows 57-61, while any future live row 34 mutation remains explicitly environment-gated.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-row31-32-autozone-execute-readiness-20260620",
+              "vm-prerelease-row31-32-autozone-readiness-retry-20260620",
+              "vm-prerelease-row27-30-mixedsku-draft-trio-execute-readiness-20260620",
+              "vm-prerelease-row33-accelerated-networking-execute-readiness-20260620",
+              "vm-prerelease-row34-vmas-vms-migration-slb-execute-readiness-20260620",
+              "vm-prerelease-row34-vmas-vms-migration-slb-live-replay-implementation-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620092839271.json",
+            "archived": 1,
+            "at": "2026-06-20T09:28:39.272Z",
+            "summary": "VM prerelease rows 25-33 execute-readiness work is now preserved as completed provenance only: the accepted row25-34 execute-candidate packet plus accepted readiness notes for rows 25-26, 27/29/30, 31-32, and row 33 together capture the mounted-source/spec/replay contracts, bounded plan/check evidence, and the exact future live execute envelopes for those families. Keep only row 34 as the live frontier in this lane; any remaining execution ceiling for the archived siblings is the already-shared westus2/local credential or runtime gate, not missing replay intent.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-row25-26-capacity-surge-execute-readiness-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620092443886.json",
+            "archived": 1,
+            "at": "2026-06-20T09:24:43.886Z",
+            "summary": "VM prerelease rows 25-33 execute-readiness work is now preserved as completed provenance only: the accepted row25-34 execute-candidate packet plus accepted readiness notes for rows 25-26, 27/29/30, 31-32, and row 33 together capture the mounted-source/spec/replay contracts, bounded plan/check evidence, and the exact future live execute envelopes for those families. Keep only row 34 as the live frontier in this lane; any remaining execution ceiling for the archived siblings is the already-shared environment-access blocker, not a new source/spec gap.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-draft-row25-34-execute-candidate-packet-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620091556404.json",
+            "archived": 1,
+            "at": "2026-06-20T09:15:56.404Z",
+            "summary": "Spec-runner/replays lane now keeps ManagedSystem create-time rerun contract as accepted completed provenance only: evidence/archive/managedsystem-create-time-initial-pool-rerun-contract-packet-20260620.md freezes the exact future rerun path for path.managedsystem.create-time-initial-pool, deferred runtime-closure-only assertions, exclusions for already-settled ManagedSystem surfaces, and the exact AKS RP fix resume trigger. No new replay leaf is needed from this completion; live forward motion in this lane remains the active VM prerelease rows 25-34 execute-candidate packet while the ManagedSystem rerun waits on a future external fix signal.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "managedsystem-create-time-initial-pool-rerun-contract-packet-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620090317282.json",
+            "archived": 22,
+            "at": "2026-06-20T09:03:17.282Z",
+            "summary": "Spec-runner and replays lane rollup: accepted bounded readiness/probe results are now represented in evidence/archive/, specs/, replays/, and model updates. Keep only live execution gates, blocked rerun waits, and active replay/model successors visible on the frontier.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
+              "vm-prerelease-virtual-node-addon-serverless-identity-gate-20260617",
+              "rp-nodepool-lifecycle-rollback-live-rerun-await-nonempty-history-20260617",
+              "app-routing-default-domain-tls-lifecycle-full-replay-rerun-gated-20260617",
+              "vm-prerelease-full-plan-live-execute-gated-20260618",
+              "draft-spec-readiness-vm-prerelease-source-blocked-wave-20260619",
+              "ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619",
+              "managedsystem-day2-count-type-westus2-local-execute-20260619",
+              "private-cluster-vnet-integration-update-westus2-local-execute-20260619",
+              "aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619",
+              "net-integration-cross-subscription-vnet-staging-prereq-blocked-20260619",
+              "planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-rerun-after-newer-image-20260619",
+              "cloud-provider-multiple-slb-westus2-local-unmarshalerror-blocked-20260619",
+              "machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619",
+              "network-cni-azure-overlay-dual-stack-row94-execute-surface-gated-20260619",
+              "westus2-local-az-aks-create-cli-crash-shared-blocker-20260619",
+              "kms-v2-private-kv-flag-family-rerun-gated-20260620",
+              "kms-v2-trusted-service-private-kv-flag-rerun-gated-20260620",
+              "managedsystem-create-time-rp-fix-rerun-gated-20260620",
+              "serverless-virtual-nodes-subnet-validation-rerun-gated-20260620",
+              "serverless-virtual-nodes-dns-resolution-external-from-aci-runtime-rerun-gated-20260620",
+              "blocked-environment-runtime-burndown-20260620"
+            ]
+          }
+        ],
+        "rollup_summary": "VM prerelease execution lane is completed provenance for this wake: row 34 now has both accepted execute-readiness evidence and a landed execute-capable replay implementation, with local validation showing execute mode reaches real mutation/credential gates instead of the former not-implemented ceiling. Archive the finished row 34 implementation/readiness leaves with the earlier rows 25-33 readiness slices; live forward motion for this project now sits in feature-knowledge/spec truth maintenance (row 34 prose refresh) and mounted-source lineage mapping for rows 57-61, while any future live row 34 mutation remains explicitly environment-gated."
+      },
+      "progress": {
+        "accepted": 26,
+        "blocked": 1,
+        "total": 48
+      },
+      "depends_on": [],
+      "archive_summary": "Replay pipeline. 203 subtasks completed over project lifetime.",
+      "archived": true,
+      "summary": "Replay pipeline established. 133 replay scripts created. Active execution moved to execution-and-verification.",
+      "state": "done",
+      "resolution": "completed",
+      "trace": {
+        "accepted_at": "2026-06-16T19:57:01.388921+00:00",
+        "accepted_by": "metric-alert-triage",
+        "acceptance_note": "All children accepted/done. Project wind-down.",
+        "rolled_up_at": "2026-06-20T09:31:51.880Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-feature-set-replacement-20260617",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the VirtualMachine pre-release pipeline by treating the pipeline as a feature-set source: extract all 232 original scenario rows into feature/spec/replay coverage, keep the broad selector healthy with bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt plus full-set dry-run smoke after each coverage wave, and feed failures or uncovered families back into the model.",
+      "inputs": [
+        "../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.json",
+        "../aks-rp-e2e/evidence/pipelines/e2ev2_virtualmachine.test_matrix.json",
+        "../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt",
+        "../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease-coverage.md"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-feature-set-replacement-20260617.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-broad-plan-dryrun-20260619.md"
+      ],
+      "acceptance": [
+        "Every original pipeline row has a clear disposition: explicit feature/spec/replay coverage, candidate needing source-link confirmation, terminal product/environment classification, or a concrete missing-spec/source-gap work item.",
+        "The feature-set config remains the only planning selector and the normal command is bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt, followed by the matching full-set dry-run execute smoke after each wave.",
+        "The branch is not considered complete until planned slices have been tried, broad selector smoke stays materializable, and failures are classified back into spec, replay, environment, product gap, or dependency-conflict updates."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "context": {
+        "pipelineRows": 232,
+        "strictCoveredRows": 111,
+        "candidateOnlyRows": 15,
+        "missingSpecRows": 106,
+        "principle": "pipeline is a feature set, not a custom runner or command",
+        "coverageCheckpoint": "../aks-rp-e2e/evidence/archive/vm-prerelease-broad-plan-dryrun-20260619.md",
+        "latestPlan": "runs/plans/plan_20260619070122743_gqh7z4.json",
+        "latestDryRun": "vm-prerelease-broad-plan-dryrun-20260619",
+        "latestDryRunSpecs": 63,
+        "latestDryRunClusters": 58,
+        "steering": "prefer independent family missing-spec closure waves over parked blocked source-holder/live-gate branches; keep up to 5 concurrent VM prerelease leaves",
+        "rollup_summary": "VM prerelease feature-set replacement is now completed provenance only. All remaining visible children under this branch were accepted source-unblock, bounded-source-equivalent, dry-run, or row-correction decisions whose durable meaning is already preserved on this parent and in the live feature-knowledge/spec lane summaries. No open work remains here; forward motion is now carried by current mounted-source and replay-planning work outside this historical branch.",
+        "archived_done_leaf_count": 148,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620091519579.json",
+            "archived": 14,
+            "at": "2026-06-20T09:15:19.579Z",
+            "summary": "VM prerelease feature-set replacement is now completed provenance only. All remaining visible children under this branch were accepted source-unblock, bounded-source-equivalent, dry-run, or row-correction decisions whose durable meaning is already preserved on this parent and in the live feature-knowledge/spec lane summaries. No open work remains here; forward motion is now carried by current mounted-source and replay-planning work outside this historical branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-addonv2-asm-lifecycle-exact-source-unblock-20260617",
+              "vm-prerelease-virtual-node-addon-source-unblock-20260617",
+              "vm-prerelease-policy-addon-handwritten-source-unblock-20260617",
+              "vm-prerelease-approuting-osm-external-exact-source-blocker-20260617",
+              "vm-prerelease-policy-addon-base-spec-implementation-20260617",
+              "vm-prerelease-policy-addon-base-replay-implementation-20260617",
+              "vm-prerelease-policy-addon-pubsub-spec-implementation-20260617",
+              "vm-prerelease-tlsbootstraptoken-upgrade-source-unblock-20260619",
+              "vm-prerelease-authoring-slice-checkpoint-reretry-after-typecheck-gates-20260619",
+              "vm-prerelease-authoring-slice-checkpoint-retry-after-typecheck-gate-20260619",
+              "vm-prerelease-shared-broad-plan-dryrun-ledger-settle-wait-20260619",
+              "vm-prerelease-addonv2-asm-row211-windows-negative-coverage-repair-20260620",
+              "vm-prerelease-addonv2-asm-row211-matrix-coverage-correction-20260620",
+              "vm-prerelease-addonv2-asm-row72-matrix-coverage-correction-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620091418481.json",
+            "archived": 1,
+            "at": "2026-06-20T09:14:18.481Z",
+            "summary": "VM prerelease feature-set replacement is now completed provenance only. All remaining visible children under this branch were accepted source-unblock, bounded-source-equivalent, dry-run, or row-correction decisions whose durable meaning is already preserved on this parent and in the live feature-knowledge/spec lane summaries. No open work remains here; forward motion is now carried by current mounted-source and replay-planning work outside this historical branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-addonv2-asm-functionality-bounded-source-equivalent-slice-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620091322006.json",
+            "archived": 1,
+            "at": "2026-06-20T09:13:22.006Z",
+            "summary": "VM prerelease feature-set replacement is now completed provenance only. All remaining visible children under this branch were accepted source-unblock, bounded-source-equivalent, dry-run, or row-correction decisions whose durable meaning is already preserved on this parent and in the live feature-knowledge/spec lane summaries. No open work remains here; forward motion is now carried by current mounted-source and replay-planning work outside this historical branch.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-addonv2-asm-cni-exact-source-unblock-20260617"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620090727701.json",
+            "archived": 1,
+            "at": "2026-06-20T09:07:27.702Z",
+            "summary": "VM prerelease feature-set replacement branch now serves as completed provenance only: all remaining visible children were accepted source-unblock, bounded-source, dry-run, or row-correction decisions whose durable meaning is already captured on this parent and on the live feature-spec lane summaries. No open work remains under this historical branch; current forward work continues in feature-knowledge-and-specs through the mounted-source ASM CNI import and its adjacent row-scoped successors.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-addonv2-asm-exact-source-unblock-20260617"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620082507637.json",
+            "archived": 1,
+            "at": "2026-06-20T08:25:07.638Z",
+            "summary": "VM prerelease ASM repair branch now has two accepted bounded correction decisions and one active repo-local application task. The accepted row-72 decomposition proves the shared ASM CNI matrix currently overstates coverage: row 72 must be demoted from covered ASM behavior to neutral pod-subnet+Cilium adjacent evidence only, while the backlog successor vm-prerelease-addonv2-asm-row72-matrix-coverage-correction-20260620 remains queued behind the active row-211 conflict. Shared functionality and broader exact-source waits remain blocked until authoritative ASM source semantics return.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-addonv2-asm-row72-cni-coverage-decomposition-repair-20260620"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-17T19:44:06.126Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T19:44:20.192Z",
+        "promoted_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T09:15:19.579Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "status": "done"
+    },
+    {
+      "id": "user-review-workspace",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "durable_lane",
+      "priority": "P1",
+      "children": [],
+      "goal": "Keep the project’s human-review and owner-handoff surfaces useful for inspecting feature intent, send-ready source-holder/external-gate packets, returned proof routing, and response-await coordination without reopening broad rediscovery or cloud execution from the review lane.",
+      "inputs": [],
+      "outputs": [
+        "ui/",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Human-facing review surfaces expose current project understanding.",
+        "Human feedback can be linked to the affected task or feature context."
+      ],
+      "forbidden": [],
+      "trace": {
+        "created_at": "2026-06-15T10:16:26.414Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-20T08:51:25.199Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "rollup_summary": "User-review workspace remains historical/human-facing rather than a live execution frontier. Outbound owner-send proof is unavailable in this runtime, passive response-await shapes were already repaired into active local successors elsewhere, and any remaining true external or returned-proof semantics now live in other branches instead of this lane. Archive these completed children so the visible tree keeps only active domain work and truthful blockers.",
+        "archived_done_leaf_count": 310,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260620085125197.json",
+            "archived": 36,
+            "at": "2026-06-20T08:51:25.199Z",
+            "summary": "User-review workspace remains historical/human-facing rather than a live execution frontier. Outbound owner-send proof is unavailable in this runtime, passive response-await shapes were already repaired into active local successors elsewhere, and any remaining true external or returned-proof semantics now live in other branches instead of this lane. Archive these completed children so the visible tree keeps only active domain work and truthful blockers.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-azure-keyvault-secrets-provider-source-holder-response-await-20260618",
+              "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
+              "vm-prerelease-autoscaling-handwritten-source-holder-response-await-20260619",
+              "vm-prerelease-uninstall-source-holder-response-await-20260619",
+              "vm-prerelease-fleet-handwritten-source-holder-response-await-20260619",
+              "vm-prerelease-tlsbootstraptoken-upgrade-source-holder-response-await-20260619",
+              "vm-prerelease-rawubuntu-egress-lockdown-source-holder-response-await-20260619",
+              "vm-prerelease-network-plugin-none-source-holder-response-await-20260619",
+              "vm-prerelease-row178-swift-cilium-source-holder-response-await-20260619",
+              "vm-prerelease-credential-provider-upgrade-source-holder-response-await-20260619",
+              "vm-prerelease-windows-gen2-source-holder-response-await-20260619",
+              "vm-prerelease-kms-v1v2-source-holder-response-await-20260619",
+              "vm-prerelease-missing-spec-source-holder-response-await-20260619",
+              "vm-prerelease-missing-spec-unpacketized-source-holder-response-await-20260619",
+              "vm-prerelease-row150-kubeproxyconfig-iptables-source-holder-response-await-20260619",
+              "kms-v2plus-managed-hsm-permission-response-await-20260619",
+              "vm-prerelease-identity-migration-source-holder-response-await-20260619",
+              "storage-csi-blob-pvc-dynamic-source-holder-response-await-20260619",
+              "serverless-virtual-nodes-missing-delegation-source-holder-response-await-20260619",
+              "westus2-local-az-aks-create-cli-crash-owner-response-await-20260620",
+              "trusted-access-dataplane-token-gateway-environment-response-await-20260620",
+              "vm-prerelease-accsgx-row57-59-source-holder-response-await-20260620",
+              "vm-prerelease-addon-umbrella-row60-61-source-holder-response-await-20260620",
+              "secops-identity-binding-removal-authoritative-source-response-await-20260620",
+              "westus2-local-baseline-create-canceled-owner-response-await-20260620",
+              "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+              "app-routing-vm-prerelease-row82-verdict-authority-consume-proof-20260620",
+              "app-routing-vm-prerelease-row83-default-internal-equivalence-consume-proof-20260620",
+              "app-routing-vm-prerelease-row84-request-verdict-lineage-consume-proof-20260620",
+              "app-routing-vm-prerelease-row89-internal-exposure-semantics-consume-proof-20260620",
+              "app-routing-vm-prerelease-row85-internal-exposure-semantics-consume-proof-20260620",
+              "go-e2ev3-devinfra-upstream-scenario-inventory-consume-proof-20260620",
+              "westus2-local-baseline-create-canceled-owner-routing-repair-20260620",
+              "westus2-local-baseline-create-canceled-send-proof-repair-20260620",
+              "kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620",
+              "kms-v2plus-managed-hsm-permission-owner-send-external-wait-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620084254469.json",
+            "archived": 1,
+            "at": "2026-06-20T08:42:54.469Z",
+            "summary": "User-review workspace remains a historical/human-facing lane, not a live execution frontier. All 37 visible children are completed branch history whose durable meaning is already captured by the lane summary: outbound owner-send proof is unavailable in this runtime, fake passive response-await shapes were repaired into active local successors elsewhere, and any remaining true external/returned-proof semantics now live in other branches instead of this lane. Archive these completed children to keep the frontier focused on the four active local burndown tasks plus the single waiting ASM successor.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "vm-prerelease-agic-overlay-source-holder-response-await-20260618"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620083842978.json",
+            "archived": 11,
+            "at": "2026-06-20T08:38:42.978Z",
+            "summary": "User-review workspace now reflects the human-steering repair: the App Monitoring row-63, CCP source-semantics, KMS feature-flag capability, and MachinesPreview send-handoff proof leaves were all accepted only as negative proof that this runtime lacks an outbound owner-delivery channel, so those branches no longer pretend to be passive reply-awaits or require more owner-routing notes. Managed HSM already established the same pattern earlier. Live project progress for those families has been moved out of user-review into the active local burndown branches, while row-scoped consume-proof waits and other genuine returned-proof/external-authority leaves remain represented elsewhere in the tree.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "app-monitoring-addonv2-azure-monitor-metrics-owner-routing-repair-20260620",
+              "app-monitoring-addonv2-azure-monitor-metrics-send-handoff-proof-20260620",
+              "ccp-connected-cluster-proxy-auth-source-owner-routing-repair-20260620",
+              "ccp-connected-cluster-proxy-auth-source-send-handoff-proof-20260620",
+              "kms-feature-flag-environment-capability-owner-routing-repair-20260620",
+              "kms-feature-flag-environment-capability-send-handoff-proof-20260620",
+              "machines-agentpool-api-crud-preview-feature-owner-routing-repair-20260620",
+              "machines-agentpool-api-crud-preview-feature-send-handoff-proof-20260620",
+              "user-review-send-ready-wave1-owner-handoff-proof-repair-20260620",
+              "user-review-send-ready-wave1-proof-gap-family-wait-20260620",
+              "user-review-external-owner-send-channel-limitation-family-wait-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620083107185.json",
+            "archived": 1,
+            "at": "2026-06-20T08:31:07.186Z",
+            "summary": "User-review workspace rollup: the earlier human-steering reference to user-review-send-ready-batch-owner-handoff-packet-20260620 is historical only and not a live leaf anymore; current live review work now distinguishes real owner-action from true response waits. Accepted owner-routing repair notes for KMS managed HSM and the shared wave-1 send-proof family remain preserved as branch history, while the Managed HSM permission branch is repaired into one concrete next leaf kms-v2plus-managed-hsm-permission-send-handoff-proof-20260620 plus the post-send wait kms-v2plus-managed-hsm-permission-response-await-20260619. Other row-scoped consume-proof waits stay blocked only behind their named shared family waits or returned proof artifacts, rather than reopening broad rediscovery.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "kms-v2plus-managed-hsm-permission-owner-routing-repair-20260620"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260620082456041.json",
+            "archived": 1,
+            "at": "2026-06-20T08:24:56.041Z",
+            "summary": "User-review workspace cleanup: the human-steering reference to user-review-send-ready-batch-owner-handoff-packet-20260620 is now conclusively historical, not a live leaf. The duplicate passive send-proof wait shapes are preserved only as archived branch history because planning replaced them with the active owner-action repair task user-review-send-ready-wave1-owner-handoff-proof-repair-20260620, which now carries the concrete proof/handoff work for the wave-1 family while row-scoped consume-proof and other external waits remain blocked only on their exact returned-proof or owner-disposition conditions.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "user-review-send-ready-batch-owner-send-proof-family-wait-20260620"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

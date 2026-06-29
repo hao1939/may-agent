@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:21:12.168Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner review: accepted the row-63 App Monitoring Azure Monitor Metrics bounded replay extension after durable evidence plus a passing non-mutating check confirmed the execute-gated readback/runtime-bundle contract. The live frontier now remains three repo-local authoring slices (ACNS Retina enterprise K8s upgrade exact carrier, private-cluster BYO DNS topology exact child landing, and VM prerelease row-41 secure-TLS canonical refresh), one waiting private-cluster Private Endpoint Connections exact-child follow-on gated only by the shared private-cluster-model-landing conflict, and one family-level external send-proof blocker for MachinesPreview plus VM prerelease operator handoff packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-coverage-seed-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular-learning lane: inventory the top uncovered private-cluster Go e2ev3 handwritten scenarios from mounted source against current repo-local feature/spec/replay/model coverage, then produce a durable source-backed packet that names the exact next non-cloud carrier/authoring slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-coverage-seed-20260620.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP source plus current repo-local artifacts to enumerate the concrete private-cluster handwritten scenarios/carriers in scope, cite the source files, and map each to current feature/spec/replay/model coverage status without guessing or running cloud work.",
+        "For at least one uncovered or partial private-cluster carrier, record the input path, expectation path, adjacent surfaces, and the smallest truthful repo-local next slice (or bounded evidence ceiling) needed to move the knowledge map forward.",
+        "Conclude with durable evidence stating whether this seed packet is sufficient to create one exact follow-on local authoring/replay/model task immediately, and name that next task precisely if yes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:10:55.657Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-coverage-seed-20260620_20260620211055",
+        "assigned_at": "2026-06-20T21:10:55.705Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-coverage-seed-20260620",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-coverage-seed-20260620_20260620211055",
+        "worker_started_at": "2026-06-20T21:11:13.462Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/private-cluster-mounted-source-coverage-seed-20260620.md`, a mounted-source-backed private-cluster carrier inventory that maps exact source files to current repo-local feature/spec/replay/model coverage and identifies one precise next local authoring task.",
+        "last_worker_completed_at": "2026-06-20T21:15:03.849Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:17:40.699Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source seed packet because evidence/archive/private-cluster-mounted-source-coverage-seed-20260620.md enumerates the exact 17 private-cluster handwritten carriers, maps each to current repo-local feature/spec/replay/model coverage, and names the concrete next local follow-on private-cluster-shared-apiserver-subnet-model-path-authoring-20260620 with bounded non-cloud model landing scope."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-coverage-seed-20260620",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-coverage-seed-20260620"
+      ],
+      "result": "Created `evidence/archive/private-cluster-mounted-source-coverage-seed-20260620.md`, a mounted-source-backed private-cluster carrier inventory that maps exact source files to current repo-local feature/spec/replay/model coverage and identifies one precise next local authoring task.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:17:40.699Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source seed packet because evidence/archive/private-cluster-mounted-source-coverage-seed-20260620.md enumerates the exact 17 private-cluster handwritten carriers, maps each to current repo-local feature/spec/replay/model coverage, and names the concrete next local follow-on private-cluster-shared-apiserver-subnet-model-path-authoring-20260620 with bounded non-cloud model landing scope."
+      },
+      "status": "done"
+    }
+  ]
+}

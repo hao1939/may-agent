@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T16:10:20.415Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Owner review 2026-06-23T16:xxZ accepted the ManagedSystem follow-up archive note as sufficient: the create-time initial-pool product-gap path and the explicit VirtualMachines+ManagedSystem combined rejection path already carry adequate source-backed statusReason/evidence linkage across maintained model/view/spec surfaces, so no repo-local patch or rerun was added. This branch now holds one truthful open item only: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single family-level external wait until returned human/operator proof arrives or the first blocked-frontier owner review after 2026-06-26.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "managedsystem-pool-boundary-map-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce a mounted-source-backed ManagedSystem pool boundary map that distinguishes the accepted VirtualMachines agentpool prerelease carrier from the rejected VirtualMachines+ManagedSystem combination and the create-time initial/default-pool product gap, and explicitly reconcile the existing terminal model verdicts as supported/rejected boundaries rather than fresh retry candidates, then land one durable archive note that records accepted inputs, rejected inputs, expected behavior, observed product behavior, adjacent surfaces, and missing probes without opening live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-boundary-map-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted authoritative carriers for the supported ManagedSystem agentpool branch and the rejected or terminal ManagedSystem combinations, including the row-54 prerelease source landing plus the existing terminal product-gap evidence for path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined.",
+        "The note explicitly maps accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the remaining unknown edges or probe gaps for ManagedSystem Pool as the first worked boundary example, makes clear that the model-terminal paths remain terminal unless a future API/version signal changes them, and does not claim fresh cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-boundary-mapping"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:03:52.770Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T16:04:01.678Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-boundary-map-20260623_20260623160422",
+        "assigned_at": "2026-06-23T16:04:22.261Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-boundary-map-20260623",
+        "worker_started_attempt_id": "a_managedsystem-pool-boundary-map-20260623_20260623160422",
+        "worker_started_at": "2026-06-23T16:05:36.736Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new durable archive note at evidence/archive/managedsystem-pool-boundary-map-20260623.md that distinguishes the accepted row-54 mounted-source VirtualMachines prerelease carrier from the rejected explicit VirtualMachines+ManagedSystem combination and the create-time initial/default-pool product gap, without opening live execution.",
+        "last_worker_completed_at": "2026-06-23T16:07:31.934Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:08:27.699Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-20260623.md cites the mounted row-54 carrier, separates it from the explicit VirtualMachines+ManagedSystem rejection and create-time initial/default-pool product gap, maps accepted/rejected inputs plus expected/observed behavior and remaining gaps, and keeps both terminal model paths closed absent a future API/version signal."
+      },
+      "session_id": "s_task_managedsystem-pool-boundary-map-20260623",
+      "session_history": [
+        "s_task_managedsystem-pool-boundary-map-20260623"
+      ],
+      "result": "Created a new durable archive note at evidence/archive/managedsystem-pool-boundary-map-20260623.md that distinguishes the accepted row-54 mounted-source VirtualMachines prerelease carrier from the rejected explicit VirtualMachines+ManagedSystem combination and the create-time initial/default-pool product gap, without opening live execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:08:27.699Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-pool-boundary-map-20260623.md cites the mounted row-54 carrier, separates it from the explicit VirtualMachines+ManagedSystem rejection and create-time initial/default-pool product gap, maps accepted/rejected inputs plus expected/observed behavior and remaining gaps, and keeps both terminal model paths closed absent a future API/version signal."
+      },
+      "status": "done"
+    },
+    {
+      "id": "managedsystem-pool-model-followup-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the ManagedSystem boundary note lands, reconcile the surviving ManagedSystem knowledge-map surface into one concrete model/spec follow-up by checking whether path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined already have sufficient source-backed statusReason/evidence linkage and, if not, preparing the bounded repo-local patch or archive delta needed to align the model and maintained views with the new boundary note without reopening execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-model-followup-20260623.md"
+      ],
+      "acceptance": [
+        "The task produces either a durable archive note describing why the current model/view linkage is already sufficient after the boundary map or a bounded patch plan that names the exact model/spec/view files needing repo-local updates, with source/evidence references tied back to the ManagedSystem boundary note.",
+        "The follow-up does not schedule or imply a live rerun; any next action remains repo-local unless a future source/API signal invalidates the terminal verdicts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-boundary-followup"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T16:07:01.011Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-pool-model-followup-20260623_20260623160731",
+        "assigned_at": "2026-06-23T16:07:31.415Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-pool-model-followup-20260623",
+        "worker_started_attempt_id": "a_managedsystem-pool-model-followup-20260623_20260623160731",
+        "worker_started_at": "2026-06-23T16:07:39.521Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/managedsystem-pool-model-followup-20260623.md`, concluding both ManagedSystem follow-up paths already have sufficient source-backed statusReason/evidence linkage and require no repo-local model/spec/view patch or rerun implication.",
+        "last_worker_completed_at": "2026-06-23T16:09:35.042Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T16:10:20.142Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-pool-model-followup-20260623.md reconciles both ManagedSystem follow-up paths against mounted source and maintained model/view/spec surfaces, shows path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined already have sufficient source-backed statusReason/evidence linkage, and truthfully lands no patch/no rerun."
+      },
+      "session_id": "s_task_managedsystem-pool-model-followup-20260623",
+      "session_history": [
+        "s_task_managedsystem-pool-model-followup-20260623"
+      ],
+      "result": "Produced `evidence/archive/managedsystem-pool-model-followup-20260623.md`, concluding both ManagedSystem follow-up paths already have sufficient source-backed statusReason/evidence linkage and require no repo-local model/spec/view patch or rerun implication.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T16:10:20.142Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-pool-model-followup-20260623.md reconciles both ManagedSystem follow-up paths against mounted source and maintained model/view/spec surfaces, shows path.managedsystem.create-time-initial-pool and path.virtualmachines.managedsystem-combined already have sufficient source-backed statusReason/evidence linkage, and truthfully lands no patch/no rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

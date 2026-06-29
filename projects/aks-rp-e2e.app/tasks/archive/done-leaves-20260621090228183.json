@@ -1,0 +1,310 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:02:28.183Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner heartbeat compacted stale root history after confirming the current live frontier is already explicit: addonv2-row63-stale-session-owner-repair-20260621 owns the local row-63 session/runtime repair decision, row76-shared-identity-authority-or-ask-packet-20260621 challenges the shared-identity blocker using mounted source before any passive wait, network-cni-overlay-dualstack-windows2025-http400-boundary-consumption-20260621 converts the accepted rerun into model knowledge, and vmpr-prerelease-mounted-source-coverage-plan-20260621 now fills spare capacity with bounded non-cloud VM prerelease coverage planning. Archived done children already have their durable meaning preserved in evidence and prior rollups; the only live blocked waits remain the consolidated external send-proof family and the row-76 rerun that resumes only after the authority-or-ask task resolves.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "azure-env-prereq-proof-capture-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture the exact repo-local proof surface and smallest owner-action contract for the current Azure execution prerequisites so the project does not leave Windows2025 overlay dual-stack or VM prerelease row-76 blocked as passive host-env waits without a concrete setup/handoff path. Reconcile the shared environment family across the subscription-id-gated Windows2025 replay and the shared-identity-gated VM prerelease row-76 replay, using mounted repo/env conventions only and without running cloud mutation; this task must inspect mounted AKS RP source and checked-in env contracts before any longer-lived external wait is preserved for the shared Azure prerequisite family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/azure-env-prereq-proof-capture-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact names the exact host prerequisites currently missing or already discoverable for the affected blocked live replays, including subscription-id and shared-identity variables, and cites the accepted blocked-run artifacts those prerequisites resume.",
+        "Artifact records the mounted-source and repo-local contract evidence inspected before any external wait is preserved, including the relevant VirtualMachine prerelease source entrypoints and any checked-in env/setup convention that can truthfully supply or explain AKS_RP_E2E_SUBSCRIPTION_ID, AZURE_SUBSCRIPTION_ID, or AKS_RP_E2E_ASSIGN_IDENTITY.",
+        "Artifact records the smallest truthful owner-action or handoff path that can supply each missing prerequisite (for example repo-local env source, staging contract, or external owner), states whether one family-level environment wait should replace or clarify the existing passive blocked leaves, and ends with concrete task-tree guidance to unblock, replace, or keep a single exact external wait with explicit resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:53:20.033Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_azure-env-prereq-proof-capture-20260621_20260621085320",
+        "assigned_at": "2026-06-21T08:53:20.080Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_azure-env-prereq-proof-capture-20260621",
+        "worker_started_attempt_id": "a_azure-env-prereq-proof-capture-20260621_20260621085320",
+        "worker_started_at": "2026-06-21T08:53:34.104Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured a durable Azure env prerequisite proof artifact at evidence/archive/azure-env-prereq-proof-capture-20260621.md showing Windows2025 is no longer a true external env wait because the host already has a readable staging subscription/account, while row-76 still truthfully waits on the exact shared identity resource id.",
+        "last_worker_completed_at": "2026-06-21T08:55:52.646Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:56:22.927Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review artifact at evidence/archive/azure-env-prereq-proof-capture-20260621.md. It credibly proves the Windows2025 subscription prerequisite is already locally derivable from the host az account and should become active env-bind+rereun work, while row-76 still truthfully waits on the exact AKS_RP_E2E_ASSIGN_IDENTITY resource id."
+      },
+      "session_id": "s_task_azure-env-prereq-proof-capture-20260621",
+      "session_history": [
+        "s_task_azure-env-prereq-proof-capture-20260621"
+      ],
+      "result": "Captured a durable Azure env prerequisite proof artifact at evidence/archive/azure-env-prereq-proof-capture-20260621.md showing Windows2025 is no longer a true external env wait because the host already has a readable staging subscription/account, while row-76 still truthfully waits on the exact shared identity resource id.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:56:22.927Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review artifact at evidence/archive/azure-env-prereq-proof-capture-20260621.md. It credibly proves the Windows2025 subscription prerequisite is already locally derivable from the host az account and should become active env-bind+rereun work, while row-76 still truthfully waits on the exact AKS_RP_E2E_ASSIGN_IDENTITY resource id."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-dualstack-windows2025-rerun-after-subscription-id-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the exact Windows2025 overlay dual-stack mutation-gated live verdict replay for path.network-cni-azure-overlay-dual-stack-windows2025 only after a working Azure subscription id is present on this host, so the accepted first live attempt's setup.auth environment blocker can advance to the first trustworthy datapath runtime verdict without changing replay scope, assertion contract, or run surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-windows2025-rerun-after-subscription-id-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records which subscription-id source became available (AKS_RP_E2E_SUBSCRIPTION_ID or AZURE_SUBSCRIPTION_ID), cites the accepted 2026-06-21 blocked first live attempt as the resume boundary, and reuses the same replay/spec/path and mutation-gate contract.",
+        "Artifact captures the first truthful terminal outcome of the resumed live rerun: either verdict-bearing agnhost plus IPv4/IPv6 pod-to-pod, pod-to-service, SNAT, host-port, and post-restart evidence for the exact Windows2025 overlay dual-stack sibling, or the next exact blocker/failure boundary with no invented coverage claims.",
+        "Task remains blocked until a working subscription id is available on this host; it must not broaden into non-Windows2025 variants, alternative datapath scopes, or unrelated environment diagnosis beyond the exact auth prerequisite."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:50:57.381Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T08:56:22.828Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by active local env-bind-and-rerun successor because evidence/archive/azure-env-prereq-proof-capture-20260621.md proves the host already has a readable staging Azure account and known subscription id 26fe00f8-9173-4872-9134-bb1d2e00343a; the truthful next step is exporting that known value into AKS_RP_E2E_SUBSCRIPTION_ID or AZURE_SUBSCRIPTION_ID and rerunning, not waiting on a passive environment blocker."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T08:56:22.828Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by active local env-bind-and-rerun successor because evidence/archive/azure-env-prereq-proof-capture-20260621.md proves the host already has a readable staging Azure account and known subscription id 26fe00f8-9173-4872-9134-bb1d2e00343a; the truthful next step is exporting that known value into AKS_RP_E2E_SUBSCRIPTION_ID or AZURE_SUBSCRIPTION_ID and rerunning, not waiting on a passive environment blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row150-kube-proxy-rerun-after-rg-delete-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the exact row-150 VM/shared-identity kube-proxy custom-config replay for path.network-datapath.kube-proxy-custom-config.vm-prerelease only after Azure has fully removed resource group row150-kp-20260621, so the accepted parser-repair path can advance past the transient HTTP 409 Deleting residue to its first trustworthy post-repair product/runtime verdict without changing the carrier, mutation gate, or replay contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row150-kube-proxy-rerun-after-rg-delete-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records a pre-rerun environment check proving row150-kp-20260621 is no longer present or no longer in provisioningState=Deleting, cites the exact replay/spec/path/mutation-gate contract reused, and explicitly links the accepted 2026-06-21 HTTP 409 blocker artifact it resumes from.",
+        "Artifact captures the first truthful terminal outcome of the resumed live rerun: either a post-parser-repair product/runtime verdict for kube-proxy flag convergence plus routing-proof service behavior, or the next exact blocker/failure boundary with command/output evidence that supersedes the deleted-resource-group wait.",
+        "Task remains blocked until Azure deletion residue clears for row150-kp-20260621; it must not broaden into parser redesign, carrier changes, or unrelated environment diagnosis unless the rerun reaches a new bounded failure surface."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:40:25.746Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T08:43:58.338Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the accepted reconciliation result: local durable authority for the 2026-06-21 post-parser-repair row-150 rerun is the pass bundle and matching owner-facing markdown, so the rerun-after-RG-delete blocker is stale and should no longer represent this path."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T08:43:58.338Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the accepted reconciliation result: local durable authority for the 2026-06-21 post-parser-repair row-150 rerun is the pass bundle and matching owner-facing markdown, so the rerun-after-RG-delete blocker is stale and should no longer represent this path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the contradictory durable row-150 kube-proxy post-parser-repair verdict record so the project has one truthful authority for the 2026-06-21 rerun before any further row-150 planning: compare the accepted task-tree review/blocker successor against the current evidence bundle and fix the smallest incorrect artifact/task state without rerunning cloud execution unless local authorities are genuinely insufficient.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact conflicting authorities for the same 2026-06-21 rerun: the current owner-facing markdown at evidence/archive/vmpr-row150-kube-proxy-live-rerun-post-parser-repair-20260621.md, the corresponding replay evidence bundle for that run id, and the task-tree done/blocker task records, then determines which source truthfully reflects the run outcome.",
+        "Artifact corrects durable project state at the smallest truthful scope: either preserve the Azure RG-deleting blocker with exact evidence and repair any stale pass artifact/summary, or retire the blocked successor as replaced and state the exact accepted live-pass/model follow-up if the local evidence bundle proves the rerun actually passed.",
+        "Artifact records the exact next tree action and any files/task ids corrected, and does not broaden into new live execution or unrelated diagnosis unless the local bundle cannot decide the contradiction."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:41:56.223Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621_20260621084156",
+        "assigned_at": "2026-06-21T08:41:56.271Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621_20260621084156",
+        "worker_started_at": "2026-06-21T08:42:13.448Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a reconciliation artifact proving the row-150 post-parser-repair rerun’s local durable authority is the pass evidence bundle, and identified the task-tree blocker/successor as the smallest incorrect state requiring owner repair.",
+        "last_worker_completed_at": "2026-06-21T08:43:36.729Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:43:58.290Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the new reconciliation artifact cites the exact contradictory authorities and shows the structured run bundle plus owner-facing markdown for vmpr-row150-kube-proxy-live-rerun-post-parser-repair-20260621 consistently prove a terminal pass, while the RG-deleting blocker story has no matching durable run artifact. This review is therefore complete and establishes that the tree, not the replay evidence, needs the smallest truthful repair before any further row-150 planning."
+      },
+      "session_id": "s_task_vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-row150-kube-proxy-verdict-artifact-reconciliation-20260621"
+      ],
+      "result": "Wrote a reconciliation artifact proving the row-150 post-parser-repair rerun’s local durable authority is the pass evidence bundle, and identified the task-tree blocker/successor as the smallest incorrect state requiring owner repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:43:58.290Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the new reconciliation artifact cites the exact contradictory authorities and shows the structured run bundle plus owner-facing markdown for vmpr-row150-kube-proxy-live-rerun-post-parser-repair-20260621 consistently prove a terminal pass, while the RG-deleting blocker story has no matching durable run artifact. This review is therefore complete and establishes that the tree, not the replay evidence, needs the smallest truthful repair before any further row-150 planning."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row76-aksconformance-tunnel-execute-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded execute path in replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts so path.virtualmachine-prerelease.row76-aksconformance-tunnel can advance from check-only/source-grounded coverage to a first truthful live-verdict-ready replay while preserving the exact mounted-source contract: create the unchanged VirtualMachines/shared-identity cluster, acquire admin kubeconfig, and validate only kubectl logs, kubectl exec, and kubectl port-forward tunnel behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row76-aksconformance-tunnel-execute-implementation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact replay file and any tiny helper changes, shows the implementation stays pinned to the mounted row-76 carrier and preserves the admin-kubeconfig plus logs/exec/port-forward-only verdict surface, and proves the replay still passes its bounded local validation/check flow after the edits.",
+        "Artifact shows --execute no longer terminates in the shared source-spec-check-only stub and instead reaches the truthful row-76 lifecycle surface: ARM preflight, resource-group create, unchanged VirtualMachines/shared-identity cluster create, admin kubeconfig acquisition, and bounded logs/exec/port-forward validation with the exact source-grounded success markers.",
+        "Artifact ends with the exact next evidence target for the first live row-76 verdict rerun, or the smallest remaining local implementation/runtime blocker if a gated execute smoke still cannot truthfully reach those assertion surfaces."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:36:14.220Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row76-aksconformance-tunnel-execute-implementation-20260621_20260621083614",
+        "assigned_at": "2026-06-21T08:36:14.268Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row76-aksconformance-tunnel-execute-implementation-20260621",
+        "worker_started_attempt_id": "a_vmpr-row76-aksconformance-tunnel-execute-implementation-20260621_20260621083614",
+        "worker_started_at": "2026-06-21T08:36:21.942Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented a real bounded execute path for row-76 in replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts and wrote evidence/archive/vmpr-row76-aksconformance-tunnel-execute-implementation-20260621.md documenting the preserved contract, local check pass, and execute-smoke blocker for missing shared identity.",
+        "last_worker_completed_at": "2026-06-21T08:40:03.392Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:40:42.289Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the artifact at evidence/archive/vmpr-row76-aksconformance-tunnel-execute-implementation-20260621.md shows replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts now owns a real bounded --execute path, preserves the exact mounted row-76 VirtualMachines/shared-identity plus admin-kubeconfig/logs/exec/port-forward contract, passes local --check, and truthfully reaches replay-owned execute mode where the only remaining blocker is supplying AKS_RP_E2E_ASSIGN_IDENTITY for a live rerun."
+      },
+      "session_id": "s_task_vmpr-row76-aksconformance-tunnel-execute-implementation-20260621",
+      "session_history": [
+        "s_task_vmpr-row76-aksconformance-tunnel-execute-implementation-20260621"
+      ],
+      "result": "Implemented a real bounded execute path for row-76 in replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts and wrote evidence/archive/vmpr-row76-aksconformance-tunnel-execute-implementation-20260621.md documenting the preserved contract, local check pass, and execute-smoke blocker for missing shared identity.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:40:42.289Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the artifact at evidence/archive/vmpr-row76-aksconformance-tunnel-execute-implementation-20260621.md shows replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts now owns a real bounded --execute path, preserves the exact mounted row-76 VirtualMachines/shared-identity plus admin-kubeconfig/logs/exec/port-forward contract, passes local --check, and truthfully reaches replay-owned execute mode where the only remaining blocker is supplying AKS_RP_E2E_ASSIGN_IDENTITY for a live rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row76-aksconformance-tunnel-live-rerun-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the first bounded live verdict attempt for path.virtualmachine-prerelease.row76-aksconformance-tunnel now that replays/virtualmachine-prerelease-row76-aksconformance-tunnel.ts has a real execute path, preserving the exact VirtualMachines/shared-identity/admin-kubeconfig tunnel contract so the feature can collect its first truthful runtime verdict or the next exact blocker beyond local execute implementation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row76-aksconformance-tunnel-live-rerun-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the exact replay/spec/path linkage, mounted-source row-76 contract, required mutation gate, required AKS_RP_E2E_ASSIGN_IDENTITY prerequisite, and exact live command used before execution.",
+        "Artifact records the first truthful terminal live outcome from the row-76 rerun: either bounded logs/exec/port-forward verdict evidence after admin kubeconfig acquisition on the unchanged VirtualMachines/shared-identity carrier, or the exact new blocker/failure boundary with command/output evidence that supersedes the prior no-identity execute smoke.",
+        "Artifact explicitly states how this live rerun resumes from the accepted execute-implementation slice and names the smallest remaining next action only if a new bounded boundary remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:40:42.335Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row76-aksconformance-tunnel-live-rerun-20260621_20260621084042",
+        "assigned_at": "2026-06-21T08:40:42.382Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row76-aksconformance-tunnel-live-rerun-20260621",
+        "worker_started_attempt_id": "a_vmpr-row76-aksconformance-tunnel-live-rerun-20260621_20260621084042",
+        "worker_started_at": "2026-06-21T08:41:07.661Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded row-76 live rerun attempt, executed the gated replay command, and wrote a durable artifact showing the truthful terminal boundary remains the missing AKS_RP_E2E_ASSIGN_IDENTITY prerequisite on the exact VirtualMachines/shared-identity/admin-kubeconfig carrier.",
+        "last_worker_completed_at": "2026-06-21T08:42:15.250Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:42:43.874Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row76-aksconformance-tunnel-live-rerun-20260621.md records the first bounded live rerun against the implemented row-76 execute path and truthfully ends at the exact preserved AKS_RP_E2E_ASSIGN_IDENTITY prerequisite with no cloud mutation performed."
+      },
+      "session_id": "s_task_vmpr-row76-aksconformance-tunnel-live-rerun-20260621",
+      "session_history": [
+        "s_task_vmpr-row76-aksconformance-tunnel-live-rerun-20260621"
+      ],
+      "result": "Completed the bounded row-76 live rerun attempt, executed the gated replay command, and wrote a durable artifact showing the truthful terminal boundary remains the missing AKS_RP_E2E_ASSIGN_IDENTITY prerequisite on the exact VirtualMachines/shared-identity/admin-kubeconfig carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:42:43.874Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row76-aksconformance-tunnel-live-rerun-20260621.md records the first bounded live rerun against the implemented row-76 execute path and truthfully ends at the exact preserved AKS_RP_E2E_ASSIGN_IDENTITY prerequisite with no cloud mutation performed."
+      },
+      "status": "done"
+    }
+  ]
+}

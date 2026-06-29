@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T03:53:43.552Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update after stale watchdog review validation: preserve the accepted row-205 closure and do not reopen a duplicate review lane. The live frontier remains intentionally narrow and unchanged in meaning: continue privatecluster-land-lifecycle-branch-bounded-json-append-20260622 as the private-cluster bounded model-append lane, continue vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622 as the next VM prerelease selector/full-plan refresh lane now that row 205 is accepted, and preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful family-level external-human wait. Archive older VM prerelease closure/refresh repair leaves whose durable meaning is now captured by this rollup and linked evidence.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "vmpr-refresh-feature-selector-and-full-plan-after-row-closure-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After every remaining VirtualMachine prerelease non-covered row is closed by an accepted artifact or explicit accepted keep-open reason, refresh ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt from the final ledger and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt to generate the full replacement plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-refresh-feature-selector-and-full-plan-after-row-closure-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact records the final closed-row inventory and the exact commands used to regenerate evidence/pipelines/virtualmachine-prerelease.features.txt and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+        "Updated feature selector file is durable in ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt and reflects the final accepted row dispositions rather than stale candidate-only/missing-spec rows.",
+        "Plan output is archived with enough evidence to show whether the full replacement pipeline is ready, and the task does not claim readiness until every non-covered row is closed or has an explicit accepted keep-open reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-plan-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:25:21.591Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T03:48:30.721Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced stale blocked dependency wait after 2026-06-22 owner review confirmed vmpr-sync-row104-coverage-markdown-rollup-20260622 is already accepted. The only live prerequisite is now the active row-205 Windows password-reset carrier leaf, so the old blocker wording was misleading and is superseded by backlog successor vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-22T03:48:30.721Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced stale blocked dependency wait after 2026-06-22 owner review confirmed vmpr-sync-row104-coverage-markdown-rollup-20260622 is already accepted. The only live prerequisite is now the active row-205 Windows password-reset carrier leaf, so the old blocker wording was misleading and is superseded by backlog successor vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the remaining VirtualMachine prerelease non-covered row 205 is closed by an accepted dedicated Windows password-reset / credential-validation artifact, refresh ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt from the final ledger and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt to generate the full replacement plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-refresh-feature-selector-and-full-plan-after-row-closure-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact records the final closed-row inventory and the exact commands used to regenerate evidence/pipelines/virtualmachine-prerelease.features.txt and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+        "Updated feature selector file is durable in ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt and reflects the final accepted row dispositions rather than stale candidate-only/missing-spec rows.",
+        "Plan output is archived with enough evidence to show whether the full replacement pipeline is ready, and the task does not claim readiness until the remaining non-covered row is closed or has an explicit accepted keep-open reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-plan-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:48:30.673Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T03:48:30.867Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-22T03:48:56.742Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622",
+        "worker_started_attempt_id": "a_vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622_20260622034856",
+        "worker_started_at": "2026-06-22T03:48:57.682Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Moved out of active during blocked-frontier owner review because its own goal is explicitly gated on accepted closure of row 205. Keeping it blocked makes the frontier truthful while vmpr-author-windows-password-reset-carrier-row205-20260622 remains the sole live prerequisite.",
+        "last_worker_completed_at": "2026-06-22T03:49:24.968Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-22T03:50:03.550Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner correction: this was not a worker result to review. The leaf is a dependency-gated successor and should not sit in review; keep its blocker text as the truthful resume condition until row 205 is accepted.",
+        "review_reject_fresh_session": false,
+        "previous_attempt_id": "a_vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622_20260622034856",
+        "reviewed_at": "2026-06-22T03:50:18.228Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during blocked-frontier owner review because the original refresh successor was prematurely activated and then fell back to runnable backlog even though its goal explicitly depends on accepted closure of row 205. Superseded by a blocked wait carrier with the exact row-205 resume condition so the frontier stays truthful."
+      },
+      "session_id": "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622",
+      "session_history": [
+        "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-closure-20260622"
+      ],
+      "result": "Moved out of active during blocked-frontier owner review because its own goal is explicitly gated on accepted closure of row 205. Keeping it blocked makes the frontier truthful while vmpr-author-windows-password-reset-carrier-row205-20260622 remains the sole live prerequisite.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T03:50:18.228Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during blocked-frontier owner review because the original refresh successor was prematurely activated and then fell back to runnable backlog even though its goal explicitly depends on accepted closure of row 205. Superseded by a blocked wait carrier with the exact row-205 resume condition so the frontier stays truthful."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-refresh-feature-selector-and-full-plan-wait-row205-acceptance-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After vmpr-author-windows-password-reset-carrier-row205-20260622 is accepted and row 205 has an accepted dedicated Windows password-reset / credential-validation carrier plus maintained coverage linkage, refresh ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt from the final ledger and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt to generate the full replacement plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-refresh-feature-selector-and-full-plan-after-row-closure-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact records the final closed-row inventory and the exact commands used to regenerate evidence/pipelines/virtualmachine-prerelease.features.txt and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+        "Updated feature selector file is durable in ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt and reflects the final accepted row dispositions rather than stale candidate-only/missing-spec rows.",
+        "Plan output is archived with enough evidence to show whether the full replacement pipeline is ready, and the task does not claim readiness until the remaining non-covered row is closed or has an explicit accepted keep-open reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-plan-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:50:18.275Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T03:50:25.157Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during owner blocked-frontier repair because this successor is dependency-gated, not a true blocker. The blocked form triggered misleading environment-overblock hygiene, so it is superseded by a dependency-linked backlog leaf that wakes automatically after row 205 acceptance."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-22T03:50:25.157Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during owner blocked-frontier repair because this successor is dependency-gated, not a true blocker. The blocked form triggered misleading environment-overblock hygiene, so it is superseded by a dependency-linked backlog leaf that wakes automatically after row 205 acceptance."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-repair-network-row-ledger-118-178-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the VM prerelease coverage ledger so rows 118 Scenario_Cilium_Dataplane_Podsubnet_Enterprise and 178 Scenario_Swift_CNI_VNetScale_Cilium stop reporting generic missing-spec and instead point at their exact adjacent repo-local carriers while preserving the still-open VirtualMachines/shared-identity substrate proof gap: row 118 -> spec.network-cni.cilium-enterprise-addon-lifecycle / replay network-cni-cilium-enterprise-addon-lifecycle / path.network-cni-cilium-enterprise-addon-lifecycle; row 178 -> spec.network-swift-v1.vnetscale-static-block-cilium / replay network-swift-v1-vnetscale-static-block-cilium / path.network-swift-v1-vnetscale-static-block-cilium.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-repair-network-row-ledger-118-178-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted 2026-06-22 network-family closure packet plus the exact files/rows changed in evidence/pipelines/virtualmachine-prerelease-coverage.{json,md} or equivalent maintained ledger surfaces.",
+        "Row 118 no longer reports generic missing-spec and instead links to the exact cilium enterprise adjacent carrier while explicitly preserving the row-exact VirtualMachines/shared-identity proof gap as non-strict.",
+        "Row 178 no longer reports generic missing-spec and instead links to the exact Swift VNetScale StaticBlock+Cilium adjacent carrier while explicitly preserving the row-exact VirtualMachines/shared-identity proof gap as non-strict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-ledger"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:27:09.963Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T03:34:09.098Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-repair-network-row-ledger-118-178-20260622_20260622033741",
+        "assigned_at": "2026-06-22T03:37:41.677Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-repair-network-row-ledger-118-178-20260622",
+        "worker_started_attempt_id": "a_vmpr-repair-network-row-ledger-118-178-20260622_20260622033741",
+        "worker_started_at": "2026-06-22T03:38:06.941Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Investigated the assigned row-118/178 ledger repair and found the task stale against current maintained surfaces. Wrote an audit artifact showing row 118 is already on an exact VM-prerelease carrier and row 178 is already marked covered through the requested sibling, so applying the requested non-strict repair would regress truthfulness.",
+        "last_worker_completed_at": "2026-06-22T03:41:44.720Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:42:22.551Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review as a decomposition repair: the archived audit proves the requested 118/178 non-strict ledger repair is stale against current maintained surfaces, with row 178 already covered on the requested sibling and row 118 already attached to a more exact VM-prerelease carrier. Replaced the stale repair ask with successor leaf vmpr-reconcile-row118-authority-and-network-packet-20260622 to decide row-118 authority and reconcile any stale packet/blocker language without regressing truth."
+      },
+      "session_id": "s_task_vmpr-repair-network-row-ledger-118-178-20260622",
+      "session_history": [
+        "s_task_vmpr-repair-network-row-ledger-118-178-20260622"
+      ],
+      "result": "Investigated the assigned row-118/178 ledger repair and found the task stale against current maintained surfaces. Wrote an audit artifact showing row 118 is already on an exact VM-prerelease carrier and row 178 is already marked covered through the requested sibling, so applying the requested non-strict repair would regress truthfulness.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:42:22.551Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review as a decomposition repair: the archived audit proves the requested 118/178 non-strict ledger repair is stale against current maintained surfaces, with row 178 already covered on the requested sibling and row 118 already attached to a more exact VM-prerelease carrier. Replaced the stale repair ask with successor leaf vmpr-reconcile-row118-authority-and-network-packet-20260622 to decide row-118 authority and reconcile any stale packet/blocker language without regressing truth."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-sync-row104-coverage-markdown-rollup-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regenerate or patch the maintained VM prerelease markdown coverage rollup so row 104 Scenario_AppMonitoring stops claiming candidate-only linkage and instead points at the accepted dedicated row-104 app-monitoring carrier already landed on the primary spec/replay/index/JSON ledger surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-sync-row104-coverage-markdown-rollup-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted row-104 carrier evidence plus the exact maintained files/commands used to sync the markdown rollup, including before/after row-104 wording.",
+        "evidence/pipelines/virtualmachine-prerelease-coverage.md no longer describes row 104 as candidate-only against spec.app-monitoring.addonv2-azure-monitor-metrics; it points at spec.app-monitoring.appmonitoring-vm-prerelease or an equally exact dedicated maintained linkage.",
+        "The change is bounded to truthful row-104 rollup synchronization and does not reopen the underlying source/model carrier authoring work already accepted on primary maintained surfaces."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-ledger"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:39:50.018Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-sync-row104-coverage-markdown-rollup-20260622_20260622034520",
+        "assigned_at": "2026-06-22T03:45:20.461Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-sync-row104-coverage-markdown-rollup-20260622",
+        "worker_started_attempt_id": "a_vmpr-sync-row104-coverage-markdown-rollup-20260622_20260622034520",
+        "worker_started_at": "2026-06-22T03:45:36.615Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented the row-104 VM prerelease markdown rollup sync in evidence/archive/vmpr-sync-row104-coverage-markdown-rollup-20260622.md, with before/after wording and verification that coverage.md now points to the dedicated app-monitoring row-104 carrier instead of the old candidate-only row-63 linkage.",
+        "last_worker_completed_at": "2026-06-22T03:47:07.218Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:47:21.283Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/vmpr-sync-row104-coverage-markdown-rollup-20260622.md and the maintained coverage markdown: row 104 / Scenario_AppMonitoring now points at spec.app-monitoring.appmonitoring-vm-prerelease instead of candidate-only linkage, with Covered rows 232 and Candidate-only rows 0 preserved. This closes the row-104 rollup-sync prerequisite without reopening the already-accepted dedicated carrier authoring work."
+      },
+      "session_id": "s_task_vmpr-sync-row104-coverage-markdown-rollup-20260622",
+      "session_history": [
+        "s_task_vmpr-sync-row104-coverage-markdown-rollup-20260622"
+      ],
+      "result": "Documented the row-104 VM prerelease markdown rollup sync in evidence/archive/vmpr-sync-row104-coverage-markdown-rollup-20260622.md, with before/after wording and verification that coverage.md now points to the dedicated app-monitoring row-104 carrier instead of the old candidate-only row-63 linkage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:47:21.283Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/vmpr-sync-row104-coverage-markdown-rollup-20260622.md and the maintained coverage markdown: row 104 / Scenario_AppMonitoring now points at spec.app-monitoring.appmonitoring-vm-prerelease instead of candidate-only linkage, with Covered rows 232 and Candidate-only rows 0 preserved. This closes the row-104 rollup-sync prerequisite without reopening the already-accepted dedicated carrier authoring work."
+      },
+      "status": "done"
+    }
+  ]
+}

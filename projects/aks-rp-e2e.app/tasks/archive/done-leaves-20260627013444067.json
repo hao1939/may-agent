@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T01:34:44.067Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 planner review accepted the storage-csi MCR mirror monitor reconciliation note: the mounted handwritten source, repaired repo-local packet/spec/replay lineage, latest non-cluster execution artifact, and current model/view surfaces all agree that path.storage-csi.mcr-mirror-monitor should remain unknown until source-faithful crane.Pull()-equivalent image validation exists. The root frontier therefore returns to the two exact external waits only: the narrowed external-human proof family for VM prerelease row 33/shared-identity rows 75-76, and the private-cluster none-dns-zone-v3 operator-authorization response wait now explicitly worded as an external decision wait rather than missing local environment diagnosis. confirm-runnable remains empty, so do not invent new local refill work until returned proof/reply, redirect, decline, exact blocker, or new steering arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-mcr-mirror-monitor-model-reconciliation-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.storage-csi.mcr-mirror-monitor from unknown to the truthful current repo-local state by reviewing the mounted storage-csi MCR mirror monitor spec/probe/evidence lineage, deciding whether the path should remain unknown or move to a source-equivalent or observation-backed verdict, and recording the exact gap/next-action boundary without running new cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-mcr-mirror-monitor-model-reconciliation-20260627.md"
+      ],
+      "acceptance": [
+        "Produce a durable evidence note that cites the current mounted spec/probe/packet artifacts for storage-csi-mcr-mirror-monitor, the latest accepted evidence artifact(s) relevant to the path, and the exact reason the model summary still shows unknown or should be updated.",
+        "If repo-local evidence is sufficient to support a clear model/view update recommendation, state the exact target status/diagnosis/next action for path.storage-csi.mcr-mirror-monitor and identify the file(s) that should change next; if evidence is insufficient, record the precise remaining gap without inventing a cloud rerun.",
+        "Do not run cloud mutation; keep the work bounded to source/spec/probe/model/evidence reconciliation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi.mcr-mirror-monitor"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T01:33:08.539Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-mcr-mirror-monitor-model-reconciliation-20260627_20260627013308",
+        "assigned_at": "2026-06-27T01:33:08.588Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-mcr-mirror-monitor-model-reconciliation-20260627",
+        "worker_started_attempt_id": "a_storage-csi-mcr-mirror-monitor-model-reconciliation-20260627_20260627013308",
+        "worker_started_at": "2026-06-27T01:33:23.122Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable reconciliation note at evidence/archive/storage-csi-mcr-mirror-monitor-model-reconciliation-20260627.md concluding path.storage-csi.mcr-mirror-monitor should remain unknown because current repo-local evidence is source-grounded but still lacks source-faithful crane.Pull()-equivalent image validation.",
+        "last_worker_completed_at": "2026-06-27T01:34:22.003Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T01:34:39.521Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/storage-csi-mcr-mirror-monitor-model-reconciliation-20260627.md cites the mounted handwritten source, repaired repo-local packet/spec/replay lineage, latest non-cluster execution artifact, and current model/view surfaces, then shows the path should truthfully remain unknown because only mirror-site HTTP is directly observed while MCR image validation still lacks source-faithful crane.Pull()-equivalent evidence."
+      },
+      "session_id": "s_task_storage-csi-mcr-mirror-monitor-model-reconciliation-20260627",
+      "session_history": [
+        "s_task_storage-csi-mcr-mirror-monitor-model-reconciliation-20260627"
+      ],
+      "result": "Produced a durable reconciliation note at evidence/archive/storage-csi-mcr-mirror-monitor-model-reconciliation-20260627.md concluding path.storage-csi.mcr-mirror-monitor should remain unknown because current repo-local evidence is source-grounded but still lacks source-faithful crane.Pull()-equivalent image validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T01:34:39.521Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/storage-csi-mcr-mirror-monitor-model-reconciliation-20260627.md cites the mounted handwritten source, repaired repo-local packet/spec/replay lineage, latest non-cluster execution artifact, and current model/view surfaces, then shows the path should truthfully remain unknown because only mirror-site HTTP is directly observed while MCR image validation still lacks source-faithful crane.Pull()-equivalent evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

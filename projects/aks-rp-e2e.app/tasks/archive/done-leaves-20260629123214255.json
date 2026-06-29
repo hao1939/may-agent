@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:32:14.255Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two review leaves that tighten the spec-loop truth boundary without creating any new product verdicts. First, workflow run 28368356550 for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease is now explicitly archived only as shared single-spec runner/watch/result-publication missing-result evidence: nested spec-runner artifacts never wrote a terminal child result, so the earlier autoaccepted verifier leaf is superseded as spec evidence. Second, run 28371054186 for spec.aad-rbac.nonaad-to-aadv2-migration is now explicitly archived only as launch-proven shared artifact-retention/ingestion blocker evidence: the exact local spec-loop artifact/state surfaces never ingested a terminal bundle, so no later assertion progress may be claimed. The live frontier therefore keeps the existing active spec verifications and adds two concrete repo-local successor leaves to diagnose the shared missing-result and artifact-retention families before any same-spec rerun is treated as new product evidence.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28368356550 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1-a_v. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368356550 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T11:21:16.666Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1_20260629112138",
+        "assigned_at": "2026-06-29T11:21:38.862Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1_20260629112138",
+        "worker_started_at": "2026-06-29T11:21:47.216Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28368356550 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1-a_v. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368356550 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T12:22:39.241Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T12:22:48.481Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28368356550 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1-a_v. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368356550 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1",
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28368356550 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-retry-202606291121-1-a_v. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28368356550 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28368356550/aks-rp-e2e-28368356550-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_215037/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T12:22:48.481Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28368356550 for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease after the misleading auto-accept, determine whether the terminal evidence is only a runner/watch/result-publication blocker or yields any truthful spec verdict, and record the exact owner follow-up or retry gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629.md"
+      ],
+      "acceptance": [
+        "Workflow metadata, top-level result surface, and nested scenario artifacts are cited.",
+        "The note states whether any product assertion actually ran and whether the autoaccepted done leaf should be treated as spec evidence or only runner/watch blocker evidence.",
+        "If the failure matches a shared family, the note names that family and the next tree action or retry gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-review:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:24:27.588Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629_20260629122427",
+        "assigned_at": "2026-06-29T12:24:27.656Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629",
+        "worker_started_attempt_id": "a_review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629_20260629122427",
+        "worker_started_at": "2026-06-29T12:25:43.612Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed run 28368356550 and wrote a durable classification note showing the autoaccepted VM-prerelease leaf was only runner/watch/result-publication blocker evidence, not truthful spec verdict evidence.",
+        "last_worker_completed_at": "2026-06-29T12:29:51.836Z",
+        "last_worker_evidence": [
+          "evidence/archive/vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:32:13.889Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629.md cites workflow metadata, top-level result, and nested spec-runner surfaces showing no terminal child result artifacts were written. Run 28368356550 therefore belongs only to the shared single-spec runner/watch/result-publication missing-result family and must not be treated as truthful spec verdict evidence."
+      },
+      "session_id": "s_task_review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629",
+      "session_history": [
+        "s_task_review-vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629"
+      ],
+      "result": "Reviewed run 28368356550 and wrote a durable classification note showing the autoaccepted VM-prerelease leaf was only runner/watch/result-publication blocker evidence, not truthful spec verdict evidence.",
+      "evidence": [
+        "evidence/archive/vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:32:13.889Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-run-28368356550-autoaccepted-runwatch-classification-20260629.md cites workflow metadata, top-level result, and nested spec-runner surfaces showing no terminal child result artifacts were written. Run 28368356550 therefore belongs only to the shared single-spec runner/watch/result-publication missing-result family and must not be treated as truthful spec verdict evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover or conclusively classify the missing terminal artifact bundle for workflow run 28371054186 so the repaired carrier can be reviewed truthfully: inspect repo/app runtime traces for retained result pointers or ingestion failure, then either classify the first actual later assertion reached or record a concrete artifact-ingestion blocker linked to the existing repaired-carrier family without inventing later progress.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md"
+      ],
+      "acceptance": [
+        "The evidence note cites the exact repo/app runtime surfaces checked for run 28371054186 artifact retention or ingestion failure and states what each surface proves.",
+        "If terminal artifacts are recovered, the note names the first actual later assertion surface reached and classifies explicit-tenant persistence as passed, failed, not reached, or still unclassifiable from the recovered packet.",
+        "If artifacts remain absent, the note records a concrete runner/artifact-ingestion blocker linked to the existing repaired-carrier or shared runner family instead of claiming later assertion progress."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:21:34.035Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629_20260629122145",
+        "assigned_at": "2026-06-29T12:21:45.519Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629",
+        "worker_started_attempt_id": "a_reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629_20260629122145",
+        "worker_started_at": "2026-06-29T12:22:48.440Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested evidence note at evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md, showing run 28371054186 is launch-proven but still absent from local spec-loop artifact/state ingestion surfaces, so the truthful outcome is a concrete artifact-retention/ingestion blocker rather than later-assertion progress.",
+        "last_worker_completed_at": "2026-06-29T12:29:46.567Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:32:13.950Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md cites the checked runtime surfaces and shows run 28371054186 is launch-proven but absent from retained spec-loop artifact/state ingestion surfaces. This is truthful shared artifact-retention/ingestion blocker evidence for the repaired carrier, not later-assertion progress."
+      },
+      "session_id": "s_task_reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629",
+      "session_history": [
+        "s_task_reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629"
+      ],
+      "result": "Wrote the requested evidence note at evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md, showing run 28371054186 is launch-proven but still absent from local spec-loop artifact/state ingestion surfaces, so the truthful outcome is a concrete artifact-retention/ingestion blocker rather than later-assertion progress.",
+      "evidence": [
+        "evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:32:13.950Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/reconcile-aad-rbac-nonaad-to-aadv2-run-28371054186-artifact-recovery-20260629.md cites the checked runtime surfaces and shows run 28371054186 is launch-proven but absent from retained spec-loop artifact/state ingestion surfaces. This is truthful shared artifact-retention/ingestion blocker evidence for the repaired carrier, not later-assertion progress."
+      },
+      "status": "done"
+    }
+  ]
+}

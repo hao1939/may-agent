@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:24:08.606Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted two bounded repo-local mounted-source reconciliations. path.traffic-azure-service-mesh.multi-revision is now explicitly limited to the dual-revision coexistence slice inside canary-upgrade/compatibility carriers and remains a draft without standalone handwritten or live-verdict authority. path.aad-rbac.managed-v2-lifecycle is now pinned to the exact VM prerelease row-37 Scenario_AAD carrier (prerelease.go/checkin.go -> aad.go/login_vm.go/reset_aad_profile.go) while observed behavior remains capped at the accepted create-ceiling environment block. Remaining live waits stay compressed to the external human transport family and the private-cluster selected-host SSH environment wait; next runnable work should continue repo-local mounted-source/model closure on another exact path.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.traffic-azure-service-mesh.multi-revision: determine the exact handwritten/source slice for the multi-revision branch, tighten feature/spec/replay/model wording to that boundary, and archive the bounded evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus the touched feature/spec/replay/model carriers for path.traffic-azure-service-mesh.multi-revision, and records whether the branch has an exact handwritten/source slice or must remain an inferred draft.",
+        "Carrier and model updates keep the multi-revision path claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit draft/source-grounded wording instead of borrowing neighboring ASM evidence.",
+        "The work stays repo-local and bounded to path.traffic-azure-service-mesh.multi-revision only: no cloud mutation, no blocked-wait follow-up, and no widening into unrelated ASM or traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-azure-service-mesh-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:08:41.062Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T20:12:05.260Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623_20260623201224",
+        "assigned_at": "2026-06-23T20:12:24.663Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623_20260623201224",
+        "worker_started_at": "2026-06-23T20:12:51.179Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.traffic-azure-service-mesh.multi-revision against mounted AKS RP source, wrote a bounded archive note, and tightened the feature/spec/replay/model wording to the exact dual-revision canary-upgrade slice without claiming a standalone handwritten multi-revision scenario or any new cloud verdict.",
+        "last_worker_completed_at": "2026-06-23T20:20:46.414Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:22:18.049Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note and model linkage narrow path.traffic-azure-service-mesh.multi-revision to the canary-upgrade dual-revision coexistence slice, keep it as a mounted-source-backed draft, and avoid borrowing the broader revision-upgrade live verdict."
+      },
+      "session_id": "s_task_traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_traffic-azure-service-mesh-multi-revision-mounted-source-reconcile-20260623"
+      ],
+      "result": "Reconciled path.traffic-azure-service-mesh.multi-revision against mounted AKS RP source, wrote a bounded archive note, and tightened the feature/spec/replay/model wording to the exact dual-revision canary-upgrade slice without claiming a standalone handwritten multi-revision scenario or any new cloud verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:22:18.049Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note and model linkage narrow path.traffic-azure-service-mesh.multi-revision to the canary-upgrade dual-revision coexistence slice, keep it as a mounted-source-backed draft, and avoid borrowing the broader revision-upgrade live verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local VirtualMachine prerelease carriers to reconcile path.aad-rbac.managed-v2-lifecycle at the exact row-37 managed AAD lifecycle boundary: identify the exact handwritten/source slice in prerelease.go/checkin.go and referenced scenario helpers, tighten the linked feature/spec/replay/model wording to that row-37 carrier, and archive bounded evidence or preserve an explicit source-grounded unknown without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus the touched repo-local feature/spec/replay/model carriers for path.aad-rbac.managed-v2-lifecycle row 37, and records whether the managed AAD lifecycle branch has an exact handwritten/source-aligned carrier or must remain a bounded inferred/environment-blocked claim.",
+        "Carrier and model updates keep the row-37 path claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit source-grounded/environment-blocked wording instead of reviving older reset-discriminator framing or borrowing neighboring VM prerelease evidence.",
+        "The work stays repo-local and bounded to path.aad-rbac.managed-v2-lifecycle row 37 only: no cloud mutation, no follow-up on blocked waits, and no widening into unrelated AAD RBAC or VirtualMachine prerelease families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T20:18:30.035Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623_20260623201830",
+        "assigned_at": "2026-06-23T20:18:30.087Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623_20260623201830",
+        "worker_started_at": "2026-06-23T20:18:54.235Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-37 mounted-source reconcile artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623.md and updated model/knowledge-map/model.json so the managed-v2 lifecycle feature/scenario/path/DAG evidence now cite the exact prerelease.go/checkin.go -> aad.go/login_vm.go/reset_aad_profile.go carrier. No cloud execution was performed; the maintained status stays environment-blocked at the existing create-ceiling artifact.",
+        "last_worker_completed_at": "2026-06-23T20:22:56.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T20:24:08.555Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the new archive artifact explicitly cites prerelease.go/checkin.go row 37 plus aad.go/login_vm.go/reset_aad_profile.go, and the model now preserves path.aad-rbac.managed-v2-lifecycle as the exact source-backed VM prerelease carrier while keeping live status capped at the existing create-ceiling environment block."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623"
+      ],
+      "result": "Created the row-37 mounted-source reconcile artifact at evidence/archive/aad-rbac-managed-v2-lifecycle-row37-mounted-source-reconcile-20260623.md and updated model/knowledge-map/model.json so the managed-v2 lifecycle feature/scenario/path/DAG evidence now cite the exact prerelease.go/checkin.go -> aad.go/login_vm.go/reset_aad_profile.go carrier. No cloud execution was performed; the maintained status stays environment-blocked at the existing create-ceiling artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T20:24:08.555Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the new archive artifact explicitly cites prerelease.go/checkin.go row 37 plus aad.go/login_vm.go/reset_aad_profile.go, and the model now preserves path.aad-rbac.managed-v2-lifecycle as the exact source-backed VM prerelease carrier while keeping live status capped at the existing create-ceiling environment block."
+      },
+      "status": "done"
+    }
+  ]
+}

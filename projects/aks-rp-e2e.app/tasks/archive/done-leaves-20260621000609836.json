@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T00:06:09.836Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "No new review work remains in the finished private-cluster placeholder branch: the stale-terminal reconciliation decision has been accepted, the shared-apiserver-subnet successor is closed as redundant under the final-pass carrier, and only the exact private-endpoint-connections lifecycle replay refinement stays active. Preserve external-send-proof-dispatch-family-20260620 as the single blocked external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-stale-terminal-subbranch-reconciliation-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the private-cluster stale-terminal frontier without cloud mutation: use the mounted private_endpoint_connections and shared_subnet source plus current spec/replay/model carriers to determine whether the lifecycle and shared-API-server-subnet success branches require new exact subpaths/spec linkage or should be rewritten as already-covered behavior, then leave one durable note that names the exact truthful successor work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-stale-terminal-subbranch-reconciliation-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted private_endpoint_connections.go and shared_subnet.go branches plus the current model/spec/replay carriers for the broad pass paths, and states precisely where the current path decomposition is too broad or already sufficient.",
+        "Artifact decides, with repo-local evidence only, whether the lifecycle branch and the two-cluster shared-API-server-subnet success branch need new exact subpaths/spec linkage, narrowed task wording, or closure as already-covered behavior; no cloud mutation is performed.",
+        "Artifact ends with the exact successor leaves or closure decisions for both stale-terminal warnings so later execution-authoring only resumes on truthful non-terminal sub-branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T23:59:10.572Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-stale-terminal-subbranch-reconciliation-20260620_20260620235910",
+        "assigned_at": "2026-06-20T23:59:10.616Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-stale-terminal-subbranch-reconciliation-20260620",
+        "worker_started_attempt_id": "a_private-cluster-stale-terminal-subbranch-reconciliation-20260620_20260620235910",
+        "worker_started_at": "2026-06-20T23:59:29.778Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested private-cluster stale-terminal reconciliation artifact at evidence/archive/private-cluster-stale-terminal-subbranch-reconciliation-20260620.md. It shows both warnings are already reconciled by existing exact sibling carriers and names bounded execution-authoring as the only truthful successor work.",
+        "last_worker_completed_at": "2026-06-21T00:01:11.261Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T00:01:25.664Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the reconciliation artifact: it cites the mounted private_endpoint_connections.go and shared_subnet.go branches, shows both stale-terminal warnings are already satisfied by exact existing sibling feature/spec/replay/model carriers, and limits truthful next work to bounded execution authoring rather than more decomposition."
+      },
+      "session_id": "s_task_private-cluster-stale-terminal-subbranch-reconciliation-20260620",
+      "session_history": [
+        "s_task_private-cluster-stale-terminal-subbranch-reconciliation-20260620"
+      ],
+      "result": "Wrote the requested private-cluster stale-terminal reconciliation artifact at evidence/archive/private-cluster-stale-terminal-subbranch-reconciliation-20260620.md. It shows both warnings are already reconciled by existing exact sibling carriers and names bounded execution-authoring as the only truthful successor work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T00:01:25.664Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the reconciliation artifact: it cites the mounted private_endpoint_connections.go and shared_subnet.go branches, shows both stale-terminal warnings are already satisfied by exact existing sibling feature/spec/replay/model carriers, and limits truthful next work to bounded execution authoring rather than more decomposition."
+      },
+      "status": "done"
+    }
+  ]
+}

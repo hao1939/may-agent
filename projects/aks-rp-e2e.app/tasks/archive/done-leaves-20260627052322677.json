@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:23:22.677Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 blocked-frontier owner review preserved the same truthful wait family unchanged: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 still waits only on returned operator/human proof for VM prerelease row 33 and shared-identity rows 75-76, and private-cluster-none-dns-zone-v3-routed-operator-response-wait-20260626 still waits only on the already-routed operator decision for the unchanged same-cluster system->none packet. The generic environment-overblock warning for the private-cluster wait remains intentionally rejected because repo-local setup/spec/source work is already complete and no truthful local diagnosis or alternate-environment leaf exists without a new reply or changed recipient/path. Archive the accepted network-cni base overlay lineage refresh and secops-fips Phase 3a rejection-spec children because their durable meaning is now represented at the root: mounted source lineage for network-cni overlay is refreshed, and that secops-fips source packet directly seeded the single live repo-local landing leaf secops-fips-base-unaligned-pools-rejection-source-landing-20260627.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-base-overlay-mounted-lineage-refresh-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the accepted network-cni base overlay canonical carrier so mounted datapath overlay source and suite wiring become the primary lineage authority, while preserving the existing no-cloud capability contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-base-overlay-mounted-lineage-refresh-20260627.md"
+      ],
+      "acceptance": [
+        "Update the accepted repo-local network-cni base overlay carrier metadata/spec lineage to cite the mounted source-first authorities for Scenario_CNI_Overlay, including the concrete overlay plan file and relevant suite/runner wiring.",
+        "Produce a durable repo-local evidence note that states what lineage/sourceRefs changed, what accepted inputs and expectation surface remain authoritative for the carrier, and what adjacent mounted rows stay out of scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-base-overlay-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:12:51.333Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-base-overlay-mounted-lineage-refresh-20260627_20260627051306",
+        "assigned_at": "2026-06-27T05:13:06.204Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-base-overlay-mounted-lineage-refresh-20260627",
+        "worker_started_attempt_id": "a_network-cni-base-overlay-mounted-lineage-refresh-20260627_20260627051306",
+        "worker_started_at": "2026-06-27T05:13:06.882Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the base Azure CNI overlay canonical carrier to use mounted Scenario_CNI_Overlay lineage in features/network-cni.yaml and features/network-cni/specs/network-cni-azure-overlay.json, and wrote a durable evidence note at evidence/archive/network-cni-base-overlay-mounted-lineage-refresh-20260627.md. Verified the no-cloud contract by passing the overlay spec check mode and regenerating runner/generated/spec-catalog.json with the new mounted source metadata.",
+        "last_worker_completed_at": "2026-06-27T05:20:11.758Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:21:05.895Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the review after checking evidence/archive/network-cni-base-overlay-mounted-lineage-refresh-20260627.md and confirming the claimed repo-local lineage refresh landed in features/network-cni.yaml and features/network-cni/specs/network-cni-azure-overlay.json with the expected spec-catalog regeneration evidence while preserving the no-cloud contract."
+      },
+      "session_id": "s_task_network-cni-base-overlay-mounted-lineage-refresh-20260627",
+      "session_history": [
+        "s_task_network-cni-base-overlay-mounted-lineage-refresh-20260627"
+      ],
+      "result": "Refreshed the base Azure CNI overlay canonical carrier to use mounted Scenario_CNI_Overlay lineage in features/network-cni.yaml and features/network-cni/specs/network-cni-azure-overlay.json, and wrote a durable evidence note at evidence/archive/network-cni-base-overlay-mounted-lineage-refresh-20260627.md. Verified the no-cloud contract by passing the overlay spec check mode and regenerating runner/generated/spec-catalog.json with the new mounted source metadata.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:21:05.895Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the review after checking evidence/archive/network-cni-base-overlay-mounted-lineage-refresh-20260627.md and confirming the claimed repo-local lineage refresh landed in features/network-cni.yaml and features/network-cni/specs/network-cni-azure-overlay.json with the expected spec-catalog regeneration evidence while preserving the no-cloud contract."
+      },
+      "status": "done"
+    }
+  ]
+}

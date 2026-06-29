@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T05:43:59.489Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed owner review accepts the recovered-run evidence-access family unblock: authenticated GitHub Actions access via the tokenized origin remote now exposes terminal completed/success state and extractable published artifacts for recovered runs 28349661035 (spec.workload-health.konnectivity-readiness) and 28349266093 (spec.workload-identity.upgrade-survival). The two passive terminal-evidence waits are therefore replaced by two assigned artifact-review classification leaves that must decide the final spec/model disposition from the extracted result.json/summary/diagnosis bundles, while the shared westus2 cluster-count preflight family remains the only live blocked wait in this lane.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "await-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-terminal-evidence-access-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful wait for spec.workload-health.konnectivity-readiness recovered rerun 28349661035 until repo-local artifact ingestion or authenticated GitHub Actions access can expose terminal state and published artifacts for final classification.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/review-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-terminal-followup-20260629.md"
+      ],
+      "acceptance": [
+        "Resume only when run 28349661035 has either repo-local ingested artifacts under the spec-loop cache or authenticated GitHub Actions evidence for terminal state plus artifact publication, so the replacement carrier can be classified without reusing the earlier non-terminal snapshot as final evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.workload-health.konnectivity-readiness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:09:22.100Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T05:43:59.280Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629 because authenticated GitHub Actions access is now proven and the spec is no longer truthfully blocked on terminal-evidence access; next work is artifact-backed classification, not waiting."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T05:43:59.280Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by classify-spec-workload-health-konnectivity-readiness-recovered-run-28349661035-artifact-review-20260629 because authenticated GitHub Actions access is now proven and the spec is no longer truthfully blocked on terminal-evidence access; next work is artifact-backed classification, not waiting."
+      },
+      "status": "done"
+    },
+    {
+      "id": "await-spec-workload-identity-upgrade-survival-recovered-run-28349266093-terminal-evidence-access-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful wait for spec.workload-identity.upgrade-survival recovered rerun 28349266093 until repo-local artifact ingestion or authenticated GitHub Actions access can expose terminal state and published artifacts for final classification.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/review-spec-workload-identity-upgrade-survival-recovered-run-28349266093-terminal-repoll-20260629b.md"
+      ],
+      "acceptance": [
+        "Remain blocked unless newer authenticated run/job/artifact captures or a downloaded workflow artifact bundle for run 28349266093 becomes available and enables final spec classification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.workload-identity.upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:17:50.501Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T05:43:59.335Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629 because authenticated GitHub Actions access is now proven and the spec is no longer truthfully blocked on terminal-evidence access; next work is artifact-backed classification, not waiting."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T05:43:59.335Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by classify-spec-workload-identity-upgrade-survival-recovered-run-28349266093-artifact-review-20260629 because authenticated GitHub Actions access is now proven and the spec is no longer truthfully blocked on terminal-evidence access; next work is artifact-backed classification, not waiting."
+      },
+      "status": "done"
+    },
+    {
+      "id": "unblock-recovered-run-terminal-evidence-access-family-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Determine whether a truthful repo-local or authenticated GitHub Actions evidence path exists right now for recovered runs 28349661035 and 28349266093, so the two passive terminal-evidence waits can either be resolved with terminal classification inputs or preserved behind one exact family blocker note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/unblock-recovered-run-terminal-evidence-access-family-20260629.md"
+      ],
+      "acceptance": [
+        "Check both runs 28349661035 and 28349266093 against the available repo-local ingestion/authenticated-access surfaces; record exact commands, observed access limits, and whether terminal workflow state and published artifacts become visible.",
+        "If evidence becomes visible, record the terminal/artifact findings needed to reopen or finish the affected spec-review leaves; if access still cannot be obtained, write one durable blocker note naming the missing access surface/owner and exact resume signal for the family without duplicating passive waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence-access:recovered-run-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T05:40:38.290Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_unblock-recovered-run-terminal-evidence-access-family-20260629_20260629054038",
+        "assigned_at": "2026-06-29T05:40:38.346Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_unblock-recovered-run-terminal-evidence-access-family-20260629",
+        "worker_started_attempt_id": "a_unblock-recovered-run-terminal-evidence-access-family-20260629_20260629054038",
+        "worker_started_at": "2026-06-29T05:41:06.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that both recovered runs 28349661035 and 28349266093 are now accessible through an authenticated GitHub Actions path derived from the tokenized repo remote, downloaded/extracted their published artifacts, and wrote a durable family-resolution note at evidence/archive/unblock-recovered-run-terminal-evidence-access-family-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T05:43:23.609Z",
+        "last_worker_evidence": [
+          "evidence/archive/unblock-recovered-run-terminal-evidence-access-family-20260629.md",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-run.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-jobs.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-artifacts.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-run.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-jobs.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-artifacts.json",
+          "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/artifact-listing-summary.json"
+        ],
+        "reviewed_at": "2026-06-29T05:43:59.222Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the durable family note and downloaded workspace artifacts prove authenticated GitHub Actions access now exposes terminal workflow/job state and extractable published artifacts for runs 28349661035 and 28349266093, so the evidence-access family blocker is resolved and successor classification leaves can proceed from repo-local extracted evidence."
+      },
+      "session_id": "s_task_unblock-recovered-run-terminal-evidence-access-family-20260629",
+      "session_history": [
+        "s_task_unblock-recovered-run-terminal-evidence-access-family-20260629"
+      ],
+      "result": "Verified that both recovered runs 28349661035 and 28349266093 are now accessible through an authenticated GitHub Actions path derived from the tokenized repo remote, downloaded/extracted their published artifacts, and wrote a durable family-resolution note at evidence/archive/unblock-recovered-run-terminal-evidence-access-family-20260629.md.",
+      "evidence": [
+        "evidence/archive/unblock-recovered-run-terminal-evidence-access-family-20260629.md",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-run.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-jobs.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349661035-artifacts.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-run.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-jobs.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/28349266093-artifacts.json",
+        "../../agents/aks-explorer/workspace/unblock-recovered-run-terminal-evidence-access-family-20260629/artifact-listing-summary.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T05:43:59.222Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the durable family note and downloaded workspace artifacts prove authenticated GitHub Actions access now exposes terminal workflow/job state and extractable published artifacts for runs 28349661035 and 28349266093, so the evidence-access family blocker is resolved and successor classification leaves can proceed from repo-local extracted evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

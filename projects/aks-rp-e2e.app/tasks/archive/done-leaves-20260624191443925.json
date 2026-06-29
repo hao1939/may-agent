@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:14:43.925Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner reconciled the watchdog-review-pending wake and compacted the repo-local format-gate branch: accepted single-file writebacks through secops-fips-root-config-preservation are now represented on this parent as stepwise reductions of the shared bun check format frontier down to the current bounded next slice replays/secops-fips-ubuntu-compat.ts. The only live local execution remains repo-wide-bun-check-replay-frontier-secops-fips-ubuntu-compat-single-file-writeback-20260624; the VirtualMachine prerelease coverage-ledger checkpoint stays blocked until the first green repo-wide bun run check, and the four exact external-human waits remain compressed under focus-mounted-source-coverage-closure-and-external-wait-20260623 with no truthful repo-local reopening before their stated resume dates or returned artifacts.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact next single-file warning slice replays/open-service-mesh-addon-lifecycle.ts from the accepted 23-warning rerun, then rerun targeted verification for that same file and refresh the repo-wide warning count without widening into other files, cloud work, or checkpoint landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/open-service-mesh-addon-lifecycle.ts, targeted verification output for that same file, and git diff or equivalent proof showing only the intended formatting changes in that file.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the replays/open-service-mesh-addon-lifecycle.ts writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no formatting outside replays/open-service-mesh-addon-lifecycle.ts, no cloud execution, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T18:48:32.950Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624_20260624184832",
+        "assigned_at": "2026-06-24T18:48:32.999Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-2026",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624_20260624184832",
+        "worker_started_at": "2026-06-24T18:48:46.634Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/open-service-mesh-addon-lifecycle.ts, verified that file is now clean, refreshed the repo-wide bun check warning count from 23 to 22, and wrote the required evidence artifact.",
+        "last_worker_completed_at": "2026-06-24T18:51:19.195Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T18:51:58.656Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624.md: the artifact proves a bounded Prettier writeback only on replays/open-service-mesh-addon-lifecycle.ts, targeted post-write verification for that same file, and a refreshed repo-wide bun run check reducing the warning frontier from 23 files to 22 without cloud work or checkpoint landing."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-2026",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-2026"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/open-service-mesh-addon-lifecycle.ts, verified that file is now clean, refreshed the repo-wide bun check warning count from 23 to 22, and wrote the required evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T18:51:58.656Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/repo-wide-bun-check-replay-frontier-open-service-mesh-addon-lifecycle-single-file-writeback-20260624.md: the artifact proves a bounded Prettier writeback only on replays/open-service-mesh-addon-lifecycle.ts, targeted post-write verification for that same file, and a refreshed repo-wide bun run check reducing the warning frontier from 23 files to 22 without cloud work or checkpoint landing."
+      },
+      "status": "done"
+    }
+  ]
+}

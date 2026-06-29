@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T22:05:09.037Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted and archived the mounted scheduler-controller enable-on-create landing because its durable meaning now lives in archive evidence plus the maintained model/view/spec/replay carriers. The live repo-local/no-cloud frontier now remains the two active disable siblings and the validating-webhook octet packet, while exact external waits stay compressed to the same three returned-proof/approval branches only. Refill continues with bounded repo-local mounted-source reconciliation rather than reopening blocked setup/auth/quota/source work or cloud mutation before returned proof or the first follow-up review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted scheduler-controller handwritten source plus the existing canonical spec/replay/index carriers to land the truthful maintained feature/scenario/input-DAG/path visibility for path.serverless-schedulerctrl.enable-on-create, keeping the slice repo-local only and preserving separation from enable-on-existing and disable-after-* serverless siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted scheduler-controller source files plus the current canonical spec, replay, feature/index, and model carriers, then concludes exactly what maintained scenario/input-DAG/path surfaces should exist for path.serverless-schedulerctrl.enable-on-create and what remains source-grounded versus observed.",
+        "If model/knowledge-map/model.json, generated maintained views, feature packets, or spec/replay linkage files change, the update exposes path.serverless-schedulerctrl.enable-on-create truthfully, keeps enable-on-existing and disable-after-* siblings distinct, validates regeneration/check evidence, and does not run cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge.serverless-schedulerctrl.enable-on-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:55:13.451Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623_20260623215513",
+        "assigned_at": "2026-06-23T21:55:13.503Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623_20260623215513",
+        "worker_started_at": "2026-06-23T21:55:51.862Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed truthful maintained visibility for path.serverless-schedulerctrl.enable-on-create by updating model/knowledge-map/model.json with explicit feature/scenario/DAG/path details and adding archive evidence at evidence/archive/serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623.md. Regenerated maintained knowledge-map views to expose the repaired path without widening into sibling scheduler-controller branches or running cloud mutation.",
+        "last_worker_completed_at": "2026-06-23T22:03:19.043Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T22:05:08.981Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the worker claim because the promised archive artifact exists and the maintained model/views now expose path.serverless-schedulerctrl.enable-on-create with explicit scenario, DAG, path, and evidence linkage while keeping observed behavior truthfully unknown and repo-local only."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623"
+      ],
+      "result": "Landed truthful maintained visibility for path.serverless-schedulerctrl.enable-on-create by updating model/knowledge-map/model.json with explicit feature/scenario/DAG/path details and adding archive evidence at evidence/archive/serverless-schedulerctrl-enable-on-create-mounted-path-landing-20260623.md. Regenerated maintained knowledge-map views to expose the repaired path without widening into sibling scheduler-controller branches or running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T22:05:08.981Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the worker claim because the promised archive artifact exists and the maintained model/views now expose path.serverless-schedulerctrl.enable-on-create with explicit scenario, DAG, path, and evidence linkage while keeping observed behavior truthfully unknown and repo-local only."
+      },
+      "status": "done"
+    }
+  ]
+}

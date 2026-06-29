@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:53:26.081Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner review accepted vm-prerelease-autozone-model-view-repair-20260620 as durable repo-local completion: the maintained VM prerelease auto-zone source/model/view surfaces now state only request-acceptance plus VirtualMachineNodesStatus validation, link the row-31/row-32/shared readiness evidence carriers, and carry exact execute-gated nextAction/resumeCondition text without over-claiming resolved zone labels. Archive that completed repair leaf. The only active repo-local capacity consumer is now vm-prerelease-mounted-source-next-gap-batch2-20260620, which should inspect mounted AKS RP VirtualMachine prerelease suites to find the first remaining truthful uncovered or mis-modeled slice and recommend the next non-cloud landing. Keep focus-vm-prerelease-pipeline-replacement-20260620 carrying external-send-proof-dispatch-family-20260620 as the single external-human transport ceiling until durable send/escalation proof or an authoritative reply is captured for the send-ready MachinesPreview and VM prerelease packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-autozone-model-view-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the accepted VM prerelease auto-zone boundary reconcile packet to the maintained knowledge map by repairing the auto-zone single/mixed-SKU source surfaces: remove any over-claim that source proves resolved real-zone labels, attach the existing row-31/row-32/shared-readiness evidence carriers or truthful note ids, add exact nextAction/resumeCondition text, and regenerate the maintained views.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autozone-model-view-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Task updates the maintained source surfaces for path.virtualmachines.auto-zone-single-sku and path.virtualmachines.auto-zone-mixed-sku so labels/statusReason/spec wording match the accepted source boundary: availabilityZones=['auto'] request acceptance plus VirtualMachineNodesStatus total/per-SKU validation, without claiming observed resolved zone labels.",
+        "Task links the existing row-31, row-32, and shared auto-zone readiness evidence into the maintained model/path surfaces via existing evidence ids or newly added truthful note ids, and records the exact execute-gated nextAction/resumeCondition for both auto-zone paths without cloud mutation.",
+        "Task regenerates the maintained knowledge-map views needed by project flow and the artifact cites the accepted reconcile packet, exact files changed/generated, and repo-local verification results for the wording/status repair without recreating the external send-proof wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-autozone-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:46:00.125Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autozone-model-view-repair-20260620_20260620224600",
+        "assigned_at": "2026-06-20T22:46:00.173Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autozone-model-view-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-autozone-model-view-repair-20260620_20260620224600",
+        "worker_started_at": "2026-06-20T22:46:08.041Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the VM prerelease auto-zone wording/status repair across spec/index/model surfaces, attached row-31/row-32/shared readiness evidence plus exact nextAction/resumeCondition text, regenerated maintained knowledge-map views, and archived the repair note at evidence/archive/vm-prerelease-autozone-model-view-repair-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T22:51:49.541Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:52:40.300Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-autozone-model-view-repair-20260620.md shows the maintained auto-zone single/mixed-SKU surfaces were repaired to the bounded source truth, row-31/row-32/shared readiness evidence plus exact nextAction/resumeCondition text were attached, maintained knowledge-map views were regenerated, and verification stayed repo-local without recreating the external send-proof wait."
+      },
+      "session_id": "s_task_vm-prerelease-autozone-model-view-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-autozone-model-view-repair-20260620"
+      ],
+      "result": "Applied the VM prerelease auto-zone wording/status repair across spec/index/model surfaces, attached row-31/row-32/shared readiness evidence plus exact nextAction/resumeCondition text, regenerated maintained knowledge-map views, and archived the repair note at evidence/archive/vm-prerelease-autozone-model-view-repair-20260620.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:52:40.300Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-autozone-model-view-repair-20260620.md shows the maintained auto-zone single/mixed-SKU surfaces were repaired to the bounded source truth, row-31/row-32/shared readiness evidence plus exact nextAction/resumeCondition text were attached, maintained knowledge-map views were regenerated, and verification stayed repo-local without recreating the external send-proof wait."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T01:23:15.563Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-29 task-completed owner review accepts the private-cluster none-dns-zone-v3 mounted-source boundary note and archives the completed child. The accepted artifact fixes the exact boundary as the same-cluster system->none lifecycle with managed-zone existence/deletion and post-transition scale checks, and it confirms the maintained spec/replay/model stack is already aligned. Keep this branch as a pure external-wait carrier only: no new local source/spec/replay successor is truthful for path.private-cluster-none-dns-zone-v3 until an explicitly authorized tuple-gated live run becomes possible, so the only live children remain the latency-checkpoint wait and the older out-of-runtime proof-return wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source plus existing repo artifacts to classify the exact input/expectation boundary for path.private-cluster-none-dns-zone-v3 and decide whether the current unknown model status should become a source-backed spec/model update, a bounded replay carrier, or a precise external blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted e2ev3 source entrypoint(s) and scenario definitions governing the private-cluster System→None private DNS zone V3 lifecycle, including the exact create/update/delete inputs, asserted expectations, and any explicit gating or prerelease markers.",
+        "The note maps adjacent surfaces and unknown edges for path.private-cluster-none-dns-zone-v3, names the most truthful next durable repo-local action (model/spec update vs bounded replay carrier vs exact blocker), and avoids any cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T01:20:24.597Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629_20260629012031",
+        "assigned_at": "2026-06-29T01:20:31.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629",
+        "worker_started_attempt_id": "a_map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629_20260629012031",
+        "worker_started_at": "2026-06-29T01:20:49.561Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new mounted-source boundary artifact at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md that classifies path.private-cluster-none-dns-zone-v3 as an exact same-cluster system→none lifecycle and recommends keeping the current unknown status as an execution-ceiling/external-blocker posture rather than reopening spec/model or replay work.",
+        "last_worker_completed_at": "2026-06-29T01:22:31.398Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T01:23:15.505Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md cites the mounted e2ev3 scenario and exact same-cluster system->none lifecycle, confirms the maintained spec/replay/model are already aligned, and truthfully keeps path.private-cluster-none-dns-zone-v3 at an external execution ceiling rather than spawning new repo-local source/spec/model or replay work."
+      },
+      "session_id": "s_task_map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629",
+      "session_history": [
+        "s_task_map-private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629"
+      ],
+      "result": "Created a new mounted-source boundary artifact at evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md that classifies path.private-cluster-none-dns-zone-v3 as an exact same-cluster system→none lifecycle and recommends keeping the current unknown status as an execution-ceiling/external-blocker posture rather than reopening spec/model or replay work.",
+      "evidence": [
+        "evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T01:23:15.505Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-20260629.md cites the mounted e2ev3 scenario and exact same-cluster system->none lifecycle, confirms the maintained spec/replay/model are already aligned, and truthfully keeps path.private-cluster-none-dns-zone-v3 at an external execution ceiling rather than spawning new repo-local source/spec/model or replay work."
+      },
+      "status": "done"
+    }
+  ]
+}

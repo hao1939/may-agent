@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:20:50.063Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the bounded row-25/26 truth-maintenance review: virtualmachines-capacity-surge-model-status-reconciliation-20260621 is now represented at parent level, with both capacity-surge VM prerelease paths truthfully promoted from draft to execute-gated blocked/source-grounded-check-replay-execute-capable based on accepted live-body evidence and row-local check/gate proof. The next useful project action is now singular and clear: vmpr-maintained-slice-checkpoint-isolation-20260621 must isolate the exact commit-ready maintained-surface done slice from the current dirty workspace after this accepted reconciliation, while external-send-proof-dispatch-family-20260620 remains the only live external-human transport blocker and no duplicate wait work should be created.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-capacity-surge-model-status-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the knowledge-map status/evidence state for VM prerelease rows 25 and 26 after their accepted live-body replay implementations, so path.virtualmachines.capacity-based-surge and path.virtualmachines.capacity-based-surge-maxunavailable stop presenting as draft/source-grounded-only if the accepted archive notes now justify the same execute-gated blocked classification already used by adjacent VirtualMachines prerelease rows, without broadening beyond those two mounted-source contracts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-capacity-surge-model-status-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "The worker cites the exact current model locations and accepted evidence/task artifacts for rows 25 and 26, determines whether each path should remain draft or be promoted to a truthful execute-gated blocked/source-grounded-live-body state, and applies only the minimal bounded model/view updates required for those two paths.",
+        "The worker runs the bounded repo-local checks directly affected by the change (at minimum model validation plus any regenerated knowledge-map views or row-local replay checks needed to prove the new status/evidence linkage), records exact commands/results, and clearly separates unrelated global validator issues.",
+        "The archive note records the final status/evidence linkage chosen for each of the two paths, why that classification is truthful given the accepted live-body implementation notes, and any remaining execute gate or nextAction that stays outside this reconciliation leaf's scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:17:08.049Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-capacity-surge-model-status-reconciliation-20260621_20260621031708",
+        "assigned_at": "2026-06-21T03:17:08.098Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-capacity-surge-model-status-reconciliation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-capacity-surge-model-status-reconciliation-20260621_20260621031708",
+        "worker_started_at": "2026-06-21T03:17:27.521Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease rows 25 and 26 from draft to truthful execute-gated blocked state in the knowledge model, added row-local evidence linkage, regenerated views, and recorded the bounded reconciliation note under evidence/archive.",
+        "last_worker_completed_at": "2026-06-21T03:20:15.001Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:20:44.730Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/virtualmachines-capacity-surge-model-status-reconciliation-20260621.md cites the exact row-25/26 model carriers, accepted live-body artifacts, bounded model/view updates, and row-local check plus execute-gate commands/results. The note truthfully promotes both paths from draft to execute-gated blocked/source-grounded-check-replay-execute-capable without broadening scope, and records the unrelated global validator noise separately from this leaf."
+      },
+      "session_id": "s_task_virtualmachines-capacity-surge-model-status-reconciliation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-capacity-surge-model-status-reconciliation-20260621"
+      ],
+      "result": "Reconciled VM prerelease rows 25 and 26 from draft to truthful execute-gated blocked state in the knowledge model, added row-local evidence linkage, regenerated views, and recorded the bounded reconciliation note under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:20:44.730Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/virtualmachines-capacity-surge-model-status-reconciliation-20260621.md cites the exact row-25/26 model carriers, accepted live-body artifacts, bounded model/view updates, and row-local check plus execute-gate commands/results. The note truthfully promotes both paths from draft to execute-gated blocked/source-grounded-check-replay-execute-capable without broadening scope, and records the unrelated global validator noise separately from this leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

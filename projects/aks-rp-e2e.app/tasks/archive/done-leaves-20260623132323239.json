@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T13:23:23.239Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review kept the single external-human wait unchanged because the repo-local wait artifact already proves sender/handoff authority and the only truthful remaining blocker is returned out-of-runtime operator proof. Archived probe-artifact-burst-triage-20260623 as captured triage context; keep private-cluster-update-private-second-hop-carrier-reconciliation-20260623 as the bounded active next slice to choose the canonical repo-local evidence pair and disposition for that carrier family, while focus-mounted-source-coverage-closure-and-external-wait-20260623 remains the family-level wait container until a reply artifact changes the resume condition.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "probe-artifact-burst-triage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: triage the large 2026-06-23 untracked evidence/archive probe burst visible in git status, group it into meaningful feature/model/update candidates, and identify one bounded next repo-local reconciliation slice or an exact defer rationale for each major family without running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/probe-artifact-burst-triage-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the concrete 2026-06-23 probe artifact families observed in repo-local git status, groups them into bounded buckets that matter for knowledge-map/model maintenance, and names the exact representative files used for each bucket.",
+        "The note recommends at least one concrete follow-up task or truthful defer/no-action reason for each major bucket, including whether any bucket can immediately feed model/status reconciliation without new execution.",
+        "No cloud mutation, packet redrafting for already-accepted private-cluster work, or duplicate external-human wait tasks are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence.archive.2026-06-23-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T13:17:15.713Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_probe-artifact-burst-triage-20260623_20260623131715",
+        "assigned_at": "2026-06-23T13:17:15.760Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_probe-artifact-burst-triage-20260623",
+        "worker_started_attempt_id": "a_probe-artifact-burst-triage-20260623_20260623131715",
+        "worker_started_at": "2026-06-23T13:17:50.581Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/probe-artifact-burst-triage-20260623.md`, grouping the 2026-06-23 untracked archive burst into bounded model-maintenance buckets with representative files, immediate reconciliation candidates, and explicit defer rationales for environment-blocked/duplicate families.",
+        "last_worker_completed_at": "2026-06-23T13:20:36.520Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T13:22:14.816Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-23 burst triage archive: it groups the untracked archive burst into bounded families with representative files, truthfully defers the environment-throttled and duplicate-matrix families, and names private-cluster update-private-second-hop as the canonical immediate repo-local successor already created and assigned as private-cluster-update-private-second-hop-carrier-reconciliation-20260623."
+      },
+      "session_id": "s_task_probe-artifact-burst-triage-20260623",
+      "session_history": [
+        "s_task_probe-artifact-burst-triage-20260623"
+      ],
+      "result": "Created `evidence/archive/probe-artifact-burst-triage-20260623.md`, grouping the 2026-06-23 untracked archive burst into bounded model-maintenance buckets with representative files, immediate reconciliation candidates, and explicit defer rationales for environment-blocked/duplicate families.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T13:22:14.816Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-23 burst triage archive: it groups the untracked archive burst into bounded families with representative files, truthfully defers the environment-throttled and duplicate-matrix families, and names private-cluster update-private-second-hop as the canonical immediate repo-local successor already created and assigned as private-cluster-update-private-second-hop-carrier-reconciliation-20260623."
+      },
+      "status": "done"
+    }
+  ]
+}

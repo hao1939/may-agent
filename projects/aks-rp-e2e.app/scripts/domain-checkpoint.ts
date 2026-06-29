@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,6 +27,10 @@ type TaskTree = {
   tasks?: Record<string, TaskNode>;
 };
 
+type ArchivedTaskBundle = {
+  tasks?: TaskNode[];
+};
+
 type GitChange = {
   status: string;
   path: string;
@@ -36,12 +40,14 @@ type GitChange = {
 type RelatedTask = {
   id: string;
   status: string;
+  matched_by: Array<"path" | "scope">;
 };
 
 type FileCheckpoint = GitChange & {
   active_or_review_tasks: RelatedTask[];
   blocked_tasks: RelatedTask[];
   accepted_tasks: RelatedTask[];
+  carrier_tasks: RelatedTask[];
   related_tasks: RelatedTask[];
   recommendation: "hold" | "candidate" | "needs-planner-review";
 };
@@ -52,6 +58,7 @@ type SliceCheckpoint = {
   active_or_review_tasks: string[];
   blocked_tasks: string[];
   accepted_tasks: string[];
+  carrier_tasks: string[];
   recommendation: "hold" | "candidate" | "needs-planner-review";
 };
 
@@ -65,7 +72,10 @@ type SummarizeOptions = {
   appDir?: string;
   projectDir?: string;
   taskTree?: TaskTree;
+  archivedTasks?: TaskNode[];
   changes?: GitChange[];
+  paths?: string[];
+  boundedSliceLabel?: string;
 };
 
 function readJson<T>(path: string): T | null {
@@ -76,9 +86,29 @@ function readJson<T>(path: string): T | null {
   }
 }
 
+function loadArchivedTasks(appDir: string): TaskNode[] {
+  const archiveDir = resolve(appDir, "tasks", "archive");
+  if (!existsSync(archiveDir)) return [];
+
+  const archivedTasks: TaskNode[] = [];
+  for (const entry of readdirSync(archiveDir)) {
+    if (!entry.startsWith("done-leaves-") || !entry.endsWith(".json")) continue;
+    const bundle = readJson<ArchivedTaskBundle>(resolve(archiveDir, entry));
+    if (!Array.isArray(bundle?.tasks)) continue;
+    for (const task of bundle.tasks) {
+      if (task && typeof task === "object") {
+        archivedTasks.push(task);
+      }
+    }
+  }
+
+  return archivedTasks;
+}
+
 function loadAppContext(appDir: string): {
   projectDir: string;
   taskTree: TaskTree;
+  archivedTasks: TaskNode[];
 } {
   const projectJson = readJson<ProjectJson>(resolve(appDir, "project.json"));
   const projectDir = resolve(
@@ -90,7 +120,8 @@ function loadAppContext(appDir: string): {
   ) ?? {
     tasks: {},
   };
-  return { projectDir, taskTree };
+  const archivedTasks = loadArchivedTasks(appDir);
+  return { projectDir, taskTree, archivedTasks };
 }
 
 function taskState(task: TaskNode): string {
@@ -148,15 +179,15 @@ function changeSlice(path: string): string {
   return parts[0] || "root";
 }
 
-function parseGitStatus(projectDir: string): GitChange[] {
+function parseGitStatus(projectDir: string, paths?: string[]): GitChange[] {
   if (!existsSync(projectDir)) {
     throw new Error(`Domain project does not exist: ${projectDir}`);
   }
-  const output = git(projectDir, [
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-  ]);
+  const args = ["status", "--porcelain=v1", "--untracked-files=all"];
+  if (paths && paths.length > 0) {
+    args.push("--", ...paths);
+  }
+  const output = git(projectDir, args);
   return output
     .split("\n")
     .filter(Boolean)
@@ -329,14 +360,18 @@ function isHistoricalSupersededBlockedTask(task: TaskNode): boolean {
 
 function relatedTasks(
   taskTree: TaskTree,
+  archivedTasks: TaskNode[],
   projectDir: string,
   path: string,
 ): RelatedTask[] {
-  return Object.values(taskTree.tasks ?? {})
+  const liveTasks = Object.values(taskTree.tasks ?? {});
+  const allTasks = [...liveTasks, ...archivedTasks];
+
+  return allTasks
     .filter((task): task is TaskNode & { id: string } =>
       Boolean(task.id && (task.state || task.status)),
     )
-    .filter((task) => {
+    .map((task) => {
       const declaredPaths = [
         ...normalizeStringArray(task.inputs),
         ...normalizeStringArray(task.outputs),
@@ -354,15 +389,30 @@ function relatedTasks(
         scopeMatch &&
         isHistoricalSupersededBlockedTask(task)
       ) {
-        return false;
+        return null;
       }
 
-      return exactPathMatch || scopeMatch;
+      if (!exactPathMatch && !scopeMatch) {
+        return null;
+      }
+
+      return {
+        id: task.id,
+        status: taskState(task),
+        matched_by: [
+          ...(exactPathMatch ? (["path"] as const) : []),
+          ...(scopeMatch ? (["scope"] as const) : []),
+        ],
+      } satisfies RelatedTask;
     })
-    .map((task) => ({ id: task.id, status: taskState(task) }))
+    .filter((task): task is RelatedTask => Boolean(task))
     .sort(
       (a, b) =>
         statusRank(a.status) - statusRank(b.status) || a.id.localeCompare(b.id),
+    )
+    .filter(
+      (task, index, items) =>
+        index === items.findIndex((candidate) => candidate.id === task.id),
     );
 }
 
@@ -382,29 +432,56 @@ function unique(values: string[]): string[] {
   return [...new Set(values)].sort();
 }
 
+function isRootExactPathCarrier(task: RelatedTask): boolean {
+  return (
+    task.id === "project" &&
+    task.status === "active" &&
+    task.matched_by.includes("path") &&
+    !task.matched_by.includes("scope")
+  );
+}
+
 function summarizeFiles(
   changes: GitChange[],
   taskTree: TaskTree,
+  archivedTasks: TaskNode[],
   projectDir: string,
+  options: { boundedSliceLabel?: string } = {},
 ): FileCheckpoint[] {
+  const boundedMode = Boolean(options.boundedSliceLabel);
+
   return changes.map((change) => {
-    const related = relatedTasks(taskTree, projectDir, change.path);
-    const activeOrReview = related.filter((task) =>
-      ["active", "review"].includes(task.status),
+    const related = relatedTasks(
+      taskTree,
+      archivedTasks,
+      projectDir,
+      change.path,
+    );
+    const carrierTasks = boundedMode
+      ? related.filter((task) => isRootExactPathCarrier(task))
+      : [];
+    const activeOrReview = related.filter(
+      (task) =>
+        ["active", "review"].includes(task.status) &&
+        !carrierTasks.some((carrier) => carrier.id === task.id),
     );
     const blocked = related.filter((task) => task.status === "blocked");
     const accepted = related.filter((task) => task.status === "done");
     const recommendation: FileCheckpoint["recommendation"] =
       activeOrReview.length > 0 || blocked.length > 0
         ? "hold"
-        : accepted.length > 0
+        : accepted.length > 0 || carrierTasks.length > 0
           ? "candidate"
           : "needs-planner-review";
     return {
       ...change,
+      ...(boundedMode && change.path.startsWith("model/")
+        ? { slice: options.boundedSliceLabel! }
+        : {}),
       active_or_review_tasks: activeOrReview,
       blocked_tasks: blocked,
       accepted_tasks: accepted,
+      carrier_tasks: carrierTasks,
       related_tasks: related,
       recommendation,
     };
@@ -431,6 +508,9 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
           file.accepted_tasks.map((task) => task.id),
         ),
       );
+      const carrierTasks = unique(
+        sliceFiles.flatMap((file) => file.carrier_tasks.map((task) => task.id)),
+      );
       const recommendation: SliceCheckpoint["recommendation"] =
         activeOrReview.length > 0 || blocked.length > 0
           ? "hold"
@@ -438,7 +518,7 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
                 (file) => file.recommendation === "needs-planner-review",
               )
             ? "needs-planner-review"
-            : accepted.length > 0
+            : accepted.length > 0 || carrierTasks.length > 0
               ? "candidate"
               : "needs-planner-review";
       return {
@@ -447,6 +527,7 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
         active_or_review_tasks: activeOrReview,
         blocked_tasks: blocked,
         accepted_tasks: accepted,
+        carrier_tasks: carrierTasks,
         recommendation,
       };
     })
@@ -483,11 +564,20 @@ export function summarizeDomainCheckpoint(
 ): CheckpointSummary {
   const defaultAppDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
   const appDir = options.appDir ?? defaultAppDir;
-  const appContext = loadAppContext(appDir);
-  const projectDir = options.projectDir ?? appContext.projectDir;
-  const taskTree = options.taskTree ?? appContext.taskTree;
-  const changes = options.changes ?? parseGitStatus(projectDir);
-  const files = summarizeFiles(changes, taskTree, projectDir);
+  const useSyntheticContext =
+    options.projectDir !== undefined ||
+    options.taskTree !== undefined ||
+    options.changes !== undefined ||
+    options.archivedTasks !== undefined;
+  const appContext = useSyntheticContext ? null : loadAppContext(appDir);
+  const projectDir = options.projectDir ?? appContext!.projectDir;
+  const taskTree = options.taskTree ?? appContext!.taskTree;
+  const archivedTasks =
+    options.archivedTasks ?? appContext?.archivedTasks ?? [];
+  const changes = options.changes ?? parseGitStatus(projectDir, options.paths);
+  const files = summarizeFiles(changes, taskTree, archivedTasks, projectDir, {
+    boundedSliceLabel: options.boundedSliceLabel,
+  });
   const slices = summarizeSlices(files);
   return {
     projectDir,
@@ -496,9 +586,89 @@ export function summarizeDomainCheckpoint(
   };
 }
 
+function splitPathList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readPathsFile(path: string): string[] {
+  return readFileSync(path, "utf-8")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+}
+
+export function parseCliArgs(argv: string[]): {
+  json: boolean;
+  paths: string[];
+  boundedSliceLabel?: string;
+} {
+  const paths: string[] = [];
+  let json = false;
+  let boundedSliceLabel: string | undefined;
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--bounded-slice") {
+      const value = argv[index + 1] ?? "";
+      boundedSliceLabel = value.trim() || undefined;
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--bounded-slice=")) {
+      const value = arg.slice("--bounded-slice=".length).trim();
+      boundedSliceLabel = value || undefined;
+      continue;
+    }
+    if (arg === "--paths") {
+      const value = argv[index + 1] ?? "";
+      paths.push(...splitPathList(value));
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--paths=")) {
+      const value = arg.slice("--paths=".length).trim();
+      if (value) {
+        paths.push(...splitPathList(value));
+      }
+      continue;
+    }
+    if (arg === "--paths-file") {
+      const value = argv[index + 1] ?? "";
+      if (value) {
+        paths.push(...readPathsFile(value));
+      }
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--paths-file=")) {
+      const value = arg.slice("--paths-file=".length).trim();
+      if (value) {
+        paths.push(...readPathsFile(value));
+      }
+    }
+  }
+
+  if (boundedSliceLabel && paths.length === 0) {
+    throw new Error("--bounded-slice requires --paths or --paths-file");
+  }
+
+  return { json, paths: unique(paths), boundedSliceLabel };
+}
+
 if (import.meta.main) {
-  const summary = summarizeDomainCheckpoint();
-  if (process.argv.includes("--json")) {
+  const cli = parseCliArgs(process.argv.slice(2));
+  const summary = summarizeDomainCheckpoint({
+    paths: cli.paths.length > 0 ? cli.paths : undefined,
+    boundedSliceLabel: cli.boundedSliceLabel,
+  });
+  if (cli.json) {
     console.log(JSON.stringify(summary, null, 2));
   } else {
     printText(summary);

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T18:44:53.794Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review accepts the private-cluster none-DNS-zone-v3 post-reconcile judgment: repo-local feature/spec/replay carriers are aligned to the mounted system->none lifecycle, but path.private-cluster-none-dns-zone-v3 still remains unknown because accepted evidence covers only the terminal none-mode branch, not the exact same-cluster lifecycle. The single blocked sibling remains the compressed external-human-transport family wait. Visible next repo-local work is virtualmachine-prerelease-mounted-source-row-boundary-packet-20260622 so mounted-source VM prerelease boundaries keep moving while external reply proof is pending.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted source plus existing private-cluster execute/replay house patterns to determine the next truthful repo-local execute surface for the exact path.private-cluster-vnet-integration-shared-apiserver-subnet: either identify and bound an execute-capable gated replay authoring slice or record the exact source-equivalent ceiling that keeps this path canonical unknown, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted source files and repo-local private-cluster execute patterns inspected, preserves the distinction between path.private-cluster-vnet-integration-shared-apiserver-subnet and broader/final private-cluster siblings, and states whether a truthful execute-capable gated replay slice exists without performing cloud execution.",
+        "If authoring is justified, the task names the concrete replay/spec/evidence files or next authoring slice to create; if not, it records the exact repo-local evidence ceiling/blocker and leaves the shared external-human wait unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-vnet-integration-shared-apiserver-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T18:25:24.361Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T18:25:26.679Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622_20260622182529",
+        "assigned_at": "2026-06-22T18:25:29.939Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622_20260622182529",
+        "worker_started_at": "2026-06-22T18:25:48.613Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the archive assessment for the shared API-server subnet path, concluding that the exact replay is already execute-capable repo-locally and that the remaining blocker is environment/live auth rather than missing authoring.",
+        "last_worker_completed_at": "2026-06-22T18:27:23.075Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T18:28:15.634Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive shows the exact shared-API-server-subnet replay is already execute-capable and mutation-gated repo-locally, so the assessment leaf is complete and no further repo-local execute authoring is needed for this path."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-shared-apiserver-subnet-execute-surface-assessment-20260622"
+      ],
+      "result": "Produced the archive assessment for the shared API-server subnet path, concluding that the exact replay is already execute-capable repo-locally and that the remaining blocker is environment/live auth rather than missing authoring.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T18:28:15.634Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive shows the exact shared-API-server-subnet replay is already execute-capable and mutation-gated repo-locally, so the assessment leaf is complete and no further repo-local execute authoring is needed for this path."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T14:06:17.720Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 task-completed owner pass accepts the Windows prerelease shared-wrapper stale-reference follow-up: the accepted model/views now remove the remaining stale replays/windows-vm-prerelease-matrix.ts maintained-surface references in the row-216/shared family and point those carriers at the extant features/windows/tests/windows-vm-prerelease-matrix.ts wrapper. With that last repo-local cleanup accepted, the truthful live project frontier is again blocked-only under focus-mounted-source-coverage-closure-and-external-wait-20260623: one narrowed VM prerelease/shared-identity proof-return family wait plus the two private-cluster operator-response waits already backed by durable send/delivery proof. No new runnable repo-local refill work is created in this bounded wake because the current tree and accepted evidence still show no truthful local successor until returned external proof/response or explicit new steering changes one of those carriers.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the remaining stale maintained-surface references to non-existent replays/windows-vm-prerelease-matrix.ts that the accepted row-206 repair intentionally left behind, starting from the mounted AKS RP source and the row-216/shared Windows prerelease family so the knowledge map either points to the extant carrier or records an exact bounded exception.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627.md"
+      ],
+      "acceptance": [
+        "Identify the exact maintained model/view/spec/path objects that still reference replays/windows-vm-prerelease-matrix.ts after the accepted row-206 repair, and map them to the owning mounted source scenario/spec boundary using /app/sources/aks-rp plus current repo-local artifacts.",
+        "If an extant equivalent wrapper/test carrier exists, update the maintained surfaces to that carrier and record bounded validation that only the intended row-216/shared-family references changed; otherwise record the precise repo-local reason the stale reference cannot yet be repaired without inventing a new carrier.",
+        "Record repo-local validation evidence, including targeted grep or diff output and the exact bun run check result if unrelated pre-existing failures prevent a full green check."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows-vm-prerelease-shared-wrapper"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T14:00:01.515Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627_20260627140001",
+        "assigned_at": "2026-06-27T14:00:01.564Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627",
+        "worker_started_attempt_id": "a_windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627_20260627140001",
+        "worker_started_at": "2026-06-27T14:00:20.296Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the remaining maintained Windows prerelease shared-wrapper references from the stale non-existent replay path to the extant wrapper carrier in the accepted knowledge-map model, regenerated maintained views, and recorded bounded mounted-source-backed evidence in evidence/archive/windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T14:03:52.503Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T14:05:56.547Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-27 evidence/archive/windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627.md: the mounted-source-backed follow-up identified the exact remaining stale maintained-surface references, repointed only the intended Windows prerelease shared-family objects from the non-existent replay path to features/windows/tests/windows-vm-prerelease-matrix.ts, regenerated maintained views, and left no stale maintained references in the accepted model/view surfaces."
+      },
+      "session_id": "s_task_windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627",
+      "session_history": [
+        "s_task_windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627"
+      ],
+      "result": "Repaired the remaining maintained Windows prerelease shared-wrapper references from the stale non-existent replay path to the extant wrapper carrier in the accepted knowledge-map model, regenerated maintained views, and recorded bounded mounted-source-backed evidence in evidence/archive/windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T14:05:56.547Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-27 evidence/archive/windows-vm-prerelease-shared-wrapper-stale-reference-followup-20260627.md: the mounted-source-backed follow-up identified the exact remaining stale maintained-surface references, repointed only the intended Windows prerelease shared-family objects from the non-existent replay path to features/windows/tests/windows-vm-prerelease-matrix.ts, regenerated maintained views, and left no stale maintained references in the accepted model/view surfaces."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T15:21:45.228Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner cleanup: archive the accepted private-cluster-none-dns-zone-v3 model-next-action reconcile leaf because its durable meaning is now carried by the maintained path status and blocker text: no new external wait should be created here, and truthful reconsideration is limited to either an accepted tuple-gated live run of replays/private-cluster-none-private-dns-zone-v3.ts or a later operator reply to the already-sent runtime prerequisite ask. Keep the two active repo-local mounted-source reconcile leaves as the current burn-down work, leave virtualmachines-prerelease-mounted-source-rows-30-32-34-reconcile-20260622 queued behind the vm-prerelease-mounted-source conflict exactly as-is, and preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.private-cluster-none-dns-zone-v3 model/status text after the execute-tuple hardening so repo-local carriers say exactly what remains unknown, what evidence ceiling is already accepted, and what later external-runtime proof would change next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Inspect the existing repo-local private-cluster none-dns-zone-v3 evidence packets that already define the mounted-source lifecycle contract, scale-validation-depth gap, explicit execute tuple gate, and external-runtime wait, then write ../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622.md that states the exact current judgment and next action without reopening local source rediscovery or cloud mutation.",
+        "If the review finds stale or contradictory model/feature/spec/view text for path.private-cluster-none-dns-zone-v3, update the directly coupled repo-local carriers and run the needed non-mutating validation/regeneration so the branch status and next-action text stay aligned; otherwise record that no carrier edit was needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T15:15:09.092Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622_20260622151515",
+        "assigned_at": "2026-06-22T15:15:15.416Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622_20260622151515",
+        "worker_started_at": "2026-06-22T15:16:03.950Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the private-cluster none-dns-zone-v3 repo-local judgment after execute-tuple and scale-depth hardening, updated the coupled model/spec/feature carriers plus regenerated views, and wrote the requested archive note documenting that only accepted exact-lifecycle live evidence still remains unknown.",
+        "last_worker_completed_at": "2026-06-22T15:19:49.161Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T15:20:45.864Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622.md rechecked the mounted-source contract, execute-tuple gate, scale-depth hardening, and existing runtime-prereq ask, then documented the exact current judgment that path.private-cluster-none-dns-zone-v3 remains unknown only because accepted live one-cluster system->none lifecycle evidence is still missing. The review also records the coupled carrier updates plus non-mutating regeneration/check steps, so this repo-local reconcile leaf is complete and should be replaced by the next private-cluster mounted-source sibling reconcile while the single external human-proof wait stays unchanged."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622"
+      ],
+      "result": "Reconciled the private-cluster none-dns-zone-v3 repo-local judgment after execute-tuple and scale-depth hardening, updated the coupled model/spec/feature carriers plus regenerated views, and wrote the requested archive note documenting that only accepted exact-lifecycle live evidence still remains unknown.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T15:20:45.864Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/private-cluster-none-dns-zone-v3-model-next-action-reconcile-20260622.md rechecked the mounted-source contract, execute-tuple gate, scale-depth hardening, and existing runtime-prereq ask, then documented the exact current judgment that path.private-cluster-none-dns-zone-v3 remains unknown only because accepted live one-cluster system->none lifecycle evidence is still missing. The review also records the coupled carrier updates plus non-mutating regeneration/check steps, so this repo-local reconcile leaf is complete and should be replaced by the next private-cluster mounted-source sibling reconcile while the single external human-proof wait stays unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

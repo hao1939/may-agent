@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T23:10:17.700Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier review keeps external-send-proof-dispatch-family-human-transport-proof-wait-20260621 unchanged as the single truthful family-level human-transport wait: accepted owner-send audit, handoff/escalation proof, packet consolidation, and covered-packets local-dispatch proof already close all repo-local preparation for MachinesPreview, VM prerelease rows 25+50, row-33 execute approval, and row-76 shared-identity packaging. Archived repo-local mounted-source grounding slices advanced cluster-autoscaler and virtual-machines packet coverage; the only live repo-local learning work remains vmpr-mounted-source-packet-grounding-retry-20260621, and refill should stay within mounted-source grounding rather than reopen the external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cas-next-mounted-source-packet-grounding-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Ground exactly one remaining cluster-autoscaler scenario packet that still uses devbox-only or otherwise ungrounded source wording in features/cluster-autoscaler.yaml against the mounted handwritten source, so the next repo-local scenario truth is preserved without waiting on cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/cluster-autoscaler.yaml"
+      ],
+      "acceptance": [
+        "Pick one remaining cluster-autoscaler scenario entry in features/cluster-autoscaler.yaml whose source linkage is still devbox-only, placeholder, or otherwise not mounted-source grounded, and update that single packet so its goSource points at the exact mounted /app/sources/aks-rp/test/e2ev3/sigs/autoscale/clusterautoscaler/plans/*.go file or closest exact referenced scenario definition used by the handwritten test.",
+        "For that same packet, check productIntent, inputs, and expectedBehavior against the mounted handwritten source and correct any overclaim or missing detail while keeping the artifact source-grounded only: no live execution claim, no new external wait, and no broadening into generic PDB/autoscaler behavior beyond the selected scenario.",
+        "Keep scope limited to one remaining cluster-autoscaler scenario packet and any exact nearby linkage needed for coherence in features/cluster-autoscaler.yaml."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T23:04:57.452Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cas-next-mounted-source-packet-grounding-20260621_20260621230612",
+        "assigned_at": "2026-06-21T23:06:12.156Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cas-next-mounted-source-packet-grounding-20260621",
+        "worker_started_attempt_id": "a_cas-next-mounted-source-packet-grounding-20260621_20260621230612",
+        "worker_started_at": "2026-06-21T23:06:38.586Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Grounded the single CAS ProvisioningRequest scenario packet in features/cluster-autoscaler.yaml to the mounted handwritten source, corrected its source path and source-backed intent/inputs/expected behavior, and removed the unsupported accepted/processed expectation from the summary list.",
+        "last_worker_completed_at": "2026-06-21T23:07:40.245Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T23:08:21.251Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: features/cluster-autoscaler.yaml now grounds one remaining CAS ProvisioningRequest packet to mounted AKS RP source, replaces devbox-only goSource with /app/sources/aks-rp, corrects source-backed inputs/expectedBehavior, and removes the unsupported ProvisioningRequest accepted/processed overclaim."
+      },
+      "session_id": "s_task_cas-next-mounted-source-packet-grounding-20260621",
+      "session_history": [
+        "s_task_cas-next-mounted-source-packet-grounding-20260621"
+      ],
+      "result": "Grounded the single CAS ProvisioningRequest scenario packet in features/cluster-autoscaler.yaml to the mounted handwritten source, corrected its source path and source-backed intent/inputs/expected behavior, and removed the unsupported accepted/processed expectation from the summary list.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T23:08:21.251Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: features/cluster-autoscaler.yaml now grounds one remaining CAS ProvisioningRequest packet to mounted AKS RP source, replaces devbox-only goSource with /app/sources/aks-rp, corrects source-backed inputs/expectedBehavior, and removes the unsupported ProvisioningRequest accepted/processed overclaim."
+      },
+      "status": "done"
+    }
+  ]
+}

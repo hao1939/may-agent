@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T07:39:40.009Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning update confirms the watchdog review-pending wake was stale: the bounded serverless virtual-nodes multi-pod burst replay implementation leaf was already reviewed and accepted, so archive that completed child and preserve its durable meaning on the project root. Keep the five exact external returned-proof waits unchanged under focus-mounted-source-coverage-closure-and-external-wait-20260623 until the on/after-2026-06-26 follow-up window, and leave the assigned serverless-virtual-nodes-multi-pod-burst-model-reconciliation-20260625 leaf as the single active no-cloud next action to reconcile model/path-summary wording against the accepted replay shell.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded live-capable replay shell for path.serverless-virtual-nodes.multi-pod-burst in replays/serverless-virtual-nodes-multi-pod-burst.ts using the accepted 2026-06-25 execute-envelope contract: exactly three ACI-targeted witness pods, baseline/post-create container-group capture, strong unique pod↔container-group matching, stage-specific blocked vs fail outcomes, and preserved non-mutating check/default behavior with no cloud execution from this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625.md"
+      ],
+      "acceptance": [
+        "replays/serverless-virtual-nodes-multi-pod-burst.ts is upgraded from a check-only carrier into a truthful live-capable replay shell that embeds or derives the exact 3-pod witness manifest shape from the accepted execute-envelope packet, captures pre/post ACI container-group state, and implements strong one-pod-to-one-container-group matching plus count-equality enforcement without widening into DNS, subnet-placement, or generic scaling work.",
+        "The implementation preserves repo-local non-mutating behavior by default/check mode, keeps any live path behind the exact future probe gate, and the archive artifact cites the packet inputs reviewed plus the local validation commands and outcomes needed to prove the replay remains coherent before any future execution-gate request."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.serverless-virtual-nodes.multi-pod-burst"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T07:32:44.094Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625_20260625073244",
+        "assigned_at": "2026-06-25T07:32:44.142Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625_20260625073244",
+        "worker_started_at": "2026-06-25T07:33:04.984Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the bounded live-capable replay shell in replays/serverless-virtual-nodes-multi-pod-burst.ts and wrote the archive artifact documenting the accepted execute-envelope inputs plus local validation outcomes; no cloud execution was performed.",
+        "last_worker_completed_at": "2026-06-25T07:37:36.161Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T07:38:23.029Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after verifying the linked archive artifact and replay shell against the acceptance contract: replays/serverless-virtual-nodes-multi-pod-burst.ts now embeds the exact 3-pod witness set, captures baseline/post-create container-group state, encodes strong unique pod↔container-group matching plus stage-specific blocked vs fail outcomes, and repo-local validation passed via 'bun replays/serverless-virtual-nodes-multi-pod-burst.ts --check' with 37/37 assertions and no cloud execution."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-multi-pod-burst-bounded-replay-implementation-20260625"
+      ],
+      "result": "Implemented the bounded live-capable replay shell in replays/serverless-virtual-nodes-multi-pod-burst.ts and wrote the archive artifact documenting the accepted execute-envelope inputs plus local validation outcomes; no cloud execution was performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T07:38:23.029Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted after verifying the linked archive artifact and replay shell against the acceptance contract: replays/serverless-virtual-nodes-multi-pod-burst.ts now embeds the exact 3-pod witness set, captures baseline/post-create container-group state, encodes strong unique pod↔container-group matching plus stage-specific blocked vs fail outcomes, and repo-local validation passed via 'bun replays/serverless-virtual-nodes-multi-pod-burst.ts --check' with 37/37 assertions and no cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

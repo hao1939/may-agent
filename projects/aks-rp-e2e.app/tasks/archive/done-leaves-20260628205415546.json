@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T20:54:15.546Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 review refill: accepted the Azure CNI overlay ILPIP dual-stack normalization slice as durable source/spec/model hygiene. This branch now knows the base ILPIP path remains the IPv4 mixed-OS trunk while the dual-stack refinement is a separate IPv4+IPv6 ILPIP carrier with exact mounted-source anchors and repaired spec sourceRefs. Archive four completed repo-local leaves whose durable meaning is now captured here. Keep the active burn-down on repair-net-integration-natgw-v2-migration-v2-to-block-model-view-wording-20260628, and keep the six operator-response children as truthful external waits with existing send proof and next owner checkpoint 2026-06-29T16:45:00Z.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit mounted Scenario_NATGatewayV2_Migration_V2toBlock against the current repo-local carrier and author or repair the exact execute-capable replay/spec/test wiring for path.net-integration.natgw-v2-migration-v2-to-block so default/check stay non-mutating while the live lane remains explicitly gated and bounded to the V2->block contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted source files and current repo-local spec/replay/test files for path.net-integration.natgw-v2-migration-v2-to-block, including any sibling reuse from the V2->none or V2->LB families and the exact remaining gap.",
+        "Repo-local carrier files are updated or explicitly confirmed so default/--check remain non-mutating while the execute path exists only behind --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-block, preserving the bounded create/bootstrap-cache/node-image-upgrade/apiserver-subnet/VNet-integration/outboundType=block contract.",
+        "A repo-local validation command and outcome are recorded in the artifact, and any maintained spec/model wording needed to reflect the repaired execute-carrier truth is updated or called out precisely."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:path.net-integration.natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T20:50:13.591Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628_20260628205013",
+        "assigned_at": "2026-06-28T20:50:13.692Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628",
+        "worker_started_attempt_id": "a_author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628_20260628205013",
+        "worker_started_at": "2026-06-28T20:50:34.087Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the mounted NATGatewayV2 V2→block source against the repo-local spec/replay/test carrier, added an explicit default-invocation non-mutation guardrail test, and wrote a durable evidence artifact documenting exact source/spec/test wiring, sibling reuse, remaining stale model wording, and local validation results.",
+        "last_worker_completed_at": "2026-06-28T20:52:07.989Z",
+        "last_worker_evidence": [
+          "features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.test.ts",
+          "evidence/archive/author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T20:52:39.850Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted for the narrow repo-local carrier/test/evidence scope: archived audit cites exact mounted source plus current spec/replay/test files, confirms the execute-capable V2->block lane already exists and stays fail-closed behind the exact mutation gate, and adds local guardrail coverage proving default invocation remains non-mutating. No live run or product verdict is accepted from this leaf; maintained model/view wording remains stale and needs separate repair."
+      },
+      "session_id": "s_task_author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628",
+      "session_history": [
+        "s_task_author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628"
+      ],
+      "result": "Audited the mounted NATGatewayV2 V2→block source against the repo-local spec/replay/test carrier, added an explicit default-invocation non-mutation guardrail test, and wrote a durable evidence artifact documenting exact source/spec/test wiring, sibling reuse, remaining stale model wording, and local validation results.",
+      "evidence": [
+        "features/net-integration/tests/net-integration-natgw-v2-migration-v2-to-block.test.ts",
+        "evidence/archive/author-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T20:52:39.850Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted for the narrow repo-local carrier/test/evidence scope: archived audit cites exact mounted source plus current spec/replay/test files, confirms the execute-capable V2->block lane already exists and stays fail-closed behind the exact mutation gate, and adds local guardrail coverage proving default invocation remains non-mutating. No live run or product verdict is accepted from this leaf; maintained model/view wording remains stale and needs separate repair."
+      },
+      "status": "done"
+    }
+  ]
+}

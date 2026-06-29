@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T14:42:11.475Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 worker-completion owner review corrected the newest verifier auto-close without widening the frontier. The archived leaf verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease is accepted only as queue-drain runner-incompatibility evidence: workflow run 28380115663 reported a skipped spec because the case is not directly live-executable by the single-spec runner and instead appears source/check-only or dependent on an existing/shared-cluster carrier, so it does not count as fresh live cloud coverage. That spec now joins the bounded repo-local reconciliation family under review-single-spec-runner-incompatibility-suspects-20260629 together with the earlier retina-enterprise-update-acns-cilium and azure-overlay-agic-vm-prerelease suspects. Active next work remains the saturated P1 verifier wave plus that one source-backed incompatibility review and the westus2 alternate-surface review; exact waits remain unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.network-cni.cilium-enterprise-addon-vm-prerelease through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.network-cni.cilium-enterprise-addon-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.cilium-enterprise-addon-vm-prerelease"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.network-cni.cilium-enterprise-addon-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-cni.cilium-enterprise-addon-vm-prerelease workflow run 28380115663 classified as done. Loop key: verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease-a_verify-spec-network-cni-ci. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28380115663 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json"
+      },
+      "trace": {
+        "created_at": "2026-06-29T14:38:20.609Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease_20260629143820",
+        "assigned_at": "2026-06-29T14:38:20.630Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease",
+        "worker_started_attempt_id": "a_verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease_20260629143820",
+        "worker_started_at": "2026-06-29T14:38:29.806Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.network-cni.cilium-enterprise-addon-vm-prerelease workflow run 28380115663 classified as done. Loop key: verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease-a_verify-spec-network-cni-ci. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28380115663 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json",
+        "last_worker_completed_at": "2026-06-29T14:39:20.503Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T14:39:29.812Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.network-cni.cilium-enterprise-addon-vm-prerelease workflow run 28380115663 classified as done. Loop key: verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease-a_verify-spec-network-cni-ci. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28380115663 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json"
+      },
+      "session_id": "s_task_verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease",
+      "session_history": [
+        "s_task_verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease"
+      ],
+      "result": "Spec spec.network-cni.cilium-enterprise-addon-vm-prerelease workflow run 28380115663 classified as done. Loop key: verify-spec-network-cni-cilium-enterprise-addon-vm-prerelease-a_verify-spec-network-cni-ci. Spec is not directly live-executable by the single-spec runner: it is source/check-only or requires an existing/shared-cluster carrier. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28380115663 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28380115663/aks-rp-e2e-28380115663-spec-test-results/test-results/single-network-cni-cilium-enterprise-addon-vm-prerelease_900345/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T14:39:29.812Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

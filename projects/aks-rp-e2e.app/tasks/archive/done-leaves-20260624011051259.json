@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T01:10:51.260Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 blocked-frontier owner review kept all three external-proof waits unchanged because their only truthful resume conditions remain returned proof or the first same-branch follow-up on/after 2026-06-26, and the AAD RBAC environment-overblock warning remains explicitly overridden as heuristic noise after completed local narrowing/auth/quota work. Archived the four latest safe done repo-local linkage/model leaves whose durable meaning is already represented in archive evidence and current model/view surfaces; live capacity stays on the three assigned no-cloud active leaves for private second-hop checkpoint repair, Windows mixed-OS VirtualMachines linkage, and VM-prerelease KEDA runtime matrix linkage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land path.private-cluster-vnet-integration-update-private-second-hop from the mounted-source second-hop boundary into normalized model/view surfaces and one repo-local archive note that preserves the inherited private-APIVNET starting checkpoint, the exact second update+validation contract, the current check-vs-execute ceiling, and the next truthful action without cloud execution or duplicate waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624.md"
+      ],
+      "acceptance": [
+        "evidence/archive/private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624.md cites the mounted-source boundary for update_private.go, names the inherited private APIVNET checkpoint plus second update/validation steps, and records the present execution ceiling plus exact next truthful replay action.",
+        "model/knowledge-map/model.json and any regenerated view surface touched by this path, including model/knowledge-map/views/path-summary.json when needed, reflect the bounded path.private-cluster-vnet-integration-update-private-second-hop understanding without widening it beyond the exact second-hop contract.",
+        "This remains repo-local runner/model hygiene only: no cloud execution, no new passive blocker leaf, and no reopening of already accepted adjacent private-cluster boundary work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-vnet-integration-update-private-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T01:00:35.403Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T01:00:39.334Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624_20260624010057",
+        "assigned_at": "2026-06-24T01:00:57.819Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624_20260624010057",
+        "worker_started_at": "2026-06-24T01:01:28.731Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the private second-hop archive note at evidence/archive/private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624.md and updated model/knowledge-map/model.json plus regenerated views so the accepted surfaces now cite the new artifact and preserve the inherited private-APIVNET checkpoint plus truthful check-vs-execute ceiling.",
+        "last_worker_completed_at": "2026-06-24T01:06:34.136Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T01:08:17.435Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review accepted: the archive note pins update_private.go second-hop source blocks, preserves the inherited private-APIVNET same-cluster checkpoint and check-vs-execute ceiling, and model/path-summary now cite the new evidence without inflating live verification."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624"
+      ],
+      "result": "Landed the private second-hop archive note at evidence/archive/private-cluster-vnet-integration-update-private-second-hop-model-view-landing-20260624.md and updated model/knowledge-map/model.json plus regenerated views so the accepted surfaces now cite the new artifact and preserve the inherited private-APIVNET checkpoint plus truthful check-vs-execute ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T01:08:17.435Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review accepted: the archive note pins update_private.go second-hop source blocks, preserves the inherited private-APIVNET same-cluster checkpoint and check-vs-execute ceiling, and model/path-summary now cite the new evidence without inflating live verification."
+      },
+      "status": "done"
+    }
+  ]
+}

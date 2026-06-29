@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T00:39:45.726Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-29 blocked-frontier owner review completes project-level hygiene for the remaining accepted repo-local normalization/repair leaves. Their durable meaning is already preserved in accepted evidence and the parent rollup: the NATGW V2 execute-carrier repair remains a repo-local truth maintenance result, the serverless schedulerctrl topology normalization remains a bounded model/view correction, and neither creates truthful new runnable work before an external resume signal changes one of the three live family blockers. Keep the frontier compressed to the two human/operator waits and the single westus2 preflight recovery gate.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the repo-local carrier gap for path.net-integration.natgw-v2-migration-v2-to-block by proving or repairing the exact Scenario_NATGatewayV2_Migration_V2toBlock spec/replay wiring, including a dedicated non-mutating check lane and the intended execute-gated mutation path, without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629.md"
+      ],
+      "acceptance": [
+        "Durable artifact cites the mounted source scenario plus the current spec, replay, and model/status carriers for the exact V2→block path.",
+        "Repo-local code and/or model text is repaired as needed so the path truthfully states whether a dedicated execute lane exists, what gate protects it, and what remains missing before any future live verdict.",
+        "Validation stays repo-local only (check/tests/status regeneration) and the artifact records the exact commands and results."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:net-integration-natgw-v2-migration-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T00:23:45.718Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T00:23:52.113Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629_20260629002355",
+        "assigned_at": "2026-06-29T00:23:55.835Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629",
+        "worker_started_attempt_id": "a_repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629_20260629002355",
+        "worker_started_at": "2026-06-29T00:24:07.516Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the NATGW V2 V2→block maintained carrier truth by updating model wording/replay refs in model/knowledge-map/model.json, regenerating views, and writing a durable audit artifact at evidence/archive/repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629.md. Verified the repo-local execute lane exists, default/check remain non-mutating, and execute stays fail-closed without the exact mutation gate.",
+        "last_worker_completed_at": "2026-06-29T00:26:04.469Z",
+        "last_worker_evidence": [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+          "model/knowledge-map/views/status-summary.json",
+          "model/knowledge-map/views/model.generated.md",
+          "evidence/archive/repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T00:26:38.781Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable artifact proves the mounted Scenario_NATGatewayV2_Migration_V2toBlock source/spec/replay/model carriers, the maintained model/view wording now truthfully states that the execute lane already exists and remains fail-closed behind the exact mutation gate, and repo-local validation recorded non-mutating check success plus execute gating without cloud mutation."
+      },
+      "session_id": "s_task_repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629",
+      "session_history": [
+        "s_task_repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629"
+      ],
+      "result": "Repaired the NATGW V2 V2→block maintained carrier truth by updating model wording/replay refs in model/knowledge-map/model.json, regenerating views, and writing a durable audit artifact at evidence/archive/repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629.md. Verified the repo-local execute lane exists, default/check remain non-mutating, and execute stays fail-closed without the exact mutation gate.",
+      "evidence": [
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "model/knowledge-map/views/status-summary.json",
+        "model/knowledge-map/views/model.generated.md",
+        "evidence/archive/repair-net-integration-natgw-v2-migration-v2-to-block-execute-carrier-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T00:26:38.781Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable artifact proves the mounted Scenario_NATGatewayV2_Migration_V2toBlock source/spec/replay/model carriers, the maintained model/view wording now truthfully states that the execute lane already exists and remains fail-closed behind the exact mutation gate, and repo-local validation recorded non-mutating check success plus execute gating without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

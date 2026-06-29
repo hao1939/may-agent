@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T17:44:29.523Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the secops-fips Ubuntu compatibility source packet: the durable archive note now preserves the exact mounted Scenario_Cluster_FIPS_Ubuntu_Compat request/expectation boundary, keeps its Windows and root-config-preservation adjacencies separate, and records bounded source-spec plus repo check validation with no cloud verdict claim. The previously accepted storage-csi file-clone contract-hardening slice and this secops packet are now represented by project rollup context rather than separate done leaves. The live frontier remains truthful: aad-rbac managed-v2 lifecycle mounted-source packet and network-cni Cilium preview-upgrade carrier repair stay active, the single external-human wait and the private-cluster selected-host SSH wait remain exact blockers, and new repo-local capacity is refilled with the cloud-provider credential-provider source-grounding backlog leaf.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "secops-fips-ubuntu-compat-source-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded mounted-source-backed source packet for path.secops-fips.ubuntu-compat so the project preserves the exact Scenario_Cluster_FIPS_Ubuntu_Compat boundary—Kubernetes 1.35+ Ubuntu 22.04 FIPS compatibility, its expected FIPS contract, and its adjacency to the existing windows/root-config-preservation carriers—across feature/spec/model/archive surfaces without claiming live product evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-ubuntu-compat-source-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted handwritten source files/helpers and records the precise request/expectation boundary for path.secops-fips.ubuntu-compat, including what is covered here versus adjacent secops-fips windows and root-config-preservation branches.",
+        "Any needed repo-local feature/spec/model/view adjustments are completed or explicitly proven already correct, and validation records bun run check plus bounded spec/model validation as applicable, with no cloud execution or live product verdict claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips-ubuntu-compat"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T17:39:21.409Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-ubuntu-compat-source-packet-20260623_20260623173925",
+        "assigned_at": "2026-06-23T17:39:25.799Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-ubuntu-compat-source-packet-20260623",
+        "worker_started_attempt_id": "a_secops-fips-ubuntu-compat-source-packet-20260623_20260623173925",
+        "worker_started_at": "2026-06-23T17:39:54.394Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable source-packet archive note at evidence/archive/secops-fips-ubuntu-compat-source-packet-20260623.md preserving the exact mounted Scenario_Cluster_FIPS_Ubuntu_Compat boundary, and revalidated the existing repo-local carrier with a fresh source-spec check plus repo-wide check output.",
+        "last_worker_completed_at": "2026-06-23T17:42:38.745Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T17:44:29.416Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/secops-fips-ubuntu-compat-source-packet-20260623.md: the archive note cites the exact mounted handwritten source, preserves the precise Scenario_Cluster_FIPS_Ubuntu_Compat request/expectation boundary and adjacency, and records bounded source-spec check plus bun run check validation without claiming live product evidence."
+      },
+      "session_id": "s_task_secops-fips-ubuntu-compat-source-packet-20260623",
+      "session_history": [
+        "s_task_secops-fips-ubuntu-compat-source-packet-20260623"
+      ],
+      "result": "Created a durable source-packet archive note at evidence/archive/secops-fips-ubuntu-compat-source-packet-20260623.md preserving the exact mounted Scenario_Cluster_FIPS_Ubuntu_Compat boundary, and revalidated the existing repo-local carrier with a fresh source-spec check plus repo-wide check output.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T17:44:29.416Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/secops-fips-ubuntu-compat-source-packet-20260623.md: the archive note cites the exact mounted handwritten source, preserves the precise Scenario_Cluster_FIPS_Ubuntu_Compat request/expectation boundary and adjacency, and records bounded source-spec check plus bun run check validation without claiming live product evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-file-clone-source-grounded-contract-hardening-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Harden the repo-local source-grounded contract for path.storage-csi-file-clone so the canonical spec/replay/model/archive surfaces consistently preserve the exact original hello-world write -> PersistentVolumeClaim dataSource clone -> cloned /mnt/datavolume/outfile readback boundary, without broadening into disk clone or claiming live verification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-file-clone-source-grounded-contract-hardening-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted/manual source and captures the clone branch's required assertions: original outfile materialized, cloned PVC dataSource kind/name preserved, cloned pod mount path preserved, and cloned outfile readback expected.",
+        "Any repo-local carrier/model/view adjustments needed to keep this branch truthful are completed or explicitly proven already correct, and validation records bun run check plus bounded replay/spec/model validation as applicable, with no cloud execution or live product verdict claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi-file-clone"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T17:39:21.459Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-file-clone-source-grounded-contract-hardening-20260623_20260623173925",
+        "assigned_at": "2026-06-23T17:39:25.851Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-file-clone-source-grounded-contract-hardening-20260623",
+        "worker_started_attempt_id": "a_storage-csi-file-clone-source-grounded-contract-hardening-20260623_20260623173925",
+        "worker_started_at": "2026-06-23T17:39:54.054Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added a durable archive hardening note at evidence/archive/storage-csi-file-clone-source-grounded-contract-hardening-20260623.md documenting that the existing file-clone spec/replay/model/view surfaces already preserve the exact handwritten Azure File clone contract without overclaiming live verification; validated with replay scaffold output and bun run check.",
+        "last_worker_completed_at": "2026-06-23T17:41:59.821Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T17:42:15.701Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the durable archive note as sufficient bounded source-grounded evidence: it cites the exact mounted Azure File clone source/helpers, preserves the original outfile -> PVC dataSource clone -> cloned outfile readback contract across spec/replay/model/view surfaces, and records repo-local scaffold plus bun run check validation without claiming live verification."
+      },
+      "session_id": "s_task_storage-csi-file-clone-source-grounded-contract-hardening-20260623",
+      "session_history": [
+        "s_task_storage-csi-file-clone-source-grounded-contract-hardening-20260623"
+      ],
+      "result": "Added a durable archive hardening note at evidence/archive/storage-csi-file-clone-source-grounded-contract-hardening-20260623.md documenting that the existing file-clone spec/replay/model/view surfaces already preserve the exact handwritten Azure File clone contract without overclaiming live verification; validated with replay scaffold output and bun run check.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T17:42:15.701Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the durable archive note as sufficient bounded source-grounded evidence: it cites the exact mounted Azure File clone source/helpers, preserves the original outfile -> PVC dataSource clone -> cloned outfile readback contract across spec/replay/model/view surfaces, and records repo-local scaffold plus bun run check validation without claiming live verification."
+      },
+      "status": "done"
+    }
+  ]
+}

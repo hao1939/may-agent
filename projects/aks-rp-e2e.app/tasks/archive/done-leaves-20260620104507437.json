@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T10:45:07.437Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Blocked-frontier owner reconciliation (2026-06-20T10:45Z): archive the accepted ManagedSystem worked-example consolidation because its durable meaning is now captured on this lane. The ManagedSystem boundary is now carried as a repo-local worked example that separates existing-pool minimal REST acceptance, create-time name+mode product-gap framing, day-2 count/type rejection, and adjacent VirtualMachines+ManagedSystem incompatibility without touching helper-held knowledge-map files. The only live work in this lane is managedsystem-deep-dive-boundary-lineage-refresh-20260620, which should refresh the human-facing deep dive with mounted source anchors while the shared seven-file checkpoint gate continues to block model/view landing edits under evidence-feedback-and-model-update.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-worked-example-boundary-map-consolidation-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consolidate the ManagedSystem Pool worked example into one durable boundary map that captures accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the next missing probes using existing repo-local evidence first, without editing helper-held knowledge-map files.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-pool-worked-example-boundary-map-consolidation-20260620.md"
+      ],
+      "acceptance": [
+        "Output cites the current repo-local ManagedSystem worked-example artifacts and states the accepted/rejected boundaries for create-time initial/default pool, day2 count/type surfaces, and adjacent ManagedSystem+VirtualMachines combinations without inventing new cloud evidence.",
+        "Output names which behavior points are directly observed versus still inferred/unknown, and records the next safe local follow-up or probe gap for each remaining unknown edge.",
+        "Task does not edit model/knowledge-map/model.json or model/knowledge-map/views/path-summary.json while the shared seven-file checkpoint carrier remains blocked."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:managedsystem-worked-example"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T10:43:00.035Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-worked-example-boundary-map-consolidation-20260620_20260620104300",
+        "assigned_at": "2026-06-20T10:43:00.078Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-worked-example-boundary-map-consolidation-20260620",
+        "worker_started_attempt_id": "a_managedsystem-worked-example-boundary-map-consolidation-20260620_20260620104300",
+        "worker_started_at": "2026-06-20T10:43:26.437Z",
+        "reviewed_at": "2026-06-20T10:45:07.391Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner re-accepted evidence/archive/managedsystem-pool-worked-example-boundary-map-consolidation-20260620.md during blocked-frontier review: the note consolidates current repo-local ManagedSystem accepted/rejected boundaries, labels direct observation versus deferred create-time unknowns, and leaves helper-held knowledge-map files untouched behind the shared seven-file checkpoint gate.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the ManagedSystem worked-example consolidation note at evidence/archive/managedsystem-pool-worked-example-boundary-map-consolidation-20260620.md, grounding accepted/rejected boundaries, direct-vs-inferred behavior, adjacent surfaces, and per-unknown next safe follow-ups from repo-local evidence and mounted AKS RP source without touching helper-held knowledge-map files.",
+        "last_worker_completed_at": "2026-06-20T10:44:33.500Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_managedsystem-worked-example-boundary-map-consolidation-20260620",
+      "session_history": [
+        "s_task_managedsystem-worked-example-boundary-map-consolidation-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T10:45:07.391Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner re-accepted evidence/archive/managedsystem-pool-worked-example-boundary-map-consolidation-20260620.md during blocked-frontier review: the note consolidates current repo-local ManagedSystem accepted/rejected boundaries, labels direct observation versus deferred create-time unknowns, and leaves helper-held knowledge-map files untouched behind the shared seven-file checkpoint gate."
+      },
+      "status": "done"
+    }
+  ]
+}

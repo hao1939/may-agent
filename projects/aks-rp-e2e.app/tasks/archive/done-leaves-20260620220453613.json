@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:04:53.613Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update reconciled the stale watchdog-runnable-backlog wake with current tree state: no runnable backlog remains because the only cited leaf is already active. Durable project knowledge now preserves three completed slices at the root level: (1) knowledge-map validator debt baseline captured the bounded validator debt starting point, (2) serverless-virtual-nodes source boundary mapping established the mounted-source/replay-backed subnet-validation contract, and (3) VM prerelease source boundary mapping for rows 25 and 50 established the source-backed prerelease expectation surface that feeds the live-operator bundle. Remaining live work is unchanged and explicit: active repo-local execution stays on delegation-service-string hygiene for serverless virtual-nodes and the bounded node-http-proxy normalized DAG repair, while the only true wait remains the consolidated external send-proof dispatch family under the VM prerelease replacement focus branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "knowledge-map-validator-debt-baseline-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the current repo-wide knowledge-map validator debt so future accepted-model landings can distinguish branch-local success from preexisting model failures and choose the first bounded repair family.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/model-validator-debt-baseline-20260620.md"
+      ],
+      "acceptance": [
+        "Run the current knowledge-map validator and capture the exact failing families/object ids or representative errors, confirming whether the overlay pod-CIDR expansion landing introduced any net-new validation failure.",
+        "Group the remaining validator failures into bounded repair families with the concrete model/view/spec surfaces they touch, and identify the smallest truthful first repair slice that would improve the validator baseline.",
+        "Do not broad-rewrite the model or run cloud execution; produce a durable evidence packet that a later worker can use to repair one family deliberately."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:58:15.113Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_knowledge-map-validator-debt-baseline-20260620_20260620215822",
+        "assigned_at": "2026-06-20T21:58:22.359Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_knowledge-map-validator-debt-baseline-20260620",
+        "worker_started_attempt_id": "a_knowledge-map-validator-debt-baseline-20260620_20260620215822",
+        "worker_started_at": "2026-06-20T21:58:38.780Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created evidence/archive/model-validator-debt-baseline-20260620.md with the current knowledge-map validator failure inventory, explicit confirmation that the overlay pod-CIDR expansion landing introduced no new validator-breaking errors, and a recommended first bounded repair slice (node-http-proxy missing DAGs).",
+        "last_worker_completed_at": "2026-06-20T22:01:53.498Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:02:36.274Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/model-validator-debt-baseline-20260620.md: it inventories the current repo-wide validator debt, confirms the overlay pod-CIDR expansion landing introduced no new validator-breaking errors, groups the dominant failure families, and identifies node-http-proxy missing DAGs as the smallest truthful first repair slice."
+      },
+      "session_id": "s_task_knowledge-map-validator-debt-baseline-20260620",
+      "session_history": [
+        "s_task_knowledge-map-validator-debt-baseline-20260620"
+      ],
+      "result": "Created evidence/archive/model-validator-debt-baseline-20260620.md with the current knowledge-map validator failure inventory, explicit confirmation that the overlay pod-CIDR expansion landing introduced no new validator-breaking errors, and a recommended first bounded repair slice (node-http-proxy missing DAGs).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:02:36.274Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/model-validator-debt-baseline-20260620.md: it inventories the current repo-wide validator debt, confirms the overlay pod-CIDR expansion landing introduced no new validator-breaking errors, groups the dominant failure families, and identifies node-http-proxy missing DAGs as the smallest truthful first repair slice."
+      },
+      "status": "done"
+    }
+  ]
+}

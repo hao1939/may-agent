@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T22:12:40.317Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-27 metric-breach owner pass finds the stale-active signal is already repaired by fresh leaf replacement, not by missing decomposition. Keep the two newly assigned active carriers in this lane unchanged: (1) repair-spec-app-routing-default-domain-http-reachability-rerun-retry-20260627 remains the single local runtime/problem leaf for the repo-local artifact-path write bug plus one bounded rerun, and (2) source-equivalent-private-cluster-none-dns-zone-v3-boundary-20260627 now owns the mounted-source/evidence review needed to decide whether the private-cluster operator-response wait is still truthful. Preserve the existing blocked waits unchanged: await-run-28298043331-spec-app-routing-default-domain-tls-lifecycle-terminal-review-20260627 still lacks any repo-local artifact or terminal workflow signal, and await-operator-response-spec-app-routing-existing-cluster-family-20260627 still has truthful send proof plus its recorded 2026-06-28T21:24:48Z owner-review trigger. Archive the superseded completed repair leaf because its durable meaning is now represented by the accepted archive evidence plus the retry leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local artifact-path write bug in features/app-routing/tests/app-routing-default-domain-http-reachability.ts, then rerun only spec.app-routing.default-domain-http-reachability and archive a terminal verdict that distinguishes a cleared test-carrier bug from any remaining product/environment outcome.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The task cites the exact source change that prevents the nested evidence/archive path ENOENT, dispatches or performs one bounded rerun of spec.app-routing.default-domain-http-reachability after that repair, and archives the terminal workflow/spec verdict with artifact/result locations."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.app-routing.default-domain-http-reachability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T21:51:42.166Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T21:51:46.340Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627_20260627215153",
+        "assigned_at": "2026-06-27T21:51:53.842Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627",
+        "worker_started_attempt_id": "a_repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627_20260627215153",
+        "worker_started_at": "2026-06-27T21:52:40.127Z",
+        "reviewed_at": "2026-06-27T22:10:16.868Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Stale-active owner review found no trustworthy acceptance evidence yet: no recorded source diff, no archived artifact at ../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627.md, and no rerun/result reference. Retire this misleading active attempt and replace it with a fresh bounded repair+rereun leaf that must produce durable evidence before review."
+      },
+      "session_id": "s_task_repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627",
+      "session_history": [
+        "s_task_repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-27T22:10:16.868Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Stale-active owner review found no trustworthy acceptance evidence yet: no recorded source diff, no archived artifact at ../aks-rp-e2e/evidence/archive/repair-spec-app-routing-default-domain-http-reachability-artifact-path-and-rerun-20260627.md, and no rerun/result reference. Retire this misleading active attempt and replace it with a fresh bounded repair+rereun leaf that must produce durable evidence before review."
+      },
+      "status": "done"
+    }
+  ]
+}

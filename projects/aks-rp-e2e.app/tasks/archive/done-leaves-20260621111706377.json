@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:17:06.377Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier owner pass confirmed both blocked leaves remain the only truthful live waits: external-send-proof-dispatch-family-human-transport-proof-wait-20260621 still carries the shared outside-runtime human transport ceiling across the covered ask packets, and privatecluster-shared-apiserver-subnet-execution-approval-wait-20260621 remains the exact explicit-execute-approval gate for the already run-ready shared API-server subnet replay. The privatecluster-byo-dns-server-topology maintained-surface repair is now complete and historical, so the only active model-maintenance slice left is privatecluster-privatelink-public-fqdn-model-visibility-repair-20260621. To avoid an underfilled frontier while those exact waits stand, the next non-cloud regular-learning follow-up is a bounded third private-cluster mounted-source inventory batch that can deepen source/spec/replay coverage without touching cloud execution or reopening the accepted blocked waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "focus_plan",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For the next 12-24h, keep exactly one bounded row-63 frontier around Scenario_Addonv2_Azure_Monitor_Metrics: preserve the accepted Standard_D2_v4 live rerun evidence, harden the replay/runtime-observation path behind the new JSON Parse error boundary, and avoid widening beyond properties.azureMonitorProfile.metrics.enabled plus the existing create/upgrade runtime bundle until trustworthy observation evidence is restored.",
+      "context": {
+        "horizon": "12-24h",
+        "success_criteria": [
+          "Azure Monitor Metrics row 63 either produces bounded live evidence after explicit allowed VM-size overrides or records the first exact replacement blocker beyond Standard_D4s_v3.",
+          "VM prerelease checkpoint-evidence retry leaves a durable artifact that either names a truthful checkpoint-safe done slice or proves exact shared-carrier reasons no clean checkpoint exists yet.",
+          "ManagedSystem boundary learning remains source-backed and feeds the next local model/spec tightening step instead of spawning ungated live execution."
+        ],
+        "progress_review": {
+          "reviewed_at": "2026-06-21T12:22:08Z",
+          "result": "needs_approval",
+          "note": "The previously proposed VMPR maintained-surface truthfulness sweep is stale. Since the last review, ManagedSystem source boundary mapping was accepted, VMPR dirty-workspace triage produced a durable no-clean-checkpoint finding and spawned an evidence retry, and the only live execution with fresh bounded value is the Azure Monitor Metrics allowed-vmsize rerun. Proposed focus shifts to a mixed execution/source/hygiene branch that matches the actual frontier and keeps external human send-proof wait isolated."
+        },
+        "rollup_summary": "2026-06-21 blocked-frontier owner hygiene archived the final completed row-63 focus child because its meaning is already preserved on this historical focus branch and in linked evidence: the owner handoff/reconcile slice completed, row-63 runtime work is no longer the live frontier, and the project's actionable surface now remains the two active private-cluster maintained-surface visibility repairs plus the two exact blocked waits (external human transport proof and explicit shared-apiserver-subnet execute approval). This focus branch stays as a completed checkpoint only.",
+        "archived_done_leaf_count": 20,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260621111547110.json",
+            "archived": 1,
+            "at": "2026-06-21T11:15:47.110Z",
+            "summary": "2026-06-21 blocked-frontier owner hygiene archived the final completed row-63 focus child because its meaning is already preserved on this historical focus branch and in linked evidence: the owner handoff/reconcile slice completed, row-63 runtime work is no longer the live frontier, and the project's actionable surface now remains the two active private-cluster maintained-surface visibility repairs plus the two exact blocked waits (external human transport proof and explicit shared-apiserver-subnet execute approval). This focus branch stays as a completed checkpoint only.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "addonv2-row63-runtime-owner-handoff-proof-or-reconcile-20260621"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260621093047642.json",
+            "archived": 1,
+            "at": "2026-06-21T09:30:47.642Z",
+            "summary": "2026-06-21 owner hygiene rollup archived the last two completed row-63 focus children because their durable meaning is already preserved on this focus branch and in linked evidence: runtime/session reconciliation completed far enough to allow the new active unchanged Standard_D2_v4 row-63 rerun leaf, and the earlier handoff-proof/reconcile leaves no longer carry independent next action. This done focus branch remains a historical checkpoint only; active project attention stays on addonv2-row63-live-runtime-verdict-rerun-after-reconcile-20260621, vmpr-row75-aksconformance-core-canonical-carrier-authoring-20260621, and the single external-send-proof family wait.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "addonv2-row63-runtime-owner-reconcile-or-escalate-20260621"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260621091055511.json",
+            "archived": 1,
+            "at": "2026-06-21T09:10:55.511Z",
+            "summary": "2026-06-21 blocked-frontier owner review converted the passive row-63 runtime/session wait into one active problem-solving leaf: addonv2-row63-runtime-owner-reconcile-or-escalate-20260621 now owns the single truthful next decision for the stale sessions s_task_addonv2-row63-live-runtime-verdict-rerun-reissue-20260621 and s_task_addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621 plus orphaned execute PID 650824. This focus branch remains bounded to Scenario_Addonv2_Azure_Monitor_Metrics and should create a fresh unchanged Standard_D2_v4 rerun only after runtime reconciliation evidence or an exact owner/operator escalation-handoff is produced.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "addonv2-row63-runtime-session-reconcile-wait-20260621"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260621090410150.json",
+            "archived": 2,
+            "at": "2026-06-21T09:04:10.150Z",
+            "summary": "2026-06-21 owner accepted both row-63 branch updates: the stall-diagnosis meaning remains preserved here and in evidence/archive/addonv2-row63-runtime-stall-diagnosis-before-next-rerun-20260621.md, and the accepted owner-repair artifact proved the task tree is already locally quarantined while runtime still shows two stale running sessions plus orphaned execute PID 650824. This branch now carries one truthful next step only: addonv2-row63-runtime-session-reconcile-wait-20260621 blocks any fresh unchanged Standard_D2_v4 rerun until those runtime/session surfaces are reconciled.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "addonv2-row63-live-runtime-verdict-rerun-retry-after-stale-attempt-20260621",
+              "addonv2-row63-stale-session-owner-repair-20260621"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260621090129776.json",
+            "archived": 1,
+            "at": "2026-06-21T09:01:29.777Z",
+            "summary": "2026-06-21 owner accepted the row-63 stall diagnosis as durable branch evidence: the two later Azure Monitor Metrics rerun attempts never produced their required live-output artifact, one drifted into check-only mode, and the smallest truthful explanation is a local worker/session/harness stall rather than a new product/runtime blocker. Archive that diagnosis leaf because its meaning is now preserved here and in evidence/archive/addonv2-row63-runtime-stall-diagnosis-before-next-rerun-20260621.md; the only live child on this focus branch is addonv2-row63-stale-session-owner-repair-20260621, which must determine whether the stale still-running sessions can be safely quarantined locally or require a shared runtime/session escalation before any fresh unchanged row-63 rerun is created.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "addonv2-row63-runtime-stall-diagnosis-before-next-rerun-20260621"
+            ]
+          }
+        ]
+      },
+      "acceptance": [
+        "The branch keeps addonv2-row63-runtime-owner-reconcile-or-escalate-20260621 as its only open child until runtime/session ownership is reconciled and a fresh unchanged Standard_D2_v4 row-63 rerun becomes truthfully safe to create, or the blocker is superseded by accepted durable evidence.",
+        "The branch stays bounded to the accepted row-63 Scenario_Addonv2_Azure_Monitor_Metrics contract and does not widen beyond properties.azureMonitorProfile.metrics.enabled plus the existing create/upgrade runtime-observation bundle unless a later owner review explicitly creates a new source-backed follow-up.",
+        "External-send-proof-dispatch-family-20260620 remains outside this focus as the sole blocked external-human transport wait, while archived ManagedSystem and VM prerelease learnings stay represented by branch rollup/evidence rather than reopened leaves."
+      ],
+      "trace": {
+        "rolled_up_at": "2026-06-21T11:15:47.110Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "result": "Child review pending: addonv2-azure-monitor-metrics-row63-source-boundary-note-20260621.",
+      "status": "done"
+    }
+  ]
+}

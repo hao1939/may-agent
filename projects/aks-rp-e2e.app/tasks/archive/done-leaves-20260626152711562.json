@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T15:27:11.562Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier review keeps the single external-human proof wait unchanged as the only truthful blocked frontier leaf and preserves the two private-cluster truthfulness-repair leaves as the active owner work. The completed privatecluster-vnet-integration-shared-apiserver-subnet mounted-source packet is now durable parent context: the exact mounted two-cluster carrier is known, the checked-in replay remains intentionally demoted until an exact two-cluster replay exists, and no extra no-cloud source rediscovery leaf should be reopened from that branch.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the mounted AKS RP private-cluster source to map the exact handwritten/e2ev3 carrier for path.private-cluster-vnet-integration-shared-apiserver-subnet, reconcile whether the current repo-local spec/replay/model already preserve the shared API-server subnet boundary truthfully, and write one archive packet that names any single bounded no-cloud follow-on still needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626.md"
+      ],
+      "acceptance": [
+        "The archive packet cites the exact mounted source file(s)/scenario names for the shared API-server subnet path, states the accepted inputs/expectations/adjacent surfaces, and records whether there is an exact handwritten carrier or only a bounded source-equivalent lineage.",
+        "The packet also names the current repo-local spec/replay/model landing for path.private-cluster-vnet-integration-shared-apiserver-subnet, says whether it is already truthful or needs one bounded repo-local follow-on, and does not request cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "privatecluster-shared-apiserver-subnet-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T15:17:51.323Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T15:17:59.372Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626_20260626151811",
+        "assigned_at": "2026-06-26T15:18:11.313Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626",
+        "worker_started_attempt_id": "a_privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626_20260626151811",
+        "worker_started_at": "2026-06-26T15:18:12.190Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive packet at evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626.md, reconciling the mounted handwritten source carrier, current repo-local spec/replay/model landing, and one bounded no-cloud follow-on.",
+        "last_worker_completed_at": "2026-06-26T15:20:00.882Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T15:22:28.434Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive packet as durable mounted-source evidence: it names the exact shared-apiserver-subnet handwritten carrier and proves the current repo-local feature/spec/model landing is truthful while the checked-in replay remains non-exact, so the review closes with one bounded repo-local replay-posture follow-on still needed."
+      },
+      "session_id": "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626",
+      "session_history": [
+        "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626"
+      ],
+      "result": "Wrote the requested archive packet at evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-mounted-source-packet-20260626.md, reconciling the mounted handwritten source carrier, current repo-local spec/replay/model landing, and one bounded no-cloud follow-on.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T15:22:28.434Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive packet as durable mounted-source evidence: it names the exact shared-apiserver-subnet handwritten carrier and proves the current repo-local feature/spec/model landing is truthful while the checked-in replay remains non-exact, so the review closes with one bounded repo-local replay-posture follow-on still needed."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T03:01:34.865Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 follow-up hygiene archives the remaining accepted row53 packaging audit and rows54-76 adjacency-map evidence into the project branch summary. The branch still carries the durable meaning: row53 already has an exact accepted maintained checkpoint slice, and the rows54-76 adjacency work already narrowed the next smallest unresolved ManagedSystem question to row54 only. Live work remains unchanged: vmpr-row54-managedsystem-model-view-residue-audit-20260622 is the sole active repo-local leaf, and external-send-proof-dispatch-family-human-transport-proof-wait-20260621 is still the sole truthful external-human family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-row53-checkpoint-packaging-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the accepted-but-uncheckpointed LocalDNS row53 dirty slice and produce one checkpoint-ready packaging map: distinguish the maintained row53 artifact set from draft/support residue, name the exact files that belong in the eventual owner checkpoint, and name any row53-adjacent files that should stay out of that checkpoint.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-row53-checkpoint-packaging-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites exact repo-local git status evidence for the LocalDNS row53 dirty family, including the accepted reconcile artifact plus current dirty feature/spec/replay/evidence/model-view paths tied to that row53 slice.",
+        "Artifact classifies the dominant row53 dirty files into checkpoint-in scope, hold-back support residue, or superseded/adjacent residue, and names one coherent owner-checkpoint slice without deleting files, committing, or widening into unrelated LocalDNS or VM prerelease families.",
+        "Work stays repo-local and review-oriented only: no cloud execution, no human transport ask, no commit, and no file deletion; the result is an evidence-backed packaging map the owner can use for a later planner checkpoint."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workspace-dirty-inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:57:26.264Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-row53-checkpoint-packaging-audit-20260622_20260622025751",
+        "assigned_at": "2026-06-22T02:57:51.551Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-row53-checkpoint-packaging-audit-20260622",
+        "worker_started_attempt_id": "a_localdns-row53-checkpoint-packaging-audit-20260622_20260622025751",
+        "worker_started_at": "2026-06-22T02:57:52.967Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested packaging audit at evidence/archive/localdns-row53-checkpoint-packaging-audit-20260622.md, classifying the LocalDNS row53 dirty family into checkpoint-in scope, hold-back support residue, and superseded/adjacent residue using exact git-status and repo-file evidence.",
+        "last_worker_completed_at": "2026-06-22T02:59:41.964Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:00:14.410Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 packaging audit: artifact cites exact row53 git-status evidence, separates checkpoint-in maintained slice from support/superseded residue, and names the coherent owner checkpoint bundle without commit, deletion, cloud execution, or unrelated LocalDNS/VM widening."
+      },
+      "session_id": "s_task_localdns-row53-checkpoint-packaging-audit-20260622",
+      "session_history": [
+        "s_task_localdns-row53-checkpoint-packaging-audit-20260622"
+      ],
+      "result": "Produced the requested packaging audit at evidence/archive/localdns-row53-checkpoint-packaging-audit-20260622.md, classifying the LocalDNS row53 dirty family into checkpoint-in scope, hold-back support residue, and superseded/adjacent residue using exact git-status and repo-file evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:00:14.410Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 packaging audit: artifact cites exact row53 git-status evidence, separates checkpoint-in maintained slice from support/superseded residue, and names the coherent owner checkpoint bundle without commit, deletion, cloud execution, or unrelated LocalDNS/VM widening."
+      },
+      "status": "done"
+    }
+  ]
+}

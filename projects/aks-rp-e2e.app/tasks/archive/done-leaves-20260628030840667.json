@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T03:08:40.667Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 regular-learning owner pass keeps the feature-reference branch focused on the still-active quality-repair batches rather than refilling new learning work. Three previously queued repair reviews are now accepted and durable on this parent: the none→loadBalancer public-proof note now captures the conditional network-isolated Learn support plus the stale REST-spec contradiction; the Cilium enterprise-addon lifecycle proof note now cleanly separates grounded Cilium/ACNS public contract from unsupported addon-lifecycle claims; and the node-artifact-streaming artifact header now truthfully matches its existing swagger/Learn evidence. Do not accept the remaining review leaves from the ACNS, net-integration, or CNI/Swift/custom-CA families until the four already-active repair/retry leaves finish and replace their placeholder-style drafts with exact public grounding or explicit bounded no-public-reference statements.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the weak collector result for net-integration-outbound-migration-none-to-lb by finding exact public API and Microsoft Learn evidence for the supported verdict on this feature (deprecation, unsupported migration, or absence of public contract), and archive a replacement feature-reference note that names the claim each source proves.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628.md"
+      ],
+      "acceptance": [
+        "Archived evidence cites exact public sources for the truthful verdict on net-integration-outbound-migration-none-to-lb, or explicitly proves no public API/doc contract exists after bounded checks.",
+        "Evidence explains how the public proof should update or constrain features/net-integration/packets/outbound-migration-none-to-lb.yaml and why the prior no-reference draft was insufficient."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:net-integration-outbound-migration-none-to-lb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T02:59:07.886Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T03:00:08.934Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628_20260628030038",
+        "assigned_at": "2026-06-28T03:00:38.788Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628",
+        "worker_started_attempt_id": "a_repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628_20260628030038",
+        "worker_started_at": "2026-06-28T03:00:40.892Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a replacement public-proof note at evidence/archive/feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628.md showing that Microsoft Learn publicly documents none→loadBalancer as supported under the network-isolated prerequisite, while public REST specs still carry contradictory create-only wording.",
+        "last_worker_completed_at": "2026-06-28T03:01:53.896Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T03:08:35.265Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived replacement note grounds none→loadBalancer public-proof status with exact Learn migration-table evidence plus the bounded REST-spec contradiction, so the prior no-reference placeholder has been truthfully replaced and the packet can now be constrained by this source-backed note."
+      },
+      "session_id": "s_task_repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628",
+      "session_history": [
+        "s_task_repair-feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628"
+      ],
+      "result": "Archived a replacement public-proof note at evidence/archive/feature-reference-net-integration-outbound-migration-none-to-lb-public-proof-20260628.md showing that Microsoft Learn publicly documents none→loadBalancer as supported under the network-isolated prerequisite, while public REST specs still carry contradictory create-only wording.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T03:08:35.265Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived replacement note grounds none→loadBalancer public-proof status with exact Learn migration-table evidence plus the bounded REST-spec contradiction, so the prior no-reference placeholder has been truthfully replaced and the packet can now be constrained by this source-backed note."
+      },
+      "status": "done"
+    }
+  ]
+}

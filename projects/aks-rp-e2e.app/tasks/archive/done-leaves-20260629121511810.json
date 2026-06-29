@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T12:15:11.810Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update accepted four concrete review outcomes and repaired one bad review leaf. The cloud-provider multiple-SLB branch now has an accepted canonical contract aligned to mounted handwritten source and swagger, with repo-local spec/packet/probe/model updates limiting future reruns to the narrower source-aligned create/readback substrate. The AAD RBAC nonAAD→AADv2 post-repair launch review is accepted as a dispatch success for run 28371054186 with later assertion classification still pending runtime completion, so a follow-up review leaf now waits to inspect the first later assertion actually reached on that repaired carrier. Both KMS v2 VNet public/private KV review leaves are accepted as truthful runner-host Azure CLI environment/infra blockers rather than generic parsed-summary failures, and the private-KV owner reconciliation leaf is complete. The stale direct-to-cache transition review was not accepted because the worker returned an empty turn; it is replaced by a concrete reassessment/relaunch leaf now assigned for exact artifact inspection or relaunch. Remaining open work is still dominated by active single-spec verification leaves plus the shared runner repair tasks and the new AAD later-run review backlog leaf.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide the canonical contract for spec.cloud-provider.multiple-slb by reconciling mounted handwritten source, mounted/public swagger, and the checked-in replay, then align repo-local spec/packet/probe/model wording and request shape so the maintained path represents either the mounted topology lifecycle or an explicitly narrowed create-time request-contract experiment before any future cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-cloud-provider-multiple-slb-canonical-contract-alignment-20260629.md"
+      ],
+      "acceptance": [
+        "Mounted source, swagger, and the checked-in replay are compared to decide whether the canonical path is the NodeIP plus child-load-balancer lifecycle or a narrower create-time request-contract slice.",
+        "Repo-local spec/packet/probe/model wording and request shape are updated to match that canonical contract, with any retained create-time request-field experiment explicitly labeled as narrower than the whole feature.",
+        "A durable note records the chosen contract, exact repo-local edits, and the single bounded rerun trigger, if any, that remains after alignment."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.multiple-slb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:01:18.715Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629_20260629120118",
+        "assigned_at": "2026-06-29T12:01:18.771Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629",
+        "worker_started_attempt_id": "a_align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629_20260629120118",
+        "worker_started_at": "2026-06-29T12:01:44.416Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned cloud-provider multiple-SLB to the mounted topology lifecycle contract, rewrote the repo-local probe to a narrower source-aligned create-time substrate check, updated the knowledge-map path status/writing, and recorded the canonical-contract decision in a durable evidence note.",
+        "last_worker_completed_at": "2026-06-29T12:12:03.603Z",
+        "last_worker_evidence": [
+          "features/cloud-provider/specs/cloud-provider-multiple-slb.json",
+          "features/cloud-provider/packets/multiple-slb.yaml",
+          "features/cloud-provider/tests/cloud-provider-multiple-slb.ts",
+          "features/cloud-provider/tests/cloud-provider-multiple-slb.test.ts",
+          "model/knowledge-map/model.json",
+          "evidence/archive/spec-cloud-provider-multiple-slb-canonical-contract-alignment-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:14:56.598Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: the evidence note cites mounted handwritten source and swagger, updates the repo-local spec/packet/probe/model files, and truthfully narrows the remaining rerun trigger to a source-aligned create/readback substrate check."
+      },
+      "session_id": "s_task_align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629",
+      "session_history": [
+        "s_task_align-spec-cloud-provider-multiple-slb-canonical-contract-and-replay-20260629"
+      ],
+      "result": "Aligned cloud-provider multiple-SLB to the mounted topology lifecycle contract, rewrote the repo-local probe to a narrower source-aligned create-time substrate check, updated the knowledge-map path status/writing, and recorded the canonical-contract decision in a durable evidence note.",
+      "evidence": [
+        "features/cloud-provider/specs/cloud-provider-multiple-slb.json",
+        "features/cloud-provider/packets/multiple-slb.yaml",
+        "features/cloud-provider/tests/cloud-provider-multiple-slb.ts",
+        "features/cloud-provider/tests/cloud-provider-multiple-slb.test.ts",
+        "model/knowledge-map/model.json",
+        "evidence/archive/spec-cloud-provider-multiple-slb-canonical-contract-alignment-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:14:56.598Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: the evidence note cites mounted handwritten source and swagger, updates the repo-local spec/packet/probe/model files, and truthfully narrows the remaining rerun trigger to a source-aligned create/readback substrate check."
+      },
+      "status": "done"
+    },
+    {
+      "id": "launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted first-contract repair evidence for spec.aad-rbac.nonaad-to-aadv2-migration to launch the required post-repair verification workflow or capture the exact launch blocker with durable evidence, so the next later assertion on the same carrier can be classified.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629.md"
+      ],
+      "acceptance": [
+        "The post-repair workflow launch is attempted from the documented carrier and either a run URL/attempt id or an exact launch blocker is recorded.",
+        "The durable note names the next later assertion reached or still blocked after the first-contract repair, without restating the already-accepted first-step result as new progress.",
+        "If launch is blocked externally, the note records the exact owner/resume condition needed instead of leaving a passive review leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:07:51.466Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T12:08:26.361Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629_20260629120842",
+        "assigned_at": "2026-06-29T12:08:42.815Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629",
+        "worker_started_attempt_id": "a_launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629_20260629120842",
+        "worker_started_at": "2026-06-29T12:08:44.248Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Launched the post-repair single-spec workflow for spec.aad-rbac.nonaad-to-aadv2-migration on dev/staging and wrote durable evidence capturing dispatch success, run id 28371054186, and the next later assertion still pending runtime completion.",
+        "last_worker_completed_at": "2026-06-29T12:11:54.173Z",
+        "last_worker_evidence": [
+          "evidence/archive/launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:14:56.662Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: durable evidence records a successful dispatch for run 28371054186 with no launch blocker, and correctly leaves the later assertion pending runtime completion rather than overstating product progress."
+      },
+      "session_id": "s_task_launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629",
+      "session_history": [
+        "s_task_launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629"
+      ],
+      "result": "Launched the post-repair single-spec workflow for spec.aad-rbac.nonaad-to-aadv2-migration on dev/staging and wrote durable evidence capturing dispatch success, run id 28371054186, and the next later assertion still pending runtime completion.",
+      "evidence": [
+        "evidence/archive/launch-aad-rbac-nonaad-to-aadv2-post-repair-verification-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:14:56.662Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: durable evidence records a successful dispatch for run 28371054186 with no launch blocker, and correctly leaves the later assertion pending runtime completion rather than overstating product progress."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28370757375 for spec.kms.v2-vnet-integration-public-kv-lifecycle, confirm whether the environment/setup failure is the real terminal state, and write durable evidence that replaces the current weak review summary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629.md"
+      ],
+      "acceptance": [
+        "The evidence note rechecks the cited result artifact(s) for run 28370757375 and records the exact blocker or failure text used for classification.",
+        "The run is classified truthfully as environment/setup blocked or another terminal state instead of remaining a generic error review leaf.",
+        "If the summary path/fallback is defective, the note links that defect to the shared runner repair task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-vnet-integration-public-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:07:51.415Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629_20260629120804",
+        "assigned_at": "2026-06-29T12:08:04.315Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629",
+        "worker_started_attempt_id": "a_review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629_20260629120804",
+        "worker_started_at": "2026-06-29T12:08:43.184Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rechecked run 28370757375 artifacts and wrote a durable review note classifying spec.kms.v2-vnet-integration-public-kv-lifecycle as a truthful setup/environment blocker caused by runner-host Azure CLI execution failure, with explicit linkage to the shared summary-fallback repair task.",
+        "last_worker_completed_at": "2026-06-29T12:10:23.533Z",
+        "last_worker_evidence": [
+          "evidence/archive/review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T12:14:56.722Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: the evidence note rechecked run 28370757375 artifacts, replaced the weak generic summary with the exact runner-host Azure CLI environment blocker, and linked the misleading fallback to the shared runner-summary repair task."
+      },
+      "session_id": "s_task_review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629",
+      "session_history": [
+        "s_task_review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629"
+      ],
+      "result": "Rechecked run 28370757375 artifacts and wrote a durable review note classifying spec.kms.v2-vnet-integration-public-kv-lifecycle as a truthful setup/environment blocker caused by runner-host Azure CLI execution failure, with explicit linkage to the shared summary-fallback repair task.",
+      "evidence": [
+        "evidence/archive/review-kms-v2-vnet-public-kv-terminal-classification-28370757375-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:14:56.722Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: the evidence note rechecked run 28370757375 artifacts, replaced the weak generic summary with the exact runner-host Azure CLI environment blocker, and linked the misleading fallback to the shared runner-summary repair task."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-kms-v2-vnet-private-kv-terminal-review-28370761631-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the completed worker output for run 28370761631 under spec.kms.v2-vnet-integration-private-kv-lifecycle, accept the truthful terminal classification if the evidence note holds up, or replace it with the minimal exact follow-up needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-kms-v2-vnet-private-kv-terminal-review-28370761631-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the existing evidence file and/or exact run artifact path used to validate the worker claim for run 28370761631.",
+        "The run is accepted as pass/fail/blocked with exact reason text, or the note records the contradiction and names the replacement follow-up leaf created.",
+        "Any shared runner defect implicated by the review is linked to the correct repair family instead of remaining unowned."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.kms.v2-vnet-integration-private-kv-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:12:11.970Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T12:12:12.231Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T12:14:56.785Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted from the completed worker evidence and step-1 event review: run 28370761631 is truthfully classified as a runner-infrastructure/environment blocker caused by runner-host Azure CLI failure during VNet setup, not by the generic parsed-summary fallback, and the shared repair family already owns the summary defect."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-29T12:14:56.785Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted from the completed worker evidence and step-1 event review: run 28370761631 is truthfully classified as a runner-infrastructure/environment blocker caused by runner-host Azure CLI failure during VNet setup, not by the generic parsed-summary fallback, and the shared repair family already owns the summary defect."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the orphaned active attempt for spec.bootstrap-profile.direct-to-cache-transition; if no durable run/session artifacts exist, relaunch the single-spec workflow and classify the result, otherwise review the existing attempt and record the truthful classification.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629.md"
+      ],
+      "acceptance": [
+        "The note cites the exact stale-attempt/session evidence proving whether the prior active leaf was orphaned or completed.",
+        "If a rerun is needed, the GitHub single-spec workflow completes or yields a concrete blocker with the exact reason captured; otherwise the existing attempt is classified truthfully from artifacts.",
+        "The spec-loop state reflects the accepted classification or the exact blocker/retry follow-up created."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.direct-to-cache-transition"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T12:12:11.867Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T12:12:12.231Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629_20260629121252",
+        "assigned_at": "2026-06-29T12:12:52.338Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629",
+        "worker_started_attempt_id": "a_retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629_20260629121252",
+        "worker_started_at": "2026-06-29T12:12:56.914Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Agent ended with an empty assistant turn",
+        "last_worker_completed_at": "2026-06-29T12:13:35.582Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T12:14:57.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Worker produced no evidence and ended with an empty assistant turn, so this review is not accepted; replaced by reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629 as the concrete follow-up for the same stale-attempt classification/relaunch decision."
+      },
+      "session_id": "s_task_retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629",
+      "session_history": [
+        "s_task_retry-or-reconcile-bootstrap-profile-direct-to-cache-transition-stale-active-20260629"
+      ],
+      "result": "Agent ended with an empty assistant turn",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T12:14:57.016Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Worker produced no evidence and ended with an empty assistant turn, so this review is not accepted; replaced by reconcile-bootstrap-profile-direct-to-cache-transition-empty-review-20260629 as the concrete follow-up for the same stale-attempt classification/relaunch decision."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:38:50.583Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog stale-review cleanup: this lane is fully reduced to one live external wait plus summarized accepted repo-local knowledge. MachinesPreview remains the single truthful live external-send wait until a human outside runtime records durable send/handoff proof or an authoritative preview-registration reply for the unchanged westus2/local rerun contract. Accepted row-25/26/27/29/30/31/32/33 status-surface reconciliation and prior row-150 evidence-ceiling work are now represented only through this lane summary and archived evidence: row 25 stays execute-gated/environment-blocked with a live replay implementation, rows 26/27/29/30/31/32/33 remain check-only, and no repo-local review/runnable work remains under this lane.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row25-33-status-surface-reconcile-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the row-25 VM prerelease execute-gated replay truth across path-summary, coverage, and related repo-local status surfaces, while confirming rows 26/27/29/30/31/32/33 remain explicitly check-only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row25-33-status-surface-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mismatch documented in evidence/archive/vm-prerelease-execution-gated-source-map-20260620.md and records the row-25 surfaces changed so repo-local metadata no longer claims that no live replay implementation exists for virtualmachines-capacity-based-surge.",
+        "Rows 26/27/29/30/31/32/33 are rechecked against their current replay carriers and remain clearly marked as check-only wrappers in any touched coverage/path/model surfaces.",
+        "Any touched planning surfaces are locally validated with the project's relevant repo-local checks and the packet records the commands and outcomes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-execution-gated-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T14:31:21.519Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T14:31:21.608Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row25-33-status-surface-reconcile-20260620_20260620143146",
+        "assigned_at": "2026-06-20T14:31:46.636Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row25-33-status-surface-reconcile-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row25-33-status-surface-reconcile-20260620_20260620143146",
+        "worker_started_at": "2026-06-20T14:31:46.935Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the VM prerelease row-25/26/27/29/30/31/32/33 repo-local status surfaces: row 25 now reflects an existing execute-capable replay blocked only by execute gating/environment, while rows 26/27/29/30/31/32/33 remain explicitly check-only across coverage/model/views. Wrote the requested evidence packet and regenerated derived knowledge-map views.",
+        "last_worker_completed_at": "2026-06-20T14:36:09.251Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T14:36:56.513Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the evidence packet: it cites the exact stale row-25 mismatch from vm-prerelease-execution-gated-source-map-20260620, records the repaired model/path-summary/coverage surfaces, rechecks rows 26/27/29/30/31/32/33 as check-only wrappers, and logs repo-local validation outcomes (view regeneration succeeded; model validation only reported pre-existing unrelated issues)."
+      },
+      "session_id": "s_task_vm-prerelease-row25-33-status-surface-reconcile-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row25-33-status-surface-reconcile-20260620"
+      ],
+      "result": "Reconciled the VM prerelease row-25/26/27/29/30/31/32/33 repo-local status surfaces: row 25 now reflects an existing execute-capable replay blocked only by execute gating/environment, while rows 26/27/29/30/31/32/33 remain explicitly check-only across coverage/model/views. Wrote the requested evidence packet and regenerated derived knowledge-map views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T14:36:56.513Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the evidence packet: it cites the exact stale row-25 mismatch from vm-prerelease-execution-gated-source-map-20260620, records the repaired model/path-summary/coverage surfaces, rechecks rows 26/27/29/30/31/32/33 as check-only wrappers, and logs repo-local validation outcomes (view regeneration succeeded; model validation only reported pre-existing unrelated issues)."
+      },
+      "status": "done"
+    }
+  ]
+}

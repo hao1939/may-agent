@@ -1,0 +1,504 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:35:05.571Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace rollup: completed children produced send-ready owner/source-holder handoff packets and accepted ask material now represented by linked evidence artifacts plus explicit blocked response-await leaves. Remaining visible children are open external response waits or owner-input blockers; archive completed ask-packet leaves as historical detail.",
+  "archived": 9,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Package the external/source-holder ask for path.app-monitoring-addonv2-azure-monitor-metrics by turning the blocked staging execute artifact and accepted 2026-06-20 row-63 contract repair into one send-ready packet that asks for the canonical Scenario_Addonv2_Azure_Monitor_Metrics request-body semantics and runtime assertion truth surface, so returned proof can unblock a bounded replay/spec/model repair without reopening broader addon-family discovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Send-ready packet cites the blocked staging frontier evidence, the accepted 2026-06-20 row-63 contract-repair note, and the blocked source-semantics leaf, then names the exact unresolved questions about canonical request payload semantics and runtime assertion truth for Scenario_Addonv2_Azure_Monitor_Metrics.",
+        "Packet asks for one accepted proof form (handwritten, archived-exact, or accepted source-equivalent) with the exact file/excerpt plus the request-body shape and runtime/PUT-time assertion surface needed to unblock one bounded replay/spec/model follow-up; it does not ask for broad addon-family rediscovery.",
+        "No cloud execution occurs; scope stays path-specific and ends with the exact routing instruction for how returned proof should resume app-monitoring-addonv2-azure-monitor-metrics-source-semantics-unblock-20260620."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-monitoring-addonv2-azure-monitor-metrics",
+        "review:app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T00:40:24.732Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T00:40:29.037Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620_20260620004031",
+        "assigned_at": "2026-06-20T00:40:31.120Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620_20260620004031",
+        "worker_started_at": "2026-06-20T00:40:51.260Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a send-ready source-holder ask packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620.md that consolidates the blocked staging frontier, accepted 2026-06-20 row-63 contract repair, and exact unresolved Scenario_Addonv2_Azure_Monitor_Metrics request/readback/runtime-proof questions into one path-scoped outbound ask with explicit resume routing.",
+        "last_worker_completed_at": "2026-06-20T00:41:46.088Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T00:43:40.058Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet is send-ready, cites the blocked staging frontier and accepted row-63 contract repair, asks only the exact canonical request-body/readback/runtime-proof questions for Scenario_Addonv2_Azure_Monitor_Metrics, and routes replies precisely into the existing source-semantics unblock leaf via the new response-await wait node."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-source-holder-ask-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T00:43:40.058Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet is send-ready, cites the blocked staging frontier and accepted row-63 contract repair, asks only the exact canonical request-body/readback/runtime-proof questions for Scenario_Addonv2_Azure_Monitor_Metrics, and routes replies precisely into the existing source-semantics unblock leaf via the new response-await wait node."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare a send-ready owner handoff packet for the still-reproducing westus2/local local-host az aks create tuple-unpack crash so the shared tooling blocker has one precise external escalation artifact. Use the accepted 2026-06-19 shared triage, the accepted affected-leaf matrix, and the accepted 2026-06-20 control repro to package the exact host tuple, bounded repro command family, traceback signature, impacted unchanged execute leaves, and the concrete resume signal the project needs from tooling owners.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/westus2-local-aks-preview-create-crash-shared-triage-20260619.md, evidence/archive/westus2-local-az-aks-create-cli-crash-affected-leaf-matrix-20260620.md, and evidence/archive/westus2-local-az-aks-create-cli-crash-control-repro-20260620.md, and consolidates the exact azure-cli/aks-preview tuple, bounded repro command family, traceback signature, and currently blocked unchanged execute leaves into one operator-sendable packet.",
+        "The packet ends with one precise external ask and resume condition: tooling owners must confirm a host tuple or client-path change that stops the same tuple-unpack crash on the bounded control repro, after which named blocked execute leaves can be reconsidered; if no owner is known, the note explicitly states that routing gap instead of inventing a fix.",
+        "Work stays scoped to escalation packaging only: no cloud execution, no replay/spec rediscovery, and no new feature verdict claims beyond shared tooling-blocker routing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:westus2-local-aks-preview-create-crash-owner-response",
+        "tooling:westus2-local-aks-preview-create-crash"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T02:03:51.402Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620_20260620020351",
+        "assigned_at": "2026-06-20T02:03:51.464Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620_20260620020351",
+        "worker_started_at": "2026-06-20T02:04:02.691Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Prepared the requested send-ready owner handoff packet at evidence/archive/westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620.md, consolidating the accepted triage, affected-leaf matrix, and control repro into one escalation artifact with explicit routing gap and resume condition.",
+        "last_worker_completed_at": "2026-06-20T02:04:47.891Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T02:06:18.490Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620.md: the packet cites the accepted shared triage, affected-leaf matrix, and control repro; names the exact azure-cli 2.73.0 + aks-preview 20.0.0b6 tuple, bounded control repro, traceback signature, impacted unchanged leaf, explicit routing gap, and exact external resume condition without overclaiming new verdicts."
+      },
+      "session_id": "s_task_westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T02:06:18.490Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/westus2-local-az-aks-create-cli-crash-owner-handoff-packet-20260620.md: the packet cites the accepted shared triage, affected-leaf matrix, and control repro; names the exact azure-cli 2.73.0 + aks-preview 20.0.0b6 tuple, bounded control repro, traceback signature, impacted unchanged leaf, explicit routing gap, and exact external resume condition without overclaiming new verdicts."
+      },
+      "status": "done"
+    },
+    {
+      "id": "kms-feature-flag-environment-capability-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create one send-ready owner/operator handoff packet for the KMS feature-flag-gated replay family so the exact next external action from the accepted 2026-06-20 KMS boundary maps is executable instead of implicit. Using evidence/archive/kms-v2-private-kv-flag-family-boundary-map-from-existing-evidence-20260620.md, evidence/archive/kms-v2-trusted-service-private-kv-boundary-map-from-existing-evidence-20260620.md, evidence/archive/staging-feature-flag-environment-blocker-frontier-map-20260620.md, and the blocked rerun-gated leaves kms-v2-private-kv-flag-family-rerun-gated-20260620 plus kms-v2-trusted-service-private-kv-flag-rerun-gated-20260620, write one bounded packet that asks an owner/operator to report the exact registration or availability state for Microsoft.ContainerService/AllowEnalbeKMSPrivateKeyVaultKonnectivityTunnel and Microsoft.ContainerService/KMSUseTrustedService in the intended rerun subscription/environment, and that states exactly how each returned answer routes back into the existing blocked rerun leaves without reopening KMS-family rediscovery or scheduling cloud execution from the packet itself.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/kms-feature-flag-environment-capability-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites both accepted 2026-06-20 KMS boundary maps, the staging feature-flag frontier map, and the two blocked rerun-gated leaves, and names the two exact Microsoft.ContainerService capabilities whose availability must be reported.",
+        "The packet is send-ready and explicitly requests the minimum discriminating evidence for each capability in the intended rerun environment/subscription, while keeping the trusted-service and non-trusted private-KV families distinct.",
+        "The note ends with exact routing: a positive KMSUseTrustedService reply reactivates kms-v2-trusted-service-private-kv-flag-rerun-gated-20260620, a positive AllowEnalbeKMSPrivateKeyVaultKonnectivityTunnel reply reactivates kms-v2-private-kv-flag-family-rerun-gated-20260620, and unavailable/unknown replies keep the current blockers unchanged; no cloud execution or broad KMS rediscovery occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:kms-feature-flag-environment-capability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T04:57:38.006Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-feature-flag-environment-capability-owner-handoff-packet-20260620_20260620045740",
+        "assigned_at": "2026-06-20T04:57:40.389Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-feature-flag-environment-capability-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_kms-feature-flag-environment-capability-owner-handoff-packet-20260620_20260620045740",
+        "worker_started_at": "2026-06-20T04:58:03.658Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the send-ready KMS capability handoff packet at evidence/archive/kms-feature-flag-environment-capability-owner-handoff-packet-20260620.md, tying the two accepted 2026-06-20 KMS boundary maps and staging frontier map to the exact blocked rerun-gated leaves and fixed reply-routing rules.",
+        "last_worker_completed_at": "2026-06-20T04:58:46.186Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T04:59:26.676Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/kms-feature-flag-environment-capability-owner-handoff-packet-20260620.md cites both accepted KMS boundary maps plus the staging capability frontier map, names the two exact Microsoft.ContainerService capabilities, and fixes reply routing back to the two blocked rerun-gated leaves without authorizing reruns or rediscovery."
+      },
+      "session_id": "s_task_kms-feature-flag-environment-capability-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_kms-feature-flag-environment-capability-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T04:59:26.676Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/kms-feature-flag-environment-capability-owner-handoff-packet-20260620.md cites both accepted KMS boundary maps plus the staging capability frontier map, names the two exact Microsoft.ContainerService capabilities, and fixes reply routing back to the two blocked rerun-gated leaves without authorizing reruns or rediscovery."
+      },
+      "status": "done"
+    },
+    {
+      "id": "trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create one send-ready owner/operator handoff packet for the Trusted Access dataplane token gateway environment gate so the exact next external action for path.trusted-access.dataplane-token-gateway is explicit. Using evidence/archive/trusted-access-dataplane-token-gateway-boundary-map-from-existing-evidence-20260620.md, the accepted westus2/local blocker evidence named by that boundary map, and the blocked Trusted Access dataplane execute leaf, write one bounded packet that asks an owner/operator to identify a runner/environment where the in-cluster dataplane step can resolve and reach *.ta.azmk8s.io or to confirm that the current environment lacks that Microsoft-internal DNS/network path, and that states exactly how the answer routes back into the existing blocked execute leaf without reopening trusted-access family rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted Trusted Access dataplane boundary map, the accepted blocker evidence establishing the *.ta.azmk8s.io DNS/network dependency, and the blocked execute leaf, and names the exact environment capability the owner/operator must confirm: an execution environment where the in-cluster dataplane step can resolve and reach the Trusted Access gateway host.",
+        "The packet is send-ready and requests the minimum discriminating environment evidence needed to decide whether the unchanged replay can move forward, while keeping cleared auth and kubectl preconditions separate from the remaining DNS/network gate.",
+        "The note ends with exact routing: an owner/operator reply identifying a DNS-capable environment reactivates the existing blocked Trusted Access execute leaf for the unchanged contract; a reply confirming no such environment keeps the blocker unchanged; no cloud execution or broad trusted-access rediscovery occurs from the packet itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:trusted-access-dataplane-token-gateway-environment"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:02:01.286Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620_20260620050207",
+        "assigned_at": "2026-06-20T05:02:07.459Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620_20260620050207",
+        "worker_started_at": "2026-06-20T05:02:20.598Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the send-ready Trusted Access environment handoff packet at evidence/archive/trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620.md, grounding it in the accepted boundary/blocker evidence and routing replies back to the existing blocked execute leaf without reopening rediscovery.",
+        "last_worker_completed_at": "2026-06-20T05:03:04.260Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:04:00.735Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620.md cites the accepted Trusted Access boundary/blocker evidence, names the exact *.ta.azmk8s.io DNS/network environment gate, and routes replies back to the existing blocked execute leaf without authorizing reruns or rediscovery."
+      },
+      "session_id": "s_task_trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:04:00.735Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/trusted-access-dataplane-token-gateway-environment-owner-handoff-packet-20260620.md cites the accepted Trusted Access boundary/blocker evidence, names the exact *.ta.azmk8s.io DNS/network environment gate, and routes replies back to the existing blocked execute leaf without authorizing reruns or rediscovery."
+      },
+      "status": "done"
+    },
+    {
+      "id": "machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create one send-ready owner/operator handoff packet for the Machines AgentPool API CRUD preview-registration gate so the next external action for path.machines-agentpool-api-crud becomes executable instead of implicit. Using evidence/archive/machines-agentpool-api-crud-preview-feature-boundary-map-from-existing-evidence-20260620.md, evidence/archive/machines-agentpool-api-crud-westus2-local-execute-20260619.md, and the blocked leaf machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619, write one bounded packet that asks an owner/operator to report the exact Microsoft.ContainerService/MachinesPreview registration state in the intended rerun subscription/environment or to name an equivalent preview-enabled environment, and that states exactly how the reply routes back into the existing blocked execute leaf without reopening generic auth or Machines-family rediscovery.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted Machines preview boundary map, the accepted westus2/local execute blocker evidence, and the blocked preview-feature leaf, and names Microsoft.ContainerService/MachinesPreview as the exact external capability whose registration state must be reported.",
+        "The packet is send-ready and explicitly requests the minimum discriminating evidence for the intended rerun subscription/environment or an equivalent preview-enabled environment, while keeping the next action limited to the unchanged Machines AgentPool CRUD replay contract.",
+        "The note ends with exact routing: a reply showing MachinesPreview=Registered or an equivalent preview-enabled environment reactivates machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619 for the unchanged rerun; an unregistered/unknown reply keeps the blocker unchanged; no cloud execution or broad Machines-family rediscovery occurs from the packet itself."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:machines-agentpool-api-crud-preview-feature"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:02:01.338Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620_20260620050207",
+        "assigned_at": "2026-06-20T05:02:07.408Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620_20260620050207",
+        "worker_started_at": "2026-06-20T05:02:20.526Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested send-ready owner/operator handoff packet at evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md, citing the accepted boundary map, westus2/local blocker evidence, and the blocked execute leaf, with exact reply-routing for MachinesPreview registration outcomes.",
+        "last_worker_completed_at": "2026-06-20T05:03:03.218Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:04:00.663Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md cites the accepted Machines preview boundary/blocker evidence, names Microsoft.ContainerService/MachinesPreview as the exact gate, and fixes reply routing back to machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619 without authorizing reruns or rediscovery."
+      },
+      "session_id": "s_task_machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:04:00.663Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/machines-agentpool-api-crud-preview-feature-owner-handoff-packet-20260620.md cites the accepted Machines preview boundary/blocker evidence, names Microsoft.ContainerService/MachinesPreview as the exact gate, and fixes reply routing back to machines-agentpool-api-crud-westus2-local-preview-feature-blocked-20260619 without authorizing reruns or rediscovery."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-accsgx-row57-59-source-holder-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the newly narrowed VM prerelease ACCSGX-family missing-spec blockers for rows 57, 58, and 59 into one send-ready authoritative-source ask packet. Using the accepted nonblocked missing-spec wave note plus the nearby maintained confidential-computing surfaces, package one exact request per row that asks for the missing request-body and verdict-bearing assertion proof needed to distinguish Scenario_ACCSGX, Scenario_ACCSGXIcelake, and Scenario_ACCSGXInProc from adjacent ACCCVM/confidential-node-pool branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-accsgx-row57-59-source-holder-ask-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted vm-prerelease-nonblocked-missing-spec-next-wave-20260620 evidence plus the exact maintained confidential-computing features/specs/replays used as rejected adjacent surfaces, and gives one row-scoped ask for rows 57/58/59 that states the exact missing request surface and verdict-bearing SGX assertion proof needed.",
+        "The packet is operator-sendable: it names accepted proof forms (handwritten, archived-exact, or source-equivalent), keeps the three rows distinct instead of collapsing them into generic confidential-computing coverage, and states how returned proof should route back into the VM prerelease coverage ledger.",
+        "Work stays repo-local with no cloud execution, and the note records any repo-local validation/search commands used to confirm the maintained adjacent surfaces named in the ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-accsgx-source-holder-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:43:38.716Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-accsgx-row57-59-source-holder-packet-20260620_20260620054338",
+        "assigned_at": "2026-06-20T05:43:38.797Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-accsgx-row57-59-source-holder-packet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-accsgx-row57-59-source-holder-packet-20260620_20260620054338",
+        "worker_started_at": "2026-06-20T05:43:58.182Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the send-ready authoritative-source ask packet for VM prerelease ACCSGX rows 57/58/59, citing the accepted missing-spec wave note plus the exact maintained ACCCVM/confidential-node-pool/Kata-SNP adjacent surfaces that were checked and rejected.",
+        "last_worker_completed_at": "2026-06-20T05:45:11.697Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:46:24.237Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the ACCSGX-family ask packet: it cites the accepted missing-spec wave, rechecks the exact maintained confidential-computing adjacent surfaces, keeps rows 57/58/59 distinct, and is now ready to hand off through a dedicated response-await leaf."
+      },
+      "session_id": "s_task_vm-prerelease-accsgx-row57-59-source-holder-packet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-accsgx-row57-59-source-holder-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:46:24.237Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the ACCSGX-family ask packet: it cites the accepted missing-spec wave, rechecks the exact maintained confidential-computing adjacent surfaces, keeps rows 57/58/59 distinct, and is now ready to hand off through a dedicated response-await leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the newly narrowed VM prerelease addon-umbrella missing-spec blockers for rows 60 and 61 into one bounded authoritative-source ask packet. Using the accepted nonblocked missing-spec wave note plus the maintained managementplane-addon lifecycle family, package one exact request for Scenario_Addon and one for Scenario_Core_Addon_Kubernetes_Compatibility so future proof can disambiguate which addon contract, version/upgrade surface, and verdict-bearing assertions those VM rows actually represent.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addon-umbrella-row60-61-source-holder-ask-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted vm-prerelease-nonblocked-missing-spec-next-wave-20260620 evidence plus the exact maintained managementplane-addon specs/replays reviewed as adjacent but non-authoritative surfaces, and gives one row-scoped ask for row 60 and one for row 61 stating the exact missing contract facts needed.",
+        "The packet is operator-sendable: it keeps Scenario_Addon and Scenario_Core_Addon_Kubernetes_Compatibility distinct, names accepted proof forms, and states how any returned proof should route back into the VM prerelease coverage ledger without reopening broad addon rediscovery.",
+        "Work stays repo-local with no cloud execution, and the note records any repo-local validation/search commands used to confirm the maintained addon surfaces named in the ask."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-addon-umbrella-source-holder-ask"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:43:38.871Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T05:43:38.960Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620_20260620054358",
+        "assigned_at": "2026-06-20T05:43:58.231Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620_20260620054358",
+        "worker_started_at": "2026-06-20T05:43:58.422Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the send-ready ask packet `evidence/archive/vm-prerelease-addon-umbrella-row60-61-source-holder-ask-packet-20260620.md`, grounding rows 60/61 in the accepted nonblocked missing-spec wave and the maintained managementplane-addon adjacent surfaces while keeping Scenario_Addon and Scenario_Core_Addon_Kubernetes_Compatibility distinct.",
+        "last_worker_completed_at": "2026-06-20T05:45:02.427Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:46:24.331Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the addon-umbrella ask packet: it grounds rows 60/61 in the accepted missing-spec wave, names the exact maintained addon-management adjacent surfaces already rejected as non-authoritative, keeps the two rows distinct, and is now ready to hand off through a dedicated response-await leaf."
+      },
+      "session_id": "s_task_vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addon-umbrella-row60-61-source-holder-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:46:24.331Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the addon-umbrella ask packet: it grounds rows 60/61 in the accepted missing-spec wave, names the exact maintained addon-management adjacent surfaces already rejected as non-authoritative, keeps the two rows distinct, and is now ready to hand off through a dedicated response-await leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "westus2-local-baseline-create-canceled-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare a send-ready owner handoff packet for the shared westus2/local baseline cluster-create ARM LRO Canceled blocker family so the two affected blocked execute branches have one exact external escalation artifact. Use the accepted shared-triage and family-next-action reconciliation notes plus the two affected execute artifacts to package the shared westus2/local create envelope, the exact branch split, what was and was not reached, and the precise owner signal needed to decide whether this family should remain environment-blocked, branch-rerouted, or retried unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-local-baseline-create-canceled-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive packet cites evidence/archive/westus2-local-create-path-shared-blocker-reconcile-20260620.md, evidence/archive/westus2-local-baseline-create-canceled-family-next-action-reconcile-20260620.md, and the two affected execute artifacts, and names exactly which leaves inherit the shared baseline-create-Canceled family versus which nearby westus2/local leaves do not.",
+        "Packet asks only the exact external owner questions needed for routing this blocker family: whether westus2/local baseline-create Canceled should be treated as known regional/runtime incident, expected transient noise, or branch-specific request/runtime defect, together with the concrete signal that would justify retry or reroute for each affected branch.",
+        "Result remains a user-review handoff artifact only: no cloud rerun, no merged execution leaf, and explicit reply routing back into aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619 and private-cluster-vnet-integration-update-westus2-local-execute-20260619."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "problem:westus2-local-baseline-create-canceled"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:11:04.341Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T06:11:09.641Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_westus2-local-baseline-create-canceled-owner-handoff-packet-20260620_20260620061109",
+        "assigned_at": "2026-06-20T06:11:09.694Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_westus2-local-baseline-create-canceled-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_westus2-local-baseline-create-canceled-owner-handoff-packet-20260620_20260620061109",
+        "worker_started_at": "2026-06-20T06:11:24.944Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested owner handoff packet at evidence/archive/westus2-local-baseline-create-canceled-owner-handoff-packet-20260620.md, consolidating the shared westus2/local baseline-create ARM LRO Canceled family, exact affected/non-affected leaves, and precise owner routing questions back to the two blocked execute branches.",
+        "last_worker_completed_at": "2026-06-20T06:12:41.317Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:13:00.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet exists at evidence/archive/westus2-local-baseline-create-canceled-owner-handoff-packet-20260620.md, cites the required reconcile and execute artifacts, cleanly separates the exact two affected leaves from nearby non-family westus2/local blockers, and asks only the bounded owner-routing questions needed to keep replies flowing back into the existing blocked execute branches."
+      },
+      "session_id": "s_task_westus2-local-baseline-create-canceled-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_westus2-local-baseline-create-canceled-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:13:00.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet exists at evidence/archive/westus2-local-baseline-create-canceled-owner-handoff-packet-20260620.md, cites the required reconcile and execute artifacts, cleanly separates the exact two affected leaves from nearby non-family westus2/local blockers, and asks only the bounded owner-routing questions needed to keep replies flowing back into the existing blocked execute branches."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare a send-ready owner handoff packet for the exact authorization gate blocking path.secops-identity-binding-role-assignment live execution. Using the accepted check-mode validation evidence, the accepted model-status reconcile note, and the existing blocked live-execute wait leaf, produce one bounded packet that asks for approval to run the unchanged replay with --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=secops-identity-role-assignment-validation, including exact command family, expected cloud mutation scope, prior local validation result, and the precise resume path for the returned approval or refusal.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive packet cites the accepted check-mode validation note, the accepted model-status reconcile note, and the blocked live-execute gate leaf, and states that repo-local validation is already complete while only execute authorization is missing.",
+        "Packet provides the exact replay command family and authorization ask for the unchanged role-assignment validation path, including --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=secops-identity-role-assignment-validation and the bounded expected mutation/cleanup surface.",
+        "Task stays in the user-review lane only: no cloud execution, no new model edits, and no broad secops-family rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:secops-identity-role-assignment-execute-authorization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:29:43.291Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620_20260620062943",
+        "assigned_at": "2026-06-20T06:29:43.371Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620",
+        "worker_started_attempt_id": "a_secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620_20260620062943",
+        "worker_started_at": "2026-06-20T06:30:07.484Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested send-ready owner handoff packet at evidence/archive/secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620.md, grounded in the accepted check-mode evidence, accepted model-status reconcile note, and the existing blocked execute-gate leaf.",
+        "last_worker_completed_at": "2026-06-20T06:31:12.374Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:32:45.686Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the send-ready authorization packet: it cites the accepted check-mode validation and model-status reconcile notes, names the exact --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=secops-identity-role-assignment-validation command family, bounds the expected cloud mutation/cleanup scope, and routes approval or refusal back to the existing blocked live-execute gate leaf only."
+      },
+      "session_id": "s_task_secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620",
+      "session_history": [
+        "s_task_secops-identity-role-assignment-execute-authorization-owner-handoff-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:32:45.686Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the send-ready authorization packet: it cites the accepted check-mode validation and model-status reconcile notes, names the exact --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=secops-identity-role-assignment-validation command family, bounds the expected cloud mutation/cleanup scope, and routes approval or refusal back to the existing blocked live-execute gate leaf only."
+      },
+      "status": "done"
+    }
+  ]
+}

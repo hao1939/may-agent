@@ -1,0 +1,536 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T18:33:20.192Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "Owner review accepted the new 2026-06-27 feature-reference packets for aad-rbac-nonaad-reset, aad-rbac-rbac-disabled-to-aadv2, acccvm, app-monitoring, app-routing, app-routing-default-domain-istio, and app-routing-default-domain-tls-secret. Their durable meaning now lives in the branch summary plus evidence/archive packets; keep the remaining open repair/collection leaves visible for unfinished reference normalization work while the live frontier stays focused on the active app-routing repair/rerun cluster and the two exact external waits.",
+  "archived": 7,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-aad-rbac-nonaad-reset",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for aad-rbac-nonaad-reset.",
+      "inputs": [
+        "feature:aad-rbac-nonaad-reset",
+        "packet:features/aad-rbac/packets/nonaad-reset.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:aad-rbac-nonaad-reset"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "aad-rbac-nonaad-reset",
+        "packetPath": "features/aad-rbac/packets/nonaad-reset.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "aad-rbac",
+        "coveredFeatureIds": [
+          "aad-rbac-nonaad-reset",
+          "nonaad-reset-aad-profile"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.204Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-aad-rbac-nonaad-reset_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.355Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-aad-rbac-nonaad-reset",
+        "worker_started_attempt_id": "a_collect-feature-reference-aad-rbac-nonaad-reset_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.754Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for aad-rbac-nonaad-reset: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:47:21.179Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:19.794Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-aad-rbac-nonaad-reset",
+      "session_history": [
+        "s_task_collect-feature-reference-aad-rbac-nonaad-reset"
+      ],
+      "result": "Collected official feature references for aad-rbac-nonaad-reset: evidence/archive/feature-reference-aad-rbac-nonaad-reset-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:19.794Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for aad-rbac-rbac-disabled-to-aadv2.",
+      "inputs": [
+        "feature:aad-rbac-rbac-disabled-to-aadv2",
+        "packet:features/aad-rbac/packets/rbac-disabled-to-aadv2-migration.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:aad-rbac-rbac-disabled-to-aadv2"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "aad-rbac-rbac-disabled-to-aadv2",
+        "packetPath": "features/aad-rbac/packets/rbac-disabled-to-aadv2-migration.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "aad-rbac",
+        "coveredFeatureIds": [
+          "rbac-disabled-to-aadv2-migration"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.209Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.362Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+        "worker_started_attempt_id": "a_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.585Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for aad-rbac-rbac-disabled-to-aadv2: evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:46:32.121Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:19.852Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2",
+      "session_history": [
+        "s_task_collect-feature-reference-aad-rbac-rbac-disabled-to-aadv2"
+      ],
+      "result": "Collected official feature references for aad-rbac-rbac-disabled-to-aadv2: evidence/archive/feature-reference-aad-rbac-rbac-disabled-to-aadv2-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:19.852Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-acccvm",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for acccvm.",
+      "inputs": [
+        "feature:acccvm",
+        "packet:features/acccvm.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:acccvm"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "acccvm",
+        "packetPath": "features/acccvm.yaml",
+        "packetKind": "feature",
+        "layout": "migration-root-feature",
+        "capabilityId": null,
+        "coveredFeatureIds": [
+          "acccvm-confidential-node-pool"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-acccvm-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.214Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-acccvm_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.369Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-acccvm",
+        "worker_started_attempt_id": "a_collect-feature-reference-acccvm_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.236Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for acccvm: evidence/archive/feature-reference-acccvm-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:46:31.946Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:19.907Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-acccvm-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-acccvm",
+      "session_history": [
+        "s_task_collect-feature-reference-acccvm"
+      ],
+      "result": "Collected official feature references for acccvm: evidence/archive/feature-reference-acccvm-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:19.907Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-monitoring",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for app-monitoring.",
+      "inputs": [
+        "feature:app-monitoring",
+        "packet:features/app-monitoring.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-monitoring"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "app-monitoring",
+        "packetPath": "features/app-monitoring.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "app-monitoring",
+        "coveredFeatureIds": [
+          "msi-azure-monitor-aad-auth-vm-prerelease",
+          "app-monitoring-addonv2-azure-monitor-metrics",
+          "app-monitoring-appmonitoring-vm-prerelease"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-monitoring-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.219Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-monitoring_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.376Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-monitoring",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-monitoring_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.175Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for app-monitoring: evidence/archive/feature-reference-app-monitoring-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:47:20.915Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:19.960Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-monitoring-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-app-monitoring",
+      "session_history": [
+        "s_task_collect-feature-reference-app-monitoring"
+      ],
+      "result": "Collected official feature references for app-monitoring: evidence/archive/feature-reference-app-monitoring-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:19.960Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-routing",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for app-routing.",
+      "inputs": [
+        "feature:app-routing",
+        "packet:features/app-routing.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "app-routing",
+        "packetPath": "features/app-routing.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "app-routing",
+        "coveredFeatureIds": [
+          "app-routing",
+          "app-routing-default-domain",
+          "app-routing-default-domain-istio",
+          "app-routing-default-domain-tls-lifecycle",
+          "app-routing-default-domain-tls-secret",
+          "app-routing-nginx-disablement",
+          "app-routing-nginx-to-istio-migration",
+          "app-routing-public-api-default-domain-enable",
+          "app-routing-public-api-disable",
+          "app-routing-public-api-enable"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.223Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.383Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.350Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for app-routing: evidence/archive/feature-reference-app-routing-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:47:20.975Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:20.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing"
+      ],
+      "result": "Collected official feature references for app-routing: evidence/archive/feature-reference-app-routing-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:20.016Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-routing-default-domain-istio",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for app-routing-default-domain-istio.",
+      "inputs": [
+        "feature:app-routing-default-domain-istio",
+        "packet:features/app-routing/packets/default-domain-istio.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing-default-domain-istio"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "app-routing-default-domain-istio",
+        "packetPath": "features/app-routing/packets/default-domain-istio.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "app-routing",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.231Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-default-domain-istio_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.389Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-default-domain-istio",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-default-domain-istio_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.640Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for app-routing-default-domain-istio: evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:47:20.762Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:20.069Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-default-domain-istio",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-default-domain-istio"
+      ],
+      "result": "Collected official feature references for app-routing-default-domain-istio: evidence/archive/feature-reference-app-routing-default-domain-istio-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:20.069Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "collect-feature-reference-app-routing-default-domain-tls-secret",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for app-routing-default-domain-tls-secret.",
+      "inputs": [
+        "feature:app-routing-default-domain-tls-secret",
+        "packet:features/app-routing/packets/app-routing-default-domain-tls-secret.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:app-routing-default-domain-tls-secret"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "app-routing-default-domain-tls-secret",
+        "packetPath": "features/app-routing/packets/app-routing-default-domain-tls-secret.yaml",
+        "packetKind": "feature",
+        "layout": "branch-packet",
+        "capabilityId": "app-routing",
+        "coveredFeatureIds": [],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-default-domain-tls-secret-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "trace": {
+        "created_at": "2026-06-27T16:21:51.236Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-app-routing-default-domain-tls-secret_20260627162151",
+        "assigned_at": "2026-06-27T16:21:51.396Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-app-routing-default-domain-tls-secret",
+        "worker_started_attempt_id": "a_collect-feature-reference-app-routing-default-domain-tls-secret_20260627162151",
+        "worker_started_at": "2026-06-27T16:25:12.401Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for app-routing-default-domain-tls-secret: evidence/archive/feature-reference-app-routing-default-domain-tls-secret-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T17:46:32.039Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T18:33:20.126Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: worker delivered evidence/archive/feature-reference-app-routing-default-domain-tls-secret-20260627.md and completed the official Learn/REST reference packet for this feature reference branch."
+      },
+      "session_id": "s_task_collect-feature-reference-app-routing-default-domain-tls-secret",
+      "session_history": [
+        "s_task_collect-feature-reference-app-routing-default-domain-tls-secret"
+      ],
+      "result": "Collected official feature references for app-routing-default-domain-tls-secret: evidence/archive/feature-reference-app-routing-default-domain-tls-secret-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T18:33:20.126Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

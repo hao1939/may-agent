@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T02:41:49.086Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner review keeps the blocked frontier intentionally compressed: the AAD RBAC approval wait, private-cluster auth service-tags devbox endpoint wait, and external dispatch family wait all remain exact external-proof branches with first bounded follow-up/escalation no earlier than 2026-06-26. Repo-local storage CSI closure advanced with accepted replay/gate work for disk-resize, disk-xfs, and file-clone carriers; the live active thread is the file-clone future-execution gate packet, and the next useful parallel local backlog is the sibling disk-clone gate packet rather than reopening any external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-disk-resize-live-execution-gate-packet-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the bounded future-live execution gate packet for path.storage-csi-disk-resize using the accepted mounted-source boundary map and replay carrier so a later mutating probe can stay truthful about prerequisites, mutation gate, cleanup, evidence outputs, and resume conditions without widening into pvc-dynamic, raw-block, xfs, clone, snapshot, or Azure File families.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-resize-live-execution-gate-packet-20260624.md"
+      ],
+      "acceptance": [
+        "Archive an evidence note that cites the exact mounted handwritten resize source slice, the accepted disk-resize boundary-map artifact, and the accepted replay-carrier artifact, and enumerates the bounded live prerequisites for resize-pvc + managed-csi + resize-pod + /mnt/datavolume hello-world proof + 10Gi->20Gi expansion + lsblk validation only.",
+        "Record the exact non-cloud and cloud gates for a future live probe, including the required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, ordered preflight checks, cleanup expectations, named evidence outputs, and the truthful resume/abort conditions if any prerequisite is missing.",
+        "Do not run cloud mutation; if a small maintained wording/model/view sync is needed so the future gate is claim-safe, validate it repo-locally and cite that proof, otherwise state why no maintained edit was required."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.storage-csi-disk-resize"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T02:37:44.824Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T02:37:50.731Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-resize-live-execution-gate-packet-20260624_20260624023821",
+        "assigned_at": "2026-06-24T02:38:21.306Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-resize-live-execution-gate-packet-20260624",
+        "worker_started_attempt_id": "a_storage-csi-disk-resize-live-execution-gate-packet-20260624_20260624023821",
+        "worker_started_at": "2026-06-24T02:38:25.520Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded future-live execution gate packet for storage CSI disk resize under evidence/archive and verified the current replay remains check-pass / execute-gated with durable JSON evidence, without any cloud mutation.",
+        "last_worker_completed_at": "2026-06-24T02:40:26.774Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T02:40:55.025Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet truthfully bounds path.storage-csi-disk-resize as a future live-execution gate only, cites the exact mounted-source and accepted carrier artifacts, and the named check/execute-gated JSON evidence files exist with no cloud mutation claimed."
+      },
+      "session_id": "s_task_storage-csi-disk-resize-live-execution-gate-packet-20260624",
+      "session_history": [
+        "s_task_storage-csi-disk-resize-live-execution-gate-packet-20260624"
+      ],
+      "result": "Authored the bounded future-live execution gate packet for storage CSI disk resize under evidence/archive and verified the current replay remains check-pass / execute-gated with durable JSON evidence, without any cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T02:40:55.025Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet truthfully bounds path.storage-csi-disk-resize as a future live-execution gate only, cites the exact mounted-source and accepted carrier artifacts, and the named check/execute-gated JSON evidence files exist with no cloud mutation claimed."
+      },
+      "status": "done"
+    }
+  ]
+}

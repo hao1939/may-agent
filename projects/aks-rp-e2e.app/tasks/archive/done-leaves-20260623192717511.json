@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:27:17.511Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: no review claims required acceptance and the truthful live frontier remains one active repo-local traffic-api-proxy normalized-carrier repair leaf plus two exact blocked waits. Preserve traffic-api-proxy-normalized-carrier-gap-repair-20260623 as the single bounded refill slice and require next worker return to include a durable archive artifact, exact carrier-file edits, validator rerun output, maintained-view regeneration output, and before/after issue counts for the selected traffic-api-proxy paths. Preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 unchanged until returned proof arrives or the first owner review after 2026-06-26, and preserve private-cluster-vnet-auth-service-tags-selected-host-ssh-environment-wait-20260623 unchanged until same-launcher SSH step-1 success or an authoritative endpoint/access-path update arrives. Archive the completed direct children below because their durable meaning already lives in evidence/archive and prior parent rollups, so compact visible tree noise without reopening those slices.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-variant-linkage-gap-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted AKS RP network/net-integration handwritten/e2ev3 source plus current repo-local feature/spec/replay/model surfaces, produce a bounded linkage map for remaining scenario variants that still share ambiguous or duplicate carriers, so the next repo-local cleanup can canonicalize one exact variant family without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-variant-linkage-gap-map-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted source files or scenario identifiers and repo-local carrier files reviewed, lists the remaining ambiguous or duplicate net-integration variant linkages with current carrier status, and recommends one highest-value canonicalization or spec/model follow-on leaf.",
+        "The work stays repo-local and bounded to net-integration source/carrier linkage: no cloud mutation, no reopening of terminal product/environment verdicts, and no duplication of the path.network-cni-cilium-preview-upgrade external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-variant-linkage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:00:11.847Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-variant-linkage-gap-map-20260623_20260623190011",
+        "assigned_at": "2026-06-23T19:00:11.898Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-variant-linkage-gap-map-20260623",
+        "worker_started_attempt_id": "a_net-integration-variant-linkage-gap-map-20260623_20260623190011",
+        "worker_started_at": "2026-06-23T19:00:33.520Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable archive artifact `evidence/archive/net-integration-variant-linkage-gap-map-20260623.md`, mapping mounted net-integration variant families to current repo-local carriers and identifying MultiNIC mixed as the only remaining ambiguous/duplicate linkage needing a bounded canonicalization leaf.",
+        "last_worker_completed_at": "2026-06-23T19:03:22.188Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:04:11.232Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/net-integration-variant-linkage-gap-map-20260623.md cites the mounted netintegration source and current repo-local carriers, shows that MultiNIC mixed is the only remaining ambiguous/duplicate carrier family, and recommends one bounded canonicalization follow-on leaf without cloud mutation."
+      },
+      "session_id": "s_task_net-integration-variant-linkage-gap-map-20260623",
+      "session_history": [
+        "s_task_net-integration-variant-linkage-gap-map-20260623"
+      ],
+      "result": "Produced the durable archive artifact `evidence/archive/net-integration-variant-linkage-gap-map-20260623.md`, mapping mounted net-integration variant families to current repo-local carriers and identifying MultiNIC mixed as the only remaining ambiguous/duplicate linkage needing a bounded canonicalization leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:04:11.232Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/net-integration-variant-linkage-gap-map-20260623.md cites the mounted netintegration source and current repo-local carriers, shows that MultiNIC mixed is the only remaining ambiguous/duplicate carrier family, and recommends one bounded canonicalization follow-on leaf without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

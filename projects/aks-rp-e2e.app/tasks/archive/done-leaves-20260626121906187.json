@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:19:06.187Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 blocked-frontier owner review accepted the preserved-order refresh as complete: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md and ../aks-rp-e2e/.state/spec-loop/state.json now capture reviewed terminal queue facts for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags, and the stale loopTaskId/order mismatch has already been reconciled. The pre-refresh blocked successors for authorized-ip-ranges, authorized-service-tags, reconcile, nsg-control, and static-egress-vmss are archived as completed or replaced context. The next truthful spec-loop action is a fresh newer-sibling leaf for spec.net-integration.nsg-control on the accepted single-spec launcher surface, with static-egress-vmss queued strictly behind that refreshed review.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the preserved-order earlier net-integration single-spec queue after the stale-active metric breach by handling only the first due earlier spec on the already accepted single-spec GitHub launcher surface: review any existing outbound-lb-custom-ip launch/result artifacts and, if they do not already yield a reviewed terminal disposition, relaunch only spec.net-integration.outbound-lb-custom-ip; then update evidence, model/spec-loop state, and the queue handoff for the next preserved-order earlier sibling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "verify-single-spec-gh-launcher-runtime-refresh-and-fallback-20260626 remains the accepted launcher gate before any refreshed queue launch.",
+        "spec.net-integration.outbound-lb-custom-ip reaches a reviewed terminal disposition or exact blocker from existing artifacts or one refreshed single-spec launch, with archive evidence and model/spec-loop updates captured.",
+        "This leaf does not launch authorized-ip-ranges, authorized-service-tags, nsg-control, or static-egress-vmss; it only leaves the next preserved-order earlier sibling ready for review after outbound-lb-custom-ip facts are recorded."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:13:53.543Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626_20260626121353",
+        "assigned_at": "2026-06-26T12:13:53.590Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-brea",
+        "worker_started_attempt_id": "a_refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626_20260626121353",
+        "worker_started_at": "2026-06-26T12:14:08.908Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the preserved-order earlier net-integration queue without relaunching GitHub runs, wrote a durable archive note at evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md, and refreshed .state/spec-loop/state.json so the stale loopTaskId/order/status metadata now reflects reviewed outcomes for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags.",
+        "last_worker_completed_at": "2026-06-26T12:17:44.234Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:18:34.459Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-26 owner review: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md plus .state/spec-loop/state.json show the accepted single-spec launcher gate stayed valid, outbound-lb-custom-ip/authorized-ip-ranges/authorized-service-tags each already had reviewable terminal evidence, and the stale queue/order metadata was refreshed without relaunch."
+      },
+      "session_id": "s_task_refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-brea",
+      "session_history": [
+        "s_task_refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-brea"
+      ],
+      "result": "Reviewed the preserved-order earlier net-integration queue without relaunching GitHub runs, wrote a durable archive note at evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md, and refreshed .state/spec-loop/state.json so the stale loopTaskId/order/status metadata now reflects reviewed outcomes for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:18:34.459Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-26 owner review: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md plus .state/spec-loop/state.json show the accepted single-spec launcher gate stayed valid, outbound-lb-custom-ip/authorized-ip-ranges/authorized-service-tags each already had reviewable terminal evidence, and the stale queue/order metadata was refreshed without relaunch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "authorized-ip-ranges-after-outbound-lb-custom-ip-earlier-net-integration-review-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After spec.net-integration.outbound-lb-custom-ip is reviewed terminal on the accepted single-spec launcher surface, consume the next preserved-order earlier sibling spec.net-integration.authorized-ip-ranges by first reviewing any existing launch/result artifacts and, only if needed, relaunching that one spec; then record evidence and model/spec-loop updates without advancing to later siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "spec.net-integration.outbound-lb-custom-ip has already reached a reviewed terminal disposition or exact blocker and remains recorded as the earlier queue predecessor.",
+        "spec.net-integration.authorized-ip-ranges reaches a reviewed terminal disposition or exact blocker from existing artifacts or one refreshed single-spec launch, with archive evidence and model/spec-loop updates captured.",
+        "This leaf does not launch authorized-service-tags, nsg-control, or static-egress-vmss before authorized-ip-ranges facts are reviewed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:15:23.525Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:18:34.506Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Completed within the accepted 2026-06-26 preserved-order queue refresh: the refresh archive note reviewed existing terminal evidence for spec.net-integration.authorized-ip-ranges and recorded reviewed-success state, so no separate successor leaf or relaunch remains."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:18:34.506Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Completed within the accepted 2026-06-26 preserved-order queue refresh: the refresh archive note reviewed existing terminal evidence for spec.net-integration.authorized-ip-ranges and recorded reviewed-success state, so no separate successor leaf or relaunch remains."
+      },
+      "status": "done"
+    },
+    {
+      "id": "authorized-service-tags-after-authorized-ip-ranges-earlier-net-integration-review-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After spec.net-integration.authorized-ip-ranges is reviewed terminal on the accepted single-spec launcher surface, consume the last preserved-order earlier sibling spec.net-integration.authorized-service-tags by first reviewing any existing launch/result artifacts and, only if needed, relaunching that one spec; then record evidence and model/spec-loop updates before handing the queue to reconcile/newer-sibling follow-up.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "spec.net-integration.authorized-ip-ranges has already reached a reviewed terminal disposition or exact blocker and remains recorded as the immediate earlier queue predecessor.",
+        "spec.net-integration.authorized-service-tags reaches a reviewed terminal disposition or exact blocker from existing artifacts or one refreshed single-spec launch, with archive evidence and model/spec-loop updates captured.",
+        "This leaf does not launch nsg-control or static-egress-vmss; it closes the preserved-order earlier queue and leaves reconcile/newer-sibling follow-up unblocked only after reviewed facts are recorded."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:15:23.573Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:18:34.552Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Completed within the accepted 2026-06-26 preserved-order queue refresh: the refresh archive note reviewed existing terminal evidence for spec.net-integration.authorized-service-tags, preserved the staging-pass/preview caveat, and recorded the reviewed queue fact in spec-loop state without a separate launch."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:18:34.552Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Completed within the accepted 2026-06-26 preserved-order queue refresh: the refresh archive note reviewed existing terminal evidence for spec.net-integration.authorized-service-tags, preserved the staging-pass/preview caveat, and recorded the reviewed queue fact in spec-loop state without a separate launch."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the preserved-order earlier net-integration retry queue is reviewed to a terminal outcome, reconcile the repo-local single-spec loop metadata so the queue owner/task id and next-spec ordering match the reviewed net-integration facts instead of the stale state file ordering.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/evidence/archive/spec-loop-net-integration-order-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note cites the exact pre-reconcile mismatch seen on 2026-06-26: .state/spec-loop/state.json still carried the legacy loopTaskId retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626 and listed static-egress-vmss ahead of authorized-ip-ranges/authorized-service-tags while the accepted active queue required the earlier preserved order.",
+        "The updated spec-loop metadata records the current queue owner/successor and no longer advertises any newer net-integration sibling ahead of still-unreviewed earlier queue specs.",
+        "This task performs repo-local state/evidence reconciliation only; it does not launch new cloud runs or bypass the preserved-order review gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:spec-loop-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:06:12.057Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:18:34.597Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as already satisfied by the 2026-06-26 queue refresh evidence: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md cites the stale legacy loopTaskId/order mismatch and .state/spec-loop/state.json now records the corrected queue owner and preserved ordering before newer siblings."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:18:34.597Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as already satisfied by the 2026-06-26 queue refresh evidence: evidence/archive/refresh-preserved-order-earlier-net-integration-single-spec-queue-after-stale-active-metric-breach-20260626.md cites the stale legacy loopTaskId/order mismatch and .state/spec-loop/state.json now records the corrected queue owner and preserved ordering before newer siblings."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-net-integration-nsg-control-after-earlier-queue-and-order-reconcile-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the preserved-order earlier net-integration queue is reviewed terminal and repo-local spec-loop ordering is reconciled, consume the next newer sibling spec.net-integration.nsg-control by first reviewing any existing launch/result artifacts and, only if needed, relaunching that one spec; then record evidence and model/spec-loop updates without advancing to static-egress-vmss.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "The preserved-order earlier net-integration queue has already reached reviewed terminal outcomes or an exact shared blocker, and reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626 has corrected repo-local ordering so newer siblings are truthful to review.",
+        "spec.net-integration.nsg-control reaches a reviewed terminal disposition or exact blocker from existing artifacts or one refreshed single-spec launch, with archive evidence and model/spec-loop updates captured.",
+        "This leaf does not launch spec.net-integration.static-egress-vmss before nsg-control facts are reviewed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:17:12.502Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:18:34.644Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during 2026-06-26 owner review after the accepted queue refresh consumed all earlier siblings and already reconciled state ordering. A new runnable successor now carries the exact next step from the refreshed queue truth instead of this stale blocked leaf's pre-refresh blocker wording."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T12:18:34.644Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during 2026-06-26 owner review after the accepted queue refresh consumed all earlier siblings and already reconciled state ordering. A new runnable successor now carries the exact next step from the refreshed queue truth instead of this stale blocked leaf's pre-refresh blocker wording."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-net-integration-static-egress-vmss-after-nsg-control-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After spec.net-integration.nsg-control is reviewed terminal on the accepted single-spec launcher surface, consume the next newer sibling spec.net-integration.static-egress-vmss by first reviewing any existing launch/result artifacts and, only if needed, relaunching that one spec; then record evidence and model/spec-loop updates and close the newer-sibling branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/runs/test-results/",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "review-net-integration-nsg-control-after-earlier-queue-and-order-reconcile-20260626 has already reached a reviewed terminal disposition or exact blocker and remains recorded as the immediate newer-sibling predecessor.",
+        "spec.net-integration.static-egress-vmss reaches a reviewed terminal disposition or exact blocker from existing artifacts or one refreshed single-spec launch, with archive evidence and model/spec-loop updates captured.",
+        "This leaf closes the bounded newer-sibling branch and does not reopen earlier-queue ordering work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runtime:single-spec-gh-launcher"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:17:12.549Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:18:34.693Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during 2026-06-26 owner review together with the stale pre-refresh newer-sibling branch. A fresh successor chain is recreated from the accepted queue-refresh state so static-egress-vmss no longer hangs behind a retired blocker."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T12:18:34.693Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during 2026-06-26 owner review together with the stale pre-refresh newer-sibling branch. A fresh successor chain is recreated from the accepted queue-refresh state so static-egress-vmss no longer hangs behind a retired blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

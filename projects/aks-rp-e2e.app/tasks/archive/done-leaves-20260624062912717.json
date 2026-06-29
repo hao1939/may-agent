@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T06:29:12.717Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 blocked-frontier owner reconciliation compressed the completed private-cluster dns-zone-none/V3 cleanup slice into root knowledge: mounted-source adjacency, canonical lineage, metadata citation closure, and the unknown-checkpoint inventory are all accepted durable history. What the project now knows for path.private-cluster-none-dns-zone-v3 is that the canonical V3 path remains the only exact-source owner, the historical dns-zone-none alias is reference-only, the system-create -> none-update boundary is already evidenced, and the next useful repo-local work is no longer cleanup but one bounded next-checkpoint priority note that converts the accepted inventory into exactly one recommended follow-up or an evidence ceiling without opening cloud execution. The three existing blocked leaves remain the only truthful external waits, unchanged until returned proof arrives or the first owner follow-up window on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the adjacent generic none-DNS private-cluster branch against mounted handwritten source and maintained carriers so the knowledge map explicitly distinguishes any exact generic privateDNSZone=none path from the already-closed V3 system->none lifecycle branch, without cloud mutation or new external waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624.md"
+      ],
+      "acceptance": [
+        "The worker produces an archive note that cites the exact mounted/private-cluster handwritten source and maintained repo-local carriers needed to answer whether path.private-cluster-dns-zone-none has an exact handwritten/source-equivalent landing distinct from path.private-cluster-none-dns-zone-v3, including any rejected interpretations and the maintained carrier anchors reviewed.",
+        "If a bounded repo-local clarification is needed, the worker updates only the most appropriate maintained carrier(s) to preserve that distinction, records the exact touched paths/anchors in the output note, and does not change the accepted V3 unknown ceiling or create cloud/external-wait work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-dns-zone-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T06:11:30.505Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624_20260624061130",
+        "assigned_at": "2026-06-24T06:11:30.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624",
+        "worker_started_attempt_id": "a_private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624_20260624061130",
+        "worker_started_at": "2026-06-24T06:11:48.927Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded mounted-source adjacency audit for private-cluster DNS none, wrote the archive note at evidence/archive/private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624.md, and added a clarifying claim to features/private-cluster/dns-zone-modes.yaml that the generic dns-zone-none alias has no separate exact mounted handwritten landing beyond the V3 source file.",
+        "last_worker_completed_at": "2026-06-24T06:14:22.721Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T06:15:04.319Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note cites the exact mounted V3 none_private_dns_zone.go lifecycle anchors plus maintained carriers showing there is no separate exact handwritten landing for path.private-cluster-dns-zone-none beyond path.private-cluster-none-dns-zone-v3, and the worker's bounded clarification to features/private-cluster/dns-zone-modes.yaml preserves the V3 unknown ceiling without introducing cloud or external-wait work."
+      },
+      "session_id": "s_task_private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624",
+      "session_history": [
+        "s_task_private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624"
+      ],
+      "result": "Completed the bounded mounted-source adjacency audit for private-cluster DNS none, wrote the archive note at evidence/archive/private-cluster-dns-zone-none-mounted-source-adjacency-audit-20260624.md, and added a clarifying claim to features/private-cluster/dns-zone-modes.yaml that the generic dns-zone-none alias has no separate exact mounted handwritten landing beyond the V3 source file.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T06:15:04.319Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note cites the exact mounted V3 none_private_dns_zone.go lifecycle anchors plus maintained carriers showing there is no separate exact handwritten landing for path.private-cluster-dns-zone-none beyond path.private-cluster-none-dns-zone-v3, and the worker's bounded clarification to features/private-cluster/dns-zone-modes.yaml preserves the V3 unknown ceiling without introducing cloud or external-wait work."
+      },
+      "status": "done"
+    }
+  ]
+}

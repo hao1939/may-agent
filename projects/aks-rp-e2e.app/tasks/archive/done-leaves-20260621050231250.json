@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:02:31.250Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after stale watchdog review wake: accepted done slices now summarized at the root are secops-fips-source-gap-map-batch1-20260621 (clusterfips source gap map captured and narrowed to blocked-addon landing), storage-csi-azurefile-advanced-subintent-map-batch2-20260621 (advanced Azure File subintent map captured and split into branch work), storage-csi-azurefile-nfs-unmount-boundary-note-batch3-20260621 (verifyNFS plus unmountSMBVolume/unmountNFSVolume source-backed boundary note accepted), and vmpr-network-cni-enterprise-separation-batch7-20260621 (VM prerelease maintained vs non-maintained carrier separation recorded for later checkpoint readiness). Current live work stays intentionally split by workspace: secops-fips-blocked-addon-boundary-landing-batch2-20260621 remains the active repo-workspace canonical landing pass, and storage-csi-azurefile-privateendpoint-boundary-note-batch5-20260621 remains the active source-workspace private-endpoint note pass. The next repo-workspace successors are already defined but should stay queued behind the secops landing: storage-csi-azurefile-nfs-unmount-boundary-landing-batch4-20260621 and vmpr-maintained-vmonly-checkpoint-readiness-batch8-20260621. Keep external-send-proof-dispatch-family-20260620 as the single truthful external-human transport blocker; do not recreate duplicate waits or source-interpretation leaves until durable send/escalation proof or an authoritative reply exists.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-source-gap-map-batch1-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the batch3_exploration uncovered-family signal to do one bounded regular-learning pass on secops-fips from the mounted Go source under /app/sources/aks-rp/test/e2ev3/sigs/: locate one exact secops-fips handwritten e2ev3 suite/file cluster, extract up to three scenario intents plus their key AKS input paths and expected behavior, then compare each scenario to current model/spec/replay coverage so the next secops-fips work is source-backed instead of guessed, without editing model/knowledge-map/model.json or running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-source-gap-map-batch1-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note names the exact mounted Go source files/suite cluster inspected for the secops-fips slice and summarizes up to three concrete handwritten e2ev3 scenario intents with the key AKS input paths and expected behavior inferred from those sources.",
+        "Archive note cross-checks each summarized scenario against current repo coverage, citing exact model path IDs, spec IDs, replay files, or an explicit missing-coverage statement for each scenario instead of hand-waving about the family overall.",
+        "Archive note ends with a ranked follow-up recommendation for the next secops-fips leaf or leaves, making clear which candidates are regular-learning/model work versus later verification work, and does not claim cloud execution or direct model updates in this batch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:52:06.756Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-source-gap-map-batch1-20260621_20260621045352",
+        "assigned_at": "2026-06-21T04:53:52.630Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-source-gap-map-batch1-20260621",
+        "worker_started_attempt_id": "a_secops-fips-source-gap-map-batch1-20260621_20260621045352",
+        "worker_started_at": "2026-06-21T04:53:53.514Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note at evidence/archive/secops-fips-source-gap-map-batch1-20260621.md after inspecting the mounted secops/clusterfips handwritten Go suite and cross-checking three exact scenarios against current repo model/spec/replay coverage.",
+        "last_worker_completed_at": "2026-06-21T04:56:00.080Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:57:48.119Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-21: evidence/archive/secops-fips-source-gap-map-batch1-20260621.md cites exact mounted clusterfips source files, captures three concrete handwritten secops-fips scenario intents with key input/expectation paths, cross-checks each against current repo-local coverage, and ends with ranked bounded follow-up recommendations. Active successor secops-fips-blocked-addon-boundary-landing-batch2-20260621 already carries the top recommended next slice, so no duplicate secops/source-gap leaf is needed."
+      },
+      "session_id": "s_task_secops-fips-source-gap-map-batch1-20260621",
+      "session_history": [
+        "s_task_secops-fips-source-gap-map-batch1-20260621"
+      ],
+      "result": "Created the requested archive note at evidence/archive/secops-fips-source-gap-map-batch1-20260621.md after inspecting the mounted secops/clusterfips handwritten Go suite and cross-checking three exact scenarios against current repo model/spec/replay coverage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:57:48.119Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-21: evidence/archive/secops-fips-source-gap-map-batch1-20260621.md cites exact mounted clusterfips source files, captures three concrete handwritten secops-fips scenario intents with key input/expectation paths, cross-checks each against current repo-local coverage, and ends with ranked bounded follow-up recommendations. Active successor secops-fips-blocked-addon-boundary-landing-batch2-20260621 already carries the top recommended next slice, so no duplicate secops/source-gap leaf is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

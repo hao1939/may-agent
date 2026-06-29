@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:20:12.338Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog blocked-frontier review found no review leaves and no new send-proof for the single external-human blocker family, so the owner left that wait unchanged and focused the live frontier on two active repo-local slices: private-cluster authorized-service-tags devbox preflight under the focus branch and Network CNI post-Swift-v2 carrier selection at the project level. The completed Swift v2 authority-reconcile child is archived because its durable meaning already lives in archive evidence and prior rollups; no duplicate blocker leaves, no live execution, and no new control/planning branches were introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining stale devbox source authority on the accepted Network CNI Swift v2 node-pool add/remove branch by reconciling the feature/spec carriers to the exact mounted-source Scenario_Swiftv2_Multi_Tenant anchors, while preserving the existing replay/model/view pass lineage and avoiding any cloud mutation or reopening accepted Cilium branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note and corresponding repo-local edits update features/network-swift-v2-node-pool-add-remove.yaml and specs/network-swift-v2-node-pool-add-remove.json to replace the stale devbox swiftv2/nodepool_lifecycle.go authority with the exact mounted-source anchors /app/sources/aks-rp/test/e2ev3/sigs/network/plans/swiftv2/swiftv2multitenant.go and /app/sources/aks-rp/test/e2ev3/sigs/network/plans/swiftv2/swiftv2podsubnet.go, citing the exact sections that carry the narrowed branch.",
+        "The note explains that network-swift-v2-node-pool-add-remove remains a narrowed accepted decomposition under Scenario_Swiftv2_Multi_Tenant, keeps replay/model/view verdict surfaces unchanged except any purely referential sync that is required, and introduces no cloud mutation, duplicate waits, or reopening of already accepted Network CNI branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T09:03:58.086Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623_20260623090358",
+        "assigned_at": "2026-06-23T09:03:58.144Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623",
+        "worker_started_attempt_id": "a_network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623_20260623090358",
+        "worker_started_at": "2026-06-23T09:04:20.068Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale devbox source authority for the accepted Swift v2 node-pool add/remove branch to mounted-source anchors, updating the feature packet, spec carrier, spec index, and a durable archive note without changing replay/model verdict surfaces or running cloud mutation.",
+        "last_worker_completed_at": "2026-06-23T09:08:02.037Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T09:08:41.509Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623.md: it replaces stale devbox authority with exact mounted Scenario_Swiftv2_Multi_Tenant anchors across the feature/spec/index carriers, preserves the narrowed accepted decomposition, and leaves replay/model verdict surfaces unchanged."
+      },
+      "session_id": "s_task_network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623",
+      "session_history": [
+        "s_task_network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623"
+      ],
+      "result": "Reconciled the stale devbox source authority for the accepted Swift v2 node-pool add/remove branch to mounted-source anchors, updating the feature packet, spec carrier, spec index, and a durable archive note without changing replay/model verdict surfaces or running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:08:41.509Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/network-swift-v2-node-pool-add-remove-mounted-source-authority-reconcile-20260623.md: it replaces stale devbox authority with exact mounted Scenario_Swiftv2_Multi_Tenant anchors across the feature/spec/index carriers, preserves the narrowed accepted decomposition, and leaves replay/model verdict surfaces unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T21:36:00.613Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier refill hygiene: archived the finished network-acns-performance-dualstack-carrier-decision-20260622 and storage-csi-disk-raw-block-source-landing-20260622 leaves because their durable meaning is already preserved at the root. The live frontier remains the app-routing row-82 verdict-ceiling audit, the ACNS cilium-upgrade carrier audit, and the single exact external-human wait; new refill work should target checkpoint-safe or bounded repo-local source/spec/model deltas without reopening the wait family.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-acns-performance-dualstack-carrier-decision-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: use mounted network ACNS source plus current repo-local carriers to decide whether Scenario_ACNS_Performance_DualStack should become a dedicated path/spec or an explicit execution-variant attachment under the existing network-acns-performance-tier carrier, and record the exact next repo-local authoring move without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-performance-dualstack-carrier-decision-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted-source files for Scenario_ACNS_Performance_DualStack and the current repo-local comparison files, and explains the create-time dual-stack input/expectation delta relative to the existing network-acns-performance-tier carrier.",
+        "The result makes one bounded durable decision: either recommend a dedicated path/spec/replay naming set with exact target files/ids, or recommend variant attachment under the existing carrier with the exact repo-local files/fields that should express that relationship.",
+        "No cloud mutation, no reopening of the external-human wait family, and no speculative authoring beyond the bounded decision packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-local-network-acns-dualstack-decision"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T21:29:02.717Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-performance-dualstack-carrier-decision-20260622_20260622212902",
+        "assigned_at": "2026-06-22T21:29:02.764Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-performance-dualstack-carrier-decision-20260622",
+        "worker_started_attempt_id": "a_network-acns-performance-dualstack-carrier-decision-20260622_20260622212902",
+        "worker_started_at": "2026-06-22T21:29:20.340Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a bounded decision packet at evidence/archive/network-acns-performance-dualstack-carrier-decision-20260622.md concluding that mounted Scenario_ACNS_Performance_DualStack should be represented as an execution-variant attachment under spec.network-acns.performance-tier, with exact repo-local follow-up fields/files named.",
+        "last_worker_completed_at": "2026-06-22T21:32:57.237Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T21:34:09.520Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet cites the mounted ACNS performance dual-stack source files plus current repo-local carriers, proves the dual-stack branch is only a create-time ipFamilies=[IPv4,IPv6] variant over the shared ACNS performance body, and makes a bounded next-move recommendation to attach it as an execution variant under the existing network-acns-performance-tier carrier rather than minting a duplicate canonical spec/replay set."
+      },
+      "session_id": "s_task_network-acns-performance-dualstack-carrier-decision-20260622",
+      "session_history": [
+        "s_task_network-acns-performance-dualstack-carrier-decision-20260622"
+      ],
+      "result": "Wrote a bounded decision packet at evidence/archive/network-acns-performance-dualstack-carrier-decision-20260622.md concluding that mounted Scenario_ACNS_Performance_DualStack should be represented as an execution-variant attachment under spec.network-acns.performance-tier, with exact repo-local follow-up fields/files named.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T21:34:09.520Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet cites the mounted ACNS performance dual-stack source files plus current repo-local carriers, proves the dual-stack branch is only a create-time ipFamilies=[IPv4,IPv6] variant over the shared ACNS performance body, and makes a bounded next-move recommendation to attach it as an execution variant under the existing network-acns-performance-tier carrier rather than minting a duplicate canonical spec/replay set."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-disk-raw-block-source-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: land the bounded Azure Disk CSI raw-block contract from mounted azurediskcsi.go into repo-local feature/spec coverage, defining the exact path inputs/expectations and whether a replay scaffold is warranted, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-disk-raw-block-source-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/speculor/storage/plans/azurediskcsi.go lines 293-328 plus the exact repo-local comparison files, and states the raw-block input/expectation contract in source-grounded terms.",
+        "The result recommends or drafts the smallest truthful repo-local landing set for this slice under exact target files/ids (feature/spec and optional replay scaffold), including the canonical path/storage-csi raw-block naming to carry forward.",
+        "No cloud mutation, no reopening of the external-human wait family, and no duplicate tasking for resize/clone/xfs unless the raw-block landing proves they must be split immediately."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-local-storage-csi-raw-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T21:31:01.702Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-disk-raw-block-source-landing-20260622_20260622213101",
+        "assigned_at": "2026-06-22T21:31:01.753Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-disk-raw-block-source-landing-20260622",
+        "worker_started_attempt_id": "a_storage-csi-disk-raw-block-source-landing-20260622_20260622213101",
+        "worker_started_at": "2026-06-22T21:31:16.104Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the archive evidence file `evidence/archive/storage-csi-disk-raw-block-source-landing-20260622.md`, grounding the Azure Disk CSI raw-block contract to mounted `azurediskcsi.go:293-328`, comparing it to current repo-local carriers, and recommending the smallest truthful landing set (`features/storage-csi/disk-raw-block.yaml` + `specs/storage-csi-disk-raw-block.json`, with replay scaffold optional).",
+        "last_worker_completed_at": "2026-06-22T21:33:10.444Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T21:34:09.571Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet cites mounted azurediskcsi.go lines 293-328 plus current repo-local storage carriers, states the exact raw-block input/expectation contract, and narrows the truthful next move to a new storage-csi-disk-raw-block feature/spec landing with replay scaffolding deferred unless later execution work needs it."
+      },
+      "session_id": "s_task_storage-csi-disk-raw-block-source-landing-20260622",
+      "session_history": [
+        "s_task_storage-csi-disk-raw-block-source-landing-20260622"
+      ],
+      "result": "Created the archive evidence file `evidence/archive/storage-csi-disk-raw-block-source-landing-20260622.md`, grounding the Azure Disk CSI raw-block contract to mounted `azurediskcsi.go:293-328`, comparing it to current repo-local carriers, and recommending the smallest truthful landing set (`features/storage-csi/disk-raw-block.yaml` + `specs/storage-csi-disk-raw-block.json`, with replay scaffold optional).",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T21:34:09.571Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet cites mounted azurediskcsi.go lines 293-328 plus current repo-local storage carriers, states the exact raw-block input/expectation contract, and narrows the truthful next move to a new storage-csi-disk-raw-block feature/spec landing with replay scaffolding deferred unless later execution work needs it."
+      },
+      "status": "done"
+    }
+  ]
+}

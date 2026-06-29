@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:06:38.761Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner rollup: accepted the serverless-virtualnodes-standard execute-contract design packet as the durable source for prerequisites, mutation order, witness gates, cleanup evidence, and addon-plane non-reuse boundaries. The branch now advances through one active bounded successor, serverless-virtualnodes-standard-execute-replay-gate-implementation-20260623, which implements the explicit execute gate in replays/serverless-virtualnodes-standard.ts while preserving repo-local check-mode behavior. Separate from that runnable serverless follow-up, the single family-level external wait for mounted-source coverage remains the only truthful blocked frontier and should resume only on returned operator proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-standard-execute-contract-design-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a bounded execute-contract design/proof packet for spec.serverless-virtualnodes.standard and path.serverless-virtualnodes.standard that states the exact prerequisites, mutation steps, witness gates, cleanup contract, and no-reuse boundaries required before any future live extension-plane verification, preserving the mounted kubelet-identity, virtualnodes-ext install/update/delete, and virtualization=virtualnode2 witness semantics without importing addon-plane aciConnectorLinux behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-execute-contract-design-20260623.md"
+      ],
+      "acceptance": [
+        "The archive packet cites the exact mounted and repo-local source/spec/replay lines that govern execute-mode prerequisites, mutation sequence, witness success criteria, cleanup expectations, and forbidden addon-plane semantic reuse for the standard VirtualNodes branch.",
+        "The packet names the minimum inputs/gates a future live replay would need, distinguishes what can be validated locally now versus what requires cloud execution later, and leaves the project with one runnable bounded follow-up instead of reopening subnet-validation wording or broad serverless-family rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:02:54.929Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-execute-contract-design-20260623_20260623100254",
+        "assigned_at": "2026-06-23T10:02:54.975Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-execute-contract-design-20260623",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-execute-contract-design-20260623_20260623100254",
+        "worker_started_at": "2026-06-23T10:03:19.716Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded execute-contract design packet for spec/path serverless-virtualnodes.standard in evidence/archive and generated fresh local proof artifacts showing check-mode passes while execute remains intentionally blocked pending a future gated extension-plane implementation.",
+        "last_worker_completed_at": "2026-06-23T10:05:28.854Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:05:44.211Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the execute-contract packet: the archive evidence cites exact mounted source/spec/replay authorities for prerequisites, mutation order, witness gates, cleanup, and addon-plane non-reuse, and it narrows the next step to one bounded gated execute-mode implementation task for spec/path serverless-virtualnodes.standard."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-execute-contract-design-20260623",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-execute-contract-design-20260623"
+      ],
+      "result": "Authored the bounded execute-contract design packet for spec/path serverless-virtualnodes.standard in evidence/archive and generated fresh local proof artifacts showing check-mode passes while execute remains intentionally blocked pending a future gated extension-plane implementation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:05:44.211Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the execute-contract packet: the archive evidence cites exact mounted source/spec/replay authorities for prerequisites, mutation order, witness gates, cleanup, and addon-plane non-reuse, and it narrows the next step to one bounded gated execute-mode implementation task for spec/path serverless-virtualnodes.standard."
+      },
+      "status": "done"
+    }
+  ]
+}

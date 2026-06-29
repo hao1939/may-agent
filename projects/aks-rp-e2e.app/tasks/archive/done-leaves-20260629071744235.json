@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T07:17:44.235Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 accepted aad-rbac spec-loop successor-state normalization. The six stale aad-rbac bookkeeping entries now point at explicit successor truth and durable evidence instead of raw status:error, with no live rerun. Continue private-cluster none-dns-zone-v3 successor-state drift repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "normalize-aad-rbac-spec-loop-successor-state-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize the six stale aad-rbac spec-loop error bookkeeping entries to explicit successor truth from the accepted 2026-06-29 reconciliation note, using a consistent repo-local rewrite rule instead of leaving raw status:error as the only visible state.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "All six scoped aad-rbac specs are mapped to one explicit successor disposition or linked durable note that supersedes the stale status:error bookkeeping entry.",
+        "The normalization convention is consistent across the family and cites the accepted evidence or successor run ids for repaired test/spec drift, deeper product issue, or rerun-ready carrier cases.",
+        "No live rerun is launched; any spec/model/evidence edits stay repo-local and preserve exact resume conditions where the branch remains rerun-ready or product-under-review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:state-normalization:aad-rbac",
+        "feature:aad-rbac"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T07:14:40.029Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_normalize-aad-rbac-spec-loop-successor-state-20260629_20260629071442",
+        "assigned_at": "2026-06-29T07:14:42.105Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_normalize-aad-rbac-spec-loop-successor-state-20260629",
+        "worker_started_attempt_id": "a_normalize-aad-rbac-spec-loop-successor-state-20260629_20260629071442",
+        "worker_started_at": "2026-06-29T07:14:53.007Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the six aad-rbac stale spec-loop entries in /app/projects/aks-rp-e2e/.state/spec-loop/state.json to explicit successor truth with consistent metadata, and wrote a durable reconciliation note documenting the rewrite rule and per-spec dispositions.",
+        "last_worker_completed_at": "2026-06-29T07:16:54.273Z",
+        "last_worker_evidence": [
+          ".state/spec-loop/state.json",
+          "evidence/archive/normalize-aad-rbac-spec-loop-successor-state-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T07:17:44.181Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: .state/spec-loop/state.json and evidence/archive/normalize-aad-rbac-spec-loop-successor-state-20260629.md map all six stale aad-rbac entries to explicit successor truth from the accepted reconciliation note, with no live rerun and exact dispositions preserved."
+      },
+      "session_id": "s_task_normalize-aad-rbac-spec-loop-successor-state-20260629",
+      "session_history": [
+        "s_task_normalize-aad-rbac-spec-loop-successor-state-20260629"
+      ],
+      "result": "Normalized the six aad-rbac stale spec-loop entries in /app/projects/aks-rp-e2e/.state/spec-loop/state.json to explicit successor truth with consistent metadata, and wrote a durable reconciliation note documenting the rewrite rule and per-spec dispositions.",
+      "evidence": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/normalize-aad-rbac-spec-loop-successor-state-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T07:17:44.181Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: .state/spec-loop/state.json and evidence/archive/normalize-aad-rbac-spec-loop-successor-state-20260629.md map all six stale aad-rbac entries to explicit successor truth from the accepted reconciliation note, with no live rerun and exact dispositions preserved."
+      },
+      "status": "done"
+    }
+  ]
+}

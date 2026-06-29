@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T20:05:57.162Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning compaction completion: archived the last remaining safe completed repo-local reconciliation leaves under project because their durable meaning is already captured in project rollup summaries and linked evidence. The project frontier is now maximally readable for the current wake: one active repo-local ASM ingress-internal mounted-source reconciliation, one exact family-level external proof wait, and one exact private-cluster selected-host SSH environment wait. No review or runnable backlog leaf needs creation from this stale watchdog event.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP source plus existing repo-local carriers to reconcile path.traffic-managed-gateway-api.create-lifecycle and path.traffic-managed-gateway-api.http-routing: determine whether each branch has an exact handwritten/source slice or must remain aggregate-derived or weak-link draft, then tighten feature/spec/replay/model wording and archive the evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus the touched feature/spec/replay/model carriers for create-lifecycle and http-routing, then records whether each path has exact handwritten/source authority or only aggregate-derived/weak-link support.",
+        "Model and carrier updates keep the two managed-gateway-api paths claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit draft/aggregate wording instead of borrowing neighboring managed-gateway evidence.",
+        "The work stays repo-local and bounded to the managed-gateway-api create-lifecycle and http-routing paths only: no cloud mutation, no external-human follow-up, and no widening into unrelated traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-managed-gateway-api-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:47:07.912Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623_20260623194707",
+        "assigned_at": "2026-06-23T19:47:07.960Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623",
+        "worker_started_attempt_id": "a_traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623_20260623194707",
+        "worker_started_at": "2026-06-23T19:47:32.346Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Completed the bounded mounted-source reconcile for managed Gateway API create-lifecycle and http-routing, writing a new archive note and tightening feature/spec/replay/model wording to keep both paths claim-safe about lacking exact mounted handwritten source slices. Model validation could not be completed because the shared knowledge model already contains many unrelated pre-existing schema/path errors outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-23T19:53:54.009Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:55:36.482Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded managed-gateway-api mounted-source reconcile: the archive note cites exact mounted managedgatewayapi CRUD/install-validation files plus the touched feature/spec/replay/model carriers, and it truthfully keeps create-lifecycle and http-routing as repo-local live-backed paths rather than falsely exact mounted-source-backed ones. The worker's model-validation caveat is unrelated shared model noise outside this leaf's bounded acceptance scope."
+      },
+      "session_id": "s_task_traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623",
+      "session_history": [
+        "s_task_traffic-managed-gateway-api-create-http-mounted-source-reconcile-20260623"
+      ],
+      "result": "Completed the bounded mounted-source reconcile for managed Gateway API create-lifecycle and http-routing, writing a new archive note and tightening feature/spec/replay/model wording to keep both paths claim-safe about lacking exact mounted handwritten source slices. Model validation could not be completed because the shared knowledge model already contains many unrelated pre-existing schema/path errors outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:55:36.482Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded managed-gateway-api mounted-source reconcile: the archive note cites exact mounted managedgatewayapi CRUD/install-validation files plus the touched feature/spec/replay/model carriers, and it truthfully keeps create-lifecycle and http-routing as repo-local live-backed paths rather than falsely exact mounted-source-backed ones. The worker's model-validation caveat is unrelated shared model noise outside this leaf's bounded acceptance scope."
+      },
+      "status": "done"
+    }
+  ]
+}

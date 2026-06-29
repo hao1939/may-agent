@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:38:40.195Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted the VM prerelease overlay multi-subnet HTTP 400 body-capture implementation as bounded runner/evidence progress only: the dedicated probe now preserves first-failure create status, raw response body, headers, and correlation identifiers plus an archive note, but no new live verdict or rerun decision is claimed yet. The active frontier remains the current single-spec verifier drain (network CNI, datapath, swift v1/v2, and node-autoprovision), alongside the existing azure-default-mode SIGTERM triage and runner child-liveness repair work; the only live waits in this lane remain the exact known-run artifact checkpoint for aad-rbac and the shared westus2 cluster-count preflight recovery family, both intentionally preserved as single bounded waits until their stated resume conditions fire.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the missing first-failure cluster-create observability for spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix by persisting the raw non-2xx create response body and request identifiers before cleanup, then leave a bounded implementation note without claiming live verdict closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-implementation-20260629.md"
+      ],
+      "acceptance": [
+        "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts captures the first failing cluster-create HTTP status plus raw response body or string payload before cleanup, rather than only a summarized error line.",
+        "The replay preserves available request/correlation identifiers from response headers or body and writes them to a stable archive/logged artifact path that the next bounded rerun can reference.",
+        "The implementation note at evidence/archive/network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-implementation-20260629.md explains the new capture surface and explicitly says no new live rerun verdict is claimed yet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:33:32.647Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T15:33:36.956Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260629_20260629153341",
+        "assigned_at": "2026-06-29T15:33:41.847Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260",
+        "worker_started_attempt_id": "a_implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260629_20260629153341",
+        "worker_started_at": "2026-06-29T15:34:09.598Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented first-failure cluster-create body capture in the dedicated network-cni VM prerelease overlay multi-subnet probe and added an implementation note under evidence/archive without claiming a new live verdict.",
+        "last_worker_completed_at": "2026-06-29T15:36:33.076Z",
+        "last_worker_evidence": [
+          "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts",
+          "evidence/archive/network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-implementation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:37:14.501Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the probe now captures first-failure cluster-create diagnostics (raw response body, HTTP status, headers, and correlation identifiers) in features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts, writes the bounded implementation note under evidence/archive, and explicitly leaves live verdict closure for a later rerun."
+      },
+      "session_id": "s_task_implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260",
+      "session_history": [
+        "s_task_implement-network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-20260"
+      ],
+      "result": "Implemented first-failure cluster-create body capture in the dedicated network-cni VM prerelease overlay multi-subnet probe and added an implementation note under evidence/archive without claiming a new live verdict.",
+      "evidence": [
+        "features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts",
+        "evidence/archive/network-cni-vm-prerelease-azure-overlay-multi-subnet-http400-create-body-capture-implementation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:37:14.501Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the probe now captures first-failure cluster-create diagnostics (raw response body, HTTP status, headers, and correlation identifiers) in features/network-cni/tests/network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix.ts, writes the bounded implementation note under evidence/archive, and explicitly leaves live verdict closure for a later rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

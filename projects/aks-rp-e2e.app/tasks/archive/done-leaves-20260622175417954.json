@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:54:17.954Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review reconciled the visible frontier to the current reality: private-cluster-none-dns-zone-v3 repo-local status reconciliation is accepted durable knowledge and can be archived, the single truthful blocked family remains external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, and the only live repo-local execution lane is vm-prerelease-mounted-source-rows-40-43-repo-local-map-20260622. Keep focus on that mounted-source VM prerelease mapping slice, do not duplicate blocker families or reopen private-cluster repo-local review without new out-of-runtime proof, and do not queue cloud mutation from this blocked-frontier pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the current repo-local carrier cluster for path.private-cluster-none-dns-zone-v3 against mounted source and existing archive packets, then land any minimal truthfulness repair needed so the maintained spec/model/evidence surfaces either justify the current unknown verdict or replace it with an exact repo-local ceiling without duplicating the shared external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Leave a durable archive packet that cites the mounted source and current maintained carriers for path.private-cluster-none-dns-zone-v3, states whether the unknown verdict remains correct repo-locally, and records any minimal bounded spec/model/status wording repair needed for that conclusion.",
+        "Keep scope bounded to repo-local private-cluster none-dns-zone-v3 status truthfulness only: no cloud execution, no duplicate human-send/wait tasks, no broad private-cluster rename churn, and no reopening unrelated private-cluster siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:49:44.624Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622_20260622174944",
+        "assigned_at": "2026-06-22T17:49:44.676Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622_20260622174944",
+        "worker_started_at": "2026-06-22T17:50:08.332Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the repo-local status truthfulness for path.private-cluster-none-dns-zone-v3, wrote a durable archive packet concluding the maintained unknown verdict remains correct, and added fresh non-mutating replay-check evidence confirming the exact mounted lifecycle carrier is still aligned and gated.",
+        "last_worker_completed_at": "2026-06-22T17:52:07.048Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:53:01.368Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive packet and fresh --check evidence show mounted source + maintained carriers align, the repo-local ceiling is exact-lifecycle live evidence only, and keeping path.private-cluster-none-dns-zone-v3 at unknown is truthful without further maintained-surface edits."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-repo-local-status-reconcile-20260622"
+      ],
+      "result": "Audited the repo-local status truthfulness for path.private-cluster-none-dns-zone-v3, wrote a durable archive packet concluding the maintained unknown verdict remains correct, and added fresh non-mutating replay-check evidence confirming the exact mounted lifecycle carrier is still aligned and gated.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:53:01.368Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive packet and fresh --check evidence show mounted source + maintained carriers align, the repo-local ceiling is exact-lifecycle live evidence only, and keeping path.private-cluster-none-dns-zone-v3 at unknown is truthful without further maintained-surface edits."
+      },
+      "status": "done"
+    }
+  ]
+}

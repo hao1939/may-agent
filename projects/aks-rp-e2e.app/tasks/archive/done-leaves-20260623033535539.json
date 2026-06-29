@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T03:35:35.539Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner reconciliation: the accepted cloudprovider CCM mounted-source contract enrichment is now absorbed at the project root. The truthful live frontier is one active repo-local follow-up leaf, cloudprovider-ccm-replay-model-wording-reconcile-20260623, to repair the remaining replay/model wording drift against the mounted ServiceNodePort->Shared contract, plus the unchanged single family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. No new operator proof or changed successor owner/checkpoint exists in this blocked-frontier wake, so the external wait remains exact and completed VM/private-cluster/cloudprovider local authoring stays closed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloudprovider-ccm-mounted-source-contract-enrichment-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich the maintained cloud-provider CCM feature/spec landing so it matches the mounted speculor cloudcontrollermanager source contract rather than only basic CCM pod health.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloudprovider-ccm-mounted-source-contract-enrichment-20260623.md"
+      ],
+      "acceptance": [
+        "features/cloud-provider/ccm-lifecycle.yaml and specs/cloud-provider-ccm-lifecycle.json are updated repo-locally to preserve the mounted source branches for ServiceNodePort->Shared health-probe mode transition, two LoadBalancer services, excluded-node-pool labeling, and exclusion expectations before and after update, with exact mounted source lineage cited in the archive artifact.",
+        "The resulting artifact states whether any model/path-summary linkage or wording repair is still needed, and no cloud retry or external-human wait churn is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor-cloudprovider-ccm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T03:29:18.837Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloudprovider-ccm-mounted-source-contract-enrichment-20260623_20260623032919",
+        "assigned_at": "2026-06-23T03:29:19.015Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloudprovider-ccm-mounted-source-contract-enrichment-20260623",
+        "worker_started_attempt_id": "a_cloudprovider-ccm-mounted-source-contract-enrichment-20260623_20260623032919",
+        "worker_started_at": "2026-06-23T03:29:39.631Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Enriched the CCM feature/spec landing to match the mounted Speculor CloudControllerManager contract, updating the branch packet, spec JSON, spec index entry, and adding an archive artifact documenting exact mounted-source lineage and remaining replay/model wording drift.",
+        "last_worker_completed_at": "2026-06-23T03:34:32.682Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T03:35:30.394Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive artifact documents exact mounted-source lineage, the feature/spec/index surfaces were enriched to the ServiceNodePort->Shared CCM contract with two LoadBalancer services and excludedpool backend expectations, and the remaining work is correctly bounded to replay/model wording repair rather than new cloud or external-wait churn."
+      },
+      "session_id": "s_task_cloudprovider-ccm-mounted-source-contract-enrichment-20260623",
+      "session_history": [
+        "s_task_cloudprovider-ccm-mounted-source-contract-enrichment-20260623"
+      ],
+      "result": "Enriched the CCM feature/spec landing to match the mounted Speculor CloudControllerManager contract, updating the branch packet, spec JSON, spec index entry, and adding an archive artifact documenting exact mounted-source lineage and remaining replay/model wording drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T03:35:30.394Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive artifact documents exact mounted-source lineage, the feature/spec/index surfaces were enriched to the ServiceNodePort->Shared CCM contract with two LoadBalancer services and excludedpool backend expectations, and the remaining work is correctly bounded to replay/model wording repair rather than new cloud or external-wait churn."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:54:44.514Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner review: compact-loop durable meaning remains captured at the parent. Accepted azure-keyvault-secrets-provider as ready staging compact coverage: features/azure-keyvault-secrets-provider/compact/staging.summary.md records one-spec/one-cluster materialization, generated check suite output, and ready status. Earlier accepted compact packages still stand; remaining open compact-loop work is the smaller set of unresolved review/backlog leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "compact-feature-azure-keyvault-secrets-provider",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate and verify the azure-keyvault-secrets-provider feature compact package.",
+      "inputs": [
+        "feature:azure-keyvault-secrets-provider",
+        "specs:features/azure-keyvault-secrets-provider/specs",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/feature-compact-loop/state.json",
+        "features/azure-keyvault-secrets-provider/compact/staging.plan.json",
+        "features/azure-keyvault-secrets-provider/compact/staging.summary.md",
+        "features/azure-keyvault-secrets-provider/compact/staging.diagnostics.json"
+      ],
+      "acceptance": [
+        "Feature compact package was generated or a concrete blocker was recorded.",
+        "Generated check-mode Vitest tests were run.",
+        "Feature compact loop state was updated as ready, partial, blocked, or error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:azure-keyvault-secrets-provider"
+      ],
+      "workflow": "feature-compact-planner",
+      "context": {
+        "featureKey": "azure-keyvault-secrets-provider",
+        "capabilityId": "azure-keyvault-secrets-provider",
+        "packetPath": "features/azure-keyvault-secrets-provider.yaml",
+        "specsDir": "features/azure-keyvault-secrets-provider/specs",
+        "specCount": 1,
+        "target": "staging",
+        "checkParallel": 50,
+        "stateRef": ".state/feature-compact-loop/state.json",
+        "loopTaskId": "aks-feature-compact-loop",
+        "acceptance_note": "Accepted owner review: features/azure-keyvault-secrets-provider/compact/staging.summary.md shows a ready staging compact package with generated check suite/test-result output for the single spec cluster shape, satisfying the compact-loop acceptance."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:41.476Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T13:49:32.624Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_compact-feature-azure-keyvault-secrets-provider",
+        "stale_active_requeued_at": "2026-06-28T13:49:31.918Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running; requeue before owner-selected reassign",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_compact-feature-azure-keyvault-secrets-provider_20260628131706",
+        "promoted_at": "2026-06-28T13:16:10.580Z",
+        "promoted_by": "task-tree-tool",
+        "worker_started_attempt_id": "a_compact-feature-azure-keyvault-secrets-provider_20260628134932",
+        "worker_started_at": "2026-06-28T13:50:04.765Z",
+        "current_attempt_id": "a_compact-feature-azure-keyvault-secrets-provider_20260628134932",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Feature compact package ready for azure-keyvault-secrets-provider. Plan: features/azure-keyvault-secrets-provider/compact/staging.plan.json. Summary: features/azure-keyvault-secrets-provider/compact/staging.summary.md. Diagnostics: features/azure-keyvault-secrets-provider/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-azure-keyvault-secrets-provider-staging_005083. Specs=1, clusters=1, saved=0.",
+        "last_worker_completed_at": "2026-06-28T13:50:07.035Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T13:54:44.456Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: features/azure-keyvault-secrets-provider/compact/staging.summary.md shows a ready staging compact package with generated check suite/test-result output for the single spec cluster shape, satisfying the compact-loop acceptance."
+      },
+      "session_id": "s_task_compact-feature-azure-keyvault-secrets-provider",
+      "session_history": [
+        "s_task_compact-feature-azure-keyvault-secrets-provider"
+      ],
+      "result": "Feature compact package ready for azure-keyvault-secrets-provider. Plan: features/azure-keyvault-secrets-provider/compact/staging.plan.json. Summary: features/azure-keyvault-secrets-provider/compact/staging.summary.md. Diagnostics: features/azure-keyvault-secrets-provider/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-azure-keyvault-secrets-provider-staging_005083. Specs=1, clusters=1, saved=0.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T13:54:44.456Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

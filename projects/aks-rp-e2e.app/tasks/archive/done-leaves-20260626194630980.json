@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:46:30.980Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner blocked-frontier review confirmed the spec-verification lane is already truthfully narrowed to one live repo-local checkpoint/reproof slice. The earlier local branch-repair preparation and Route A import-repair evidence are now preserved as parent context only: they established the accepted one-file/two-import replay repair and the basis for re-proving origin/dev before any bounded node-public-ip rerun decision. Open work in this lane is exactly checkpoint-route-a-replay-slice-and-reproof-origin-dev-20260626, which must verify the diff stayed Route-A-only, checkpoint/push that slice, and record the resulting commit hash plus fresh origin/dev replay/spec truth. Do not refill sibling leaves or widen into rerun/live execution from this wake unless that active checkpoint leaf finishes and its evidence changes the next decision.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using origin/dev branch truth plus the local maintained node-public-ip carrier, determine the smallest repo-local branch repair slice that will let spec.net-integration.node-public-ip resolve to an existing import-clean carrier on origin/dev before any rerun: either minimally repair replays/net-integration-node-public-ip.ts on branch, or promote features/net-integration/tests/net-integration-node-public-ip.ts plus the spec probeRef update, and record exact file-level proof for the smaller route.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626.md"
+      ],
+      "acceptance": [
+        "Durable evidence compares the two truthful branch repair routes against current origin/dev and local repo state, cites the exact files each route would touch, and selects the smaller truthful route with source-backed reasoning.",
+        "The artifact proves the selected route would make origin/dev:features/net-integration/specs/net-integration-node-public-ip.json resolve to an existing carrier file on origin/dev and identifies any remaining repo-local edits required before commit/push or rerun.",
+        "The conclusion states the exact next owner action after this comparison: commit/push a specific file slice, or perform one bounded repo-local edit if the selected route is not yet import-clean."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:39:33.023Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626_20260626193939",
+        "assigned_at": "2026-06-26T19:39:39.833Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626",
+        "worker_started_attempt_id": "a_prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626_20260626193939",
+        "worker_started_at": "2026-06-26T19:39:46.523Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested comparison artifact at evidence/archive/prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626.md, proving Route A (one-file replay import repair) is the smaller truthful branch repair than promoting the maintained test plus spec update.",
+        "last_worker_completed_at": "2026-06-26T19:42:01.973Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:42:35.106Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the durable comparison artifact proves with exact branch/local file evidence that Route A is the smallest truthful repair slice for spec.net-integration.node-public-ip on origin/dev, namely restoring replays/net-integration-node-public-ip.ts and changing only the two stale replay imports to runner/scenario-lib paths; no broader branch-repair claim is accepted yet."
+      },
+      "session_id": "s_task_prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626",
+      "session_history": [
+        "s_task_prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626"
+      ],
+      "result": "Wrote the requested comparison artifact at evidence/archive/prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626.md, proving Route A (one-file replay import repair) is the smaller truthful branch repair than promoting the maintained test plus spec update.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:42:35.106Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the durable comparison artifact proves with exact branch/local file evidence that Route A is the smallest truthful repair slice for spec.net-integration.node-public-ip on origin/dev, namely restoring replays/net-integration-node-public-ip.ts and changing only the two stale replay imports to runner/scenario-lib paths; no broader branch-repair claim is accepted yet."
+      },
+      "status": "done"
+    }
+  ]
+}

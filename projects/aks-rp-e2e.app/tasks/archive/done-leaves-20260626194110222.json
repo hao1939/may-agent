@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:41:10.223Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner blocked-frontier review kept the spec-verification lane truthful and narrow: the nsg-control retry diagnosis, the node-public-ip review basis, and the workflow-carrier gate proof are all preserved as parent context, while the earlier queue/review child is now superseded by the smaller active branch-repair slice. With no new runnable live or repo-local sibling work justified from this wake, this lane should expose exactly one live child: prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626, which must determine the minimal origin/dev branch repair needed for spec.net-integration.node-public-ip to resolve to an existing import-clean carrier before any rerun.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted run-28260814570 artifact plus checked-in workflow/spec sources, prove the smallest truthful repo/workflow repair gate for spec.net-integration.node-public-ip before any rerun: either the legacy replay carrier on origin/dev must be repaired, or the single-spec workflow/spec-runner mapping must be updated to execute the reviewed maintained test carrier instead.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626.md"
+      ],
+      "acceptance": [
+        "Durable evidence cites the accepted workflow artifact surfaces and the relevant checked-in branch/spec-runner source that explain why spec.net-integration.node-public-ip materialized as replays/net-integration-node-public-ip.ts on run 28260814570.",
+        "The artifact classifies the exact repair gate as one of: legacy replay import fix required on branch, workflow/spec mapping fix required, or another narrower repo-local defect, with source-backed proof rather than speculation.",
+        "The conclusion states the exact precondition that must be re-proven before any new node-public-ip single-spec workflow dispatch is queued."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:36:46.000Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626_20260626193646",
+        "assigned_at": "2026-06-26T19:36:46.045Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626",
+        "worker_started_attempt_id": "a_prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626_20260626193646",
+        "worker_started_at": "2026-06-26T19:37:03.641Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created durable evidence at evidence/archive/prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626.md proving run 28260814570 materialized the legacy replay because origin/dev still mapped the spec there, and classifying the smallest truthful rerun gate as branch-state/spec-carrier repair proof rather than a workflow-engine bug.",
+        "last_worker_completed_at": "2026-06-26T19:38:55.007Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:39:32.973Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted source-backed review: durable evidence proves run 28260814570 followed origin/dev spec resolution into the stale legacy replay, so the truthful rerun gate is re-proving origin/dev branch-state/spec-carrier repair rather than changing the workflow/spec-runner mapping."
+      },
+      "session_id": "s_task_prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626",
+      "session_history": [
+        "s_task_prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626"
+      ],
+      "result": "Created durable evidence at evidence/archive/prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626.md proving run 28260814570 materialized the legacy replay because origin/dev still mapped the spec there, and classifying the smallest truthful rerun gate as branch-state/spec-carrier repair proof rather than a workflow-engine bug.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:39:32.973Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted source-backed review: durable evidence proves run 28260814570 followed origin/dev spec resolution into the stale legacy replay, so the truthful rerun gate is re-proving origin/dev branch-state/spec-carrier repair rather than changing the workflow/spec-runner mapping."
+      },
+      "status": "done"
+    },
+    {
+      "id": "queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "With the accepted node-public-ip review basis in place and the shared-clusters arm-rest import repair now proven on origin/dev, queue exactly one bounded .github/workflows/run-single-spec.yaml attempt for spec.net-integration.node-public-ip against the workflow branch source-of-truth, then review the exact run outcome using the remote branch state as authoritative even if the main local repo still carries the same one-line diff.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626.md"
+      ],
+      "acceptance": [
+        "Durable evidence records the workflow dispatch inputs plus run id, URL, and checked-out commit SHA for exactly one node-public-ip single-spec attempt.",
+        "The review classifies the exact workflow-path result as pass, fail, blocked, or error using run logs/artifacts rather than speculation and states whether the outcome changes the model or only the runner diagnosis.",
+        "If the queue still cannot be made truthfully, the artifact records the exact surviving gate with branch-state proof and no blind rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:31:04.221Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626_20260626193219",
+        "assigned_at": "2026-06-26T19:32:19.325Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof",
+        "worker_started_attempt_id": "a_queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626_20260626193219",
+        "worker_started_at": "2026-06-26T19:32:25.089Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Queued exactly one GitHub Actions single-spec workflow attempt for spec.net-integration.node-public-ip, downloaded and reviewed run 28260814570 artifacts, and wrote durable evidence classifying the outcome as a workflow/runner error caused by stale imports in origin/dev replays/net-integration-node-public-ip.ts.",
+        "last_worker_completed_at": "2026-06-26T19:36:13.500Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:36:45.955Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the one allowed workflow run 28260814570 on origin/dev commit fe246c37407e4f08a5942089851fdcfb94fb5e8d truthfully ended as a runner/workflow error before product assertions because replays/net-integration-node-public-ip.ts still imports missing legacy ./lib/* modules; this changes runner diagnosis only and does not justify a model verdict change."
+      },
+      "session_id": "s_task_queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof",
+      "session_history": [
+        "s_task_queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof"
+      ],
+      "result": "Queued exactly one GitHub Actions single-spec workflow attempt for spec.net-integration.node-public-ip, downloaded and reviewed run 28260814570 artifacts, and wrote durable evidence classifying the outcome as a workflow/runner error caused by stale imports in origin/dev replays/net-integration-node-public-ip.ts.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:36:45.955Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the one allowed workflow run 28260814570 on origin/dev commit fe246c37407e4f08a5942089851fdcfb94fb5e8d truthfully ended as a runner/workflow error before product assertions because replays/net-integration-node-public-ip.ts still imports missing legacy ./lib/* modules; this changes runner diagnosis only and does not justify a model verdict change."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Queue and review one bounded single-spec workflow rerun for spec.net-integration.nsg-control now that origin/dev carries the committed scenario-lib import repair, then record whether the exact workflow path passes, fails with a new terminal signal, or remains blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626.md"
+      ],
+      "acceptance": [
+        "Evidence shows the exact run command or dispatch used for spec.net-integration.nsg-control against the repaired dev branch and records the resulting workflow/run identifier.",
+        "The artifact captures the terminal outcome for the rerun from durable sources: pass, fail with exact failing step/log signal, blocked with exact blocker, or workflow/runner error distinct from the prior stale-import failure.",
+        "If the rerun still does not produce a spec result, the artifact explicitly compares the new failure to the previous stale-import failure and states whether the import-repair hypothesis is cleared or another runner/workflow defect remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:21:59.727Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626_20260626192202",
+        "assigned_at": "2026-06-26T19:22:02.270Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626_20260626192202",
+        "worker_started_at": "2026-06-26T19:22:16.273Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Queued one repaired-branch single-spec rerun for spec.net-integration.nsg-control, captured workflow run 28260282158 and its durable artifacts, and wrote evidence showing the original execute-vitest-plan import failure is cleared but a new runner/vitest-runtime stale import now causes a test_error.",
+        "last_worker_completed_at": "2026-06-26T19:25:29.739Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:25:56.677Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626.md proves run-single-spec workflow 28260282158 executed against repaired dev commit b53e96aa, cleared the original runner/execute-vitest-plan.ts stale-import failure, and instead failed later with a new vitest-runtime stale import in runner/vitest-runtime/shared-clusters.ts for ../../replays/lib/arm-rest.ts. This leaf therefore completed its bounded rerun-and-diagnose goal and should not be retried blindly."
+      },
+      "session_id": "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626",
+      "session_history": [
+        "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626"
+      ],
+      "result": "Queued one repaired-branch single-spec rerun for spec.net-integration.nsg-control, captured workflow run 28260282158 and its durable artifacts, and wrote evidence showing the original execute-vitest-plan import failure is cleared but a new runner/vitest-runtime stale import now causes a test_error.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:25:56.677Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626.md proves run-single-spec workflow 28260282158 executed against repaired dev commit b53e96aa, cleared the original runner/execute-vitest-plan.ts stale-import failure, and instead failed later with a new vitest-runtime stale import in runner/vitest-runtime/shared-clusters.ts for ../../replays/lib/arm-rest.ts. This leaf therefore completed its bounded rerun-and-diagnose goal and should not be retried blindly."
+      },
+      "status": "done"
+    }
+  ]
+}

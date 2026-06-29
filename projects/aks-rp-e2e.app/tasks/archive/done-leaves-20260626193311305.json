@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T19:33:11.305Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner accepted the origin/dev shared-clusters import-repair proof alongside the earlier node-public-ip review basis, so this lane now has the workflow-branch bootstrap gate cleared with remote evidence: commit fe246c37407e4f08a5942089851fdcfb94fb5e8d is on origin/dev and origin/dev:runner/vitest-runtime/shared-clusters.ts imports ../scenario-lib/arm-rest.ts. The earlier nsg-control and node-public-ip review artifacts remain archived as basis, and the only live work in this lane is the active bounded node-public-ip single-spec workflow queue-and-review attempt, which should treat origin/dev remote branch truth as authoritative even though the main local repo still has the same one-line diff.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted local patch proof for runner/vitest-runtime/shared-clusters.ts into truthful workflow-branch proof: commit/push the one-line arm-rest import repair to origin/dev (or record the exact repo-local inability), confirm the remote file content, and capture the unblock signal for queued single-spec workflow leaves without queuing the rerun itself.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626.md"
+      ],
+      "acceptance": [
+        "Repo-local evidence records either successful commit/push proof or the exact repo-local reason it could not be completed, and includes git ls-remote --heads origin dev plus git show origin/dev:runner/vitest-runtime/shared-clusters.ts proving whether the workflow branch now imports ../scenario-lib/arm-rest.ts.",
+        "The artifact states the resulting unblock condition for the queued spec.net-integration.nsg-control and spec.net-integration.node-public-ip single-spec workflow leaves, and it does not itself queue a cloud workflow rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-workflow"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T19:29:30.120Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626_20260626193010",
+        "assigned_at": "2026-06-26T19:30:10.718Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626",
+        "worker_started_attempt_id": "a_prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626_20260626193010",
+        "worker_started_at": "2026-06-26T19:30:10.996Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Committed and pushed the one-line runner/vitest-runtime/shared-clusters.ts arm-rest import repair to GitHub origin/dev, then captured remote branch and file proof plus the resulting unblock signal in evidence/archive/prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T19:31:55.986Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T19:32:19.279Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker evidence: evidence/archive/prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626.md proves commit fe246c37407e4f08a5942089851fdcfb94fb5e8d reached origin/dev, git ls-remote shows refs/heads/dev at that SHA, and git show origin/dev:runner/vitest-runtime/shared-clusters.ts confirms the workflow branch now imports ../scenario-lib/arm-rest.ts, clearing the stale-import gate for the queued single-spec workflow successor."
+      },
+      "session_id": "s_task_prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626",
+      "session_history": [
+        "s_task_prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626"
+      ],
+      "result": "Committed and pushed the one-line runner/vitest-runtime/shared-clusters.ts arm-rest import repair to GitHub origin/dev, then captured remote branch and file proof plus the resulting unblock signal in evidence/archive/prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T19:32:19.279Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker evidence: evidence/archive/prove-vitest-runtime-shared-clusters-arm-rest-import-repair-on-origin-dev-20260626.md proves commit fe246c37407e4f08a5942089851fdcfb94fb5e8d reached origin/dev, git ls-remote shows refs/heads/dev at that SHA, and git show origin/dev:runner/vitest-runtime/shared-clusters.ts confirms the workflow branch now imports ../scenario-lib/arm-rest.ts, clearing the stale-import gate for the queued single-spec workflow successor."
+      },
+      "status": "done"
+    }
+  ]
+}

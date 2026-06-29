@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:39:40.914Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 planner state is now clean: the accepted mounted-source classification has been summarized at the project root, the only live repo-local work remains vmpr-row76-model-landing-reconcile-20260622 for row-76 model/view landing, and the only truthful blocked residue remains the single external human/operator proof wait for later reply/identity/registration/execution evidence.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-covered-asks-mounted-source-classification-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease sources (starting at prerelease.go and checkin.go plus referenced scenario definitions) to classify the currently externally-covered asks into repo-local source-answerable versus true later-human-proof-only work, so the shared external wait stays narrow and source/spec/model follow-up can proceed without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-covered-asks-mounted-source-classification-20260622.md"
+      ],
+      "acceptance": [
+        "The artifact cites the mounted source files and referenced scenario definitions inspected for the covered asks (MachinesPreview, VM prerelease rows 25+50, rows 40-43, row 33, row 76) and states which asks already have source-equivalent answers versus which still require later human/operator proof.",
+        "For each ask family that source can answer, the artifact names the exact bounded repo-local next task surface (spec, replay, feature, or model carrier) rather than expanding the external wait; for asks that remain true external waits, the artifact explains the exact evidence ceiling."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-covered-asks"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:33:21.778Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-covered-asks-mounted-source-classification-20260622_20260622133321",
+        "assigned_at": "2026-06-22T13:33:21.828Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-covered-asks-mounted-source-classification-20260622",
+        "worker_started_attempt_id": "a_vmpr-covered-asks-mounted-source-classification-20260622_20260622133321",
+        "worker_started_at": "2026-06-22T13:33:38.768Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source classification artifact at evidence/archive/vmpr-covered-asks-mounted-source-classification-20260622.md, classifying MachinesPreview, rows 25+50, rows 40-43, row 33, and row 76 into source-answerable vs true external-proof waits with bounded repo-local next surfaces.",
+        "last_worker_completed_at": "2026-06-22T13:36:44.109Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T13:37:42.472Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source classification artifact: it cites prerelease/checkin plus referenced scenario-definition files for MachinesPreview, rows 25+50, rows 40-43, row 33, and row 76, and it narrows the shared external wait to true later human/operator proof while exposing only bounded repo-local follow-up surfaces."
+      },
+      "session_id": "s_task_vmpr-covered-asks-mounted-source-classification-20260622",
+      "session_history": [
+        "s_task_vmpr-covered-asks-mounted-source-classification-20260622"
+      ],
+      "result": "Created the requested mounted-source classification artifact at evidence/archive/vmpr-covered-asks-mounted-source-classification-20260622.md, classifying MachinesPreview, rows 25+50, rows 40-43, row 33, and row 76 into source-answerable vs true external-proof waits with bounded repo-local next surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T13:37:42.472Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source classification artifact: it cites prerelease/checkin plus referenced scenario-definition files for MachinesPreview, rows 25+50, rows 40-43, row 33, and row 76, and it narrows the shared external wait to true later human/operator proof while exposing only bounded repo-local follow-up surfaces."
+      },
+      "status": "done"
+    }
+  ]
+}

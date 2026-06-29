@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T15:24:42.875Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Accepted and archived the private-cluster auth service tags replay-gate semantics repair: the dedicated replay carrier now stays non-mutating by default, keeps --check truthful and local, requires --execute plus the exact probe-id mutation gate, and no longer accepts broad all-gating for this path. With that repo-local repair complete, this focus branch now truthfully carries one active mounted-source closure leaf for VM prerelease row 37 managed AAD lifecycle source/spec alignment, vm-prerelease-row37-mounted-source-carrier-closure-20260623, plus the unchanged single family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. No live execution, new blocker family, or duplicate wait is introduced by this task-completed refill pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the dedicated replay carrier for path.private-cluster-vnet-integration-auth-service-tags so it matches the already-accepted execute-gated rerun contract: default invocation must stay non-mutating, --check must be truthful local/readiness mode, --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=private-cluster-vnet-integration-auth-service-tags must be the only live path, and broad all-gating must no longer count as sufficient for this replay.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623.md"
+      ],
+      "acceptance": [
+        "The replay file replays/private-cluster-vnet-integration-auth-service-tags.ts is updated so default invocation is non-mutating, --check is truthful, --execute is the only live path, and the mutation gate requires the exact probe id rather than accepting broad all-gating for this carrier.",
+        "A bounded archive note records the changed replay gate semantics, cites the accepted contract note that justified the repair, and includes any local repo checks used to verify the replay remains consistent without opening cloud execution or new blocker families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge-map-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T15:20:06.358Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623_20260623152006",
+        "assigned_at": "2026-06-23T15:20:06.408Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623_20260623152006",
+        "worker_started_at": "2026-06-23T15:20:30.856Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the private-cluster auth service tags replay gate semantics in replays/private-cluster-vnet-integration-auth-service-tags.ts and added a bounded archive note documenting the exact-gate contract plus local verification evidence.",
+        "last_worker_completed_at": "2026-06-23T15:23:17.465Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T15:23:36.110Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623.md: the dedicated replay now enforces default non-mutating/check truth, requires --execute plus exact probe-id gating, rejects broad AKS_RP_E2E_ALLOW_CLOUD_MUTATION=all, and local verification stayed repo-local with no cloud execution."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623"
+      ],
+      "result": "Repaired the private-cluster auth service tags replay gate semantics in replays/private-cluster-vnet-integration-auth-service-tags.ts and added a bounded archive note documenting the exact-gate contract plus local verification evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T15:23:36.110Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/private-cluster-auth-service-tags-replay-gate-semantics-repair-20260623.md: the dedicated replay now enforces default non-mutating/check truth, requires --execute plus exact probe-id gating, rejects broad AKS_RP_E2E_ALLOW_CLOUD_MUTATION=all, and local verification stayed repo-local with no cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

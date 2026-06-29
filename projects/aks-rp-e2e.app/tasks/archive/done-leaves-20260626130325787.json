@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T13:03:25.787Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner accepts the row-61 feature-packet sync as completed no-cloud context: the maintained row-61 packet now explicitly preserves the mounted prerelease.go -> checkin.go -> VM matrix row 61 -> addon/coreaddons/k8s_compatibility.go carrier chain, the oldest/latest CoreDNS + metrics-server boundary with replica_num=2, and the suite-vs-matrix nuance without broadening scope. Root-local repo work for addonv2 create-scale-upgrade, row60 legacy addon, row60 packet sync, and row61 packet sync is now complete context already represented here, so those completed leaves are archived. The only live project work remains the single truthful external human/operator proof family wait under focus-mounted-source-coverage-closure-and-external-wait-20260623; do not reopen repo-local source/spec/model work without returned external proof or new human steering.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP/e2ev3 source plus existing repo-local specs/replays/model artifacts as the primary no-cloud authority for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade: identify the exact handwritten scenario carrier(s), map the accepted create/scale/upgrade addon lifecycle boundary and adjacent excluded surfaces, and record the current repo-local spec/replay/model coverage plus the next bounded local follow-up without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note cites the exact mounted source files, scenario names, and relevant assertions/steps that carry the addonv2 create/scale/upgrade contract for VirtualMachines prerelease.",
+        "The note maps accepted inputs, expected behavior, adjacent or excluded surfaces, and current repo-local coverage across specs/replays/model for path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade without guessing beyond the cited source and artifacts.",
+        "The note leaves a truthful landing for the path and names one concrete bounded local follow-up if more repo-local work remains, without reopening the external human wait or requiring cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "mounted-source:vm-prerelease-addonv2-create-scale-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:53:30.172Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626_20260626125422",
+        "assigned_at": "2026-06-26T12:54:22.029Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626_20260626125422",
+        "worker_started_at": "2026-06-26T12:54:22.647Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source map at evidence/archive/vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626.md, grounding path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in exact mounted AKS RP source, current spec/replay/model coverage, and one bounded local follow-up.",
+        "last_worker_completed_at": "2026-06-26T12:56:06.633Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:56:56.924Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626.md cites the exact mounted row-73/74/215/219 carriers, maps the addonv2 create/scale/upgrade boundary and excluded surfaces, records current spec/replay/model coverage, and names one truthful local successor without reopening cloud or external waits."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626"
+      ],
+      "result": "Created the requested mounted-source map at evidence/archive/vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626.md, grounding path.managementplane-addon.vm-prerelease-addonv2-create-scale-upgrade in exact mounted AKS RP source, current spec/replay/model coverage, and one bounded local follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:56:56.924Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-addonv2-create-scale-upgrade-mounted-source-map-20260626.md cites the exact mounted row-73/74/215/219 carriers, maps the addonv2 create/scale/upgrade boundary and excluded surfaces, records current spec/replay/model coverage, and names one truthful local successor without reopening cloud or external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

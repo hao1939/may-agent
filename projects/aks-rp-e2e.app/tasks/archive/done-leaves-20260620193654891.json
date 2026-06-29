@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:36:54.891Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed reconciliation accepts the checkpoint-helper entrypoint slice as parent-level provenance: evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md proves the failing domain-root command was 'cd /app/projects/aks-rp-e2e && bun run --silent domain:checkpoint -- --json' and that planners must instead run the app-root helper 'cd /app/projects/aks-rp-e2e.app && bun run --silent domain:checkpoint -- --json'. The live frontier is now unchanged apart from that tooling clarification: serverless-virtual-nodes-subnet-source-boundary-map-20260620 remains the sole active runnable regular-learning task, and external-send-proof-dispatch-family-20260620 remains the single family-level blocked transport ceiling until durable human send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "checkpoint-helper-entrypoint-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the missing domain checkpoint helper entrypoint for /app/projects/aks-rp-e2e so future done-slice planner checkpoints can use a truthful command instead of the currently failing bun run domain:checkpoint invocation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact failing checkpoint-helper invocation observed on 2026-06-20, identifies the correct repo-local checkpoint helper entrypoint or proves it is missing, and names the exact next command planners should use.",
+        "If the expected helper is absent or miswired, artifact records the precise package/tooling gap and the smallest repo-local repair needed, without broad unrelated cleanup or commits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint-helper-entrypoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:32:38.815Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_checkpoint-helper-entrypoint-reconcile-20260620_20260620193247",
+        "assigned_at": "2026-06-20T19:32:47.002Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_checkpoint-helper-entrypoint-reconcile-20260620",
+        "worker_started_attempt_id": "a_checkpoint-helper-entrypoint-reconcile-20260620_20260620193247",
+        "worker_started_at": "2026-06-20T19:33:32.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested checkpoint-helper reconciliation artifact at evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md, proving the failing domain-root command is wrong for this repo and naming the correct app-root domain:checkpoint command planners should use.",
+        "last_worker_completed_at": "2026-06-20T19:34:59.799Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:36:13.411Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-20: evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md cites the exact failing domain-root invocation (script not found), proves domain:checkpoint is app-local in /app/projects/aks-rp-e2e.app/package.json, and records the truthful planner command as 'cd /app/projects/aks-rp-e2e.app && bun run --silent domain:checkpoint -- --json'. No broader tooling repair is required beyond using the correct app-root entrypoint."
+      },
+      "session_id": "s_task_checkpoint-helper-entrypoint-reconcile-20260620",
+      "session_history": [
+        "s_task_checkpoint-helper-entrypoint-reconcile-20260620"
+      ],
+      "result": "Created the requested checkpoint-helper reconciliation artifact at evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md, proving the failing domain-root command is wrong for this repo and naming the correct app-root domain:checkpoint command planners should use.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:36:13.411Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-20: evidence/archive/checkpoint-helper-entrypoint-reconcile-20260620.md cites the exact failing domain-root invocation (script not found), proves domain:checkpoint is app-local in /app/projects/aks-rp-e2e.app/package.json, and records the truthful planner command as 'cd /app/projects/aks-rp-e2e.app && bun run --silent domain:checkpoint -- --json'. No broader tooling repair is required beyond using the correct app-root entrypoint."
+      },
+      "status": "done"
+    }
+  ]
+}

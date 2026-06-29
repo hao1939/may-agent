@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T09:07:47.201Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier owner review confirmed the three live waits remain truthful: the external-send proof family is still the single human-transport ceiling, row-76 still depends on that family for one exact shared-identity value before its unchanged rerun can resume, and addonv2 row-63 still waits on runtime/session reconciliation. Archived vmpr-prerelease-mounted-source-coverage-plan-20260621 has already delivered its durable value: it established mounted-source coverage and the mixed-SKU trio candidate slice now being worked by vmpr-mixed-sku-trio-next-slice-shaping-20260621. To refill non-blocked capacity without reopening settled waits, the next new runnable work should stay in bounded source/spec knowledge lanes rather than duplicate blocked execution branches.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-prerelease-mounted-source-coverage-plan-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP Go source to map VirtualMachine prerelease handwritten suites into current repo coverage and identify the next exact non-cloud planning slice: inspect prerelease.go, checkin.go, and referenced scenario definitions, reconcile them against existing specs/replays/model/task-tree coverage, and end with exact bun run plan --features candidates or a justified no-new-work verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-prerelease-mounted-source-coverage-plan-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go, /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and any referenced scenario definitions used, and maps the covered prerelease rows/features to current repo-local specs/replays/model/task-tree state without cloud execution.",
+        "Artifact identifies the highest-value uncovered, stale, or weakly mapped VM prerelease surfaces, clearly separating rows already represented by active/blocked leaves from genuinely missing planning coverage.",
+        "Artifact ends with one to three exact next-step recommendations expressed as bun run plan --features candidate slices and/or concrete task-tree leaf shapes, or records a bounded no-new-work verdict if current active branches already cover the best available VM prerelease motion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-planning"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T09:02:28.083Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-prerelease-mounted-source-coverage-plan-20260621_20260621090228",
+        "assigned_at": "2026-06-21T09:02:28.133Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-prerelease-mounted-source-coverage-plan-20260621",
+        "worker_started_attempt_id": "a_vmpr-prerelease-mounted-source-coverage-plan-20260621_20260621090228",
+        "worker_started_at": "2026-06-21T09:02:43.238Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source coverage-planning artifact at evidence/archive/vmpr-prerelease-mounted-source-coverage-plan-20260621.md, reconciling VM prerelease suite rows against current specs/replays/model/task state and ending with exact planner-validated next-slice commands plus a no-new-source-gap verdict.",
+        "last_worker_completed_at": "2026-06-21T09:05:43.491Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T09:06:29.897Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the mounted-source coverage artifact: it cites prerelease.go, checkin.go, and referenced VM plan files; proves prerelease.go is only an alias over CheckIn; confirms rows 25-34, 45, and 54-56 are already represented in current feature/spec/replay/model state; and ends with exact planner-validated next-slice commands, making mixed-SKU rows 27/29/30 the highest-value non-cloud follow-on rather than a new source-gap branch."
+      },
+      "session_id": "s_task_vmpr-prerelease-mounted-source-coverage-plan-20260621",
+      "session_history": [
+        "s_task_vmpr-prerelease-mounted-source-coverage-plan-20260621"
+      ],
+      "result": "Produced the requested mounted-source coverage-planning artifact at evidence/archive/vmpr-prerelease-mounted-source-coverage-plan-20260621.md, reconciling VM prerelease suite rows against current specs/replays/model/task state and ending with exact planner-validated next-slice commands plus a no-new-source-gap verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T09:06:29.897Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the mounted-source coverage artifact: it cites prerelease.go, checkin.go, and referenced VM plan files; proves prerelease.go is only an alias over CheckIn; confirms rows 25-34, 45, and 54-56 are already represented in current feature/spec/replay/model state; and ends with exact planner-validated next-slice commands, making mixed-SKU rows 27/29/30 the highest-value non-cloud follow-on rather than a new source-gap branch."
+      },
+      "status": "done"
+    }
+  ]
+}

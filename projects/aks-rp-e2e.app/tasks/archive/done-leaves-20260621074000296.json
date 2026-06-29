@@ -1,0 +1,640 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:40:00.296Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update confirmed the metric-recovered wake needs no refill: the live frontier is intentionally saturated at maxConcurrent=5 with one bounded addonv2 row-63 D2_v4 rerun plus four VM prerelease carrier-authoring leaves (rows 150, 178, 217, and 76), and there are no review or runnable backlog leaves to assign. The single blocked leaf remains the exact family-level external-human send-proof wait for the MachinesPreview and VM prerelease packets. Archived done children preserve already accepted source-disposition, carrier-landing, and bounded-alias evidence so the root foregrounds only the current execution/spec-expansion frontier and the one true external wait.",
+  "archived": 11,
+  "tasks": [
+    {
+      "id": "private-cluster-source-coverage-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded source-backed coverage map for one uncovered private-cluster e2ev3 family so the project has a concrete next knowledge/spec expansion lane independent of the blocked external-send wait and the active addonv2 row-63 replay.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-source-coverage-map-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact handwritten or mounted-source private-cluster suite files inspected and enumerates the bounded scenario set with the key inputs, expectations, and assertions those cases exercise.",
+        "Artifact maps that scenario set against existing project specs/replays/model paths, distinguishing already-covered versus missing or weakly-evidenced surfaces without proposing ungated cloud execution.",
+        "Artifact ends with one or two evidence-backed next follow-up candidates for the highest-value missing private-cluster surface, or states that no bounded follow-up is needed because current project coverage is already source-equivalent for the inspected family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:20:15.730Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-source-coverage-map-20260621_20260621072015",
+        "assigned_at": "2026-06-21T07:20:15.779Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-source-coverage-map-20260621",
+        "worker_started_attempt_id": "a_private-cluster-source-coverage-map-20260621_20260621072015",
+        "worker_started_at": "2026-06-21T07:20:28.536Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested bounded private-cluster source coverage artifact at evidence/archive/private-cluster-source-coverage-map-20260621.md, mapping the mounted private-endpoint-connections family to current specs/replays/model surfaces and identifying the exact missing maintained-surface gap.",
+        "last_worker_completed_at": "2026-06-21T07:22:29.756Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:23:56.418Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-source-coverage-map-20260621.md cites the exact mounted private-endpoint-connections source/suite files, maps them against current specs/replays/model paths, and truthfully isolates the maintained model/view gap for the exact lifecycle path as the next bounded repo-local follow-up."
+      },
+      "session_id": "s_task_private-cluster-source-coverage-map-20260621",
+      "session_history": [
+        "s_task_private-cluster-source-coverage-map-20260621"
+      ],
+      "result": "Created the requested bounded private-cluster source coverage artifact at evidence/archive/private-cluster-source-coverage-map-20260621.md, mapping the mounted private-endpoint-connections family to current specs/replays/model surfaces and identifying the exact missing maintained-surface gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:23:56.418Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-source-coverage-map-20260621.md cites the exact mounted private-endpoint-connections source/suite files, maps them against current specs/replays/model paths, and truthfully isolates the maintained model/view gap for the exact lifecycle path as the next bounded repo-local follow-up."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-fips-source-coverage-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a bounded mounted-source coverage map for one uncovered secops-fips e2ev3 family so the project keeps a second repo-local expansion lane ready behind the active addonv2/private-cluster work and the exact external-send wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-source-coverage-map-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact handwritten or mounted-source secops-fips suite files inspected and enumerates the bounded scenario set with the key inputs, expectations, and assertions those cases exercise.",
+        "Artifact maps that scenario set against existing project specs/replays/model paths, distinguishing already-covered versus missing or weakly-evidenced surfaces without proposing ungated cloud execution.",
+        "Artifact ends with one or two evidence-backed next follow-up candidates for the highest-value missing secops-fips surface, or states that no bounded follow-up is needed because current project coverage is already source-equivalent for the inspected family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:21:14.765Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-source-coverage-map-20260621_20260621072131",
+        "assigned_at": "2026-06-21T07:21:31.766Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-source-coverage-map-20260621",
+        "worker_started_attempt_id": "a_secops-fips-source-coverage-map-20260621_20260621072131",
+        "worker_started_at": "2026-06-21T07:21:32.485Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Built the requested SecOps FIPS mounted-source coverage map and wrote it to evidence/archive/secops-fips-source-coverage-map-20260621.md, covering six still-unlanded clusterfips guardrail/advanced scenarios with source-backed inputs, expectations, current repo-local coverage state, and bounded next candidates.",
+        "last_worker_completed_at": "2026-06-21T07:23:44.081Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:24:43.127Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/secops-fips-source-coverage-map-20260621.md: mounted clusterfips guardrail/advanced map cites six exact source scenarios, separates missing direct carriers from adjacent existing FIPS coverage, and ends with bounded next carrier candidates without proposing cloud execution."
+      },
+      "session_id": "s_task_secops-fips-source-coverage-map-20260621",
+      "session_history": [
+        "s_task_secops-fips-source-coverage-map-20260621"
+      ],
+      "result": "Built the requested SecOps FIPS mounted-source coverage map and wrote it to evidence/archive/secops-fips-source-coverage-map-20260621.md, covering six still-unlanded clusterfips guardrail/advanced scenarios with source-backed inputs, expectations, current repo-local coverage state, and bounded next candidates.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:24:43.127Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/secops-fips-source-coverage-map-20260621.md: mounted clusterfips guardrail/advanced map cites six exact source scenarios, separates missing direct carriers from adjacent existing FIPS coverage, and ends with bounded next carrier candidates without proposing cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows75-76-aksconformance-source-disposition-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing VM prerelease ledger evidence to resolve rows 75 (Scenario_AKSConformance_Core) and 76 (Scenario_AKSConformance_Tunnel) into exact source-backed spec/replay/model carriers or an explicit evidence-backed keep-open disposition, so the prerelease pipeline replacement can move these first-priority missing-spec rows without waiting for human input.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows75-76-aksconformance-source-disposition-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted suite and plan/helper files inspected for rows 75 and 76, including the source anchor from test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go or prerelease.go plus the exact downstream AKSConformance plan files.",
+        "For each row, the artifact records one truthful disposition: exact spec/replay/model linkage to promote from missing-spec, or an evidence-backed reason the row must remain uncovered/candidate-only/blocked with the exact missing proof still required.",
+        "Artifact ends with the exact next repo-local follow-up needed for any still-unresolved AKSConformance surface and does not claim either row as covered unless the named spec/replay linkage already exists or is authored in the same bounded follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-aksconformance"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.084Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows75-76-aksconformance-source-disposition-20260621_20260621072255",
+        "assigned_at": "2026-06-21T07:22:55.505Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows75-76-aksconformance-source-disposition-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows75-76-aksconformance-source-disposition-20260621_20260621072255",
+        "worker_started_at": "2026-06-21T07:23:22.085Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested source-disposition artifact for VM prerelease rows 75-76, using mounted AKS RP source plus existing ledger evidence to show both rows must remain missing-spec/keep-open until an exact alias packet or dedicated branch exists.",
+        "last_worker_completed_at": "2026-06-21T07:25:43.533Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:26:24.031Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-rows75-76-aksconformance-source-disposition-20260621.md cites the mounted VM prerelease suite anchors plus old AKSConformance plan/helper files, proves rows 75 and 76 have no exact current maintained carrier, and truthfully keeps both rows missing-spec pending a bounded alias packet or dedicated carrier authoring."
+      },
+      "session_id": "s_task_vmpr-rows75-76-aksconformance-source-disposition-20260621",
+      "session_history": [
+        "s_task_vmpr-rows75-76-aksconformance-source-disposition-20260621"
+      ],
+      "result": "Created the requested source-disposition artifact for VM prerelease rows 75-76, using mounted AKS RP source plus existing ledger evidence to show both rows must remain missing-spec/keep-open until an exact alias packet or dedicated branch exists.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:26:24.031Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-rows75-76-aksconformance-source-disposition-20260621.md cites the mounted VM prerelease suite anchors plus old AKSConformance plan/helper files, proves rows 75 and 76 have no exact current maintained carrier, and truthfully keeps both rows missing-spec pending a bounded alias packet or dedicated carrier authoring."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile VM prerelease App Routing rows 81, 83, 84, 86, 88, 90, and 91 against mounted Go source and the existing canonical row-79-through-row-89 dispositions so each row is either promoted via exact source-backed spec/replay linkage or explicitly retained as candidate-only/missing-spec with row-local evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact names every targeted row and scenario (81/83/84/86/88/90/91) and cites the exact mounted App Routing suite/plan files plus the prior row79-89 disposition evidence used for comparison.",
+        "For each row, the artifact states whether an existing canonical spec/replay/path can truthfully carry it as an execution variant, whether a new spec/replay is needed, or whether the row must remain candidate-only/missing-spec because exact body/assertion proof is still absent.",
+        "Artifact ends with one or two bounded next follow-up candidates for the highest-value unresolved App Routing rows and does not collapse candidate-only rows into covered without exact source-backed linkage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.143Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:30:46.784Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621_20260621073221",
+        "assigned_at": "2026-06-21T07:32:21.669Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621_20260621073221",
+        "worker_started_at": "2026-06-21T07:32:31.655Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease App Routing rows 81/83/84/86/88/90/91 against mounted AKS RP source and accepted row79-89 dispositions, then wrote a durable evidence note classifying which rows remain candidate-only variants versus exact-blocked missing-spec branches.",
+        "last_worker_completed_at": "2026-06-21T07:34:57.655Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:36:10.407Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621.md preserves exact App Routing boundaries by keeping rows 81/83/86/88/91 as candidate-only under existing canonicals and rows 84/90 as missing-spec rather than overpromoting mounted scenario-name evidence."
+      },
+      "session_id": "s_task_vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621"
+      ],
+      "result": "Reconciled VM prerelease App Routing rows 81/83/84/86/88/90/91 against mounted AKS RP source and accepted row79-89 dispositions, then wrote a durable evidence note classifying which rows remain candidate-only variants versus exact-blocked missing-spec branches.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:36:10.407Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-rows81-91-approuting-prerelease-gap-reconciliation-20260621.md preserves exact App Routing boundaries by keeping rows 81/83/86/88/91 as candidate-only under existing canonicals and rows 84/90 as missing-spec rather than overpromoting mounted scenario-name evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and existing VM prerelease network-gap evidence to reconcile rows 99 (Scenario_Azure_CNI_Overlay_AGIC), 118 (Scenario_Cilium_Dataplane_Podsubnet_Enterprise), 119 (Scenario_Swift_CNI_Windows2022_vms), 155 (Scenario_Network_Plugin_None), 176 (Scenario_Swift_CNI_Runner), 178 (Scenario_Swift_CNI_VNetScale_Cilium), and 207 (Scenario_Swift_CNI_Windows_vms) into exact source-backed spec/replay linkage or explicit evidence-backed keep-open dispositions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted suite/plan files inspected for each targeted network-family row, starting from the VM prerelease suite anchor and the relevant network, cilium, or swift plan files.",
+        "Artifact records a row-by-row disposition for 99/118/119/155/176/178/207 that distinguishes exact covered linkage, candidate-only linkage, new-spec-needed, and still-blocked states without overclaiming adjacent family evidence as coverage.",
+        "Artifact ends with the next bounded repo-local follow-up for the highest-value unresolved network-family row set, suitable for later spec/replay authoring or ledger repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.207Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:23:24.926Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621_20260621073118",
+        "assigned_at": "2026-06-21T07:31:18.299Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621_20260621073118",
+        "worker_started_at": "2026-06-21T07:31:53.322Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-by-row mounted-source reconciliation artifact at evidence/archive/vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621.md, classifying rows 99/118/119/155/176/178/207 into still-blocked, candidate-only, and new-spec-needed states with exact source and repo-local carrier citations.",
+        "last_worker_completed_at": "2026-06-21T07:34:58.130Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:36:10.358Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621.md cites exact mounted network suite anchors and repo-local carriers, truthfully keeps rows 99/155 open for carrier-substrate mismatch, retains 118/119/176/207 as candidate-only, and identifies row 178 as the bounded next exact authoring target."
+      },
+      "session_id": "s_task_vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621",
+      "session_history": [
+        "s_task_vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621"
+      ],
+      "result": "Created the requested row-by-row mounted-source reconciliation artifact at evidence/archive/vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621.md, classifying rows 99/118/119/155/176/178/207 into still-blocked, candidate-only, and new-spec-needed states with exact source and repo-local carrier citations.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:36:10.358Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-rows99-118-119-155-176-178-207-network-family-source-disposition-20260621.md cites exact mounted network suite anchors and repo-local carriers, truthfully keeps rows 99/155 open for carrier-substrate mismatch, retains 118/119/176/207 as candidate-only, and identifies row 178 as the bounded next exact authoring target."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows121-150-platform-config-source-disposition-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve VM prerelease row 121 (Scenario_CustomKubeletIdentity) and row 150 (Scenario_KubeProxyConfig_IPTABLES) against mounted source and existing specs so these platform-config uncovered rows either gain exact source-backed carriers or an explicit evidence-backed reason they must stay candidate-only or missing-spec.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted suite and downstream plan/helper files inspected for Scenario_CustomKubeletIdentity and Scenario_KubeProxyConfig_IPTABLES.",
+        "Artifact gives a separate disposition for rows 121 and 150, naming exact spec/replay/model ids when promotion is justified and naming the exact missing proof when it is not.",
+        "Artifact ends with bounded next follow-up candidates for any remaining unresolved platform-config work and does not treat row 121 candidate-only evidence or adjacent kube-proxy coverage as covered without exact linkage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-platform-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.279Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:23:03.740Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows121-150-platform-config-source-disposition-20260621_20260621072321",
+        "assigned_at": "2026-06-21T07:23:21.915Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows121-150-platform-config-source-disposition-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows121-150-platform-config-source-disposition-20260621_20260621072321",
+        "worker_started_at": "2026-06-21T07:23:23.031Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested source-disposition artifact at evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md, resolving row 121 as candidate-only alias to the secops kubelet-identity carrier and row 150 as missing-spec with a narrowed mounted-source-backed blocker.",
+        "last_worker_completed_at": "2026-06-21T07:25:50.237Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:26:23.982Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md cites exact mounted customkubeletidentity and kubeproxy sources, keeps row 121 as candidate-only alias to the existing kubelet-identity carrier, and keeps row 150 missing-spec with the narrowed exact gap of no maintained VM/shared-identity create-IPTABLES→update-IPVS carrier."
+      },
+      "session_id": "s_task_vmpr-rows121-150-platform-config-source-disposition-20260621",
+      "session_history": [
+        "s_task_vmpr-rows121-150-platform-config-source-disposition-20260621"
+      ],
+      "result": "Produced the requested source-disposition artifact at evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md, resolving row 121 as candidate-only alias to the secops kubelet-identity carrier and row 150 as missing-spec with a narrowed mounted-source-backed blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:26:23.982Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-rows121-150-platform-config-source-disposition-20260621.md cites exact mounted customkubeletidentity and kubeproxy sources, keeps row 121 as candidate-only alias to the existing kubelet-identity carrier, and keeps row 150 missing-spec with the narrowed exact gap of no maintained VM/shared-identity create-IPTABLES→update-IPVS carrier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and existing autoscaling evidence to resolve VM prerelease rows 125 (Scenario_AutoScaling_Service_Principal) and 131 (Scenario_AutoScaling_Spot) into exact source-backed spec/replay linkage or explicit evidence-backed keep-open dispositions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted suite/plan files for rows 125 and 131 starting from the VM prerelease suite anchor and the relevant autoscaling plans.",
+        "Artifact records one truthful disposition per row: exact covered linkage, new-spec-needed, or evidence-backed keep-open state with the exact unresolved proof gap.",
+        "Artifact ends with the next bounded repo-local follow-up for any unresolved autoscaling service-principal or spot surface and does not claim coverage from generic autoscaling adjacency alone."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.337Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:23:24.926Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621_20260621072552",
+        "assigned_at": "2026-06-21T07:25:52.597Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621_20260621072552",
+        "worker_started_at": "2026-06-21T07:25:53.586Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested source-disposition artifact at evidence/archive/vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621.md, linking VM prerelease rows 125 and 131 from the mounted matrix anchor through mounted autoscaling suite plans and recording evidence-backed keep-open dispositions for both rows.",
+        "last_worker_completed_at": "2026-06-21T07:28:25.531Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:29:56.904Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621.md cites the mounted VM prerelease matrix anchor, test_suites registry, and clusterautoscaling service_principal.go/spot.go sources, and it lands truthful evidence-backed keep-open dispositions for rows 125 and 131 with a bounded next step to trace the row-local VirtualMachines+shared-identity substrate/alias path."
+      },
+      "session_id": "s_task_vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621",
+      "session_history": [
+        "s_task_vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621"
+      ],
+      "result": "Wrote the requested source-disposition artifact at evidence/archive/vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621.md, linking VM prerelease rows 125 and 131 from the mounted matrix anchor through mounted autoscaling suite plans and recording evidence-backed keep-open dispositions for both rows.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:29:56.904Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-rows125-131-autoscaling-sp-spot-source-disposition-20260621.md cites the mounted VM prerelease matrix anchor, test_suites registry, and clusterautoscaling service_principal.go/spot.go sources, and it lands truthful evidence-backed keep-open dispositions for rows 125 and 131 with a bounded next step to trace the row-local VirtualMachines+shared-identity substrate/alias path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile candidate-only VM prerelease rows 104 (Scenario_AppMonitoring), 148 (Scenario_KMS_Public_Cluster_v1_Public_Key_Vault), 149 (Scenario_KMS_Private_Cluster_v2_Private_Key_Vault), and 188 (Scenario_Autoupgrader) against mounted source and existing spec/replay surfaces so each row is either promoted through exact linkage or explicitly retained as candidate-only with evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact names all four targeted rows and scenarios and cites the exact mounted suite/plan files plus existing spec/replay carriers inspected for app monitoring, KMS, and autoupgrader surfaces.",
+        "For each row, the artifact states whether the existing candidate spec/replay ids are exact enough to promote, need a new dedicated carrier, or must remain candidate-only because the mounted source proves a materially different request or assertion contract.",
+        "Artifact preserves the current row-63 live rerun boundary by staying repo-local only and does not create or justify a duplicate live addonv2 execution task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-crossfamily-candidates"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.391Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:23:03.740Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621_20260621072321",
+        "assigned_at": "2026-06-21T07:23:21.915Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621_20260621072321",
+        "worker_started_at": "2026-06-21T07:23:22.960Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested reconciliation artifact at evidence/archive/vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621.md, resolving row 148 as promotable, row 149 as promotable only after relinking to the correct VNet-integration KMS carrier, and rows 104/188 as non-promoted with mounted-source evidence.",
+        "last_worker_completed_at": "2026-06-21T07:25:07.336Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:25:36.040Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621.md cites the mounted suite/plan carriers, promotes row 148 directly, keeps row 149 only via the correct VNet-integration KMS carrier, and retains rows 104/188 as non-promoted with source-backed proof, satisfying the repo-local acceptance boundary without widening row-63 live work."
+      },
+      "session_id": "s_task_vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621"
+      ],
+      "result": "Created the requested reconciliation artifact at evidence/archive/vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621.md, resolving row 148 as promotable, row 149 as promotable only after relinking to the correct VNet-integration KMS carrier, and rows 104/188 as non-promoted with mounted-source evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:25:36.040Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-rows104-148-149-188-crossfamily-candidate-reconciliation-20260621.md cites the mounted suite/plan carriers, promotes row 148 directly, keeps row 149 only via the correct VNet-integration KMS carrier, and retains rows 104/188 as non-promoted with source-backed proof, satisfying the repo-local acceptance boundary without widening row-63 live work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows186-205-217-windows-variant-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and existing Windows spec/replay surfaces to reconcile candidate-only VM prerelease rows 186 (Scenario_Windows2022_Windows2025_Combination_vms), 205 (Scenario_Windows_Password_Containerd_vms), and 217 (Scenario_Windows2022_K8S_With_Gen2_vms) into exact source-backed linkage or explicit evidence-backed retention as candidate-only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted VM prerelease suite anchor and downstream Windows plan/helper files inspected for rows 186, 205, and 217, plus any prior Windows-tail evidence used as comparison.",
+        "Artifact records a truthful row-by-row disposition that distinguishes exact promotion from adjacent-only Windows evidence and names the exact target spec/replay/model ids when promotion is justified.",
+        "Artifact ends with bounded next follow-up candidates for any unresolved Windows-tail row and does not overclaim existing node-pool-create coverage as exact row coverage without source-backed proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:22:55.447Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:34:48.432Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows186-205-217-windows-variant-reconciliation-20260621_20260621073537",
+        "assigned_at": "2026-06-21T07:35:37.993Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows186-205-217-windows-variant-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows186-205-217-windows-variant-reconciliation-20260621_20260621073537",
+        "worker_started_at": "2026-06-21T07:35:39.195Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested Windows variant reconciliation artifact at evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md using mounted AKS RP source plus repo-local Windows carriers, and concluded rows 186, 205, and 217 must all remain candidate-only with narrower source-backed reasons.",
+        "last_worker_completed_at": "2026-06-21T07:38:20.923Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:39:14.231Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md: mounted source directly supports keeping rows 186, 205, and 217 candidate-only, and row 217 is now narrowed from a missing-source wait to a bounded Gen2 node-image-version carrier gap."
+      },
+      "session_id": "s_task_vmpr-rows186-205-217-windows-variant-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-rows186-205-217-windows-variant-reconciliation-20260621"
+      ],
+      "result": "Authored the requested Windows variant reconciliation artifact at evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md using mounted AKS RP source plus repo-local Windows carriers, and concluded rows 186, 205, and 217 must all remain candidate-only with narrower source-backed reasons.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:39:14.231Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/vmpr-rows186-205-217-windows-variant-reconciliation-20260621.md: mounted source directly supports keeping rows 186, 205, and 217 candidate-only, and row 217 is now narrowed from a missing-source wait to a bounded Gen2 node-image-version carrier gap."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author a bounded repo-local alias packet for VM prerelease AKSConformance rows 75 (Scenario_AKSConformance_Core) and 76 (Scenario_AKSConformance_Tunnel) only, using the accepted 2026-06-21 source-disposition evidence to compare historic row assertions against current maintained workload-health or other canonical carriers and either name an exact alias mapping per row or record why no truthful alias can yet be accepted.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites evidence/archive/vmpr-rows75-76-aksconformance-source-disposition-20260621.md plus the exact maintained spec/replay/path files proposed as candidate carriers for rows 75 and 76.",
+        "For each row, the artifact states one bounded verdict: exact alias packet accepted with the named maintained carrier set and preserved assertion bundle, or no-alias-yet with the exact mismatch that keeps the row missing-spec.",
+        "Artifact does not promote either row to covered unless the alias mapping is exact and durable enough to drive a later spec/model landing; otherwise it ends with the smallest next authoring follow-up needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-aksconformance"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:27:16.608Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T07:34:48.432Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621_20260621073537",
+        "assigned_at": "2026-06-21T07:35:37.994Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621_20260621073537",
+        "worker_started_at": "2026-06-21T07:35:39.283Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded alias packet for VM prerelease rows 75-76 at evidence/archive/vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621.md, concluding both rows remain no-alias-yet with exact mismatch evidence against current maintained carriers.",
+        "last_worker_completed_at": "2026-06-21T07:37:34.240Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:38:21.062Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621.md cites the required source-disposition baseline and maintained candidate carriers, records bounded no-alias-yet verdicts for both rows 75 and 76 with exact mismatch reasons, and ends with concrete next authoring follow-ups instead of over-promoting coverage."
+      },
+      "session_id": "s_task_vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621",
+      "session_history": [
+        "s_task_vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621"
+      ],
+      "result": "Authored the bounded alias packet for VM prerelease rows 75-76 at evidence/archive/vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621.md, concluding both rows remain no-alias-yet with exact mismatch evidence against current maintained carriers.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:38:21.062Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-rows75-76-aksconformance-bounded-alias-packet-20260621.md cites the required source-disposition baseline and maintained candidate carriers, records bounded no-alias-yet verdicts for both rows 75 and 76 with exact mismatch reasons, and ends with concrete next authoring follow-ups instead of over-promoting coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Trace where VM prerelease rows 125 (Scenario_AutoScaling_Service_Principal) and 131 (Scenario_AutoScaling_Spot) acquire the VirtualMachines + use_shared_identity=true substrate, and determine whether mounted source preserves a second row-local override/body for either scenario or whether the matrix rows are stale/non-equivalent aliases over the VMSS handwritten autoscaling plans.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted VM prerelease matrix anchor plus every mounted source/config file inspected to trace how rows 125 and 131 are wired into VirtualMachines + use_shared_identity=true, including any overlay, generator, or row-alias surfaces found.",
+        "Artifact records a row-by-row verdict for 125 and 131: exact second row-local body/override found with the named source/spec/replay linkage, or stale/non-equivalent alias confirmed with the exact mismatch against the VMSS handwritten plan.",
+        "Artifact ends with the smallest truthful follow-up for the autoscaling family and does not promote either row to covered without exact source-backed proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:29:56.952Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621_20260621072957",
+        "assigned_at": "2026-06-21T07:29:57.000Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621_20260621072957",
+        "worker_started_at": "2026-06-21T07:30:21.850Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-anchor substrate reconciliation artifact for VM prerelease autoscaling rows 125 and 131, showing the VirtualMachines + use_shared_identity substrate comes from the static VM prerelease matrix overlay while the mounted handwritten bodies remain VMSS-based and non-equivalent.",
+        "last_worker_completed_at": "2026-06-21T07:34:21.950Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:34:59.873Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621.md traces rows 125 and 131 to the static VM prerelease matrix overlay, shows the handwritten autoscaling plans remain VMSS-based and non-equivalent, and ends with a truthful stale/non-equivalent alias disposition rather than overpromoting coverage."
+      },
+      "session_id": "s_task_vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621"
+      ],
+      "result": "Produced the requested row-anchor substrate reconciliation artifact for VM prerelease autoscaling rows 125 and 131, showing the VirtualMachines + use_shared_identity substrate comes from the static VM prerelease matrix overlay while the mounted handwritten bodies remain VMSS-based and non-equivalent.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:34:59.873Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-rows125-131-autoscaling-row-anchor-substrate-reconciliation-20260621.md traces rows 125 and 131 to the static VM prerelease matrix overlay, shows the handwritten autoscaling plans remain VMSS-based and non-equivalent, and ends with a truthful stale/non-equivalent alias disposition rather than overpromoting coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

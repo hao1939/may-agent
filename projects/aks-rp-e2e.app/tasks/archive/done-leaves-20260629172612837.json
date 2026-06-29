@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T17:26:12.837Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planner refill accepted three fresh review leaves and converted them into executable next steps. First, the ssh-public-key mounted-source family is no longer a vague environment wait: the reviewed rerun proves GitHub Actions reaches the repaired head but still fails preflight on missing /app/sources/aks-rp, so repair-ssh-public-key-mounted-source-preflight-for-github-runner-20260629 is now the concrete repo-local runner/carrier task. Second, skip-gpu-driver is not a westus2 shared wait family anymore: the repaired live run reached the first GPU add, and mounted source identifies GPU PreRelease eastus2 as the truthful same-contract alternate carrier, so prepare-skip-gpu-driver-gpu-prerelease-eastus2-carrier-followup-20260629 now owns that relocation/handoff work. Third, oidc default-by-version rerun evidence is accepted as a branch-trust blocker rather than product verdict: the four-assert repair was verified locally and dispatched, but run 28390207492 died at Azure federated login because the repair branch ref is not trusted, so publish-oidc-default-by-version-runtime-carrier-repair-to-trusted-ref-20260629 is the exact next leaf. The explicit-enable OIDC lane remains intentionally narrow with request-real-cluster-tuple-for-spec-oidc-issuer-v133-explicit-enable-runtime-20260629 as the only live same-spec next step; no passive wait or rerun is justified until send/handoff proof exists for that ask. Existing family waits such as westus2 cluster-count and retina live-slot remain singular and unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the Standard_NC6s_v3 VMSizeNotSupported environment family exposed by spec.node-pool-config.skip-gpu-driver after baseline cluster creation succeeded: determine whether a truthful alternate live surface exists for this exact GPU-pool assertion or produce one exact shared environment wait/escalation with resume proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/westus2-gpu-vmsize-family-skip-gpu-driver-20260629.md"
+      ],
+      "acceptance": [
+        "Durable evidence shows whether the skip-gpu-driver spec can move via a reviewed alternate region/SKU/carrier without changing the product contract, or confirms that no truthful alternate surface exists yet.",
+        "If no truthful alternate surface exists, the task leaves exactly one shared blocker/escalation path with the exact resume condition for the GPU VMSize family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-gpu-vmsize-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:20:01.263Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629_20260629172001",
+        "assigned_at": "2026-06-29T17:20:01.332Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629",
+        "worker_started_attempt_id": "a_diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629_20260629172001",
+        "worker_started_at": "2026-06-29T17:20:22.323Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced durable diagnosis evidence at evidence/archive/westus2-gpu-vmsize-family-skip-gpu-driver-20260629.md concluding that the westus2 Standard_NC6s_v3 failure should move to the mounted-source GPU PreRelease eastus2 carrier rather than remain a shared wait.",
+        "last_worker_completed_at": "2026-06-29T17:22:33.960Z",
+        "last_worker_evidence": [
+          "evidence/archive/westus2-gpu-vmsize-family-skip-gpu-driver-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T17:25:55.485Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker diagnosis: the repaired skip-gpu-driver carrier really reached the first GPU add and then hit westus2 VMSizeNotSupported, while mounted source identifies GPU PreRelease eastus2 as the truthful same-contract alternate carrier. Follow-up now moves through prepare-skip-gpu-driver-gpu-prerelease-eastus2-carrier-followup-20260629 instead of another blind westus2 retry or passive wait."
+      },
+      "session_id": "s_task_diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629",
+      "session_history": [
+        "s_task_diagnose-westus2-gpu-vmsize-family-for-skip-gpu-driver-20260629"
+      ],
+      "result": "Produced durable diagnosis evidence at evidence/archive/westus2-gpu-vmsize-family-skip-gpu-driver-20260629.md concluding that the westus2 Standard_NC6s_v3 failure should move to the mounted-source GPU PreRelease eastus2 carrier rather than remain a shared wait.",
+      "evidence": [
+        "evidence/archive/westus2-gpu-vmsize-family-skip-gpu-driver-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:25:55.485Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker diagnosis: the repaired skip-gpu-driver carrier really reached the first GPU add and then hit westus2 VMSizeNotSupported, while mounted source identifies GPU PreRelease eastus2 as the truthful same-contract alternate carrier. Follow-up now moves through prepare-skip-gpu-driver-gpu-prerelease-eastus2-carrier-followup-20260629 instead of another blind westus2 retry or passive wait."
+      },
+      "status": "done"
+    }
+  ]
+}

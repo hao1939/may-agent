@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T22:07:49.967Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 task-completed review accepted the single-spec verifier prefix-collision repair: repo-local verifier/test logic now uses exact or boundary-safe workflow-run and loop-family matching, so the accepted ACNS/KMS wrong-run cases are no longer unexplained routing defects. Durable retry posture is now explicit: retry only verify-spec-network-acns-retina-enterprise, verify-spec-kms-v2plus-enable-cmk-from-v2-private, and verify-spec-kms-v2plus-enable-cmk-from-v2-public, and only after the shared await-staging-westus2-cluster-count-preflight-family-recovery-20260628 wait clears. Keep the westus2 family blocker as the single truthful shared gate for those reruns while the remaining operator-response waits and active repo-local/source work continue unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-single-spec-verifier-prefix-run-binding-collisions-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the single-spec verifier so overlapping spec ids and loop-family prefixes no longer bind a verifier to the wrong GitHub run/artifact bundle, then record the exact affected KMS/ACNS retry condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-single-spec-verifier-prefix-run-binding-collisions-20260628.md"
+      ],
+      "acceptance": [
+        "Repo-local verifier logic under /app/projects/aks-rp-e2e.app/workflows/single-spec-verifier.ts no longer relies on unsafe substring matching for workflow run titles or loop-key family identity when sibling spec ids share prefixes.",
+        "The archive note cites the accepted 2026-06-28 KMS/ACNS wrong-run diagnoses and states exactly which affected spec leaves should be retried only after the repair lands.",
+        "If a full code repair is not yet safe, the note records the smallest bounded guard or exact blocker needed so prefix-collision misbindings stop being treated as unexplained artifact-routing mismatches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-verifier-prefix-run-binding"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T22:01:17.427Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T22:01:47.298Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-single-spec-verifier-prefix-run-binding-collisions-20260628_20260628220150",
+        "assigned_at": "2026-06-28T22:01:50.131Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-single-spec-verifier-prefix-run-binding-collisions-20260628",
+        "worker_started_attempt_id": "a_repair-single-spec-verifier-prefix-run-binding-collisions-20260628_20260628220150",
+        "worker_started_at": "2026-06-28T22:02:14.223Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired single-spec verifier prefix-collision run binding in ../aks-rp-e2e.app/workflows/single-spec-verifier.ts, added regression coverage in ../aks-rp-e2e.app/workflows/single-spec-verifier.test.ts, and wrote the archive note documenting the accepted ACNS/KMS diagnoses and exact retry set.",
+        "last_worker_completed_at": "2026-06-28T22:05:57.173Z",
+        "last_worker_evidence": [
+          "../aks-rp-e2e.app/workflows/single-spec-verifier.ts",
+          "../aks-rp-e2e.app/workflows/single-spec-verifier.test.ts",
+          "evidence/archive/repair-single-spec-verifier-prefix-run-binding-collisions-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T22:06:14.262Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/repair-single-spec-verifier-prefix-run-binding-collisions-20260628.md documents the exact prefix-collision root cause, the repo-local verifier/test repair, bun test coverage, and the bounded ACNS/KMS retry set gated on westus2 preflight recovery."
+      },
+      "session_id": "s_task_repair-single-spec-verifier-prefix-run-binding-collisions-20260628",
+      "session_history": [
+        "s_task_repair-single-spec-verifier-prefix-run-binding-collisions-20260628"
+      ],
+      "result": "Repaired single-spec verifier prefix-collision run binding in ../aks-rp-e2e.app/workflows/single-spec-verifier.ts, added regression coverage in ../aks-rp-e2e.app/workflows/single-spec-verifier.test.ts, and wrote the archive note documenting the accepted ACNS/KMS diagnoses and exact retry set.",
+      "evidence": [
+        "../aks-rp-e2e.app/workflows/single-spec-verifier.ts",
+        "../aks-rp-e2e.app/workflows/single-spec-verifier.test.ts",
+        "evidence/archive/repair-single-spec-verifier-prefix-run-binding-collisions-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T22:06:14.262Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/repair-single-spec-verifier-prefix-run-binding-collisions-20260628.md documents the exact prefix-collision root cause, the repo-local verifier/test repair, bun test coverage, and the bounded ACNS/KMS retry set gated on westus2 preflight recovery."
+      },
+      "status": "done"
+    }
+  ]
+}

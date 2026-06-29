@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:47:53.874Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 watchdog review reconciliation: the requested unsuffixed IDs were stale. verify-spec-aad-rbac-managed-v2-lifecycle now lives as the active timeout60 rerun leaf verify-spec-aad-rbac-managed-v2-lifecycle-timeout60-rerun-20260629, while verify-spec-runtime-container-kscr-rotation-matrix is already an archived accepted historical review/error-reconcile chain and does not need a revived live task. This pass accepted the single-spec empty-result aggregation repair and the eastus2 Automatic SKU raw-error diagnosis, preserved await-westus2-managedsystem-capacity-recovery-20260629 as the one truthful westus2 environment wait, replaced the VM prerelease review leaf with diagnose-vm-prerelease-single-spec-result-timing-gap-20260629, and added repair-spec-aad-rbac-automatic-sku-eastus2-create-http400-diagnostics-20260629 as the next concrete repo-local probe-evidence repair before any eastus2 diagnosis rerun.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "repair-single-spec-empty-result-aggregation-family-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose and bound a repo-local repair for the single-spec artifact aggregation failure family exposed by spec.machines.agentpool-api-crud run 28361388097: explain why tests/<spec>.json can record a synthetic error while top-level result.json remains status=empty with specResults=[], and define or implement the fail-closed path when the child spec-runner stops after status.json + heartbeats without terminal result artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/single-spec-empty-result-aggregation-family-repair-plan-20260629.md"
+      ],
+      "acceptance": [
+        "The exact repro packet and file set from run 28361388097 are documented, including the synthetic tests/machines-agentpool-api-crud.json record, empty top-level result.json, and missing child spec-runner terminal artifacts.",
+        "The responsible repo-local aggregation/runtime surface is identified with a bounded next action: patch proposal, code change, or exact handoff if tooling outside this repo owns it.",
+        "The outcome states whether future verifier/executor behavior should fail closed as infra error when terminal child artifacts are missing, and why that change is safe for the single-spec workflow family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-artifact-aggregation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:40:26.859Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-single-spec-empty-result-aggregation-family-20260629_20260629094026",
+        "assigned_at": "2026-06-29T09:40:26.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-single-spec-empty-result-aggregation-family-20260629",
+        "worker_started_attempt_id": "a_repair-single-spec-empty-result-aggregation-family-20260629_20260629094026",
+        "worker_started_at": "2026-06-29T09:40:43.348Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the single-spec empty-result aggregation failure family from run 28361388097, implemented a repo-local fail-closed aggregation repair in runner/vitest-runtime/results.ts, and wrote the durable repair note at evidence/archive/single-spec-empty-result-aggregation-family-repair-plan-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T09:45:37.852Z",
+        "last_worker_evidence": [
+          "runner/vitest-runtime/results.ts",
+          "runner/vitest-runtime/results.test.ts",
+          "evidence/archive/single-spec-empty-result-aggregation-family-repair-plan-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:47:53.712Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note bound run 28361388097 to a repo-local fail-closed aggregation bug, documented the exact empty-result contradiction, and records the repair in runner/vitest-runtime/results.ts/results.test.ts that now keeps synthetic missing-result errors from regressing top-level result.json back to empty. The existing retry leaf verify-spec-machines-agentpool-api-crud-postfix-20260629 is the next meaningful validation path."
+      },
+      "session_id": "s_task_repair-single-spec-empty-result-aggregation-family-20260629",
+      "session_history": [
+        "s_task_repair-single-spec-empty-result-aggregation-family-20260629"
+      ],
+      "result": "Diagnosed the single-spec empty-result aggregation failure family from run 28361388097, implemented a repo-local fail-closed aggregation repair in runner/vitest-runtime/results.ts, and wrote the durable repair note at evidence/archive/single-spec-empty-result-aggregation-family-repair-plan-20260629.md.",
+      "evidence": [
+        "runner/vitest-runtime/results.ts",
+        "runner/vitest-runtime/results.test.ts",
+        "evidence/archive/single-spec-empty-result-aggregation-family-repair-plan-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:47:53.712Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note bound run 28361388097 to a repo-local fail-closed aggregation bug, documented the exact empty-result contradiction, and records the repair in runner/vitest-runtime/results.ts/results.test.ts that now keeps synthetic missing-result errors from regressing top-level result.json back to empty. The existing retry leaf verify-spec-machines-agentpool-api-crud-postfix-20260629 is the next meaningful validation path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound the eastus2 Automatic/ManagedSystem create-failure variant for spec.aad-rbac.azure-rbac-automatic-sku by identifying how to preserve the raw ARM HTTP 400 error body in repo-local run artifacts, using reroute run single-aad-rbac-azure-rbac-automatic-sku_122409 as the worked example and defining the exact repair or handoff before any diagnosis rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-plan-20260629.md"
+      ],
+      "acceptance": [
+        "The task documents the exact eastus2 reroute artifact set from single-aad-rbac-azure-rbac-automatic-sku_122409, including what claim/probe surfaces preserved HTTP 400 and what raw ARM error fields/body are missing.",
+        "The repo-local surface responsible for dropping or not recording the ARM create error body is identified with one bounded next action: code patch proposal, code change, or exact handoff if another tooling layer owns it.",
+        "The outcome states the truthful next step for this spec path: artifact-quality repair only, repaired eastus2 diagnosis rerun, or evidence ceiling if raw ARM body cannot be captured from this workflow family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T09:43:26.561Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T09:43:28.939Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629_20260629094332",
+        "assigned_at": "2026-06-29T09:43:32.458Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629",
+        "worker_started_attempt_id": "a_diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629_20260629094332",
+        "worker_started_at": "2026-06-29T09:43:44.848Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed the eastus2 Automatic SKU HTTP 400 raw-error capture gap and wrote a durable plan note showing the current reroute artifacts, the missing raw ARM body fields, and that the loss point is probe-local in features/aad-rbac/tests/aad-rbac-azure-rbac-automatic-sku.ts rather than the shared ARM transport.",
+        "last_worker_completed_at": "2026-06-29T09:45:56.604Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-plan-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T09:47:53.767Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note proves the eastus2 reroute preserves only a coarse create-stage HTTP 400 surface and that the raw ARM body/header loss point is probe-local in features/aad-rbac/tests/aad-rbac-azure-rbac-automatic-sku.ts, not shared arm-rest transport. Follow-up now lives in repair-spec-aad-rbac-automatic-sku-eastus2-create-http400-diagnostics-20260629 while await-westus2-managedsystem-capacity-recovery-20260629 remains the single truthful same-surface environment wait."
+      },
+      "session_id": "s_task_diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629",
+      "session_history": [
+        "s_task_diagnose-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-20260629"
+      ],
+      "result": "Diagnosed the eastus2 Automatic SKU HTTP 400 raw-error capture gap and wrote a durable plan note showing the current reroute artifacts, the missing raw ARM body fields, and that the loss point is probe-local in features/aad-rbac/tests/aad-rbac-azure-rbac-automatic-sku.ts rather than the shared ARM transport.",
+      "evidence": [
+        "evidence/archive/spec-aad-rbac-azure-rbac-automatic-sku-eastus2-http400-raw-error-capture-plan-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:47:53.767Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note proves the eastus2 reroute preserves only a coarse create-stage HTTP 400 surface and that the raw ARM body/header loss point is probe-local in features/aad-rbac/tests/aad-rbac-azure-rbac-automatic-sku.ts, not shared arm-rest transport. Follow-up now lives in repair-spec-aad-rbac-automatic-sku-eastus2-create-http400-diagnostics-20260629 while await-westus2-managedsystem-capacity-recovery-20260629 remains the single truthful same-surface environment wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease after dev commit 2174d920 fixed live source-mount handling, result status normalization, and orchestrator response parsing.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run uses dev at or after 2174d920.",
+        "Spec status is classified as pass, fail, or error from post-fix result artifacts.",
+        "Spec-loop state is updated with the post-fix run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "depends_on": [],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "retryOf": "verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix-20260629",
+        "requiredDomainCommit": "2174d920",
+        "acceptance_note": "Owner review rejected this as a terminal spec verdict: run 28362055893 still describes a runner/orchestrator result-recording timing gap (workflow concluded error before the scenario wrote a terminal result), not stable product or environment evidence. This review leaf is replaced by diagnose-vm-prerelease-single-spec-result-timing-gap-20260629 so the next move is bounded repo-local diagnosis rather than an unchanged rerun or passive blocker."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:23:53.025Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629_20260629092501",
+        "assigned_at": "2026-06-29T09:25:01.672Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629_20260629092501",
+        "worker_started_at": "2026-06-29T09:25:11.723Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28362055893 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629-a_veri. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362055893 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_538474/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362055893/aks-rp-e2e-28362055893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362055893/aks-rp-e2e-28362055893-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_538474/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:45:56.661Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:47:53.821Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review rejected this as a terminal spec verdict: run 28362055893 still describes a runner/orchestrator result-recording timing gap (workflow concluded error before the scenario wrote a terminal result), not stable product or environment evidence. This review leaf is replaced by diagnose-vm-prerelease-single-spec-result-timing-gap-20260629 so the next move is bounded repo-local diagnosis rather than an unchanged rerun or passive blocker."
+      },
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629",
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28362055893 classified as error. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-postfix2-20260629-a_veri. Vitest finished before this scenario test wrote a result. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28362055893 Result: runs/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_538474/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362055893/aks-rp-e2e-28362055893-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28362055893/aks-rp-e2e-28362055893-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_538474/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:47:53.821Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

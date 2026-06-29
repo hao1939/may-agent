@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T17:56:47.809Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed reconciliation: accepted vmpr-shared-carrier-separation-for-row26-20260621 as bounded repo-local evidence proving the remaining row-26 carrier contamination is exactly the non-row-26 row-25 capacity-based-surge, row-27 mixed-sku-upgrade, and row-29 mixed-sku-lifecycle regions across model.json plus the six regenerated maintained views. Keep vmpr-row26-carrier-clean-batch1-20260621 as the single active successor to remove or separately park those regions and regenerate the seven-file maintained carrier before any truthful row-26 checkpoint. Preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 unchanged as the only live external transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "row37-aad-managed-v2-model-view-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular model/view-repair lane: reconcile the shared maintained path surfaces for path.aad-rbac.managed-v2-lifecycle so model/knowledge-map/model.json and regenerated model/knowledge-map/views/path-summary.json preserve the exact mounted VM prerelease row-37 Scenario_AAD contract already carried by the checked-in feature/spec/spec-index/replay family, instead of the stale legacy product-gap/empty-selected-input lineage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/row37-aad-managed-v2-model-view-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Use the mounted row-37 Scenario_AAD source contract together with the existing feature/spec/spec-index/replay carriers and the accepted row-37 triage artifact to identify the exact stale shared maintained entries for path.aad-rbac.managed-v2-lifecycle in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json.",
+        "Update only the bounded row-37 maintained surfaces needed so the shared model/view posture matches the exact source-backed row-37 contract and selected inputs while preserving any older reset-centric live evidence as historical or adjacent context rather than the current shared row-37 review surface.",
+        "Produce a bounded repo-local artifact summarizing the exact files changed, the before/after maintained posture, and the verification/regeneration commands used; no cloud execution, no new feature/spec/replay branch, and no unrelated AAD or VM prerelease rewrites."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "row37-aad-managed-v2-model-view"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T17:47:29.280Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_row37-aad-managed-v2-model-view-reconciliation-20260621_20260621174731",
+        "assigned_at": "2026-06-21T17:47:31.594Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_row37-aad-managed-v2-model-view-reconciliation-20260621",
+        "worker_started_attempt_id": "a_row37-aad-managed-v2-model-view-reconciliation-20260621_20260621174731",
+        "worker_started_at": "2026-06-21T17:47:53.649Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the shared row-37 managed AAD model/view surfaces to the mounted Scenario_AAD VM-prerelease contract by updating model/knowledge-map/model.json with a normalized row-37 DAG/path posture and regenerating model/knowledge-map/views/path-summary.json plus derived views; also wrote the requested evidence summary artifact.",
+        "last_worker_completed_at": "2026-06-21T17:55:23.989Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T17:55:54.153Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded row-37 repair artifact: it updated model/knowledge-map/model.json plus regenerated path-summary/views so path.aad-rbac.managed-v2-lifecycle now preserves the mounted Scenario_AAD row-37 contract as an exact maintained unknown carrier instead of the stale legacy product-gap lineage."
+      },
+      "session_id": "s_task_row37-aad-managed-v2-model-view-reconciliation-20260621",
+      "session_history": [
+        "s_task_row37-aad-managed-v2-model-view-reconciliation-20260621"
+      ],
+      "result": "Reconciled the shared row-37 managed AAD model/view surfaces to the mounted Scenario_AAD VM-prerelease contract by updating model/knowledge-map/model.json with a normalized row-37 DAG/path posture and regenerating model/knowledge-map/views/path-summary.json plus derived views; also wrote the requested evidence summary artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T17:55:54.153Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded row-37 repair artifact: it updated model/knowledge-map/model.json plus regenerated path-summary/views so path.aad-rbac.managed-v2-lifecycle now preserves the mounted Scenario_AAD row-37 contract as an exact maintained unknown carrier instead of the stale legacy product-gap lineage."
+      },
+      "status": "done"
+    }
+  ]
+}

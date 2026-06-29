@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:35:07.106Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs now records the accepted VM prerelease mounted-source lineage landings for addonv2 rows 64-74 plus the accepted rows57-61 lineage slice as completed provenance. The live frontier is narrowed to three concrete VM prerelease leaves only: row34 review-repair/prose truth maintenance with the missing archive note requirement made explicit, the active SGX rows57-59 row-local spec packet, and the newly assigned rows60-61 addon-umbrella mounted-source spec packet so the post-rows57-61 lineage split can continue without reopening broad source-holder waits or cloud execution.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted azureservicemesh_cni.go as first authority to import the truthful row-69 through row-72 addonv2 ASM CNI boundary, replacing the obsolete overlay/source-holder logic with row-scoped source-backed matrix or model updates.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites /app/sources/aks-rp/test/e2e/suites/azureservicemesh/azureservicemesh_cni.go and the existing row-72 correction notes, then names every repo-local matrix/model/spec carrier changed or explicitly confirmed for rows 69-72.",
+        "The resulting local contract truthfully distinguishes overlay, overlay+Cilium, pod-subnet, and pod-subnet+Cilium semantics without reviving the old exact-source blocker or re-overclaiming row 72 coverage.",
+        "No cloud execution and no expansion into non-CNI ASM semantics occur."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:addonv2-asm:cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:54:16.210Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620_20260620085416",
+        "assigned_at": "2026-06-20T08:54:16.427Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620_20260620085416",
+        "worker_started_at": "2026-06-20T08:54:35.435Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Imported mounted azureservicemesh_cni.go as first authority for the VM prerelease Addonv2 ASM CNI boundary, updated the row-69 overlay carrier plus shared CNI matrix/coverage surfaces for rows 69-72, and wrote the archive note at evidence/archive/vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620.md. Repo-local verification passed via the overlay check replay and the shared matrix wiring replay.",
+        "last_worker_completed_at": "2026-06-20T09:09:45.024Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:10:10.830Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note evidence/archive/vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620.md cites mounted azureservicemesh_cni.go plus supporting helpers, records repo-local carrier updates for rows 69-72, preserves row 69 as dedicated overlay/non-Cilium while restoring rows 70-72 to the shared source-backed ASM CNI matrix, and documents passing local replay verification without cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:10:10.830Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note evidence/archive/vm-prerelease-addonv2-asm-cni-source-backed-boundary-import-20260620.md cites mounted azureservicemesh_cni.go plus supporting helpers, records repo-local carrier updates for rows 69-72, preserves row 69 as dedicated overlay/non-Cilium while restoring rows 70-72 to the shared source-backed ASM CNI matrix, and documents passing local replay verification without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the mounted-source row-64, row-65, and row-68 ASM lifecycle findings into the repo-local VM prerelease carriers so the lifecycle matrix/replay/model no longer depends on stale shared ASM wait lineage, while explicitly preserving rows 73/74 under generic addonv2 create-scale/upgrade lineage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-addonv2-asm-lifecycle-and-coreaddon-linkage-repair-20260620.md plus the mounted azureservicemesh_crud.go, azureservicemesh_upgrade.go, and azureservicemesh_stop_start.go authorities, then names every repo-local matrix/model/spec/replay carrier changed or explicitly confirmed for rows 64, 65, and 68.",
+        "Rows 64, 65, and 68 land as dedicated CRUD/canary-upgrade/stop-start source-backed local carriers or bounded unknowns in the local VM prerelease addonv2 ASM surfaces, and no remaining local note or matrix lineage keeps them as generic stale ASM exact-source waits.",
+        "Rows 73 and 74 are explicitly left under the existing generic addonv2 create-scale/upgrade lineage rather than being reintroduced into ASM lifecycle carrier edits, and no cloud execution or unrelated VM prerelease rediscovery occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:addonv2-asm:lifecycle-row64-65-68"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:58:28.782Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620_20260620085831",
+        "assigned_at": "2026-06-20T08:58:31.905Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620_20260620085831",
+        "worker_started_at": "2026-06-20T08:58:50.453Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the row 64/65/68 ASM lifecycle carrier repair repo-locally by updating the lifecycle and generic Addonv2 matrix specs with mounted-source authorities, and wrote the requested archive note documenting every changed/confirmed carrier plus the explicit preservation of rows 73/74 under generic Addonv2 lineage.",
+        "last_worker_completed_at": "2026-06-20T09:01:09.908Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:02:37.455Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note cites the required mounted-source lifecycle/coreaddon authorities, names the changed/confirmed repo-local carriers for rows 64/65/68 plus preserved rows 73/74 lineage, and the workspace diff shows the two claimed spec carriers plus archive outputs landed without any cloud-execution claim."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-lifecycle-row64-65-68-carrier-landings-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:02:37.455Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note cites the required mounted-source lifecycle/coreaddon authorities, names the changed/confirmed repo-local carriers for rows 64/65/68 plus preserved rows 73/74 lineage, and the workspace diff shows the two claimed spec carriers plus archive outputs landed without any cloud-execution claim."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go plus referenced scenario definitions to replace leftover ASM-specific ambiguity for VM prerelease rows 73-74 with truthful generic addonv2 lineage/spec attachments.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted prerelease.go/checkin.go entrypoints and any directly referenced scenario files that govern rows 73-74, then states the exact source-backed intent for each row.",
+        "The task updates or explicitly confirms every repo-local feature/spec/evidence carrier needed for rows 73-74 without reviving obsolete ASM-specific claims, exact-source blockers, or cloud execution.",
+        "If the current shared checkpoint gate still blocks model/view edits, the archive note names the deferred carrier precisely while still landing any gate-free source/spec truth available from mounted source."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:addonv2:generic"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:07:27.751Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620_20260620090727",
+        "assigned_at": "2026-06-20T09:07:27.802Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620_20260620090727",
+        "worker_started_at": "2026-06-20T09:07:42.047Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new archive note at evidence/archive/vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620.md proving from mounted source that VM prerelease rows 73-74 are generic Addonv2 coreaddon create/scale and upgrade lineage, not ASM-specific or owned by the e2ev3 virtualmachine prerelease suite; also confirmed existing spec and coverage carriers already reflect that truth.",
+        "last_worker_completed_at": "2026-06-20T09:09:22.917Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:09:48.902Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note evidence/archive/vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620.md cites mounted prerelease/checkin plus generic coreaddons/create_scale.go and upgrade.go, and specs/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade.json already truthfully carries rows 73-74 as generic Addonv2 create/scale and upgrade lineage on VirtualMachines substrate rather than any ASM-specific wait."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:09:48.902Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note evidence/archive/vm-prerelease-addonv2-generic-row73-74-mounted-source-lineage-20260620.md cites mounted prerelease/checkin plus generic coreaddons/create_scale.go and upgrade.go, and specs/managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade.json already truthfully carries rows 73-74 as generic Addonv2 create/scale and upgrade lineage on VirtualMachines substrate rather than any ASM-specific wait."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP e2ev3 VirtualMachine prerelease/checkin source to replace the remaining rows 57-61 source-holder posture with a repo-local lineage packet covering the exact input paths, expectation paths, and next spec/replay candidates for accSGX and addon umbrella scenarios.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted source suite/scenario anchors for VM prerelease rows 57-61 from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and/or checkin.go, grouped by the concrete accSGX (rows 57-59) and addon umbrella (rows 60-61) scenarios they cover.",
+        "For each covered row family, the note maps the AKS input path, expectation path, and current repo-local coverage state (existing spec/replay/model evidence vs still-missing) without relying on external source-holder asks.",
+        "The result names the next safe concrete follow-up leaf for each uncovered scenario family (spec authoring, replay authoring, or model-only landing) and explicitly retires any need to treat rows 57-61 as blocked solely for missing handwritten/native-source access."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source:aks-rp-vm-prerelease-57-61"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:28:39.322Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620_20260620092839",
+        "assigned_at": "2026-06-20T09:28:39.372Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620_20260620092839",
+        "worker_started_at": "2026-06-20T09:29:02.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested mounted-source lineage packet at evidence/archive/vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620.md, replacing the old source-holder posture for VM prerelease rows 57-61 with repo-local e2ev3/e2ev2 lineage, exact input/expectation mappings, coverage-state notes, and next safe follow-up leaves.",
+        "last_worker_completed_at": "2026-06-20T09:31:55.738Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:32:50.411Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620.md cites exact mounted e2ev3 prerelease/checkin anchors plus e2ev2 SGX/addon authoritative bodies, maps rows 57-61 to concrete input/expectation paths, and retires the old source-holder posture in favor of local spec/replay/model follow-up work."
+      },
+      "session_id": "s_task_vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:32:50.411Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-rows57-61-mounted-source-lineage-slice-20260620.md cites exact mounted e2ev3 prerelease/checkin anchors plus e2ev2 SGX/addon authoritative bodies, maps rows 57-61 to concrete input/expectation paths, and retires the old source-holder posture in favor of local spec/replay/model follow-up work."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T15:52:05.691Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Owner review 2026-06-23T15:52Z: accepted evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md as the bounded managed NAT Gateway canonicalization slice. The exact mounted keepers are now fixed on managed_natgateway.go plus automaticcluster/checkin.go, the canonical spec/feature/model surfaces already match that lineage, and any remaining nat_gateway.go references are confined to secondary historical/index carriers only. This focus branch now truthfully consists of one active repo-local successor leaf—natgw-secondary-metadata-hygiene-decision-20260623—to decide whether those remaining secondary carriers need bounded metadata repair or explicit historical-only posture, plus the same single family-level blocked external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 with its unchanged returned-proof-or-post-2026-06-26 resume condition. No live execution, duplicate waits, or reopened product-branch work were introduced.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-mounted-lineage-canonicalization-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the remaining stale managed NAT Gateway Automatic SKU historical archive drift by reconciling the accepted canonical mounted/source/spec carriers against the older archive notes in speculor-uncovered-scenario-batch2-source-inventory-20260623.md and go-e2ev3-speculor-remainder-source-coverage-frontier-20260617.md, selecting the durable keeper citations, and recording whether any later bounded supersession or annotation edit is still needed without reopening execution or creating a new product branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted managed_natgateway.go plus automaticcluster/checkin.go anchors, names the stale historical archive-note carriers that still describe Automatic SKU as uncovered or weakly attached, and selects the truthful keeper citations for the canonical managed NAT Gateway path/spec/evidence set.",
+        "The artifact states whether archive canonicalization alone fully resolves the drift or whether one later bounded supersession/annotation edit is still needed, while preserving managed NAT Gateway Automatic SKU as execution-variant metadata only and avoiding live execution, new runnable product branches, or duplicate external waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "archive-canonicalization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T15:48:49.596Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T15:48:49.643Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-mounted-lineage-canonicalization-20260623_20260623154849",
+        "assigned_at": "2026-06-23T15:48:49.690Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-mounted-lineage-canonicalization-20260623",
+        "worker_started_attempt_id": "a_natgw-mounted-lineage-canonicalization-20260623_20260623154849",
+        "worker_started_at": "2026-06-23T15:49:37.874Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable archive artifact evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md, reconciling mounted managed_natgateway.go lineage against older devbox-era nat_gateway references and recording keeper vs superseded citations plus the bounded follow-up judgment.",
+        "last_worker_completed_at": "2026-06-23T15:51:19.511Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T15:51:49.269Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md: it cites the exact mounted keepers in managed_natgateway.go and automaticcluster/checkin.go, names the stale historical carriers still pointing at devbox-era nat_gateway.go, selects the canonical spec/feature/model keeper surfaces, and correctly limits any remaining work to bounded secondary hygiene without reopening execution or creating a duplicate product branch."
+      },
+      "session_id": "s_task_natgw-mounted-lineage-canonicalization-20260623",
+      "session_history": [
+        "s_task_natgw-mounted-lineage-canonicalization-20260623"
+      ],
+      "result": "Produced the durable archive artifact evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md, reconciling mounted managed_natgateway.go lineage against older devbox-era nat_gateway references and recording keeper vs superseded citations plus the bounded follow-up judgment.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T15:51:49.269Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/natgw-mounted-lineage-canonicalization-20260623.md: it cites the exact mounted keepers in managed_natgateway.go and automaticcluster/checkin.go, names the stale historical carriers still pointing at devbox-era nat_gateway.go, selects the canonical spec/feature/model keeper surfaces, and correctly limits any remaining work to bounded secondary hygiene without reopening execution or creating a duplicate product branch."
+      },
+      "status": "done"
+    }
+  ]
+}

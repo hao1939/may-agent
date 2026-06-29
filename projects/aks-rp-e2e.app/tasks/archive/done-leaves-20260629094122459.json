@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:41:22.459Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 task-completed planning update accepts the westus2 ManagedSystem reroute diagnosis and compacts the latest completed follow-up leaves into branch memory. The branch now records three durable truths: (1) run 28361930300 is a same-surface westus2 Automatic/ManagedSystem capacity family blocker only, with AKSCapacityHeavyUsage plus nested SkuNotAvailable on aksmanagedap standard_d4lds_v5 preserved in the single wait await-westus2-managedsystem-capacity-recovery-20260629; (2) the concrete move-forward path for the same contract is the already-active eastus2 reroute verifier verify-spec-aad-rbac-azure-rbac-automatic-sku-eastus2-reroute-20260629, so no extra westus2 diagnosis leaf should remain live; and (3) the latest repo-local non-pass reviews remain consolidated as shared diagnosis/repair work rather than per-spec blocker churn. Remaining useful frontier is the existing active verifier set plus the shared sigterm and empty-result reconciliation leaves.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-authorized-service-tags",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.authorized-service-tags through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.authorized-service-tags",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.authorized-service-tags"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.authorized-service-tags",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Rejected the review result as non-terminal product evidence: run 28361560217 ended in the same shared single-spec SIGTERM/error handling before the scenario contract completed, so this leaf is replaced by diagnose-single-spec-sigterm-family-net-integration-20260629 for shared root-cause classification."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:12:16.504Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-29T09:16:27.556Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-authorized-service-tags_retry_20260629091627",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-authorized-service-tags_20260629091627",
+        "worker_started_at": "2026-06-29T09:16:45.193Z",
+        "stale_active_requeued_at": "2026-06-29T09:15:49.267Z",
+        "stale_active_requeue_reason": "watchdog stale-active review: session not running",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_verify-spec-net-integration-authorized-service-tags_20260629091216",
+        "promoted_at": "2026-06-29T09:16:09.344Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-authorized-service-tags_20260629091627",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.net-integration.authorized-service-tags workflow run 28361560217 classified as error. Loop key: verify-spec-net-integration-authorized-service-tags-a_verify-spec-net-integration-authoriz. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361560217 Result: runs/test-results/single-net-integration-authorized-service-tags_707294/artifacts/net-integration-authorized-service-tags/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361560217/aks-rp-e2e-28361560217-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361560217/aks-rp-e2e-28361560217-spec-test-results/test-results/single-net-integration-authorized-service-tags_707294/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T09:37:24.290Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:38:51.679Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Rejected the review result as non-terminal product evidence: run 28361560217 ended in the same shared single-spec SIGTERM/error handling before the scenario contract completed, so this leaf is replaced by diagnose-single-spec-sigterm-family-net-integration-20260629 for shared root-cause classification."
+      },
+      "session_history": [
+        "s_task_verify-spec-net-integration-authorized-service-tags",
+        "s_task_verify-spec-net-integration-authorized-service-tags_retry_20260629091627"
+      ],
+      "session_id": "s_task_verify-spec-net-integration-authorized-service-tags_retry_20260629091627",
+      "result": "Spec spec.net-integration.authorized-service-tags workflow run 28361560217 classified as error. Loop key: verify-spec-net-integration-authorized-service-tags-a_verify-spec-net-integration-authoriz. Test run interrupted by SIGTERM before this scenario test completed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361560217 Result: runs/test-results/single-net-integration-authorized-service-tags_707294/artifacts/net-integration-authorized-service-tags/spec-runner/status.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361560217/aks-rp-e2e-28361560217-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361560217/aks-rp-e2e-28361560217-spec-test-results/test-results/single-net-integration-authorized-service-tags_707294/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T09:38:51.679Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

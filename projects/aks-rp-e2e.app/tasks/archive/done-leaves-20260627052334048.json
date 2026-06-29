@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:23:34.048Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 follow-up compaction finished the same blocked-frontier review without changing project truth: the root already carries the preserved two-leaf external wait family and the single live repo-local secops-fips landing leaf. Archive the remaining accepted secops-fips Phase 3a rejection-spec child because its durable meaning is now represented by the root rollup plus the active successor leaf secops-fips-base-unaligned-pools-rejection-source-landing-20260627, which is the concrete repo-local implementation follow-up for that accepted source packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land an exact mounted-source packet for the base secops-fips Phase 3a rejection boundary: enabling cluster-level FIPS must be rejected while existing Linux pools remain unaligned, and determine the precise repo-local spec/model/probe shape needed to represent that boundary without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627.md"
+      ],
+      "acceptance": [
+        "Use mounted handwritten secops/clusterfips source as the primary authority and quote the exact Phase 3a scenario carrier/file evidence for the unaligned-pools rejection boundary.",
+        "Decide whether current repo-local secops-fips carriers already represent this exact rejection path; if not, produce the exact new spec/model/probe landing proposal and explain its non-overlap with enabled-cluster-create and advanced carriers.",
+        "Stay in the no-cloud knowledge/spec lane only and end with a concrete disposition the owner can review for task-tree follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips-base-phase3a-rejection"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:15:56.124Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627_20260627051755",
+        "assigned_at": "2026-06-27T05:17:55.085Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627",
+        "worker_started_attempt_id": "a_secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627_20260627051755",
+        "worker_started_at": "2026-06-27T05:17:55.756Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested no-cloud source packet at evidence/archive/secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627.md, proving mounted base Phase 3a is not yet represented by an exact Linux-only repo-local carrier and proposing the exact packet/spec/model/probe landing shape for owner follow-up.",
+        "last_worker_completed_at": "2026-06-27T05:19:47.926Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:20:17.878Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627.md quotes mounted Scenario_Cluster_FIPS Phase 3a reject-before-alignment source anchors, shows existing enabled-cluster-create/windows/advanced/root-config-preservation carriers do not land the exact Linux-only base rejection boundary, and gives a concrete no-cloud packet/spec/test/model landing shape."
+      },
+      "session_id": "s_task_secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627",
+      "session_history": [
+        "s_task_secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627"
+      ],
+      "result": "Produced the requested no-cloud source packet at evidence/archive/secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627.md, proving mounted base Phase 3a is not yet represented by an exact Linux-only repo-local carrier and proposing the exact packet/spec/model/probe landing shape for owner follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:20:17.878Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/secops-fips-base-phase3a-unaligned-pools-rejection-spec-20260627.md quotes mounted Scenario_Cluster_FIPS Phase 3a reject-before-alignment source anchors, shows existing enabled-cluster-create/windows/advanced/root-config-preservation carriers do not land the exact Linux-only base rejection boundary, and gives a concrete no-cloud packet/spec/test/model landing shape."
+      },
+      "status": "done"
+    }
+  ]
+}

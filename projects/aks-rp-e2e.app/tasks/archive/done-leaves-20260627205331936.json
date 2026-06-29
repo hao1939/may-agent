@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T20:53:31.936Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+  "summary": "This bounded replay refill branch now has three accepted completed slices: natgw-v2-migration-v2-to-none preserved exact check/gate/auth-preflight evidence with no live mutation, storage-csi-file-resize preserved the bounded live resize run plus the exact repo-local pvcProbe shell blocker, and repair-storage-csi-disk-xfs-carrier-evidence-20260627 restored the missing XFS carrier notes and returned 'bun features/storage-csi/tests/storage-csi-disk-xfs.ts --check' to pass as a repo-local contract repair only. The only live work left in this branch is owner review of the pvcProbe shell-assembly repair and the already-active post-repair storage-csi-file-resize rerun; do not create new bounded replay leaves here until that rerun lands a narrower blocker or closes the missing Bound/PV-driver proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "execute-net-integration-natgw-v2-migration-v2-to-none-20260627",
+      "parent_id": "bounded-replay-execution-ready-gap-validation-20260627",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the existing exact path.net-integration.natgw-v2-migration-v2-to-none carrier to reconfirm check-lane readiness, verify execute-gate and Azure preflight truthfully, and if the mutation gate is explicitly open, land a bounded live V2→none migration artifact or an exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/execute-net-integration-natgw-v2-migration-v2-to-none-20260627.md"
+      ],
+      "acceptance": [
+        "Artifact names the exact path and replay carrier, quotes the --check result plus the execute gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none, and records whether Azure auth/subscription preflight passed.",
+        "If live execution occurs, artifact records the exact commands and the resulting GET/PUT/GET or terminal migration verdict for the bounded V2→none branch; otherwise it records the exact blocker and resume condition without widening scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T18:58:26.242Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T19:02:02.749Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_execute-net-integration-natgw-v2-migration-v2-to-none-20260627_20260627190449",
+        "assigned_at": "2026-06-27T19:04:49.825Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_execute-net-integration-natgw-v2-migration-v2-to-none-20260627",
+        "worker_started_attempt_id": "a_execute-net-integration-natgw-v2-migration-v2-to-none-20260627_20260627190449",
+        "worker_started_at": "2026-06-27T19:04:54.286Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested NAT Gateway V2 V2→none execution-readiness artifact after rerunning the exact probe in check mode, confirming execute-gate behavior, and truthfully recording failed Azure subscription/auth preflight with no live mutation attempted.",
+        "last_worker_completed_at": "2026-06-27T19:06:29.446Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T19:13:42.423Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the worker summary records a bounded readiness artifact that reran the exact check-lane probe, confirmed execute-gate behavior, and truthfully preserved failed Azure subscription/auth preflight with no live mutation attempted."
+      },
+      "session_id": "s_task_execute-net-integration-natgw-v2-migration-v2-to-none-20260627",
+      "session_history": [
+        "s_task_execute-net-integration-natgw-v2-migration-v2-to-none-20260627"
+      ],
+      "result": "Produced the requested NAT Gateway V2 V2→none execution-readiness artifact after rerunning the exact probe in check mode, confirming execute-gate behavior, and truthfully recording failed Azure subscription/auth preflight with no live mutation attempted.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T19:13:42.423Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the worker summary records a bounded readiness artifact that reran the exact check-lane probe, confirmed execute-gate behavior, and truthfully preserved failed Azure subscription/auth preflight with no live mutation attempted."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T04:13:24.790Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update after watchdog review acceptance: archive the accepted row63 runtime-interpretation and semantic-repair leaves plus the maintained model/view repair because their durable meaning is already preserved in project rollup and linked evidence. The live frontier is now intentionally one active verification leaf, row63-execute-rerun-or-gate-proof-20260622, which owns the remaining row-63 decision: either prove execute authorization plus one repaired rerun with fresh runtime evidence, or record the exact gate/preflight blocker and resume condition without overclaiming live verification. Preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful family-level external-human wait until durable send/handoff/reply proof arrives for its covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "row63-replay-runtime-bundle-semantic-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair replays/app-monitoring-addonv2-azure-monitor-metrics.ts so row-63 runtime interpretation matches mounted-source semantics: accept the alternate Azure Monitor Metrics helm-release name and preserve last observed per-surface runtime results instead of collapsing timed-out bundles to all-false.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/row63-replay-runtime-bundle-semantic-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Replay code accepts both source-supported helm-release names for Azure Monitor Metrics, including aks-managed-azure-monitor-metrics, with the exact changed locations cited in the artifact.",
+        "Timed-out runtime-bundle return preserves the last observed helmOk/podsOk/nodeExporterOk truth values and detail instead of resetting podsOk/nodeExporterOk to false when pods were already observed running.",
+        "Artifact summarizes the repo-local repair, cites the changed replay lines plus mounted-source anchors, and states whether a fresh rerun is still needed after the repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row63"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T04:09:57.258Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_row63-replay-runtime-bundle-semantic-repair-20260622_20260622040957",
+        "assigned_at": "2026-06-22T04:09:57.305Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_row63-replay-runtime-bundle-semantic-repair-20260622",
+        "worker_started_attempt_id": "a_row63-replay-runtime-bundle-semantic-repair-20260622_20260622040957",
+        "worker_started_at": "2026-06-22T04:10:17.298Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-63 replay semantics in replays/app-monitoring-addonv2-azure-monitor-metrics.ts to accept both Azure Monitor Metrics helm-release names and preserve last observed runtime bundle truth on timeout; documented the change in evidence/archive/row63-replay-runtime-bundle-semantic-repair-20260622.md and verified local check-mode still passes.",
+        "last_worker_completed_at": "2026-06-22T04:11:50.874Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T04:12:36.802Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 repo-local semantic repair review: the replay now accepts both source-supported Azure Monitor Metrics helm-release names and preserves lastObserved runtime bundle truth on timeout, with artifact-backed mounted-source citations and local check-mode validation; a fresh authorized --execute rerun remains the next verification step."
+      },
+      "session_id": "s_task_row63-replay-runtime-bundle-semantic-repair-20260622",
+      "session_history": [
+        "s_task_row63-replay-runtime-bundle-semantic-repair-20260622"
+      ],
+      "result": "Repaired row-63 replay semantics in replays/app-monitoring-addonv2-azure-monitor-metrics.ts to accept both Azure Monitor Metrics helm-release names and preserve last observed runtime bundle truth on timeout; documented the change in evidence/archive/row63-replay-runtime-bundle-semantic-repair-20260622.md and verified local check-mode still passes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T04:12:36.802Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 repo-local semantic repair review: the replay now accepts both source-supported Azure Monitor Metrics helm-release names and preserves lastObserved runtime bundle truth on timeout, with artifact-backed mounted-source citations and local check-mode validation; a fresh authorized --execute rerun remains the next verification step."
+      },
+      "status": "done"
+    }
+  ]
+}

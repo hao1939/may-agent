@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T10:16:27.366Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner watchdog-review reconciliation: private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623 was already accepted and is now archived into the root summary, while the stale watchdog review target external-send-proof-dispatch-family-stale-followup-or-escalation-20260623 is already represented by the focus-mounted-source-coverage-closure-and-external-wait-20260623 rollup archive rather than a live task. The visible frontier should therefore stay compact around one active repo-local successor—private-cluster-vnet-integration-update-public-second-hop-execute-replay-gate-implementation-20260623—and the unchanged single family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622; do not reopen completed repo-local source/spec/model closure or split the wait without new external proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source and existing repo-local carriers to author the exact replay/execute-contract packet for path.private-cluster-vnet-integration-update-public-second-hop, keeping the work repo-local and bounded to the second update from the public APIVNET checkpoint plus its validation witness contract without widening into adjacent private-cluster paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted source/scenario files and any existing spec/replay surfaces for the second-hop path, names the selected input boundary and expected validation witnesses, and states whether the path needs a dedicated replay or a bounded extension of an existing replay.",
+        "The packet defines the future execute gate, preflight assumptions, evidence expectations, and cleanup/stop conditions for only path.private-cluster-vnet-integration-update-public-second-hop, without cloud mutation or conflating auth-service-tags, none-dns-zone-v3, or generic private-cluster lifecycle work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T10:09:26.019Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T10:09:30.061Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623_20260623100932",
+        "assigned_at": "2026-06-23T10:09:32.550Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623_20260623100932",
+        "worker_started_at": "2026-06-23T10:09:54.803Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the durable replay/execute-contract packet for path.private-cluster-vnet-integration-update-public-second-hop under evidence/archive and verified the dedicated second-hop replay/spec wiring with a fresh check-only run.",
+        "last_worker_completed_at": "2026-06-23T10:12:44.105Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T10:13:45.728Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the source-backed replay contract packet: mounted update_public.go plus repo-local spec/replay carriers now define the exact second-hop public-APIVNET to private-APIVNET boundary, witnesses, dedicated replay ownership, mutation gate, and check-mode verification for path.private-cluster-vnet-integration-update-public-second-hop."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-public-second-hop-replay-contract-20260623"
+      ],
+      "result": "Authored the durable replay/execute-contract packet for path.private-cluster-vnet-integration-update-public-second-hop under evidence/archive and verified the dedicated second-hop replay/spec wiring with a fresh check-only run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T10:13:45.728Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the source-backed replay contract packet: mounted update_public.go plus repo-local spec/replay carriers now define the exact second-hop public-APIVNET to private-APIVNET boundary, witnesses, dedicated replay ownership, mutation gate, and check-mode verification for path.private-cluster-vnet-integration-update-public-second-hop."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:28:19.766Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed reconciliation: accepted and archive the completed repo-local surface repairs/authorship leaves for ppg row 1 gated replay authoring, VM prerelease row 49 execution-ready surface reconciliation, and VM prerelease rows 47-48 diagnosis surface reconciliation. The tree now records that row 47/48 historical diagnosis wording was repaired to match the already-accepted execute-capable gated replay reality while preserving that live cloud verdicts remain unknown. Keep the active frontier on KSCR row 9 execute-gated replay authoring and VM prerelease row 49 diagnosis-surface reconciliation, while one family-level external-human-transport wait continues to cover the remaining out-of-runtime approval/reply proof.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ppg-row1-execute-gated-replay-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Upgrade the row-1 PPG cluster-and-agentpool-placement replay from source/check-only into an execute-capable gated replay that preserves the mounted-source PPG placement contract for the default VirtualMachines pool and the additional VirtualMachineScaleSets pool without performing cloud execution in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ppg-row1-execute-gated-replay-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Replay code and archive evidence cite the exact mounted row-1 source/plan anchors, preserve the create/readback expectations for created PPG resource id plus persisted default-pool and nodepool2 proximityPlacementGroupID surfaces, and document the execute gate/preflight shape needed for later regular-verification use.",
+        "The task stays repo-local and non-mutating: no cloud run is executed, no duplicate external-human wait is created, and canonical feature/spec/path/replay references for row 1 remain consistent."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ppg-row1"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:20:17.392Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ppg-row1-execute-gated-replay-authoring-20260622_20260622192017",
+        "assigned_at": "2026-06-22T19:20:17.444Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ppg-row1-execute-gated-replay-authoring-20260622",
+        "worker_started_attempt_id": "a_ppg-row1-execute-gated-replay-authoring-20260622_20260622192017",
+        "worker_started_at": "2026-06-22T19:20:31.728Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Upgraded replays/ppg-cluster-and-agentpool-placement.ts from check-only into an execute-capable gated replay for VM prerelease row 1, and added durable archive evidence documenting the preserved mounted-source PPG contract, execute gate, and preflight shape without running cloud mutation.",
+        "last_worker_completed_at": "2026-06-22T19:25:51.958Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:26:22.021Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as gated replay authoring complete: evidence/archive/ppg-row1-execute-gated-replay-authoring-20260622.md and replays/ppg-cluster-and-agentpool-placement.ts show the row-1 replay now preserves mounted source/spec anchors, adds an explicit --execute lane gated by AKS_RP_E2E_ALLOW_CLOUD_MUTATION=ppg-cluster-and-agentpool-placement, and records a passing repo-local --check run without claiming any live cloud verification."
+      },
+      "session_id": "s_task_ppg-row1-execute-gated-replay-authoring-20260622",
+      "session_history": [
+        "s_task_ppg-row1-execute-gated-replay-authoring-20260622"
+      ],
+      "result": "Upgraded replays/ppg-cluster-and-agentpool-placement.ts from check-only into an execute-capable gated replay for VM prerelease row 1, and added durable archive evidence documenting the preserved mounted-source PPG contract, execute gate, and preflight shape without running cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:26:22.021Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as gated replay authoring complete: evidence/archive/ppg-row1-execute-gated-replay-authoring-20260622.md and replays/ppg-cluster-and-agentpool-placement.ts show the row-1 replay now preserves mounted source/spec anchors, adds an explicit --execute lane gated by AKS_RP_E2E_ALLOW_CLOUD_MUTATION=ppg-cluster-and-agentpool-placement, and records a passing repo-local --check run without claiming any live cloud verification."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T14:20:39.988Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 owner rollup: cluster-autoscaler VM-prerelease local-storage runtime preflight is accepted as done because the archived note proves the dedicated replay passes repo-local --check with exit 0, writes the expected JSON/Markdown evidence pair, stays no-cloud, and leaves the five runtime behavior variables explicitly unresolved pending execute-gate preparation. Earlier egress-lockdown VM-prerelease VHD matrix repair/verification and the network-cni Azure Overlay + AGIC mounted-source packet remain valid completed inputs; the live open work is now limited to the autoscaler execute-gate preparation leaf and the create-time carrier repair leaf, while the single external human-proof family wait remains the only truthful blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For path.cluster-autoscaler.vm-prerelease-profile-matrix, run the existing dedicated local-storage runtime replay in repo-local --check mode and archive the exact command, exit status, emitted evidence paths, and current execute-gate preparation state for the five mounted-source runtime unknowns, without cloud execution or path expansion.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note records the exact --check command for replays/cluster-autoscaler-vm-prerelease-local-storage-runtime.ts, its exit status, and quoted output proving the replay remains repo-local and no-cloud for this path.",
+        "The note identifies the exact evidence artifact(s) written by the run, or states precisely why none were emitted, and ties them to the five mounted-source runtime unknowns already modeled for this path.",
+        "The note states the resulting next repo-local decision for path.cluster-autoscaler.vm-prerelease-profile-matrix only (ready execute-gate preparation remains, local repair needed, or equivalent bounded follow-up) without widening into service-principal, spot, or other autoscaler branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.cluster-autoscaler.vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T14:16:32.820Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626_20260626141705",
+        "assigned_at": "2026-06-26T14:17:05.569Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626_20260626141705",
+        "worker_started_at": "2026-06-26T14:17:06.116Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the dedicated local-storage runtime replay in repo-local --check mode, captured its pass/exit-0 no-cloud evidence, and archived a bounded preflight note for path.cluster-autoscaler.vm-prerelease-profile-matrix.",
+        "last_worker_completed_at": "2026-06-26T14:18:06.077Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T14:19:05.298Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626.md: it records the exact repo-local --check command, exit-0 no-cloud output, emitted JSON/Markdown evidence files, execute-only sidecar absence, the five mounted-source runtime unknowns still pending, and the bounded next decision that only execute-gate preparation remains for path.cluster-autoscaler.vm-prerelease-profile-matrix."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626"
+      ],
+      "result": "Ran the dedicated local-storage runtime replay in repo-local --check mode, captured its pass/exit-0 no-cloud evidence, and archived a bounded preflight note for path.cluster-autoscaler.vm-prerelease-profile-matrix.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T14:19:05.298Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-preflight-20260626.md: it records the exact repo-local --check command, exit-0 no-cloud output, emitted JSON/Markdown evidence files, execute-only sidecar absence, the five mounted-source runtime unknowns still pending, and the bounded next decision that only execute-gate preparation remains for path.cluster-autoscaler.vm-prerelease-profile-matrix."
+      },
+      "status": "done"
+    }
+  ]
+}

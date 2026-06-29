@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T18:26:19.579Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning review accepted two repo-local review leaves and reconciled a stale worker-completion wake for the already-rolled-up agentpool-upgrade-resume dedicated carrier repair. The spec lane now knows: (1) publication-wait family rereview found no newer same-run artifact or terminal surfaces for runs 28371054186, 28389908499, 28391106496, and 28391146628, so their blocked review-on-publication leaves remain the single truthful waits; (2) rp.available-agent-pool-versions carrier repair is landed repo-locally with authoritative properties.agentPoolVersions parsing, exact current-version membership assertion, bounded raw GET body capture, and passing --check validation, so the truthful successor is workflow-ref publication followed by one bounded same-spec rerun; (3) the separate worker-completion event for spec.rp-nodepool-lifecycle.agentpool-upgrade-resume references a task id no longer present in the live tree and is treated as already-accounted-for carrier-repair work, not new product verification. Active focus remains the four assigned verifier leaves while blocked work stays concentrated in exact publication/external waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-loop-publication-review-waits-family-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the current same-run publication/terminal surfaces for the blocked single-spec publication waits (aad-rbac-known 28371054186, node-http-proxy create-timeout90 28389908499, oidc-default-by-version 28391106496, and acns-basic-retina update-retina-enterprise 28391146628) and convert any stale passive wait into the truthful next task or refreshed family evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-publication-review-waits-family-20260629.md"
+      ],
+      "acceptance": [
+        "Each listed run is checked against current durable publication/terminal surfaces without launching a duplicate rerun.",
+        "For each affected blocked review leaf, either evidence proves the wait still stands or the tree is updated to the truthful review/retry successor.",
+        "The artifact names the run ids, affected task ids, and any replacements or unchanged waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-publication-review-waits"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T18:22:28.516Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-publication-review-waits-family-20260629_20260629182228",
+        "assigned_at": "2026-06-29T18:22:28.577Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-publication-review-waits-family-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-publication-review-waits-family-20260629_20260629182228",
+        "worker_started_at": "2026-06-29T18:23:12.076Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the four blocked single-spec publication waits and wrote evidence/archive/spec-loop-publication-review-waits-family-20260629.md confirming all stale passive waits had already been truthfully converted to current review-on-publication leaves, with no newer durable same-run publication surface justifying replacement.",
+        "last_worker_completed_at": "2026-06-29T18:25:18.628Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-loop-publication-review-waits-family-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T18:26:19.466Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review evidence in evidence/archive/spec-loop-publication-review-waits-family-20260629.md: the four cited same-run publication waits were rechecked against current durable surfaces, no newer artifact/terminal surface exists, and the current blocked review-on-publication leaves are already the truthful live representatives with no retry/replacement justified."
+      },
+      "session_id": "s_task_reconcile-spec-loop-publication-review-waits-family-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-loop-publication-review-waits-family-20260629"
+      ],
+      "result": "Reviewed the four blocked single-spec publication waits and wrote evidence/archive/spec-loop-publication-review-waits-family-20260629.md confirming all stale passive waits had already been truthfully converted to current review-on-publication leaves, with no newer durable same-run publication surface justifying replacement.",
+      "evidence": [
+        "evidence/archive/spec-loop-publication-review-waits-family-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T18:26:19.466Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review evidence in evidence/archive/spec-loop-publication-review-waits-family-20260629.md: the four cited same-run publication waits were rechecked against current durable surfaces, no newer artifact/terminal surface exists, and the current blocked review-on-publication leaves are already the truthful live representatives with no retry/replacement justified."
+      },
+      "status": "done"
+    }
+  ]
+}

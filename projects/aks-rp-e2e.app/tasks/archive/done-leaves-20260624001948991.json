@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:19:48.991Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog review-pending reconciliation: the requested private-cluster-none-dns-zone-v3 review leaf was already owner-accepted, and its durable meaning now lives in evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624.md plus the updated model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json, where path.private-cluster-none-dns-zone-v3 stays truthfully unknown for live-evidence-breadth reasons rather than missing source/spec/replay linkage. Keep the three external waits unchanged until returned proof arrives or the first owner follow-up on or after 2026-06-26, and refill runnable capacity with one repo-local mounted-source VM prerelease coverage matrix task so the frontier is not blocked-only while those waits age.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.private-cluster-none-dns-zone-v3 from the mounted source, maintained feature/spec/replay carriers, and existing repo-local archive artifacts so the accepted model/view status and linkage are truthful and no-cloud-progress resumes on this exact path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "The exact path.private-cluster-none-dns-zone-v3 row/source carrier, maintained feature/spec/replay linkage, and existing archive evidence are reconciled into one truthful repo-local note and accepted model/view path entry without cloud execution.",
+        "The path no longer stays 'unknown' by inertia: either the model/view status is upgraded to a source-backed blocked/product/evidence-ceiling judgment supported by cited repo-local evidence, or the path remains unknown with an exact source-backed statusReason/nextAction that explains why bounded local evidence still cannot classify it."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T00:14:50.666Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624_20260624001450",
+        "assigned_at": "2026-06-24T00:14:50.716Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624_20260624001450",
+        "worker_started_at": "2026-06-24T00:15:14.316Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.private-cluster-none-dns-zone-v3 into a new repo-local status note, updated both accepted model carriers in model/knowledge-map/model.json, and regenerated path-summary so the path now truthfully stays unknown only because of exact live-execution breadth, not missing source/spec/replay linkage.",
+        "last_worker_completed_at": "2026-06-24T00:17:53.657Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:18:55.456Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after bounded owner validation: archive artifact reconciles the mounted source, maintained feature/spec/replay carriers, and row-171 linkage, and direct model/view inspection confirms path.private-cluster-none-dns-zone-v3 remains source-backed but unknown only because accepted live evidence still covers the terminal none-mode subset rather than the full one-cluster system→none lifecycle."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-status-reconcile-20260624"
+      ],
+      "result": "Reconciled path.private-cluster-none-dns-zone-v3 into a new repo-local status note, updated both accepted model carriers in model/knowledge-map/model.json, and regenerated path-summary so the path now truthfully stays unknown only because of exact live-execution breadth, not missing source/spec/replay linkage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:18:55.456Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after bounded owner validation: archive artifact reconciles the mounted source, maintained feature/spec/replay carriers, and row-171 linkage, and direct model/view inspection confirms path.private-cluster-none-dns-zone-v3 remains source-backed but unknown only because accepted live evidence still covers the terminal none-mode subset rather than the full one-cluster system→none lifecycle."
+      },
+      "status": "done"
+    }
+  ]
+}

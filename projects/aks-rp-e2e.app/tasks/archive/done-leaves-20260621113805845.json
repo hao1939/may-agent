@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:38:05.846Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 accepted the bounded repair for the private-cluster PrivateLink public-FQDN toggle standard-runner discovery gap: the spec was present on disk but missing from specs/index.json, and registering it there made spec.private-cluster.privatelink-public-fqdn-toggle resolve and pass dry-run/check on the standard spec-id runner surface without runner code changes. The project frontier is now intentionally narrow: one active VM prerelease workspace-triage leaf to carve a truthful checkpointable slice out of the dirty repo burst, plus two truthful family-level blocked waits only (external human transport proof for already-prepared asks, and explicit execute approval for the private-cluster shared API-server subnet replay). No additional runnable refill work should be created until the VM prerelease triage leaf identifies the next clean slice or one of those exact external resume conditions changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the remaining repo-local discoverability gap for path.private-cluster-privatelink-public-fqdn-toggle by tracing why spec.private-cluster.privatelink-public-fqdn-toggle is not resolved on the standard spec-id runner surface, then either land the bounded repo-local wiring repair or produce a source-backed evidence packet proving file-path execution is the truthful ceiling and what broader runner/index work would be required next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621.md"
+      ],
+      "acceptance": [
+        "Evidence identifies the concrete discovery path used by runner/spec-runner.ts and shows, with source quotes or local command results, why spec.private-cluster.privatelink-public-fqdn-toggle is currently unknown while the file-path invocation works.",
+        "If the gap is safely repairable inside this repo, the task lands the minimal wiring change and verifies spec-id resolution with a passing local check command plus any required model/check validation; otherwise the packet records the exact missing owner/tooling boundary that prevents repair.",
+        "Task ends with a truthful next status for path.private-cluster-privatelink-public-fqdn-toggle: fully replay-ready on standard runner surface, or still blocked on a narrower repo/app-tooling gap with explicit next action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:33:13.710Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621_20260621113313",
+        "assigned_at": "2026-06-21T11:33:13.757Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621",
+        "worker_started_attempt_id": "a_privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621_20260621113313",
+        "worker_started_at": "2026-06-21T11:33:27.961Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the repo-local spec-id discovery gap for the private-cluster public-FQDN toggle by registering the spec in specs/index.json and wrote a source-backed evidence packet proving why spec-id lookup failed before and why it now resolves correctly on the standard runner surface.",
+        "last_worker_completed_at": "2026-06-21T11:36:37.303Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:37:09.819Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the evidence packet quotes runner/spec-runner.ts resolution rules, proves the spec was missing from specs/index.json, and verifies that adding the bounded index registration makes spec.private-cluster.privatelink-public-fqdn-toggle resolve and pass dry-run/check on the standard spec-id runner surface. This clears the repo-local discovery gap without reopening blocked execution work."
+      },
+      "session_id": "s_task_privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621",
+      "session_history": [
+        "s_task_privatecluster-privatelink-public-fqdn-spec-id-runner-discovery-gap-20260621"
+      ],
+      "result": "Repaired the repo-local spec-id discovery gap for the private-cluster public-FQDN toggle by registering the spec in specs/index.json and wrote a source-backed evidence packet proving why spec-id lookup failed before and why it now resolves correctly on the standard runner surface.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:37:09.819Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the evidence packet quotes runner/spec-runner.ts resolution rules, proves the spec was missing from specs/index.json, and verifies that adding the bounded index registration makes spec.private-cluster.privatelink-public-fqdn-toggle resolve and pass dry-run/check on the standard spec-id runner surface. This clears the repo-local discovery gap without reopening blocked execution work."
+      },
+      "status": "done"
+    }
+  ]
+}

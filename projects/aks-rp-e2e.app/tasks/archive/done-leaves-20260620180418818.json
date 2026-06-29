@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:04:18.819Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed review: serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620 stays accepted as bounded non-cloud mounted-source reconciliation. Durable evidence in evidence/archive/serverless-schedulerctrl-source-coverage-audit-20260620.md plus the repo-local scheduler-controller feature/model/view updates preserve exact lineage distinct from serverless-virtual-nodes and runtime-blocked witness paths, with no cloud execution claimed. The next live local work remains private-cluster-shared-source-truthfulness-repair-20260620, which must repair private-cluster-byo-vnet-privatelink spec/replay/spec-index/model/path-summary wording and verdicts to match the mounted-source shared-lineage ceiling without implying a standalone handwritten BYO-VNet-only scenario. external-send-proof-dispatch-family-20260620 remains the single truthful blocked family for human send/escalation proof or authoritative reply and should not be duplicated.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted AKS RP handwritten source for the serverless scheduler controller branch, then add or update repo-local feature/spec/replay/model surfaces so serverless-schedulerctrl has exact source-backed lineage distinct from serverless-virtual-nodes and from runtime-blocked witness paths, without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-source-coverage-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted AKS RP handwritten source files that define or bound serverless scheduler controller behavior, or records a bounded mounted-source ceiling if no distinct standalone scenario exists.",
+        "Repo-local feature/spec/replay/model surfaces are added or updated so serverless-schedulerctrl has exact lineage, remains separated from serverless-virtual-nodes, and records any shared or adjacent surfaces without over-claiming source coverage.",
+        "The artifact records accepted inputs, expectation path, adjacent surfaces, and unknown edges for the serverless scheduler controller branch, and confirms no cloud mutation was run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:55:37.273Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620_20260620175540",
+        "assigned_at": "2026-06-20T17:55:40.521Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620_20260620175540",
+        "worker_started_at": "2026-06-20T17:55:56.589Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source lineage audit for serverless-schedulerctrl, added the requested evidence artifact, and updated repo-local scheduler-controller feature/model/view surfaces so the lifecycle quartet now exists as exact source-backed lineage distinct from serverless-virtual-nodes and blocked ACI witness paths.",
+        "last_worker_completed_at": "2026-06-20T18:02:01.972Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:02:41.908Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the worker audit: evidence/archive/serverless-schedulerctrl-source-coverage-audit-20260620.md grounds the lifecycle quartet in exact mounted schedulerctrl files, features/serverless-schedulerctrl.yaml records the separated source-backed family, and the branch is now kept distinct from serverless-virtual-nodes and runtime-blocked ACI witness paths without claiming cloud execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620"
+      ],
+      "result": "Completed the mounted-source lineage audit for serverless-schedulerctrl, added the requested evidence artifact, and updated repo-local scheduler-controller feature/model/view surfaces so the lifecycle quartet now exists as exact source-backed lineage distinct from serverless-virtual-nodes and blocked ACI witness paths.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:02:41.908Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the worker audit: evidence/archive/serverless-schedulerctrl-source-coverage-audit-20260620.md grounds the lifecycle quartet in exact mounted schedulerctrl files, features/serverless-schedulerctrl.yaml records the separated source-backed family, and the branch is now kept distinct from serverless-virtual-nodes and runtime-blocked ACI witness paths without claiming cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

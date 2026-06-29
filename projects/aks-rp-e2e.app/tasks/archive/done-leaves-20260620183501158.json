@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:35:01.158Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 watchdog blocked-frontier review kept the single truthful external-send family unchanged and compacted completed exactness batches into parent context. securetls-vm-prerelease-exactness-batch-20260620 and localdns-vm-prerelease-exactness-batch-20260620 are accepted provenance only: their durable evidence narrowed the VM prerelease replacement frontier to one blocked outbound human-transport family plus two concrete LocalDNS VM-prerelease carrier leaves for rows 52-53. external-send-proof-dispatch-family-20260620 remains the only live blocker because both send-ready packets still lack durable repo-local send or escalation proof or an authoritative reply. The next repo-local work for this branch is unchanged: finish the active row-52 LocalDNS AzureLinux exact carrier, then unblock row-53 LocalDNS enable-disable authoring by conflict-scope release rather than by recreating duplicate blocker or packet tasks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "securetls-vm-prerelease-exactness-batch-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted VM prerelease suite source plus current repo-local SecureTLS carriers to decide exact final coverage for rows 41-43 (SecureTLSBootstrapping*): either land explicit VM-prerelease exact carriers for each row or record an evidence-backed accepted decision that the existing generic family carriers are the final exact mapping.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/securetls-vm-prerelease-exactness-batch-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted VM prerelease suite anchors for rows 41-43 from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and the current repo-local SecureTLS carrier files actually inspected.",
+        "Artifact gives a row-by-row exactness verdict for rows 41-43 and names the required concrete repo-local follow-up per row: explicit VM-prerelease variant landing, or an evidence-backed final decision that the generic SecureTLS carrier already serves as the exact intended mapping.",
+        "No cloud mutation, no external send/wait creation, and no reopening of row 28 or the external-send dispatch family; output is repo-local exactness/reconciliation evidence only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-securetls"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:29:54.559Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_securetls-vm-prerelease-exactness-batch-20260620_20260620182954",
+        "assigned_at": "2026-06-20T18:29:54.605Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_securetls-vm-prerelease-exactness-batch-20260620",
+        "worker_started_attempt_id": "a_securetls-vm-prerelease-exactness-batch-20260620_20260620182954",
+        "worker_started_at": "2026-06-20T18:30:14.895Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created evidence/archive/securetls-vm-prerelease-exactness-batch-20260620.md with a row-by-row exactness verdict for SecureTLS VM prerelease rows 41-43, citing mounted suite anchors and inspected repo-local feature/spec/replay carriers. The artifact concludes all three rows should stay attached to the existing canonical SecureTLS carriers rather than landing VM-only siblings.",
+        "last_worker_completed_at": "2026-06-20T18:32:14.622Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:32:44.829Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/securetls-vm-prerelease-exactness-batch-20260620.md cites mounted VM prerelease/checkin SecureTLS anchors plus inspected repo-local feature/spec/replay carriers, gives row-by-row verdicts for rows 41-43, and truthfully concludes the canonical SecureTLS carriers remain the final exact mapping without VM-only siblings."
+      },
+      "session_id": "s_task_securetls-vm-prerelease-exactness-batch-20260620",
+      "session_history": [
+        "s_task_securetls-vm-prerelease-exactness-batch-20260620"
+      ],
+      "result": "Created evidence/archive/securetls-vm-prerelease-exactness-batch-20260620.md with a row-by-row exactness verdict for SecureTLS VM prerelease rows 41-43, citing mounted suite anchors and inspected repo-local feature/spec/replay carriers. The artifact concludes all three rows should stay attached to the existing canonical SecureTLS carriers rather than landing VM-only siblings.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:32:44.829Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/securetls-vm-prerelease-exactness-batch-20260620.md cites mounted VM prerelease/checkin SecureTLS anchors plus inspected repo-local feature/spec/replay carriers, gives row-by-row verdicts for rows 41-43, and truthfully concludes the canonical SecureTLS carriers remain the final exact mapping without VM-only siblings."
+      },
+      "status": "done"
+    }
+  ]
+}

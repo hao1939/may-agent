@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T15:44:32.327Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed reconciliation: the secops-fips advanced archive-backfill repair event was already truthfully absorbed into the tree via the backfilled artifact and archived repair leaf, so no new secops-fips branch is needed. Archive the remaining accepted network-cni mounted-source done leaf as hygiene because its durable meaning already lives in ../aks-rp-e2e/evidence/archive/network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622.md plus the current parent rollup: Scenario_Basic_Retina_Update_Retina_Enterprise is source/spec/replay/index carried with local replay-check evidence, while the still-open gap is the active model-view repair leaf network-acns-basic-retina-update-retina-enterprise-model-view-repair-20260622c. Keep secops-fips-mounted-source-following-uncovered-handwritten-slice-reconcile-20260622b active as the ongoing secops-fips repo-local slice and preserve external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source plus directly referenced scenario definitions to reconcile the next bounded handwritten network-cni slice into repo-local source/spec/model carriers so another top uncovered family advances through source-grounded understanding before any live execution gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b.md"
+      ],
+      "acceptance": [
+        "Inspect one bounded handwritten network-cni e2ev3 slice from mounted AKS RP Go source and any directly referenced scenario definitions, then write the archive artifact summarizing the concrete input paths, expected behavior paths, existing repo-local coverage, and the exact remaining gaps/blockers without cloud mutation.",
+        "If the mounted-source review shows stale or missing repo-local carriers for that bounded network-cni slice, update the directly coupled source/spec/model/status text and run the needed non-mutating validation or regeneration so the maintained branch truthfully reflects the source-backed contract."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-mounted-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T15:36:11.988Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b_20260622153612",
+        "assigned_at": "2026-06-22T15:36:12.034Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b_20260622153612",
+        "worker_started_at": "2026-06-22T15:36:24.252Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the mounted network-cni handwritten slice `Scenario_Basic_Retina_Update_Retina_Enterprise` and wrote a durable archive report showing the slice is now source/spec/replay/index-carried but still missing from the current accepted model/view layer.",
+        "last_worker_completed_at": "2026-06-22T15:42:00.858Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T15:43:04.777Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: ../aks-rp-e2e/evidence/archive/network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b.md exists and provides mounted-source-backed reconciliation for Scenario_Basic_Retina_Update_Retina_Enterprise, including exact input/update/expectation contract, local replay check evidence, and the narrower current truth that feature/spec/replay/index carriers exist while accepted model/view exposure is still missing in current repo state."
+      },
+      "session_id": "s_task_network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b",
+      "session_history": [
+        "s_task_network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b"
+      ],
+      "result": "Reconciled the mounted network-cni handwritten slice `Scenario_Basic_Retina_Update_Retina_Enterprise` and wrote a durable archive report showing the slice is now source/spec/replay/index-carried but still missing from the current accepted model/view layer.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T15:43:04.777Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: ../aks-rp-e2e/evidence/archive/network-cni-mounted-source-next-uncovered-handwritten-slice-reconcile-20260622b.md exists and provides mounted-source-backed reconciliation for Scenario_Basic_Retina_Update_Retina_Enterprise, including exact input/update/expectation contract, local replay check evidence, and the narrower current truth that feature/spec/replay/index carriers exist while accepted model/view exposure is still missing in current repo state."
+      },
+      "status": "done"
+    }
+  ]
+}

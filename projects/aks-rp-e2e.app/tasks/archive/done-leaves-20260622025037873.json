@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T02:50:37.873Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+  "summary": "2026-06-22 owner rollup refresh: accepted rows40/41/42/43 repo-local carrier evidence is now archived branch knowledge. The branch now knows row40 shared-SSH, row43 network-isolated secure-TLS, row41 upgrade plus later-phase secure-TLS lifecycle, and existing row42 readiness context are all preserved as execute-gated maintained carriers. The only live child is vmpr-rows40-43-bundle-readiness-conclusion-20260622, which must synthesize those accepted surfaces into one exact bundle-readiness conclusion and either name the five-member live-execution ask shape or the smallest remaining repo-local gap without duplicating the project-level external human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row41-later-phase-carrier-authoring-20260622",
+      "parent_id": "focus-vmpr-localdns-plan-readiness-20260622",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extend the maintained row-41 secure-TLS basic-lifecycle execute carrier from the accepted post-upgrade CSR checkpoint through the remaining mounted later phases only: rotate cluster certificates, refresh credentials, validate post-refresh CSRs, stop/start the cluster, and validate post-stop/start CSRs without widening beyond row 41.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/secure-tls-bootstrap-basic-lifecycle.ts",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row41-later-phase-carrier-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Replay and evidence cite the mounted row-41 source workflow plus the accepted 2026-06-22 upgrade+post-upgrade-CSR carrier/readiness packets, then extend the maintained execute path only through rotate-certificates, credential refresh, post-refresh CSR validation, stop/start, and post-stop/start CSR validation while preserving the already landed create+upgrade coverage.",
+        "Artifact states the exact row-41 lifecycle coverage after the change, explicitly says whether spec.secure-tls-bootstrap.basic-lifecycle is now a full-spec execute-gated maintained carrier, and references local validation output proving the replay remains repo-local and check-clean.",
+        "Work stays repo-local and cloud-free: mounted-source inspection, maintained replay/runtime/spec edits if needed, local validation, and evidence write-up only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-bundle-readiness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T02:44:51.710Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row41-later-phase-carrier-authoring-20260622_20260622024453",
+        "assigned_at": "2026-06-22T02:44:53.668Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row41-later-phase-carrier-authoring-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row41-later-phase-carrier-authoring-20260622_20260622024453",
+        "worker_started_at": "2026-06-22T02:45:07.160Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Extended row-41 secure TLS replay through full later lifecycle phases in `replays/secure-tls-bootstrap-basic-lifecycle.ts`, updated `specs/secure-tls-bootstrap-basic-lifecycle.json` execute metadata, and wrote the authoring evidence artifact `evidence/archive/vm-prerelease-row41-later-phase-carrier-authoring-20260622.md` with mounted-source citations and validation output.",
+        "last_worker_completed_at": "2026-06-22T02:49:22.653Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T02:49:57.129Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-22: the evidence artifact cites mounted row-41 source flow and records repo-local validation showing the maintained replay now extends the secure-TLS basic lifecycle through rotate-certificates, credential refresh, post-refresh CSR validation, stop/start, and post-stop/start CSR validation; it also states the spec metadata moved to execute-ready full-spec carrier truth without claiming live execution."
+      },
+      "session_id": "s_task_vm-prerelease-row41-later-phase-carrier-authoring-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row41-later-phase-carrier-authoring-20260622"
+      ],
+      "result": "Extended row-41 secure TLS replay through full later lifecycle phases in `replays/secure-tls-bootstrap-basic-lifecycle.ts`, updated `specs/secure-tls-bootstrap-basic-lifecycle.json` execute metadata, and wrote the authoring evidence artifact `evidence/archive/vm-prerelease-row41-later-phase-carrier-authoring-20260622.md` with mounted-source citations and validation output.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T02:49:57.129Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-22: the evidence artifact cites mounted row-41 source flow and records repo-local validation showing the maintained replay now extends the secure-TLS basic lifecycle through rotate-certificates, credential refresh, post-refresh CSR validation, stop/start, and post-stop/start CSR validation; it also states the spec metadata moved to execute-ready full-spec carrier truth without claiming live execution."
+      },
+      "status": "done"
+    }
+  ]
+}

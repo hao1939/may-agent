@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T20:01:30.218Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 scheduled blocked-frontier owner review: the project root should now show only the active spec-dispatch lane plus the single blocked external-human wait family. Archive the completed spec-loop controller parent because its durable meaning is preserved in prior rollups and the current live work has already been narrowed to the standalone active dispatch leaf. No new backlog leaf is created from this wake: the dispatch task remains in progress and the blocked family is already truthfully compressed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aks-spec-verification-loop",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run a bounded spec verification loop over aks-rp-e2e specs, prioritizing the dev-infra-core feature set first and keeping only a small frontier of live verification leaves open.",
+      "inputs": [
+        "../aks-rp-e2e/specs/index.json",
+        "../aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Controller pulses keep a bounded child frontier filled from pending specs.",
+        "Dev Infra Core selectors are scheduled before the remaining spec backlog.",
+        "Each child leaf runs one single-spec GitHub workflow and records pass, fail, blocked, or error in spec-loop state.",
+        "The loop remains open until all specs have reviewed dispositions or the owner intentionally closes it."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop"
+      ],
+      "workflow": "spec-loop-controller",
+      "context": {
+        "windowSize": 5,
+        "stateRef": ".state/spec-loop/state.json",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "targetRunning": 3,
+        "priorityFeatureSet": "dev-infra-core",
+        "workflowProgress": {
+          "completionReady": false,
+          "reason": "spec-loop state still has non-terminal specs",
+          "pending": 634,
+          "running": 3,
+          "pass": 6,
+          "fail": 1,
+          "blocked": 8,
+          "error": 2,
+          "done": 0,
+          "openChildren": 5,
+          "lastPulseCreated": 0,
+          "lastPulseAssigned": 1,
+          "updatedAt": "2026-06-26T17:21:36.456Z"
+        },
+        "rollup_summary": "2026-06-26 owner review accepted the bounded node-public-ip rerun evidence: after the Route A replay import repair was re-proven on origin/dev, exactly one unchanged run-single-spec.yaml rerun for spec.net-integration.node-public-ip on ref dev succeeded as GitHub run 28261624269 on commit 13a170dd4378884001e9d6e80f8f61a972bb8fb9. Durable artifacts proved the workflow still used the unchanged Route A carrier replays/net-integration-node-public-ip.ts, reached live create/GET/VMSS assertions, and passed without any Route B retarget. This clears the prior workflow-carrier/import blocker for the bounded path.net-integration.node-public-ip Route A workflow lane. No immediate follow-up rerun is needed from this wake; leave any broader Route B or other spec-loop expansion to future explicitly scoped work while the current project focus remains the active external-human-proof-family evidence refresh.",
+        "archived_done_leaf_count": 50,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260626195736992.json",
+            "archived": 1,
+            "at": "2026-06-26T19:57:36.992Z",
+            "summary": "2026-06-26 owner review accepted the bounded node-public-ip rerun evidence: after the Route A replay import repair was re-proven on origin/dev, exactly one unchanged run-single-spec.yaml rerun for spec.net-integration.node-public-ip on ref dev succeeded as GitHub run 28261624269 on commit 13a170dd4378884001e9d6e80f8f61a972bb8fb9. Durable artifacts proved the workflow still used the unchanged Route A carrier replays/net-integration-node-public-ip.ts, reached live create/GET/VMSS assertions, and passed without any Route B retarget. This clears the prior workflow-carrier/import blocker for the bounded path.net-integration.node-public-ip Route A workflow lane. No immediate follow-up rerun is needed from this wake; leave any broader Route B or other spec-loop expansion to future explicitly scoped work while the current project focus remains the active external-human-proof-family evidence refresh.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "rerun-spec-net-integration-node-public-ip-single-spec-workflow-on-dev-after-route-a-origin-proof-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626195226532.json",
+            "archived": 1,
+            "at": "2026-06-26T19:52:26.532Z",
+            "summary": "2026-06-26 owner review keeps this lane to one live spec rerun. The accepted Route A replay restore/import-repair proof is now parent context: the workspace holds the bounded one-file/two-import Route A diff, the origin/dev replay basis was re-proven, and Route B drift remains explicitly excluded. Remaining open work is only rerun-spec-net-integration-node-public-ip-single-spec-workflow-on-dev-after-route-a-origin-proof-20260626 to queue the unchanged dev workflow rerun and classify the resulting durable workflow artifacts.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "checkpoint-route-a-replay-slice-and-reproof-origin-dev-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626194642075.json",
+            "archived": 1,
+            "at": "2026-06-26T19:46:42.075Z",
+            "summary": "2026-06-26 owner blocked-frontier review confirmed the spec-verification lane should expose exactly one live child. The accepted Route A replay restore/import-repair proof is now preserved as parent context together with the earlier branch-repair basis; it established that the local workspace currently holds only the one-file/two-import Route A diff and that Route B drift remains excluded. Open work in this lane remains exactly checkpoint-route-a-replay-slice-and-reproof-origin-dev-20260626, which must verify that narrow diff is still intact, checkpoint/push it, and record fresh origin/dev replay/spec truth before any rerun decision. No sibling refill or blocked-branch expansion is justified from this wake.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "restore-node-public-ip-route-a-replay-import-repair-slice-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626194630980.json",
+            "archived": 1,
+            "at": "2026-06-26T19:46:30.981Z",
+            "summary": "2026-06-26 owner blocked-frontier review confirmed the spec-verification lane is already truthfully narrowed to one live repo-local checkpoint/reproof slice. The earlier local branch-repair preparation and Route A import-repair evidence are now preserved as parent context only: they established the accepted one-file/two-import replay repair and the basis for re-proving origin/dev before any bounded node-public-ip rerun decision. Open work in this lane is exactly checkpoint-route-a-replay-slice-and-reproof-origin-dev-20260626, which must verify the diff stayed Route-A-only, checkpoint/push that slice, and record the resulting commit hash plus fresh origin/dev replay/spec truth. Do not refill sibling leaves or widen into rerun/live execution from this wake unless that active checkpoint leaf finishes and its evidence changes the next decision.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260626194110222.json",
+            "archived": 3,
+            "at": "2026-06-26T19:41:10.223Z",
+            "summary": "2026-06-26 owner blocked-frontier review kept the spec-verification lane truthful and narrow: the nsg-control retry diagnosis, the node-public-ip review basis, and the workflow-carrier gate proof are all preserved as parent context, while the earlier queue/review child is now superseded by the smaller active branch-repair slice. With no new runnable live or repo-local sibling work justified from this wake, this lane should expose exactly one live child: prepare-node-public-ip-origin-dev-branch-repair-slice-after-run-28260814570-20260626, which must determine the minimal origin/dev branch repair needed for spec.net-integration.node-public-ip to resolve to an existing import-clean carrier before any rerun.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "prove-node-public-ip-workflow-carrier-repair-gate-after-run-28260814570-20260626",
+              "queue-and-review-spec-net-integration-node-public-ip-single-spec-workflow-after-origin-dev-proof-20260626",
+              "verify-spec-net-integration-nsg-control-single-spec-workflow-retry-after-import-repair-20260626"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-26T15:53:30.434Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-26T15:53:49.164Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aks-spec-verification-loop",
+        "last_controller_pulse_at": "2026-06-26T16:21:19.143Z",
+        "last_controller_pulse_summary": "Spec loop aks-spec-verification-loop controller pulse created 2 child task(s); releasing controller slot before child assignment.",
+        "rolled_up_at": "2026-06-26T19:57:36.992Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_aks-spec-verification-loop",
+      "session_history": [
+        "s_task_aks-spec-verification-loop"
+      ],
+      "result": "Child review pending: verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626, verify-spec-storage-csi-file-pvc-dynamic-provision.",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T08:24:06.650Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner accepted three recent completed slices and tightened the live frontier. Network CNI exact-model landing now covers both Azure Overlay dual-stack Windows2022 and Windows2025 siblings as accepted mounted-source-backed paths with regenerated model/view consistency. VM prerelease row 150 no longer sits as stale active/review work: the bounded live rerun already reached create, update, runtime validation, and cleanup, and the remaining gap is narrowed to a replay-local warning-prefixed Endpoints JSON parse defect rather than body-authoring or cloud-execution uncertainty. The live frontier is now one still-running verification rerun (addonv2 row 63 Azure Monitor Metrics), one concrete network-datapath repair task for the row-150 parser defect, and the existing family-level external human send-proof wait.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "First inspect the mounted AKS RP Go source for the create-time Windows2022 Azure Overlay Dual Stack scenario lineage and capture repo-local evidence from that inspection, then land the exact Windows2022 path/model carriers so path.network-cni-azure-overlay-dual-stack-windows2022 becomes an explicit maintained source-backed path instead of relying on adjacent generic row-94 VM-prerelease coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Task begins from mounted source under /app/sources/aks-rp, cites the exact source files and existing repo-local lineage authorities, updates the maintained model/view/spec carriers so path.network-cni-azure-overlay-dual-stack-windows2022 exists as an exact source-backed path with truthful status/retest wording, and explicitly preserves path.network-cni-azure-overlay-dual-stack as adjacent-only row-94 coverage rather than exact coverage for this Windows2022 create-time contract.",
+        "Artifact records the exact files changed, the resulting scenario/feature/path/spec linkage, and the smallest truthful remaining gap after the model landing without widening to generic overlay/dual-stack cleanup; if the work stops early, the artifact must name the exact mounted-source or repo-local command/output that blocked progress rather than claiming missing source.",
+        "Artifact includes local validation evidence from the knowledge-map/view regeneration plus at least one repo-local consistency check showing the exact Windows2022 path is now represented consistently, or it captures the exact local validation failure output that prevented acceptance."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:18:02.416Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T08:21:05.891Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_retry_20260621082105",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_20260621082105",
+        "worker_started_at": "2026-06-21T08:21:14.911Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the exact Windows2022 Azure overlay dual-stack model landing was already present in mounted source/spec/replay/model/view carriers and wrote the required acceptance artifact at evidence/archive/network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621.md with validation evidence and remaining-gap wording.",
+        "last_worker_completed_at": "2026-06-21T08:22:46.264Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-21T08:20:54.594Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Reject review: worker produced result=error/blocked with no evidence, no artifact at evidence/archive/network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621.md, and no verification verdict. Mounted source exists at /app/sources/aks-rp, so any retry must inspect that source, land the Windows2022 exact path/model carriers, and if blocked record the exact repo-local command/output causing the stop.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_20260621081802",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_20260621082105",
+        "reviewed_at": "2026-06-21T08:23:11.429Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the artifact shows the exact Windows2022 overlay dual-stack path was already present in mounted source/spec/replay/model/view carriers, records the required repo-local validation evidence, and leaves only a separate future live-verdict gap."
+      },
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621",
+        "s_task_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_retry_20260621082105"
+      ],
+      "result": "Verified the exact Windows2022 Azure overlay dual-stack model landing was already present in mounted source/spec/replay/model/view carriers and wrote the required acceptance artifact at evidence/archive/network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621.md with validation evidence and remaining-gap wording.",
+      "evidence": [],
+      "session_id": "s_task_network-cni-overlay-dualstack-windows2022-exact-model-landing-20260621_retry_20260621082105",
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:23:11.429Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the artifact shows the exact Windows2022 overlay dual-stack path was already present in mounted source/spec/replay/model/view carriers, records the required repo-local validation evidence, and leaves only a separate future live-verdict gap."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted-source create-time Windows2025 Azure Overlay Dual Stack sibling into the accepted knowledge model so path.network-cni-azure-overlay-dual-stack-windows2025 no longer depends on adjacent family coverage and can carry its own truthful source-backed status.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Task cites the existing mounted-source lineage authorities for the Windows2025 sibling, updates the maintained model/view/spec carriers so path.network-cni-azure-overlay-dual-stack-windows2025 exists as an exact source-backed path with truthful status/retest wording, and keeps the generic row-94 and migration carriers distinct rather than absorbing this sibling.",
+        "Artifact records the exact files changed, the resulting scenario/feature/path/spec linkage, and the smallest truthful remaining gap after landing the Windows2025 sibling without reopening unrelated network-cni family work.",
+        "Artifact includes local validation evidence from the knowledge-map/view regeneration plus at least one repo-local consistency check showing the exact Windows2025 path is now represented consistently."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:18:02.464Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-21T08:23:11.478Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621",
+        "worker_started_attempt_id": "a_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621_20260621082311",
+        "worker_started_at": "2026-06-21T08:23:24.598Z",
+        "stale_active_requeued_at": "2026-06-21T08:21:05.845Z",
+        "stale_active_requeue_reason": "Hold the sibling while the failed Windows2022 review is retried first; both tasks share the network-cni conflict scope and likely the same mounted-source/model-landing assumption set, so keeping Windows2025 active would block the deterministic retry and risks repeating the same evidence-free failure pattern.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621_20260621082018",
+        "promoted_at": "2026-06-21T08:22:53.452Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621_20260621082311",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded a bounded evidence artifact proving the Windows2025 Azure Overlay dual-stack exact sibling is already landed in the accepted knowledge model, with mounted-source lineage, path/spec/view linkage, and local consistency validation.",
+        "last_worker_completed_at": "2026-06-21T08:23:24.650Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:23:58.297Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the worker artifact: it cites exact mounted-source lineage, lands the Windows2025 Azure Overlay dual-stack sibling in the maintained model/view/spec carriers, and records local regeneration plus consistency validation so path.network-cni-azure-overlay-dual-stack-windows2025 now has truthful exact source-backed representation."
+      },
+      "session_id": "s_task_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621",
+      "session_history": [
+        "s_task_network-cni-overlay-dualstack-windows2025-exact-model-landing-20260621"
+      ],
+      "result": "Recorded a bounded evidence artifact proving the Windows2025 Azure Overlay dual-stack exact sibling is already landed in the accepted knowledge model, with mounted-source lineage, path/spec/view linkage, and local consistency validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:23:58.297Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the worker artifact: it cites exact mounted-source lineage, lands the Windows2025 Azure Overlay dual-stack sibling in the maintained model/view/spec carriers, and records local regeneration plus consistency validation so path.network-cni-azure-overlay-dual-stack-windows2025 now has truthful exact source-backed representation."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row150-kube-proxy-live-verdict-rerun-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale VM prerelease row-150 kube-proxy live attempt by inspecting the existing local attempt/run outputs and exact mounted-source/spec/replay lineage, so this branch records whether a terminal live boundary already exists, whether execution stopped before the create→update lifecycle began, or whether one fresh bounded rerun is still needed for path.network-datapath.kube-proxy-custom-config.vm-prerelease without carrying forward unevidenced blocker state.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row150-kube-proxy-live-verdict-rerun-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the exact input path, expectation path, model gap, and current attempt id, then inspects existing repo-local run/session/replay outputs to state whether the row-150 create IPTABLES → update IPVS lifecycle actually started and the first exact boundary where the attempt stopped.",
+        "Artifact captures one truthful terminal result for the stale-attempt family: either accepted existing live evidence for create/update plus daemonset-flag and pod-to-service checks, or the exact local/external blocker with command/output, or a precise fresh-rerun command and gate when the prior attempt never reached a terminal execution boundary.",
+        "If a fresh rerun is still required, the artifact states which prior blocker is superseded, what remains unchanged from the accepted body-authoring/model work, and the smallest next action without reusing unevidenced wait or retry claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-datapath"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T08:06:01.117Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row150-kube-proxy-live-verdict-rerun-20260621_20260621080601",
+        "assigned_at": "2026-06-21T08:06:01.170Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row150-kube-proxy-live-verdict-rerun-20260621",
+        "worker_started_attempt_id": "a_vmpr-row150-kube-proxy-live-verdict-rerun-20260621_20260621080601",
+        "worker_started_at": "2026-06-21T08:06:19.929Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the row-150 kube-proxy live rerun and wrote a durable evidence note at evidence/archive/vmpr-row150-kube-proxy-live-verdict-rerun-20260621.md. The replay reached live create/update/runtime validation and cleanup, but failed at a replay-local JSON parse on warning-prefixed Endpoints output, narrowing the remaining blocker to a concrete implementation bug.",
+        "last_worker_completed_at": "2026-06-21T08:23:38.286Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T08:23:58.345Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the reconciliation artifact: the bounded rerun already reached live create/update/runtime validation and cleanup, then terminated at a replay-local JSON parse failure on warning-prefixed 'kubectl get endpoints -o json' output. This closes the stale-review carrier and makes the remaining work a concrete replay implementation repair, not an unevidenced pending rerun."
+      },
+      "session_id": "s_task_vmpr-row150-kube-proxy-live-verdict-rerun-20260621",
+      "session_history": [
+        "s_task_vmpr-row150-kube-proxy-live-verdict-rerun-20260621"
+      ],
+      "result": "Executed the row-150 kube-proxy live rerun and wrote a durable evidence note at evidence/archive/vmpr-row150-kube-proxy-live-verdict-rerun-20260621.md. The replay reached live create/update/runtime validation and cleanup, but failed at a replay-local JSON parse on warning-prefixed Endpoints output, narrowing the remaining blocker to a concrete implementation bug.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T08:23:58.345Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the reconciliation artifact: the bounded rerun already reached live create/update/runtime validation and cleanup, then terminated at a replay-local JSON parse failure on warning-prefixed 'kubectl get endpoints -o json' output. This closes the stale-review carrier and makes the remaining work a concrete replay implementation repair, not an unevidenced pending rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

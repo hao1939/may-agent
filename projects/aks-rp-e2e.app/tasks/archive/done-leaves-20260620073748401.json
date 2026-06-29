@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T07:37:48.401Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "The response-await coordination family remains focused on one owner-batch proof/handoff burn-down. The accepted queue registry at evidence/archive/user-review-send-ready-queue-registry-refresh-20260620.md plus the accepted proof-gap coordination note at evidence/archive/user-review-send-ready-proof-gap-owner-coordination-20260620.md establish that all 34 current live blocked response-await leaves are packetized and queue-eligible, that none yet has accepted repo-local proof-of-send/handoff, and that the replaced placeholder leaf user-review-send-ready-batch-owner-handoff-packet-20260620 was superseded by the sole live successor user-review-send-ready-batch-owner-handoff-packet-authoring-20260620. That active authoring leaf remains the only concrete next move for the largest blocked frontier because it will produce one durable owner-facing handoff artifact while preserving the 14 special-routing waits and the remaining leaf-specific reply gates for later consume-proof routing.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-send-ready-batch-owner-handoff-packet-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After user-review-send-ready-proof-gap-owner-coordination-20260620 is accepted, synthesize one durable owner-facing batch handoff packet for the queue-eligible response-await leaves that still have packet evidence but no accepted proof-of-send or handoff, so the shared send-ready proof gap is represented by one concrete outbound artifact instead of only per-leaf packet notes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-send-ready-batch-owner-handoff-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive packet cites evidence/archive/user-review-send-ready-queue-registry-refresh-20260620.md plus the accepted proof-gap coordination note and names the exact current leaf ids that belong in the batch handoff because they remain packetized-but-unsent or handoff-unproven.",
+        "The packet preserves separate routing for any waits whose external gate is more specific than send-proof alone, explicitly naming which waits stay independently tracked and why instead of collapsing them into a generic ask.",
+        "Repo-local only: no claim that any packet was actually sent, no cloud execution, and no reopening of blocked execute/spec leaves beyond preparing the exact owner-facing outbound artifact."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:send-ready-batch-owner-handoff"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:35:11.166Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T07:36:54.345Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the dependency-blocked placeholder with runnable leaf user-review-send-ready-batch-owner-handoff-packet-authoring-20260620 now that evidence/archive/user-review-send-ready-proof-gap-owner-coordination-20260620.md is accepted and names the exact 34-leaf shared handoff cohort plus the waits that must retain independent reply routing."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T07:36:54.345Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the dependency-blocked placeholder with runnable leaf user-review-send-ready-batch-owner-handoff-packet-authoring-20260620 now that evidence/archive/user-review-send-ready-proof-gap-owner-coordination-20260620.md is accepted and names the exact 34-leaf shared handoff cohort plus the waits that must retain independent reply routing."
+      },
+      "status": "done"
+    }
+  ]
+}

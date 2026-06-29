@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:05:42.839Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review state: accepted evidence/archive/validate-node-custom-ca-trust-create-local-check-20260622.md as durable proof that the repaired canonical node-custom-ca-trust replay now passes repo-local --check validation with the mounted-source-equivalent PEM/base64 payload and no cloud mutation. The custom-CA frontier therefore stays intentionally narrow: one active leaf remains for exactly one bounded live rerun to learn whether the earlier CATrustPreviewCAPEMDecodeFailure disappears or is replaced by a new bounded live outcome. The separate external human transport family remains compressed to one truthful blocked wait and is unchanged by this replay completion.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "validate-node-custom-ca-trust-create-local-check-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the bounded local check-mode validation for the repaired canonical node-custom-ca-trust-create replay so the custom CA PEM/base64 payload fix has durable structural evidence before any future live rerun is considered.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/validate-node-custom-ca-trust-create-local-check-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact local command used for replays/node-custom-ca-trust-create.ts check mode, the timestamp/run id, and the observed outcome proving whether the repaired replay passes repo-local preflight/spec/path validation without cloud mutation.",
+        "If the local check passes, the artifact explicitly states that the PEM/base64 replay payload repair is now structurally validated and names the narrow next action as scheduling one bounded post-repair live replay; if it fails, it captures the exact repo-local error and the narrowest next local repair step."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay-node-custom-ca-trust-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:01:21.557Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T11:01:24.823Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_validate-node-custom-ca-trust-create-local-check-20260622_20260622110126",
+        "assigned_at": "2026-06-22T11:01:26.918Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_validate-node-custom-ca-trust-create-local-check-20260622",
+        "worker_started_attempt_id": "a_validate-node-custom-ca-trust-create-local-check-20260622_20260622110126",
+        "worker_started_at": "2026-06-22T11:01:50.593Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran the bounded local check for the repaired canonical node-custom-ca-trust replay, produced JSON evidence plus an archive markdown artifact showing the exact command, timestamps, pass result, and next action of one bounded post-repair live rerun.",
+        "last_worker_completed_at": "2026-06-22T11:03:08.672Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:03:57.267Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/validate-node-custom-ca-trust-create-local-check-20260622.md: the exact local --check command, run id/timestamps, and pass result prove the repaired canonical node-custom-ca-trust-create replay now passes repo-local structural validation with the mounted-source-equivalent PEM/base64 payload. This closes the local verification review and leaves one bounded repaired live rerun as the next truthful step."
+      },
+      "session_id": "s_task_validate-node-custom-ca-trust-create-local-check-20260622",
+      "session_history": [
+        "s_task_validate-node-custom-ca-trust-create-local-check-20260622"
+      ],
+      "result": "Ran the bounded local check for the repaired canonical node-custom-ca-trust replay, produced JSON evidence plus an archive markdown artifact showing the exact command, timestamps, pass result, and next action of one bounded post-repair live rerun.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:03:57.267Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/validate-node-custom-ca-trust-create-local-check-20260622.md: the exact local --check command, run id/timestamps, and pass result prove the repaired canonical node-custom-ca-trust-create replay now passes repo-local structural validation with the mounted-source-equivalent PEM/base64 payload. This closes the local verification review and leaves one bounded repaired live rerun as the next truthful step."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T11:38:04.221Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 planner rollup after accepting the private-cluster Addonv2 execute-contract packet: that branch now has durable archive evidence for the repaired replay carrier, bounded future execute contract, and preserved unknown runtime verdict. The next concrete repo-local action remains the already-assigned private-cluster none-dns-zone-v3 execute-contract authoring leaf, while the only live blocker stays the single family-level external human proof wait for covered VM/private-cluster asks; do not reopen completed source/spec/model closure from that wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the narrowest future live-execution contract for path.private-cluster-addonv2.coreaddons-privatecluster using the repaired replay carrier and existing source/spec/model packet so a later bounded mutating probe, if ever authorized, has an exact preflight, private-access path, assertion set, cleanup story, stop conditions, and evidence contract without changing the current unknown verdict or running cloud mutation now.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the exact mounted source, canonical spec, repaired replay carrier, and current knowledge-map path/model status for path.private-cluster-addonv2.coreaddons-privatecluster, and translates them into one bounded future execute contract with exact preflight prerequisites, required private-access mechanism, mutation gate variables, assertion sequence, cleanup expectations, and failure-attribution boundaries.",
+        "The task performs no cloud mutation, preserves the path's current claim-safe unknown runtime verdict, and does not widen scope beyond the same six-input private-cluster Addonv2 core-addons branch and five-assertion execution bundle."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-addonv2-coreaddons-privatecluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T11:33:45.287Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623_20260623113348",
+        "assigned_at": "2026-06-23T11:33:48.265Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623",
+        "worker_started_attempt_id": "a_private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623_20260623113348",
+        "worker_started_at": "2026-06-23T11:34:19.124Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the archive packet `evidence/archive/private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623.md` defining the exact future live execute contract for `path.private-cluster-addonv2.coreaddons-privatecluster`, and verified the repaired replay carrier still passes fresh non-mutating check mode with durable evidence.",
+        "last_worker_completed_at": "2026-06-23T11:36:05.951Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T11:37:04.541Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet names the exact mounted source/spec/replay/model authorities, preserves the six-input and five-assertion private-cluster Addonv2 boundary, records fresh non-mutating replay-check proof, and leaves runtime verdict truthfully unknown pending any explicitly authorized future live execute task."
+      },
+      "session_id": "s_task_private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623",
+      "session_history": [
+        "s_task_private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623"
+      ],
+      "result": "Authored the archive packet `evidence/archive/private-cluster-addonv2-coreaddons-privatecluster-execute-contract-authoring-20260623.md` defining the exact future live execute contract for `path.private-cluster-addonv2.coreaddons-privatecluster`, and verified the repaired replay carrier still passes fresh non-mutating check mode with durable evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T11:37:04.541Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet names the exact mounted source/spec/replay/model authorities, preserves the six-input and five-assertion private-cluster Addonv2 boundary, records fresh non-mutating replay-check proof, and leaves runtime verdict truthfully unknown pending any explicitly authorized future live execute task."
+      },
+      "status": "done"
+    }
+  ]
+}

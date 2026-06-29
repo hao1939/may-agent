@@ -1,0 +1,410 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T14:57:27.449Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner review: accepted verify-spec-cluster-autoscaler-vm-prerelease-spot as a truthful blocked spec verdict, not a product/runtime failure. The reviewed artifact shows the scenario exists but is source/check-only and does not implement gated live execution yet; keep any GitHub workflow conclusion-failure note scoped to the watch/runtime-contract mismatch family and do not use it to dispute this spec verdict. Systematic next work remains classify-source-check-only-single-spec-family-20260628 so current source/check-only specs can be mapped to source-equivalent ceilings, live-execution candidates, or retirement from the live spec queue.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "verify-spec-cluster-autoscaler-scale-from-zero-labels-fips",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cluster-autoscaler.scale-from-zero-labels-fips through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cluster-autoscaler.scale-from-zero-labels-fips",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.scale-from-zero-labels-fips"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cluster-autoscaler.scale-from-zero-labels-fips",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:39:18.004Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:49:40.115Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T14:51:35.348Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_retry_20260628142419",
+        "worker_started_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_20260628145135",
+        "worker_started_at": "2026-06-28T14:51:36.206Z",
+        "stale_active_requeued_at": "2026-06-28T14:31:20.553Z",
+        "stale_active_requeue_reason": "watchdog stale active: session not running",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_20260628142419",
+        "current_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_20260628145135",
+        "reviewed_at": "2026-06-28T14:56:25.193Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "session_history": [
+        "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips",
+        "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_retry_20260628142419"
+      ],
+      "session_id": "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-fips_retry_20260628142419",
+      "resolution": "replaced",
+      "done_at": "2026-06-28T14:56:25.193Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cluster-autoscaler.scale-from-zero-labels-manageddisks through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cluster-autoscaler.scale-from-zero-labels-manageddisks",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.scale-from-zero-labels-manageddisks"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cluster-autoscaler.scale-from-zero-labels-manageddisks",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:39:18.016Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:54:57.545Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T14:55:25.745Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_retry_20260628142506",
+        "worker_started_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_20260628145525",
+        "worker_started_at": "2026-06-28T14:55:30.376Z",
+        "stale_active_requeued_at": "2026-06-28T14:31:20.617Z",
+        "stale_active_requeue_reason": "watchdog stale active: session not running",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_20260628142506",
+        "current_attempt_id": "a_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_20260628145525",
+        "reviewed_at": "2026-06-28T14:56:25.346Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "session_history": [
+        "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks",
+        "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_retry_20260628142506"
+      ],
+      "session_id": "s_task_verify-spec-cluster-autoscaler-scale-from-zero-labels-manageddisks_retry_20260628142506",
+      "resolution": "replaced",
+      "done_at": "2026-06-28T14:56:25.346Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cluster-autoscaler-vm-prerelease-service-principal",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cluster-autoscaler.vm-prerelease-service-principal through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-service-principal",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-service-principal"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cluster-autoscaler.vm-prerelease-service-principal",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:39:18.176Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:54:57.545Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-cluster-autoscaler-vm-prerelease-service-principal_20260628145525",
+        "assigned_at": "2026-06-28T14:55:25.745Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cluster-autoscaler-vm-prerelease-service-principal",
+        "worker_started_attempt_id": "a_verify-spec-cluster-autoscaler-vm-prerelease-service-principal_20260628145525",
+        "worker_started_at": "2026-06-28T14:55:26.869Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.cluster-autoscaler.vm-prerelease-service-principal workflow run 28326111533 classified as blocked. Loop key: verify-spec-cluster-autoscaler-vm-prerelease-service-principal-a_verify-spec-cluster-autos. Spec spec.cluster-autoscaler.vm-prerelease-service-principal has scenario test features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-service-principal.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326111533 Result: runs/test-results/single-cluster-autoscaler-vm-prerelease-service-principal_555213/artifacts/cluster-autoscaler-vm-prerelease-service-principal/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326111533/aks-rp-e2e-28326111533-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326111533/aks-rp-e2e-28326111533-spec-test-results/test-results/single-cluster-autoscaler-vm-prerelease-service-principal_555213/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T14:56:18.907Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T14:56:25.141Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "session_id": "s_task_verify-spec-cluster-autoscaler-vm-prerelease-service-principal",
+      "session_history": [
+        "s_task_verify-spec-cluster-autoscaler-vm-prerelease-service-principal"
+      ],
+      "result": "Spec spec.cluster-autoscaler.vm-prerelease-service-principal workflow run 28326111533 classified as blocked. Loop key: verify-spec-cluster-autoscaler-vm-prerelease-service-principal-a_verify-spec-cluster-autos. Spec spec.cluster-autoscaler.vm-prerelease-service-principal has scenario test features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-service-principal.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326111533 Result: runs/test-results/single-cluster-autoscaler-vm-prerelease-service-principal_555213/artifacts/cluster-autoscaler-vm-prerelease-service-principal/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326111533/aks-rp-e2e-28326111533-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326111533/aks-rp-e2e-28326111533-spec-test-results/test-results/single-cluster-autoscaler-vm-prerelease-service-principal_555213/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T14:56:25.141Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-cluster-autoscaler-vm-prerelease-spot",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.cluster-autoscaler.vm-prerelease-spot through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-spot",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-spot"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.cluster-autoscaler.vm-prerelease-spot",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:39:18.192Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T14:54:57.545Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-cluster-autoscaler-vm-prerelease-spot_20260628145525",
+        "assigned_at": "2026-06-28T14:55:25.745Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-cluster-autoscaler-vm-prerelease-spot",
+        "worker_started_attempt_id": "a_verify-spec-cluster-autoscaler-vm-prerelease-spot_20260628145525",
+        "worker_started_at": "2026-06-28T14:55:35.619Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.cluster-autoscaler.vm-prerelease-spot workflow run 28326115920 classified as blocked. Loop key: verify-spec-cluster-autoscaler-vm-prerelease-spot-a_verify-spec-cluster-autoscaler-vm-prer. Spec spec.cluster-autoscaler.vm-prerelease-spot has scenario test features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-spot.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326115920 Result: runs/test-results/single-cluster-autoscaler-vm-prerelease-spot_600382/artifacts/cluster-autoscaler-vm-prerelease-spot/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326115920/aks-rp-e2e-28326115920-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326115920/aks-rp-e2e-28326115920-spec-test-results/test-results/single-cluster-autoscaler-vm-prerelease-spot_600382/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-28T14:56:23.312Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T14:56:25.244Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Current active execution claim is not credible under the accepted single-spec verifier runtime/session contract gap; replaced by family-level retry gate task escalate-single-spec-verifier-runtime-session-contract-family-20260628 until runtime proves assigned verifier task.session_id liveness or ships an alternate durable in-flight surface."
+      },
+      "session_id": "s_task_verify-spec-cluster-autoscaler-vm-prerelease-spot",
+      "session_history": [
+        "s_task_verify-spec-cluster-autoscaler-vm-prerelease-spot"
+      ],
+      "result": "Spec spec.cluster-autoscaler.vm-prerelease-spot workflow run 28326115920 classified as blocked. Loop key: verify-spec-cluster-autoscaler-vm-prerelease-spot-a_verify-spec-cluster-autoscaler-vm-prer. Spec spec.cluster-autoscaler.vm-prerelease-spot has scenario test features/cluster-autoscaler/tests/cluster-autoscaler-vm-prerelease-spot.ts, but that scenario test is source/check-only and does not implement gated live execution yet. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28326115920 Result: runs/test-results/single-cluster-autoscaler-vm-prerelease-spot_600382/artifacts/cluster-autoscaler-vm-prerelease-spot/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326115920/aks-rp-e2e-28326115920-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28326115920/aks-rp-e2e-28326115920-spec-test-results/test-results/single-cluster-autoscaler-vm-prerelease-spot_600382/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T14:56:25.244Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the completed spec.cloud-provider.credential-provider run 28325678125, classify whether the ACR manifest import failure is a transient Docker Hub unauthenticated pull-rate limiter, repo/testdata issue, or broader runner/environment contract problem, and leave a durable evidence/model recommendation for how this spec should be recorded and when it is worth retrying.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628.md"
+      ],
+      "acceptance": [
+        "Artifact quotes the exact failing run/result paths and the 429 TOOMANYREQUESTS evidence from run 28325678125 and identifies the narrow failing step/carrier.",
+        "Result classifies the failure as product, environment, runner/runtime, or transient external dependency and states the truthful retry gate for this spec.",
+        "Artifact states whether the capability model/spec status should change now or whether the result should be carried as bounded runner/external-noise evidence pending a retry."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:50:22.446Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628_20260628145022",
+        "assigned_at": "2026-06-28T14:50:22.551Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628",
+        "worker_started_attempt_id": "a_diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628_20260628145022",
+        "worker_started_at": "2026-06-28T14:50:45.752Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Agent ended with an empty assistant turn",
+        "last_worker_completed_at": "2026-06-28T14:51:32.205Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T14:52:19.206Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review result was not accepted because the assigned worker ended with an empty assistant turn and left no trustworthy artifact; replaced by a fresh evidence-producing diagnosis leaf instead of preserving a misleading review state."
+      },
+      "session_id": "s_task_diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628",
+      "session_history": [
+        "s_task_diagnose-spec-cloud-provider-credential-provider-acr-pull-rate-limit-20260628"
+      ],
+      "result": "Agent ended with an empty assistant turn",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T14:52:19.206Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review result was not accepted because the assigned worker ended with an empty assistant turn and left no trustworthy artifact; replaced by a fresh evidence-producing diagnosis leaf instead of preserving a misleading review state."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-single-spec-verifier-session-handoff-runtime-contract-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the single-spec-verifier task-worker -> runWorkflow -> watchdog liveness contract, prove from runtime sessions whether the currently active verifier leaves are real executions or stale-active artifacts, determine whether the assigned verifier session_id should be registered in runtime sessions or whether watchdog needs a verifier-specific in-flight source, and leave a concrete repo-local repair or bounded runtime escalation artifact that future stale-active wakes can follow without spec-by-spec rediscovery, including an explicit disposition for verify-spec-cloud-provider-credential-provider, verify-spec-cluster-autoscaler-statefulset-pdb, verify-spec-cluster-autoscaler-vm-prerelease-profile-matrix, and verify-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/single-spec-verifier-session-handoff-runtime-contract-20260628.md"
+      ],
+      "acceptance": [
+        "Artifact traces the exact handoff path across task-worker.ts, single-spec-verifier.ts, and project-execution-watchdog.ts using the diagnosis evidence and states which component currently owns/verifies verifier liveness.",
+        "Task either lands a repo-local repair with verification evidence or records one bounded escalation/owner handoff explaining why local repair is not yet possible and what exact resume signal is required.",
+        "Result states, using runtime sessions evidence, whether the currently active verifier leaves are safe to retry immediately, need a watchdog/session fix first, or should remain subject to the existing retry gate, and gives an explicit disposition for each currently active verifier leaf in this family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow:single-spec-verifier-runtime"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T14:47:18.539Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-single-spec-verifier-session-handoff-runtime-contract-20260628_20260628144718",
+        "assigned_at": "2026-06-28T14:47:18.594Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-single-spec-verifier-session-handoff-runtime-contract-20260628",
+        "worker_started_attempt_id": "a_repair-single-spec-verifier-session-handoff-runtime-contract-20260628_20260628144718",
+        "worker_started_at": "2026-06-28T14:47:32.934Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Traced the single-spec verifier liveness handoff across task-worker, single-spec-verifier, and project-execution-watchdog, and wrote a bounded runtime-escalation artifact concluding stale verifier leaves need a session/watchdog contract fix before safe retry.",
+        "last_worker_completed_at": "2026-06-28T14:50:31.204Z",
+        "last_worker_evidence": [
+          "evidence/archive/single-spec-verifier-session-handoff-runtime-contract-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T14:51:34.071Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the runtime-contract artifact: it traces task-worker -> single-spec-verifier -> project-execution-watchdog, proves from runtime sessions evidence that worker_started is not credible liveness for current single-spec verifier leaves, and concludes the family needs one runtime/session-contract repair or escalation before those verifier leaves are trusted for safe retry."
+      },
+      "session_id": "s_task_repair-single-spec-verifier-session-handoff-runtime-contract-20260628",
+      "session_history": [
+        "s_task_repair-single-spec-verifier-session-handoff-runtime-contract-20260628"
+      ],
+      "result": "Traced the single-spec verifier liveness handoff across task-worker, single-spec-verifier, and project-execution-watchdog, and wrote a bounded runtime-escalation artifact concluding stale verifier leaves need a session/watchdog contract fix before safe retry.",
+      "evidence": [
+        "evidence/archive/single-spec-verifier-session-handoff-runtime-contract-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T14:51:34.071Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the runtime-contract artifact: it traces task-worker -> single-spec-verifier -> project-execution-watchdog, proves from runtime sessions evidence that worker_started is not credible liveness for current single-spec verifier leaves, and concludes the family needs one runtime/session-contract repair or escalation before those verifier leaves are trusted for safe retry."
+      },
+      "status": "done"
+    }
+  ]
+}

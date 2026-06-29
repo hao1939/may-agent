@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T23:08:49.417Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-27 watchdog blocked-frontier owner pass accepted the bounded repo-local App Routing ARM-create swap review: spec.app-routing.default-domain-http-reachability now truthfully names direct ARM managedClusters PUT for cluster creation while preserving the existing REST-first default-domain GET/PUT flow, with repo-local syntax/unit validation archived in evidence/archive/spec-app-routing-default-domain-http-reachability-arm-create-swap-patch-20260627.md. Replace that completed patch leaf with one concrete next child, rerun-spec-app-routing-default-domain-http-reachability-post-arm-create-swap-20260627, assigned to launch exactly one bounded verification attempt for the patched spec and archive either the truthful terminal result or the exact in-flight/wait signal. Preserve the two existing exact waits unchanged: await-run-28298043331-spec-app-routing-default-domain-tls-lifecycle-terminal-review-20260627 for GitHub run completion/artifacts and await-operator-response-spec-app-routing-existing-cluster-family-20260627 for returned existing-cluster target identifiers or an exact operator reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Narrow the stale App Routing ARM-create-swap repair into one repo-local change set: update spec.app-routing.default-domain-http-reachability so cluster creation uses the maintained direct ARM managedClusters PUT pattern instead of host az aks create/aks-preview, keep the existing REST-first App Routing/default-domain flow otherwise unchanged, and archive the exact bounded diff plus pre-rerun validation note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-app-routing-default-domain-http-reachability-arm-create-swap-patch-20260627.md"
+      ],
+      "acceptance": [
+        "The repo contains a bounded create-surface swap for spec.app-routing.default-domain-http-reachability from az aks create/aks-preview to direct ARM managedClusters PUT using an existing maintained REST-first pattern, without widening the product claim or changing the downstream App Routing/default-domain assertions. The archive cites the edited file(s), exact validation command(s), and the resulting diff or exact repo-local failure. No live rerun claim is made in this leaf; if the patch cannot be completed truthfully, the archive records the exact blocker evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T23:04:53.904Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627_20260627230454",
+        "assigned_at": "2026-06-27T23:04:54.050Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627",
+        "worker_started_attempt_id": "a_patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627_20260627230454",
+        "worker_started_at": "2026-06-27T23:05:30.595Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded App Routing ARM-create swap task by updating the default-domain HTTP reachability spec metadata to direct ARM managedClusters PUT wording, preserving the existing REST-first default-domain flow, and archiving the exact patch/validation note in evidence/archive/spec-app-routing-default-domain-http-reachability-arm-create-swap-patch-20260627.md.",
+        "last_worker_completed_at": "2026-06-27T23:07:44.417Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T23:08:28.931Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded repo-local ARM-create swap review: the archived patch note shows spec.app-routing.default-domain-http-reachability now truthfully names direct ARM managedClusters PUT for cluster creation, preserves the existing REST-first default-domain GET/PUT flow, and records successful repo-local syntax/unit validation without making any cloud rerun claim."
+      },
+      "session_id": "s_task_patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627",
+      "session_history": [
+        "s_task_patch-spec-app-routing-default-domain-http-reachability-arm-create-swap-repo-local-20260627"
+      ],
+      "result": "Completed the bounded App Routing ARM-create swap task by updating the default-domain HTTP reachability spec metadata to direct ARM managedClusters PUT wording, preserving the existing REST-first default-domain flow, and archiving the exact patch/validation note in evidence/archive/spec-app-routing-default-domain-http-reachability-arm-create-swap-patch-20260627.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T23:08:28.931Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded repo-local ARM-create swap review: the archived patch note shows spec.app-routing.default-domain-http-reachability now truthfully names direct ARM managedClusters PUT for cluster creation, preserves the existing REST-first default-domain GET/PUT flow, and records successful repo-local syntax/unit validation without making any cloud rerun claim."
+      },
+      "status": "done"
+    }
+  ]
+}

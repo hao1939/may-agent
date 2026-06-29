@@ -1,0 +1,695 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T06:33:22.491Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner planning pass reconciles the stale problem-unknown wake to the live gate structure: the old autoupgrader verify/problem branch is superseded by requeue-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-gate-proof-review-20260628, and the only truthful shared gate for the current coredns/autoupgrader mini-cluster remains review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 until it archives exact workflow/result/artifact identity proof or a bounded GitHub artifact blocker. Preserve the active metricsserver/bootstrap-profile leaves plus the gated autoupgrader/coredns successors; archive low-value completed history already represented here so the live verification frontier stays focused on the current proof gate and reruns.",
+  "archived": 12,
+  "tasks": [
+    {
+      "id": "verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun and review spec.ccp-autoupgrader.k8s-rapid-mtc-window only after review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 archives durable proof that the repaired single-spec workflow preserves spec/artifact identity for sibling reruns.",
+      "inputs": [],
+      "outputs": [
+        "test-results/"
+      ],
+      "acceptance": [
+        "The gate-proof review for run 28313632351 explicitly confirms sibling reruns can trust workflow metadata, result.json specId, and artifact family alignment.",
+        "A fresh rerun for spec.ccp-autoupgrader.k8s-rapid-mtc-window cites matching result path, result.json specId, and workflow metadata before any verdict is accepted.",
+        "The rerun ends in a pass/fail/blocked/error classification with linked trustworthy artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-autoupgrader.k8s-rapid-mtc-window"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:15:54.492Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:28:00.398Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T06:31:35.649Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628",
+        "worker_started_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628_20260628063135",
+        "worker_started_at": "2026-06-28T06:31:36.683Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Investigated the assigned autoupgrader rerun task and confirmed it is still gated by the missing sibling gate-proof review for run 28313632351. Wrote a durable blocker note at evidence/archive/verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628-blocker.md with the exact missing artifact, current run-state evidence, and resume condition.",
+        "last_worker_completed_at": "2026-06-28T06:31:36.708Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-28T06:31:02.674Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Rejected as a review outcome because the worker proved an unmet shared gate, not a completed rerun verdict: keep this leaf pending until review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628 archives durable artifact-identity proof for sibling reruns.",
+        "review_reject_fresh_session": false,
+        "previous_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628_20260628062815",
+        "current_attempt_id": "a_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628_20260628063135",
+        "reviewed_at": "2026-06-28T06:32:20.499Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced premature review leaf after owner review confirmed the worker only proved an unmet local sibling gate, not a completed rerun verdict; successor backlog leaf requeue-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-gate-proof-review-20260628 now carries the truthful post-gate rerun work without leaving a non-terminal item in review."
+      },
+      "session_id": "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628",
+      "session_history": [
+        "s_task_verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628"
+      ],
+      "result": "Investigated the assigned autoupgrader rerun task and confirmed it is still gated by the missing sibling gate-proof review for run 28313632351. Wrote a durable blocker note at evidence/archive/verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-routing-fix-20260628-blocker.md with the exact missing artifact, current run-state evidence, and resume condition.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T06:32:20.499Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced premature review leaf after owner review confirmed the worker only proved an unmet local sibling gate, not a completed rerun verdict; successor backlog leaf requeue-spec-ccp-autoupgrader-k8s-rapid-mtc-window-after-gate-proof-review-20260628 now carries the truthful post-gate rerun work without leaving a non-terminal item in review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Re-run and review spec.ccp-coredns.component-lifecycle only after the single-spec artifact identity gate is repaired, so the next verdict comes from a spec-matching result bundle rather than the 2026-06-28 wrong-family ccp-agent-lifecycle artifact.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "single-spec verifier artifact identity gate repair is completed with durable evidence.",
+        "A new single-spec run for spec.ccp-coredns.component-lifecycle produces a result bundle whose specId/artifact family matches the requested spec before owner acceptance.",
+        "The rerun is classified as pass, fail, blocked, or error with trustworthy linked artifacts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.component-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:28:53.414Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:24:44.555Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T06:24:57.399Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628",
+        "worker_started_attempt_id": "a_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628_20260628062457",
+        "worker_started_at": "2026-06-28T06:24:58.153Z",
+        "stale_active_requeued_at": "2026-06-28T06:24:35.525Z",
+        "stale_active_requeue_reason": "Single-spec artifact identity gate still needs owner-reviewed proof; keep this spec as backlog until the sibling coredns custom-config review confirms workflow metadata, result.json specId, and artifact family alignment under the repaired path.",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628_20260628060656",
+        "current_attempt_id": "a_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628_20260628062457",
+        "reviewed_at": "2026-06-28T06:27:54.548Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Session-no-activity confirms this active leaf produced no fresh rerun or review evidence. Its only truthful next dependency is the sibling gate-proof review review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628, so close this stale active carrier and replace it with a backlog successor that runs only after that review proves spec/artifact identity alignment."
+      },
+      "session_id": "s_task_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628",
+      "session_history": [
+        "s_task_requeue-spec-ccp-coredns-component-lifecycle-after-routing-fix-20260628"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T06:27:54.548Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Session-no-activity confirms this active leaf produced no fresh rerun or review evidence. Its only truthful next dependency is the sibling gate-proof review review-spec-ccp-coredns-custom-config-run-28313632351-after-dispatch-20260628, so close this stale active carrier and replace it with a backlog successor that runs only after that review proves spec/artifact identity alignment."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the failed review for spec.bootstrap-profile.public-api-direct-idempotent-update by reviewing mounted source plus repo-local scenario artifacts, then leave either (a) a runnable live replay/spec artifact update, (b) a source-backed non-executable ceiling, or (c) a concrete archive proving the failure was artifact-routing/runner-side and should be carried by the shared routing diagnostic instead of a bootstrap-profile blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/bootstrap-profile/, ../aks-rp-e2e/specs/, ../aks-rp-e2e/replays/, ../aks-rp-e2e/evidence/archive/bootstrap-profile-public-api-direct-idempotent-update-recovery-20260628.md"
+      ],
+      "acceptance": [
+        "Mounted source and existing scenario/check-only carrier are reviewed enough to name the exact missing live-execution pieces for spec.bootstrap-profile.public-api-direct-idempotent-update.",
+        "Repo-local artifacts are updated so the path is either runnable for future single-spec verification or downgraded with a durable evidence-backed non-executable verdict.",
+        "If the prior worker failure was actually artifact-routing or result-packaging, the archive cites that proof and names the shared routing diagnostic as the owning follow-up instead of asserting a bootstrap-profile blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.public-api-direct-idempotent-update"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:51:53.952Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:22:22.820Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628_20260628062243",
+        "assigned_at": "2026-06-28T06:22:43.251Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628",
+        "worker_started_attempt_id": "a_retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628_20260628062243",
+        "worker_started_at": "2026-06-28T06:22:43.979Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed mounted AKS RP source plus repo-local bootstrap-profile artifacts, verified the spec now resolves to a live-capable feature probe via current spec-runner dry-run, and archived evidence that the prior failure was stale artifact-routing/wiring rather than a bootstrap-profile blocker.",
+        "last_worker_completed_at": "2026-06-28T06:24:55.239Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:25:38.951Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: mounted source plus current repo-local spec/probe wiring and fresh spec-runner dry-run show spec.bootstrap-profile.public-api-direct-idempotent-update resolves to the live-capable feature probe, so the prior blocked artifact was stale routing output owned by the shared routing diagnostic rather than a bootstrap-profile blocker."
+      },
+      "session_id": "s_task_retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628",
+      "session_history": [
+        "s_task_retry-bootstrap-profile-public-api-direct-idempotent-update-live-replay-evidence-first-20260628"
+      ],
+      "result": "Reviewed mounted AKS RP source plus repo-local bootstrap-profile artifacts, verified the spec now resolves to a live-capable feature probe via current spec-runner dry-run, and archived evidence that the prior failure was stale artifact-routing/wiring rather than a bootstrap-profile blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:25:38.951Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: mounted source plus current repo-local spec/probe wiring and fresh spec-runner dry-run show spec.bootstrap-profile.public-api-direct-idempotent-update resolves to the live-capable feature probe, so the prior blocked artifact was stale routing output owned by the shared routing diagnostic rather than a bootstrap-profile blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the accepted shared single-spec capacity/session repair, rerun the source-grounded carrier for spec.ccp-metricsserver.upgrade-survival and record a trustworthy bounded verdict or exact blocker, replacing the stale-active non-result with fresh evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628.md"
+      ],
+      "acceptance": [
+        "The task does not treat the 2026-06-28 stale-active leaf as product evidence; it waits for the accepted queue/session capacity repair and then records the exact rerun command, reached assertion, and resulting verdict or blocker.",
+        "The output explains whether the fresh rerun reached a product observation, hit the same liveness/runtime issue, or exposed a different bounded blocker under the repaired queue/session path.",
+        "If review shows a rerun is still not the truthful next action, the task replaces execution intent with an exact non-execution carrier that names the accepted gate and next resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.ccp-metricsserver.upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:56:37.567Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:16:44.028Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628_20260628061903",
+        "assigned_at": "2026-06-28T06:19:03.504Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628",
+        "worker_started_attempt_id": "a_requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628_20260628061903",
+        "worker_started_at": "2026-06-28T06:19:04.154Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-28T06:19:25.914Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:20:22.321Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review rejected: the worker left no evidence archive and only the unsupported summary 'error', so this review leaf is replaced by recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628 to inspect the failed attempt and regenerate a truthful bounded verdict."
+      },
+      "session_id": "s_task_requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628",
+      "session_history": [
+        "s_task_requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T06:20:22.321Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review rejected: the worker left no evidence archive and only the unsupported summary 'error', so this review leaf is replaced by recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628 to inspect the failed attempt and regenerate a truthful bounded verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Upgrade features/ccp-metricsserver/tests/ccp-metricsserver-resource-metrics-api.ts from source/check-only into a gated execute-capable replay that truthfully verifies metrics.k8s.io discovery plus node and pod metrics, then rerun spec.ccp-metricsserver.resource-metrics-api against the same single-spec path that previously produced blocked run 28312048381.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/ccp-metricsserver/tests/ccp-metricsserver-resource-metrics-api.ts, ../aks-rp-e2e/features/ccp-metricsserver/tests/ccp-metricsserver-resource-metrics-api.test.ts, ../aks-rp-e2e/evidence/archive/author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628.md"
+      ],
+      "acceptance": [
+        "The replay advertises truthful live capability to the runner via explicit check/execute structure, a detectable AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, and no cloud mutation in check mode.",
+        "Execute mode implements and records bounded assertions for metrics.k8s.io API discovery, non-empty node metrics, non-empty pod metrics, and cleanup outcome using repo-local live replay patterns.",
+        "A follow-up single-spec rerun for spec.ccp-metricsserver.resource-metrics-api leaves a fresh result or exact blocker that supersedes run 28312048381's live-scenario-test-missing verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.resource-metrics-api"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:08:30.204Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628_20260628060953",
+        "assigned_at": "2026-06-28T06:09:53.795Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628",
+        "worker_started_attempt_id": "a_author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628_20260628060953",
+        "worker_started_at": "2026-06-28T06:09:54.856Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Upgraded the CCP MetricsServer resource-metrics replay to a runner-detectable execution-gated live probe in features/ccp-metricsserver/tests/ccp-metricsserver-resource-metrics-api.ts and captured a fresh passing single-spec live rerun plus task evidence summary.",
+        "last_worker_completed_at": "2026-06-28T06:25:52.173Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:26:56.128Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive shows the replay was upgraded into a truthful execute-capable gated live carrier, local check/dry-run wiring passed, and fresh single-spec run single-ccp-metricsserver-resource-metrics-api_803895 completed with passing metrics.k8s.io discovery plus node/pod metrics, superseding blocked run 28312048381."
+      },
+      "session_id": "s_task_author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628",
+      "session_history": [
+        "s_task_author-spec-ccp-metricsserver-resource-metrics-api-gated-live-replay-20260628"
+      ],
+      "result": "Upgraded the CCP MetricsServer resource-metrics replay to a runner-detectable execution-gated live probe in features/ccp-metricsserver/tests/ccp-metricsserver-resource-metrics-api.ts and captured a fresh passing single-spec live rerun plus task evidence summary.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:26:56.128Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive shows the replay was upgraded into a truthful execute-capable gated live carrier, local check/dry-run wiring passed, and fresh single-spec run single-ccp-metricsserver-resource-metrics-api_803895 completed with passing metrics.k8s.io discovery plus node/pod metrics, superseding blocked run 28312048381."
+      },
+      "status": "done"
+    },
+    {
+      "id": "dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use a repo-local or owner-supported dispatch path to launch a fresh post-artifact-repair single-spec workflow for spec.ccp-coredns.custom-config, then leave the run id plus artifact-identity proof or an exact dispatch blocker with command/error evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628.md, .state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "A fresh post-repair single-spec workflow run for spec.ccp-coredns.custom-config is launched through a supported dispatcher and the run id/loop key are archived, or the attempted dispatcher path is recorded with exact command/environment error proving why launch still cannot occur.",
+        "The archived evidence checks the new run's artifact family/spec identity so the next review cannot confuse ccp-coredns.custom-config with an autoscaler or other wrong-family bundle.",
+        "The next owner/worker can review a trustworthy post-repair attempt from this successor leaf without re-investigating source ambiguity."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-coredns.custom-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:10:39.764Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:16:44.028Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628_20260628061800",
+        "assigned_at": "2026-06-28T06:18:00.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628",
+        "worker_started_attempt_id": "a_dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628_20260628061800",
+        "worker_started_at": "2026-06-28T06:18:01.611Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Launched a fresh post-repair single-spec GitHub workflow run for spec.ccp-coredns.custom-config and archived durable dispatch/identity evidence in evidence/archive/dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628.md. Updated .state/spec-loop/state.json to reflect the new in-flight run 28313632351.",
+        "last_worker_completed_at": "2026-06-28T06:21:01.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:21:38.959Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived dispatch evidence proves supported repo-local GitHub API launch of custom-config run 28313632351, .state/spec-loop/state.json now tracks spec.ccp-coredns.custom-config as running on that run id, and workflow/job/spec identities align to ccp-coredns.custom-config rather than the earlier autoscaler-family contamination."
+      },
+      "session_id": "s_task_dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628",
+      "session_history": [
+        "s_task_dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628"
+      ],
+      "result": "Launched a fresh post-repair single-spec GitHub workflow run for spec.ccp-coredns.custom-config and archived durable dispatch/identity evidence in evidence/archive/dispatch-spec-ccp-coredns-custom-config-post-routing-fix-single-spec-run-20260628.md. Updated .state/spec-loop/state.json to reflect the new in-flight run 28313632351.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:21:38.959Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived dispatch evidence proves supported repo-local GitHub API launch of custom-config run 28313632351, .state/spec-loop/state.json now tracks spec.ccp-coredns.custom-config as running on that run id, and workflow/job/spec identities align to ccp-coredns.custom-config rather than the earlier autoscaler-family contamination."
+      },
+      "status": "done"
+    },
+    {
+      "id": "author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement a truthful gated live replay for spec.bootstrap-profile.managed-acr-lifecycle by upgrading the checked-in scenario test from placeholder create/get wiring to the mounted managed-ACR lifecycle contract (cache create, direct/cache transitions, image-pull validation, and cleanup evidence), then leave repo-local proof of the repaired carrier plus any remaining live gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/bootstrap-profile/tests/bootstrap-profile-managed-acr-lifecycle.ts, ../aks-rp-e2e/features/bootstrap-profile/tests/bootstrap-profile-managed-acr-lifecycle.test.ts, ../aks-rp-e2e/evidence/archive/author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628.md"
+      ],
+      "acceptance": [
+        "The scenario test and wrapper no longer stop at generic cluster create/get; they implement or truthfully gate the mounted managed-ACR lifecycle operations named in the 2026-06-28 gap note.",
+        "The repaired carrier records the exact remaining live-execution gate, if any, without reusing unrelated direct-to-cache pass surfaces as an exact substitute.",
+        "Durable evidence cites the mounted source files, the repaired repo-local files, and whether spec.bootstrap-profile.managed-acr-lifecycle is now runnable through the standard gated single-spec path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.bootstrap-profile.managed-acr-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:14:08.311Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628_20260628061408",
+        "assigned_at": "2026-06-28T06:14:08.734Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628",
+        "worker_started_attempt_id": "a_author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628_20260628061408",
+        "worker_started_at": "2026-06-28T06:14:35.773Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the managed-ACR lifecycle carrier in features/bootstrap-profile/tests/bootstrap-profile-managed-acr-lifecycle.ts, updated its Vitest wrapper to validate check/gate behavior, and wrote durable evidence showing the standard single-spec path now reaches the live-run gate instead of live-scenario-test-missing.",
+        "last_worker_completed_at": "2026-06-28T06:18:17.622Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:20:22.202Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628.md shows the carrier and wrapper now implement the mounted Cache->Direct->Cache managed-ACR lifecycle, add the exact live gate markers required by the single-spec runner, and reach a truthful gated runnable state instead of live-scenario-test-missing."
+      },
+      "session_id": "s_task_author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628",
+      "session_history": [
+        "s_task_author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628"
+      ],
+      "result": "Repaired the managed-ACR lifecycle carrier in features/bootstrap-profile/tests/bootstrap-profile-managed-acr-lifecycle.ts, updated its Vitest wrapper to validate check/gate behavior, and wrote durable evidence showing the standard single-spec path now reaches the live-run gate instead of live-scenario-test-missing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:20:22.202Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/author-spec-bootstrap-profile-managed-acr-lifecycle-gated-live-replay-20260628.md shows the carrier and wrapper now implement the mounted Cache->Direct->Cache managed-ACR lifecycle, add the exact live gate markers required by the single-spec runner, and reach a truthful gated runnable state instead of live-scenario-test-missing."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Now that the shared task-tree capacity-default repair is accepted, launch and review one fresh trustworthy single-spec run for spec.ccp-metricsserver.ha-scaling, then record whether run 28312582887 reproduces as a real product failure or resolves under the repaired queue/session path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628.md, .state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "A fresh single-spec workflow run is launched after the accepted capacity fix, not inferred from the stale active record.",
+        "Workflow metadata, top-level result.json, and spec-runner artifact family are reviewed for spec.ccp-metricsserver.ha-scaling before accepting any verdict.",
+        "The new archive states whether the earlier pod-distribution failure reproduced and what that means for the owning path/model next action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.ha-scaling"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:14:08.422Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-28T06:14:08.901Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628_20260628061413",
+        "assigned_at": "2026-06-28T06:14:13.140Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628",
+        "worker_started_attempt_id": "a_rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628_20260628061413",
+        "worker_started_at": "2026-06-28T06:14:35.712Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Launched a fresh post-capacity-fix single-spec GitHub run for spec.ccp-metricsserver.ha-scaling (run 28313569566), reviewed workflow/result/spec-runner artifacts, wrote the archive note, and updated app-local spec-loop state to the fresh fail verdict.",
+        "last_worker_completed_at": "2026-06-28T06:24:58.828Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:25:38.898Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive cites fresh single-spec run 28313569566, matching workflow/result/spec-runner artifacts for spec.ccp-metricsserver.ha-scaling, and confirms the pod-distribution failure reproduced after the capacity-default repair while tightening the next action to source-vs-spec model clarification rather than another blind rerun."
+      },
+      "session_id": "s_task_rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628",
+      "session_history": [
+        "s_task_rerun-spec-ccp-metricsserver-ha-scaling-after-capacity-fix-20260628"
+      ],
+      "result": "Launched a fresh post-capacity-fix single-spec GitHub run for spec.ccp-metricsserver.ha-scaling (run 28313569566), reviewed workflow/result/spec-runner artifacts, wrote the archive note, and updated app-local spec-loop state to the fresh fail verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:25:38.898Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive cites fresh single-spec run 28313569566, matching workflow/result/spec-runner artifacts for spec.ccp-metricsserver.ha-scaling, and confirms the pod-distribution failure reproduced after the capacity-default repair while tightening the next action to source-vs-spec model clarification rather than another blind rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run spec.autoupgrader.vm-prerelease-umbrella through the newly repaired gated live carrier so the next verdict comes from a fresh execute-mode result bundle rather than the old live-scenario-test-missing blocker, then archive the bounded observed outcome or exact new blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628.md"
+      ],
+      "acceptance": [
+        "A fresh execute-path run for spec.autoupgrader.vm-prerelease-umbrella is attempted through the repaired repo-local gated carrier, with run id and artifact family recorded.",
+        "The archive states whether the spec now reaches product/runtime assertions, fails on a narrower product/runtime blocker, or is stopped by an exact execution preflight/blocker different from live-scenario-test-missing.",
+        "Any resulting model/spec follow-up is named concretely so this authoring fix rolls into the next verification step without reopening carrier-authoring ambiguity."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.autoupgrader.vm-prerelease-umbrella"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:18:50.720Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628_20260628061926",
+        "assigned_at": "2026-06-28T06:19:26.752Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628",
+        "worker_started_attempt_id": "a_rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628_20260628061926",
+        "worker_started_at": "2026-06-28T06:19:27.857Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Ran a fresh execute-path rerun for spec.autoupgrader.vm-prerelease-umbrella through the repaired gated carrier, captured a passing bounded live-carrier result, and archived the outcome in a new evidence note.",
+        "last_worker_completed_at": "2026-06-28T06:26:13.720Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:26:56.191Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive cites fresh execute-path rerun single-autoupgrader-vm-prerelease-umbrella_954440 with matching artifact family and passing bounded live carrier verdict, truthfully clearing the old live-scenario-test-missing blocker and moving this family from carrier repair to later semantic-depth follow-up if needed."
+      },
+      "session_id": "s_task_rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628",
+      "session_history": [
+        "s_task_rerun-spec-autoupgrader-vm-prerelease-umbrella-after-gated-carrier-repair-20260628"
+      ],
+      "result": "Ran a fresh execute-path rerun for spec.autoupgrader.vm-prerelease-umbrella through the repaired gated carrier, captured a passing bounded live-carrier result, and archived the outcome in a new evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:26:56.191Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive cites fresh execute-path rerun single-autoupgrader-vm-prerelease-umbrella_954440 with matching artifact family and passing bounded live carrier verdict, truthfully clearing the old live-scenario-test-missing blocker and moving this family from carrier repair to later semantic-depth follow-up if needed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the empty review for spec.ccp-metricsserver.upgrade-survival by inspecting the failed 2026-06-28 rerun attempt/session and producing a durable archive that states the exact rerun command or failure point, whether the repaired single-spec path reached any product observation, and the next truthful action (fresh rerun, bounded blocker, or non-execution gate).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628.md"
+      ],
+      "acceptance": [
+        "The task cites the exact failed attempt/session evidence for requeue-spec-ccp-metricsserver-upgrade-survival-after-liveness-repair-20260628 instead of treating its review leaf as a result.",
+        "The archive records the exact command or runner failure point, whether any product assertion was reached, and whether the single-spec capacity/session repair actually changed the outcome.",
+        "The task leaves one truthful successor state for path.ccp-metricsserver.upgrade-survival: a fresh rerun with artifact proof, a bounded blocker with resume condition, or a non-execution carrier naming the gate that still prevents rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.ccp-metricsserver.upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:20:22.262Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628_20260628062102",
+        "assigned_at": "2026-06-28T06:21:02.199Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628",
+        "worker_started_attempt_id": "a_recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628_20260628062102",
+        "worker_started_at": "2026-06-28T06:21:02.839Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recovered the empty review for the CCP metrics-server upgrade-survival rerun by writing a durable archive that cites the failed task/session, exact live command/failure point, lack of product observation, and the truthful next action as a fresh rerun from a dispatch-capable environment.",
+        "last_worker_completed_at": "2026-06-28T06:22:36.182Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:24:11.897Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the recovery archive: it cites the exact failed rerun task/session, proves the post-repair single-spec carrier targeted spec.ccp-metricsserver.upgrade-survival, records the SIGTERM interruption before any product assertion, and truthfully sets the next action to one fresh dispatch-capable live rerun."
+      },
+      "session_id": "s_task_recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628",
+      "session_history": [
+        "s_task_recover-spec-ccp-metricsserver-upgrade-survival-empty-review-artifact-20260628"
+      ],
+      "result": "Recovered the empty review for the CCP metrics-server upgrade-survival rerun by writing a durable archive that cites the failed task/session, exact live command/failure point, lack of product observation, and the truthful next action as a fresh rerun from a dispatch-capable environment.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:24:11.897Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the recovery archive: it cites the exact failed rerun task/session, proves the post-repair single-spec carrier targeted spec.ccp-metricsserver.upgrade-survival, records the SIGTERM interruption before any product assertion, and truthfully sets the next action to one fresh dispatch-capable live rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review mounted handwritten AKS source, current spec assertions, and fresh rerun evidence for spec.ccp-metricsserver.ha-scaling to decide whether the spec intentionally exceeds source-backed MetricsServer intent or should be narrowed from cross-node distribution / >=2 ready replicas claims.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628.md"
+      ],
+      "acceptance": [
+        "Mounted handwritten MetricsServer source and the current spec/replay assertions are compared with exact citations for replica-count, readiness, and cross-node distribution expectations.",
+        "The archive classifies the truthful next state as source-backed failure, spec-overreach needing narrowing, or bounded remaining unknown, with a concrete model/spec follow-up rather than another blind rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.ccp-metricsserver.ha-scaling"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:26:44.484Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628_20260628062656",
+        "assigned_at": "2026-06-28T06:26:56.248Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628",
+        "worker_started_attempt_id": "a_clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628_20260628062656",
+        "worker_started_at": "2026-06-28T06:27:05.323Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive clarifying that `spec.ccp-metricsserver.ha-scaling` currently overreaches source authority: mounted handwritten source does not assert >=2 ready replicas or cross-node placement, while implementation source shows HA is conditional behind `enable-metrics-server-ha` and anti-affinity is preferred, not required.",
+        "last_worker_completed_at": "2026-06-28T06:29:38.341Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:31:02.610Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive cites handwritten source, implementation source, current spec, and fresh rerun evidence to show spec.ccp-metricsserver.ha-scaling overreaches source authority and needs narrowing or a conditional-HA split instead of another blind rerun."
+      },
+      "session_id": "s_task_clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628",
+      "session_history": [
+        "s_task_clarify-spec-ccp-metricsserver-ha-scaling-source-authority-boundary-20260628"
+      ],
+      "result": "Produced the requested archive clarifying that `spec.ccp-metricsserver.ha-scaling` currently overreaches source authority: mounted handwritten source does not assert >=2 ready replicas or cross-node placement, while implementation source shows HA is conditional behind `enable-metrics-server-ha` and anti-affinity is preferred, not required.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:31:02.610Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive cites handwritten source, implementation source, current spec, and fresh rerun evidence to show spec.ccp-metricsserver.ha-scaling overreaches source authority and needs narrowing or a conditional-HA split instead of another blind rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Compare mounted AKS RP handwritten/source-equivalent autoupgrader VM prerelease umbrella semantics with the newly passing bounded live carrier so the project explicitly decides whether spec.autoupgrader.vm-prerelease-umbrella remains a VM carrier proof only or should split concrete successor coverage for rapid/stable/patch fan-out, maintenance-configuration behavior, and service-bus orchestration.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628.md"
+      ],
+      "acceptance": [
+        "The note cites the mounted VM prerelease handwritten/source files, current spec, and 2026-06-28 bounded pass archive to enumerate which autoupgrader umbrella behaviors are actually covered versus still outside the carrier (at minimum rapid/stable/patch fan-out, maintenance-configuration behavior, and service-bus/orchestration).",
+        "The note makes one explicit source-backed decision: either keep spec.autoupgrader.vm-prerelease-umbrella as a bounded VM carrier proof with a documented ceiling, or name the concrete successor spec/model work needed for the missing semantic branches without reopening carrier-authoring ambiguity.",
+        "If successor coverage is required, the note names the exact next branch or spec candidates and the evidence path each would need, while avoiding any new cloud probe unless the source/spec comparison proves a specific execution gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.autoupgrader.vm-prerelease-umbrella"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T06:29:04.443Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628_20260628062935",
+        "assigned_at": "2026-06-28T06:29:35.032Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628",
+        "worker_started_attempt_id": "a_clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628_20260628062935",
+        "worker_started_at": "2026-06-28T06:29:35.832Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested semantic-depth note at evidence/archive/clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628.md comparing mounted autoupgrader source, current spec/model, and the 2026-06-28 bounded live pass, and made an explicit source-backed decision to keep the spec as a bounded VM carrier with named successor candidates.",
+        "last_worker_completed_at": "2026-06-28T06:30:52.962Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T06:31:17.794Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the note compares mounted source, current spec/model, and bounded live-pass evidence, then truthfully keeps spec.autoupgrader.vm-prerelease-umbrella as a VM/shared-identity carrier with a documented ceiling and names narrower successor branches for deeper semantics."
+      },
+      "session_id": "s_task_clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628",
+      "session_history": [
+        "s_task_clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628"
+      ],
+      "result": "Wrote the requested semantic-depth note at evidence/archive/clarify-spec-autoupgrader-vm-prerelease-umbrella-semantic-depth-after-bounded-pass-20260628.md comparing mounted autoupgrader source, current spec/model, and the 2026-06-28 bounded live pass, and made an explicit source-backed decision to keep the spec as a bounded VM carrier with named successor candidates.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T06:31:17.794Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the note compares mounted source, current spec/model, and bounded live-pass evidence, then truthfully keeps spec.autoupgrader.vm-prerelease-umbrella as a VM/shared-identity carrier with a documented ceiling and names narrower successor branches for deeper semantics."
+      },
+      "status": "done"
+    }
+  ]
+}

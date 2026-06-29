@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T00:36:21.359Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 watchdog blocked-frontier review accepted the two private-cluster second-hop model/view slices after bounded review: the private second hop now has its own normalized accepted path entry, and the public second-hop review confirmed the accepted model/view surfaces were already correct without edits. The three external waits remain unchanged because each already carries exact returned-proof or post-2026-06-26 follow-up resume conditions, so no new blocker family or escalation leaf is truthful yet. The live frontier is therefore simpler and still useful: one active repo-local no-cloud VirtualMachine row-03 hybrid-substrate repair remains in flight, while blocked work stays compressed to the same three exact external waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-update-private-second-hop-model-view-landing-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the mounted-source-backed path.private-cluster-vnet-integration-update-private-second-hop into accepted model/view surfaces: use the existing feature/spec/replay carriers plus the mounted-source audit to add the missing path entry in model/knowledge-map/model.json, regenerate model/knowledge-map/views/path-summary.json, and record a short evidence note that keeps this second-hop path explicitly distinct from the first-hop update-private and reverse-direction update-public-second-hop siblings without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-update-private-second-hop-model-view-landing-20260624.md"
+      ],
+      "acceptance": [
+        "Repo-local model/view surfaces now include path.private-cluster-vnet-integration-update-private-second-hop with wording/status/retest context that matches the mounted-source second-hop slice and remains clearly distinct from path.private-cluster-vnet-integration-update-private and path.private-cluster-vnet-integration-update-public-second-hop.",
+        "A durable archive note cites the mounted source and existing feature/spec/replay carriers used for the landing and names the exact model/view files updated.",
+        "No cloud mutation, remote execution, or environment setup occurs; this is repo-local model/view repair only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model.private-cluster.update-private-second-hop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T00:30:00.116Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-update-private-second-hop-model-view-landing-20260624_20260624003002",
+        "assigned_at": "2026-06-24T00:30:02.537Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-update-private-second-hop-model-view-landing-20260624",
+        "worker_started_attempt_id": "a_private-cluster-update-private-second-hop-model-view-landing-20260624_20260624003002",
+        "worker_started_at": "2026-06-24T00:30:47.867Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the missing mounted-source-backed private second-hop path into model/knowledge-map/model.json, regenerated path-summary view, and added a durable archive note documenting the exact source/spec/replay carriers and the distinction from the first-hop private and reverse-direction public-second-hop siblings.",
+        "last_worker_completed_at": "2026-06-24T00:35:25.829Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T00:35:52.424Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after bounded review of the worker result and archive note: the mounted-source-backed private second-hop branch now has its own normalized model/view path with a durable evidence note that cites update_private.go, the existing feature/spec/replay carriers, and the exact distinction from the first-hop private and reverse-direction public-second-hop siblings. The leaf stays repo-local/no-cloud and satisfies its acceptance without reopening any blocked waits or environment work."
+      },
+      "session_id": "s_task_private-cluster-update-private-second-hop-model-view-landing-20260624",
+      "session_history": [
+        "s_task_private-cluster-update-private-second-hop-model-view-landing-20260624"
+      ],
+      "result": "Landed the missing mounted-source-backed private second-hop path into model/knowledge-map/model.json, regenerated path-summary view, and added a durable archive note documenting the exact source/spec/replay carriers and the distinction from the first-hop private and reverse-direction public-second-hop siblings.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T00:35:52.424Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after bounded review of the worker result and archive note: the mounted-source-backed private second-hop branch now has its own normalized model/view path with a durable evidence note that cites update_private.go, the existing feature/spec/replay carriers, and the exact distinction from the first-hop private and reverse-direction public-second-hop siblings. The leaf stays repo-local/no-cloud and satisfies its acceptance without reopening any blocked waits or environment work."
+      },
+      "status": "done"
+    }
+  ]
+}

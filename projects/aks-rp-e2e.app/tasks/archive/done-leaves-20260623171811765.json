@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T17:18:11.766Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner review accepted and archived the final repo-local VirtualMachines manual-scale-policy hygiene slice: the historical placeholder is now consistently superseded to spec/path.virtualmachines.mixed-sku-deallocate across spec, index, model, and regenerated path summary, and bun run check no longer emits the missing supersededBy warning for that spec. This focus branch now intentionally compresses to one truthful live child only: external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single family-level external-human wait and is still not due for follow-up before the first owner review after 2026-06-26 unless returned proof arrives sooner. New local capacity is redirected outside this branch to repo-local model/evidence hygiene work rather than reopening source rediscovery, duplicate waits, or cloud execution here.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add the missing exact supersededBy successor metadata for spec.virtualmachines.manual-scale-policy, reconcile the stale-terminal-retry/model-hygiene warning on the superseded path, and leave the manual-scale-policy historical placeholder warning-clean without reopening source rediscovery or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note records the exact pre/post schema state, names the authoritative successor spec/path.virtualmachines.mixed-sku-deallocate, and explains any adjacent CLI manual-profile branch kept only as non-successor context.",
+        "The touched repo-local surfaces needed for this warning repair (at minimum specs/virtualmachines-manual-scale-policy.json and any mirrored index/model/view records that consume the successor pointer) agree on the superseded lineage with claim-safe wording and no contradictory active-retry framing.",
+        "Repo-local verification is clean for this slice: bun run check passes and no longer emits the specific 'spec.superseded spec.virtualmachines.manual-scale-policy - Status is \"superseded\" but supersededBy is missing' warning."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-manual-scale-policy-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T17:10:00.111Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623_20260623171000",
+        "assigned_at": "2026-06-23T17:10:00.164Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623",
+        "worker_started_attempt_id": "a_virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623_20260623171000",
+        "worker_started_at": "2026-06-23T17:10:30.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired VirtualMachines manual-scale-policy supersession metadata across the spec, spec index, accepted model, and regenerated path summary; documented the bounded lineage fix in a new archive note and verified bun run check no longer emits the missing supersededBy warning for this spec.",
+        "last_worker_completed_at": "2026-06-23T17:16:10.337Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T17:17:59.892Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note and repo-local verification prove spec.virtualmachines.manual-scale-policy now carries the exact supersededBy successor to spec.virtualmachines.mixed-sku-deallocate across the leaf spec, specs/index.json, accepted model/path records, and regenerated path summary, and bun run check no longer emits the missing supersededBy warning for this superseded placeholder."
+      },
+      "session_id": "s_task_virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623",
+      "session_history": [
+        "s_task_virtualmachines-manual-scale-policy-supersededby-lineage-hygiene-20260623"
+      ],
+      "result": "Repaired VirtualMachines manual-scale-policy supersession metadata across the spec, spec index, accepted model, and regenerated path summary; documented the bounded lineage fix in a new archive note and verified bun run check no longer emits the missing supersededBy warning for this spec.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T17:17:59.892Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note and repo-local verification prove spec.virtualmachines.manual-scale-policy now carries the exact supersededBy successor to spec.virtualmachines.mixed-sku-deallocate across the leaf spec, specs/index.json, accepted model/path records, and regenerated path summary, and bun run check no longer emits the missing supersededBy warning for this superseded placeholder."
+      },
+      "status": "done"
+    }
+  ]
+}

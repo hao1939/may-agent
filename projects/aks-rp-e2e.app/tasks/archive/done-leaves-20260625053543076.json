@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T05:35:43.076Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 watchdog-review cleanup: the stale review request for serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625 is already satisfied, and that accepted private-only future-live draft packet now rolls into root history alongside the mounted-source four-pair/eight-leaf validating-webhook boundary map. Preserve the five exact external returned-proof waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 unchanged until the first bounded follow-up window on or after 2026-06-26, and keep the single active repo-local learning slot on serverless-schedulerctrl-validating-webhook-apiserver-vnet-integration-public-future-live-packet-20260625 so sibling coverage advances without widening the existing public approval wait or creating duplicate blockers.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact private-topology future-live approval/gate packet for the serverless schedulerctrl validating-webhook family, using the mounted-source four-pair/eight-leaf matrix as authority and preserving the existing public approval-returned-proof wait unchanged.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625.md"
+      ],
+      "acceptance": [
+        "Archive evidence defines the private-only topology pair for the validating-webhook family, links the exact mounted source files plus canonical spec/replay/path ids, and states the precise future live-execution gate and expected allow/disallow witnesses without widening to public or APIServerVNetIntegration siblings.",
+        "The artifact explicitly records that it is a repo-local draft packet only: no approval send, no duplicate blocked wait, no cloud mutation, and no reopening of the existing public approval-returned-proof wait.",
+        "The note recommends the next safe owner action for the private pair after authoring, framed as optional sibling-specific future-live work rather than an accepted live product verdict."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-schedulerctrl.validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T05:32:08.238Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625_20260625053208",
+        "assigned_at": "2026-06-25T05:32:08.283Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625_20260625053208",
+        "worker_started_at": "2026-06-25T05:32:32.667Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the private-only future-live draft packet for the serverless schedulerctrl validating-webhook family at evidence/archive/serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625.md, grounded in mounted private source plus maintained spec/replay/model carriers, while explicitly preserving the existing public approval-returned-proof wait unchanged.",
+        "last_worker_completed_at": "2026-06-25T05:33:55.285Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T05:34:49.820Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the archive packet: it stays private-only, source-backed, draft-only, preserves the existing public approval-returned-proof wait unchanged, and records the exact private gate plus allow/disallow live witnesses without widening to APIServerVNetIntegration or family-level approval."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625"
+      ],
+      "result": "Authored the private-only future-live draft packet for the serverless schedulerctrl validating-webhook family at evidence/archive/serverless-schedulerctrl-validating-webhook-private-future-live-packet-20260625.md, grounded in mounted private source plus maintained spec/replay/model carriers, while explicitly preserving the existing public approval-returned-proof wait unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T05:34:49.820Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the archive packet: it stays private-only, source-backed, draft-only, preserves the existing public approval-returned-proof wait unchanged, and records the exact private gate plus allow/disallow live witnesses without widening to APIServerVNetIntegration or family-level approval."
+      },
+      "status": "done"
+    }
+  ]
+}

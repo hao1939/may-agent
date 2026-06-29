@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T11:22:45.299Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 watchdog blocked-frontier owner review accepts the completed Windows VirtualMachines prerelease boundary matrix as durable background and archives that done child because its meaning now lives in the evidence archive and the project root. Keep windows-virtualmachines-prerelease-linkage-hygiene-20260628 as the sole active repo-local leaf until it repairs row 205/206/216/217/218 accepted linkage/citation debt, and preserve the same four exact external waits unchanged (App Routing existing-cluster operator response, private-cluster public-FQDN-toggle live-run authorization, LocalDNS VM-prerelease selected-host proof, and the older VM-prerelease/shared-identity proof-return family) until a returned proof/reply or recorded checkpoint materially changes one carrier.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "windows-virtualmachines-prerelease-boundary-matrix-20260628",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a durable Windows VirtualMachines prerelease boundary matrix from mounted AKS RP source, handwritten e2ev3 lineage, and accepted model/spec/replay artifacts for the row-205/206/216/217/218 family so the project records the shared substrate and exact delta assertions for password-reset, custom-kubelet-config, base Windows create, and gen2/Calico refinements without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted AKS RP and handwritten e2ev3 anchors used for rows 205, 206, 216, 217, and 218, including the source files or scenario/row references that define the shared Windows VirtualMachines substrate and each row-specific delta assertion.",
+        "Archive note maps each surfaced row/path to its current spec/replay/path-summary carrier, distinguishing shared substrate coverage from row-specific refinements and calling out any stale or missing linkage that should be repaired later rather than guessed now.",
+        "Archive note separates accepted, rejected, and still-unknown behavior edges plus next-safe probes/retest conditions for the family, and remains repo-local only with no cloud mutation, operator ask, or direct edits to project.app manifests."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows-vm-prerelease-boundary-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T11:16:25.443Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_windows-virtualmachines-prerelease-boundary-matrix-20260628_20260628111628",
+        "assigned_at": "2026-06-28T11:16:28.562Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_windows-virtualmachines-prerelease-boundary-matrix-20260628",
+        "worker_started_attempt_id": "a_windows-virtualmachines-prerelease-boundary-matrix-20260628_20260628111628",
+        "worker_started_at": "2026-06-28T11:16:47.976Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable archive note `evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md`, mapping rows 205/206/216/217/218 to exact mounted-source anchors, current spec/replay/path carriers, row-specific deltas, and repo-local linkage debt without cloud mutation.",
+        "last_worker_completed_at": "2026-06-28T11:20:12.497Z",
+        "last_worker_evidence": [
+          "evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T11:21:15.607Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepts the archive note as complete for its bounded scope: evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md cites exact mounted-source and handwritten anchors for rows 205/206/216/217/218, maps current spec/test/path carriers, separates shared substrate from row-local deltas, and records the remaining linkage debt as follow-up work rather than guessed lineage."
+      },
+      "session_id": "s_task_windows-virtualmachines-prerelease-boundary-matrix-20260628",
+      "session_history": [
+        "s_task_windows-virtualmachines-prerelease-boundary-matrix-20260628"
+      ],
+      "result": "Created the durable archive note `evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md`, mapping rows 205/206/216/217/218 to exact mounted-source anchors, current spec/replay/path carriers, row-specific deltas, and repo-local linkage debt without cloud mutation.",
+      "evidence": [
+        "evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T11:21:15.607Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepts the archive note as complete for its bounded scope: evidence/archive/windows-virtualmachines-prerelease-boundary-matrix-20260628.md cites exact mounted-source and handwritten anchors for rows 205/206/216/217/218, maps current spec/test/path carriers, separates shared substrate from row-local deltas, and records the remaining linkage debt as follow-up work rather than guessed lineage."
+      },
+      "status": "done"
+    }
+  ]
+}

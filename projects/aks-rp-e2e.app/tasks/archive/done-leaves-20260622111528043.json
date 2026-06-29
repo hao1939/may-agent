@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:15:28.043Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier review keeps the frontier intentionally minimal and truthful: node-custom-ca-trust-post-rerun-surface-validation-20260622 is accepted as completed repo-local evidence, the single live repo-local action remains node-custom-ca-trust-repo-local-surface-sync-20260622 to land the accepted post-rerun eastus2 Standard_D4s_v5 environment-gate truth across model/spec/view surfaces without cloud mutation, and the only blocked sibling remains external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the exact family-level out-of-runtime human/operator proof wait for the already-routed MachinesPreview and VM prerelease asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "node-custom-ca-trust-post-rerun-surface-validation-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the orphaned node-custom-ca-trust completion against touched repo-local surfaces: verify the archive note's environment-gate diagnosis is reflected consistently in the replay, knowledge/model/view/status surfaces that were claimed as updated, and record whether the missing original review task was already compacted or needs replacement summary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-custom-ca-trust-post-rerun-surface-validation-20260622.md"
+      ],
+      "acceptance": [
+        "The review artifact cites the existing reconcile note plus each touched repo-local file/path actually inspected, confirms whether the replay VM-size override landed, and states whether path.node-custom-ca-trust.create remains unknown with eastus2 Standard_D4s_v5 subscription restriction as the current blocker.",
+        "If any claimed model/view/status surface was not updated consistently, the artifact names the exact gap and the follow-up fix required; if the original task was simply compacted away, the artifact says so and preserves the accepted meaning.",
+        "No new cloud mutation is performed; this is review/verification of repo-local surfaces only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path-node-custom-ca-trust-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:12:22.223Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-custom-ca-trust-post-rerun-surface-validation-20260622_20260622111222",
+        "assigned_at": "2026-06-22T11:12:22.273Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-custom-ca-trust-post-rerun-surface-validation-20260622",
+        "worker_started_attempt_id": "a_node-custom-ca-trust-post-rerun-surface-validation-20260622_20260622111222",
+        "worker_started_at": "2026-06-22T11:12:31.932Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested surface-validation review at evidence/archive/node-custom-ca-trust-post-rerun-surface-validation-20260622.md after inspecting the accepted reconcile note, replay, model/views, spec, and task archives. The review confirms the VM-size override landed and the path remains unknown due to the eastus2 Standard_D4s_v5 subscription restriction, while naming the exact model/view/status surfaces still stale and confirming the original task was already compacted.",
+        "last_worker_completed_at": "2026-06-22T11:14:17.784Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:14:44.166Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact verifies the VM-size override landed, path.node-custom-ca-trust.create remains unknown, the current truthful blocker is the eastus2 Standard_D4s_v5 subscription restriction, the original reconcile meaning was preserved by compaction, and the exact stale model/view/spec surfaces needing repo-local sync are named."
+      },
+      "session_id": "s_task_node-custom-ca-trust-post-rerun-surface-validation-20260622",
+      "session_history": [
+        "s_task_node-custom-ca-trust-post-rerun-surface-validation-20260622"
+      ],
+      "result": "Wrote the requested surface-validation review at evidence/archive/node-custom-ca-trust-post-rerun-surface-validation-20260622.md after inspecting the accepted reconcile note, replay, model/views, spec, and task archives. The review confirms the VM-size override landed and the path remains unknown due to the eastus2 Standard_D4s_v5 subscription restriction, while naming the exact model/view/status surfaces still stale and confirming the original task was already compacted.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:14:44.166Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact verifies the VM-size override landed, path.node-custom-ca-trust.create remains unknown, the current truthful blocker is the eastus2 Standard_D4s_v5 subscription restriction, the original reconcile meaning was preserved by compaction, and the exact stale model/view/spec surfaces needing repo-local sync are named."
+      },
+      "status": "done"
+    }
+  ]
+}

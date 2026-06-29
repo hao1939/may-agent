@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:16:38.317Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted the row-27 VirtualMachines mixed-SKU upgrade feature packet as the durable source-grounded carrier for mounted mixed_sku_upgrade.go lineage, spec/path/scenario/replay bindings, and the upgrade-vs-row29/row30 boundary. Future row-27 live execution remains intentionally not an open passive blocker here: its exact execute approval, mutation gate, and runner-disable caveat are already preserved as nextAction/resumeCondition in the maintained feature/model surfaces. The only live project frontier now remains the single family-level external-human send/escalation-proof wait; no duplicate send waits or passive row-27 environment blockers should be recreated until new approval or execution evidence exists.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-mixed-sku-upgrade-feature-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the missing durable feature packet for VM prerelease row 27 by adding features/virtualmachines-mixed-sku-upgrade.yaml, grounding the mounted mixed_sku_upgrade.go contract, its prerelease/checkin lineage, and the existing spec/replay/model ids without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachines-mixed-sku-upgrade.yaml"
+      ],
+      "acceptance": [
+        "Feature packet cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/mixed_sku_upgrade.go plus prerelease/checkin lineage needed to show row-27 provenance and the execute-gated runner-disable note.",
+        "Feature packet binds featureId virtualmachines-mixed-sku-upgrade to spec.virtualmachines.mixed-sku-upgrade, path.virtualmachines.mixed-sku-upgrade, scenario.virtualmachines-mixed-sku-upgrade, and replay replays/virtualmachines-mixed-sku-upgrade.ts with execute-gated wording only.",
+        "Packet explicitly preserves the upgrade-versus-lifecycle/deallocate boundary and leaves any deeper DAG enrichment or cloud execution as later follow-up rather than broadening this repo-local authoring task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:12:54.081Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-mixed-sku-upgrade-feature-packet-20260621_20260621061254",
+        "assigned_at": "2026-06-21T06:12:54.130Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-mixed-sku-upgrade-feature-packet-20260621",
+        "worker_started_attempt_id": "a_vm-mixed-sku-upgrade-feature-packet-20260621_20260621061254",
+        "worker_started_at": "2026-06-21T06:13:14.596Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the missing durable feature packet at features/virtualmachines-mixed-sku-upgrade.yaml, grounding VM prerelease row 27 to mounted mixed_sku_upgrade.go, prerelease/checkin lineage, existing spec/path/scenario/replay IDs, and execute-gated runner-disable evidence without any cloud execution.",
+        "last_worker_completed_at": "2026-06-21T06:15:17.414Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:16:21.913Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: features/virtualmachines-mixed-sku-upgrade.yaml exists and satisfies the row-27 packet acceptance by citing mounted mixed_sku_upgrade.go plus prerelease/checkin lineage, binding spec/path/scenario/replay ids, preserving the row-27 upgrade-vs-row-29/30 boundary, and keeping live execution explicitly execute-gated rather than claiming a cloud verdict."
+      },
+      "session_id": "s_task_vm-mixed-sku-upgrade-feature-packet-20260621",
+      "session_history": [
+        "s_task_vm-mixed-sku-upgrade-feature-packet-20260621"
+      ],
+      "result": "Authored the missing durable feature packet at features/virtualmachines-mixed-sku-upgrade.yaml, grounding VM prerelease row 27 to mounted mixed_sku_upgrade.go, prerelease/checkin lineage, existing spec/path/scenario/replay IDs, and execute-gated runner-disable evidence without any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:16:21.913Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: features/virtualmachines-mixed-sku-upgrade.yaml exists and satisfies the row-27 packet acceptance by citing mounted mixed_sku_upgrade.go plus prerelease/checkin lineage, binding spec/path/scenario/replay ids, preserving the row-27 upgrade-vs-row-29/30 boundary, and keeping live execution explicitly execute-gated rather than claiming a cloud verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-mixed-sku-upgrade-live-execution-gate-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact row-27 VirtualMachines mixed-SKU upgrade replay only after explicit approval and mutation preflight are available, then archive durable evidence for the bounded contract: two manual profiles {1,1}, maxSurge=2, upgrade completion, and post-upgrade manual-profile plus VirtualMachineNodesStatus preservation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row27-live-execution-20260621-virtualmachines-mixed-sku-upgrade.md"
+      ],
+      "acceptance": [
+        "Task runs replays/virtualmachines-mixed-sku-upgrade.ts only for the unchanged row-27 branch after explicit execute approval plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=virtualmachines-mixed-sku-upgrade and clean Azure subscription/auth preflight are present, or records exact gate-failure evidence if one of those prerequisites is still missing at retry time.",
+        "Execution evidence stays bounded to the row-27 contract from mounted mixed_sku_upgrade.go: create/update the mixedskuap VirtualMachines system pool with exactly two manual profiles count {1,1}, set upgradeSettings.maxSurge=2, complete control-plane plus agent-pool upgrade, and verify manual-profile plus VirtualMachineNodesStatus preservation after upgrade.",
+        "Any result records the upstream runner-disable caveat about the CRP ARM VM state mismatch or approved reimage-based path, and does not broaden into row-29 lifecycle or row-30 deallocate semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:16:26.439Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T06:16:38.268Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced after owner review: row-27 future live execution is a bounded nextAction already carried in features/virtualmachines-mixed-sku-upgrade.yaml and the maintained model/spec surfaces. Keeping a separate passive blocked leaf would overstate an environment/approval gate without any new local setup or diagnosis work to do now."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-21T06:16:38.268Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced after owner review: row-27 future live execution is a bounded nextAction already carried in features/virtualmachines-mixed-sku-upgrade.yaml and the maintained model/spec surfaces. Keeping a separate passive blocked leaf would overstate an environment/approval gate without any new local setup or diagnosis work to do now."
+      },
+      "status": "done"
+    }
+  ]
+}

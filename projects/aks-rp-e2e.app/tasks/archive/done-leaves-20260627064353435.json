@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T06:43:53.435Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 owner planning pass confirmed the watchdog review wake was already satisfied: serverless-schedulerctrl-validating-webhook-family-matrix-20260627 had been accepted in review, proving the archived matrix covers all 8 validating-webhook scenarios and maps them onto the current 4 topology-paired spec carriers. Archived that safe done leaf at the root; the direct successor remains serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627 to repair knowledge-map attachments toward canonical feature-local carriers. Parallel repo-local progress remains serverless-addonv2-aci-connector-mounted-vmss-family-matrix-20260627. The blocked frontier stays truthfully consolidated as the two exact external waits already supported by durable dispatch proof, so no new retry, environment setup, or refill work was created from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-family-matrix-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a mounted-source-backed capability matrix for the serverless schedulerctrl validating-webhook family so the project regains runnable repo-local progress while the current external waits remain blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-validating-webhook-family-matrix-20260627.md"
+      ],
+      "acceptance": [
+        "Archive a durable evidence note that enumerates the mounted handwritten scenarios and current spec/replay/model path coverage for the validating-webhook family across public, private, and API server VNet Integration topologies, including allow/disallow expectations.",
+        "The note identifies exact current path ids, attached canonical specs/replays, and any bounded coverage/model gaps or duplicate-carrier risks that should become the next follow-up leaf, without running cloud mutation.",
+        "Findings are specific enough that a follow-up worker can update the knowledge map or replay/model attachments for this family without re-reading the full source tree."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T06:39:43.421Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-matrix-20260627_20260627063943",
+        "assigned_at": "2026-06-27T06:39:43.475Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-family-matrix-20260627",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-family-matrix-20260627_20260627063943",
+        "worker_started_at": "2026-06-27T06:39:53.791Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a new family-level validating-webhook matrix at evidence/archive/serverless-schedulerctrl-validating-webhook-family-matrix-20260627.md, mapping all eight mounted source scenarios to current specs/probes/model paths and identifying the concrete replay-attachment drift as the next bounded follow-up.",
+        "last_worker_completed_at": "2026-06-27T06:42:17.452Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T06:42:58.269Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archived matrix enumerates all 8 mounted validating-webhook scenarios, maps them to 4 topology-paired specs and current feature-local carriers, and narrows the next bounded repo-local gap to replay/model attachment drift without requiring cloud mutation."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-family-matrix-20260627",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-family-matrix-20260627"
+      ],
+      "result": "Archived a new family-level validating-webhook matrix at evidence/archive/serverless-schedulerctrl-validating-webhook-family-matrix-20260627.md, mapping all eight mounted source scenarios to current specs/probes/model paths and identifying the concrete replay-attachment drift as the next bounded follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T06:42:58.269Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archived matrix enumerates all 8 mounted validating-webhook scenarios, maps them to 4 topology-paired specs and current feature-local carriers, and narrows the next bounded repo-local gap to replay/model attachment drift without requiring cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

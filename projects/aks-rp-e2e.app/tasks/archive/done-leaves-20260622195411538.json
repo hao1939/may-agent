@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:54:11.538Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog review reconciliation: the row-26 VM prerelease capacity-based-surge boundary landing and its capacity-based-surge frontier follow-on are both accepted and their durable meaning now lives at the project root. The next useful repo-local frontier is vmpr-mixed-sku-next-unlanded-row-source-frontier-follow-on-20260622, which should use mounted VM prerelease mixed-SKU handwritten source plus current carriers to identify the next uncovered row/path after row 27 and either land its exact boundary/status note or prove the immediate mixed-SKU frontier is locally closed. Keep external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single family-level external-human-transport wait; do not reopen row-26 review, duplicate blocked waits, or queue cloud execution from this planner pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP Go handwritten e2ev3 capacity-based-surge source family plus current repo-local carriers to identify the next VM prerelease capacity-based-surge row/path that still lacks its own durable boundary/status note, then land that next row's exact input/expectation boundary or explicitly prove the family is already locally closed without reopening cloud execution or duplicating external waits. Treat the current row-26 landing as input when available, but do not wait passively on row-26 review before completing the bounded source-frontier scan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/plans/capacity_based_surge.go together with the current row-26 landing when available and prior VM prerelease matrix evidence, names the exact next selected row/path ids, and summarizes the accepted/rejected inputs, expected behavior, observed repo-local status, and adjacent unknown edge for that next row or proves the family is already locally source-backed.",
+        "If repo-local feature/spec/replay/model wording for the selected next row is already truthful, the note says so and names the remaining external/runtime gate; otherwise it lists only the exact bounded follow-up edits needed, without creating duplicate blocker leaves or opening ungated cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-capacity-based-surge-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:50:20.331Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T19:50:24.511Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622_20260622195053",
+        "assigned_at": "2026-06-22T19:50:53.607Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622",
+        "worker_started_attempt_id": "a_vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622_20260622195053",
+        "worker_started_at": "2026-06-22T19:50:55.514Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive note at evidence/archive/vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622.md, concluding the next frontier row after capacity-based-surge rows 25/26 is row 27 and that the family is already locally closed because row 27 already has durable source/model/status notes and only an existing runtime execution gate remains.",
+        "last_worker_completed_at": "2026-06-22T19:52:53.993Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:53:30.999Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622.md: it uses mounted VM prerelease suite order plus current row-26 landing and row-27 carriers to prove the immediate capacity-based-surge frontier is locally closed, identifies row 27 as the exact next successor, and avoids inventing duplicate blockers or unnecessary follow-up edits."
+      },
+      "session_id": "s_task_vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622",
+      "session_history": [
+        "s_task_vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622"
+      ],
+      "result": "Produced the requested archive note at evidence/archive/vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622.md, concluding the next frontier row after capacity-based-surge rows 25/26 is row 27 and that the family is already locally closed because row 27 already has durable source/model/status notes and only an existing runtime execution gate remains.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:53:30.999Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vmpr-capacity-based-surge-next-unlanded-row-source-frontier-follow-on-20260622.md: it uses mounted VM prerelease suite order plus current row-26 landing and row-27 carriers to prove the immediate capacity-based-surge frontier is locally closed, identifies row 27 as the exact next successor, and avoids inventing duplicate blockers or unnecessary follow-up edits."
+      },
+      "status": "done"
+    }
+  ]
+}

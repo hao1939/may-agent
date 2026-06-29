@@ -1,0 +1,561 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T04:59:06.020Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 owner blocked-frontier planning repaired this focus branch so the live tree matches current work: the earlier frontier-327 closures and the first four frontier-362 SecOps FIPS repair slices are durable done history, one exact repo-local frontier-362 agentPool.enableFIPS omitted-on-create repair leaf stays active for inputDags[362].nodes[7][0].value, one same-conflict post-frontier-362 maintained-view/next-frontier capture leaf is now queued behind it, and the single family-level external-human wait remains the only blocked child. Keep the whole branch repo-local/no-cloud and do not reopen completed validator slices or split duplicate waits.",
+  "archived": 10,
+  "tasks": [
+    {
+      "id": "shared-model-validator-post-frontier-267-maintained-view-capture-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the active OIDC JWKS expected-key-count frontier-267 repair slice is accepted, rerun the repo-local shared-model validator maintained view to capture the exact post-repair frontier for the same conflict family, recording either the next single residual or a validator-clean state without repairing any later residual in this task and without any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-post-frontier-267-maintained-view-capture-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence records the exact repo-local validator/maintained-view command(s), the resulting post-frontier-267 state, and the next single residual location or validator-clean result for the shared-model-validator family, with links to the accepted frontier-267 repair evidence.",
+        "This task performs capture only: it does not repair any new residual, reopen older validator slices, widen beyond the shared-model-validator conflict family, or start cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:12:26.156Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-post-frontier-267-maintained-view-capture-20260624_20260624041501",
+        "assigned_at": "2026-06-24T04:15:01.204Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-post-frontier-267-maintained-view-capture-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-post-frontier-267-maintained-view-capture-20260624_20260624041501",
+        "worker_started_at": "2026-06-24T04:15:03.459Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the post-frontier-267 shared-model-validator maintained-view state in evidence/archive/shared-model-validator-post-frontier-267-maintained-view-capture-20260624.md, proving the OIDC JWKS frontier-267 residual stays cleared and the next single residual is now inputDags[268].nodes[1][0].value.",
+        "last_worker_completed_at": "2026-06-24T04:16:25.080Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:16:56.061Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted archive evidence: fresh repo-local validator/generate reruns prove frontier-267 stays cleared, maintained views regenerated with issue count reduced to 3500, and the next single truthful residual is now inputDags[268].nodes[1][0].value without repairing later residuals."
+      },
+      "session_id": "s_task_shared-model-validator-post-frontier-267-maintained-view-capture-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-post-frontier-267-maintained-view-capture-20260624"
+      ],
+      "result": "Captured the post-frontier-267 shared-model-validator maintained-view state in evidence/archive/shared-model-validator-post-frontier-267-maintained-view-capture-20260624.md, proving the OIDC JWKS frontier-267 residual stays cleared and the next single residual is now inputDags[268].nodes[1][0].value.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:16:56.061Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted archive evidence: fresh repo-local validator/generate reruns prove frontier-267 stays cleared, maintained views regenerated with issue count reduced to 3500, and the next single truthful residual is now inputDags[268].nodes[1][0].value without repairing later residuals."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the same single repo-local shared-model-validator frontier residual at inputDags[327].nodes[0][0].value for enable_addon_v2=true by inspecting the mounted AKS RP source plus the already-tracked spec/replay/model context, then make the smallest truthful repo-local domain/model/evidence repair or bounded final disposition and rerun only the exact validator slice needed to prove whether this residual clears or is superseded.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the exact mounted source files, repo-local spec/replay/model artifacts, and the residual string at inputDags[327].nodes[0][0].value, then records the chosen bounded repair or final disposition for enable_addon_v2=true with enough detail to reproduce the reasoning.",
+        "Archive evidence includes a fresh validator rerun snippet for the exact frontier-327 residual showing either that this residual is removed or that the frontier is truthfully superseded by the documented bounded disposition; do not stop at a generic error or unsupported blocked claim.",
+        "Stay on this one frontier slice only: do not repair later residuals, reopen accepted frontier-268 work, widen into unrelated paths, or do any cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:24:56.788Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624_20260624042456",
+        "assigned_at": "2026-06-24T04:24:56.885Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624_20260624042456",
+        "worker_started_at": "2026-06-24T04:25:19.801Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a bounded archive evidence packet confirming the requested frontier-327 enable_addon_v2 residual is already cleared/superseded, with mounted-source citations and a fresh validator rerun showing the next remaining same-DAG residuals.",
+        "last_worker_completed_at": "2026-06-24T04:27:43.205Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:28:16.610Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after reading evidence/archive/shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624.md: it names the mounted source and repo-local artifacts, confirms inputDags[327].nodes[0][0].value now uses string \"true\" against domain [\"true\"], and includes a fresh validator rerun showing the exact enable_addon_v2 residual is gone while later same-DAG residuals become the new frontier."
+      },
+      "session_id": "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624"
+      ],
+      "result": "Wrote a bounded archive evidence packet confirming the requested frontier-327 enable_addon_v2 residual is already cleared/superseded, with mounted-source citations and a fresh validator rerun showing the next remaining same-DAG residuals.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:28:16.610Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after reading evidence/archive/shared-model-validator-addonv2-enable-flag-frontier-327-mounted-source-evidence-retry-20260624.md: it names the mounted source and repo-local artifacts, confirms inputDags[327].nodes[0][0].value now uses string \"true\" against domain [\"true\"], and includes a fresh validator rerun showing the exact enable_addon_v2 residual is gone while later same-DAG residuals become the new frontier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-post-frontier-327-maintained-view-capture-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the exact frontier-327 mounted-source retry is accepted, regenerate the bounded shared-model-validator maintained view for the same addonv2 enable_addon_v2=true conflict scope and capture whether the maintained view is clean or what exact next residual remains, without repairing unrelated frontier items.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-post-frontier-327-maintained-view-capture-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted frontier-327 retry artifact, records the exact maintained-view/validator command snippets used after that repair, and states whether the same conflict scope is now clean or what exact next residual/path remains.",
+        "Any required repo-local maintained-view/model file updates are limited to representing the post-frontier-327 state truthfully; do not widen into unrelated validator repairs, blocked waits, or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:25:58.439Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-post-frontier-327-maintained-view-capture-20260624_20260624042745",
+        "assigned_at": "2026-06-24T04:27:45.652Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-post-frontier-327-maintained-view-capture-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-post-frontier-327-maintained-view-capture-20260624_20260624042745",
+        "worker_started_at": "2026-06-24T04:27:47.928Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the post-frontier-327 maintained-view state in evidence/archive/shared-model-validator-post-frontier-327-maintained-view-capture-20260624.md, citing the accepted frontier-327 retry and fresh validator/generator reruns. Verified the exact enable_addon_v2 residual remains cleared while the same conflict scope is still non-clean due to residuals at inputDags[327].nodes[2][0].value and inputDags[327].nodes[7][0].variable.",
+        "last_worker_completed_at": "2026-06-24T04:29:36.472Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:30:18.653Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves the accepted frontier-327 retry remains clear for inputDags[327].nodes[0][0].value, reran the exact validator and maintained-view commands, and truthfully captured the same-scope next residuals at inputDags[327].nodes[2][0].value and inputDags[327].nodes[7][0].variable without widening scope."
+      },
+      "session_id": "s_task_shared-model-validator-post-frontier-327-maintained-view-capture-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-post-frontier-327-maintained-view-capture-20260624"
+      ],
+      "result": "Captured the post-frontier-327 maintained-view state in evidence/archive/shared-model-validator-post-frontier-327-maintained-view-capture-20260624.md, citing the accepted frontier-327 retry and fresh validator/generator reruns. Verified the exact enable_addon_v2 residual remains cleared while the same conflict scope is still non-clean due to residuals at inputDags[327].nodes[2][0].value and inputDags[327].nodes[7][0].variable.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:30:18.653Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves the accepted frontier-327 retry remains clear for inputDags[327].nodes[0][0].value, reran the exact validator and maintained-view commands, and truthfully captured the same-scope next residuals at inputDags[327].nodes[2][0].value and inputDags[327].nodes[7][0].variable without widening scope."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For the same shared-model-validator frontier-327 conflict scope, use mounted AKS RP source plus current model evidence to resolve the next exact residual at inputDags[327].nodes[2][0].value for use_shared_identity, determine whether the accepted model should store string \"true\" or a different truthful representation, make only the bounded repo-local model/view update justified by source, rerun the validator, and archive whether that residual clears and what exact next residual remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted source/scenario lines and current model/input-variable state for use_shared_identity, explains the truthful representation decision for inputDags[327].nodes[2][0].value, and records the scoped validator rerun result showing either that the residual cleared or the exact remaining same-scope residual/path.",
+        "Any repo-local edits stay bounded to the same frontier-327 conflict scope (model plus regenerated maintained views if needed); do not widen into unrelated validator repairs, blocked waits, or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:30:18.704Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624_20260624043022",
+        "assigned_at": "2026-06-24T04:30:22.602Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624_20260624043022",
+        "worker_started_at": "2026-06-24T04:30:44.166Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the frontier-327 shared-identity model mismatch by changing the Addonv2 ASM lifecycle DAG node to string \"true\", regenerated maintained views, and archived mounted-source-backed evidence showing the assigned residual cleared and the next residual is source.slice unknown-variable.",
+        "last_worker_completed_at": "2026-06-24T04:32:59.316Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:33:33.135Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves mounted-source-backed repair changed the frontier-327 use_shared_identity DAG node to string \"true\", regenerated maintained views, and cleared the assigned inputDags[327].nodes[2][0].value residual; the next exact same-scope residual is unknown variable source.slice at inputDags[327].nodes[7][0].variable."
+      },
+      "session_id": "s_task_shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-shared-identity-flag-frontier-327-mounted-source-evidence-retry-20260624"
+      ],
+      "result": "Repaired the frontier-327 shared-identity model mismatch by changing the Addonv2 ASM lifecycle DAG node to string \"true\", regenerated maintained views, and archived mounted-source-backed evidence showing the assigned residual cleared and the next residual is source.slice unknown-variable.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:33:33.135Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves mounted-source-backed repair changed the frontier-327 use_shared_identity DAG node to string \"true\", regenerated maintained views, and cleared the assigned inputDags[327].nodes[2][0].value residual; the next exact same-scope residual is unknown variable source.slice at inputDags[327].nodes[7][0].variable."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For the same shared-model-validator frontier-327 conflict scope, use mounted AKS RP source plus current model evidence to resolve the next exact residual at inputDags[327].nodes[7][0].variable for source.slice, determine whether source.slice should be represented by an existing accepted variable, a newly added bounded variable/domain, or a different truthful DAG expression, make only the repo-local model/view update justified by source, rerun the validator, and archive whether that residual clears and what exact next same-scope residual remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted source/scenario lines and current frontier-327 model state for source.slice, explains the truthful representation decision for inputDags[327].nodes[7][0].variable, and records the scoped validator rerun result showing either that the residual cleared or the exact remaining same-scope residual/path.",
+        "Any repo-local edits stay bounded to the same frontier-327 conflict scope (model plus regenerated maintained views if needed); do not widen into unrelated validator repairs, blocked waits, or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:33:33.186Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624_20260624043333",
+        "assigned_at": "2026-06-24T04:33:33.232Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624_20260624043333",
+        "worker_started_at": "2026-06-24T04:33:51.450Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Resolved the assigned frontier-327 source.slice residual by adding a bounded input variable definition in model/knowledge-map/model.json, regenerated maintained views, and archived evidence in evidence/archive/shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624.md showing the mounted-source basis and validator outcome.",
+        "last_worker_completed_at": "2026-06-24T04:38:00.167Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:38:43.144Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted AKS RP source plus exact pre/post model state, adds bounded source.slice variable with the two already-used lineage values, regenerates maintained views, and proves the assigned frontier-327 residual at inputDags[327].nodes[7][0].variable is cleared with no remaining validator error on inputDags[327]."
+      },
+      "session_id": "s_task_shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624"
+      ],
+      "result": "Resolved the assigned frontier-327 source.slice residual by adding a bounded input variable definition in model/knowledge-map/model.json, regenerated maintained views, and archived evidence in evidence/archive/shared-model-validator-source-slice-frontier-327-mounted-source-resolution-20260624.md showing the mounted-source basis and validator outcome.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:38:43.144Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted AKS RP source plus exact pre/post model state, adds bounded source.slice variable with the two already-used lineage values, regenerates maintained views, and proves the assigned frontier-327 residual at inputDags[327].nodes[7][0].variable is cleared with no remaining validator error on inputDags[327]."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-next-frontier-capture-after-source-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From the current shared-model-validator state after the accepted source.slice repair, rerun the repo-local validator, capture the exact next first remaining validator residual beyond cleared inputDags[327], and archive the bounded evidence needed to decide the next truthful repair slice without editing the model yet or widening into cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-next-frontier-capture-after-source-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence records the exact validator command/output after the source.slice repair, names the first remaining residual with exact path/node text, and states whether the next repair stays in shared-model-validator-frontier or should branch elsewhere.",
+        "No model/view edits, blocked-wait changes, or cloud execution occur from this task; it is evidence capture and next-frontier scoping only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:38:55.261Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-next-frontier-capture-after-source-slice-20260624_20260624043855",
+        "assigned_at": "2026-06-24T04:38:55.309Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-next-frontier-capture-after-source-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-next-frontier-capture-after-source-slice-20260624_20260624043855",
+        "worker_started_at": "2026-06-24T04:39:13.826Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the post-source.slice shared-model-validator frontier in a new archive note, confirming inputDags[327] is clean and identifying the next residual beyond 327 as inputDags[362].nodes[2][0].variable for feature.previewHeader.",
+        "last_worker_completed_at": "2026-06-24T04:40:58.605Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:41:32.370Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence reran the repo-local validator after the source.slice repair, proved inputDags[327] is now clean, and truthfully identified the first remaining residual beyond 327 as inputDags[362].nodes[2][0].variable for feature.previewHeader with no model edits or cloud work."
+      },
+      "session_id": "s_task_shared-model-validator-next-frontier-capture-after-source-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-next-frontier-capture-after-source-slice-20260624"
+      ],
+      "result": "Captured the post-source.slice shared-model-validator frontier in a new archive note, confirming inputDags[327] is clean and identifying the next residual beyond 327 as inputDags[362].nodes[2][0].variable for feature.previewHeader.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:41:32.370Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence reran the repo-local validator after the source.slice repair, proved inputDags[327] is now clean, and truthfully identified the first remaining residual beyond 327 as inputDags[362].nodes[2][0].variable for feature.previewHeader with no model edits or cloud work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted source, existing secops FIPS spec/linkage artifacts, and the fresh validator frontier capture, resolve the first remaining shared-model-validator residual beyond cleared inputDags[327] by determining whether inputDags[362].nodes[2][0].variable should model feature.previewHeader as a bounded variable/domain or should normalize to an already-accepted equivalent variable, then land only the exact repo-local model repair needed for that node and archive validator proof of the outcome without widening into the adjacent inputDags[362] value mismatches or any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted secops FIPS source/spec artifacts used, explains the exact repair choice for inputDags[362].nodes[2][0].variable, and records the validator command/output proving that specific feature.previewHeader residual is cleared or truthfully re-scoped if the model must normalize to an existing equivalent variable.",
+        "Any model/view edits remain bounded to the exact frontier-362 preview-header slice needed for inputDags[362].nodes[2][0].variable; the task does not widen into nodes[3], [4], [5], or [7], does not touch blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:41:32.319Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260624_20260624044137",
+        "assigned_at": "2026-06-24T04:41:37.106Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260",
+        "worker_started_attempt_id": "a_shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260624_20260624044137",
+        "worker_started_at": "2026-06-24T04:42:00.813Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the bounded shared-model input variable `feature.previewHeader` to `model/knowledge-map/model.json` and archived the frontier-362 repair note proving `inputDags[362].nodes[2][0].variable` is cleared while adjacent node-value residuals remain intentionally untouched.",
+        "last_worker_completed_at": "2026-06-24T04:45:02.737Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:45:52.860Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted SecOps FIPS source plus existing feature/spec linkage, shows the bounded model addition for feature.previewHeader, and proves the exact inputDags[362].nodes[2][0].variable residual is cleared while adjacent value mismatches remain intentionally untouched."
+      },
+      "session_id": "s_task_shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260",
+      "session_history": [
+        "s_task_shared-model-validator-secops-fips-preview-header-frontier-362-mounted-source-repair-slice-20260"
+      ],
+      "result": "Added the bounded shared-model input variable `feature.previewHeader` to `model/knowledge-map/model.json` and archived the frontier-362 repair note proving `inputDags[362].nodes[2][0].variable` is cleared while adjacent node-value residuals remain intentionally untouched.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:45:52.860Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted SecOps FIPS source plus existing feature/spec linkage, shows the bounded model addition for feature.previewHeader, and proves the exact inputDags[362].nodes[2][0].variable residual is cleared while adjacent value mismatches remain intentionally untouched."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted SecOps FIPS source, the accepted root-config-preservation spec/linkage artifacts, and the fresh frontier-362 validator evidence, resolve only the next adjacent residual at inputDags[362].nodes[3][0].value by determining whether cluster.operation=update-tag-only should be normalized to an already-accepted cluster.operation domain value or whether the shared model requires one bounded domain repair for this SecOps preservation step, then land only the exact repo-local repair needed for that node and archive validator proof without widening into nodes[4], [5], or [7] or any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted SecOps FIPS source/spec artifacts used, explains the exact repair choice for inputDags[362].nodes[3][0].value, and records validator command/output proving that specific cluster.operation residual is cleared or truthfully re-scoped if normalization is required.",
+        "Any model/view edits remain bounded to the exact frontier-362 operation slice needed for inputDags[362].nodes[3][0].value; the task does not widen into nodes[4], [5], or [7], does not touch blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:46:01.493Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-slice-20260624_20260624044601",
+        "assigned_at": "2026-06-24T04:46:01.541Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-",
+        "worker_started_attempt_id": "a_shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-slice-20260624_20260624044601",
+        "worker_started_at": "2026-06-24T04:46:14.981Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the frontier-362 SecOps FIPS DAG node `cluster.operation=update-tag-only` to `update` in `model/knowledge-map/model.json`, regenerated views, and archived a bounded evidence note proving the exact `inputDags[362].nodes[3][0].value` validator residual is cleared without touching nodes 4, 5, or 7.",
+        "last_worker_completed_at": "2026-06-24T04:48:29.348Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:49:09.881Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites the mounted SecOps FIPS source and accepted root-config-preservation carriers, justifies normalizing cluster.operation=update-tag-only to shared value update, and records validator proof that inputDags[362].nodes[3][0].value is cleared while nodes[4], [5], and [7] remain the only adjacent same-DAG residuals."
+      },
+      "session_id": "s_task_shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-",
+      "session_history": [
+        "s_task_shared-model-validator-secops-fips-operation-update-tag-only-frontier-362-mounted-source-repair-"
+      ],
+      "result": "Normalized the frontier-362 SecOps FIPS DAG node `cluster.operation=update-tag-only` to `update` in `model/knowledge-map/model.json`, regenerated views, and archived a bounded evidence note proving the exact `inputDags[362].nodes[3][0].value` validator residual is cleared without touching nodes 4, 5, or 7.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:49:09.881Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites the mounted SecOps FIPS source and accepted root-config-preservation carriers, justifies normalizing cluster.operation=update-tag-only to shared value update, and records validator proof that inputDags[362].nodes[3][0].value is cleared while nodes[4], [5], and [7] remain the only adjacent same-DAG residuals."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted SecOps FIPS source, the accepted root-config-preservation spec/linkage artifacts, and the accepted frontier-362 operation-slice evidence, resolve only the next adjacent residual at inputDags[362].nodes[4][0].value by determining whether cluster.enableFIPS=omitted-on-put should normalize to an already-accepted cluster.enableFIPS domain value or whether the shared model requires one bounded domain repair for this SecOps preservation step, then land only the exact repo-local repair needed for that node and archive validator proof without widening into nodes[5] or [7] or any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted SecOps FIPS source/spec artifacts used, explains the exact repair choice for inputDags[362].nodes[4][0].value, and records validator command/output proving that specific cluster.enableFIPS residual is cleared or truthfully re-scoped if normalization is required.",
+        "Any model/view edits remain bounded to the exact frontier-362 cluster.enableFIPS slice needed for inputDags[362].nodes[4][0].value; the task does not widen into nodes[5] or [7], does not touch blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:49:09.930Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624_20260624044909",
+        "assigned_at": "2026-06-24T04:49:09.977Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source",
+        "worker_started_attempt_id": "a_shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624_20260624044909",
+        "worker_started_at": "2026-06-24T04:49:27.274Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Normalized the frontier-362 SecOps FIPS cluster.enableFIPS omit-on-put node to the accepted shared state value in model/knowledge-map/model.json and archived a bounded evidence note proving the specific residual was cleared while adjacent nodes [5] and [7] remain for later work.",
+        "last_worker_completed_at": "2026-06-24T04:53:02.028Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:54:15.081Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted SecOps FIPS source plus accepted root-config-preservation carriers, records the exact node[4][0] normalization to cluster.enableFIPS=true, and shows validator output clearing that precise frontier-362 residual while leaving adjacent nodes [5] and [7] for later bounded slices."
+      },
+      "session_id": "s_task_shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source",
+      "session_history": [
+        "s_task_shared-model-validator-secops-fips-cluster-enablefips-omitted-on-put-frontier-362-mounted-source"
+      ],
+      "result": "Normalized the frontier-362 SecOps FIPS cluster.enableFIPS omit-on-put node to the accepted shared state value in model/knowledge-map/model.json and archived a bounded evidence note proving the specific residual was cleared while adjacent nodes [5] and [7] remain for later work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:54:15.081Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted SecOps FIPS source plus accepted root-config-preservation carriers, records the exact node[4][0] normalization to cluster.enableFIPS=true, and shows validator output clearing that precise frontier-362 residual while leaving adjacent nodes [5] and [7] for later bounded slices."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using mounted SecOps FIPS source, the accepted root-config-preservation spec/linkage artifacts, and the accepted frontier-362 cluster-level omit-on-put repair, resolve only the next adjacent residual at inputDags[362].nodes[5][0].value by determining whether agentPool.enableFIPS=omitted-on-put should normalize to an already-accepted agentPool.enableFIPS domain value or whether the shared model needs one bounded agent-pool-domain repair for this Phase 7 preservation step, then land only the exact repo-local repair needed for that node and archive validator proof without widening into nodes[7] or any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the mounted SecOps FIPS source/spec artifacts used, explains the exact repair choice for inputDags[362].nodes[5][0].value, and records validator command/output proving that specific agentPool.enableFIPS residual is cleared or truthfully re-scoped if normalization is required.",
+        "Any model/view edits remain bounded to the exact frontier-362 agentPool.enableFIPS omit-on-put slice needed for inputDags[362].nodes[5][0].value; the task does not widen into nodes[7], does not touch blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T04:54:15.129Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624_20260624045415",
+        "assigned_at": "2026-06-24T04:54:15.176Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-sour",
+        "worker_started_attempt_id": "a_shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-source-repair-slice-20260624_20260624045415",
+        "worker_started_at": "2026-06-24T04:54:37.605Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Resolved the assigned frontier-362 residual by normalizing `inputDags[362].nodes[5][0].value` from `agentPool.enableFIPS=omitted-on-put` to the already-accepted shared-domain value `omitted`, and archived evidence proving the specific validator error is cleared while `nodes[7]` remains the next residual.",
+        "last_worker_completed_at": "2026-06-24T04:57:01.399Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T04:57:39.177Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites mounted SecOps FIPS/source-linked preservation artifacts, shows the bounded model edit normalized inputDags[362].nodes[5][0].value from agentPool.enableFIPS=omitted-on-put to the already-accepted shared-domain value omitted, and proves the specific validator residual cleared while nodes[7] remains next."
+      },
+      "session_id": "s_task_shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-sour",
+      "session_history": [
+        "s_task_shared-model-validator-secops-fips-agentpool-enablefips-omitted-on-put-frontier-362-mounted-sour"
+      ],
+      "result": "Resolved the assigned frontier-362 residual by normalizing `inputDags[362].nodes[5][0].value` from `agentPool.enableFIPS=omitted-on-put` to the already-accepted shared-domain value `omitted`, and archived evidence proving the specific validator error is cleared while `nodes[7]` remains the next residual.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T04:57:39.177Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites mounted SecOps FIPS/source-linked preservation artifacts, shows the bounded model edit normalized inputDags[362].nodes[5][0].value from agentPool.enableFIPS=omitted-on-put to the already-accepted shared-domain value omitted, and proves the specific validator residual cleared while nodes[7] remains next."
+      },
+      "status": "done"
+    }
+  ]
+}

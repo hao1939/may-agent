@@ -1,0 +1,724 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T07:07:04.041Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Archive falsely closed spec-loop follow-up leaves after fixing planner policy: context.specLoopFollowup repo-local reconciliation is allowed even while westus2 blocks fresh live execution, so these done/replaced leaves are being cleared for recreation under the corrected contract.",
+  "archived": 10,
+  "tasks": [
+    {
+      "id": "reconcile-spec-loop-error-storage-csi",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 2 error spec-loop result(s) for the storage-csi feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:storage-csi",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.storage-csi.disk-pvc-dynamic-provision",
+        "spec:spec.storage-csi.file-pvc-dynamic-provision"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:storage-csi",
+        "feature:storage-csi"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "storage-csi",
+        "totalSpecCount": 2,
+        "sampledSpecIds": [
+          "spec.storage-csi.disk-pvc-dynamic-provision",
+          "spec.storage-csi.file-pvc-dynamic-provision"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.741Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-storage-csi_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-storage-csi",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-storage-csi_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.132Z",
+        "reviewed_at": "2026-06-29T07:05:12.958Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-storage-csi",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-storage-csi"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.958Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-workload-health",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 2 error spec-loop result(s) for the workload-health feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:workload-health",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.workload-health.konnectivity-readiness",
+        "spec:spec.workload-health.kube-proxy-readiness"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:workload-health",
+        "feature:workload-health"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "workload-health",
+        "totalSpecCount": 2,
+        "sampledSpecIds": [
+          "spec.workload-health.konnectivity-readiness",
+          "spec.workload-health.kube-proxy-readiness"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.750Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-workload-health_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-workload-health",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-workload-health_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.292Z",
+        "reviewed_at": "2026-06-29T07:05:13.212Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-workload-health",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-workload-health"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:13.212Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-app-monitoring",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the app-monitoring feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:app-monitoring",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.app-monitoring.addonv2-azure-monitor-metrics"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:app-monitoring",
+        "feature:app-monitoring"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "app-monitoring",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.app-monitoring.addonv2-azure-monitor-metrics"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.759Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-app-monitoring_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-app-monitoring",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-app-monitoring_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:25.997Z",
+        "reviewed_at": "2026-06-29T07:05:12.371Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-app-monitoring",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-app-monitoring"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.371Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-bootstrap-profile",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the bootstrap-profile feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:bootstrap-profile",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.bootstrap-profile.public-api-direct-create"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:bootstrap-profile",
+        "feature:bootstrap-profile"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "bootstrap-profile",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.bootstrap-profile.public-api-direct-create"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.769Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-bootstrap-profile_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-bootstrap-profile",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-bootstrap-profile_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:25.938Z",
+        "reviewed_at": "2026-06-29T07:05:12.557Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-bootstrap-profile",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-bootstrap-profile"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.557Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-ccp-security-patch",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the ccp-security-patch feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:ccp-security-patch",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.ccp-security-patch.azurelinux-prod-mtc"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:ccp-security-patch",
+        "feature:ccp-security-patch"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "ccp-security-patch",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.ccp-security-patch.azurelinux-prod-mtc"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.783Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-ccp-security-patch_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-ccp-security-patch",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-ccp-security-patch_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.181Z",
+        "reviewed_at": "2026-06-29T07:05:12.649Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-ccp-security-patch",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-ccp-security-patch"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.649Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-node-pool-config",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the node-pool-config feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:node-pool-config",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:node-pool-config",
+        "feature:node-pool-config"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "node-pool-config",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.node-pool-config.ephemeral-disk"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.792Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-node-pool-config_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-node-pool-config",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-node-pool-config_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.233Z",
+        "reviewed_at": "2026-06-29T07:05:12.729Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-node-pool-config",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-node-pool-config"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.729Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-ppg",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the ppg feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:ppg",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.ppg.cluster-and-agentpool-placement"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:ppg",
+        "feature:ppg"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "ppg",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.ppg.cluster-and-agentpool-placement"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.800Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-ppg_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-ppg",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-ppg_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.406Z",
+        "reviewed_at": "2026-06-29T07:05:12.816Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-ppg",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-ppg"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.816Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-runtime-container",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the runtime-container feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:runtime-container",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.runtime-container.kscr-rotation-matrix"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:runtime-container",
+        "feature:runtime-container"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "runtime-container",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.runtime-container.kscr-rotation-matrix"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.808Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-runtime-container_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.910Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-runtime-container",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-runtime-container_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.519Z",
+        "reviewed_at": "2026-06-29T07:05:12.894Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-runtime-container",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-runtime-container"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:12.894Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-virtualmachines",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the virtualmachines feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:virtualmachines",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.virtualmachines.capacity-based-surge"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:virtualmachines",
+        "feature:virtualmachines"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "virtualmachines",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.virtualmachines.capacity-based-surge"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.817Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-virtualmachines_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-virtualmachines",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-virtualmachines_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.351Z",
+        "reviewed_at": "2026-06-29T07:05:13.054Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-virtualmachines",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-virtualmachines"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:13.054Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconcile-spec-loop-error-workload-autoscaler",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile 1 error spec-loop result(s) for the workload-autoscaler feature family without blindly rerunning unchanged live tests.",
+      "inputs": [
+        "status:error",
+        "featureFamily:workload-autoscaler",
+        "target:staging",
+        "branch:dev",
+        "state:.state/spec-loop/state.json",
+        "spec:spec.workload-autoscaler.keda-runtime-scaling"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "evidence/archive/",
+        "features/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
+        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
+        "Any remaining blocker has an exact resume condition and affected spec list."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-followup:error:workload-autoscaler",
+        "feature:workload-autoscaler"
+      ],
+      "context": {
+        "specLoopFollowup": true,
+        "status": "error",
+        "featureFamily": "workload-autoscaler",
+        "totalSpecCount": 1,
+        "sampledSpecIds": [
+          "spec.workload-autoscaler.keda-runtime-scaling"
+        ],
+        "stateRef": ".state/spec-loop/state.json",
+        "target": "staging",
+        "branch": "dev",
+        "createdBy": "manual-push-hard-after-controller-change",
+        "acceptance_note": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "trace": {
+        "created_at": "2026-06-29T07:02:30.830Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-error-workload-autoscaler_20260629070423",
+        "assigned_at": "2026-06-29T07:04:23.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-error-workload-autoscaler",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-error-workload-autoscaler_20260629070423",
+        "worker_started_at": "2026-06-29T07:04:26.068Z",
+        "reviewed_at": "2026-06-29T07:05:13.135Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review found this per-feature reconcile leaf was accidentally reopened without any new westus2 recovery proof, replacement execution surface, or reroute signal. Replace it with the single shared family wait await-staging-westus2-cluster-count-preflight-family-recovery-20260628 so the spec-verification lane matches the accepted environment-family blocker instead of advertising a false runnable retry."
+      },
+      "session_id": "s_task_reconcile-spec-loop-error-workload-autoscaler",
+      "session_history": [
+        "s_task_reconcile-spec-loop-error-workload-autoscaler"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-29T07:05:13.135Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:47:22.560Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "User-review workspace now has the accepted repo-local send-proof repair slice fully reconciled: the four 2026-06-20 response-await proof tasks were reviewed and accepted, and their durable meaning is that App Monitoring row 63, App Routing rows 82/83/84/89/85, CCP admin-group/source-semantics, cloud-provider multiple SLB, go-e2ev3 devinfra, KMS feature-capability gating, and MachinesPreview gating now each have truthful response-await notes that distinguish send-ready-only from proof-of-send/handoff and preserve exact reply-routing back to the existing blocked leaves. Remaining live work in this lane is the external waits themselves, not more repo-local proof-repair.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-response-await-proof-app-monitoring-routing-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Using the accepted 2026-06-20 send-proof audit plus the existing ask/send-ready packets, materialize or repair the missing response-await proof notes for App Monitoring row 63 and App Routing shared rows 82/83/84/89 plus row 85 so each wait truthfully records whether the outbound ask is only send-ready or has durable proof-of-send, and preserves the exact reply-routing destination.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-response-await-proof-app-monitoring-routing-20260620.md"
+      ],
+      "acceptance": [
+        "Creates or repairs evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-source-holder-response-await-20260620.md, evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618.md, and evidence/archive/app-routing-vm-prerelease-row85-outbound-ask-gap-response-await-20260619.md using only repo-local evidence.",
+        "Each repaired note cites the matching accepted ask/send-ready packet plus evidence/archive/external-response-await-send-proof-audit-20260620.md and explicitly states whether the current state is send-ready-only or proof-of-send/handoff present; if no proof exists, it does not invent one.",
+        "Each repaired note preserves one exact resume condition and reply-routing destination back to the existing blocked feature leaf, with no cloud execution and no broad App Monitoring/App Routing rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:external-response-await-proof-app-monitoring-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:44:53.384Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-response-await-proof-app-monitoring-routing-20260620_20260620064453",
+        "assigned_at": "2026-06-20T06:44:53.601Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-response-await-proof-app-monitoring-routing-20260620",
+        "worker_started_attempt_id": "a_external-response-await-proof-app-monitoring-routing-20260620_20260620064453",
+        "worker_started_at": "2026-06-20T06:45:19.059Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the three missing response-await evidence notes plus a repair summary under evidence/archive, each grounded in repo-local ask packets and the 2026-06-20 send-proof audit, and each truthfully marked send-ready-only with preserved reply-routing destinations.",
+        "last_worker_completed_at": "2026-06-20T06:46:37.227Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:47:09.027Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: summary artifact and the three repaired response-await notes exist under evidence/archive, each cites the accepted send-proof audit plus the matching ask/send-ready packets, truthfully records send-ready-only (not proof-of-send), and preserves the exact reply-routing destinations for App Monitoring row 63 and App Routing rows 82/83/84/89/85."
+      },
+      "session_id": "s_task_external-response-await-proof-app-monitoring-routing-20260620",
+      "session_history": [
+        "s_task_external-response-await-proof-app-monitoring-routing-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:47:09.027Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: summary artifact and the three repaired response-await notes exist under evidence/archive, each cites the accepted send-proof audit plus the matching ask/send-ready packets, truthfully records send-ready-only (not proof-of-send), and preserves the exact reply-routing destinations for App Monitoring row 63 and App Routing rows 82/83/84/89/85."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:53:59.098Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: archived the completed private-cluster K8S-validation attached-variant visibility slice because its durable meaning now lives in archive evidence and the maintained model/views. The live repo-local/no-cloud frontier now truthfully centers on two active mounted-source serverless leaves: serverless-addonv2-aci-connector-mounted-vmss-model-landing-20260623 and serverless-virtualnodes-standard-mounted-path-landing-20260623. The three blocked leaves remain exact external waits only: aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623 is still a strict external execution-approval gate despite the generic environment-warning, external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single family-level returned-proof wait, and private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623 remains the single returned-endpoint wait. Do not reopen local setup/source/auth/quota rediscovery or cloud mutation on any blocked branch before returned proof arrives or the first owner follow-up review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-k8s-validation-attached-variant-model-visibility-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted privatelink-with-validation source plus the existing attached spec/replay carriers to decide and land the truthful maintained visibility for Scenario_Private_Cluster_With_K8S_Validation, preserving canonical ownership on path.private-cluster-privatelink-create while repairing any missing model/view exposure for the attached K8S-validation variant without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-k8s-validation-attached-variant-model-visibility-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the exact mounted source files, existing feature packet, attached spec, replay, and canonical owner path for Scenario_Private_Cluster_With_K8S_Validation, and concludes with source-backed reasoning whether the scenario should remain attached metadata only or gain an explicit maintained variant/path-summary visibility row.",
+        "If model/knowledge-map/model.json or generated maintained views change, the update keeps canonical pass ownership on path.private-cluster-privatelink-create, exposes the attached K8S-validation lineage truthfully, and cites validation or regeneration evidence; no cloud mutation or live execution occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge.private-cluster.k8s-validation-variant"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:43:18.079Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-k8s-validation-attached-variant-model-visibility-20260623_20260623214318",
+        "assigned_at": "2026-06-23T21:43:18.126Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-k8s-validation-attached-variant-model-visibility-20260623",
+        "worker_started_attempt_id": "a_private-cluster-k8s-validation-attached-variant-model-visibility-20260623_20260623214318",
+        "worker_started_at": "2026-06-23T21:43:40.324Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed explicit maintained visibility for the attached K8S-validation variant in model/knowledge-map/model.json and regenerated maintained views, while preserving canonical pass ownership on path.private-cluster-privatelink-create. Wrote a new archive note documenting the mounted-source/spec/replay reasoning and the visibility decision with no cloud execution.",
+        "last_worker_completed_at": "2026-06-23T21:47:30.754Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:49:19.131Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence cites the mounted privatelinkwithvalidation source, attached spec/replay carriers, and canonical owner path, and the worker landed a truthful maintained attached-variant visibility row while preserving canonical pass ownership on path.private-cluster-privatelink-create with no cloud execution."
+      },
+      "session_id": "s_task_private-cluster-k8s-validation-attached-variant-model-visibility-20260623",
+      "session_history": [
+        "s_task_private-cluster-k8s-validation-attached-variant-model-visibility-20260623"
+      ],
+      "result": "Landed explicit maintained visibility for the attached K8S-validation variant in model/knowledge-map/model.json and regenerated maintained views, while preserving canonical pass ownership on path.private-cluster-privatelink-create. Wrote a new archive note documenting the mounted-source/spec/replay reasoning and the visibility decision with no cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:49:19.131Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence cites the mounted privatelinkwithvalidation source, attached spec/replay carriers, and canonical owner path, and the worker landed a truthful maintained attached-variant visibility row while preserving canonical pass ownership on path.private-cluster-privatelink-create with no cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

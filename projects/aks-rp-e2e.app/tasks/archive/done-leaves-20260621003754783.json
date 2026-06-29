@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T00:37:54.783Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Project root now preserves the exact live VM-prerelease source-grounding frontier and the shared external-human transport ceiling: app-monitoring-metrics-replay-extension-check-proof-20260621 is accepted and archived as the bounded execute-ready proof for the Azure Monitor metrics replay branch, vmpr-row33-accelerated-networking-check-proof-20260621 is accepted and archived as the bounded row-33 accelerated-networking source/check proof, vmpr-row32-auto-zone-mixed-sku-check-proof-20260621 remains the active adjacent row-32 mixed-SKU auto-zone authoring slice, and external-send-proof-dispatch-family-20260620 remains the single truthful family-level external send/escalation wait until durable human-channel proof or an authoritative reply is recorded.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "app-monitoring-metrics-replay-extension-check-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extend the exact replay for path.app-monitoring-addonv2-azure-monitor-metrics so the execute-capable path can capture the create+upgrade verification bundle (azureMonitorProfile.metrics.enabled readback, helm release presence, pod readiness, and node-exporter proxy-scrape evidence), then prove the repo-local authoring slice in non-cloud mode and write a bounded evidence packet for the next execute gate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-replay-extension-check-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Replay implementation is updated only for the exact app-monitoring-addonv2-azure-monitor-metrics branch, preserving the existing create+upgrade scope while adding capture points for metrics-enabled readback, helm release state, pod readiness, and node-exporter proxy-scrape evidence.",
+        "A durable evidence packet records the touched replay/spec surfaces, the exact verification bundle now wired, and the non-cloud proof used to show the branch is execute-ready without claiming live product success.",
+        "Any remaining blocker after the authoring proof is expressed only as the explicit execute-authorization/live-environment gate for this exact path; do not broaden into unrelated addon, monitoring, or VM-prerelease work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replays/app-monitoring-addonv2-azure-monitor-metrics.ts"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T00:32:46.647Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-metrics-replay-extension-check-proof-20260621_20260621003248",
+        "assigned_at": "2026-06-21T00:32:48.548Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-metrics-replay-extension-check-proof-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-metrics-replay-extension-check-proof-20260621_20260621003248",
+        "worker_started_at": "2026-06-21T00:33:10.334Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a bounded evidence packet for the exact app-monitoring Azure Monitor Metrics replay branch and verified non-cloud authoring readiness with both check-mode pass evidence and execute-gate blocked evidence for the create+upgrade verification bundle.",
+        "last_worker_completed_at": "2026-06-21T00:34:19.360Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T00:34:43.450Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-replay-extension-check-proof-20260621.md: the exact row-63 replay/spec/feature slice now records the create+upgrade verification bundle, check-mode proof passed, execute mode truthfully blocks only on the explicit live authorization gate, and the work stayed bounded to path.app-monitoring-addonv2-azure-monitor-metrics."
+      },
+      "session_id": "s_task_app-monitoring-metrics-replay-extension-check-proof-20260621",
+      "session_history": [
+        "s_task_app-monitoring-metrics-replay-extension-check-proof-20260621"
+      ],
+      "result": "Produced a bounded evidence packet for the exact app-monitoring Azure Monitor Metrics replay branch and verified non-cloud authoring readiness with both check-mode pass evidence and execute-gate blocked evidence for the create+upgrade verification bundle.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T00:34:43.450Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-replay-extension-check-proof-20260621.md: the exact row-63 replay/spec/feature slice now records the create+upgrade verification bundle, check-mode proof passed, execute mode truthfully blocks only on the explicit live authorization gate, and the work stayed bounded to path.app-monitoring-addonv2-azure-monitor-metrics."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row33-accelerated-networking-check-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact VM prerelease row-33 accelerated-networking branch as a maintained source-grounded check-replay slice: capture the mounted-source request/expectation contract, normalize the dedicated spec and replay, and attach the exact NIC accelerated-networking assertions in durable evidence without claiming live-cloud success.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row33-accelerated-networking-check-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Work stays bounded to path.virtualmachines.accelerated-networking and its direct mounted-source, feature/spec/replay, and model/view surfaces; do not widen into adjacent auto-zone, mixed-SKU, or execute-gated VM prerelease rows.",
+        "A durable evidence packet records the mounted-source lineage plus local non-cloud proof that the exact replay/spec contract is wired and reviewable, including the accelerated-vs-non-accelerated NIC expectation bundle.",
+        "Any remaining gap after the authoring proof is expressed only as the explicit future live-execute gate for this exact accelerated-networking branch; do not infer product pass/fail from source-only or check-only evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-accelerated-networking"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T00:34:13.797Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T00:34:20.449Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row33-accelerated-networking-check-proof-20260621_20260621003452",
+        "assigned_at": "2026-06-21T00:34:52.385Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row33-accelerated-networking-check-proof-20260621",
+        "worker_started_attempt_id": "a_vmpr-row33-accelerated-networking-check-proof-20260621_20260621003452",
+        "worker_started_at": "2026-06-21T00:34:52.993Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable row-33 accelerated-networking proof packet at evidence/archive/vmpr-row33-accelerated-networking-check-proof-20260621.md and generated fresh non-cloud check evidence proving the mounted-source/spec/replay/path wiring for the exact VM prerelease slice.",
+        "last_worker_completed_at": "2026-06-21T00:36:05.504Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T00:36:35.770Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: evidence/archive/vmpr-row33-accelerated-networking-check-proof-20260621.md stays bounded to path.virtualmachines.accelerated-networking, cites the mounted-source/spec/replay/model surfaces, and the generated check evidence JSON shows status=pass for row 33 wiring, assertion count 4, required accelerated-networking source snippets present, and modelImpact.noCloudMutationPerformed=true, so the row-33 authoring/check proof is complete without any live-cloud claim."
+      },
+      "session_id": "s_task_vmpr-row33-accelerated-networking-check-proof-20260621",
+      "session_history": [
+        "s_task_vmpr-row33-accelerated-networking-check-proof-20260621"
+      ],
+      "result": "Created a durable row-33 accelerated-networking proof packet at evidence/archive/vmpr-row33-accelerated-networking-check-proof-20260621.md and generated fresh non-cloud check evidence proving the mounted-source/spec/replay/path wiring for the exact VM prerelease slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T00:36:35.770Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: evidence/archive/vmpr-row33-accelerated-networking-check-proof-20260621.md stays bounded to path.virtualmachines.accelerated-networking, cites the mounted-source/spec/replay/model surfaces, and the generated check evidence JSON shows status=pass for row 33 wiring, assertion count 4, required accelerated-networking source snippets present, and modelImpact.noCloudMutationPerformed=true, so the row-33 authoring/check proof is complete without any live-cloud claim."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T12:46:33.801Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner review update: row-36 app-monitoring AAD-auth is now fully accepted after the review-repair note reconciled the original output-path mismatch, named evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620.md as the authoritative landing, and recorded a fresh passing local replay --check for the mounted-source Log Analytics/useAADAuth/ama-logs contract. The remaining live feature/spec frontier is the active row-44 cloud-provider IP-based backend-pool authoring slice plus the single truthful MachinesPreview external send/reply wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the VirtualMachine prerelease authoring slice for row 36 by refreshing the app-monitoring feature packet and adding the exact Azure Monitor AAD-auth spec/replay contract grounded in the accepted mounted source mapping.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Using evidence/archive/vm-prerelease-e2ev3-missing-spec-authoring-batch-plan-20260620.md and the mounted-source mappings it cites, refresh features/app-monitoring.yaml and add specs/msi-azure-monitor-aad-auth-vm-prerelease.json plus replays/msi-azure-monitor-aad-auth-vm-prerelease.ts for the row-36 Azure Monitor AAD-auth contract without reopening source discovery.",
+        "Artifact summarizes the exact files landed, captures the Log Analytics workspace plus omsagent useAADAuth=true and ama-logs validation semantics, and names any bounded follow-up needed; work stays within row 36 only.",
+        "Do not edit evidence/pipelines/virtualmachine-prerelease.features.txt, model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, or checkpoint-held files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:42:35.065Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620_20260620124240",
+        "assigned_at": "2026-06-20T12:42:40.323Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620_20260620124240",
+        "worker_started_at": "2026-06-20T12:42:53.743Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Validated the row-36 Azure Monitor AAD-auth authoring slice, confirmed the app-monitoring feature packet plus dedicated spec/replay and evidence artifact are present, and made one bounded replay change to keep check-mode verification authoring-only via skipCoverageCheck.",
+        "last_worker_completed_at": "2026-06-20T12:44:09.031Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:46:25.066Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review repair: the row-36 app-monitoring feature/spec/replay files are present, the bounded Azure Monitor AAD-auth semantics match mounted source, and evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md reconciles the original output-path mismatch by naming the authoritative landing note and fresh local check artifacts."
+      },
+      "session_id": "s_task_vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:46:25.066Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review repair: the row-36 app-monitoring feature/spec/replay files are present, the bounded Azure Monitor AAD-auth semantics match mounted source, and evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md reconciles the original output-path mismatch by naming the authoritative landing note and fresh local check artifacts."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the row-36 app-monitoring AAD-auth review by reconciling the expected artifact path evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620.md with the landed suffixed row-36 artifacts, leaving one bounded, source-grounded row-36 landing that satisfies the original review leaf.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Review the current row-36 landing and leave durable repo-local evidence that reconciles the mismatch between the review leaf's expected output path and the files actually landed; either restore the exact expected artifact path evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-authoring-20260620.md or document why the suffixed row-36 artifact set is the authoritative replacement without expanding beyond row 36.",
+        "Confirm features/app-monitoring.yaml plus specs/msi-azure-monitor-aad-auth-vm-prerelease.json and replays/msi-azure-monitor-aad-auth-vm-prerelease.ts capture the mounted-source Log Analytics workspace, omsagent useAADAuth=true, ama-logs validation semantics, and skipCoverageCheck authoring-only intent; record the exact local source/spec check command and result in the repair artifact.",
+        "Do not edit evidence/pipelines/virtualmachine-prerelease.features.txt, model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, or checkpoint-held files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:44:34.509Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620_20260620124434",
+        "assigned_at": "2026-06-20T12:44:34.552Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620_20260620124434",
+        "worker_started_at": "2026-06-20T12:44:47.716Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the row-36 review/output-path mismatch by writing the expected review-repair note at evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md and re-validating the row-36 source/spec/replay contract with a fresh local check artifact pair.",
+        "last_worker_completed_at": "2026-06-20T12:46:16.247Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:46:25.114Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the repair note at evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md restores a review-path artifact, identifies the authoritative row-36 landing, and records a fresh passing local replay --check result for the mounted-source Log Analytics/useAADAuth/ama-logs contract."
+      },
+      "session_id": "s_task_vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:46:25.114Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the repair note at evidence/archive/vm-prerelease-row36-aad-auth-app-monitoring-review-repair-20260620.md restores a review-path artifact, identifies the authoritative row-36 landing, and records a fresh passing local replay --check result for the mounted-source Log Analytics/useAADAuth/ama-logs contract."
+      },
+      "status": "done"
+    }
+  ]
+}

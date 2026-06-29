@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:45:18.217Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier planning update: accepted the private-cluster private-endpoint-connections lifecycle maintained-surface landing after evidence and maintained-surface checks confirmed model/knowledge-map/model.json plus path-summary now expose path.private-cluster-private-endpoint-connections-lifecycle while preserving the existing list-only sibling path.private-cluster-private-endpoint-connections unchanged. The earlier waitingBacklog conflict reference against private-cluster-custom-dns-zone-exact-contract-reconcile-20260622 is now stale because that sibling leaf was already accepted done. Repo-local frontier capacity is refilled with one concrete regular-learning leaf, private-cluster-remaining-mounted-source-gap-post-lifecycle-inventory-20260622, to inspect the remaining mounted private-cluster handwritten source frontier and either nominate exactly one bounded next local landing or conclude no private-cluster repo-local authoring gap remains. Keep external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful external-human transport family wait until real send/reply evidence arrives.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-custom-dns-zone-exact-contract-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the private-cluster custom-DNS-zone exact contract into repo-local maintained knowledge surfaces using mounted AKS RP source plus the existing private-cluster feature carriers, clarifying zone-mode boundaries and execution linkage without cloud execution or duplicate specs/replays.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-custom-dns-zone-exact-contract-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP source files used plus the existing private-cluster feature carriers relevant to custom DNS zone behavior, including one or more of features/private-cluster/dns-zone-modes.yaml, features/private-cluster/none-dns-zone-v3.yaml, and features/private-cluster/webhook-custom-dns.yaml, to show the exact contract and why any maintained-surface gap exists.",
+        "Maintained repo-local surfaces are updated truthfully so model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json expose or explicitly annotate the exact custom-DNS-zone private-cluster path boundary and its execution/spec linkage, without inventing a new cloud run or duplicating runnable specs/replays.",
+        "Artifact records the exact maintained-surface landing, any regeneration/check commands used, and confirms no cloud execution or external-human wait was introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:38:56.124Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T08:39:53.297Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-custom-dns-zone-exact-contract-reconcile-20260622_20260622084004",
+        "assigned_at": "2026-06-22T08:40:04.724Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-custom-dns-zone-exact-contract-reconcile-20260622",
+        "worker_started_attempt_id": "a_private-cluster-custom-dns-zone-exact-contract-reconcile-20260622_20260622084004",
+        "worker_started_at": "2026-06-22T08:40:27.356Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the knowledge-map model and regenerated path-summary so the private-cluster custom-DNS exact contract is explicitly annotated as an existing split across path.private-cluster-private-dns-zone and path.private-cluster-fqdn-subdomain, with durable evidence links and no cloud execution.",
+        "last_worker_completed_at": "2026-06-22T08:43:10.892Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:43:36.336Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 worker evidence: archive/private-cluster-custom-dns-zone-exact-contract-reconcile-20260622.md cites mounted custom_dns_zone.go plus adjacent fqdn_subdomain.go and shows the exact handwritten contract is already truthfully split across maintained carriers path.private-cluster-private-dns-zone and path.private-cluster-fqdn-subdomain; maintained model/path-summary surfaces now explicitly record that split and no cloud or external-human work was introduced."
+      },
+      "session_id": "s_task_private-cluster-custom-dns-zone-exact-contract-reconcile-20260622",
+      "session_history": [
+        "s_task_private-cluster-custom-dns-zone-exact-contract-reconcile-20260622"
+      ],
+      "result": "Updated the knowledge-map model and regenerated path-summary so the private-cluster custom-DNS exact contract is explicitly annotated as an existing split across path.private-cluster-private-dns-zone and path.private-cluster-fqdn-subdomain, with durable evidence links and no cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:43:36.336Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 worker evidence: archive/private-cluster-custom-dns-zone-exact-contract-reconcile-20260622.md cites mounted custom_dns_zone.go plus adjacent fqdn_subdomain.go and shows the exact handwritten contract is already truthfully split across maintained carriers path.private-cluster-private-dns-zone and path.private-cluster-fqdn-subdomain; maintained model/path-summary surfaces now explicitly record that split and no cloud or external-human work was introduced."
+      },
+      "status": "done"
+    },
+    {
+      "id": "private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land maintained knowledge-map/view visibility for the private-cluster private-endpoint-connections lifecycle contract using mounted AKS RP source plus the existing feature carriers, without creating duplicate specs/replays or running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted AKS RP source files used plus features/private-cluster/private-endpoint-connections-lifecycle.yaml and any adjacent existing private-endpoint carrier needed to show the lifecycle contract and why it remains a repo-local maintained-surface gap.",
+        "Maintained repo-local surfaces are updated truthfully so model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json expose or explicitly attach the private-endpoint-connections lifecycle path boundary and execution/spec linkage, without widening it into a duplicate product branch or inventing a new runnable replay.",
+        "Artifact records the exact maintained-surface landing, any regeneration/check commands used, and confirms no cloud execution or external-human wait was introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-source-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T08:38:56.168Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T08:39:53.297Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622_20260622084336",
+        "assigned_at": "2026-06-22T08:43:36.384Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622_20260622084336",
+        "worker_started_at": "2026-06-22T08:43:53.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the exact private-endpoint-connections lifecycle branch into model/knowledge-map/model.json with new feature/scenario/inputDag/featurePath entries, regenerated knowledge-map views, and wrote a bounded evidence note preserving the existing list-only sibling path.",
+        "last_worker_completed_at": "2026-06-22T08:43:53.935Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T08:45:18.069Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 review after checking evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622.md and confirming the maintained model/view surfaces now expose path.private-cluster-private-endpoint-connections-lifecycle while preserving sibling path.private-cluster-private-endpoint-connections as a separate list-only carrier; no cloud execution or external-human wait was introduced."
+      },
+      "session_id": "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622"
+      ],
+      "result": "Landed the exact private-endpoint-connections lifecycle branch into model/knowledge-map/model.json with new feature/scenario/inputDag/featurePath entries, regenerated knowledge-map views, and wrote a bounded evidence note preserving the existing list-only sibling path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T08:45:18.069Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 review after checking evidence/archive/private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622.md and confirming the maintained model/view surfaces now expose path.private-cluster-private-endpoint-connections-lifecycle while preserving sibling path.private-cluster-private-endpoint-connections as a separate list-only carrier; no cloud execution or external-human wait was introduced."
+      },
+      "status": "done"
+    }
+  ]
+}

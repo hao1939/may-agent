@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T17:37:01.946Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the row-55 standalone metadata decision as durable repo-local knowledge: keep the current superseded-spec execution-variant crosswalk, with no new non-superseded standalone surface. The visible frontier should no longer point at the stale private-cluster review; instead it should carry one fresh repo-local VM prerelease next-row frontier packet leaf plus the single shared external-human transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row55-standalone-variant-metadata-promotion-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide whether row 55 Scenario_ManagedSystemPool_Enable_VirtualMachine should keep using specs/superseded/managedsystem-standalone-e2ev3-enable.json as historical execution-variant metadata or gain a clearer non-superseded standalone variant surface, without changing the already-accepted canonical coverage judgment that the row is covered.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row55-standalone-variant-metadata-promotion-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted source row-55 scenario, the accepted frontier packet, and current maintained carriers, then states one exact metadata decision: keep the current superseded-spec variant crosswalk with rationale, or make the minimal repo-local metadata/file updates needed for a clearer non-superseded execution-variant surface.",
+        "If the decision changes maintained metadata, update only the relevant repo-local carrier files and cite the exact changed spec/path/variant linkage in the artifact; if no change is warranted, record why current discoverability is already truthful and sufficient.",
+        "No cloud mutation, no new ManagedSystem product path invention, and no reopening of the closed direct-link frontier; this is a bounded repo-local metadata/crosswalk cleanup review only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row55-variant-metadata"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T17:33:55.953Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row55-standalone-variant-metadata-promotion-20260622_20260622173358",
+        "assigned_at": "2026-06-22T17:33:58.149Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row55-standalone-variant-metadata-promotion-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row55-standalone-variant-metadata-promotion-20260622_20260622173358",
+        "worker_started_at": "2026-06-22T17:34:21.080Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-55 standalone-variant metadata review and wrote an archive artifact concluding no metadata promotion is needed; the current superseded-spec execution-variant crosswalk should remain in place.",
+        "last_worker_completed_at": "2026-06-22T17:36:04.135Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T17:37:01.898Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: the archive artifact cites mounted row-55 source, accepted frontier context, maintained carriers, and a clear no-change decision to keep the current superseded-spec execution-variant crosswalk because row-55 discoverability is already truthful and sufficient without adding a duplicate active standalone surface."
+      },
+      "session_id": "s_task_vm-prerelease-row55-standalone-variant-metadata-promotion-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row55-standalone-variant-metadata-promotion-20260622"
+      ],
+      "result": "Completed the row-55 standalone-variant metadata review and wrote an archive artifact concluding no metadata promotion is needed; the current superseded-spec execution-variant crosswalk should remain in place.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T17:37:01.898Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: the archive artifact cites mounted row-55 source, accepted frontier context, maintained carriers, and a clear no-change decision to keep the current superseded-spec execution-variant crosswalk because row-55 discoverability is already truthful and sufficient without adding a duplicate active standalone surface."
+      },
+      "status": "done"
+    }
+  ]
+}

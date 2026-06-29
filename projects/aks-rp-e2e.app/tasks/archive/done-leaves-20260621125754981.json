@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:57:54.981Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted the row-34 maintained-surface reconciliation and collapsed the finished VM prerelease preparation leaves into project memory. Rolled-up knowledge now preserves the accepted rows25+50 source boundary, rows31-32 auto-zone source boundary, row-34 AvailabilitySet→VirtualMachines Standard-LB maintained-surface reconciliation, and row-75 maintained-surface repairs. The live frontier is now one exact blocked external-human-transport family plus one new repo-local VM prerelease source-boundary task for the next adjacent row so planning stays on durable knowledge-map expansion rather than idling on the external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row75-maintained-surface-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted row-75 canonical carrier to repair the missing maintained repo surfaces for the exact VM prerelease Scenario_AKSConformance_Core row, specifically aligning any feature/spec/replay/index/model/view surfaces to the row-75 deployment+tunnel+metrics user-kubeconfig carrier while truthfully recording that model/knowledge-map/model.json and generated views do not yet contain the row-75 feature/scenario/inputDag/featurePath landing until this repair proves it.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row75-maintained-surface-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Task cites the accepted evidence/archive/vmpr-row75-aksconformance-core-canonical-carrier-20260621.md artifact and names each maintained surface changed or confirmed unchanged for the exact row-75 scenario/path, including whether feature/spec/replay/index were already correct versus what model/view surfaces were missing in this checkout.",
+        "Result truthfully updates the maintained repo surfaces needed for row 75, including model/knowledge-map/model.json and regenerated view surfaces if repaired, or records the bounded reason a given surface stays unchanged, keeping all wording aligned to the row-75 canonical carrier without claiming already-live model/view coverage unless the task actually proves it.",
+        "Work stays repo-local and row-scoped: no cloud mutation, no new human-transport asks, no reopening of privatecluster shared-apiserver-subnet execution approval, and no spillover into unrelated VM prerelease rows."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row75-aksconformance-core"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:10:41.772Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row75-maintained-surface-repair-20260621_20260621121600",
+        "assigned_at": "2026-06-21T12:16:00.823Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row75-maintained-surface-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row75-maintained-surface-repair-20260621_20260621121600",
+        "worker_started_at": "2026-06-21T12:16:02.282Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-75 maintained spec surfaces to cite the accepted canonical carrier instead of the stale overclaiming authoring artifact, and wrote a row-scoped repair report documenting changed vs unchanged surfaces and why model/view surfaces remain absent.",
+        "last_worker_completed_at": "2026-06-21T12:17:42.457Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:18:20.735Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the row-75 repair: evidence/archive/vmpr-row75-maintained-surface-repair-20260621.md cites the accepted canonical carrier, records the spec and specs/index citation swap away from the stale overclaiming artifact, and truthfully preserves model/knowledge-map/model.json plus generated view surfaces as still absent rather than claiming a landed row-75 model/view path."
+      },
+      "session_id": "s_task_vmpr-row75-maintained-surface-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row75-maintained-surface-repair-20260621"
+      ],
+      "result": "Repaired the row-75 maintained spec surfaces to cite the accepted canonical carrier instead of the stale overclaiming authoring artifact, and wrote a row-scoped repair report documenting changed vs unchanged surfaces and why model/view surfaces remain absent.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:18:20.735Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the row-75 repair: evidence/archive/vmpr-row75-maintained-surface-repair-20260621.md cites the accepted canonical carrier, records the spec and specs/index citation swap away from the stale overclaiming artifact, and truthfully preserves model/knowledge-map/model.json plus generated view surfaces as still absent rather than claiming a landed row-75 model/view path."
+      },
+      "status": "done"
+    }
+  ]
+}

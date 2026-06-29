@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T07:22:42.077Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "user-review-workspace",
+  "summary": "The 2026-06-20 excluded packetization review is now partially reconciled at the lane level. The accepted VM prerelease matrix proves that 12 excluded VM prerelease waits are already backed by durable outbound packet artifacts and only the shared identity/migration family still lacks one trustworthy ask/handoff packet before queue inclusion. The earlier non-VM matrix attempt was not accepted because it produced no artifact and ended in worker error, so it was replaced by one bounded rerun leaf rather than left as ambiguous review state. Current active repo-local work in this lane is therefore exactly two owner-approved leaves: user-review-vm-prerelease-identity-migration-packet-authoring-repair-20260620 to mint the one missing shared identity/migration outbound packet, and user-review-non-vm-excluded-response-await-packetization-matrix-rerun-20260620 to classify the excluded non-VM waits with exact packet/gap routing. All other user-review blocked leaves remain true external waits until new proof or handoff evidence arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the currently excluded VM prerelease user-review response-await leaves from the accepted 2026-06-20 outbound registry into durable packetization states so the blocked frontier can be reduced without guessing. Using the registry exclusion list, each live excluded VM prerelease source-holder wait, and any already-cited archive artifacts, determine whether the wait already has a durable outbound ask/handoff artifact that can be treated as packetized, still lacks a trustworthy packet artifact and therefore needs packet-authoring repair, or is not actually a send-ready queue item. Produce one durable matrix with exact artifact paths, missing artifact gaps, and the precise child follow-up each cohort should receive.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note enumerates the excluded VM prerelease waits named by evidence/archive/user-review-send-ready-outbound-registry-20260620.md, cites the current live task id for each, and classifies each as already-packetized-via-existing-artifact, missing-packet-repair-needed, or non-send-ready/non-queue with exact evidence paths.",
+        "For waits classified as already-packetized, the note names the exact artifact that should be considered the outbound packet and states whether planning can fold that wait into the operator-facing queue without further authoring; for waits classified as missing-packet-repair-needed, the note states the exact missing durable surface and the bounded repair action needed.",
+        "The matrix stays repo-local and review-lane only: no cloud execution, no claims that any packet was sent, and no broad VM-prerelease rediscovery beyond what is necessary to classify packetization state."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-excluded-packetization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:15:08.106Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620_20260620071508",
+        "assigned_at": "2026-06-20T07:15:08.160Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620",
+        "worker_started_attempt_id": "a_user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620_20260620071508",
+        "worker_started_at": "2026-06-20T07:15:28.356Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable VM prerelease excluded-wait packetization matrix at evidence/archive/user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620.md, classifying 12 excluded waits as already packetized and 1 identity/migration wait as needing packet-authoring repair.",
+        "last_worker_completed_at": "2026-06-20T07:17:11.262Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T07:22:26.800Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620.md enumerates the excluded VM prerelease waits from the outbound registry, classifies 12 as already packetized and 1 shared identity/migration wait as missing-packet-repair-needed, and gives exact artifact paths plus row-local routing."
+      },
+      "session_id": "s_task_user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620",
+      "session_history": [
+        "s_task_user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T07:22:26.800Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/user-review-vm-prerelease-excluded-response-await-packetization-matrix-20260620.md enumerates the excluded VM prerelease waits from the outbound registry, classifies 12 as already packetized and 1 shared identity/migration wait as missing-packet-repair-needed, and gives exact artifact paths plus row-local routing."
+      },
+      "status": "done"
+    }
+  ]
+}

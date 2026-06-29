@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T22:21:31.450Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed owner review accepted the serverless virtual-nodes subnet-validation canonical reconcile and archived the done leaf because its durable meaning now lives in the new archive note plus the maintained feature/spec/replay/spec-index/model carriers. The project frontier is now blocked-only with exactly three truthful external waits—aad-rbac-managed-v2-lifecycle-execution-approval-proof-wait-20260623, private-cluster-auth-service-tags-devbox-endpoint-returned-proof-wait-20260623, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622—so do not reopen repo-local source/setup/auth/quota discovery or run cloud mutation before returned proof arrives or the first blocked-frontier follow-up review on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.serverless-virtual-nodes.subnet-validation against the mounted serverless/virtual-nodes source, the current canonical spec/replay/index carriers, and the accepted boundary/evidence-ceiling artifacts so the maintained scenario/input-DAG/path linkage and blocked-runtime status stay truthful repo-local only and explicitly separate subnet-wiring validation from the Addonv2 ACI connector lifecycle branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact mounted serverless/virtual-nodes source anchors plus the current canonical spec, replay, spec-index, feature carrier, and accepted boundary/evidence-ceiling/status artifacts, then concludes exactly what maintained scenario/input-DAG/path surface path.serverless-virtual-nodes.subnet-validation covers, what remains blocked at runtime, and what must stay source-equivalent versus execution-derived.",
+        "If features/serverless.yaml, model/knowledge-map/model.json, generated maintained views, specs/index.json, the canonical spec, or the replay change, the update keeps execution status repo-local/blocked-runtime with no cloud mutation, validates cleanly within the touched surfaces, and leaves a bounded next action that does not reopen duplicate environment/setup waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "knowledge.serverless-virtual-nodes-subnet-validation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T22:17:56.174Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623_20260623221758",
+        "assigned_at": "2026-06-23T22:17:58.793Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623_20260623221758",
+        "worker_started_at": "2026-06-23T22:18:20.319Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a new archive reconcile note at evidence/archive/serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623.md that ties mounted virtualnodes source, current feature/spec/replay/spec-index/model carriers, and accepted boundary/evidence-ceiling artifacts into one canonical statement for path.serverless-virtual-nodes.subnet-validation. Also verified the maintained replay wiring remains coherent with a passing local --check run.",
+        "last_worker_completed_at": "2026-06-23T22:20:46.496Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T22:21:31.401Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the review after checking evidence/archive/serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623.md: it cites the mounted virtualnodes source anchors, current feature/spec/replay/spec-index/model carriers, accepted boundary/evidence-ceiling packets, and preserves the truthful repo-local blocked-runtime separation from Addonv2 siblings. The archive note also records a passing repo-local check run for replays/serverless-virtual-nodes-subnet-validation.ts with no cloud mutation or duplicate blocker reopening."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623"
+      ],
+      "result": "Wrote a new archive reconcile note at evidence/archive/serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623.md that ties mounted virtualnodes source, current feature/spec/replay/spec-index/model carriers, and accepted boundary/evidence-ceiling artifacts into one canonical statement for path.serverless-virtual-nodes.subnet-validation. Also verified the maintained replay wiring remains coherent with a passing local --check run.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T22:21:31.401Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the review after checking evidence/archive/serverless-virtual-nodes-subnet-validation-canonical-path-reconcile-20260623.md: it cites the mounted virtualnodes source anchors, current feature/spec/replay/spec-index/model carriers, accepted boundary/evidence-ceiling packets, and preserves the truthful repo-local blocked-runtime separation from Addonv2 siblings. The archive note also records a passing repo-local check run for replays/serverless-virtual-nodes-subnet-validation.ts with no cloud mutation or duplicate blocker reopening."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:33:24.400Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review and capacity refill: kept external-send-proof-dispatch-family-20260620 unchanged as the single truthful family-level external-human transport wait with exact send-proof-or-authoritative-reply resume conditions, preserved the three active source-contract closure leaves, archived the accepted policy-addon large-scale-audit source-semantics unblock leaf into project rollup context, and opened one bounded follow-on to choose the exact row-167 runtime verdict surface or prove that check-only is the final truthful ceiling without broadening coverage.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "policy-addon-large-scale-audit-source-semantics-unblock-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For Scenario_PolicyAddonLargeScaleAudit, use mounted aks-rp e2ev3 source plus existing repo-local policy-addon spec/replay/model assets to replace the generic handwritten-source blocker with one row-local proof packet that pins the exact request/body semantics and verdict-bearing assertion surface, or records the exact checked-in evidence ceiling if no exact source equivalent exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/policy-addon-large-scale-audit-source-semantics-unblock-20260621.md"
+      ],
+      "acceptance": [
+        "The work cites the exact mounted source file(s) and scenario/row-local definitions used for Scenario_PolicyAddonLargeScaleAudit, or records explicit repo-local proof that no exact checked-in source exists and which bounded source-equivalent artifacts were used instead.",
+        "Repo-local durable carriers are updated as warranted so the large-scale-audit branch truthfully captures the request/body encoding and verdict-bearing assertion surface in maintained evidence/spec/model surfaces without collapsing it into generic policy-addon coverage.",
+        "The evidence artifact records files inspected/changed, validation commands/checks used, and whether the path should remain blocked pending execution or can advance to a narrower replay/model follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "policy-addon-large-scale-audit"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:28:26.587Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_policy-addon-large-scale-audit-source-semantics-unblock-20260621_20260621062826",
+        "assigned_at": "2026-06-21T06:28:26.639Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_policy-addon-large-scale-audit-source-semantics-unblock-20260621",
+        "worker_started_attempt_id": "a_policy-addon-large-scale-audit-source-semantics-unblock-20260621_20260621062826",
+        "worker_started_at": "2026-06-21T06:29:21.640Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-167 PolicyAddon source-semantics unblock artifact and refreshed the maintained knowledge-map surfaces so the large-scale-audit branch now records accepted source-equivalent semantics instead of the old handwritten-source blocker.",
+        "last_worker_completed_at": "2026-06-21T06:31:47.902Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:32:20.476Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: artifact cites exact mounted AKS RP source and row-167 matrix identity, and repo-local maintained carriers now align on a source-equivalent large-scale-audit contract in model/knowledge-map model plus regenerated path-summary/graph-view surfaces without claiming a fresh cloud verdict."
+      },
+      "session_id": "s_task_policy-addon-large-scale-audit-source-semantics-unblock-20260621",
+      "session_history": [
+        "s_task_policy-addon-large-scale-audit-source-semantics-unblock-20260621"
+      ],
+      "result": "Produced the row-167 PolicyAddon source-semantics unblock artifact and refreshed the maintained knowledge-map surfaces so the large-scale-audit branch now records accepted source-equivalent semantics instead of the old handwritten-source blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:32:20.476Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: artifact cites exact mounted AKS RP source and row-167 matrix identity, and repo-local maintained carriers now align on a source-equivalent large-scale-audit contract in model/knowledge-map model plus regenerated path-summary/graph-view surfaces without claiming a fresh cloud verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

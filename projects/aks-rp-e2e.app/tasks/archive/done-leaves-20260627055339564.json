@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T05:53:39.564Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier review kept the tree truthful without reopening local busywork: the only live repo-local execution slice remains net-integration-natgw-v2-v2-to-block-model-wording-reconciliation-20260627, while focus-mounted-source-coverage-closure-and-external-wait-20260623 continues to hold the two exact external waits unchanged with their existing resume conditions. Archive the completed NATGW execute-lane closure and the two completed VM prerelease Windows reconciliation leaves because their durable meaning is now captured at the project root: the VM mounted-source coverage cleanup is complete, the NATGW path already has a proven execute-gated carrier, and no new setup/source/spec refill task is truthful until either the active NATGW wording task finishes or one of the external waits receives a reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the next concrete repo-local gap outside the preserved external waits by auditing path.net-integration.natgw-v2-migration-v2-to-block and either landing the exact execute-gated replay lane for the mounted Scenario_NATGatewayV2_Migration_V2toBlock carrier or writing precise evidence/model-ceiling updates that prove what remains missing and why.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627.md"
+      ],
+      "acceptance": [
+        "Worker leaves one durable repo-local artifact that names the mounted source file(s), canonical spec/replay/test carrier, and the exact current state of the V2->block live-control lane; if the execute path is missing or incomplete, the worker lands the minimal repo-local code/spec/evidence changes needed to make the bounded lane explicit and verifies the non-mutating carrier wiring, or else records an exact evidence-backed ceiling explaining the missing piece without claiming live product verdicts.",
+        "Task must keep scope bounded to path.net-integration.natgw-v2-migration-v2-to-block and distinguish it from adjacent V2->none and V2->LB siblings; do not run cloud mutation, do not disturb the two preserved external waits, and do not broaden into generic NATGW migration family cleanup."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "net-integration-natgw-v2-v2-to-block"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T05:48:52.551Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627_20260627054958",
+        "assigned_at": "2026-06-27T05:49:58.813Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627",
+        "worker_started_attempt_id": "a_net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627_20260627054958",
+        "worker_started_at": "2026-06-27T05:49:59.346Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Closed the bounded NATGW V2→block repo-local gap by writing a durable lane-closure artifact and repairing the spec’s sourceRefs to point at the real packet plus exact 2026-06-26 execute-lane evidence. Verified the check-mode carrier and Vitest gate tests still pass without cloud mutation after regenerating the spec catalog.",
+        "last_worker_completed_at": "2026-06-27T05:52:08.491Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T05:52:53.035Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the 2026-06-27 lane-closure artifact durably proves the mounted V2→block source/spec/probe carrier is exact, the execute-gated live-control lane already exists and remains fail-closed without authorization, and the only remaining repo-local gap is stale model/path wording rather than missing carrier implementation."
+      },
+      "session_id": "s_task_net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627",
+      "session_history": [
+        "s_task_net-integration-natgw-v2-v2-to-block-execute-lane-closure-20260627"
+      ],
+      "result": "Closed the bounded NATGW V2→block repo-local gap by writing a durable lane-closure artifact and repairing the spec’s sourceRefs to point at the real packet plus exact 2026-06-26 execute-lane evidence. Verified the check-mode carrier and Vitest gate tests still pass without cloud mutation after regenerating the spec catalog.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T05:52:53.035Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the 2026-06-27 lane-closure artifact durably proves the mounted V2→block source/spec/probe carrier is exact, the execute-gated live-control lane already exists and remains fail-closed without authorization, and the only remaining repo-local gap is stale model/path wording rather than missing carrier implementation."
+      },
+      "status": "done"
+    }
+  ]
+}

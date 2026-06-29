@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:47:09.247Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Stale watchdog review request reconciled: shared-knowledge-map-seven-file-reduction-order-matrix-20260620 was already accepted, so the owner branch now just records that no truthful cross-family checkpoint cohort exists yet while the seven maintained shared files remain helper-held and multi-family. Remaining live work under this lane is the canonical shared-hold blocker plus future reduction-order follow-up only if family-level clearance changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-knowledge-map-seven-file-reduction-order-matrix-20260620",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the current seven-file shared knowledge-map/model batch into one concrete reduction order that can turn the helper-held multi-family surface into a truthful future checkpoint cohort. Using the accepted shared-cohort partition note plus current helper/git evidence, enumerate the families still cohabiting model/knowledge-map/model.json and the six generated views, name each family's direct companion files and present owner state (accepted, blocked, hold, needs-planner-review), and end with one ordered reduction sequence identifying which family slices must land, close, or be excluded first before a checkpoint retry becomes truthful.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-knowledge-map-seven-file-reduction-order-matrix-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/shared-knowledge-map-done-slice-cohort-partition-20260620.md together with current git diff/checkpoint-helper evidence and enumerates the exact family markers still cohabiting the seven shared files.",
+        "For each named family, the note lists the direct companion feature/spec/replay/evidence files that make the shared delta truthful and classifies their present task/helper state in repo-local terms (for example accepted, blocked, hold, or needs-planner-review) without broad rediscovery or commit attempts.",
+        "The note ends with one bounded ordered reduction sequence for planner checkpointing that says which families or ownership states must clear first before the shared seven-file batch can become a truthful checkpoint cohort; generic generator tooling stays explicitly in or out by evidence-backed decision."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:shared-knowledge-map-cohort"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T06:41:55.688Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-knowledge-map-seven-file-reduction-order-matrix-20260620_20260620064155",
+        "assigned_at": "2026-06-20T06:41:55.739Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-knowledge-map-seven-file-reduction-order-matrix-20260620",
+        "worker_started_attempt_id": "a_shared-knowledge-map-seven-file-reduction-order-matrix-20260620_20260620064155",
+        "worker_started_at": "2026-06-20T06:42:14.010Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note at evidence/archive/shared-knowledge-map-seven-file-reduction-order-matrix-20260620.md, mapping the seven shared knowledge-map files to the still-cohabiting families, their direct companions, current helper states, and one ordered reduction sequence for a truthful future checkpoint retry.",
+        "last_worker_completed_at": "2026-06-20T06:44:28.435Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T06:46:07.445Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/shared-knowledge-map-seven-file-reduction-order-matrix-20260620.md cites the shared-cohort partition anchor plus fresh git diff/domain:checkpoint evidence, enumerates the exact twelve cohabiting families across the seven maintained knowledge-map files, maps direct companion files with repo-local owner state, and ends with one bounded reduction order that keeps generic tooling excluded and clears held sibling families before any truthful checkpoint retry."
+      },
+      "session_id": "s_task_shared-knowledge-map-seven-file-reduction-order-matrix-20260620",
+      "session_history": [
+        "s_task_shared-knowledge-map-seven-file-reduction-order-matrix-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T06:46:07.445Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/shared-knowledge-map-seven-file-reduction-order-matrix-20260620.md cites the shared-cohort partition anchor plus fresh git diff/domain:checkpoint evidence, enumerates the exact twelve cohabiting families across the seven maintained knowledge-map files, maps direct companion files with repo-local owner state, and ends with one bounded reduction order that keeps generic tooling excluded and clears held sibling families before any truthful checkpoint retry."
+      },
+      "status": "done"
+    }
+  ]
+}

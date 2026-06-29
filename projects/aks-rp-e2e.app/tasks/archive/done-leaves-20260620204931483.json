@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:49:31.483Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed planning update: accepted mixed-SKU status-repair is now durable at the project level, and the earlier scheduler-controller index-registration rerun is also preserved in evidence/history. Live repo-local focus is narrowed to one active non-cloud leaf: reconcile the final model/landing text for serverless-schedulerctrl-disable-after-enable so it truthfully reflects the accepted source-grounded carrier plus passing local wiring checks and records the exact future live-verification resume condition. The only remaining blocked work is the single family-level external-human send-proof transport wait for the already send-ready MachinesPreview and VM prerelease packets; no duplicate child waits should be recreated without real send/escalation proof or an authoritative reply.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add the missing specs/index.json registration for spec.serverless-schedulerctrl.disable-after-enable by mirroring the sibling scheduler-controller entry shape, then rerun the same two bounded local validations so the spec/replay pair proves it loads cleanly without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-disable-after-enable-local-wiring-check-20260620.md"
+      ],
+      "acceptance": [
+        "Update specs/index.json so spec.serverless-schedulerctrl.disable-after-enable is registered with file serverless-schedulerctrl-disable-after-enable.json, probeRef replays/serverless-schedulerctrl-disable-after-enable.ts, and the matching feature/path metadata; record the exact registration delta in the evidence artifact.",
+        "Rerun the same two bounded repo-local checks used in the diagnosis (the replay --check validation and bun runner/spec-runner.ts spec.serverless-schedulerctrl.disable-after-enable --dry-run), capture the exact commands and outcomes in the evidence artifact, and confirm whether the pair now loads cleanly.",
+        "If either rerun still fails, capture the exact failing output and name the next bounded culprit in the same evidence artifact without widening into other scheduler-controller leaves, model edits, or remote execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-disable-after-enable-carrier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:46:03.024Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T20:46:03.117Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620_20260620204609",
+        "assigned_at": "2026-06-20T20:46:09.461Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620_20260620204609",
+        "worker_started_at": "2026-06-20T20:46:26.719Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Registered spec.serverless-schedulerctrl.disable-after-enable in specs/index.json and refreshed the task evidence artifact with the exact index delta plus successful reruns of the replay --check and spec-runner --dry-run local validations.",
+        "last_worker_completed_at": "2026-06-20T20:47:48.196Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:48:19.481Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence shows specs/index.json now registers spec.serverless-schedulerctrl.disable-after-enable with matching replay/path metadata, and the same two bounded local validations reran cleanly (replay --check and spec-runner --dry-run) without widening into cloud execution or other scheduler-controller leaves."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-disable-after-enable-index-registration-rerun-20260620"
+      ],
+      "result": "Registered spec.serverless-schedulerctrl.disable-after-enable in specs/index.json and refreshed the task evidence artifact with the exact index delta plus successful reruns of the replay --check and spec-runner --dry-run local validations.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:48:19.481Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence shows specs/index.json now registers spec.serverless-schedulerctrl.disable-after-enable with matching replay/path metadata, and the same two bounded local validations reran cleanly (replay --check and spec-runner --dry-run) without widening into cloud execution or other scheduler-controller leaves."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local VM mixed-SKU upgrade path/model status so it truthfully reflects the mounted-source runner disable note for this exact scenario, recording the known-risk blocker and resume condition instead of leaving the path as a generic draft.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620.md"
+      ],
+      "acceptance": [
+        "Update the relevant repo-local model/status text for feature virtualmachines-mixed-sku-upgrade and path.virtualmachines.mixed-sku-upgrade so it cites the mounted-source runner disable note ('CRP ARM vm state mismatch' or reimage-based upgrade path) as the current source-backed blocker/known-risk, with exact source location quoted in the evidence artifact.",
+        "Record the exact files/fields changed plus before/after status wording in the evidence artifact, and keep the change bounded to truthful repo-local model/spec status repair for the mixed-SKU upgrade row without adding live cloud execution work.",
+        "If a second repo-local file must change to keep status linkage consistent, include it, but do not widen into other VM prerelease rows; conclude with the explicit resume condition for future live replay work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:45:01.605Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620_20260620204508",
+        "assigned_at": "2026-06-20T20:45:08.374Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620_20260620204508",
+        "worker_started_at": "2026-06-20T20:45:23.057Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the mixed-SKU VM prerelease model/status landing in model/knowledge-map/model.json to blocked/known-risk with the exact mounted-source runner disable note, regenerated derived views, and wrote the evidence artifact at evidence/archive/vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T20:47:30.801Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:47:56.323Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence shows the repo-local model/path landing was repaired from generic draft to explicit blocked/known-risk for path.virtualmachines.mixed-sku-upgrade and feature virtualmachines-mixed-sku-upgrade, citing the mounted-source runner disable note and resume condition without widening into live replay work."
+      },
+      "session_id": "s_task_vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620"
+      ],
+      "result": "Repaired the mixed-SKU VM prerelease model/status landing in model/knowledge-map/model.json to blocked/known-risk with the exact mounted-source runner disable note, regenerated derived views, and wrote the evidence artifact at evidence/archive/vm-prerelease-mixed-sku-upgrade-model-status-repair-20260620.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:47:56.323Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence shows the repo-local model/path landing was repaired from generic draft to explicit blocked/known-risk for path.virtualmachines.mixed-sku-upgrade and feature virtualmachines-mixed-sku-upgrade, citing the mounted-source runner disable note and resume condition without widening into live replay work."
+      },
+      "status": "done"
+    }
+  ]
+}

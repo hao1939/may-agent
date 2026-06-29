@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:18:21.487Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: accepted the AAD row-37 execution-gate audit, then repaired the resulting passive environment wait because no durable send/handoff proof for the exact readiness ask was yet visible in the tree. The live next step is now the active leaf aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623, which must either link existing routed proof or capture one bounded out-of-runtime readiness request for ARM auth, AAD env values, probe-specific mutation approval, and quota-readiness for the exact row-37 carrier. The private-cluster auth-service-tags endpoint wait remains the single truthful environment wait, and the external-send proof family wait remains intentionally compressed until returned proof arrives or the first owner follow-up after 2026-06-26. Do not reopen source/spec/model rediscovery for the AAD path; once send-proof exists, the branch can return to one exact external wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful external execution-gate wait for path.aad-rbac.managed-v2-lifecycle until returned readiness proof shows the exact row-37 source-aligned carrier can rerun from the launcher with working ARM auth, provided AKS_RP_E2E_AAD_ADMIN_GROUP_OID and AKS_RP_E2E_AAD_TENANT_ID values, explicit probe-specific mutation approval, and enough capacity to verify quota for one login VM plus one VM-prerelease cluster.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623.md"
+      ],
+      "acceptance": [
+        "A follow-up archive artifact or authoritative reply records timestamp, channel/owner, and returned readiness proof for the same row-37 carrier: working ARM auth in the launcher environment, provided AKS_RP_E2E_AAD_ADMIN_GROUP_OID and AKS_RP_E2E_AAD_TENANT_ID values, and explicit probe-specific mutation approval for AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle.",
+        "The same follow-up proves or enables immediate local quota verification for one login VM plus one VM-prerelease cluster, and this branch remains represented by one exact external wait only; no new source/spec/model rediscovery or duplicate blocker leaves are introduced before the returned readiness facts change."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:17:41.822Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-23T21:18:14.459Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced during blocked-frontier owner review because the tree now flags this as an environment-overblock without proven send/handoff evidence. A passive returned-proof wait is not yet the truthful live representation for path.aad-rbac.managed-v2-lifecycle until aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623 confirms existing routed ask proof or captures one bounded out-of-runtime readiness request."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-23T21:18:14.459Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced during blocked-frontier owner review because the tree now flags this as an environment-overblock without proven send/handoff evidence. A passive returned-proof wait is not yet the truthful live representation for path.aad-rbac.managed-v2-lifecycle until aad-rbac-managed-v2-lifecycle-readiness-request-proof-capture-20260623 confirms existing routed ask proof or captures one bounded out-of-runtime readiness request."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row37-mounted-source-carrier-map-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease source carriers to map the exact row-37 managed AAD lifecycle input/expectation/replay linkage, and record whether any remaining uncertainty is repo-local or purely environment-bound.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row37-mounted-source-carrier-map-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the mounted AKS RP source carrier(s) for the row-37 prerelease scenario, including the exact suite/scenario/step anchors needed to rerun or reason about the path without reopening old reset-discriminator framing.",
+        "The note states the exact current model implication for path.aad-rbac.managed-v2-lifecycle: either a bounded repo-local spec/model follow-up remains, or the path is confirmed to be waiting only on environment capacity; no cloud mutation is started from this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:07:42.438Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row37-mounted-source-carrier-map-20260623_20260623210742",
+        "assigned_at": "2026-06-23T21:07:42.488Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row37-mounted-source-carrier-map-20260623",
+        "worker_started_attempt_id": "a_vm-prerelease-row37-mounted-source-carrier-map-20260623_20260623210742",
+        "worker_started_at": "2026-06-23T21:07:58.702Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-37 mounted-source carrier map at evidence/archive/vm-prerelease-row37-mounted-source-carrier-map-20260623.md and verified the current implication for path.aad-rbac.managed-v2-lifecycle is environment-only, not repo-local ambiguity.",
+        "last_worker_completed_at": "2026-06-23T21:10:40.855Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:11:00.907Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the exact mounted VM prerelease suite, Scenario_AAD, login-VM helper, raw ResetAAD handler, and matching replay/spec anchors, with the remaining uncertainty narrowed truthfully to environment/runtime execution only for path.aad-rbac.managed-v2-lifecycle."
+      },
+      "session_id": "s_task_vm-prerelease-row37-mounted-source-carrier-map-20260623",
+      "session_history": [
+        "s_task_vm-prerelease-row37-mounted-source-carrier-map-20260623"
+      ],
+      "result": "Produced the requested row-37 mounted-source carrier map at evidence/archive/vm-prerelease-row37-mounted-source-carrier-map-20260623.md and verified the current implication for path.aad-rbac.managed-v2-lifecycle is environment-only, not repo-local ambiguity.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:11:00.907Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the exact mounted VM prerelease suite, Scenario_AAD, login-VM helper, raw ResetAAD handler, and matching replay/spec anchors, with the remaining uncertainty narrowed truthfully to environment/runtime execution only for path.aad-rbac.managed-v2-lifecycle."
+      },
+      "status": "done"
+    }
+  ]
+}

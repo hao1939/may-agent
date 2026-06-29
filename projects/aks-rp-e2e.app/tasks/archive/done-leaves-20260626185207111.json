@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T18:52:07.111Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner blocked-frontier review: the external human-operator wait remains the lone truthful blocked frontier and stays unchanged. Within this verification loop, the only live branch is still path.net-integration.multinic-mixed, but it is now explicitly framed as a contradiction-repair task because planner hygiene surfaced a stale terminal-pass signal while the capability model summary still shows the path blocked. Archive the completed boundary-map and prior status-surface reconcile leaves because their durable meaning is already captured here: mounted handwritten source and repo-local surfaces disagree, and the next useful no-cloud work is to repair the replay/status carrier so local evidence stops implying a generic one-pool pass as the canonical verdict.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-multinic-mixed-boundary-map-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile conflicting local model surfaces for path.net-integration.multinic-mixed without cloud execution: compare the current pass/verdictFinal status exposed by project status with the task-tree/model packet surfaces still treating the path as blocked/no-rootCause, then produce a durable repo-local note that pins the authoritative mounted source/spec/replay/model state and states the exact follow-up (model correction, evidence linkage, or reopened bounded gap).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-multinic-mixed-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "A durable note cites the authoritative mounted or checked-in source/spec/replay surfaces for path.net-integration.multinic-mixed together with the currently conflicting model/status surfaces, and concludes whether the path is truthfully terminal pass or still missing a bounded no-cloud clarification.",
+        "If the path is already terminal, the note names the stale surface(s) that need correction and why no new boundary-probe planning is warranted; otherwise it restates the exact remaining boundary/evidence gap and the concrete next action, all without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:net-integration.multinic-mixed"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:36:22.652Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-multinic-mixed-boundary-map-20260626_20260626183622",
+        "assigned_at": "2026-06-26T18:36:22.698Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-multinic-mixed-boundary-map-20260626",
+        "worker_started_attempt_id": "a_net-integration-multinic-mixed-boundary-map-20260626_20260626183622",
+        "worker_started_at": "2026-06-26T18:37:16.012Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable no-cloud boundary map for path.net-integration.multinic-mixed at evidence/archive/net-integration-multinic-mixed-boundary-map-20260626.md, grounding the exact mounted same-pool Dynamic+Standard contract, accepted/rejected edges, current evidence ceiling, and exact next replay action.",
+        "last_worker_completed_at": "2026-06-26T18:39:27.231Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:40:25.988Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the durable boundary map cites mounted handwritten source, API/spec contract, and current repo-local model/spec surfaces to show path.net-integration.multinic-mixed is the exact same-pool Dynamic+Standard contract and remains source-grounded/blocked rather than a proven pass. The note also isolates the concrete next bounded successor: reconcile the stale local status surface and then repair the replay carrier before any future cloud probe."
+      },
+      "session_id": "s_task_net-integration-multinic-mixed-boundary-map-20260626",
+      "session_history": [
+        "s_task_net-integration-multinic-mixed-boundary-map-20260626"
+      ],
+      "result": "Produced a durable no-cloud boundary map for path.net-integration.multinic-mixed at evidence/archive/net-integration-multinic-mixed-boundary-map-20260626.md, grounding the exact mounted same-pool Dynamic+Standard contract, accepted/rejected edges, current evidence ceiling, and exact next replay action.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:40:25.988Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the durable boundary map cites mounted handwritten source, API/spec contract, and current repo-local model/spec surfaces to show path.net-integration.multinic-mixed is the exact same-pool Dynamic+Standard contract and remains source-grounded/blocked rather than a proven pass. The note also isolates the concrete next bounded successor: reconcile the stale local status surface and then repair the replay carrier before any future cloud probe."
+      },
+      "status": "done"
+    }
+  ]
+}

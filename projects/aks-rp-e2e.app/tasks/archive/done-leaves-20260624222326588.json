@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T22:23:26.588Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner archived the completed NAT Gateway V2 V2→none repo-local execution-prep slice as durable root history: live-control authoring, replay implementation, approval packet, and send-proof capture are all accepted and no longer need visible root leaves. The only open NATGW work remains the active model/task linkage reconciliation leaf for the stale terminal-warning check, plus the exact blocked returned-proof wait for path.net-integration.natgw-v2-migration-v2-to-none; keep the other external waits unchanged until returned proof or the first bounded follow-up window on or after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Capture durable proof that the exact NAT Gateway V2 V2→none live-execution approval packet is either handed off outward on the unchanged exact branch or explicitly escalated to the human/operator path needed to send it, without widening into sibling NATGW migration paths or creating a passive wait without send proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact records timestamp, channel, sender/owner, recipient or escalation target, links evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-packet-20260624.md, preserves the exact path.net-integration.natgw-v2-migration-v2-to-none branch and gate AKS_RP_E2E_ALLOW_CLOUD_MUTATION=net-integration-natgw-v2-migration-v2-to-none, and captures either send/handoff proof or the exact bounded escalation/redirect needed before any response wait can be truthful.",
+        "The task stays at approval-transport scope only: no cloud mutation, no passive response-await blocker without durable send proof, no reopening of path.net-integration.outbound-migration-natgw-to-none or the V2-to-block/V2-to-LB siblings, and no broad NATGW family merge."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.net-integration.natgw-v2-migration-v2-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T22:17:32.380Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624_20260624221732",
+        "assigned_at": "2026-06-24T22:17:32.424Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624",
+        "worker_started_attempt_id": "a_natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624_20260624221732",
+        "worker_started_at": "2026-06-24T22:17:58.228Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured durable NATGW V2→none approval-send proof by dispatching the exact approval packet through the app approval-dispatch lane and writing the archive artifact with runtime event IDs, ledger proof, preserved exact path, and unchanged mutation gate.",
+        "last_worker_completed_at": "2026-06-24T22:20:02.253Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T22:21:03.009Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable archive proof at evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624.md: the exact NATGW V2 V2→none approval packet was routed through the approval-dispatch lane with runtime submitted/requested/message.created evidence and unchanged mutation gate, so approval-transport scope is complete and the truthful successor is the returned-proof wait leaf natgw-v2-migration-v2-to-none-live-execution-approval-returned-proof-wait-20260624."
+      },
+      "session_id": "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624",
+      "session_history": [
+        "s_task_natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624"
+      ],
+      "result": "Captured durable NATGW V2→none approval-send proof by dispatching the exact approval packet through the app approval-dispatch lane and writing the archive artifact with runtime event IDs, ledger proof, preserved exact path, and unchanged mutation gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T22:21:03.009Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable archive proof at evidence/archive/natgw-v2-migration-v2-to-none-live-execution-approval-send-or-escalation-proof-capture-20260624.md: the exact NATGW V2 V2→none approval packet was routed through the approval-dispatch lane with runtime submitted/requested/message.created evidence and unchanged mutation gate, so approval-transport scope is complete and the truthful successor is the returned-proof wait leaf natgw-v2-migration-v2-to-none-live-execution-approval-returned-proof-wait-20260624."
+      },
+      "status": "done"
+    }
+  ]
+}

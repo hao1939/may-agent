@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T06:34:57.872Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+  "summary": "VM prerelease feature-set replacement lane rollup: completed children have already extracted, mapped, authored, or refreshed replacement-plan coverage material for the VirtualMachine prerelease feature set. Remaining visible children are blocked source-holder, typecheck, execution, or broad-plan waits that still need explicit unblock or disposition; archive completed wave leaves as historical detail.",
+  "archived": 10,
+  "tasks": [
+    {
+      "id": "vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close a bounded VM prerelease missing-spec wave for the uncovered AgentPool/Capacity/Mixed/Auto rows surfaced by the refreshed coverage ledger, so rows 3/4/25/26/27/29/30/31/32 move from generic missing-spec debt into explicit repo-local specs/replays or exact terminal dispositions. Start from evidence/pipelines/virtualmachine-prerelease-coverage.md and the normal feature-set selector, author or attach the minimum maintained specs/replays needed for those rows, update the coverage ledger counts for the touched rows, and re-run the standard plan dry-run using bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt to prove the feature-set pipeline still materializes cleanly after the wave.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current VM prerelease coverage ledger rows 3/4/25/26/27/29/30/31/32 plus the maintained specs/replays or terminal dispositions chosen for each row, and records exactly which repo-local files were added or updated.",
+        "The touched rows are no longer left as unexplained generic missing-spec debt: each ends this wave as explicit spec+replay coverage, accepted candidate/terminal disposition with evidence, or a narrower successor blocker that names the exact missing external input. The coverage ledger is updated accordingly.",
+        "The wave uses the normal feature-set selector only, then records the resulting bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt dry-run outcome in the archive note; no custom pipeline runner or cloud execution occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-agentpool-mixed-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:21:15.272Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620_20260620052115",
+        "assigned_at": "2026-06-20T05:21:15.347Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620_20260620052115",
+        "worker_started_at": "2026-06-20T05:21:26.800Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded VM prerelease missing-spec wave by tightening `evidence/pipelines/virtualmachine-prerelease-coverage.json` for rows 27/29/30, writing the archive note `evidence/archive/vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620.md`, and rerunning the normal `bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt` dry-run successfully.",
+        "last_worker_completed_at": "2026-06-20T05:23:23.569Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:26:43.516Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note documents rows 3/4/25/26/27/29/30/31/32, records the exact maintained substrates and row-local blocker outcomes, confirms coverage.json tightened rows 27/29/30 so the full nine-row slice is no longer generic missing-spec debt, and records successful normal feature-set dry-run plan_20260620052225501_72vqi5."
+      },
+      "session_id": "s_task_vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-agentpool-mixed-sku-missing-spec-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:26:43.516Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note documents rows 3/4/25/26/27/29/30/31/32, records the exact maintained substrates and row-local blocker outcomes, confirms coverage.json tightened rows 27/29/30 so the full nine-row slice is no longer generic missing-spec debt, and records successful normal feature-set dry-run plan_20260620052225501_72vqi5."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close a second independent VM prerelease missing-spec wave for the uncovered identity/SSH/network tail rows 33/35/36/39/40/44 from the refreshed coverage ledger, so accelerated networking, MSI variants, SSH disable/update, and IP-based LB backend pool do not remain parked behind the older source-holder/typecheck cluster. Starting from evidence/pipelines/virtualmachine-prerelease-coverage.md and the maintained feature/spec surfaces, author or attach the minimum repo-local specs/replays or exact bounded blockers for those rows, update the ledger dispositions, and re-run the standard feature-set plan dry-run to verify the replacement branch still plans cleanly.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites VM prerelease coverage ledger rows 33/35/36/39/40/44 and the maintained specs/replays, docs, or blocker evidence used to disposition each row, with exact file-level changes recorded.",
+        "Each touched row ends this wave with explicit coverage or a narrower exact blocker/resume condition rather than remaining generic missing-spec debt, and evidence/pipelines/virtualmachine-prerelease-coverage.md is updated to match the new dispositions.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the wave; work stays repo-local with no cloud execution and no custom pipeline machinery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-identity-ssh-network-tail"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:21:15.414Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620_20260620052115",
+        "assigned_at": "2026-06-20T05:21:15.485Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620_20260620052115",
+        "worker_started_at": "2026-06-20T05:21:26.843Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Tightened VM prerelease tail-row ledger detail for rows 33/35/36/39/40/44 in evidence/pipelines/virtualmachine-prerelease-coverage.json, wrote the archive note evidence/archive/vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620.md, and reran the maintained plan dry-run successfully (plan_20260620052326912_hns3s4).",
+        "last_worker_completed_at": "2026-06-20T05:24:13.648Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:27:06.314Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note documents rows 33/35/36/39/40/44, records exact row-local blocker outcomes and maintained surfaces checked, confirms coverage.json now carries explicit blockers for the full six-row tail slice, and records successful normal feature-set dry-run plan_20260620052326912_hns3s4 while the markdown ledger remained truthful because row status classes did not change."
+      },
+      "session_id": "s_task_vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-identity-ssh-network-tail-missing-spec-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:27:06.314Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note documents rows 33/35/36/39/40/44, records exact row-local blocker outcomes and maintained surfaces checked, confirms coverage.json now carries explicit blockers for the full six-row tail slice, and records successful normal feature-set dry-run plan_20260620052326912_hns3s4 while the markdown ledger remained truthful because row status classes did not change."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-candidate-attachment-refresh-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the refreshed VM prerelease candidate-only debt by reviewing the bounded attachment rows 41/42/43/45/52/81/83/86/88 from evidence/pipelines/virtualmachine-prerelease-coverage.md and converting every row that can now be justified into strict coverage or an exact retained-candidate reason. Use the maintained spec/replay set plus already accepted family notes to repair exact scenario-to-spec linkage, refresh the coverage ledger counts, and dry-run the normal feature-set selector after the attachment wave.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-candidate-attachment-refresh-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the candidate-only rows 41/42/43/45/52/81/83/86/88, the maintained specs/replays or accepted family notes examined for each, and records which rows were promoted to strict coverage versus which remained candidate-only with an exact evidence-backed reason.",
+        "evidence/pipelines/virtualmachine-prerelease-coverage.md is updated so the touched rows and summary counts reflect the new strict-covered/candidate-only dispositions, and any row that still cannot be promoted has a narrower follow-up reason than the pre-wave generic candidate bucket.",
+        "The archive note records the result of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the attachment repairs; no cloud execution or custom pipeline runner work occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-candidate-attachment-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:21:15.555Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T05:34:08.629Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-candidate-attachment-refresh-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-candidate-attachment-refresh-wave-20260620_20260620053408",
+        "worker_started_at": "2026-06-20T05:34:08.885Z",
+        "stale_active_requeued_at": "2026-06-20T05:34:08.600Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_vm-prerelease-candidate-attachment-refresh-wave-20260620_20260620052115",
+        "current_attempt_id": "a_vm-prerelease-candidate-attachment-refresh-wave-20260620_20260620053408",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the VM prerelease candidate-attachment wave by promoting rows 41/42/43/45 to strict coverage, tightening retained-candidate reasons for rows 52/81/83/86/88, updating the prerelease coverage ledger/selector files, and recording the post-wave plan dry-run in a new archive note.",
+        "last_worker_completed_at": "2026-06-20T05:34:08.928Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:34:57.185Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted from the archive note at ../aks-rp-e2e/evidence/archive/vm-prerelease-candidate-attachment-refresh-wave-20260620.md: it cites all bounded attachment rows 41/42/43/45/52/81/83/86/88, records four strict-coverage promotions and five narrower retained-candidate reasons, updates the prerelease coverage ledger/selectors with truthful 128/17/87/0 totals, and records the post-wave broad feature-set dry-run."
+      },
+      "session_id": "s_task_vm-prerelease-candidate-attachment-refresh-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-candidate-attachment-refresh-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:34:57.185Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted from the archive note at ../aks-rp-e2e/evidence/archive/vm-prerelease-candidate-attachment-refresh-wave-20260620.md: it cites all bounded attachment rows 41/42/43/45/52/81/83/86/88, records four strict-coverage promotions and five narrower retained-candidate reasons, updates the prerelease coverage ledger/selectors with truthful 128/17/87/0 totals, and records the post-wave broad feature-set dry-run."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-platform-tail-missing-spec-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close one bounded VM prerelease platform-tail missing-spec wave for rows 1/9/34 in evidence/pipelines/virtualmachine-prerelease-coverage.md so Scenario_PPG_VirtualMachine, Scenario_KSCR_VirtualMachine, and Scenario_VMAS_To_VMS_Migration_SLB_VirtualMachine move from generic missing-spec debt into explicit repo-local spec/replay coverage, accepted terminal disposition, or an exact row-local blocker with a precise resume condition. Use only maintained repo-local sources plus the normal feature-set selector and finish with the standard dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-platform-tail-missing-spec-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites VM prerelease coverage ledger rows 1/9/34, the maintained specs/replays/docs/evidence checked for each, and records the exact file-level changes or the exact blocker evidence retained for each row.",
+        "Each touched row ends this wave as explicit spec+replay coverage, an accepted terminal/candidate disposition with evidence, or a narrower exact blocker/resume condition rather than generic missing-spec debt, and the maintained coverage ledger is updated accordingly.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the wave; work stays repo-local with no cloud execution and no custom pipeline runner."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-platform-tail"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:27:06.389Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-platform-tail-missing-spec-wave-20260620_20260620052706",
+        "assigned_at": "2026-06-20T05:27:06.462Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-platform-tail-missing-spec-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-platform-tail-missing-spec-wave-20260620_20260620052706",
+        "worker_started_at": "2026-06-20T05:27:24.395Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the maintained VM prerelease coverage ledger for rows 1/9/34 with exact row-local blockers in evidence/pipelines/virtualmachine-prerelease-coverage.json and wrote the archive note evidence/archive/vm-prerelease-platform-tail-missing-spec-wave-20260620.md. Also reran the standard maintained selector dry-run with bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt successfully.",
+        "last_worker_completed_at": "2026-06-20T05:30:31.225Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:31:16.819Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites rows 1/9/34, records exact row-local blocker dispositions landed in the maintained VM prerelease coverage ledger, and confirms the standard feature-set dry-run still returns ready without inventing unsupported spec/replay coverage."
+      },
+      "session_id": "s_task_vm-prerelease-platform-tail-missing-spec-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-platform-tail-missing-spec-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:31:16.819Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites rows 1/9/34, records exact row-local blocker dispositions landed in the maintained VM prerelease coverage ledger, and confirms the standard feature-set dry-run still returns ready without inventing unsupported spec/replay coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-platform-tail-candidate-refresh-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the next bounded VM prerelease closure wave after rows 1/9/34 by reviewing one explicit small set of remaining platform-tail candidate/missing-linkage rows from evidence/pipelines/virtualmachine-prerelease-coverage.md and converting each touched row into strict coverage, an accepted terminal disposition, or an exact retained blocker reason using only maintained repo-local evidence plus the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-platform-tail-candidate-refresh-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note names one explicit bounded next-row set selected after the current platform-tail wave, cites the maintained specs/replays/docs/evidence checked for each touched row, and records strict-coverage promotion, accepted terminal disposition, or exact retained blocker reason for each row.",
+        "The VM prerelease coverage ledger is updated only for touched rows, summary counts stay truthful, and any remaining unresolved row ends narrower than the pre-wave generic candidate or missing-spec state.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the bounded refresh; work stays repo-local with no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-platform-tail-refresh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:28:45.171Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-platform-tail-candidate-refresh-wave-20260620_20260620052945",
+        "assigned_at": "2026-06-20T05:29:45.788Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-platform-tail-candidate-refresh-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-platform-tail-candidate-refresh-wave-20260620_20260620052945",
+        "worker_started_at": "2026-06-20T05:30:16.835Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded VM prerelease platform-tail candidate refresh wave by tightening maintained coverage-ledger reasons for rows 186, 188, and 217, and wrote the archive note at evidence/archive/vm-prerelease-platform-tail-candidate-refresh-wave-20260620.md. Re-ran the maintained feature-set dry-run successfully after the edits.",
+        "last_worker_completed_at": "2026-06-20T05:36:33.097Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:38:31.603Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: the archive note and maintained coverage ledger now tighten rows 186, 188, and 217 with exact repo-local candidate reasoning, keep summary counts truthful, and record a successful feature-set dry-run after the bounded platform-tail refresh."
+      },
+      "session_id": "s_task_vm-prerelease-platform-tail-candidate-refresh-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-platform-tail-candidate-refresh-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:38:31.603Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: the archive note and maintained coverage ledger now tighten rows 186, 188, and 217 with exact repo-local candidate reasoning, keep summary counts truthful, and record a successful feature-set dry-run after the bounded platform-tail refresh."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-candidate-attachment-followup-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the next bounded follow-up after the current candidate attachment refresh by selecting one small remaining candidate-only row set from evidence/pipelines/virtualmachine-prerelease-coverage.md and converting each touched row into strict coverage or an exact retained-candidate reason using maintained repo-local specs/replays/evidence plus the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-candidate-attachment-followup-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note names one explicit bounded next-row set selected after the current attachment wave, cites the maintained specs/replays or accepted family notes checked for each touched row, and records which rows were promoted to strict coverage versus which remained candidate-only with exact evidence-backed reasons.",
+        "The VM prerelease coverage ledger is updated only for touched rows, summary counts stay truthful, and each remaining candidate row ends with a narrower reason than before the wave.",
+        "The note records the result of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the follow-up repair; no cloud execution or custom runner work occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-candidate-attachment-followup"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:28:48.648Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-candidate-attachment-followup-wave-20260620_20260620052905",
+        "assigned_at": "2026-06-20T05:29:05.622Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-candidate-attachment-followup-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-candidate-attachment-followup-wave-20260620_20260620052905",
+        "worker_started_at": "2026-06-20T05:29:05.884Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the VM prerelease coverage ledger for the bounded follow-up slice rows 186 and 217, moving both candidate attachments from the stale VMSS-backed Windows spec to the current VM-backed Windows base spec, and wrote the archive note documenting evidence, retained-candidate reasons, and the successful plan dry-run.",
+        "last_worker_completed_at": "2026-06-20T05:32:41.007Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:33:49.823Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: archive note and both ledger authorities now show rows 186 and 217 reattached from the stale VMSS-backed Windows sibling to spec.windows.node-pool-create-virtualmachines with narrower retained-candidate reasons, and the recorded dry-run plan artifact remains successful (plan_20260620053205757_vwcss9)."
+      },
+      "session_id": "s_task_vm-prerelease-candidate-attachment-followup-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-candidate-attachment-followup-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:33:49.823Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: archive note and both ledger authorities now show rows 186 and 217 reattached from the stale VMSS-backed Windows sibling to spec.windows.node-pool-create-virtualmachines with narrower retained-candidate reasons, and the recorded dry-run plan artifact remains successful (plan_20260620053205757_vwcss9)."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-next-missing-spec-closure-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the next bounded VM prerelease missing-spec closure wave after the completed platform-tail rows 1/9/34 by selecting one explicit small remaining missing-spec row set from evidence/pipelines/virtualmachine-prerelease-coverage.md and converting each touched row into explicit repo-local spec/replay coverage, an accepted terminal disposition, or an exact retained blocker reason using maintained repo-local evidence plus the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-next-missing-spec-closure-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note names one explicit bounded remaining missing-spec row set selected after the completed rows 1/9/34 wave, cites the maintained specs/replays/docs/evidence checked for each touched row, and records explicit spec+replay coverage, accepted terminal disposition, or exact retained blocker reasoning for each row.",
+        "evidence/pipelines/virtualmachine-prerelease-coverage.md is updated only for the touched rows with truthful summary counts, and every row left unresolved ends narrower than its pre-wave generic missing-spec state.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the bounded repair; work stays repo-local with no cloud execution or custom pipeline runner."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-next-missing-spec-closure"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:32:20.929Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T05:32:21.003Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-next-missing-spec-closure-wave-20260620_20260620053224",
+        "assigned_at": "2026-06-20T05:32:24.765Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-next-missing-spec-closure-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-next-missing-spec-closure-wave-20260620_20260620053224",
+        "worker_started_at": "2026-06-20T05:32:44.987Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded next VM prerelease missing-spec closure wave for rows 3/4 by writing a new archive note and tightening the maintained markdown ledger to include exact retained blocker reasoning for those two AgentPool rows; the standard feature-set planner dry-run still materializes cleanly.",
+        "last_worker_completed_at": "2026-06-20T05:34:51.764Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:36:36.208Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from archive note and maintained ledger updates: rows 3 and 4 were narrowed from generic missing-spec markdown entries to exact retained blockers against specific RP nodepool lifecycle child bindings, and the VM prerelease feature-set dry-run remained ready after the bounded repair."
+      },
+      "session_id": "s_task_vm-prerelease-next-missing-spec-closure-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-next-missing-spec-closure-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:36:36.208Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from archive note and maintained ledger updates: rows 3 and 4 were narrowed from generic missing-spec markdown entries to exact retained blockers against specific RP nodepool lifecycle child bindings, and the VM prerelease feature-set dry-run remained ready after the bounded repair."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Take the still-generic VM prerelease candidate row 188 (Scenario_Autoupgrader) through one bounded repo-local clarification wave by checking the maintained CCP autoupgrader and planned-maintenance spec/replay family against the coverage ledger, then either attach row 188 to exact strict coverage or keep it candidate-only with one final narrower family-aware reason that removes any remaining umbrella ambiguity. Finish with the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 188 plus the exact maintained autoupgrader specs/replays/features/evidence checked, and records whether the row was promoted to strict coverage or retained candidate-only with a narrower exact reason than the currently accepted family-split wording.",
+        "The VM prerelease coverage ledger is updated only for touched row 188 (and any unavoidable exact sibling linkage it depends on), summary counts stay truthful, and the row no longer rests on a generic unresolved umbrella description.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the bounded clarification; no cloud execution or custom pipeline runner work occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-row188-autoupgrader"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:38:31.757Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620_20260620053831",
+        "assigned_at": "2026-06-20T05:38:31.974Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620_20260620053831",
+        "worker_started_at": "2026-06-20T05:38:46.698Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Clarified VM prerelease row 188 as still candidate-only with a narrower maintained-surface reason, updated the row-188 entries in both coverage ledger files, wrote the archive note, and ran the required feature-set dry-run plan.",
+        "last_worker_completed_at": "2026-06-20T05:41:24.332Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:43:07.832Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note verified row 188 against exact maintained CCP autoupgrader and planned-maintenance specs/replays/evidence, updated only the row-188 ledger entries with a narrower candidate-only reason, and recorded the required feature-set dry-run outcome without cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row188-autoupgrader-candidate-clarification-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:43:07.832Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note verified row 188 against exact maintained CCP autoupgrader and planned-maintenance specs/replays/evidence, updated only the row-188 ledger entries with a narrower candidate-only reason, and recorded the required feature-set dry-run outcome without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-nonblocked-missing-spec-next-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the next independent VM prerelease missing-spec closure wave from the current coverage ledger by selecting one small remaining missing-spec row set that is not already parked behind the normalized source-holder readiness waits, then convert each touched row into explicit repo-local spec/replay coverage, an accepted terminal disposition, or an exact retained blocker reason using maintained repo-local evidence and the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-nonblocked-missing-spec-next-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note names the explicit bounded missing-spec row set selected from evidence/pipelines/virtualmachine-prerelease-coverage.md, cites the maintained specs/replays/docs/evidence checked for each touched row, and records explicit coverage, terminal disposition, or exact retained blocker reasoning for each.",
+        "The VM prerelease coverage ledger is updated only for the touched rows with truthful summary counts, and every unresolved row ends narrower than its pre-wave generic missing-spec state without duplicating the existing source-blocked readiness wait leaves.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the bounded repair; work stays repo-local with no cloud execution or custom pipeline runner."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-nonblocked-missingspec-next"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:38:31.827Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-nonblocked-missing-spec-next-wave-20260620_20260620053832",
+        "assigned_at": "2026-06-20T05:38:32.051Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-nonblocked-missing-spec-next-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-nonblocked-missing-spec-next-wave-20260620_20260620053832",
+        "worker_started_at": "2026-06-20T05:38:46.749Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the assigned VM prerelease missing-spec closure wave by selecting rows 57-61, updating `evidence/pipelines/virtualmachine-prerelease-coverage.json` with exact row-local blocker reasons, and writing the durable archive note `evidence/archive/vm-prerelease-nonblocked-missing-spec-next-wave-20260620.md`. The standard `bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt` dry-run still succeeds with plan `plan_20260620054114269_5uqflx`.",
+        "last_worker_completed_at": "2026-06-20T05:42:50.496Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:43:38.640Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note bounded rows 57-61, cited the exact maintained confidential-computing and addon-management surfaces checked, narrowed each unresolved row to one row-local exact blocker in the JSON ledger, and recorded a successful VM feature-set plan materialization without cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-nonblocked-missing-spec-next-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-nonblocked-missing-spec-next-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:43:38.640Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note bounded rows 57-61, cited the exact maintained confidential-computing and addon-management surfaces checked, narrowed each unresolved row to one row-local exact blocker in the JSON ledger, and recorded a successful VM feature-set plan materialization without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-swift-variant-candidate-clarification-wave-20260620",
+      "parent_id": "vm-prerelease-feature-set-replacement-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Take the nonblocked VM prerelease Swift execution-variant candidate rows 119, 176, and 207 through one bounded clarification wave by checking the maintained Swift V1 source/spec/replay lineage and archived run evidence, then either promote any touched row to strict coverage or retain it as candidate-only with a narrower exact reason that is independent of the separate row178 source-holder blocker. Finish with the standard feature-set dry-run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-swift-variant-candidate-clarification-wave-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites rows 119, 176, and 207 plus the exact maintained Swift sources/specs/replays/evidence checked, and records for each row whether it was promoted to strict coverage or retained candidate-only with a narrower exact reason than the current execution-variant umbrella wording.",
+        "The VM prerelease coverage ledger is updated only for touched rows 119/176/207 (and any unavoidable exact sibling linkage they depend on), summary counts stay truthful, and the batch remains explicitly independent of the separate row178 Swift source-holder blocker.",
+        "The note records the outcome of bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt after the bounded clarification; no cloud execution or custom pipeline runner work occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:vm-prerelease-swift-variant-candidates"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T05:42:09.293Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-swift-variant-candidate-clarification-wave-20260620_20260620054209",
+        "assigned_at": "2026-06-20T05:42:09.397Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-swift-variant-candidate-clarification-wave-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-swift-variant-candidate-clarification-wave-20260620_20260620054209",
+        "worker_started_at": "2026-06-20T05:42:20.761Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Clarified VM prerelease Swift candidate rows 119/176/207 with narrower, row-specific candidate-only reasons in the coverage ledger and added an archive note documenting the maintained Swift V1 lineage checked plus the fresh feature-set plan/dry-run outcome.",
+        "last_worker_completed_at": "2026-06-20T05:45:23.151Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T05:46:24.421Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the Swift clarification wave: the archive note and touched coverage ledger narrow rows 119/176/207 to exact candidate-only reasons tied to the maintained Swift V1 lineage, preserve independence from row178, and record the required feature-set plan/dry-run outcome."
+      },
+      "session_id": "s_task_vm-prerelease-swift-variant-candidate-clarification-wave-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-swift-variant-candidate-clarification-wave-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T05:46:24.421Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the Swift clarification wave: the archive note and touched coverage ledger narrow rows 119/176/207 to exact candidate-only reasons tied to the maintained Swift V1 lineage, preserve independence from row178, and record the required feature-set plan/dry-run outcome."
+      },
+      "status": "done"
+    }
+  ]
+}

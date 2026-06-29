@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T00:53:13.575Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review kept the frontier narrow and evidence-backed. Accepted done work is now summarized at the root: aad-managed-v2-replay-check-repair-20260622 proved the exact local replay check already passes for path.aad-rbac.managed-v2-lifecycle, so the remaining live task is only to reframe the maintained path around live-execution prerequisites; vm-prerelease-source-frontier-shortlist-20260622 already established the mounted-source shortlist that supports current VM prerelease follow-up. The repaired row-54 backlog leaf is now audit-first after a rejected no-evidence attempt: it must first reconcile mounted source and generated path/view anchors against the stale-terminal warning before any further repo-local repair is attempted. The single blocked external-send-proof family remains the only truthful external-human wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "aad-managed-v2-replay-check-repair-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or precisely diagnose the repo-local AAD managed v2 lifecycle replay so `bun replays/aad-rbac-managed-v2-lifecycle.ts --check --write-evidence --run-id=<id>` can pass without cloud execution, using the current replay/spec files and existing evidence to close the local readiness gap named in path.aad-rbac.managed-v2-lifecycle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-managed-v2-replay-check-repair-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact replay/spec/source anchors inspected, records the concrete `bun replays/aad-rbac-managed-v2-lifecycle.ts --check --write-evidence --run-id=<id>` command(s) and outcomes, and identifies the current repo-local mismatch or missing input that prevents the AAD managed v2 replay from being locally ready.",
+        "Task either lands the minimal repo-local replay/spec adjustment needed for `bun replays/aad-rbac-managed-v2-lifecycle.ts --check --write-evidence --run-id=<id>` to pass, or documents bounded evidence proving why a further local repair cannot proceed without a newly surfaced exact dependency.",
+        "Result stays in the regular verification-prep lane only: no cloud mutation, no external-human transport ask, and any blocker or next action is narrowed to the smallest concrete follow-up leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:48:36.197Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-managed-v2-replay-check-repair-20260622_20260622004841",
+        "assigned_at": "2026-06-22T00:48:41.559Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-managed-v2-replay-check-repair-20260622",
+        "worker_started_attempt_id": "a_aad-managed-v2-replay-check-repair-20260622_20260622004841",
+        "worker_started_at": "2026-06-22T00:49:05.485Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the AAD managed v2 row-37 replay is already repo-locally repaired: two non-mutating `--check --write-evidence` runs passed, and I wrote a durable artifact documenting the exact anchors, commands, outcomes, and the fact that only live-execution gates remain.",
+        "last_worker_completed_at": "2026-06-22T00:50:19.611Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:50:52.992Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/aad-managed-v2-replay-check-repair-20260622.md cites exact replay/spec/feature/source anchors and records two successful non-mutating `bun replays/aad-rbac-managed-v2-lifecycle.ts --check --write-evidence` runs, so the repo-local readiness gap for path.aad-rbac.managed-v2-lifecycle is closed and only live execution prerequisites remain."
+      },
+      "session_id": "s_task_aad-managed-v2-replay-check-repair-20260622",
+      "session_history": [
+        "s_task_aad-managed-v2-replay-check-repair-20260622"
+      ],
+      "result": "Verified the AAD managed v2 row-37 replay is already repo-locally repaired: two non-mutating `--check --write-evidence` runs passed, and I wrote a durable artifact documenting the exact anchors, commands, outcomes, and the fact that only live-execution gates remain.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:50:52.992Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/aad-managed-v2-replay-check-repair-20260622.md cites exact replay/spec/feature/source anchors and records two successful non-mutating `bun replays/aad-rbac-managed-v2-lifecycle.ts --check --write-evidence` runs, so the repo-local readiness gap for path.aad-rbac.managed-v2-lifecycle is closed and only live execution prerequisites remain."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-source-frontier-shortlist-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Start from mounted AKS RP Go source at /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, then produce a bounded repo-local shortlist of the next 2-4 VirtualMachine prerelease or checkin branches whose source/spec/model coverage is absent, stale, or misclassified but can be advanced without cloud execution or external-human transport.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-source-frontier-shortlist-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites exact mounted-source scenario anchors (suite/scenario/row references), maps each shortlisted branch to current repo-local model/spec/replay status, and distinguishes already-satisfied coverage from genuine local gaps.",
+        "For each shortlisted branch, artifact records the exact input path delta, expectation path delta, maintained-status gap, and the narrowest next worker action that would improve the knowledge map without reopening blocked external-human or cloud-mutation work.",
+        "Shortlist excludes branches already terminally blocked/product-gap/deprecated unless the task proves a stale maintained-status mismatch that can be fixed repo-locally, and it ends with one recommended next leaf to assign."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T00:43:33.975Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-frontier-shortlist-20260622_20260622004334",
+        "assigned_at": "2026-06-22T00:43:34.021Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-frontier-shortlist-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-source-frontier-shortlist-20260622_20260622004334",
+        "worker_started_at": "2026-06-22T00:43:52.137Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested VM prerelease/checkin shortlist artifact at evidence/archive/vm-prerelease-source-frontier-shortlist-20260622.md, grounded in mounted-source anchors and current repo-local model/spec/replay/coverage state. The shortlist recommends row 54 path/view landing repair first, with row 33 stale path-status reconciliation as the second bounded candidate.",
+        "last_worker_completed_at": "2026-06-22T00:48:05.768Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T00:49:41.945Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-source-frontier-shortlist-20260622.md cites mounted prerelease/checkin and scenario anchors, distinguishes already-satisfied rows from real repo-local gaps, and recommends row 54 exact maintained path/view landing repair as the narrowest next local leaf."
+      },
+      "session_id": "s_task_vm-prerelease-source-frontier-shortlist-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-source-frontier-shortlist-20260622"
+      ],
+      "result": "Produced the requested VM prerelease/checkin shortlist artifact at evidence/archive/vm-prerelease-source-frontier-shortlist-20260622.md, grounded in mounted-source anchors and current repo-local model/spec/replay/coverage state. The shortlist recommends row 54 path/view landing repair first, with row 33 stale path-status reconciliation as the second bounded candidate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T00:49:41.945Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-source-frontier-shortlist-20260622.md cites mounted prerelease/checkin and scenario anchors, distinguishes already-satisfied rows from real repo-local gaps, and recommends row 54 exact maintained path/view landing repair as the narrowest next local leaf."
+      },
+      "status": "done"
+    }
+  ]
+}

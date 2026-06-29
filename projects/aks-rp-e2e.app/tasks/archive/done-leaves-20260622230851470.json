@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:08:51.470Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 completion rollup: accepted the VM prerelease OSM external-lineage audit, the follow-on App Routing blocked-vs-unknown status audit, the RP nodepool lifecycle non-rollback calibration, and the archive-family checkpoint slice review. Project now records mounted-source lineage for the row-84/row-89 OSM external branches, reclassifies the five App Routing VM prerelease carriers and the five non-rollback RP nodepool lifecycle carriers from overclaimed blocked to truthful unknown where current accepted evidence is source-grounded or execute-capable-but-unobserved, and preserves the prior archive/checkpoint decision. The only live open branch is focus-vmpr-row50-hardening-and-external-wait-separation-20260622, which holds the single truthful family-level external-human wait pending later out-of-runtime proof and must not reopen completed repo-local VM/private-cluster source-spec-model work until that proof arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-routing-vm-prerelease-osm-external-lineage-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: now that the mounted-source selector/body lineage audit already resolved the OSM addon-path and row-84/row-89 request-shape facts, use the recovered source helpers plus maintained repo-local App Routing packets/specs/model carriers to answer only the residual row-84/row-89 verdict-authority question: what exact external/public contract can path.app-routing.vm-prerelease.osm-external-nginx.external truthfully inherit from the shared external helper flow, and what exact internal-client/runtime-only boundary must remain on path.app-routing.vm-prerelease.osm-external-nginx.internal, without reopening selector discovery, live execution, or replay redesign.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-osm-external-lineage-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-osm-external-lineage-audit-20260622.md cites the completed selector-lineage audit plus the mounted AKS RP source helpers used for row-82/row-84 external verdict flow and row-89 internal-client flow, and states the exact verdict-authority relationship for path.app-routing.vm-prerelease.osm-external-nginx.external and .internal after selector/body lineage is treated as already resolved.",
+        "The artifact clearly separates already-closed selector/body-lineage findings from the remaining verdict-authority question, names any truthful residual unknown that still blocks stronger claims, and updates bounded maintained wording only where that narrower verdict analysis changes blocked-vs-unknown language for the two OSM ExternalNginx paths.",
+        "bun run check passes after any bounded carrier/model/spec wording repair, and no cloud mutation, replay execution, or duplicate external-human wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-routing.vm-prerelease.osm-external-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:57:42.858Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-vm-prerelease-osm-external-lineage-audit-20260622_20260622225742",
+        "assigned_at": "2026-06-22T22:57:42.909Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-vm-prerelease-osm-external-lineage-audit-20260622",
+        "worker_started_attempt_id": "a_app-routing-vm-prerelease-osm-external-lineage-audit-20260622_20260622225742",
+        "worker_started_at": "2026-06-22T22:58:12.571Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Completed the row-84/row-89 mounted-source lineage audit and landed bounded wording repairs in the row-89 source packet and maintained model descriptions, plus a new archive artifact documenting exact OSM/addon-profile and InternalClient/ExternalClient lineage. `bun run check` did not pass because repo-wide format checks failed in unrelated pre-existing files outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-22T23:04:03.380Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T23:06:13.433Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted: evidence/archive/app-routing-vm-prerelease-osm-external-lineage-audit-20260622.md now cites the mounted AKS RP source carriers for row 84/89 scenario, request, addon-profile, and ExternalClient/InternalClient runtime lineage; bounded wording repairs landed in the row-84/row-89 App Routing source packets and model surfaces; and planner verification reran 'cd /app/projects/aks-rp-e2e && bun run check' with a passing result, so the earlier partial/failing-check claim is superseded."
+      },
+      "session_id": "s_task_app-routing-vm-prerelease-osm-external-lineage-audit-20260622",
+      "session_history": [
+        "s_task_app-routing-vm-prerelease-osm-external-lineage-audit-20260622"
+      ],
+      "result": "Completed the row-84/row-89 mounted-source lineage audit and landed bounded wording repairs in the row-89 source packet and maintained model descriptions, plus a new archive artifact documenting exact OSM/addon-profile and InternalClient/ExternalClient lineage. `bun run check` did not pass because repo-wide format checks failed in unrelated pre-existing files outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T23:06:13.433Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted: evidence/archive/app-routing-vm-prerelease-osm-external-lineage-audit-20260622.md now cites the mounted AKS RP source carriers for row 84/89 scenario, request, addon-profile, and ExternalClient/InternalClient runtime lineage; bounded wording repairs landed in the row-84/row-89 App Routing source packets and model surfaces; and planner verification reran 'cd /app/projects/aks-rp-e2e && bun run check' with a passing result, so the earlier partial/failing-check claim is superseded."
+      },
+      "status": "done"
+    }
+  ]
+}

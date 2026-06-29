@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:06:50.711Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 watchdog blocked-frontier review confirmed aks-spec-verification-loop is intentionally constrained to one truthful live execution branch: retry-preserved-order-earlier-net-integration-single-spec-queue-fresh-retry-after-stale-watchdog-20260626 remains the sole active unlocker and must consume outbound-lb-custom-ip, authorized-ip-ranges, then authorized-service-tags in preserved order on the already accepted single-spec GitHub launcher surface. The blocked siblings verify-newer-net-integration-single-spec-siblings-after-earlier-retry-queue-20260626 and reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626 remain legitimate dependency waits behind that active leaf because .state/spec-loop/state.json ordering is still known stale/misleading for net-integration sequencing until the earlier queue reaches reviewed terminal outcome. The external human/operator proof family stays compressed as its own exact wait branch with no repo-local refill work. This rollup archives the superseded done predecessor review leaf and preserves the current next action as finishing/reviewing the active preserved-order retry queue before any newer sibling launch or metadata reconciliation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the preserved-order earlier net-integration retry queue is reviewed to a terminal outcome, reconcile the repo-local single-spec loop metadata so the queue owner/task id and next-spec ordering match the reviewed net-integration facts instead of the stale state file ordering.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+        "../aks-rp-e2e/evidence/archive/spec-loop-net-integration-order-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note cites the exact pre-reconcile mismatch seen on 2026-06-26: .state/spec-loop/state.json still carried the legacy loopTaskId retry-earlier-net-integration-single-spec-queue-after-gh-restore-20260626 and listed static-egress-vmss ahead of authorized-ip-ranges/authorized-service-tags while the accepted active queue required the earlier preserved order.",
+        "The updated spec-loop metadata records the current queue owner/successor and no longer advertises any newer net-integration sibling ahead of still-unreviewed earlier queue specs.",
+        "This task performs repo-local state/evidence reconciliation only; it does not launch new cloud runs or bypass the preserved-order review gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:spec-loop-state"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:05:03.505Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626_20260626120533",
+        "assigned_at": "2026-06-26T12:05:33.998Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626",
+        "worker_started_attempt_id": "a_reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626_20260626120533",
+        "worker_started_at": "2026-06-26T12:05:34.414Z",
+        "reviewed_at": "2026-06-26T12:06:12.109Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced because this leaf was prematurely active before its own prerequisite was met. The single useful live work is the preserved-order earlier retry queue; reconciliation was re-created as blocked leaf reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626 to resume only after that queue reaches terminal review."
+      },
+      "session_id": "s_task_reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626",
+      "session_history": [
+        "s_task_reconcile-spec-loop-net-integration-order-after-earlier-queue-review-20260626"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-26T12:06:12.109Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced because this leaf was prematurely active before its own prerequisite was met. The single useful live work is the preserved-order earlier retry queue; reconciliation was re-created as blocked leaf reconcile-spec-loop-net-integration-order-after-earlier-queue-terminal-review-20260626 to resume only after that queue reaches terminal review."
+      },
+      "status": "done"
+    }
+  ]
+}

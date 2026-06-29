@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:26:02.809Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner blocked-frontier review accepted the disable-ssh carrier repair as real repo-local progress: run 28386236395 failed before execute because runner/scenario-lib/disable-ssh-live-carrier.ts hard-required evidence/pipelines/virtualmachine-prerelease-coverage.json and misderived the probeRef path, and the accepted repair now proves clean-workspace check mode passes while preserving an explicit execute gate for any future live rerun. The same review also corrected a bad auto-terminal decomposition on spec.node-pool-config.ssh-public-key-update-linux: run 28386900939 only proved another preflight wiring error before execute, not a final spec verdict, so a new assigned repair leaf now owns exact artifact/source diagnosis plus any bounded local fix or rerun gate. The active verifier wave stays intentionally saturated, and the existing checkpoint-driven human/operator and environment waits remain the only truthful passive blockers until their stated resume times or earlier durable evidence changes them.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "verify-spec-node-pool-config-ssh-public-key-update-linux",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-pool-config.ssh-public-key-update-linux through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-pool-config.ssh-public-key-update-linux",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ssh-public-key-update-linux"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-pool-config.ssh-public-key-update-linux",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-pool-config.ssh-public-key-update-linux workflow run 28386900939 classified as error. Loop key: verify-spec-node-pool-config-ssh-public-key-update-linux-a_verify-spec-node-pool-config-ss. Scenario_Update_SSH_Public_Key_Linux preflight wiring failed; execute path not entered. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28386900939 Result: runs/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/artifacts/node-pool-config-ssh-public-key-update-linux/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "trace": {
+        "created_at": "2026-06-29T16:23:48.138Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-pool-config-ssh-public-key-update-linux_20260629162348",
+        "assigned_at": "2026-06-29T16:23:48.157Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux",
+        "worker_started_attempt_id": "a_verify-spec-node-pool-config-ssh-public-key-update-linux_20260629162348",
+        "worker_started_at": "2026-06-29T16:23:59.159Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.node-pool-config.ssh-public-key-update-linux workflow run 28386900939 classified as error. Loop key: verify-spec-node-pool-config-ssh-public-key-update-linux-a_verify-spec-node-pool-config-ss. Scenario_Update_SSH_Public_Key_Linux preflight wiring failed; execute path not entered. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28386900939 Result: runs/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/artifacts/node-pool-config-ssh-public-key-update-linux/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-29T16:24:48.905Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T16:24:54.513Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Spec loop accepted terminal verifier classification without owner review. Spec spec.node-pool-config.ssh-public-key-update-linux workflow run 28386900939 classified as error. Loop key: verify-spec-node-pool-config-ssh-public-key-update-linux-a_verify-spec-node-pool-config-ss. Scenario_Update_SSH_Public_Key_Linux preflight wiring failed; execute path not entered. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28386900939 Result: runs/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/artifacts/node-pool-config-ssh-public-key-update-linux/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/result.json run watch issue: GitHub run completed with conclusion failure"
+      },
+      "session_id": "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux",
+      "session_history": [
+        "s_task_verify-spec-node-pool-config-ssh-public-key-update-linux"
+      ],
+      "result": "Spec spec.node-pool-config.ssh-public-key-update-linux workflow run 28386900939 classified as error. Loop key: verify-spec-node-pool-config-ssh-public-key-update-linux-a_verify-spec-node-pool-config-ss. Scenario_Update_SSH_Public_Key_Linux preflight wiring failed; execute path not entered. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28386900939 Result: runs/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/artifacts/node-pool-config-ssh-public-key-update-linux/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28386900939/aks-rp-e2e-28386900939-spec-test-results/test-results/single-node-pool-config-ssh-public-key-update-linux_427655/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "terminal",
+      "done_at": "2026-06-29T16:24:54.513Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-disable-ssh-live-carrier-coverage-preflight-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Harden the disable-ssh live carrier so spec.node-pool-config.disable-ssh-lifecycle no longer fails preflight on a clean workflow runner when evidence/pipelines/virtualmachine-prerelease-coverage.json is absent, and record the exact rerun-readiness condition before any new live attempt.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md"
+      ],
+      "acceptance": [
+        "The worker cites the exact preflight dependency and source location that caused run 28386236395 to fail before execute, and records the chosen repo-local repair or bounded non-code classification.",
+        "Repo-local proof shows a clean-workspace check or equivalent bounded execution path no longer terminates with the same ENOENT before execute; any remaining limitation is stated exactly.",
+        "The output note states whether spec.node-pool-config.disable-ssh-lifecycle is ready for a bounded rerun, needs another local fix, or should remain non-rerunnable pending a different exact blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.disable-ssh-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T16:19:07.360Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-disable-ssh-live-carrier-coverage-preflight-20260629_20260629161917",
+        "assigned_at": "2026-06-29T16:19:17.206Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-disable-ssh-live-carrier-coverage-preflight-20260629",
+        "worker_started_attempt_id": "a_repair-disable-ssh-live-carrier-coverage-preflight-20260629_20260629161917",
+        "worker_started_at": "2026-06-29T16:19:43.177Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the disable-ssh live carrier preflight in runner/scenario-lib/disable-ssh-live-carrier.ts so missing evidence/pipelines/virtualmachine-prerelease-coverage.json no longer causes the run-28386236395 ENOENT before execute, documented the exact failure and rerun gate in evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md, and proved clean-workspace check mode now passes.",
+        "last_worker_completed_at": "2026-06-29T16:23:29.551Z",
+        "last_worker_evidence": [
+          "runner/scenario-lib/disable-ssh-live-carrier.ts",
+          "evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T16:26:02.755Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md cites the exact ENOENT dependency in runner/scenario-lib/disable-ssh-live-carrier.ts, the repo-local guard plus probeRef repair now prevent clean-runner preflight failure before execute, and the note records the exact bounded rerun gate without claiming any live product verdict."
+      },
+      "session_id": "s_task_repair-disable-ssh-live-carrier-coverage-preflight-20260629",
+      "session_history": [
+        "s_task_repair-disable-ssh-live-carrier-coverage-preflight-20260629"
+      ],
+      "result": "Repaired the disable-ssh live carrier preflight in runner/scenario-lib/disable-ssh-live-carrier.ts so missing evidence/pipelines/virtualmachine-prerelease-coverage.json no longer causes the run-28386236395 ENOENT before execute, documented the exact failure and rerun gate in evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md, and proved clean-workspace check mode now passes.",
+      "evidence": [
+        "runner/scenario-lib/disable-ssh-live-carrier.ts",
+        "evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:26:02.755Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repair-disable-ssh-live-carrier-coverage-preflight-20260629.md cites the exact ENOENT dependency in runner/scenario-lib/disable-ssh-live-carrier.ts, the repo-local guard plus probeRef repair now prevent clean-runner preflight failure before execute, and the note records the exact bounded rerun gate without claiming any live product verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

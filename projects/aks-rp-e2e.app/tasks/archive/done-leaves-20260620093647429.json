@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:36:47.429Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs now records row34 prose-truth repair as accepted provenance alongside the prior mounted-source lineage landings for addonv2 rows 64-74 and the accepted rows57-61 lineage slice. The only live feature-spec frontier is narrowed to two concrete VM prerelease mounted-source authoring leaves: the SGX addon row-local packet for rows 57-59 and the addon-umbrella row-local packet for rows 60-61, so forward motion stays with those source-backed coverage packets without reopening cloud execution or stale source-holder waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row34-spec-coverage-prose-refresh-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the rejected VM prerelease row 34 prose refresh by landing the missing archive note and verifying the repo-local row34 spec/index wording now truthfully reflects the execute-capable replay plus remaining mutation-gate environment ceiling.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md"
+      ],
+      "acceptance": [
+        "Repo-local metadata/prose that still describes VM prerelease row 34 as lacking live replay implementation is updated to the truthful post-2026-06-20 state: execute-capable replay landed, check-mode still passes, and the remaining ceiling is explicit mutation-gated execute readiness rather than missing implementation.",
+        "The declared archive note ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md exists, names the exact files updated (including specs/index.json and any row34 coverage/status artifact updated), and cites the exact local evidence/commands that justify the wording refresh.",
+        "No new cloud execution is introduced; this task only repairs metadata/model/spec truth and the previously rejected review gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:virtualmachines-vmas-to-vms-migration-slb"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:30:43.601Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-20T09:34:00.327Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_retry_20260620093400",
+        "worker_started_attempt_id": "a_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_20260620093400",
+        "worker_started_at": "2026-06-20T09:34:10.885Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the remaining current row-34 prose surface and wrote the missing archive note. The canonical row-34 spec/index wording already reflected the execute-capable replay state; I aligned `evidence/pipelines/virtualmachine-prerelease-coverage.json` and documented the exact evidence and intentionally preserved historical snapshots in `evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md`.",
+        "last_worker_completed_at": "2026-06-20T09:35:19.125Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-20T09:34:00.280Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Review rejected: specs/index.json and specs/virtualmachines-vmas-to-vms-migration-slb.json now carry the truthful execute-capable row34 wording, but the declared archive output ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md is still missing and the worker attached no evidence, so acceptance is not yet met.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_20260620093043",
+        "current_attempt_id": "a_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_20260620093400",
+        "reviewed_at": "2026-06-20T09:36:05.316Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the missing archive note now exists at ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md, it names the exact repo-local files refreshed (specs/virtualmachines-vmas-to-vms-migration-slb.json, specs/index.json, evidence/pipelines/virtualmachine-prerelease-coverage.json), cites the exact local grep/git-diff validation commands, and the current row34 spec/index/coverage wording truthfully reflects an execute-capable replay with check-mode pass plus remaining mutation/subscription-auth gating and no new cloud execution."
+      },
+      "session_history": [
+        "s_task_vm-prerelease-row34-spec-coverage-prose-refresh-20260620",
+        "s_task_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_retry_20260620093400"
+      ],
+      "session_id": "s_task_vm-prerelease-row34-spec-coverage-prose-refresh-20260620_retry_20260620093400",
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:36:05.316Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the missing archive note now exists at ../aks-rp-e2e/evidence/archive/vm-prerelease-row34-spec-coverage-prose-refresh-20260620.md, it names the exact repo-local files refreshed (specs/virtualmachines-vmas-to-vms-migration-slb.json, specs/index.json, evidence/pipelines/virtualmachine-prerelease-coverage.json), cites the exact local grep/git-diff validation commands, and the current row34 spec/index/coverage wording truthfully reflects an execute-capable replay with check-mode pass plus remaining mutation/subscription-auth gating and no new cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

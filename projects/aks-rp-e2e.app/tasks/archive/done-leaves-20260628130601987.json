@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T13:06:01.987Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-compact-loop",
+  "summary": "2026-06-28 owner heartbeat hygiene continuation: archive the remaining completed compact package leaves whose durable meaning is already captured by their generated feature artifacts and compact loop state. Keep only live active/runnable compact work plus the fleet failure diagnosis follow-up visible in this lane.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "compact-feature-arm64",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate and verify the arm64 feature compact package.",
+      "inputs": [
+        "feature:arm64",
+        "specs:features/arm64/specs",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/feature-compact-loop/state.json",
+        "features/arm64/compact/staging.plan.json",
+        "features/arm64/compact/staging.summary.md",
+        "features/arm64/compact/staging.diagnostics.json"
+      ],
+      "acceptance": [
+        "Feature compact package was generated or a concrete blocker was recorded.",
+        "Generated check-mode Vitest tests were run.",
+        "Feature compact loop state was updated as ready, partial, blocked, or error."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:arm64"
+      ],
+      "workflow": "feature-compact-planner",
+      "context": {
+        "featureKey": "arm64",
+        "capabilityId": "arm64",
+        "packetPath": "features/arm64.yaml",
+        "specsDir": "features/arm64/specs",
+        "specCount": 1,
+        "target": "staging",
+        "checkParallel": 50,
+        "stateRef": ".state/feature-compact-loop/state.json",
+        "loopTaskId": "aks-feature-compact-loop",
+        "acceptance_note": "Accepted compact package: generated check-mode tests passed and feature-compact state records ready."
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:41.453Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_compact-feature-arm64_20260628123841",
+        "assigned_at": "2026-06-28T12:38:41.720Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_compact-feature-arm64",
+        "worker_started_attempt_id": "a_compact-feature-arm64_20260628123841",
+        "worker_started_at": "2026-06-28T12:39:48.416Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Feature compact package ready for arm64. Plan: features/arm64/compact/staging.plan.json. Summary: features/arm64/compact/staging.summary.md. Diagnostics: features/arm64/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-arm64-staging_948758. Specs=1, clusters=1, saved=0.",
+        "last_worker_completed_at": "2026-06-28T12:39:50.687Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T12:41:13.723Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted compact package: generated check-mode tests passed and feature-compact state records ready."
+      },
+      "session_id": "s_task_compact-feature-arm64",
+      "session_history": [
+        "s_task_compact-feature-arm64"
+      ],
+      "result": "Feature compact package ready for arm64. Plan: features/arm64/compact/staging.plan.json. Summary: features/arm64/compact/staging.summary.md. Diagnostics: features/arm64/compact/staging.diagnostics.json. Test result: runs/test-results/feature-compact-arm64-staging_948758. Specs=1, clusters=1, saved=0.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T12:41:13.723Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

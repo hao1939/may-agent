@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T20:37:43.481Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner reconciliation: accepted the mounted-source Retina Enterprise create-time carrier landing based on durable repo evidence (features/spec/replay/evidence files exist and cite the mounted ACNS source contract), and reconciled the completion-event mismatch by noting the task itself is already absent from the live tree because that result has effectively been compacted into project-level rollup state rather than awaiting owner review. Archived the remaining safe done leaves for the same slice: secops FIPS automatic SKU carrier landing, storage CSI csidrivers source landing split, VM prerelease row-42 secure-TLS basic adjacency proof, and the prior VM adjacent-source frontier packet. Open work remains one active regular-learning leaf for the next exact secure-TLS VNet adjacency proof, while the only blocked work stays the single external human-transport proof family wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-automatic-sku-carrier-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: land a bounded source-backed canonical carrier for Scenario_Cluster_FIPS_Automatic_SKU using the mounted AKS RP handwritten source, preserving the distinct Automatic SKU composite FIPS-enable rejection branch as repo-local feature/spec/replay artifacts without cloud execution or unrelated secops-fips broadening.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/secops/fips-automatic-sku.yaml",
+        "../aks-rp-e2e/specs/secops-fips-automatic-sku.json",
+        "../aks-rp-e2e/replays/secops-fips-automatic-sku.ts",
+        "../aks-rp-e2e/evidence/archive/secops-fips-automatic-sku-carrier-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Create or update a dedicated repo-local canonical carrier for Scenario_Cluster_FIPS_Automatic_SKU that cites /app/sources/aks-rp/test/e2ev3/sigs/secops/clusterfips/plans/cluster_fips_automatic_sku.go and preserves the branch inputs managedClusters.sku.name=Automatic, attempted managedClusters.properties.enableFIPS=true on update, and the aligned agentPoolProfiles[*].enableFIPS=true precondition.",
+        "Carrier captures the mounted-source expectation and postcondition conservatively: rejection contains 'Cannot enable cluster-level FIPS because an incompatible component is enabled' and the cluster-level FIPS state remains disabled after the rejected update; do not collapse this work into blocked-addon slice1/slice2 or extension-blocked carriers.",
+        "Produce a durable evidence note listing the exact repo files changed and local validation commands run, and confirm no cloud execution and no external-human transport work occurred in this carrier-landing pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T20:33:03.692Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-21T20:33:03.784Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted repo-local SecOps FIPS Automatic SKU landing after owner review: all four declared artifacts exist, the evidence note cites the mounted handwritten source and preserved the distinct Automatic-SKU rejection boundary, and the recorded local checks passed (dedicated replay --check evidence plus runner/wiring-check) with no cloud execution or external-human transport work."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-21T20:33:03.784Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted repo-local SecOps FIPS Automatic SKU landing after owner review: all four declared artifacts exist, the evidence note cites the mounted handwritten source and preserved the distinct Automatic-SKU rejection boundary, and the recorded local checks passed (dedicated replay --check evidence plus runner/wiring-check) with no cloud execution or external-human transport work."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:00:43.666Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog review closure: serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620 is accepted done and no longer needs standalone root visibility. The root frontier now stays intentionally compact with two active mounted-source learning leaves — private-cluster-mounted-source-lineage-audit-20260620 for bounded private-cluster source/spec/model lineage and serverless-schedulerctrl-mounted-source-lineage-reconcile-20260620 for exact scheduler-controller lineage separation from virtual-nodes/runtime witnesses — plus the single truthful blocked external-send family external-send-proof-dispatch-family-20260620 under the VM prerelease replacement focus. Future wakes should review/continue those two active repo-local leaves and leave the external-send family unchanged until durable human send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the mounted AKS RP handwritten source for the serverless virtual nodes branch, then update repo-local feature/spec/replay/model surfaces so serverless-virtual-nodes has exact source-backed lineage and a truthful relationship to the existing runtime-blocked witness path without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted AKS RP handwritten source files that define or bound serverless virtual nodes behavior, or records a bounded mounted-source ceiling if no distinct standalone scenario exists.",
+        "Repo-local feature/spec/replay/model surfaces are added or updated so serverless-virtual-nodes has exact lineage, preserves the existing runtime-blocked witness separately, and records adjacency versus serverless-schedulerctrl without treating adjacent source as authoritative by inheritance.",
+        "The artifact records accepted inputs, expectation path, adjacent surfaces, and unknown edges for the serverless virtual nodes branch, and confirms no cloud mutation was run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:52:17.892Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620_20260620175217",
+        "assigned_at": "2026-06-20T17:52:17.937Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620_20260620175217",
+        "worker_started_at": "2026-06-20T17:52:35.695Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source lineage audit for serverless virtual nodes, wrote evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md, and updated repo-local feature/spec/replay/model surfaces to ground serverless-virtual-nodes in mounted sigs/virtualnodes while preserving the separate runtime-blocked witness paths and schedulerctrl adjacency boundary.",
+        "last_worker_completed_at": "2026-06-20T17:59:27.830Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:00:06.269Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the audit artifact grounds serverless-virtual-nodes in mounted sigs/virtualnodes Scenario_Standard_VirtualNodes, explicitly separates adjacent sigs/serverless schedulerctrl lineage, preserves the runtime-blocked witness paths as separate repo-local branches, and the repo shows the corresponding serverless feature/spec/replay/model updates plus the archived evidence file with no cloud mutation claimed."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-mounted-source-lineage-reconcile-20260620"
+      ],
+      "result": "Completed the mounted-source lineage audit for serverless virtual nodes, wrote evidence/archive/serverless-virtual-nodes-source-coverage-audit-20260620.md, and updated repo-local feature/spec/replay/model surfaces to ground serverless-virtual-nodes in mounted sigs/virtualnodes while preserving the separate runtime-blocked witness paths and schedulerctrl adjacency boundary.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:00:06.269Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the audit artifact grounds serverless-virtual-nodes in mounted sigs/virtualnodes Scenario_Standard_VirtualNodes, explicitly separates adjacent sigs/serverless schedulerctrl lineage, preserves the runtime-blocked witness paths as separate repo-local branches, and the repo shows the corresponding serverless feature/spec/replay/model updates plus the archived evidence file with no cloud mutation claimed."
+      },
+      "status": "done"
+    }
+  ]
+}

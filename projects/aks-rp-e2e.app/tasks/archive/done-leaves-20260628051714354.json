@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T05:17:14.354Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 owner planning update accepts the completed stale-active/artifact-routing diagnostic as durable evidence of a shared repo-local single-spec verifier/spec-loop consumer bug rather than a planner verdict problem: the note ties the autoupgrader, CCP agent-connectivity, and Key Vault review misroutes to wrong-family downloaded artifact paths, and it defines a fail-closed identity gate (expected specId + workflow loop_key family + artifact family) as the next trustworthy repair before any contaminated spec verdict is reused. Archive the completed diagnostic leaf because its durable meaning is now preserved on this parent; keep repair-single-spec-verifier-artifact-identity-gate-20260628 as the concrete next repo-local successor and leave the autoupgrader-family requeue branch pending that repair gate.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared single-spec verifier failure family behind stale active slots and artifact/spec routing mismatches, using the 2026-06-28 watchdog stale-active wake plus the three autoupgrader review leaves (verify-spec-autoupgrader-vm-prerelease-umbrella, verify-spec-ccp-autoupgrader-k8s-rapid-mtc-window, verify-spec-ccp-autoupgrader-pipeline-daily-master) whose completed runs currently point at mismatched or shared artifact identities, and produce a bounded repo-local repair/triage note with the exact next owner action.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628.md"
+      ],
+      "acceptance": [
+        "Evidence captures the stale-active symptom and the mismatched artifact/spec identity with exact task ids, run ids, and result paths, including the autoupgrader review family.",
+        "The note distinguishes planner cleanup from runner/workflow/tooling failure and names the most likely root-cause class.",
+        "The note states one concrete next action: local tooling fix candidate, retry gate, or exact external escalation owner."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T05:11:30.946Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628_20260628051138",
+        "assigned_at": "2026-06-28T05:11:38.155Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628",
+        "worker_started_attempt_id": "a_diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628_20260628051138",
+        "worker_started_at": "2026-06-28T05:12:08.686Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested triage note at evidence/archive/diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628.md, documenting the 2026-06-28 stale-active symptoms, exact misrouted single-spec artifacts, and a concrete repo-local verifier/spec-loop repair gate.",
+        "last_worker_completed_at": "2026-06-28T05:14:50.311Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T05:15:35.992Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628.md: it documents the 2026-06-28 stale-active symptoms plus the autoupgrader/CCP/KeyVault artifact misroutes with exact run ids and result paths, and it provides a concrete fail-closed verifier/spec-loop repair gate before any affected spec verdict is trusted."
+      },
+      "session_id": "s_task_diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628",
+      "session_history": [
+        "s_task_diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628"
+      ],
+      "result": "Produced the requested triage note at evidence/archive/diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628.md, documenting the 2026-06-28 stale-active symptoms, exact misrouted single-spec artifacts, and a concrete repo-local verifier/spec-loop repair gate.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T05:15:35.992Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/diagnose-single-spec-run-artifact-routing-and-stale-active-watchdog-20260628.md: it documents the 2026-06-28 stale-active symptoms plus the autoupgrader/CCP/KeyVault artifact misroutes with exact run ids and result paths, and it provides a concrete fail-closed verifier/spec-loop repair gate before any affected spec verdict is trusted."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T05:57:57.492Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review keeps the frontier compressed and truthful: the three completed repo-local leaves are now represented at the project root, including the maintained model/view landing for path.net-integration.multinic-dualstack plus the VM prerelease row-27 execution-readiness decision and live-approval packet authoring. The only immediate repo-local action remains netintegration-multinic-dualstack-live-execution-packet-20260622, which should finish a send-ready, execute-gated live-execution ask packet without claiming cloud mutation. external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful blocked family because no new durable human send/handoff/reply evidence has arrived; it should resume only on real external transport proof or authoritative reply, not on more local packet/source/setup work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "netintegration-multinic-dualstack-model-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the dedicated maintained knowledge-map/model/view carrier for path.net-integration.multinic-dualstack so the newly authored Scenario_MultiNIC_DualStack source-backed carrier is represented in the accepted model without claiming live verdict evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/netintegration-multinic-dualstack-model-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted 2026-06-22 MultiNIC DualStack carrier-authoring evidence plus the mounted source lineage, and explains the exact feature/path/model gap being closed.",
+        "Repo-local maintained surfaces are updated for the dual-stack sibling: the relevant feature/model/view artifacts name path.net-integration.multinic-dualstack (or the exact accepted path id if normalized during landing), remain source-grounded, and do not overstate live execution evidence.",
+        "Artifact distinguishes source-grounded model landing from still-unexecuted dual-stack product validation and ends with the exact next follow-up if any adjacent repo-local gap remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T05:47:35.847Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_netintegration-multinic-dualstack-model-landing-20260622_20260622054735",
+        "assigned_at": "2026-06-22T05:47:35.898Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_netintegration-multinic-dualstack-model-landing-20260622",
+        "worker_started_attempt_id": "a_netintegration-multinic-dualstack-model-landing-20260622_20260622054735",
+        "worker_started_at": "2026-06-22T05:47:59.821Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the maintained knowledge-map/model/view carrier for path.net-integration.multinic-dualstack in model/knowledge-map/model.json, regenerated maintained views, and wrote the evidence artifact evidence/archive/netintegration-multinic-dualstack-model-landing-20260622.md without claiming live verdict evidence.",
+        "last_worker_completed_at": "2026-06-22T05:55:57.961Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T05:56:59.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the 2026-06-22 maintained-surface landing: evidence/archive/netintegration-multinic-dualstack-model-landing-20260622.md cites the earlier source-backed carrier artifact and bounded verifier result, and repo-local maintained surfaces now expose feature net-integration-multinic-dualstack plus scenario.net-integration.multinic-dualstack, dag.net-integration.multinic-dualstack, and path.net-integration.multinic-dualstack without claiming live verdict evidence."
+      },
+      "session_id": "s_task_netintegration-multinic-dualstack-model-landing-20260622",
+      "session_history": [
+        "s_task_netintegration-multinic-dualstack-model-landing-20260622"
+      ],
+      "result": "Landed the maintained knowledge-map/model/view carrier for path.net-integration.multinic-dualstack in model/knowledge-map/model.json, regenerated maintained views, and wrote the evidence artifact evidence/archive/netintegration-multinic-dualstack-model-landing-20260622.md without claiming live verdict evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T05:56:59.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the 2026-06-22 maintained-surface landing: evidence/archive/netintegration-multinic-dualstack-model-landing-20260622.md cites the earlier source-backed carrier artifact and bounded verifier result, and repo-local maintained surfaces now expose feature net-integration-multinic-dualstack plus scenario.net-integration.multinic-dualstack, dag.net-integration.multinic-dualstack, and path.net-integration.multinic-dualstack without claiming live verdict evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

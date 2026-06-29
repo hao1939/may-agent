@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T17:56:01.773Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted three bounded private-cluster branch updates under the spec-verification lane: (1) the privatelink public-FQDN toggle disable transition is now repaired to mounted-source GET+mutate+full PUT semantics and its same-spec rerun remains the truthful next cloud action; (2) authorized-service-tags now has exact mounted lifecycle pass evidence from run 28390950596 promoted into the capability model, explicitly replacing older devbox/environment-blocked framing as the authority for this path; and (3) shared-apiserver-subnet is now clearly classified as a runner/carrier implementation gap, not an existing-shared-cluster dependency, with a concrete implementation follow-up created while the product/path verdict stays unknown until later approved live evidence.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted pass for spec.private-cluster.vnet-integration-authorized-service-tags into the capability model/knowledge map so the exact private-cluster authorized-service-tags lifecycle is recorded with the right path boundary and kept distinct from older environment-blocked devbox evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-authorized-service-tags-pass-model-reconciliation-20260629.md"
+      ],
+      "acceptance": [
+        "A durable note cites run 28390950596/result artifacts and records the exact boundary proven by the pass: create persisted [\"0.0.0.0/32\"] with blocked kube access on local, then update persisted [\"AzureCloud\"] with allowed kube access on local, with all 4/4 claims passing.",
+        "The relevant capability-model/knowledge-map entries are updated, or the note explains precisely why no model text change was needed.",
+        "The note explicitly reconciles this staging pass against any older authorized-service-tags blocked/environment surfaces so future planning does not conflate the private-cluster VNet integration lifecycle with unrelated devbox reachability blockers."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.vnet-integration-authorized-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:48:49.276Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629_20260629174853",
+        "assigned_at": "2026-06-29T17:48:53.272Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629",
+        "worker_started_attempt_id": "a_map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629_20260629174853",
+        "worker_started_at": "2026-06-29T17:49:23.213Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the accepted pass from workflow run 28390950596 into the durable evidence/model surfaces: added a reconciliation note at evidence/archive/private-cluster-vnet-integration-authorized-service-tags-pass-model-reconciliation-20260629.md, promoted the private-cluster authorized-service-tags feature/path to pass in model/knowledge-map/model.json, and regenerated model/knowledge-map/views/path-summary.json.",
+        "last_worker_completed_at": "2026-06-29T17:54:24.599Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-vnet-integration-authorized-service-tags-pass-model-reconciliation-20260629.md",
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json"
+        ],
+        "reviewed_at": "2026-06-29T17:56:01.554Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the reconciliation note cites run 28390950596 and its 4/4 create-blocked/update-allowed lifecycle claims, promotes the exact authorized-service-tags path to pass in the knowledge model, and explicitly separates this mounted exact pass from older devbox/environment-blocked and approximate CIDR-only evidence."
+      },
+      "session_id": "s_task_map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629",
+      "session_history": [
+        "s_task_map-private-cluster-vnet-integration-authorized-service-tags-pass-into-model-20260629"
+      ],
+      "result": "Reconciled the accepted pass from workflow run 28390950596 into the durable evidence/model surfaces: added a reconciliation note at evidence/archive/private-cluster-vnet-integration-authorized-service-tags-pass-model-reconciliation-20260629.md, promoted the private-cluster authorized-service-tags feature/path to pass in model/knowledge-map/model.json, and regenerated model/knowledge-map/views/path-summary.json.",
+      "evidence": [
+        "evidence/archive/private-cluster-vnet-integration-authorized-service-tags-pass-model-reconciliation-20260629.md",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:56:01.554Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the reconciliation note cites run 28390950596 and its 4/4 create-blocked/update-allowed lifecycle claims, promotes the exact authorized-service-tags path to pass in the knowledge model, and explicitly separates this mounted exact pass from older devbox/environment-blocked and approximate CIDR-only evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace the current check-only replay for spec.private-cluster.vnet-integration-shared-apiserver-subnet with an exact mounted-source two-cluster execute-capable carrier while keeping live execution gated until explicit approval.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-plan-20260629.md"
+      ],
+      "acceptance": [
+        "The repo-local repair or plan precisely matches mounted source shared_subnet.go: shared VNet with node subnet plus shared API-server subnet, cluster0 then cluster1 create, validation for both clusters, and ordered cluster0-then-cluster1 teardown.",
+        "The work explicitly records that this is a runner/carrier gap rather than an existing/shared-cluster dependency, and keeps the path verdict unknown until future live evidence is reviewed.",
+        "A durable note names the exact files or implementation surfaces that must change to support the exact two-cluster carrier and states the truthful next execute gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.vnet-integration-shared-apiserver-subnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:48:25.101Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T17:49:03.401Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-20260629_20260629174922",
+        "assigned_at": "2026-06-29T17:49:22.417Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-2",
+        "worker_started_attempt_id": "a_repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-20260629_20260629174922",
+        "worker_started_at": "2026-06-29T17:49:24.945Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable repair plan at evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-plan-20260629.md that maps the exact mounted-source two-cluster contract, classifies the gap as runner/carrier-only, and names the repo surfaces and truthful execute gate needed for future implementation.",
+        "last_worker_completed_at": "2026-06-29T17:53:54.948Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-plan-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T17:56:01.663Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived plan is source-backed to shared_subnet.go, correctly classifies the gap as runner/carrier-only rather than existing-cluster dependency, names the exact repo surfaces to implement, and preserves unknown path verdict plus explicit future execute gate."
+      },
+      "session_id": "s_task_repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-2",
+      "session_history": [
+        "s_task_repair-spec-private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-2"
+      ],
+      "result": "Wrote a durable repair plan at evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-plan-20260629.md that maps the exact mounted-source two-cluster contract, classifies the gap as runner/carrier-only, and names the repo surfaces and truthful execute gate needed for future implementation.",
+      "evidence": [
+        "evidence/archive/private-cluster-vnet-integration-shared-apiserver-subnet-exact-two-cluster-carrier-plan-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:56:01.663Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived plan is source-backed to shared_subnet.go, correctly classifies the gap as runner/carrier-only rather than existing-cluster dependency, names the exact repo surfaces to implement, and preserves unknown path verdict plus explicit future execute gate."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair spec.private-cluster.privatelink-public-fqdn-toggle so the disable-public-FQDN transition uses mounted-source-equivalent GET + mutate + full createOrUpdate-style update semantics before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-privatelink-public-fqdn-toggle-disable-update-repair-20260629.md"
+      ],
+      "acceptance": [
+        "features/private-cluster/tests/private-cluster-privatelink-public-fqdn-toggle.ts replaces the direct PATCH disable step with a source-aligned GET + mutate + full update flow matching mounted source semantics.",
+        "features/private-cluster/specs/private-cluster-privatelink-public-fqdn-toggle.json no longer claims a PATCH-only disable contract if that wording remains after the repair.",
+        "A durable note records the exact files changed, cites the mounted source anchors that defined the repair target, and states the bounded rerun shape that becomes truthful after the repo-local fix lands."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.private-cluster.privatelink-public-fqdn-toggle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T17:48:09.260Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T17:49:03.401Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629_20260629174922",
+        "assigned_at": "2026-06-29T17:49:22.417Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629",
+        "worker_started_attempt_id": "a_repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629_20260629174922",
+        "worker_started_at": "2026-06-29T17:49:24.867Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the private-cluster public-FQDN toggle carrier/spec so the disable transition now uses mounted-source-equivalent GET+mutate+full PUT semantics, and wrote a durable repair note under evidence/archive/ with rerun guidance.",
+        "last_worker_completed_at": "2026-06-29T17:51:59.944Z",
+        "last_worker_evidence": [
+          "features/private-cluster/tests/private-cluster-privatelink-public-fqdn-toggle.ts",
+          "features/private-cluster/specs/private-cluster-privatelink-public-fqdn-toggle.json",
+          "evidence/archive/private-cluster-privatelink-public-fqdn-toggle-disable-update-repair-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T17:53:39.170Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived repair note cites mounted-source update anchors, the carrier/spec now use source-equivalent GET+mutate+full PUT disable semantics, and the next truthful action is a bounded same-spec rerun rather than treating the old PATCH-only failure as product evidence."
+      },
+      "session_id": "s_task_repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629",
+      "session_history": [
+        "s_task_repair-spec-private-cluster-privatelink-public-fqdn-toggle-disable-update-shape-20260629"
+      ],
+      "result": "Repaired the private-cluster public-FQDN toggle carrier/spec so the disable transition now uses mounted-source-equivalent GET+mutate+full PUT semantics, and wrote a durable repair note under evidence/archive/ with rerun guidance.",
+      "evidence": [
+        "features/private-cluster/tests/private-cluster-privatelink-public-fqdn-toggle.ts",
+        "features/private-cluster/specs/private-cluster-privatelink-public-fqdn-toggle.json",
+        "evidence/archive/private-cluster-privatelink-public-fqdn-toggle-disable-update-repair-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T17:53:39.170Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived repair note cites mounted-source update anchors, the carrier/spec now use source-equivalent GET+mutate+full PUT disable semantics, and the next truthful action is a bounded same-spec rerun rather than treating the old PATCH-only failure as product evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

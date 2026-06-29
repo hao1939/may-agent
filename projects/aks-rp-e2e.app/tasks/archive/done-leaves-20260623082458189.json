@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T08:24:58.189Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed refill pass accepted the OIDC >=1.34 default-by-version repo-local status reconciliation: mounted source, canonical spec/replay/model carriers are aligned, and the truthful framing is source-backed ready-carrier with observed unknown until replay request-shape repair plus a bounded >=1.34 rerun. The private-cluster none-dns-zone-v3 status reconciliation was already archived earlier in this wake family and likewise preserves unknown pending exact lifecycle live evidence. The visible frontier is now reduced to one active repo-local private-cluster authorized-service-tags source reconciliation leaf plus the unchanged single family-level external-human proof wait; no new cloud execution or duplicate blocker work is warranted from this wake.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.oidc.default-by-version.k8s-gte-1.34 against mounted-source authorities, canonical spec/replay/model carriers, and existing archive evidence so the project records whether the current ready/source-grounded framing is truthful or needs a more exact repo-local status/next-step wording, without running cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-k8s-gte-1-34-status-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact maintained authorities for path.oidc.default-by-version.k8s-gte-1.34 (mounted source, feature/spec/replay carriers, model/path-summary surfaces, and existing evidence artifacts), explains whether the current ready/source-grounded framing is truthful, and states the exact repo-local status/model wording or evidence-ceiling next step needed.",
+        "The note remains bounded to repo-local evidence reconciliation only: no cloud mutation, no broad OIDC feature expansion, and no speculative promotion of unknown observations into pass/fail claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T08:20:16.452Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623_20260623082016",
+        "assigned_at": "2026-06-23T08:20:16.501Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623",
+        "worker_started_attempt_id": "a_oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623_20260623082016",
+        "worker_started_at": "2026-06-23T08:20:50.014Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the bounded repo-local reconciliation for path.oidc.default-by-version.k8s-gte-1.34 and wrote a durable archive note clarifying that the path is source-backed and ready-carrier only, with observation still unknown and replay repair needed before direct verification.",
+        "last_worker_completed_at": "2026-06-23T08:24:28.851Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T08:24:47.159Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites mounted-source, canonical spec/replay/model carriers, and existing execute evidence to keep the path framed as a source-backed ready-carrier with observed unknown and bounded replay-repair next step."
+      },
+      "session_id": "s_task_oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623",
+      "session_history": [
+        "s_task_oidc-default-by-version-k8s-gte-1-34-status-reconcile-20260623"
+      ],
+      "result": "Completed the bounded repo-local reconciliation for path.oidc.default-by-version.k8s-gte-1.34 and wrote a durable archive note clarifying that the path is source-backed and ready-carrier only, with observation still unknown and replay repair needed before direct verification.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T08:24:47.159Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites mounted-source, canonical spec/replay/model carriers, and existing execute evidence to keep the path framed as a source-backed ready-carrier with observed unknown and bounded replay-repair next step."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T21:26:10.168Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner-heartbeat preserved the intentionally minimal frontier. The accepted VM prerelease mounted-source boundary map is now archived because its durable meaning lives in the parent rollup plus the archive note, and the live work remains one active repo-local VirtualMachine autoscaled VMs CRUD mounted-source boundary map for the adjacent prerelease/checkin row plus the single family-level external-send-proof human-transport wait pending real external send/escalation proof or authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-boundary-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: use the mounted AKS RP handwritten e2ev3 VirtualMachine source as the primary artifact to map the prerelease/checkin boundary for the currently tracked prerelease asks, extracting the exact input paths, expected behaviors, and current coverage/gap linkage for the VM prerelease rows without any cloud execution or external-human transport.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-boundary-map-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the mounted source files /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, names the concrete prerelease/checkin scenarios or rows relevant to the currently tracked VM prerelease asks, and distinguishes any shared versus row-specific intent.",
+        "Archive note maps the exact input-path and expectation-path boundaries surfaced by those handwritten cases to current repo-local coverage: what is already covered by existing specs/model paths, what remains externally blocked by the send-proof family, and what bounded repo-local gaps still need follow-up, with no new cloud mutation or human-send work.",
+        "If the source review proves a concrete repo-local carrier/spec/model edit is needed, the note names the exact file/path to update and the validation/checks required; otherwise it explicitly records that no carrier edits were required and leaves a concrete next leaf-ready follow-up for the source-backed gap it exposed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "frontier/virtualmachine"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T21:22:34.323Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-boundary-map-20260621_20260621212305",
+        "assigned_at": "2026-06-21T21:23:05.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-boundary-map-20260621",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-boundary-map-20260621_20260621212305",
+        "worker_started_at": "2026-06-21T21:23:06.610Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note at evidence/archive/virtualmachine-prerelease-mounted-source-boundary-map-20260621.md, mapping the mounted VM prerelease/checkin source boundary for the tracked prerelease asks (rows 33/40/41/42), their exact input/expectation paths, current repo-local coverage, the row-33 send-proof-family blocker, and the next leaf-ready follow-up.",
+        "last_worker_completed_at": "2026-06-21T21:25:14.110Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T21:25:29.936Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted mounted-source boundary synthesis: archive note cites prerelease/checkin source, maps exact input/expectation boundaries for tracked VM prerelease rows 33/40/41/42, confirms rows 40/41/42 already have truthful repo-local carriers, narrows row 33 to the existing external send-proof gate only, and identifies the next adjacent repo-local leaf as source-order row 46 / maintained row 45 autoscaled VMs CRUD."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-boundary-map-20260621",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-boundary-map-20260621"
+      ],
+      "result": "Created the requested archive note at evidence/archive/virtualmachine-prerelease-mounted-source-boundary-map-20260621.md, mapping the mounted VM prerelease/checkin source boundary for the tracked prerelease asks (rows 33/40/41/42), their exact input/expectation paths, current repo-local coverage, the row-33 send-proof-family blocker, and the next leaf-ready follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T21:25:29.936Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted mounted-source boundary synthesis: archive note cites prerelease/checkin source, maps exact input/expectation boundaries for tracked VM prerelease rows 33/40/41/42, confirms rows 40/41/42 already have truthful repo-local carriers, narrows row 33 to the existing external send-proof gate only, and identifies the next adjacent repo-local leaf as source-order row 46 / maintained row 45 autoscaled VMs CRUD."
+      },
+      "status": "done"
+    }
+  ]
+}

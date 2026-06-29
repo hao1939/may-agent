@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T04:26:39.160Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 task-completed refill accepts two newly completed bounded branches at the root and leaves the next actions explicit: evidence/archive/network-cni-source-gap-batch1-20260621.md narrowed the current mounted network-cni frontier to one exact remaining addon-lifecycle gap, so active leaf network-cni-cilium-enterprise-mounted-source-packet-20260621 now carries the bounded non-cloud follow-up for Scenario_Cilium_Dataplane_Enterprise. The earlier dirty-workspace checkpoint triage is likewise preserved through its active successor vmpr-shared-carrier-isolation-batch1-20260621, which now owns the 12-file carrier separation needed before any truthful VM prerelease checkpoint attempt. external-send-proof-dispatch-family-20260620 remains the single live blocked family-level wait for human outbound send/escalation proof; no duplicate passive waits are needed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-source-gap-batch1-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect a bounded first batch of uncovered network-cni Go e2ev3 scenarios from mounted source, map each scenario to existing repo-local feature/spec/replay/model coverage (or the lack of it), and write a source-backed gap note that names the exact next artifact-worthy follow-up for any still-uncovered scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-source-gap-batch1-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact mounted network-cni source files/scenarios inspected and the current repo-local coverage artifacts checked for each one.",
+        "For each inspected scenario, the note truthfully classifies it as already covered, needing new spec/replay/model work, execute-gated, or no longer worth frontier work, with evidence for the classification.",
+        "If at least one uncovered scenario remains, the note names the smallest concrete next repo-local artifact task to create next; if none remain in the bounded batch, it records that ceiling and points to the next adjacent uncovered family or batch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T04:20:12.828Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-source-gap-batch1-20260621_20260621042012",
+        "assigned_at": "2026-06-21T04:20:12.874Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-source-gap-batch1-20260621",
+        "worker_started_attempt_id": "a_network-cni-source-gap-batch1-20260621_20260621042012",
+        "worker_started_at": "2026-06-21T04:20:42.067Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive gap note at evidence/archive/network-cni-source-gap-batch1-20260621.md after inspecting mounted network/ciliumdataplane and swiftv2 Go scenarios against current repo-local feature/spec/replay/model coverage, and identified one exact remaining follow-up task for Scenario_Cilium_Dataplane_Enterprise.",
+        "last_worker_completed_at": "2026-06-21T04:25:13.798Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T04:25:51.006Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-source-gap-batch1-20260621.md cites the exact mounted ciliumdataplane/swiftv2 source files and repo-local coverage carriers, truthfully classifies the four inspected scenarios, and narrows the remaining exact gap to Scenario_Cilium_Dataplane_Enterprise with one concrete next artifact task."
+      },
+      "session_id": "s_task_network-cni-source-gap-batch1-20260621",
+      "session_history": [
+        "s_task_network-cni-source-gap-batch1-20260621"
+      ],
+      "result": "Produced the requested archive gap note at evidence/archive/network-cni-source-gap-batch1-20260621.md after inspecting mounted network/ciliumdataplane and swiftv2 Go scenarios against current repo-local feature/spec/replay/model coverage, and identified one exact remaining follow-up task for Scenario_Cilium_Dataplane_Enterprise.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T04:25:51.006Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-source-gap-batch1-20260621.md cites the exact mounted ciliumdataplane/swiftv2 source files and repo-local coverage carriers, truthfully classifies the four inspected scenarios, and narrows the remaining exact gap to Scenario_Cilium_Dataplane_Enterprise with one concrete next artifact task."
+      },
+      "status": "done"
+    }
+  ]
+}

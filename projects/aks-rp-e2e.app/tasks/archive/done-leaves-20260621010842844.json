@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:08:42.844Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner review accepted the row-30/31/32 maintained checkpoint-readiness audit: the previously accepted VMPR isolation packet is stale because row-30/31/32 model and maintained-view surfaces are already identical to HEAD. The only live repo-local runnable work is now the newly exposed non-target residual dirty pair: one bounded serverless model-text classification task for the subnet-validation delegation wording in model/knowledge-map/model.json, and one bounded private-cluster specs/index metadata classification task for the APIVNET entries. The external-send-proof-dispatch-family-20260620 leaf remains the single truthful blocked carrier for outbound human transport proof. Archived done leaves preserve the completed VMPR isolation and earlier private-cluster/serverless reconcile packets; future checkpoint planning should not reopen row-30/31/32 unless new diffs appear after those residual surfaces are resolved.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the one remaining stale canonical APIVNET Automatic-SKU text surface using the accepted 2026-06-21 source packet and current maintained feature metadata. Update only specs/private-cluster-apiserver-vnet-integration-create.json so its direct public spec statusReason no longer says the Automatic-SKU public row remains source-blocked, and make it match the already-reconciled maintained execution-variant metadata plus the corrected specs/index.json wording. Preserve the boundary that canonical base APIVNET specs/replays are not Automatic-SKU execution proof, and do not add model/view rows, duplicate specs/replays, or re-open index.json unless new evidence proves a fresh mismatch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "The work lands before/after diff evidence for specs/private-cluster-apiserver-vnet-integration-create.json, showing the stale Automatic-SKU source-blocked wording removed from the direct public canonical spec while keeping the non-variant/not-execution-proof boundary explicit.",
+        "The packet cites the accepted 2026-06-21 source packet, the maintained execution-variant metadata in features/private-cluster/vnet-integration.yaml, and the already-corrected specs/index.json wording, and explains exactly why the public/private Automatic-SKU pair is source-grounded metadata attached to canonical base APIVNET paths rather than duplicate runnable coverage.",
+        "If any residual mismatch still remains after the direct-spec repair, the packet ends with one narrower successor leaf tied to the exact remaining file/field instead of reopening a generic APIVNET source-gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-apivnet-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:05:18.966Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621_20260621010519",
+        "assigned_at": "2026-06-21T01:05:19.055Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621",
+        "worker_started_attempt_id": "a_private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621_20260621010519",
+        "worker_started_at": "2026-06-21T01:05:31.408Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale APIVNET Automatic-SKU canonical text surfaces by updating specs/index.json and specs/private-cluster-apiserver-vnet-integration-create.json, and wrote a durable evidence packet at evidence/archive/private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T01:07:14.820Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:07:44.623Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence packet shows the bounded direct-spec repair landed in specs/private-cluster-apiserver-vnet-integration-create.json, cites the 2026-06-21 mounted-source packet plus features/private-cluster/vnet-integration.yaml and specs/index.json alignment, and closes the stale source-blocked wording with no residual mismatch."
+      },
+      "session_id": "s_task_private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621",
+      "session_history": [
+        "s_task_private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621"
+      ],
+      "result": "Reconciled the stale APIVNET Automatic-SKU canonical text surfaces by updating specs/index.json and specs/private-cluster-apiserver-vnet-integration-create.json, and wrote a durable evidence packet at evidence/archive/private-cluster-apivnet-automatic-sku-canonical-surface-reconcile-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:07:44.623Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence packet shows the bounded direct-spec repair landed in specs/private-cluster-apiserver-vnet-integration-create.json, cites the 2026-06-21 mounted-source packet plus features/private-cluster/vnet-integration.yaml and specs/index.json alignment, and closes the stale source-blocked wording with no residual mismatch."
+      },
+      "status": "done"
+    }
+  ]
+}

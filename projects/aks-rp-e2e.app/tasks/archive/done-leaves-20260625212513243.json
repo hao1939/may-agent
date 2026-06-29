@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T21:25:13.243Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 scheduled blocked-frontier owner review: no review leaves or new returned-proof artifacts were present, so the compressed seven-leaf external-wait family under focus-mounted-source-coverage-closure-and-external-wait-20260623 remains the single truthful blocked frontier unchanged until authoritative reply proof arrives or the 2026-06-26 follow-up window opens. The only live non-blocked branch is model-knowledge-map-inputdags-325-istio-ingress-egress-dual-revision-slice-unknown-variable-family-repair-20260625, which should continue the repo-local mounted-source knowledge-map validator repair without widening into cloud execution or duplicate blocker/setup work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "evidence-feedback-unknown-path-status-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the remaining repo-local unknown-path evidence for private-cluster none-dns-zone v3 and serverless virtual-nodes multi-pod burst into maintained status/model outputs without cloud mutation, using the already accepted source/spec/readiness packets as the decision anchors.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "Both target paths have one maintained repo-local status decision each: either a concrete model/path-summary update or an exact evidence-ceiling note that keeps the path unknown with linked rationale, and each decision cites the already accepted 2026-06-25 source/spec/readiness evidence rather than reopening external waits or inventing new live probes.",
+        "Work stays in the evidence-feedback/model-update lane only: validate repo-local artifacts, regenerate/validate local maintained outputs as needed, and do not trigger cloud mutation, approval asks, or duplicate blocked waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T20:24:28.383Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_evidence-feedback-unknown-path-status-reconcile-20260625_20260625202430",
+        "assigned_at": "2026-06-25T20:24:30.766Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_evidence-feedback-unknown-path-status-reconcile-20260625",
+        "worker_started_attempt_id": "a_evidence-feedback-unknown-path-status-reconcile-20260625_20260625202430",
+        "worker_started_at": "2026-06-25T20:24:46.633Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that both assigned unknown-path targets were already reconciled in maintained model/path-summary outputs, and wrote a bounded evidence note documenting that no further model/view edits were needed. Also captured that full model validation currently fails due to unrelated pre-existing issues outside the assigned paths.",
+        "last_worker_completed_at": "2026-06-25T20:26:06.334Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T20:27:06.173Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/evidence-feedback-unknown-path-status-reconcile-20260625.md shows both target paths already have maintained unknown/evidence-ceiling decisions in model.json and path-summary.json, so the worker truthfully reconciled the branch without reopening waits or cloud work."
+      },
+      "session_id": "s_task_evidence-feedback-unknown-path-status-reconcile-20260625",
+      "session_history": [
+        "s_task_evidence-feedback-unknown-path-status-reconcile-20260625"
+      ],
+      "result": "Verified that both assigned unknown-path targets were already reconciled in maintained model/path-summary outputs, and wrote a bounded evidence note documenting that no further model/view edits were needed. Also captured that full model validation currently fails due to unrelated pre-existing issues outside the assigned paths.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T20:27:06.173Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/evidence-feedback-unknown-path-status-reconcile-20260625.md shows both target paths already have maintained unknown/evidence-ceiling decisions in model.json and path-summary.json, so the worker truthfully reconciled the branch without reopening waits or cloud work."
+      },
+      "status": "done"
+    }
+  ]
+}

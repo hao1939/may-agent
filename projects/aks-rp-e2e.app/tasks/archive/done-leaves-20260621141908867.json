@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:19:08.867Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner review accepted the ManagedSystem create-time boundary map: the project now has a durable source-backed packet preserving path.managedsystem.create-time-initial-pool as a terminal minimal name+mode product-gap branch, while the adjacent VirtualMachines+ManagedSystem path is cleanly separated as an explicit combined request-shape branch with unchanged terminal verdict. The live repo-local working set is now the private-cluster authorized-service-tags model reconciliation leaf plus the new VM prerelease row-37 managed-AAD model reconciliation leaf, and the single external-send-proof family remains the only truthful blocked wait pending off-runtime human send/handoff/escalation proof or authoritative replies.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-create-time-boundary-map-and-evidence-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: document the first durable ManagedSystem boundary map around path.managedsystem.create-time-initial-pool using repo-local artifacts plus mounted /app/sources/aks-rp source so the project has one source-backed accepted-vs-rejected input/expectation packet for create-time initial/default pool behavior, adjacent VirtualMachines combination surfaces, and the next bounded non-retry follow-up gaps, while explicitly preserving the terminal product-gap verdict and avoiding cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md"
+      ],
+      "acceptance": [
+        "Write evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md citing the exact mounted source files, existing repo-local feature/model artifacts, and prior execution evidence used to map accepted inputs, rejected/product-gap inputs, expected behavior, observed behavior, adjacent surfaces, and unknown edges for ManagedSystem create-time initial/default pool behavior.",
+        "Update any directly affected repo-local carrier(s) needed so path.managedsystem.create-time-initial-pool and the adjacent VirtualMachines+ManagedSystem surface are described truthfully and consistently with the boundary map, preserving the existing terminal/product-gap judgments and avoiding any retry framing unless a new API/product signal is cited.",
+        "Perform repo-local validation only and record the exact next safe follow-up probes or source-backed questions that remain after the boundary map, limited to documentation/reconciliation gaps rather than re-running the already terminal ManagedSystem create-time product-gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-boundary-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:12:26.534Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-create-time-boundary-map-and-evidence-20260621_20260621141226",
+        "assigned_at": "2026-06-21T14:12:26.582Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-create-time-boundary-map-and-evidence-20260621",
+        "worker_started_attempt_id": "a_managedsystem-create-time-boundary-map-and-evidence-20260621_20260621141226",
+        "worker_started_at": "2026-06-21T14:13:14.572Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the create-time ManagedSystem boundary map at evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md and repaired the adjacent VirtualMachines+ManagedSystem model carriers in model/knowledge-map/model.json with regenerated views/path-summary.json to reflect the dedicated combined request shape and source-backed scenario lineage.",
+        "last_worker_completed_at": "2026-06-21T14:18:03.338Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:19:08.820Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the ManagedSystem boundary packet: evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md cites the exact mounted ManagedSystem and VM+ManagedSystem source anchors, preserves path.managedsystem.create-time-initial-pool as a terminal minimal name+mode product-gap branch, and truthfully separates the adjacent explicit VirtualMachines+ManagedSystem request shape. The regenerated model/path-summary carriers now show the dedicated combined request-shape input and source-backed scenario title without reopening any retry planning."
+      },
+      "session_id": "s_task_managedsystem-create-time-boundary-map-and-evidence-20260621",
+      "session_history": [
+        "s_task_managedsystem-create-time-boundary-map-and-evidence-20260621"
+      ],
+      "result": "Wrote the create-time ManagedSystem boundary map at evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md and repaired the adjacent VirtualMachines+ManagedSystem model carriers in model/knowledge-map/model.json with regenerated views/path-summary.json to reflect the dedicated combined request shape and source-backed scenario lineage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:19:08.820Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the ManagedSystem boundary packet: evidence/archive/managedsystem-create-time-boundary-map-and-evidence-20260621.md cites the exact mounted ManagedSystem and VM+ManagedSystem source anchors, preserves path.managedsystem.create-time-initial-pool as a terminal minimal name+mode product-gap branch, and truthfully separates the adjacent explicit VirtualMachines+ManagedSystem request shape. The regenerated model/path-summary carriers now show the dedicated combined request-shape input and source-backed scenario title without reopening any retry planning."
+      },
+      "status": "done"
+    }
+  ]
+}

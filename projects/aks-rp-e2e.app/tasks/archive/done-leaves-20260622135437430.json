@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:54:37.430Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted two repo-local truth updates now represented at the project level: (1) path.private-cluster-none-dns-zone-v3 remains truthfully unknown with verdictFinal=false until accepted live evidence covers more than the terminal none-mode branch, and (2) the mounted-source VM prerelease matrix proves rows 25+50, 40-43, 33, and 76 are no longer blocked on source interpretation. Current actionable frontier is still the private-cluster-none-dns-zone-v3 replay/spec contract reconcile leaf; its model-review follow-on remains dependency-gated on an accepted reconcile artifact. The only truthful blocked family remains the single external-human-transport wait for later out-of-runtime replies/proofs.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-judgment-update-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the repo-local private cluster system->none V3 replay/spec contract reconciliation artifact lands, update the knowledge-map judgment for path.private-cluster-none-dns-zone-v3 so the model and views reflect the exact mounted-source contract, the repo-local carrier posture, and the remaining live-evidence ceiling without inventing a cloud verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-judgment-update-20260622.md"
+      ],
+      "acceptance": [
+        "The task reviews the completed reconcile artifact plus any edited repo-local spec/replay carriers, then updates model/knowledge-map/model.json and regenerated views if the source-backed contract materially changes the path's expected behavior, diagnosis, status, or next-safe-action; otherwise it records why the model stays unchanged.",
+        "The archive artifact cites the exact reconcile evidence and final model posture for path.private-cluster-none-dns-zone-v3, including whether the path remains unknown pending cloud evidence or narrows to a stronger repo-local/source-backed judgment."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:49:33.669Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-judgment-update-20260622_20260622134959",
+        "assigned_at": "2026-06-22T13:49:59.558Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-judgment-update-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-judgment-update-20260622_20260622134959",
+        "worker_started_at": "2026-06-22T13:49:59.735Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that path.private-cluster-none-dns-zone-v3 already has the correct source-backed unknown judgment in model/view surfaces and wrote a new archive artifact documenting why no further model change was needed.",
+        "last_worker_completed_at": "2026-06-22T13:51:21.843Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T13:52:09.111Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Premature review result replaced: the acceptance required the current replay/spec contract reconcile artifact plus any resulting carrier edits, but the prerequisite reconcile leaf remains active and the review artifact cites older reconcile evidence instead of the active task output. Recreate this model-judgment review only after private-cluster-none-dns-zone-v3-replay-spec-contract-reconcile-20260622 lands with concrete evidence."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-judgment-update-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-judgment-update-20260622"
+      ],
+      "result": "Verified that path.private-cluster-none-dns-zone-v3 already has the correct source-backed unknown judgment in model/view surfaces and wrote a new archive artifact documenting why no further model change was needed.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-22T13:52:09.111Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Premature review result replaced: the acceptance required the current replay/spec contract reconcile artifact plus any resulting carrier edits, but the prerequisite reconcile leaf remains active and the review artifact cites older reconcile evidence instead of the active task output. Recreate this model-judgment review only after private-cluster-none-dns-zone-v3-replay-spec-contract-reconcile-20260622 lands with concrete evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

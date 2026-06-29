@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T15:29:25.794Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner review accepted two repo-local review leaves and rejected two empty-turn completions without widening cloud scope. The runner terminalization diagnosis for ACNS retina-enterprise and the Swift V1 Calico bounded probe repair are now durable done evidence. In contrast, the ACNS observability contract reconcile leaf and the VM prerelease multi-subnet HTTP400 capture leaf produced no archive artifacts and ended as empty assistant turns, so both review leaves were replaced by one assigned shared diagnosis task that must classify the root cause and reissue the exact next truthful action per affected path. The shared westus2 cluster-count environment-overblock warning was also rechecked at this rollup and remains one exact external-proof family wait; no earlier local setup, duplicate rerun, or alternate live surface can produce truthful evidence before returned proof lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or tightly diagnose the runner/spec-runner stale-running ceiling exposed by single-network-acns-basic-retina-update-retina-enterprise_147709 so a spawned child process that stops without writing result artifacts becomes observable and terminal, then record the exact rerun trigger for spec.network-acns.basic-retina-update-retina-enterprise.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact stale-running evidence from run 147709 (running status, empty result, heartbeat-only steps, dead child pid, missing terminal artifacts) and names the concrete runner/spec-runner boundary being repaired or instrumented.",
+        "Repo-local evidence shows either a landed runner/spec-runner observability repair or a bounded diagnosis that converts child disappearance without result files into a terminal error artifact/progress signal.",
+        "Artifact states the exact rerun gate for spec.network-acns.basic-retina-update-retina-enterprise after the observability repair, without redoing mounted-carrier implementation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:single-spec-stale-running-terminalization"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T15:19:39.943Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T15:19:45.065Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629_20260629151948",
+        "assigned_at": "2026-06-29T15:19:48.511Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629",
+        "worker_started_attempt_id": "a_repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629_20260629151948",
+        "worker_started_at": "2026-06-29T15:20:14.257Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested diagnosis artifact at evidence/archive/repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629.md, tying run 147709’s stale-running evidence to the current runner/spec-runner code and defining the exact rerun gate. Verified the current repo-local partial repairs with targeted runner tests and concluded the dead-child-without-result terminalization gap remains bounded but not yet closed.",
+        "last_worker_completed_at": "2026-06-29T15:26:15.825Z",
+        "last_worker_evidence": [
+          "evidence/archive/repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T15:28:41.824Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted the evidence note: the artifact exists and records the exact run 147709 stale-running boundary, confirms partial repo-local runner repairs with targeted tests, and leaves a precise rerun gate instead of claiming the terminalization bug is fully closed."
+      },
+      "session_id": "s_task_repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629",
+      "session_history": [
+        "s_task_repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629"
+      ],
+      "result": "Produced the requested diagnosis artifact at evidence/archive/repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629.md, tying run 147709’s stale-running evidence to the current runner/spec-runner code and defining the exact rerun gate. Verified the current repo-local partial repairs with targeted runner tests and concluded the dead-child-without-result terminalization gap remains bounded but not yet closed.",
+      "evidence": [
+        "evidence/archive/repair-runner-terminalization-for-stale-acns-basic-retina-enterprise-live-rerun-147709-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T15:28:41.824Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted the evidence note: the artifact exists and records the exact run 147709 stale-running boundary, confirms partial repo-local runner repairs with targeted tests, and leaves a precise rerun gate instead of claiming the terminalization bug is fully closed."
+      },
+      "status": "done"
+    }
+  ]
+}

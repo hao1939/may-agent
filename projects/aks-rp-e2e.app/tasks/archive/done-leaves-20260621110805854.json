@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T11:08:05.854Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 regular-learning owner pass kept the blocked frontier unchanged and made the next useful work explicit. privatecluster-shared-apiserver-subnet-model-wording-repair-20260621 was not accepted because the worker claim arrived without attached evidence and its declared archive artifact was missing at review time, so the leaf was rejected and immediately re-assigned for a proof-carrying rerun. In parallel, privatecluster-privatelink-public-fqdn-model-visibility-repair-20260621 remains the other active model-maintenance slice. The only truthful waits remain external-send-proof-dispatch-family-human-transport-proof-wait-20260621 for human transport proof outside runtime and privatecluster-shared-apiserver-subnet-execution-approval-wait-20260621 for explicit execute approval on the shared API-server subnet replay. Completed VM prerelease/ManagedSystem and private-cluster source-inventory slices already have durable meaning preserved in linked evidence and earlier root summaries, so archiving those safe done leaves keeps the live frontier focused on two active model repairs plus two exact waits.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "vmpr-prerelease-mounted-source-coverage-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP VirtualMachine prerelease/checkin e2ev3 sources as the authoritative non-cloud starting point to reconcile current feature/spec/replay/model coverage, identify any still-unmapped or stale prerelease branches, and record the smallest truthful next source-backed follow-up work without launching execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-prerelease-mounted-source-coverage-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted sources /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus any directly referenced scenario definitions needed to enumerate the currently modeled prerelease/checkin intent.",
+        "Artifact cross-checks those mounted-source branches against the current local feature/spec/replay/model surfaces and distinguishes what is already covered, what is stale or mismapped, and what remains genuinely uncovered, with exact ids/paths/files rather than general statements.",
+        "Task stays in the regular-learning lane only: no cloud execution, no external ask, and no verdict inflation; it ends with one or more concrete smallest-next follow-up candidates or an explicit statement that current prerelease/checkin coverage is already locally complete."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:46:25.769Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-prerelease-mounted-source-coverage-reconciliation-20260621_20260621104627",
+        "assigned_at": "2026-06-21T10:46:27.989Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-prerelease-mounted-source-coverage-reconciliation-20260621",
+        "worker_started_attempt_id": "a_vmpr-prerelease-mounted-source-coverage-reconciliation-20260621_20260621104627",
+        "worker_started_at": "2026-06-21T10:46:49.807Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested mounted-source reconciliation artifact at evidence/archive/vmpr-prerelease-mounted-source-coverage-reconciliation-20260621.md, cross-checking prerelease/checkin mounted VM sources against current feature/spec/replay/model surfaces and identifying only stale metadata/carrier-shape follow-up work rather than any genuinely uncovered audited prerelease branches.",
+        "last_worker_completed_at": "2026-06-21T10:51:11.075Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:52:37.215Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vmpr-prerelease-mounted-source-coverage-reconciliation-20260621.md: the artifact cites the required mounted prerelease/checkin suite files and referenced scenario definitions, cross-checks each audited row against current feature/spec/replay/model carriers, and truthfully concludes there are no genuinely uncovered audited prerelease branches—only bounded stale metadata/prose follow-up on row 54 and row 27."
+      },
+      "session_id": "s_task_vmpr-prerelease-mounted-source-coverage-reconciliation-20260621",
+      "session_history": [
+        "s_task_vmpr-prerelease-mounted-source-coverage-reconciliation-20260621"
+      ],
+      "result": "Created the requested mounted-source reconciliation artifact at evidence/archive/vmpr-prerelease-mounted-source-coverage-reconciliation-20260621.md, cross-checking prerelease/checkin mounted VM sources against current feature/spec/replay/model surfaces and identifying only stale metadata/carrier-shape follow-up work rather than any genuinely uncovered audited prerelease branches.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:52:37.215Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vmpr-prerelease-mounted-source-coverage-reconciliation-20260621.md: the artifact cites the required mounted prerelease/checkin suite files and referenced scenario definitions, cross-checks each audited row against current feature/spec/replay/model carriers, and truthfully concludes there are no genuinely uncovered audited prerelease branches—only bounded stale metadata/prose follow-up on row 54 and row 27."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row54-managedsystem-combined-metadata-sync-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the stale/mismapped maintained surfaces for VM prerelease row 54 so the managedsystem-combined branch consistently reflects the accepted terminal product-gap state across spec index, dedicated spec metadata, path-summary/model-selected input shape, and replay header posture.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row54-managedsystem-combined-metadata-sync-20260621.md"
+      ],
+      "acceptance": [
+        "Update the exact stale surfaces identified by the accepted mounted-source reconciliation: specs/index.json no longer leaves the row-54 entry in draft/staging-blocked, specs/virtualmachines-managedsystem-combined.json uses the dedicated virtualmachines-managedsystem-combined feature identity or a clearly justified equivalent, model/knowledge-map/views/path-summary.json (or its source generator input) no longer maps the branch to arm-rest-virtualmachines-mixed-manual-profiles, and any replay header posture in replays/virtualmachines-managedsystem-combined.ts no longer advertises an exploratory phase inconsistent with the accepted terminal product-gap verdict.",
+        "Artifact cites the accepted mounted-source reconciliation plus the exact files/paths changed and explains the final bounded state for path.virtualmachines.managedsystem-combined without reopening cloud execution or the already accepted unsupported-combination verdict.",
+        "Task stays in the evidence-feedback/model-update lane only: no new source hunt, no cloud execution, and no blocker inflation; if one surface cannot yet be updated, the artifact records the precise repo-local reason and smallest remaining follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:52:37.264Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row54-managedsystem-combined-metadata-sync-20260621_20260621105237",
+        "assigned_at": "2026-06-21T10:52:37.312Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row54-managedsystem-combined-metadata-sync-20260621",
+        "worker_started_attempt_id": "a_vmpr-row54-managedsystem-combined-metadata-sync-20260621_20260621105237",
+        "worker_started_at": "2026-06-21T10:52:44.237Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced the row-54 managedsystem-combined metadata surfaces to the accepted terminal product-gap state across spec index, dedicated spec, model/path-summary, replay header, and wrote the required evidence artifact.",
+        "last_worker_completed_at": "2026-06-21T10:55:13.112Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:56:19.541Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/vmpr-row54-managedsystem-combined-metadata-sync-20260621.md plus repo-local maintained surfaces: specs/index.json now carries spec.virtualmachines.managedsystem-combined as product_gap/terminal with the dedicated feature identity, specs/virtualmachines-managedsystem-combined.json uses featureId virtualmachines-managedsystem-combined, model/knowledge-map/model.json and views/path-summary.json now map the branch to arm-rest-virtualmachines-managedsystem with Scenario_VirtualMachine_ManagedSystem_AgentPool, and replays/virtualmachines-managedsystem-combined.ts no longer advertises an exploratory phase. This satisfies the bounded metadata/model-truthfulness repair without reopening cloud execution or changing the accepted terminal verdict."
+      },
+      "session_id": "s_task_vmpr-row54-managedsystem-combined-metadata-sync-20260621",
+      "session_history": [
+        "s_task_vmpr-row54-managedsystem-combined-metadata-sync-20260621"
+      ],
+      "result": "Synced the row-54 managedsystem-combined metadata surfaces to the accepted terminal product-gap state across spec index, dedicated spec, model/path-summary, replay header, and wrote the required evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:56:19.541Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/vmpr-row54-managedsystem-combined-metadata-sync-20260621.md plus repo-local maintained surfaces: specs/index.json now carries spec.virtualmachines.managedsystem-combined as product_gap/terminal with the dedicated feature identity, specs/virtualmachines-managedsystem-combined.json uses featureId virtualmachines-managedsystem-combined, model/knowledge-map/model.json and views/path-summary.json now map the branch to arm-rest-virtualmachines-managedsystem with Scenario_VirtualMachine_ManagedSystem_AgentPool, and replays/virtualmachines-managedsystem-combined.ts no longer advertises an exploratory phase. This satisfies the bounded metadata/model-truthfulness repair without reopening cloud execution or changing the accepted terminal verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row29-coverage-prose-truthfulness-audit-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the maintained VM prerelease row-29 coverage prose against the current local mixed-sku-lifecycle source/spec/feature/model/replay carriers and repair the maintained coverage wording only if the existing wrapper-only description is stale.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row29-coverage-prose-truthfulness-audit-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact checks the current row-29 maintained coverage wording against the mounted/local carrier state for Scenario_Mixed_SKU_VirtualMachine and concludes whether the existing wrapper-only statement is still truthful or stale, citing the exact local references used.",
+        "If the wrapper-only wording is stale, update the exact maintained row-29 surfaces in evidence/pipelines/virtualmachine-prerelease-coverage.json and the matching MD mirror so they truthfully describe the current bounded replay/spec/feature/model posture without claiming live product verdicts.",
+        "Task stays in the evidence-feedback/model-truthfulness lane only: no cloud execution, no broad new source hunt, no blocker inflation; if no maintained change is needed, the artifact records the precise bounded reason and leaves surfaces unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:57:35.750Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row29-coverage-prose-truthfulness-audit-20260621_20260621105735",
+        "assigned_at": "2026-06-21T10:57:35.803Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row29-coverage-prose-truthfulness-audit-20260621",
+        "worker_started_attempt_id": "a_vmpr-row29-coverage-prose-truthfulness-audit-20260621_20260621105735",
+        "worker_started_at": "2026-06-21T10:57:58.926Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited VM prerelease row-29 maintained coverage prose against mounted source/spec/replay/feature carriers, found the Markdown mirror stale, updated evidence/pipelines/virtualmachine-prerelease-coverage.md row 29 to match the already-truthful JSON wording, and wrote the audit artifact at evidence/archive/vmpr-row29-coverage-prose-truthfulness-audit-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T10:59:14.532Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:59:55.520Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/vmpr-row29-coverage-prose-truthfulness-audit-20260621.md: the audit cites mounted source/spec/replay/feature/check evidence, proves the row-29 Markdown mirror was stale, and repairs evidence/pipelines/virtualmachine-prerelease-coverage.md to the already-truthful execute-capable-but-gated wording that matches the maintained JSON row without claiming live product verdicts."
+      },
+      "session_id": "s_task_vmpr-row29-coverage-prose-truthfulness-audit-20260621",
+      "session_history": [
+        "s_task_vmpr-row29-coverage-prose-truthfulness-audit-20260621"
+      ],
+      "result": "Audited VM prerelease row-29 maintained coverage prose against mounted source/spec/replay/feature carriers, found the Markdown mirror stale, updated evidence/pipelines/virtualmachine-prerelease-coverage.md row 29 to match the already-truthful JSON wording, and wrote the audit artifact at evidence/archive/vmpr-row29-coverage-prose-truthfulness-audit-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:59:55.520Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/vmpr-row29-coverage-prose-truthfulness-audit-20260621.md: the audit cites mounted source/spec/replay/feature/check evidence, proves the row-29 Markdown mirror was stale, and repairs evidence/pipelines/virtualmachine-prerelease-coverage.md to the already-truthful execute-capable-but-gated wording that matches the maintained JSON row without claiming live product verdicts."
+      },
+      "status": "done"
+    },
+    {
+      "id": "privatecluster-mounted-source-scenario-inventory-first-batch-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted private-cluster e2ev3 scenario surface into a first bounded coverage inventory by listing the currently source-visible private-cluster scenarios, linking each to any existing local feature/spec/replay/model carriers, and naming the highest-value uncovered or stale slice to take next without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-mounted-source-scenario-inventory-first-batch-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted private-cluster source files/scenarios inspected and records a bounded inventory of the first batch of source-visible scenarios with current local carrier links (feature/spec/replay/model/evidence) or explicit uncovered/stale gaps.",
+        "Artifact distinguishes already-covered, execute-gated, and still-uncovered or stale private-cluster slices using only repo-local/mounted evidence, and nominates one concrete next source-backed follow-up slice with exact file/path anchors.",
+        "Task stays in the feature-knowledge/spec-gap lane only: no cloud execution, no external asks, and no speculative blocker creation beyond what mounted/local evidence proves."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:59:55.570Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-mounted-source-scenario-inventory-first-batch-20260621_20260621105955",
+        "assigned_at": "2026-06-21T10:59:55.617Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-mounted-source-scenario-inventory-first-batch-20260621",
+        "worker_started_attempt_id": "a_privatecluster-mounted-source-scenario-inventory-first-batch-20260621_20260621105955",
+        "worker_started_at": "2026-06-21T11:00:10.186Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested private-cluster mounted-source first-batch inventory at evidence/archive/privatecluster-mounted-source-scenario-inventory-first-batch-20260621.md, mapping mounted scenarios to local specs/features/replays/model paths and nominating shared_subnet.go as the next stale slice.",
+        "last_worker_completed_at": "2026-06-21T11:02:15.158Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:02:47.872Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/privatecluster-mounted-source-scenario-inventory-first-batch-20260621.md cites the exact mounted private-cluster source files inspected, links each first-batch scenario to repo-local feature/spec/replay/model carriers, distinguishes covered vs execute-gated vs stale slices, and correctly nominates shared_subnet.go / path.private-cluster-vnet-integration-shared-apiserver-subnet as the next non-cloud reconciliation slice without creating unsupported blocker or execution claims."
+      },
+      "session_id": "s_task_privatecluster-mounted-source-scenario-inventory-first-batch-20260621",
+      "session_history": [
+        "s_task_privatecluster-mounted-source-scenario-inventory-first-batch-20260621"
+      ],
+      "result": "Created the requested private-cluster mounted-source first-batch inventory at evidence/archive/privatecluster-mounted-source-scenario-inventory-first-batch-20260621.md, mapping mounted scenarios to local specs/features/replays/model paths and nominating shared_subnet.go as the next stale slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:02:47.872Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/privatecluster-mounted-source-scenario-inventory-first-batch-20260621.md cites the exact mounted private-cluster source files inspected, links each first-batch scenario to repo-local feature/spec/replay/model carriers, distinguishes covered vs execute-gated vs stale slices, and correctly nominates shared_subnet.go / path.private-cluster-vnet-integration-shared-apiserver-subnet as the next non-cloud reconciliation slice without creating unsupported blocker or execution claims."
+      },
+      "status": "done"
+    },
+    {
+      "id": "privatecluster-mounted-source-scenario-inventory-second-batch-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inventory the next bounded batch of mounted private-cluster Go e2ev3 scenarios beyond the already-covered shared API-server subnet slices by citing exact source anchors, summarizing their input/expectation intent, and reconciling which local feature/spec/replay/model carriers already exist versus which precise follow-up artifacts are still missing, without requesting cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-mounted-source-scenario-inventory-second-batch-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites exact mounted private-cluster source anchors for a bounded next batch of additional scenarios beyond the already-covered shared_subnet.go positive/negative slices and summarizes each scenario's intent plus the key input/expectation surface.",
+        "Artifact maps each cited scenario to current repo-local carriers (feature/spec/replay/model/path-summary) or names the exact missing carrier/follow-up needed, with at least one concrete next candidate task identified from the inventory.",
+        "Task stays in the regular-learning/source-inventory lane only: no cloud execution, no approval ask, and no verdict change beyond evidence-backed inventory/reconciliation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T11:03:56.425Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-21T11:03:56.563Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-mounted-source-scenario-inventory-second-batch-20260621_20260621110430",
+        "assigned_at": "2026-06-21T11:04:30.316Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-mounted-source-scenario-inventory-second-batch-20260621",
+        "worker_started_attempt_id": "a_privatecluster-mounted-source-scenario-inventory-second-batch-20260621_20260621110430",
+        "worker_started_at": "2026-06-21T11:04:31.032Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested second-batch private-cluster mounted-source inventory artifact at evidence/archive/privatecluster-mounted-source-scenario-inventory-second-batch-20260621.md, citing exact source anchors, summarizing scenario intent, and reconciling current repo-local carriers versus currently maintained model/view gaps.",
+        "last_worker_completed_at": "2026-06-21T11:06:27.236Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T11:06:45.713Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/privatecluster-mounted-source-scenario-inventory-second-batch-20260621.md cites exact mounted private-cluster source anchors for a bounded second batch, reconciles current feature/spec/replay/model carriers versus missing maintained path visibility, and identifies concrete next candidate tasks without requesting cloud execution."
+      },
+      "session_id": "s_task_privatecluster-mounted-source-scenario-inventory-second-batch-20260621",
+      "session_history": [
+        "s_task_privatecluster-mounted-source-scenario-inventory-second-batch-20260621"
+      ],
+      "result": "Created the requested second-batch private-cluster mounted-source inventory artifact at evidence/archive/privatecluster-mounted-source-scenario-inventory-second-batch-20260621.md, citing exact source anchors, summarizing scenario intent, and reconciling current repo-local carriers versus currently maintained model/view gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T11:06:45.713Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/privatecluster-mounted-source-scenario-inventory-second-batch-20260621.md cites exact mounted private-cluster source anchors for a bounded second batch, reconciles current feature/spec/replay/model carriers versus missing maintained path visibility, and identifies concrete next candidate tasks without requesting cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T10:51:53.737Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the VM prerelease row 76 maintained landing: accepted model/knowledge-map/model.json and regenerated views now include the row-76 aksconformance tunnel feature/scenario/DAG/path using the existing source/spec/replay/evidence chain, without changing the separate external shared-identity wait. Recent done slices now cover (1) live-run failed-24h metric interpretation/dashboard wording and (2) VM prerelease row 76 accepted maintained landing. Remaining live work stays intentionally narrow: continue the active repo-local reconciliation for repeated node-pool-config.custom-ca live contradictions, while preserving one family-level external human-transport wait for later out-of-runtime proof across the covered VM preview asks.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "reconcile-live-contradiction-node-custom-ca-trust-create-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the repeated fresh live failures for node-custom-ca-trust.create against the still-pass maintained model/status surfaces, deciding whether the truthful outcome is model downgrade, replay/runner diagnosis repair, or infra-only classification without rerunning cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-live-contradiction-node-custom-ca-trust-create-20260622.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the repeated live diagnosis carriers named in live-run-failed-24h-family-triage-20260622 plus the current model/status/spec/replay surfaces for path.node-custom-ca-trust.create, then explains the truthful contradiction classification and exact next action.",
+        "If the current pass posture or adjacent repo-local carriers are stale, the relevant model/view/spec/replay/evidence surfaces are updated to the truthful state; otherwise the artifact proves why the repeated failures should remain outside product/model verdict changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "live-run-node-custom-ca-trust-create"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:45:04.863Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T10:45:30.948Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-live-contradiction-node-custom-ca-trust-create-20260622_20260622104559",
+        "assigned_at": "2026-06-22T10:45:59.992Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-live-contradiction-node-custom-ca-trust-create-20260622",
+        "worker_started_attempt_id": "a_reconcile-live-contradiction-node-custom-ca-trust-create-20260622_20260622104559",
+        "worker_started_at": "2026-06-22T10:46:02.548Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Reconciled the node-custom-ca-trust.create live contradiction in a durable archive note, repaired the replay to use the mounted-source PEM certificate, and downgraded path.node-custom-ca-trust.create from pass to unknown in the maintained model. Full model validation/view regeneration could not complete because model/knowledge-map/model.json already contains many unrelated pre-existing validator errors outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-22T10:50:11.190Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T10:50:43.455Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker output: evidence/archive/reconcile-live-contradiction-node-custom-ca-trust-create-20260622.md reconciles the repeated live failures to a malformed maintained replay payload, records the repo-local replay repair, and the maintained model/view surfaces now truthfully downgrade path.node-custom-ca-trust.create from pass to unknown pending one bounded post-repair live run."
+      },
+      "session_id": "s_task_reconcile-live-contradiction-node-custom-ca-trust-create-20260622",
+      "session_history": [
+        "s_task_reconcile-live-contradiction-node-custom-ca-trust-create-20260622"
+      ],
+      "result": "Reconciled the node-custom-ca-trust.create live contradiction in a durable archive note, repaired the replay to use the mounted-source PEM certificate, and downgraded path.node-custom-ca-trust.create from pass to unknown in the maintained model. Full model validation/view regeneration could not complete because model/knowledge-map/model.json already contains many unrelated pre-existing validator errors outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T10:50:43.455Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker output: evidence/archive/reconcile-live-contradiction-node-custom-ca-trust-create-20260622.md reconciles the repeated live failures to a malformed maintained replay payload, records the repo-local replay repair, and the maintained model/view surfaces now truthfully downgrade path.node-custom-ca-trust.create from pass to unknown pending one bounded post-repair live run."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row76-accepted-model-view-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land VM prerelease row 76 tunnelconformance into the accepted maintained knowledge model and generated views using the already-existing mounted-source/spec/replay/evidence chain, while preserving the shared external wait only for the later shared-identity live-rerun proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row76-accepted-model-view-landing-20260622.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the mounted old-suite row-76 source carriers, existing feature/spec/replay/check evidence, and the current absence or staleness in model/knowledge-map/model.json plus generated views, then explains the exact accepted maintained landing for row 76.",
+        "If row 76 is still missing or stale in the accepted maintained surfaces, the relevant model/knowledge-map/model.json entries and regenerated views are updated truthfully without claiming a new live product verdict; otherwise the artifact proves why no repo-local landing change was needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-row76-model-landing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T10:45:28.238Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row76-accepted-model-view-landing-20260622_20260622104528",
+        "assigned_at": "2026-06-22T10:45:28.335Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row76-accepted-model-view-landing-20260622",
+        "worker_started_attempt_id": "a_vmpr-row76-accepted-model-view-landing-20260622_20260622104528",
+        "worker_started_at": "2026-06-22T10:46:00.078Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed VM prerelease row 76 into the accepted knowledge model by adding the row-76 feature/scenario/DAG/path plus supporting evidence/variables in model/knowledge-map/model.json, regenerated maintained views, reran the dedicated row-76 replay check, and wrote the durable archive note evidence/archive/vmpr-row76-accepted-model-view-landing-20260622.md while keeping the separate shared-identity live-rerun wait unchanged.",
+        "last_worker_completed_at": "2026-06-22T10:51:02.769Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T10:51:53.639Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: the archive artifact cites mounted source/spec/replay/evidence carriers, records the model.json + regenerated view landing for VM prerelease row 76, reruns the dedicated replay check, and keeps the separate external shared-identity wait unchanged."
+      },
+      "session_id": "s_task_vmpr-row76-accepted-model-view-landing-20260622",
+      "session_history": [
+        "s_task_vmpr-row76-accepted-model-view-landing-20260622"
+      ],
+      "result": "Landed VM prerelease row 76 into the accepted knowledge model by adding the row-76 feature/scenario/DAG/path plus supporting evidence/variables in model/knowledge-map/model.json, regenerated maintained views, reran the dedicated row-76 replay check, and wrote the durable archive note evidence/archive/vmpr-row76-accepted-model-view-landing-20260622.md while keeping the separate shared-identity live-rerun wait unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T10:51:53.639Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: the archive artifact cites mounted source/spec/replay/evidence carriers, records the model.json + regenerated view landing for VM prerelease row 76, reruns the dedicated replay check, and keeps the separate external shared-identity wait unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

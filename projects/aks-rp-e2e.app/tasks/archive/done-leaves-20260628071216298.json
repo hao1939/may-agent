@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T07:12:16.298Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-28 stale-active wake confirms the current breach is a recovered worker-health incident in the spec lane, not new external-wait debt. The fresh metricsserver rerun was watchdog-requeued with no durable archive from the stale session, so keep that retry active in aks-spec-verification-loop and leave this focus branch compressed to the two truthful external waits only: await-operator-response-private-cluster-privatelink-public-fqdn-toggle-live-run-auth-20260627 and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. Archive the completed escalation child because its durable meaning already lives in the family wait archive and parent summary; do not add duplicate send/source/spec work here unless a returned proof or operator reply changes one of these carriers.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "escalate-external-human-transport-proof-return-family-20260628",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the oldest external-human-transport family wait and take the one bounded owner action now justified by age: either dispatch a durable escalation/follow-up that cites the existing routed asks for VM prerelease row 33 and shared-identity rows 75-76, or record exact evidence that no stronger escalation path exists and tighten the family blocker/resume condition instead of leaving a passive indefinite wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/escalate-external-human-transport-proof-return-family-20260628.md"
+      ],
+      "acceptance": [
+        "Archive durable evidence showing one of two terminal owner outcomes for the external-human-transport family: (a) a new bounded escalation/follow-up with exact recipient, ask scope, and send proof linked to the existing wait evidence, or (b) a reviewed no-stronger-owner-action ceiling with exact reasons and a tightened next-review/resume condition; update the family wait text so future blocked-frontier reviews know whether escalation has already been spent."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-human-transport"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:03:48.514Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_escalate-external-human-transport-proof-return-family-20260628_20260628070353",
+        "assigned_at": "2026-06-28T07:03:53.636Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_escalate-external-human-transport-proof-return-family-20260628",
+        "worker_started_attempt_id": "a_escalate-external-human-transport-proof-return-family-20260628_20260628070353",
+        "worker_started_at": "2026-06-28T07:04:16.133Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded the external-human-transport family ceiling review in evidence/archive/escalate-external-human-transport-proof-return-family-20260628.md and tightened the family blocker artifact to state that the 2026-06-26 follow-up/escalation was already spent, so age alone no longer justifies another reminder.",
+        "last_worker_completed_at": "2026-06-28T07:07:13.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T07:07:42.999Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-28 owner-action ceiling review: archived evidence proves the 2026-06-26 family follow-up/escalation was already accepted on the human:operator route, so no stronger owner action is justified now; tightened the family wait text to make returned proof/reply or an authoritative reroute the only truthful resume trigger."
+      },
+      "session_id": "s_task_escalate-external-human-transport-proof-return-family-20260628",
+      "session_history": [
+        "s_task_escalate-external-human-transport-proof-return-family-20260628"
+      ],
+      "result": "Recorded the external-human-transport family ceiling review in evidence/archive/escalate-external-human-transport-proof-return-family-20260628.md and tightened the family blocker artifact to state that the 2026-06-26 follow-up/escalation was already spent, so age alone no longer justifies another reminder.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T07:07:42.999Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-28 owner-action ceiling review: archived evidence proves the 2026-06-26 family follow-up/escalation was already accepted on the human:operator route, so no stronger owner action is justified now; tightened the family wait text to make returned proof/reply or an authoritative reroute the only truthful resume trigger."
+      },
+      "status": "done"
+    }
+  ]
+}

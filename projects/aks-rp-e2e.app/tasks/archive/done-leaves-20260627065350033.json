@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T06:53:50.033Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-27 watchdog blocked-frontier owner pass preserved the two blocked leaves as exact external waits with unchanged resume conditions after step-1 recheck confirmed no returned proof or operator reply. The remaining root done validating-webhook attachment repair is now archived because its accepted evidence and model/path-summary diffs are already represented in project rollups; the single active local lane remains private-cluster-privatelink-public-fqdn-toggle-source-boundary-map-20260627.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the serverless schedulerctrl validating-webhook family knowledge-map attachments so all 8 path leaves point to the current canonical feature-local test carriers instead of nonexistent top-level replays, preserving the existing 4 topology-paired spec shape and avoiding duplicate carrier conventions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "Update the validating-webhook family probeRef and nextAction attachments for all 8 path ids to the chosen canonical current carriers under features/serverless-schedulerctrl-validating-webhook/tests/, or document one deliberate equivalent canonical mapping if regeneration stores the same information elsewhere.",
+        "Preserve the current one-spec-per-topology-pair / two-paths-per-spec carrier design and do not add duplicate top-level replay shims unless the task leaves durable evidence proving that convention was intentionally chosen instead of attachment reconciliation.",
+        "Leave durable repo-local evidence or diff context specific enough that later workers can see exactly which validating-webhook carriers are canonical after the repair without re-reading the entire source tree."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-validating-webhook"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T06:43:07.082Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627_20260627064328",
+        "assigned_at": "2026-06-27T06:43:28.303Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627_20260627064328",
+        "worker_started_at": "2026-06-27T06:43:28.880Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled all 8 serverless schedulerctrl validating-webhook path attachments to the canonical feature-local test carriers, regenerated path-summary.json, and added a durable evidence note documenting the 4-spec/8-path mapping.",
+        "last_worker_completed_at": "2026-06-27T06:46:30.465Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T06:47:13.698Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: durable evidence note documents the 4-spec/8-path canonical carrier mapping, and the pending diffs in model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json match the claimed attachment repair without introducing replay shims."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-validating-webhook-replay-attachment-reconcile-20260627"
+      ],
+      "result": "Reconciled all 8 serverless schedulerctrl validating-webhook path attachments to the canonical feature-local test carriers, regenerated path-summary.json, and added a durable evidence note documenting the 4-spec/8-path mapping.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T06:47:13.698Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: durable evidence note documents the 4-spec/8-path canonical carrier mapping, and the pending diffs in model/knowledge-map/model.json plus model/knowledge-map/views/path-summary.json match the claimed attachment repair without introducing replay shims."
+      },
+      "status": "done"
+    }
+  ]
+}

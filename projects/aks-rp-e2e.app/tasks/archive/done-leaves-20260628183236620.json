@@ -1,0 +1,642 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:32:36.620Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-28 blocked-frontier owner review: compact this branch around one active local successor and five exact operator waits. The only live repo-local work remains rerun-spec-defender-profile-vm-prerelease-matrix-after-durable-runner-repair-20260628, which should either land a terminal defender-profile verdict with the repaired post-spawn artifact trail or replace itself with an exact new blocker. The spec-loop blocked family stays truthful and unchanged otherwise: App Routing existing-cluster, CCP connected-cluster-proxy auth admin-group, CostAnalysis underlay kubeconfig, deployment-safeguards authorized alternate-ref, and egress-lockdown fallback-promotion all already have durable send proof and now share the same next owner review/send-escalation checkpoint of 2026-06-29T16:45:00Z unless a reply arrives sooner. Do not create duplicate reruns, resend asks, or speculative source/setup work for those waits before a returned reply/proof or the checkpoint.",
+  "archived": 11,
+  "tasks": [
+    {
+      "id": "await-ref-pickup-deployment-safeguards-subresource-api-version-split-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Carry the single truthful deployment-safeguards rerun gate for the sub-resource API-version split now confirmed by both VAP-upgrade and VPA-interop reviews, until the single-spec execution ref includes the accepted deploymentSafeguards child-resource API-version repair or an explicitly authorized alternate repair-bearing ref is selected.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/retry-spec-deployment-safeguards-vap-upgrade-reconcile-after-subresource-api-version-ref-pickup-20260628.md"
+      ],
+      "acceptance": [
+        "The branch preserves owner-visible evidence that current single-spec workflow executions still target a stale ref for deployment-safeguards reruns, names the exact resume conditions, and prevents new blind rerun leaves until the gate changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-ref:deployment-safeguards-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:32:49.709Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-28T18:05:17.226Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Blocked-frontier owner review replaced this passive ref-pickup wait with active task resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628 because mounted AKS RP source is available and repo-local/source validation can still determine whether a repair-bearing ref already exists or whether an exact alternate-ref escalation artifact is required."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-28T18:05:17.226Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Blocked-frontier owner review replaced this passive ref-pickup wait with active task resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628 because mounted AKS RP source is available and repo-local/source validation can still determine whether a repair-bearing ref already exists or whether an exact alternate-ref escalation artifact is required."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-turn-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry one bounded single-spec verification for spec.cluster-autoscaler.vm-prerelease-scale-from-zero-labels-fips using the already-repaired row-48 VM-prerelease FIPS carrier once the shared westus2 live-capacity preflight family is known-good again, and then produce a trustworthy live verdict or the next exact execution gate without reopening carrier-repair diagnosis.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "Launch and review one single-spec workflow attempt for spec.cluster-autoscaler.vm-prerelease-scale-from-zero-labels-fips against staging, or capture the exact preflight/execution blocker if no live run can start.",
+        "Classify the resulting live attempt against the repaired row-48 carrier specifically: pass, fail, blocked, or runner error, with exact run id and result/bundle paths when produced.",
+        "If the run still does not yield a trustworthy product verdict, end with the next narrower gate justified by evidence and do not reopen the already-accepted carrier repair diagnosis or cite the prior empty-turn attempt as evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cluster-autoscaler.vm-prerelease-scale-from-zero-labels-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:51:36.359Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-turn-20260628_20260628175136",
+        "assigned_at": "2026-06-28T17:51:36.514Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-t",
+        "worker_started_attempt_id": "a_retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-turn-20260628_20260628175136",
+        "worker_started_at": "2026-06-28T17:51:47.463Z",
+        "reviewed_at": "2026-06-28T18:01:26.799Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced this misleading active retry leaf with the shared westus2 live-capacity preflight family tracked by reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628. Accepted diagnosis evidence shows the repaired row-48 carrier is not the active gate; do not rerun until same-surface capacity proof exists again."
+      },
+      "session_id": "s_task_retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-t",
+      "session_history": [
+        "s_task_retry-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-live-rerun-after-empty-t"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T18:01:26.799Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced this misleading active retry leaf with the shared westus2 live-capacity preflight family tracked by reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628. Accepted diagnosis evidence shows the repaired row-48 carrier is not the active gate; do not rerun until same-surface capacity proof exists again."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Investigate the shared staging live-capacity preflight failure that cannot read current AKS cluster count for subscription 26fe00f8-9173-4872-9134-bb1d2e00343a in westus2, using the row-48 cluster-autoscaler FIPS rerun as the worked example, and determine whether the next truthful step is a local runner fix, a bounded environment retry gate, or one shared external blocker covering affected single-spec reruns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628.md"
+      ],
+      "acceptance": [
+        "Identify the exact preflight stage, command/API, and evidence path behind the 'could not read current AKS cluster count' failure, citing the affected run ids or runner traces that prove this is a shared family rather than a row-48 carrier defect.",
+        "Conclude with one concrete disposition only: (a) a local repo/runtime repair task if the gate is locally fixable, (b) a bounded rerun gate if the preflight is already healthy again, or (c) one exact external/environment blocker with resume condition and affected spec ids if the failure remains outside repo-local control.",
+        "Update the diagnosis so the row-48 cluster-autoscaler FIPS retry and any same-family spec reruns no longer carry ambiguous 'unknown' status or reopen the accepted carrier-repair work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:live-capacity-preflight-westus2-cluster-count"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:54:06.888Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628_20260628175414",
+        "assigned_at": "2026-06-28T17:54:14.921Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628",
+        "worker_started_attempt_id": "a_diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628_20260628175414",
+        "worker_started_at": "2026-06-28T17:56:13.487Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested diagnosis artifact at evidence/archive/diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628.md, concluding the row-48 FIPS rerun is blocked by a shared westus2 cluster-count preflight environment blocker rather than a repo-local carrier defect or ready-to-rerun gate.",
+        "last_worker_completed_at": "2026-06-28T17:57:57.505Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:59:24.949Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the diagnosis artifact because it ties the row-48 autoscaler rerun and multiple unrelated single-spec reruns to the same westus2 managed-cluster-count preflight blocker in runner/execute-vitest-plan.ts, preserves exact failing commands plus repeated blocked run evidence, and narrows the truthful next step to one shared environment family with an explicit same-surface recovery proof resume condition."
+      },
+      "session_id": "s_task_diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628",
+      "session_history": [
+        "s_task_diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628"
+      ],
+      "result": "Wrote the requested diagnosis artifact at evidence/archive/diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628.md, concluding the row-48 FIPS rerun is blocked by a shared westus2 cluster-count preflight environment blocker rather than a repo-local carrier defect or ready-to-rerun gate.",
+      "evidence": [
+        "evidence/archive/diagnose-shared-live-capacity-preflight-westus2-cluster-count-family-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:59:24.949Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the diagnosis artifact because it ties the row-48 autoscaler rerun and multiple unrelated single-spec reruns to the same westus2 managed-cluster-count preflight blocker in runner/execute-vitest-plan.ts, preserves exact failing commands plus repeated blocked run evidence, and narrows the truthful next step to one shared environment family with an explicit same-surface recovery proof resume condition."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run one bounded single-spec verification for spec.egress-lockdown.fips using the repo-local carrier after the mounted-source subnet/VNet prerequisite wiring port, and determine whether the prior EmptySubnetError preassertion stop is cleared or replaced by a narrower verified gate.",
+      "inputs": [],
+      "outputs": [
+        ".state/spec-loop/state.json"
+      ],
+      "acceptance": [
+        "Launch one single-spec workflow attempt for spec.egress-lockdown.fips against the carrier containing the subnet/VNet prerequisite alignment, or capture the exact blocker if no live run can start.",
+        "Record whether execution now progresses beyond the prior EmptySubnetError create stop, with exact run id and artifact/result paths for this spec only.",
+        "If the spec still does not reach trustworthy product assertions, end with the next narrower carrier/runtime/environment gate justified by new evidence rather than reopening the already-accepted create-failure evidence capture or prerequisite-mapping work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.egress-lockdown.fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:55:00.529Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628_20260628175552",
+        "assigned_at": "2026-06-28T17:55:52.640Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628",
+        "worker_started_attempt_id": "a_rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628_20260628175552",
+        "worker_started_at": "2026-06-28T17:56:13.520Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Dispatched and reviewed one bounded single-spec run for spec.egress-lockdown.fips after the carrier’s subnet/VNet alignment, recorded durable evidence under evidence/archive/spec-egress-lockdown-fips-run-28331013520/, and updated .state/spec-loop/state.json to the new blocked/environment-gate result.",
+        "last_worker_completed_at": "2026-06-28T18:00:28.675Z",
+        "last_worker_evidence": [
+          "evidence/archive/rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628.md",
+          "evidence/archive/spec-egress-lockdown-fips-run-28331013520/",
+          ".state/spec-loop/state.json"
+        ],
+        "reviewed_at": "2026-06-28T18:01:26.733Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the run-28331013520 evidence because it proves the aligned egress-lockdown carrier launched on dev, the prior EmptySubnetError gate is no longer the active stop, and the new exact gate is the shared westus2 cluster-count capacity-preflight blocker captured in evidence/archive/spec-egress-lockdown-fips-run-28331013520/ and evidence/archive/rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628.md."
+      },
+      "session_id": "s_task_rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628",
+      "session_history": [
+        "s_task_rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628"
+      ],
+      "result": "Dispatched and reviewed one bounded single-spec run for spec.egress-lockdown.fips after the carrier’s subnet/VNet alignment, recorded durable evidence under evidence/archive/spec-egress-lockdown-fips-run-28331013520/, and updated .state/spec-loop/state.json to the new blocked/environment-gate result.",
+      "evidence": [
+        "evidence/archive/rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628.md",
+        "evidence/archive/spec-egress-lockdown-fips-run-28331013520/",
+        ".state/spec-loop/state.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:01:26.733Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the run-28331013520 evidence because it proves the aligned egress-lockdown carrier launched on dev, the prior EmptySubnetError gate is no longer the active stop, and the new exact gate is the shared westus2 cluster-count capacity-preflight blocker captured in evidence/archive/spec-egress-lockdown-fips-run-28331013520/ and evidence/archive/rerun-spec-egress-lockdown-fips-after-network-prereq-alignment-20260628.md."
+      },
+      "status": "done"
+    },
+    {
+      "id": "continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Determine whether the launched single-spec run for spec.defender-profile.vm-prerelease-matrix produced a final result after the planner-session timeout, and if not, rerun the same runtime-bundle-ported carrier in a longer-lived executor so the branch ends with a trustworthy live verdict or an exact runner/process-management blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md"
+      ],
+      "acceptance": [
+        "Inspect the already-launched run single-defender-profile-vm-prerelease-matrix_247490 (or its final artifact location if renamed) and either archive the completed result evidence or prove that no trustworthy final result was emitted.",
+        "If no final result exists, execute or hand off one bounded rerun in a longer-lived executor against the same post-port carrier and record the exact run id plus result/bundle paths.",
+        "End with one truthful disposition only: pass/fail/blocked for this spec, or a narrower runner/process-management blocker that explains why the live verdict still cannot be trusted."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:55:32.023Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T18:10:04.661Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_retry_20260628181004",
+        "worker_started_attempt_id": "a_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_20260628181004",
+        "worker_started_at": "2026-06-28T18:10:15.551Z",
+        "stale_active_requeued_at": "2026-06-28T18:10:04.600Z",
+        "stale_active_requeue_reason": "watchdog stale-active repair: prior worker session shows no activity and no evidence artifact exists; require fresh recovery/rerun attempt",
+        "stale_active_fresh_session": true,
+        "previous_attempt_id": "a_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_20260628175552",
+        "current_attempt_id": "a_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_20260628181004",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Inspected the original timed-out defender-profile VM prerelease single-spec run and the longer-lived rerun, then wrote a blocker artifact concluding no trustworthy final result exists and the remaining issue is a runner/process-management blocker rather than carrier authoring.",
+        "last_worker_completed_at": "2026-06-28T18:13:56.047Z",
+        "last_worker_evidence": [
+          "evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:14:27.590Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a blocker-artifact review, not a product verdict: the archived evidence proves both runs _247490 and longer-lived rerun _734848 stayed at outer status=running/result=empty with no spec-runner/result.json, no post-spawn scenario artifacts, and pending cleanup, so the remaining issue is runner/process-management reliability rather than defender-profile carrier authoring."
+      },
+      "session_history": [
+        "s_task_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628",
+        "s_task_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_retry_20260628181004"
+      ],
+      "session_id": "s_task_continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628_retry_20260628181004",
+      "result": "Inspected the original timed-out defender-profile VM prerelease single-spec run and the longer-lived rerun, then wrote a blocker artifact concluding no trustworthy final result exists and the remaining issue is a runner/process-management blocker rather than carrier authoring.",
+      "evidence": [
+        "evidence/archive/continue-spec-defender-profile-vm-prerelease-matrix-after-session-timeout-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:14:27.590Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a blocker-artifact review, not a product verdict: the archived evidence proves both runs _247490 and longer-lived rerun _734848 stayed at outer status=running/result=empty with no spec-runner/result.json, no post-spawn scenario artifacts, and pending cleanup, so the remaining issue is runner/process-management reliability rather than defender-profile carrier authoring."
+      },
+      "status": "done"
+    },
+    {
+      "id": "reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the accepted westus2 managed-cluster-count live-capacity preflight diagnosis into the affected spec-verification branches and durable evidence so this shared environment blocker is represented once with the exact affected spec set, preserved evidence paths, and a truthful same-surface recovery proof resume condition without reopening carrier-local bugs or launching new cloud probes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628.md"
+      ],
+      "acceptance": [
+        "List the affected spec branches proven to stop on the same westus2 cluster-count blocker, with exact run ids and result/artifact paths anchored in accepted evidence.",
+        "State the single shared blocker contract and same-surface recovery proof needed before any affected rerun is retried, and note which existing carrier-local or artifact-routing diagnoses stay closed.",
+        "End with concrete owner-facing branch guidance for the currently live autoscaler row-48 rerun leaf and any adjacent affected spec leaves, without launching a new cloud run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:live-capacity-preflight-westus2-cluster-count"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:59:25.010Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628_20260628175925",
+        "assigned_at": "2026-06-28T17:59:25.068Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628",
+        "worker_started_attempt_id": "a_reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628_20260628175925",
+        "worker_started_at": "2026-06-28T17:59:41.911Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation artifact at evidence/archive/reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628.md, consolidating the accepted westus2 managed-cluster-count blocker across the affected row-48, cloud-provider, KMS v2, and KMS v2plus branches with exact run/result paths and owner-facing branch guidance.",
+        "last_worker_completed_at": "2026-06-28T18:01:07.567Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:01:42.302Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the reconciliation artifact because it consolidates the row-48 autoscaler, cloud-provider, KMS v2, and KMS v2plus branches under one shared westus2 cluster-count preflight blocker with exact run/result paths and a same-surface recovery-proof contract. Owner review now also has accepted egress-lockdown run-28331013520 evidence showing the same blocker family, so future retries should stay family-gated rather than reopening carrier-local diagnoses."
+      },
+      "session_id": "s_task_reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628",
+      "session_history": [
+        "s_task_reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628"
+      ],
+      "result": "Wrote the requested reconciliation artifact at evidence/archive/reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628.md, consolidating the accepted westus2 managed-cluster-count blocker across the affected row-48, cloud-provider, KMS v2, and KMS v2plus branches with exact run/result paths and owner-facing branch guidance.",
+      "evidence": [
+        "evidence/archive/reconcile-shared-westus2-live-capacity-preflight-family-into-affected-spec-branches-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:01:42.302Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the reconciliation artifact because it consolidates the row-48 autoscaler, cloud-provider, KMS v2, and KMS v2plus branches under one shared westus2 cluster-count preflight blocker with exact run/result paths and a same-surface recovery-proof contract. Owner review now also has accepted egress-lockdown run-28331013520 evidence showing the same blocker family, so future retries should stay family-gated rather than reopening carrier-local diagnoses."
+      },
+      "status": "done"
+    },
+    {
+      "id": "resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP source plus existing deployment-safeguards failure evidence to turn the stale-ref blocker into one concrete next action: identify a repair-bearing ref/commit already suitable for single-spec reruns, or produce the exact ref-selection/escalation artifact needed before any new deployment-safeguards rerun is queued.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628.md"
+      ],
+      "acceptance": [
+        "The output cites mounted-source evidence for deploymentSafeguards child-resource handling/scenarios and states whether the needed API-version split is already present in an available ref/commit or still missing from the execution ref.",
+        "If a repair-bearing ref/commit is available, the output names the exact ref/commit and the follow-up rerun leaf that should use it; otherwise it records the exact authorized alternate-ref ask or escalation/send-proof required so the blocker is no longer a passive wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "execution-ref:deployment-safeguards-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:05:12.071Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628_20260628180517",
+        "assigned_at": "2026-06-28T18:05:17.289Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628",
+        "worker_started_attempt_id": "a_resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628_20260628180517",
+        "worker_started_at": "2026-06-28T18:05:47.683Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the deployment-safeguards execution-ref selection artifact at evidence/archive/resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628.md, using mounted AKS RP source plus git/ref inspection to show only basic-enable-disable is covered by current committed origin/dev and that the remaining family needs an authorized alternate-ref ask.",
+        "last_worker_completed_at": "2026-06-28T18:07:06.856Z",
+        "last_worker_evidence": [
+          "evidence/archive/resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:07:38.511Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: mounted source plus ref inspection prove only origin/dev basic-enable-disable currently carries the Deployment Safeguards API-version split, while the remaining family still needs an authorized branch/SHA carrying the five unreleased probe repairs before new single-spec reruns are queued."
+      },
+      "session_id": "s_task_resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628",
+      "session_history": [
+        "s_task_resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628"
+      ],
+      "result": "Produced the deployment-safeguards execution-ref selection artifact at evidence/archive/resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628.md, using mounted AKS RP source plus git/ref inspection to show only basic-enable-disable is covered by current committed origin/dev and that the remaining family needs an authorized alternate-ref ask.",
+      "evidence": [
+        "evidence/archive/resolve-deployment-safeguards-execution-ref-selection-after-mounted-source-check-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:07:38.511Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: mounted source plus ref inspection prove only origin/dev basic-enable-disable currently carries the Deployment Safeguards API-version split, while the remaining family still needs an authorized branch/SHA carrying the five unreleased probe repairs before new single-spec reruns are queued."
+      },
+      "status": "done"
+    },
+    {
+      "id": "carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted OIDC family decision to identify and record the exact authorized-ref carrier for the egress-lockdown VM-prerelease VHD-matrix fallback repair (currently only proven on branch commit 24dbd228629a7af62b22f3bca5b60d9af288feaa), so the next single-spec rerun can launch from an already-authorized ref instead of another blocked aks-explorer branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628.md"
+      ],
+      "acceptance": [
+        "The output compares the branch repair commit to the current authorized ref state and states the exact authorized ref/commit that should carry the fallback repair, or the exact gap preventing that handoff.",
+        "The output names the exact follow-up rerun leaf that becomes valid once the authorized ref contains the fallback repair and explicitly forbids another branch-ref workflow attempt for this spec until then."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.egress-lockdown.vm-prerelease-vhd-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:05:35.675Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628_20260628180535",
+        "assigned_at": "2026-06-28T18:05:35.739Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628",
+        "worker_started_attempt_id": "a_carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628_20260628180535",
+        "worker_started_at": "2026-06-28T18:05:47.611Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested handoff artifact identifying `dev` as the exact authorized ref carrier for the egress-lockdown fallback repair, and documented that the current gap is absence of commit 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent content on `origin/dev`.",
+        "last_worker_completed_at": "2026-06-28T18:06:59.237Z",
+        "last_worker_evidence": [
+          "evidence/archive/carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:07:38.447Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived handoff artifact proves dev is the exact authorized carrier, shows origin/dev still lacks commit 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent fallback markers, and explicitly forbids another branch-ref single-spec attempt until the repair is promoted onto dev."
+      },
+      "session_id": "s_task_carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628",
+      "session_history": [
+        "s_task_carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628"
+      ],
+      "result": "Wrote the requested handoff artifact identifying `dev` as the exact authorized ref carrier for the egress-lockdown fallback repair, and documented that the current gap is absence of commit 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent content on `origin/dev`.",
+      "evidence": [
+        "evidence/archive/carry-egress-lockdown-vm-prerelease-fallback-repair-onto-authorized-ref-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:07:38.447Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived handoff artifact proves dev is the exact authorized carrier, shows origin/dev still lacks commit 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent fallback markers, and explicitly forbids another branch-ref single-spec attempt until the repair is promoted onto dev."
+      },
+      "status": "done"
+    },
+    {
+      "id": "send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Dispatch the exact repo-owner/operator ask to promote the egress-lockdown VM-prerelease fallback repair from commit 24dbd228629a7af62b22f3bca5b60d9af288feaa onto an already-authorized dev ref, and archive send-proof that names the required equivalent content, the target ref, and the follow-up rerun leaf that becomes valid after promotion.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628.md"
+      ],
+      "acceptance": [
+        "Archive durable send-proof or handoff evidence naming dev as the required authorized carrier, the current missing-equivalence gap on origin/dev, and the exact request to land or provide a dev branch/SHA containing the 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent fallback markers.",
+        "The artifact names rerun-spec-egress-lockdown-vm-prerelease-vhd-matrix-from-authorized-dev-after-fallback-promotion as the only valid follow-up rerun leaf after promotion and explicitly preserves the no-more branch-ref workflow rule for this spec until that proof exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.egress-lockdown.vm-prerelease-vhd-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:07:38.573Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628_20260628180738",
+        "assigned_at": "2026-06-28T18:07:38.640Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628",
+        "worker_started_attempt_id": "a_send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628_20260628180738",
+        "worker_started_at": "2026-06-28T18:07:55.091Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived durable send-proof for the egress-lockdown VM-prerelease fallback promotion ask at evidence/archive/send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628.md and routed it through approval-dispatch to human:operator, preserving dev as the required authorized carrier and the no-more-branch-ref rule until promotion proof exists.",
+        "last_worker_completed_at": "2026-06-28T18:09:34.911Z",
+        "last_worker_evidence": [
+          "evidence/archive/send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:10:55.866Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archived send-proof names dev as the required authorized carrier, proves origin/dev still lacks the 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent fallback markers, preserves the no-more-branch-ref rule, and names rerun-spec-egress-lockdown-vm-prerelease-vhd-matrix-from-authorized-dev-after-fallback-promotion as the only valid post-promotion follow-up."
+      },
+      "session_id": "s_task_send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628",
+      "session_history": [
+        "s_task_send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628"
+      ],
+      "result": "Archived durable send-proof for the egress-lockdown VM-prerelease fallback promotion ask at evidence/archive/send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628.md and routed it through approval-dispatch to human:operator, preserving dev as the required authorized carrier and the no-more-branch-ref rule until promotion proof exists.",
+      "evidence": [
+        "evidence/archive/send-egress-lockdown-vm-prerelease-fallback-promotion-ask-to-authorized-dev-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:10:55.866Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archived send-proof names dev as the required authorized carrier, proves origin/dev still lacks the 24dbd228629a7af62b22f3bca5b60d9af288feaa-equivalent fallback markers, preserves the no-more-branch-ref rule, and names rerun-spec-egress-lockdown-vm-prerelease-vhd-matrix-from-authorized-dev-after-fallback-promotion as the only valid post-promotion follow-up."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Determine whether spec.defender-profile.vm-prerelease-matrix run _734848 ever emits trustworthy final artifacts if left alone long enough, or else pinpoint the earliest runner/probe stage where durable progress/result artifacts stop so this branch ends with an exact runner/process-management blocker rather than another ambiguous timed-out live run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628.md"
+      ],
+      "acceptance": [
+        "Check the current state of run single-defender-profile-vm-prerelease-matrix_734848 and record whether spec-runner/result.json, outer result.json, cleanup metadata, or any post-spawn scenario artifacts eventually appear; if they do, archive the trustworthy final verdict paths.",
+        "If the run still stalls, identify the earliest missing durable signal after launch using existing run artifacts/process evidence (for example status.json, steps.jsonl, outer run/result files, process tree, or other repo-local runner traces) and explain why the branch should now be treated as a runner/process-management blocker.",
+        "End with one exact disposition for this branch only: final live verdict recovered, or a narrower runner/process-management blocker with concrete next repair target and rerun gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:14:27.651Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628_20260628181427",
+        "assigned_at": "2026-06-28T18:14:27.711Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628",
+        "worker_started_attempt_id": "a_diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628_20260628181427",
+        "worker_started_at": "2026-06-28T18:14:36.338Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Diagnosed run `single-defender-profile-vm-prerelease-matrix_734848` and wrote a durable blocker artifact showing progress stops immediately after `scenario-test.spawned`, with no trustworthy final artifacts ever appearing even after ~18 minutes alive.",
+        "last_worker_completed_at": "2026-06-28T18:16:24.534Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:17:03.554Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived evidence proves run _734848 never produced spec-runner/result.json, diagnosis, summary, or any post-spawn scenario artifact even after ~18 minutes alive, narrowing this branch from an ambiguous timeout to a runner/process-management blocker whose earliest missing durable signal is the first checkpoint after scenario-test.spawned."
+      },
+      "session_id": "s_task_diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628",
+      "session_history": [
+        "s_task_diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628"
+      ],
+      "result": "Diagnosed run `single-defender-profile-vm-prerelease-matrix_734848` and wrote a durable blocker artifact showing progress stops immediately after `scenario-test.spawned`, with no trustworthy final artifacts ever appearing even after ~18 minutes alive.",
+      "evidence": [
+        "evidence/archive/diagnose-spec-defender-profile-vm-prerelease-matrix-runner-progress-artifacts-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:17:03.554Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived evidence proves run _734848 never produced spec-runner/result.json, diagnosis, summary, or any post-spawn scenario artifact even after ~18 minutes alive, narrowing this branch from an ambiguous timeout to a runner/process-management blocker whose earliest missing durable signal is the first checkpoint after scenario-test.spawned."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use repo-local runner/spec-runner.ts, the defender-profile VM prerelease carrier, and the repeated _734848/_247490 artifact stall signature to map exactly where durable progress should be persisted after scenario-test.spawned, decide whether a repo-local repair candidate exists, and leave one concrete next repair or escalation target before any further live rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628.md"
+      ],
+      "acceptance": [
+        "Cite the exact code/artifact locations that explain why durable artifacts freeze at scenario-test.spawned and whether the runner's existing heartbeats are console-only or persisted anywhere.",
+        "Determine whether the next action is a repo-local repair candidate (for example heartbeat persistence in runner/spec-runner.ts or an immediate checkpoint in the defender-profile scenario) or an external owner ask, and name the exact file/function or escalation target.",
+        "End with an updated rerun gate for spec.defender-profile.vm-prerelease-matrix that blocks another blind live rerun until the identified durable-progress repair/evidence condition is met."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runner:post-spawn-durable-progress",
+        "spec:spec.defender-profile.vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T18:17:03.617Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628_20260628181703",
+        "assigned_at": "2026-06-28T18:17:03.680Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628",
+        "worker_started_attempt_id": "a_diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628_20260628181703",
+        "worker_started_at": "2026-06-28T18:17:15.507Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable diagnosis artifact showing why defender-profile live-run artifacts freeze at scenario-test.spawned, identifying console-only heartbeats in runner/spec-runner.ts and naming a repo-local heartbeat persistence repair target before any further rerun.",
+        "last_worker_completed_at": "2026-06-28T18:18:53.681Z",
+        "last_worker_evidence": [
+          "evidence/archive/diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T18:19:20.754Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archived diagnosis proves the defender-profile VM prerelease family stalls durably at scenario-test.spawned because runner/spec-runner.ts heartbeats are console-only and the carrier writes no linked post-spawn checkpoints; this is evidence-backed analysis, not a repair, so the next action is a repo-local runner durability fix before any blind live rerun."
+      },
+      "session_id": "s_task_diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628",
+      "session_history": [
+        "s_task_diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628"
+      ],
+      "result": "Produced a durable diagnosis artifact showing why defender-profile live-run artifacts freeze at scenario-test.spawned, identifying console-only heartbeats in runner/spec-runner.ts and naming a repo-local heartbeat persistence repair target before any further rerun.",
+      "evidence": [
+        "evidence/archive/diagnose-runner-post-spawn-durable-progress-defender-profile-family-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T18:19:20.754Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archived diagnosis proves the defender-profile VM prerelease family stalls durably at scenario-test.spawned because runner/spec-runner.ts heartbeats are console-only and the carrier writes no linked post-spawn checkpoints; this is evidence-backed analysis, not a repair, so the next action is a repo-local runner durability fix before any blind live rerun."
+      },
+      "status": "done"
+    }
+  ]
+}

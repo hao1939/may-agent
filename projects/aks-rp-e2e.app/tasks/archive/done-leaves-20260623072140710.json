@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:21:40.710Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the bounded storage-csi Blob verifyNFS mounted-source landing, which now has durable repo-local feature/spec/replay/archive carriers distinct from adjacent Blob branches. The single external-human dispatch wait remains the only truthful blocked family and stays unchanged pending newer operator proof. Completed private-cluster auth-service-tags normalization, storage-csi Blob Fuse2 clone landing, VM prerelease mounted-source audit, and Blob verifyNFS landing are archived here; active next work is VM prerelease row 55 selectability hygiene plus the newly assigned Azure File resize mounted-source landing, with remaining storage-csi backlog left as separate runnable follow-ups.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-auth-service-tags-status-normalize-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Bound the exact trustworthy AzureCloud witness-host gate for path.private-cluster-vnet-integration-auth-service-tags using the already-reconciled repo-local carriers and prior runner-vantage ceiling evidence, so the next truthful step is a concrete future replay/witness proof path rather than another model/spec/replay normalization pass.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-auth-service-tags-status-normalize-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the completed reconcile note and the existing runner-vantage proof/ceiling artifact for path.private-cluster-vnet-integration-auth-service-tags, plus the exact replay/spec pair already carrying the deny-all -> AzureCloud lifecycle.",
+        "The note records one bounded owner-usable execution gate for this path: the exact witness-host or attestation conditions needed to treat the post-update AzureCloud allow check as meaningful, and whether any repo-local carrier wording must be updated or is already sufficient after inspection.",
+        "Scope stays bounded to future replay/witness gating for this one private-cluster branch only: no cloud mutation, no reopening of repo-local feature/spec/replay/model reconciliation, and no external-human wait-family rewrite."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-auth-service-tags"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:15:15.368Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-auth-service-tags-status-normalize-20260623_20260623071517",
+        "assigned_at": "2026-06-23T07:15:17.765Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-auth-service-tags-status-normalize-20260623",
+        "worker_started_attempt_id": "a_private-cluster-auth-service-tags-status-normalize-20260623_20260623071517",
+        "worker_started_at": "2026-06-23T07:15:42.591Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable normalization note at evidence/archive/private-cluster-auth-service-tags-status-normalize-20260623.md confirming the current repo-local status for path.private-cluster-vnet-integration-auth-service-tags: source-backed contract and replay/spec readiness are landed, while the exact live verdict remains unknown with no further carrier repair needed.",
+        "last_worker_completed_at": "2026-06-23T07:17:36.690Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:20:25.762Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: repo-local status is normalized for path.private-cluster-vnet-integration-auth-service-tags with source-backed contract/spec/replay/model carriers already aligned, while the exact live verdict remains unknown and the only truthful future step is a bounded witness/execute run; no external-human wait rewrite or further repo-local carrier repair is needed."
+      },
+      "session_id": "s_task_private-cluster-auth-service-tags-status-normalize-20260623",
+      "session_history": [
+        "s_task_private-cluster-auth-service-tags-status-normalize-20260623"
+      ],
+      "result": "Wrote a durable normalization note at evidence/archive/private-cluster-auth-service-tags-status-normalize-20260623.md confirming the current repo-local status for path.private-cluster-vnet-integration-auth-service-tags: source-backed contract and replay/spec readiness are landed, while the exact live verdict remains unknown with no further carrier repair needed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:20:25.762Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: repo-local status is normalized for path.private-cluster-vnet-integration-auth-service-tags with source-backed contract/spec/replay/model carriers already aligned, while the exact live verdict remains unknown and the only truthful future step is a bounded witness/execute run; no external-human wait rewrite or further repo-local carrier repair is needed."
+      },
+      "status": "done"
+    }
+  ]
+}

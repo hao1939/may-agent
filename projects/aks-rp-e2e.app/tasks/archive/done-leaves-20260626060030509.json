@@ -1,0 +1,729 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T06:00:30.509Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 scheduled blocked-frontier owner review: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single truthful family-level external wait pending returned proof, keep cluster-autoscaler-vm-prerelease-spot-repo-local-carrier-audit-20260626 as the active no-cloud source/spec/model lane, and queue external-send-proof-family-scope-reconcile-20260626 as the bounded repo-local follow-up to repair the row/path coverage wording mismatch between the blocked wait packet and its archive artifact without reopening covered local work or inventing a new external ask.",
+  "archived": 13,
+  "tasks": [
+    {
+      "id": "node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit and reconcile the repo-local replay-truth drift for the VM prerelease SSH public-key split pair without cloud execution: compare the Linux and Windows row-40/41/42 replay entrypoints against the shared ssh-public-key live-carrier helper, current specs, model coverage wording, and prior archive claims, then state the truthful execute-carrier status and the smallest repo-local repair or downgrade needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626.md"
+      ],
+      "acceptance": [
+        "The archive cites the exact checked-in replay entrypoints, shared helper, relevant spec/model/archive claim locations, and determines whether the Linux and Windows SSH public-key paths are truly execute-capable through the shared helper or whether current repo-local claims overstate that capability.",
+        "The archive recommends one bounded repo-local follow-up (entrypoint rewiring or spec/model/evidence downgrade) with exact target files and no cloud execution, leaving the mounted-source split-carrier conclusion unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-pool-config-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:57:21.532Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T04:58:06.965Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626_20260626045912",
+        "assigned_at": "2026-06-26T04:59:12.045Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626",
+        "worker_started_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626_20260626045912",
+        "worker_started_at": "2026-06-26T04:59:12.231Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-40 SSH replay truth-drift audit and wrote a durable archive note showing the checked-in Linux/Windows replay entrypoints are stubbed and not wired to the shared execute-capable helper, with a bounded recommendation to rewire those two entrypoints.",
+        "last_worker_completed_at": "2026-06-26T05:01:26.967Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:02:58.712Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive proves both checked-in Linux/Windows row-40 SSH replay entrypoints are stubbed, orphaned from replays/lib/ssh-public-key-live-carrier.ts, and therefore currently overstate execute-capable truth; mounted-source split-carrier conclusion remains unchanged and the bounded next step is entrypoint rewiring."
+      },
+      "session_id": "s_task_node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626",
+      "session_history": [
+        "s_task_node-pool-config-vm-prerelease-row40-ssh-replay-truth-drift-audit-20260626"
+      ],
+      "result": "Completed the row-40 SSH replay truth-drift audit and wrote a durable archive note showing the checked-in Linux/Windows replay entrypoints are stubbed and not wired to the shared execute-capable helper, with a bounded recommendation to rewire those two entrypoints.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:02:58.712Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive proves both checked-in Linux/Windows row-40 SSH replay entrypoints are stubbed, orphaned from replays/lib/ssh-public-key-live-carrier.ts, and therefore currently overstate execute-capable truth; mounted-source split-carrier conclusion remains unchanged and the bounded next step is entrypoint rewiring."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile and normalize the repo-local carrier for path.cluster-autoscaler.vm-prerelease-profile-matrix without cloud execution: resolve the row-number drift between the spec metadata and pipeline coverage ledger, populate truthful normalized selectedInputs/behavior for the path from mounted source plus checked-in spec/replay artifacts, and record the current replay as a thin substrate probe rather than full seven-op execution proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "The archive cites the exact mounted source, repo-local spec/replay/model, and coverage-ledger files; explains the stable scenario-name join versus the row-number drift; and names the smallest repo-local repair targets or wording changes needed so the path/spec/evidence agree.",
+        "The task truthfully updates or proposes updates for the normalized path so selectedInputs and behavior are populated from the mounted autoscaler profile scenarios, and it records in evidence/model wording that the checked-in live replay is only a thin create/get substrate probe until the declared profile-matrix operations are actually exercised."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:59:55.287Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626_20260626050127",
+        "assigned_at": "2026-06-26T05:01:27.292Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626_20260626050127",
+        "worker_started_at": "2026-06-26T05:01:27.562Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive reconciliation note at evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626.md, documenting the row-number drift, mounted-source-derived normalized selectedInputs/behavior proposal, and why the current live replay is only a thin substrate probe.",
+        "last_worker_completed_at": "2026-06-26T05:05:46.405Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:06:17.560Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive at ../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626.md cites the mounted source, checked-in spec/replay/model, and coverage ledger; explains the stable scenario-name join versus row-number drift; proposes truthful normalized selectedInputs/behavior; and explicitly narrows the existing live replay to thin create/get substrate proof rather than full seven-operation coverage."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626"
+      ],
+      "result": "Produced the requested archive reconciliation note at evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626.md, documenting the row-number drift, mounted-source-derived normalized selectedInputs/behavior proposal, and why the current live replay is only a thin substrate probe.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:06:17.560Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive at ../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-normalization-reconcile-20260626.md cites the mounted source, checked-in spec/replay/model, and coverage ledger; explains the stable scenario-name join versus row-number drift; proposes truthful normalized selectedInputs/behavior; and explicitly narrows the existing live replay to thin create/get substrate proof rather than full seven-operation coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rewire the checked-in Linux and Windows VM prerelease row-40 SSH public-key replay entrypoints to the shared live-carrier helper, then revalidate truth locally in --check mode without cloud execution so the repo-local execute-capable claim matches HEAD again.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626.md"
+      ],
+      "acceptance": [
+        "Both replays/node-pool-config-ssh-public-key-update-linux.ts and replays/node-pool-config-ssh-public-key-update-windows.ts become thin wrappers over replays/lib/ssh-public-key-live-carrier.ts with the correct per-OS probe/spec/path/scenario wiring and no broad behavioral changes beyond restoring helper reachability.",
+        "The worker records repo-local evidence citing the exact wrapper edits plus successful local --check runs for both entrypoints, and confirms the repaired HEAD truth now matches the execute-gated spec/model claim without cloud mutation or mounted-source re-interpretation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-pool-config-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:02:58.761Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626_20260626050546",
+        "assigned_at": "2026-06-26T05:05:46.606Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626",
+        "worker_started_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626_20260626050546",
+        "worker_started_at": "2026-06-26T05:05:46.808Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rewired both row-40 SSH replay entrypoints to the shared live carrier, fixed the helper’s check-mode coverage-row lookup to match the current split coverage ledger by specId, and produced repo-local pass evidence from successful Linux/Windows --check runs.",
+        "last_worker_completed_at": "2026-06-26T05:08:14.438Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:08:43.716Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence shows both Linux and Windows row-40 SSH replay entrypoints are thin wrappers over the shared live-carrier helper again, the helper's check-mode coverage-row lookup was narrowly repaired to match split spec-backed rows 41/42 without changing pipeline-row truth, and both repo-local --check runs now pass with emitted Linux/Windows evidence artifacts."
+      },
+      "session_id": "s_task_node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626",
+      "session_history": [
+        "s_task_node-pool-config-vm-prerelease-row40-ssh-entrypoint-rewire-check-20260626"
+      ],
+      "result": "Rewired both row-40 SSH replay entrypoints to the shared live carrier, fixed the helper’s check-mode coverage-row lookup to match the current split coverage ledger by specId, and produced repo-local pass evidence from successful Linux/Windows --check runs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:08:43.716Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence shows both Linux and Windows row-40 SSH replay entrypoints are thin wrappers over the shared live-carrier helper again, the helper's check-mode coverage-row lookup was narrowly repaired to match split spec-backed rows 41/42 without changing pipeline-row truth, and both repo-local --check runs now pass with emitted Linux/Windows evidence artifacts."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the accepted repo-local alignment for path.cluster-autoscaler.vm-prerelease-profile-matrix without cloud execution: update the accepted model/view carrier plus the spec/coverage wording so the path uses the five stable scenario names as the canonical join, carries truthful selectedInputs/behavior from mounted source, and distinguishes thin create/get substrate proof from unexecuted seven-op behavior claims.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626.md"
+      ],
+      "acceptance": [
+        "Repo-local changes update model/knowledge-map/model.json and regenerated derived views so path.cluster-autoscaler.vm-prerelease-profile-matrix has non-empty selectedInputNodeIds/DAG wiring, source-grounded behavior entries, and wording that keeps most behavior observed/alignment unknown while preserving the checked-in live probe as thin create/get substrate evidence only.",
+        "The worker records archive evidence citing the exact spec, coverage-ledger, model, and generated-view edits, and aligns the spec/ledger wording so scenario names are the canonical join while row labels are either updated to 128-132 or explicitly documented as historical/spec-authoring metadata."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:06:17.612Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626_20260626050814",
+        "assigned_at": "2026-06-26T05:08:14.710Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626_20260626050814",
+        "worker_started_at": "2026-06-26T05:08:14.908Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied repo-local alignment for the cluster-autoscaler VM prerelease profile-matrix carrier: updated model/knowledge-map/model.json with non-empty DAG/path behavior, rewrote spec and coverage-ledger wording to use the five scenario names as the canonical join, regenerated views, and added archive evidence in evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626.md.",
+        "last_worker_completed_at": "2026-06-26T05:11:46.986Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:13:17.141Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after spot-checking the archive note plus model/spec/view outputs: path.cluster-autoscaler.vm-prerelease-profile-matrix now has four selected input nodes in model.json/path-summary/graph-view, spec sourceScenarios rows 128-132 align to the five stable scenario names, coverage wording uses the canonical scenario-name join, and the truth boundary remains one thin create/get observed proof plus five source-grounded unknown behaviors."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626"
+      ],
+      "result": "Applied repo-local alignment for the cluster-autoscaler VM prerelease profile-matrix carrier: updated model/knowledge-map/model.json with non-empty DAG/path behavior, rewrote spec and coverage-ledger wording to use the five scenario names as the canonical join, regenerated views, and added archive evidence in evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-model-spec-alignment-20260626.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:13:17.141Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after spot-checking the archive note plus model/spec/view outputs: path.cluster-autoscaler.vm-prerelease-profile-matrix now has four selected input nodes in model.json/path-summary/graph-view, spec sourceScenarios rows 128-132 align to the five stable scenario names, coverage wording uses the canonical scenario-name join, and the truth boundary remains one thin create/get observed proof plus five source-grounded unknown behaviors."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the newly aligned profile-matrix model/spec as the source of truth and compare the current shared replay plus mounted autoscaler source so the five remaining unknown behaviors are decomposed into an exact next verification slice: identify which assertions are already observable on the checked-in replay surface, which require replay/assertion expansion, and what the smallest truthful next gap-closing probe or no-cloud evidence ceiling should be without running cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note enumerates the five still-unknown profile-matrix behaviors, cites the exact mounted source and current replay/assertion touchpoints for each, and states whether the present replay surface can observe the behavior unchanged, needs bounded replay/spec edits, or must stay unverified without a new execution slice.",
+        "The note recommends one concrete successor slice for this branch (replay/spec patch, bounded run-plan candidate, or explicit no-cloud evidence ceiling) with exact target files/commands and preserves the thin create/get-only observed boundary; no cloud execution is performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:13:17.189Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626_20260626051317",
+        "assigned_at": "2026-06-26T05:13:17.235Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626_20260626051317",
+        "worker_started_at": "2026-06-26T05:13:28.687Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626.md, decomposing the five unknown profile-matrix behaviors against mounted source, current spec/replay surfaces, and the smallest truthful next successor slice without cloud execution.",
+        "last_worker_completed_at": "2026-06-26T05:16:27.916Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:17:04.140Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626.md truthfully decomposes the five remaining unknown behaviors against mounted source, current replay/spec surfaces, and the smallest no-cloud successor slice, and it recommends the concrete replay/spec mutation-readback patch without claiming any cloud-observed behavior."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626"
+      ],
+      "result": "Wrote the requested archive note at evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626.md, decomposing the five unknown profile-matrix behaviors against mounted source, current spec/replay surfaces, and the smallest truthful next successor slice without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:17:04.140Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-replay-gap-plan-20260626.md truthfully decomposes the five remaining unknown behaviors against mounted source, current replay/spec surfaces, and the smallest no-cloud successor slice, and it recommends the concrete replay/spec mutation-readback patch without claiming any cloud-observed behavior."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Patch the shared cluster-autoscaler VM prerelease profile-matrix replay/spec so the checked-in no-cloud carrier executes and evidences the seven already-declared ARM mutation/readback operations, while preserving the current thin observed boundary and leaving the five source-defined local-storage behavior points unknown until a later execution slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts",
+        "../aks-rp-e2e/specs/cluster-autoscaler-vm-prerelease-profile-matrix.json",
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-20260626.md"
+      ],
+      "acceptance": [
+        "The replay is updated so the checked-in no-cloud carrier executes and emits evidence for op.set-explicit-autoscaler-profile, op.get-explicit-autoscaler-profile, op.update-vm-agentpool-autoscale-bounds, op.get-vm-agentpool-autoscale-bounds, op.toggle-skip-local-storage-profile, op.reset-autoscaler-profile-to-defaults, and op.get-reset-autoscaler-profile instead of leaving them as comment-only stubs; the task verifies the carrier repo-locally without cloud mutation.",
+        "The spec/assertion wording and archive note make the carrier boundary explicit: structural mutation/readback is covered, but the five mounted-source local-storage scale-down/not-scale-down behaviors remain unknown and are not claimed as observed; the note records exact follow-up commands for later review/use."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:17:04.192Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-20260626_20260626051704",
+        "assigned_at": "2026-06-26T05:17:04.243Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-202606",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-20260626_20260626051704",
+        "worker_started_at": "2026-06-26T05:17:12.210Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Patched the cluster-autoscaler VM prerelease profile-matrix replay/spec so check mode now executes and evidences all seven declared structural mutation/readback operations repo-locally, and wrote an archive note that preserves the thin live boundary while keeping the five mounted-source local-storage runtime behaviors explicitly unknown.",
+        "last_worker_completed_at": "2026-06-26T05:20:21.313Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:20:58.917Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: replay/spec/archive evidence now show all seven declared ARM mutation/readback operations execute in repo-local check mode, while preserving the thin live boundary and keeping the five mounted-source local-storage runtime behavior points explicitly unknown."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-202606",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-structural-mutation-readback-replay-patch-202606"
+      ],
+      "result": "Patched the cluster-autoscaler VM prerelease profile-matrix replay/spec so check mode now executes and evidences all seven declared structural mutation/readback operations repo-locally, and wrote an archive note that preserves the thin live boundary while keeping the five mounted-source local-storage runtime behaviors explicitly unknown.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:20:58.917Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: replay/spec/archive evidence now show all seven declared ARM mutation/readback operations execute in repo-local check mode, while preserving the thin live boundary and keeping the five mounted-source local-storage runtime behavior points explicitly unknown."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the five still-unknown mounted-source local-storage autoscaler behaviors for the VM prerelease profile matrix into one bounded successor slice: map each source scenario to the minimal live-observation contract, decide whether the current shared replay can carry it or a dedicated replay is required, and record the exact execute/preflight gate needed before any cloud run.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626.md"
+      ],
+      "acceptance": [
+        "A source-backed archive artifact enumerates the five still-unknown local-storage behavior points, ties each to exact mounted-source scenario files/steps, and states what runtime observation would be required to close each point without overstating current evidence.",
+        "The artifact makes a concrete bounded successor decision for this branch: extend the existing replay or create a dedicated live replay slice, with exact command shape, required env/mutation gate, and why the structural carrier from 2026-06-26 is insufficient for those claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:20:58.866Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626_20260626052058",
+        "assigned_at": "2026-06-26T05:20:58.968Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626_20260626052058",
+        "worker_started_at": "2026-06-26T05:21:08.212Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact `evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626.md`, mapping the five unknown local-storage behaviors to exact mounted-source scenarios, minimum live observation contracts, and a bounded successor decision to use a dedicated live replay slice rather than extend the current shared structural carrier.",
+        "last_worker_completed_at": "2026-06-26T05:23:05.209Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:23:36.139Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archived slice-plan artifact substantively maps the five remaining local-storage autoscaler unknowns to exact mounted-source scenarios, defines the minimum live observation contract for each, and justifies a dedicated live replay/spec successor instead of extending the shared structural carrier."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626"
+      ],
+      "result": "Created the requested archive artifact `evidence/archive/cluster-autoscaler-vm-prerelease-profile-matrix-runtime-effectiveness-slice-plan-20260626.md`, mapping the five unknown local-storage behaviors to exact mounted-source scenarios, minimum live observation contracts, and a bounded successor decision to use a dedicated live replay slice rather than extend the current shared structural carrier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:23:36.139Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archived slice-plan artifact substantively maps the five remaining local-storage autoscaler unknowns to exact mounted-source scenarios, defines the minimum live observation contract for each, and justifies a dedicated live replay/spec successor instead of extending the shared structural carrier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the dedicated VM prerelease cluster-autoscaler local-storage runtime slice the accepted plan calls for: turn the five mapped local-storage unknowns into one bounded replay/spec package with exact check-mode preflight, execute-mode gate, covered feature-path list, expected live observations, and named evidence outputs without broadening into unrelated autoscaler branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626.md"
+      ],
+      "acceptance": [
+        "An archive artifact defines the dedicated local-storage runtime slice with the exact covered source scenarios/feature paths, the minimum runtime observations required for each of the five unknowns, the check-mode/preflight command shape, the execute-mode command shape, the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate value, cleanup expectations, and the named evidence files to collect.",
+        "The task either produces or pinpoints the concrete replay/spec edits needed for this dedicated slice, while explicitly preserving the rule that no cloud execution occurs from planning alone and no unrelated shared structural replay branch is modified without source-backed justification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:23:36.201Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626_20260626052336",
+        "assigned_at": "2026-06-26T05:23:36.264Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626_20260626052336",
+        "worker_started_at": "2026-06-26T05:23:46.636Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested runtime-slice archive artifact at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626.md, defining the bounded VM prerelease local-storage verification slice with exact covered scenarios/path, required observations for all five unknowns, check/execute command shapes, gate value, cleanup rules, and named evidence outputs.",
+        "last_worker_completed_at": "2026-06-26T05:25:57.454Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:26:29.600Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626.md: it truthfully packages the bounded dedicated local-storage runtime slice (five unknown behavior variables, preserved path.cluster-autoscaler.vm-prerelease-profile-matrix, exact --check/--execute command shapes, exact mutation gate, cleanup rules, and named evidence outputs). This closes the planning/spec-package leaf only and does not claim live-runtime verification closure."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626"
+      ],
+      "result": "Created the requested runtime-slice archive artifact at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626.md, defining the bounded VM prerelease local-storage verification slice with exact covered scenarios/path, required observations for all five unknowns, check/execute command shapes, gate value, cleanup rules, and named evidence outputs.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:26:29.600Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-slice-20260626.md: it truthfully packages the bounded dedicated local-storage runtime slice (five unknown behavior variables, preserved path.cluster-autoscaler.vm-prerelease-profile-matrix, exact --check/--execute command shapes, exact mutation gate, cleanup rules, and named evidence outputs). This closes the planning/spec-package leaf only and does not claim live-runtime verification closure."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the dedicated VM prerelease cluster-autoscaler local-storage runtime slice defined by the accepted archive plan: add the bounded spec/replay carrier for the five local-storage runtime unknowns, preserve the existing feature path path.cluster-autoscaler.vm-prerelease-profile-matrix, keep the exact execute gate cluster-autoscaler-vm-prerelease-local-storage-runtime, and avoid widening into service-principal, spot, or unrelated autoscaler branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/cluster-autoscaler-vm-prerelease-local-storage-runtime.ts"
+      ],
+      "acceptance": [
+        "A dedicated runtime replay exists at replays/cluster-autoscaler-vm-prerelease-local-storage-runtime.ts and the matching spec id/spec wiring for spec.cluster-autoscaler.vm-prerelease-local-storage-runtime is added so the slice remains attached to path.cluster-autoscaler.vm-prerelease-profile-matrix rather than creating a new autoscaler path.",
+        "Check-mode/preflight support is implemented exactly for the bounded slice: the replay exposes the accepted five-scenario runtime scope, requires no cloud mutation in --check mode, requires the exact AKS_RP_E2E_ALLOW_CLOUD_MUTATION=cluster-autoscaler-vm-prerelease-local-storage-runtime gate for --execute, and is ready for later owner/worker validation with the archive plan's named evidence outputs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:26:29.652Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626_20260626052629",
+        "assigned_at": "2026-06-26T05:26:29.709Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626_20260626052629",
+        "worker_started_at": "2026-06-26T05:26:38.372Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the dedicated VM prerelease cluster-autoscaler local-storage runtime slice by adding a new spec, a new execution-gated replay, and wiring the spec into specs/index.json while keeping coverage attached to path.cluster-autoscaler.vm-prerelease-profile-matrix.",
+        "last_worker_completed_at": "2026-06-26T05:39:37.736Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:40:25.086Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review accepted: repo-local replay/spec wiring and exact cluster-autoscaler-vm-prerelease-local-storage-runtime mutation gate were implemented for the five-scenario local-storage runtime slice, and the linked dry-run/local-check artifacts prove check-mode passes without Azure mutations while live cloud behavior remains unproven."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-impl-20260626"
+      ],
+      "result": "Implemented the dedicated VM prerelease cluster-autoscaler local-storage runtime slice by adding a new spec, a new execution-gated replay, and wiring the spec into specs/index.json while keeping coverage attached to path.cluster-autoscaler.vm-prerelease-profile-matrix.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:40:25.086Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review accepted: repo-local replay/spec wiring and exact cluster-autoscaler-vm-prerelease-local-storage-runtime mutation gate were implemented for the five-scenario local-storage runtime slice, and the linked dry-run/local-check artifacts prove check-mode passes without Azure mutations while live cloud behavior remains unproven."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the capability model and durable archive evidence for the VM prerelease cluster-autoscaler local-storage runtime slice so path.cluster-autoscaler.vm-prerelease-profile-matrix records the new dedicated replay/spec coverage, the exact five-scenario bounded scope, the successful no-cloud check/dry-run validation, and the remaining live-execution gap without widening into service-principal or spot branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact links the exact replay/spec files and local validation record for the dedicated local-storage runtime slice, naming the exact execute gate cluster-autoscaler-vm-prerelease-local-storage-runtime and the bounded five-scenario scope.",
+        "The relevant capability-model/source-of-truth entry for path.cluster-autoscaler.vm-prerelease-profile-matrix is updated to reflect structural implementation plus dry-run/no-cloud validation for this slice, while explicitly preserving the remaining live cloud execution gap and avoiding any claim about service-principal, spot, or other autoscaler branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:40:25.134Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626_20260626054025",
+        "assigned_at": "2026-06-26T05:40:25.183Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626_20260626054025",
+        "worker_started_at": "2026-06-26T05:40:38.324Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the cluster-autoscaler VM prerelease profile-matrix model/path to attach the dedicated local-storage runtime execution variant, added a durable archive note at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626.md, and regenerated derived knowledge-map views. Repo-local evidence now records the exact five-scenario scope, exact gate, successful no-cloud check-mode pass, successful dry-run plan resolution, and the remaining live-execution gap without widening into service-principal or spot branches.",
+        "last_worker_completed_at": "2026-06-26T05:44:50.330Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:45:48.280Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing the durable archive artifact and regenerated path-summary/model references: the exact five-scenario local-storage runtime slice, exact gate cluster-autoscaler-vm-prerelease-local-storage-runtime, successful no-cloud check and dry-run evidence, and the still-open live runtime unknowns are all recorded without widening into service-principal or spot branches."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626"
+      ],
+      "result": "Updated the cluster-autoscaler VM prerelease profile-matrix model/path to attach the dedicated local-storage runtime execution variant, added a durable archive note at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-model-update-20260626.md, and regenerated derived knowledge-map views. Repo-local evidence now records the exact five-scenario scope, exact gate, successful no-cloud check-mode pass, successful dry-run plan resolution, and the remaining live-execution gap without widening into service-principal or spot branches.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:45:48.280Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing the durable archive artifact and regenerated path-summary/model references: the exact five-scenario local-storage runtime slice, exact gate cluster-autoscaler-vm-prerelease-local-storage-runtime, successful no-cloud check and dry-run evidence, and the still-open live runtime unknowns are all recorded without widening into service-principal or spot branches."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the next bounded follow-on for path.cluster-autoscaler.vm-prerelease-profile-matrix by checking repo-local readiness for the exact live execute-gated local-storage runtime slice, recording whether the unchanged replay can truthfully proceed to --execute now or must wait on exact auth/mutation/environment prerequisites, without widening into service-principal or spot siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact names the exact replay/spec/path, exact execute gate cluster-autoscaler-vm-prerelease-local-storage-runtime, exact live command shape, and the concrete repo-local preflight/auth/mutation prerequisites for the five-scenario local-storage runtime slice.",
+        "The artifact ends in one truthful bounded disposition only: either the slice is ready for a future live --execute run with named witness outputs, or it records the exact missing prerequisite/blocker and preserves that the five runtime behavior points on path.cluster-autoscaler.vm-prerelease-profile-matrix remain unknown until reviewed live evidence exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:45:48.331Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626_20260626054548",
+        "assigned_at": "2026-06-26T05:45:48.396Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626_20260626054548",
+        "worker_started_at": "2026-06-26T05:46:03.193Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested readiness artifact at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626.md after re-running structural preflight, dedicated replay preflight, dry-run validation, and execute-gate/auth blocker checks for the exact local-storage runtime slice.",
+        "last_worker_completed_at": "2026-06-26T05:47:42.325Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:48:30.575Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626.md: it names the exact path/spec/replay/mutation gate and live command shape, records structural preflight + dedicated preflight + dry-run pass evidence, and ends in one truthful bounded disposition that live --execute is blocked in the current launcher environment only by missing subscription/auth inputs while the five local-storage runtime behavior points remain unknown until live witness evidence exists."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626"
+      ],
+      "result": "Produced the requested readiness artifact at evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626.md after re-running structural preflight, dedicated replay preflight, dry-run validation, and execute-gate/auth blocker checks for the exact local-storage runtime slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:48:30.575Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/cluster-autoscaler-vm-prerelease-local-storage-runtime-live-execute-readiness-20260626.md: it names the exact path/spec/replay/mutation gate and live command shape, records structural preflight + dedicated preflight + dry-run pass evidence, and ends in one truthful bounded disposition that live --execute is blocked in the current launcher environment only by missing subscription/auth inputs while the five local-storage runtime behavior points remain unknown until live witness evidence exists."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Produce the next bounded no-cloud follow-on for path.cluster-autoscaler.vm-prerelease-service-principal by mapping the exact mounted e2ev3 source carrier, repo-local spec/replay attachment, intended inputs, expected behaviors, and any source/spec/replay/model gaps without widening into the local-storage runtime or spot siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted source file(s)/scenario carrier for the service-principal sibling, names the precise feature path plus any existing repo-local spec/replay attachments, and maps the accepted inputs, expected behavior edges, adjacent surfaces, and unknowns for this bounded sibling only.",
+        "The artifact ends with one concrete no-cloud next-step verdict only: either the current spec/replay/model attachment is already truthful for the service-principal sibling, or it identifies the exact repo-local repair/follow-on leaf needed next; no cloud execution, mutation-gate use, or widening into local-storage runtime or spot siblings occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-service-principal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:48:30.624Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626_20260626054830",
+        "assigned_at": "2026-06-26T05:48:30.690Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626_20260626054830",
+        "worker_started_at": "2026-06-26T05:48:40.753Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable boundary-map artifact for the VM prerelease cluster-autoscaler service-principal sibling, grounding the exact mounted source carrier and concluding that the current repo-local spec/replay/model attachment needs a bounded repo-local truth-repair follow-on.",
+        "last_worker_completed_at": "2026-06-26T05:50:38.003Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:51:08.592Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact cites the exact mounted service_principal.go + autoscalerloader + VM matrix carrier, maps the bounded service-principal input/expectation edges, and proves the current repo-local spec/replay/model attachment still needs a bounded truth-repair follow-on before any future verification is truthful."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-service-principal-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Produced the requested durable boundary-map artifact for the VM prerelease cluster-autoscaler service-principal sibling, grounding the exact mounted source carrier and concluding that the current repo-local spec/replay/model attachment needs a bounded repo-local truth-repair follow-on.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:51:08.592Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact cites the exact mounted service_principal.go + autoscalerloader + VM matrix carrier, maps the bounded service-principal input/expectation edges, and proves the current repo-local spec/replay/model attachment still needs a bounded truth-repair follow-on before any future verification is truthful."
+      },
+      "status": "done"
+    },
+    {
+      "id": "cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local carrier for path.cluster-autoscaler.vm-prerelease-service-principal so the checked-in spec, replay, and normalized model truthfully preserve the mounted source distinction between the VM row selector and the service-principal cluster identity branch, without cloud execution or widening into adjacent autoscaler siblings.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626.md"
+      ],
+      "acceptance": [
+        "specs/cluster-autoscaler-vm-prerelease-service-principal.json is updated so the mounted-source truth is explicit and auditable: the VM row selector (VirtualMachines + _at_least_133 + use_shared_identity=true) remains preserved as matrix metadata while the scenario's distinguishing cluster identity branch is clearly recorded as service-principal / managed_cluster_identity_type none rather than MSI.",
+        "replays/cluster-autoscaler-vm-prerelease-service-principal.ts and the normalized path attachment for path.cluster-autoscaler.vm-prerelease-service-principal are updated so they no longer claim or construct a contradictory SystemAssigned cluster carrier; the replay/model remain bounded no-cloud carrier work only, and a durable archive artifact summarizes the exact repo-local repairs and any remaining thinness without widening into local-storage runtime or spot siblings."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler-vm-prerelease-service-principal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T05:51:08.646Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626_20260626055108",
+        "assigned_at": "2026-06-26T05:51:08.698Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626_20260626055108",
+        "worker_started_at": "2026-06-26T05:51:22.400Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-125 service-principal repo-local carrier across spec, replay, normalized model/views, and archive evidence so it now preserves the VM row selector as metadata while making the service-principal / managed_cluster_identity_type=None branch explicit. Verified the new no-cloud replay check passes and the replay test file passes with 2/2 tests green.",
+        "last_worker_completed_at": "2026-06-26T05:58:28.888Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T05:59:11.055Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive evidence, repaired spec/replay/model wording, and bounded no-cloud replay validation show the row-125 service-principal carrier now preserves VM selector metadata while making managed_cluster_identity_type=None explicit without reintroducing a contradictory SystemAssigned cluster identity."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626"
+      ],
+      "result": "Repaired the row-125 service-principal repo-local carrier across spec, replay, normalized model/views, and archive evidence so it now preserves the VM row selector as metadata while making the service-principal / managed_cluster_identity_type=None branch explicit. Verified the new no-cloud replay check passes and the replay test file passes with 2/2 tests green.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T05:59:11.055Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive evidence, repaired spec/replay/model wording, and bounded no-cloud replay validation show the row-125 service-principal carrier now preserves VM selector metadata while making managed_cluster_identity_type=None explicit without reintroducing a contradictory SystemAssigned cluster identity."
+      },
+      "status": "done"
+    }
+  ]
+}

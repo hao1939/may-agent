@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:36:44.557Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner stale-review cleanup: watchdog pointed at already-compacted network-cni-mounted-source-coverage-batch1-20260620, so no review leaf was recreated. Durable meaning stays in project rollup while the live frontier remains one assigned network-CNI mounted-source reconcile slice (Windows2022 Azure CNI overlay dual-stack create-time), three concrete follow-ons queued behind the shared network-cni-source-coverage conflict scope (Windows2025 create-time dual-stack, dual-stack migration siblings, and PodCIDR expansion), and the single family-level external send-proof dispatch wait for the MachinesPreview and VM prerelease outbound packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-securetls-rows42-43-exactness-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted VM prerelease secure-TLS source to resolve the remaining rows 42-43 candidate-only exactness ceiling truthfully: determine the exact row-level differences from the newly covered row 41 carrier, then land the smallest truthful repo-local spec/replay/coverage update or preserve the exact repo-local ceiling if no truthful local promotion is possible.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-securetls-rows42-43-exactness-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Use mounted source from test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go and prerelease.go plus the row-local securetls bootstrapping plan/mutator definitions to map rows 42 and 43 exactly against the refreshed row-41 canonical secure-TLS carrier, preserving scenario identity, substrate, row mutators, and workflow differences without guessing.",
+        "Update only the smallest truthful repo-local carrier surfaces needed for rows 42-43: either add exact variant/linkage coverage and promote any row that becomes truthfully covered, or preserve/replace the current exactness ceiling with a more precise repo-local limitation that explains why promotion still cannot happen. Do not regress row 41 or overgeneralize one row across the others.",
+        "Regenerate directly affected VM prerelease coverage or spec/index artifacts, validate the changed secure-TLS carrier(s) locally with non-mutating checks, and conclude with durable evidence stating the exact status of rows 42-43 after the authoring slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:22:47.374Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T21:22:51.179Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-securetls-rows42-43-exactness-authoring-20260620_20260620212251",
+        "assigned_at": "2026-06-20T21:22:51.228Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-securetls-rows42-43-exactness-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-securetls-rows42-43-exactness-authoring-20260620_20260620212251",
+        "worker_started_at": "2026-06-20T21:23:08.794Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted VM prerelease secure-TLS rows 42 and 43 from candidate-only to covered by refreshing the canonical spec/replay/index/coverage surfaces, adding selectors, and writing durable evidence in evidence/archive/vm-prerelease-securetls-rows42-43-exactness-authoring-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T21:31:57.068Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:32:30.618Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after spot-checking the durable archive plus repo diff surfaces: evidence/archive/vm-prerelease-securetls-rows42-43-exactness-authoring-20260620.md cites mounted-source anchors, row-42/43 replay/spec/index/feature/coverage promotions, and non-mutating verification outputs for both replay checks and bun run plan; git diff --stat also shows the claimed secure-tls spec/replay/index/coverage carriers updated, while the archive scopes schema-check failures to unrelated pre-existing feature-status enum issues."
+      },
+      "session_id": "s_task_vm-prerelease-securetls-rows42-43-exactness-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-securetls-rows42-43-exactness-authoring-20260620"
+      ],
+      "result": "Promoted VM prerelease secure-TLS rows 42 and 43 from candidate-only to covered by refreshing the canonical spec/replay/index/coverage surfaces, adding selectors, and writing durable evidence in evidence/archive/vm-prerelease-securetls-rows42-43-exactness-authoring-20260620.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:32:30.618Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after spot-checking the durable archive plus repo diff surfaces: evidence/archive/vm-prerelease-securetls-rows42-43-exactness-authoring-20260620.md cites mounted-source anchors, row-42/43 replay/spec/index/feature/coverage promotions, and non-mutating verification outputs for both replay checks and bun run plan; git diff --stat also shows the claimed secure-tls spec/replay/index/coverage carriers updated, while the archive scopes schema-check failures to unrelated pre-existing feature-status enum issues."
+      },
+      "status": "done"
+    }
+  ]
+}

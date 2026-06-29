@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T21:17:46.563Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: accepted the AAD row-37 execution-gate audit after verifying the archive note classifies the remaining blockers as readiness facts, not source/spec/model ambiguity. The active repo-local audit leaf is now complete and replaced by one restored exact external wait aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623 for returned ARM auth, AAD env values, mutation approval, and quota-readiness proof. The private-cluster auth-service-tags endpoint wait remains the single truthful environment wait, and the external-send proof family wait remains intentionally compressed until returned proof arrives or the first owner follow-up after 2026-06-26. The frontier is again a clean blocked-only set of exact waits; do not reopen duplicate local diagnosis until one of those external facts changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit the row-37 managed AAD lifecycle execution gate from current repo-local/runtime evidence, classify each prerequisite as locally satisfiable versus true external wait, and leave one truthful next-step artifact for path.aad-rbac.managed-v2-lifecycle.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623.md"
+      ],
+      "acceptance": [
+        "The archive note cites the current row-37 carrier and execution prerequisites (clean ARM auth, AKS_RP_E2E_AAD_ADMIN_GROUP_OID, AKS_RP_E2E_AAD_TENANT_ID, quota for one login VM plus one VM-prerelease cluster, and explicit mutation approval), and classifies each as locally checkable now versus requiring external proof.",
+        "The note concludes with exactly one truthful successor for path.aad-rbac.managed-v2-lifecycle: either a concrete local preflight/setup/retry leaf that can run without reopening source ambiguity, or a restored exact family-level wait naming the external proof and resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T21:12:25.968Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623_20260623211226",
+        "assigned_at": "2026-06-23T21:12:26.068Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623",
+        "worker_started_attempt_id": "a_aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623_20260623211226",
+        "worker_started_at": "2026-06-23T21:12:47.358Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the row-37 managed AAD execution gate and wrote `evidence/archive/aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623.md`, classifying each prerequisite and concluding the truthful successor is to restore the exact external execution-gate wait `aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623`.",
+        "last_worker_completed_at": "2026-06-23T21:16:53.787Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T21:17:46.510Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623.md: the note cites the exact row-37 carrier, classifies all execution prerequisites from current runtime evidence, and truthfully concludes the only successor is the restored external execution-gate wait aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623."
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623"
+      ],
+      "result": "Audited the row-37 managed AAD execution gate and wrote `evidence/archive/aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623.md`, classifying each prerequisite and concluding the truthful successor is to restore the exact external execution-gate wait `aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T21:17:46.510Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/aad-rbac-managed-v2-lifecycle-execution-preflight-gate-audit-20260623.md: the note cites the exact row-37 carrier, classifies all execution prerequisites from current runtime evidence, and truthfully concludes the only successor is the restored external execution-gate wait aad-rbac-managed-v2-lifecycle-environment-execution-gate-wait-20260623."
+      },
+      "status": "done"
+    }
+  ]
+}

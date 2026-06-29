@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T15:43:02.653Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 task-completed refill records the latest accepted no-cloud work as durable project context: the cluster-autoscaler profile-matrix mounted-source packet and local-storage evidence-set review confirmed the accepted path.cluster-autoscaler.vm-prerelease-profile-matrix surfaces already carry the 2026-06-26 local-storage preflight evidence, while the private-cluster BYO DNS exact replay mutation-gate repair and shared-API-server-subnet posture demotion remain accepted truthfulness repairs with no cloud execution reopened. The single external-human proof family remains the only truthful blocked wait, and the only live runnable owner work stays the assigned autoscaling-base replay-contract repair to reconcile the repo-local carrier with the recovered mounted-source row-124 contract.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the private-cluster shared-API-server-subnet truthfulness-demotion branch by reconciling the archive note against the actual repo-local edits and recording exact no-cloud verification evidence: if replay/feature/spec/model/index surfaces were demoted, cite each touched file plus the exact verification commands/outcomes proving the demotions; if only a subset changed, update the note so it truthfully names just the changed surfaces and preserves the path as source-backed, replay-incomplete, non-exact, and no-cloud unknown.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626.md"
+      ],
+      "acceptance": [
+        "The archive note truthfully matches the actual touched repo-local surfaces for path.private-cluster-vnet-integration-shared-apiserver-subnet, explicitly correcting any previously over-broad claim about replay/feature/spec/model/index edits and naming each touched file path exactly.",
+        "The note records exact local no-cloud verification commands and outcomes sufficient for owner review, including at minimum repo-local commands such as git diff/status and any relevant check command(s), plus the observed outputs showing the claimed demotions; summary-only validation language is not sufficient."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "privatecluster-shared-apiserver-subnet-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T15:22:28.525Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-26T15:32:29.039Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_retry_20260626153229",
+        "worker_started_attempt_id": "a_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_20260626153229",
+        "worker_started_at": "2026-06-26T15:32:40.830Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the archive note at evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626.md so it now matches the actually touched repo-local surfaces and includes exact no-cloud verification commands/outcomes for owner review.",
+        "last_worker_completed_at": "2026-06-26T15:34:08.367Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-26T15:32:26.843Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Owner review found the archive note is not yet evidence-backed enough to accept: current git diff/status only shows model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, specs/index.json, and the archive note itself as touched, while the note claims replay, feature, and path spec surfaces were demoted too; the note also lacks exact local verification commands/outcomes. Rework must reconcile the note to the actual changed files and add concrete no-cloud verification evidence.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_20260626152228",
+        "current_attempt_id": "a_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_20260626153229",
+        "reviewed_at": "2026-06-26T15:35:28.144Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review of evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626.md: the note now truthfully names the exact touched replay/feature/spec surfaces, narrows shared-file claims to path-entry verification, and records exact no-cloud git/diff/grep verification outcomes without overstating live execution readiness."
+      },
+      "session_history": [
+        "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626",
+        "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_retry_20260626153229"
+      ],
+      "result": "Repaired the archive note at evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626.md so it now matches the actually touched repo-local surfaces and includes exact no-cloud verification commands/outcomes for owner review.",
+      "evidence": [],
+      "session_id": "s_task_privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626_retry_20260626153229",
+      "resolution": "completed",
+      "done_at": "2026-06-26T15:35:28.144Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review of evidence/archive/privatecluster-vnet-integration-shared-apiserver-subnet-replay-posture-demotion-20260626.md: the note now truthfully names the exact touched replay/feature/spec surfaces, narrows shared-file claims to path-entry verification, and records exact no-cloud git/diff/grep verification outcomes without overstating live execution readiness."
+      },
+      "status": "done"
+    }
+  ]
+}

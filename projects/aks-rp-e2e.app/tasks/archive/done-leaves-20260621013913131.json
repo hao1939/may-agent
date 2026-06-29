@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:39:13.131Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the repo-local ResetAAD reconciliation result as durable project knowledge: mounted source Scenario_AAD expects managed-AAD ResetAADProfile to be rejected with a raw ManagedClusterAADProfile body, so the old success-oriented/product-gap framing for path.aad-rbac.managed-v2-lifecycle is stale. Keep aad-managed-v2-reset-contract-repair-20260621 as the single active next step to repair spec/feature/model/replay surfaces, clear the stale terminal verdict on that path, and regenerate derived views to that source-backed contract while preserving external-send-proof-dispatch-family-20260620 as the only live external-human transport ceiling for the send-ready MachinesPreview and VM prerelease packets.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "row36-maintained-surface-parity-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair VM prerelease row 36 maintained-surface parity so the already-authored source-backed Azure Monitor AAD-auth carrier lands consistently across specs/index.json, model/knowledge-map/model.json, and regenerated model/knowledge-map/views/path-summary.json, preserving row 36 as a source-grounded/check-only monitoring contract distinct from row 35 generic system-assigned identity and row 63 Azure Monitor Metrics, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-maintained-surface-parity-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source lineage and existing row-36 local carriers in features/app-monitoring.yaml, specs/msi-azure-monitor-aad-auth-vm-prerelease.json, and replays/msi-azure-monitor-aad-auth-vm-prerelease.ts, then identifies the stale or missing maintained-surface entries in specs/index.json, model/knowledge-map/model.json, and views/path-summary.json.",
+        "After repair, the maintained surfaces consistently expose row 36 as path.app-monitoring.msi-azure-monitor-aad-auth-vm-prerelease with truthful source-grounded/check-only status and monitoring-specific intent, without collapsing it into row 35 identity coverage or row 63 metrics coverage; regenerated view output and any index/model linkage reflect that parity.",
+        "Outcome stays repo-local only: no cloud execution, no duplicate external-send waits, and no widening of row-36 coverage beyond mounted-source/check-only truth."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row36-maintained-surface-parity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:32:08.663Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_row36-maintained-surface-parity-repair-20260621_20260621013208",
+        "assigned_at": "2026-06-21T01:32:08.706Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_row36-maintained-surface-parity-repair-20260621",
+        "worker_started_attempt_id": "a_row36-maintained-surface-parity-repair-20260621_20260621013208",
+        "worker_started_at": "2026-06-21T01:32:19.439Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired row-36 maintained-surface parity by adding the missing row-36 spec index entry and model/view carriers, then documented the exact mounted-source lineage, stale surfaces found, and final parity state in evidence/archive/vm-prerelease-row36-maintained-surface-parity-repair-20260621.md.",
+        "last_worker_completed_at": "2026-06-21T01:36:22.754Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:36:53.703Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after step-1 spot-check plus artifact review: the evidence records exact mounted-source lineage, identifies the stale maintained-surface gaps, and shows row-36 parity restored across specs/index.json, model.json, and regenerated path-summary while preserving row-35/row-63 separation without cloud execution."
+      },
+      "session_id": "s_task_row36-maintained-surface-parity-repair-20260621",
+      "session_history": [
+        "s_task_row36-maintained-surface-parity-repair-20260621"
+      ],
+      "result": "Repaired row-36 maintained-surface parity by adding the missing row-36 spec index entry and model/view carriers, then documented the exact mounted-source lineage, stale surfaces found, and final parity state in evidence/archive/vm-prerelease-row36-maintained-surface-parity-repair-20260621.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:36:53.703Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after step-1 spot-check plus artifact review: the evidence records exact mounted-source lineage, identifies the stale maintained-surface gaps, and shows row-36 parity restored across specs/index.json, model.json, and regenerated path-summary while preserving row-35/row-63 separation without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "source-vm-prerelease-next-adjacent-row-feature-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP Go source at /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go to pick the next single VM prerelease scenario adjacent to the recently accepted row-33/34/35 slice, then author one bounded repo-local source-backed feature packet that records the scenario intent, exact source lineage, candidate spec/replay linkage, and the next safe model/replay action without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-next-adjacent-row-feature-packet-20260621.md"
+      ],
+      "acceptance": [
+        "The artifact names the one chosen VM prerelease scenario/row, cites exact mounted-source files/functions or referenced scenario definitions, and explains why it is the next adjacent uncovered or under-specified slice after the accepted row-33/34/35 work.",
+        "Repo-local outputs truthfully link that scenario to current feature/spec/replay/model surfaces (or note the exact missing surface) without claiming live verification or widening executed coverage beyond existing evidence.",
+        "Work stays in the regular learning lane only: no cloud execution, no duplicate external-send waits, and any proposed follow-up is a concrete local next step rather than a passive placeholder."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-adjacent-source-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:28:51.368Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_source-vm-prerelease-next-adjacent-row-feature-packet-20260621_20260621012853",
+        "assigned_at": "2026-06-21T01:28:53.504Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-vm-prerelease-next-adjacent-row-feature-packet-20260621",
+        "worker_started_attempt_id": "a_source-vm-prerelease-next-adjacent-row-feature-packet-20260621_20260621012853",
+        "worker_started_at": "2026-06-21T01:29:03.847Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the bounded adjacent-row feature packet at evidence/archive/vm-prerelease-next-adjacent-row-feature-packet-20260621.md. It selects VM prerelease row 36 from mounted source, documents exact lineage and current repo-local spec/replay surfaces, and identifies maintained-surface parity as the next safe local action without cloud execution.",
+        "last_worker_completed_at": "2026-06-21T01:31:43.220Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:32:08.616Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after targeted verification: evidence/archive/vm-prerelease-next-adjacent-row-feature-packet-20260621.md correctly selects row 36 / Scenario_MSI_AzureMonitorAADAuth_VirtualMachine as the next adjacent slice after rows 33/34/35, mounted source confirms the scenario in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and repo-local carriers already exist in features/app-monitoring.yaml, specs/msi-azure-monitor-aad-auth-vm-prerelease.json, and replays/msi-azure-monitor-aad-auth-vm-prerelease.ts while the packet truthfully limits the remaining gap to maintained-surface parity rather than live coverage."
+      },
+      "session_id": "s_task_source-vm-prerelease-next-adjacent-row-feature-packet-20260621",
+      "session_history": [
+        "s_task_source-vm-prerelease-next-adjacent-row-feature-packet-20260621"
+      ],
+      "result": "Authored the bounded adjacent-row feature packet at evidence/archive/vm-prerelease-next-adjacent-row-feature-packet-20260621.md. It selects VM prerelease row 36 from mounted source, documents exact lineage and current repo-local spec/replay surfaces, and identifies maintained-surface parity as the next safe local action without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:32:08.616Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after targeted verification: evidence/archive/vm-prerelease-next-adjacent-row-feature-packet-20260621.md correctly selects row 36 / Scenario_MSI_AzureMonitorAADAuth_VirtualMachine as the next adjacent slice after rows 33/34/35, mounted source confirms the scenario in /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go, and repo-local carriers already exist in features/app-monitoring.yaml, specs/msi-azure-monitor-aad-auth-vm-prerelease.json, and replays/msi-azure-monitor-aad-auth-vm-prerelease.ts while the packet truthfully limits the remaining gap to maintained-surface parity rather than live coverage."
+      },
+      "status": "done"
+    }
+  ]
+}

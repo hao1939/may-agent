@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T03:34:09.818Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review: the cloudprovider mounted-source slice-status correction and multiple-SLB contract enrichment are already accepted and absorbed at the project root, so they no longer need to stay as visible done children. The truthful live frontier is now one active repo-local mounted-source follow-up leaf, cloudprovider-ccm-mounted-source-contract-enrichment-20260623, plus the unchanged single family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. This watchdog wake found no new operator proof and no changed successor owner/checkpoint for the covered external wait, so that blocker remains exact and should not reopen completed VM/private-cluster/local authoring work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloudprovider-mounted-source-slice-status-reconcile-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile repo-local cloudprovider source-inventory notes so mounted speculor suite registrations are the trusted scenario count for this slice, including the now-confirmed fourth cloudprovider carrier in checkin.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloudprovider-mounted-source-slice-status-reconcile-20260623.md"
+      ],
+      "acceptance": [
+        "A repo-local archive artifact records the exact mounted suite registrations for /app/sources/aks-rp/test/e2ev3/sigs/speculor/cloudprovider, explains the 4-scenario checkin count versus the older 3-scenario summary, and names any repo-local inventory note or metadata updated to prevent reuse of the stale count.",
+        "The work stays repo-local and does not create execution, blocker, or packet-redraft tasks beyond the bounded cloudprovider inventory reconciliation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor-mounted-source-inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T03:29:18.785Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloudprovider-mounted-source-slice-status-reconcile-20260623_20260623032918",
+        "assigned_at": "2026-06-23T03:29:18.961Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloudprovider-mounted-source-slice-status-reconcile-20260623",
+        "worker_started_attempt_id": "a_cloudprovider-mounted-source-slice-status-reconcile-20260623_20260623032918",
+        "worker_started_at": "2026-06-23T03:29:39.813Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the repo-local cloudprovider mounted-source slice count to the authoritative 4-scenario CheckIn registration, wrote the archive note at evidence/archive/cloudprovider-mounted-source-slice-status-reconcile-20260623.md, and updated two maintained feature packets to stop repeating the stale 3-scenario summary.",
+        "last_worker_completed_at": "2026-06-23T03:30:51.352Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T03:31:27.567Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note documents mounted cloudprovider checkin/prerelease/runner registrations, reconciles the stale 3-scenario summary to the authoritative 4-scenario CheckIn count, and the repo-local wording repair landed in features/cloud-provider/ccm-lifecycle.yaml and features/cloud-provider/multiple-slb.yaml without introducing new execution or blocker churn."
+      },
+      "session_id": "s_task_cloudprovider-mounted-source-slice-status-reconcile-20260623",
+      "session_history": [
+        "s_task_cloudprovider-mounted-source-slice-status-reconcile-20260623"
+      ],
+      "result": "Reconciled the repo-local cloudprovider mounted-source slice count to the authoritative 4-scenario CheckIn registration, wrote the archive note at evidence/archive/cloudprovider-mounted-source-slice-status-reconcile-20260623.md, and updated two maintained feature packets to stop repeating the stale 3-scenario summary.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T03:31:27.567Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note documents mounted cloudprovider checkin/prerelease/runner registrations, reconciles the stale 3-scenario summary to the authoritative 4-scenario CheckIn count, and the repo-local wording repair landed in features/cloud-provider/ccm-lifecycle.yaml and features/cloud-provider/multiple-slb.yaml without introducing new execution or blocker churn."
+      },
+      "status": "done"
+    }
+  ]
+}

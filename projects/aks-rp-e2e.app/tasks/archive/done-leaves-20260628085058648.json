@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T08:50:58.649Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner blocked-frontier hygiene rollup: this fully closed feature-reference lane has no live runnable or review work, and its durable meaning already lives in accepted archive notes plus the parent rollup summary. Archive the last visible done collector/model leaves so future blocked-frontier reviews do not mistake stale reference work for actionable backlog; reopen this lane only on a new weak collector result, uncovered feature-reference gap, or contradiction from source/evidence drift.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "collect-feature-reference-serverless",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Collect official API and documentation references for serverless.",
+      "inputs": [
+        "feature:serverless",
+        "packet:features/serverless.yaml",
+        "authorities: Microsoft Learn and Azure REST API specs"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
+        "Microsoft Learn documentation references were checked.",
+        "Azure REST API specs references were checked.",
+        "Gaps or contradictions against existing feature packets/specs were summarized.",
+        "Feature-reference loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference:serverless"
+      ],
+      "workflow": "feature-reference-collector",
+      "context": {
+        "featureKey": "serverless",
+        "packetPath": "features/serverless.yaml",
+        "packetKind": "capability",
+        "layout": "capability-root",
+        "capabilityId": "serverless",
+        "coveredFeatureIds": [
+          "serverless-virtual-nodes-enable",
+          "serverless-virtual-nodes-lifecycle",
+          "serverless-virtual-nodes-pod-scheduling",
+          "serverless-virtual-nodes-upgrade-survival",
+          "serverless-virtual-nodes-network-connectivity",
+          "serverless-virtual-nodes-subnet-validation",
+          "serverless-virtual-nodes-reenablement",
+          "serverless-virtual-nodes-multi-pod-burst",
+          "serverless-virtual-nodes-dns-resolution",
+          "serverless-virtual-nodes-dns-resolution-external-from-aci",
+          "serverless-virtual-nodes-virtual-node-addon",
+          "serverless-addonv2-aci-connector",
+          "serverless-addonv2-aci-connector-mounted-vmss-lifecycle",
+          "serverless-virtualnodes-standard"
+        ],
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "loopTaskId": "aks-feature-reference-loop",
+        "draftDir": "evidence/archive",
+        "acceptance_note": "Replaced by repair-feature-reference-serverless-official-ref-discovery-20260628 after owner review found placeholder 'No matching reference found yet' sections in the current archive note, so the collector result is non-terminal and needs an official-reference repair pass."
+      },
+      "trace": {
+        "created_at": "2026-06-28T07:55:00.523Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_collect-feature-reference-serverless_20260628075501",
+        "assigned_at": "2026-06-28T07:55:01.006Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_collect-feature-reference-serverless",
+        "worker_started_attempt_id": "a_collect-feature-reference-serverless_20260628075501",
+        "worker_started_at": "2026-06-28T07:55:17.465Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Collected official feature references for serverless: evidence/archive/feature-reference-serverless-20260628.md.",
+        "last_worker_completed_at": "2026-06-28T07:57:24.003Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T08:10:39.735Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by repair-feature-reference-serverless-official-ref-discovery-20260628 after owner review found placeholder 'No matching reference found yet' sections in the current archive note, so the collector result is non-terminal and needs an official-reference repair pass."
+      },
+      "session_id": "s_task_collect-feature-reference-serverless",
+      "session_history": [
+        "s_task_collect-feature-reference-serverless"
+      ],
+      "result": "Collected official feature references for serverless: evidence/archive/feature-reference-serverless-20260628.md.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-28T08:10:39.735Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

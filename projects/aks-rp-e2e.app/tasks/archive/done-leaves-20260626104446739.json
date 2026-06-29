@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:44:46.739Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: run one bounded live-evidence readiness slice for the repaired row-39 Disable SSH carrier only. Confirm the exact execute contract for path.node-pool-config.disable-ssh-lifecycle, capture the explicit mutation-gate/env prerequisites and replay command needed for the unchanged row-39 replay, and write a repo-local archive artifact that either (a) declares the task ready for an intentional gated cloud run with the exact Linux-disabled, Windows-disabled, LocalUser update, node-image-upgrade, and post-upgrade enabled checks to review next, or (b) records the exact missing prerequisite/blocker with command/evidence and a truthful resume condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626.md"
+      ],
+      "acceptance": [
+        "The artifact cites the repaired row-39 replay/spec/path surfaces and gives the exact bounded live-execution command, mutation gate value, and required env/preflight checklist for this same carrier only, without widening into row-40 or other VM prerelease paths.",
+        "If a prerequisite is missing, the artifact records the exact observed blocker/evidence and resume condition; if prerequisites are satisfied, the artifact leaves a truthful ready-to-run cloud-execution handoff for the next bounded execution/review leaf.",
+        "No cloud mutation is started from this task, and no unrelated model/spec edits are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:node-pool-config-disable-ssh-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T10:24:40.126Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626_20260626102440",
+        "assigned_at": "2026-06-26T10:24:40.181Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626",
+        "worker_started_attempt_id": "a_node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626_20260626102440",
+        "worker_started_at": "2026-06-26T10:24:53.984Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-39 Disable SSH execute-gate artifact at evidence/archive/node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626.md, using repo-local check-mode evidence plus an execute-path preflight probe that truthfully blocked on missing subscription env before any cloud mutation.",
+        "last_worker_completed_at": "2026-06-26T10:27:14.821Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T10:28:01.064Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626.md proves the exact row-39 Disable SSH carrier surfaces, mutation gate, bounded execute command, and execute-path preflight blocker on missing subscription env before any cloud mutation, satisfying the blocker-artifact acceptance path."
+      },
+      "session_id": "s_task_node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626",
+      "session_history": [
+        "s_task_node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626"
+      ],
+      "result": "Produced the requested row-39 Disable SSH execute-gate artifact at evidence/archive/node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626.md, using repo-local check-mode evidence plus an execute-path preflight probe that truthfully blocked on missing subscription env before any cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T10:28:01.064Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/node-pool-config-disable-ssh-lifecycle-live-execute-gate-20260626.md proves the exact row-39 Disable SSH carrier surfaces, mutation gate, bounded execute command, and execute-path preflight blocker on missing subscription env before any cloud mutation, satisfying the blocker-artifact acceptance path."
+      },
+      "status": "done"
+    }
+  ]
+}

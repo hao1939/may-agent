@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T14:06:47.175Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier/refill review accepted three repo-local slices as durable knowledge: the row-37 managed AAD replay is now an exact mounted-source-aligned live-executor-shaped carrier with passing local --check evidence, the root AAD/RBAC summary now truthfully reflects mounted row-37 and row-38 semantics without stale devbox/admin-group wording, and the private-cluster authorized-service-tags branch now has an exact deny-all -> AzureCloud live-run packet that also exposed one concrete replay --check defect. The single external human-transport send-proof wait remains the only truthful blocked family and stays compressed unchanged. Live repo-local continuation is now three active leaves: finish the row-38 Azure RBAC exact live-contract packet, repair the private-cluster authorized-service-tags replay preflight check logic so the exact spec is execution-ready, and normalize the remaining unrelated AAD root source-path drift to mounted /app/sources/aks-rp paths without reopening accepted row-37/row-38 semantics.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs + evidence feedback/model-update lane: reconcile the broader root AAD feature summary carrier in features/aad-rbac.yaml to exact mounted row-37/row-38 source semantics so the maintained root summary no longer uses stale devbox paths, stale create-time adminGroupObjectIDs, or generic Azure RBAC wording, without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md"
+      ],
+      "acceptance": [
+        "Update features/aad-rbac.yaml so the maintained root summary cites mounted source paths under /app/sources/aks-rp for the row-37 Scenario_AAD and row-38 Scenario_Azure_RBAC surfaces it summarizes, removing stale devbox references and preserving truthful separation from row 36 Azure Monitor AAD auth and Automatic SKU branches.",
+        "Repair the row-38 root-summary semantics in features/aad-rbac.yaml to match the dedicated maintained carriers: no create-time adminGroupObjectIDs for Scenario_Azure_RBAC, explicit nil-after-create admin-group expectation, and the mounted disable/verify-false/re-enable/verify-true Azure RBAC lifecycle plus Reader allow/deny oracle wording.",
+        "Write evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md summarizing the mounted source files/symbols consulted, the exact root-summary drift repaired in features/aad-rbac.yaml, repo-local validation performed, and any remaining bounded gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-rbac-root-summary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T14:02:45.847Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621_20260621140245",
+        "assigned_at": "2026-06-21T14:02:45.892Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621",
+        "worker_started_attempt_id": "a_aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621_20260621140245",
+        "worker_started_at": "2026-06-21T14:02:57.342Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled `features/aad-rbac.yaml` root row-37/row-38 AAD summaries to mounted `/app/sources/aks-rp` semantics and wrote the requested evidence note at `evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md`.",
+        "last_worker_completed_at": "2026-06-21T14:05:52.713Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T14:06:38.785Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md documents the mounted /app/sources/aks-rp row-37 and row-38 authorities, the exact features/aad-rbac.yaml drift repaired, and repo-local validation showing stale devbox/adminGroupObjectIDs wording was removed while row separation was preserved."
+      },
+      "session_id": "s_task_aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621",
+      "session_history": [
+        "s_task_aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621"
+      ],
+      "result": "Reconciled `features/aad-rbac.yaml` root row-37/row-38 AAD summaries to mounted `/app/sources/aks-rp` semantics and wrote the requested evidence note at `evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T14:06:38.785Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: evidence/archive/aad-rbac-root-feature-summary-mounted-source-reconciliation-20260621.md documents the mounted /app/sources/aks-rp row-37 and row-38 authorities, the exact features/aad-rbac.yaml drift repaired, and repo-local validation showing stale devbox/adminGroupObjectIDs wording was removed while row separation was preserved."
+      },
+      "status": "done"
+    }
+  ]
+}

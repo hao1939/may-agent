@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T09:02:01.177Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner blocked-frontier hygiene rollup: this fully closed feature-reference lane has no live runnable or review work, and its durable meaning already lives in accepted archive notes plus the parent rollup summary. Archive the last visible done collector/model leaf so future blocked-frontier reviews do not mistake stale reference work for actionable backlog; reopen this lane only on a new weak collector result, uncovered feature-reference gap, or contradiction from source/evidence drift.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the repo-local model/path wording for path.net-integration.outbound-migration-natgw-to-none so it no longer treats carrier-shape clarity as the unknown. Use the accepted mounted-source boundary archive to restate the exact compliant managedNATGateway->none target shape and make the remaining gap execution-specific (auth/mutation-gated live verdict missing).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628.md"
+      ],
+      "acceptance": [
+        "Archive cites the accepted mounted-source boundary note and names the exact compliant create/mutate/verify shape now considered source-backed for managedNATGateway->none.",
+        "Repo-local model/status wording that still says this path is unknown because it needs a carrier that explicitly models the compliant target shape is updated to an execution-specific unknown or equivalent truth, with the next action framed as authenticated compliant-shape execution rather than more source-boundary work.",
+        "Any touched path-summary/model/feature surfaces stay mutually consistent about the remaining gap and link the new archive evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:path.net-integration.outbound-migration-natgw-to-none"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T07:48:54.644Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628_20260628074854",
+        "assigned_at": "2026-06-28T07:48:54.694Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260",
+        "worker_started_attempt_id": "a_reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628_20260628074854",
+        "worker_started_at": "2026-06-28T07:49:01.817Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the managedNATGateway→none wording surfaces to treat the carrier shape as already source-backed and to frame the remaining gap as authenticated, mutation-gated live execution. Added a new archive note, updated model path wording/evidence, refreshed packet readiness/gap text, and regenerated maintained views.",
+        "last_worker_completed_at": "2026-06-28T07:51:29.554Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-28T07:52:39.442Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted: ../aks-rp-e2e/evidence/archive/reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628.md now cites the accepted mounted-source boundary and states the exact compliant managedNATGateway→none create/mutate/verify shape, while ../aks-rp-e2e/features/net-integration/specs/net-integration-outbound-migration-natgw-to-none.json now treats the path as source-grounded with execution-specific unknown/live-verdict debt instead of carrier-shape ambiguity."
+      },
+      "session_id": "s_task_reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260",
+      "session_history": [
+        "s_task_reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260"
+      ],
+      "result": "Updated the managedNATGateway→none wording surfaces to treat the carrier shape as already source-backed and to frame the remaining gap as authenticated, mutation-gated live execution. Added a new archive note, updated model path wording/evidence, refreshed packet readiness/gap text, and regenerated maintained views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-28T07:52:39.442Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted: ../aks-rp-e2e/evidence/archive/reconcile-model-wording-net-outbound-migration-natgw-to-none-after-mounted-source-boundary-20260628.md now cites the accepted mounted-source boundary and states the exact compliant managedNATGateway→none create/mutate/verify shape, while ../aks-rp-e2e/features/net-integration/specs/net-integration-outbound-migration-natgw-to-none.json now treats the path as source-grounded with execution-specific unknown/live-verdict debt instead of carrier-shape ambiguity."
+      },
+      "status": "done"
+    }
+  ]
+}

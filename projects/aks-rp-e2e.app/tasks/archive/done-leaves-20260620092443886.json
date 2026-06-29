@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:24:43.886Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "VM prerelease rows 25-33 execute-readiness work is now preserved as completed provenance only: the accepted row25-34 execute-candidate packet plus accepted readiness notes for rows 25-26, 27/29/30, 31-32, and row 33 together capture the mounted-source/spec/replay contracts, bounded plan/check evidence, and the exact future live execute envelopes for those families. Keep only row 34 as the live frontier in this lane; any remaining execution ceiling for the archived siblings is the already-shared environment-access blocker, not a new source/spec gap.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-draft-row25-34-execute-candidate-packet-20260620",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write a bounded execute-candidate packet for the mounted-source-backed VirtualMachines prerelease draft rows 25-34 so the project stops carrying that frontier as implicit draft status and instead names the next concrete row batch to promote into replay/spec work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-draft-row25-34-execute-candidate-packet-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current draft VM prerelease row family now visible in model status (rows 25-34 / capacity-based surge, maxUnavailable, mixed-SKU upgrade/lifecycle/deallocate, auto-zone single/mixed, accelerated networking, VMAS→VMS migration SLB) and maps each row to the existing mounted-source/spec/replay carriers.",
+        "The packet groups shared preconditions and names at least one smallest next promotion batch that can be driven by bun run plan --features ... or an equivalent existing replay contract without cloud execution, instead of leaving all rows as undifferentiated draft backlog.",
+        "Any row that still cannot be promoted is paired with an exact blocker/evidence ceiling and a concrete recommended successor leaf, with no cloud execution in this packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease:row25-34-execute-candidates"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:13:18.972Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-draft-row25-34-execute-candidate-packet-20260620_20260620091319",
+        "assigned_at": "2026-06-20T09:13:19.024Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-draft-row25-34-execute-candidate-packet-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-draft-row25-34-execute-candidate-packet-20260620_20260620091319",
+        "worker_started_at": "2026-06-20T09:13:41.443Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded execute-candidate packet at evidence/archive/vm-prerelease-draft-row25-34-execute-candidate-packet-20260620.md, mapping VM prerelease rows 25-34 to mounted-source/spec/replay carriers and naming concrete next promotion batches with local plan/check evidence only.",
+        "last_worker_completed_at": "2026-06-20T09:16:27.400Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:16:53.883Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-20 execute-candidate packet: archive note maps VM prerelease rows 25-34 to mounted-source/spec/replay carriers, confirms row 28 is already the family pass anchor, and narrows the draft frontier into concrete next promotion batches with local plan/check evidence only."
+      },
+      "session_id": "s_task_vm-prerelease-draft-row25-34-execute-candidate-packet-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-draft-row25-34-execute-candidate-packet-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:16:53.883Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-20 execute-candidate packet: archive note maps VM prerelease rows 25-34 to mounted-source/spec/replay carriers, confirms row 28 is already the family pass anchor, and narrows the draft frontier into concrete next promotion batches with local plan/check evidence only."
+      },
+      "status": "done"
+    }
+  ]
+}

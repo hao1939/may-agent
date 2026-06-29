@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T08:12:33.979Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review accepted the new VirtualMachines prerelease mounted-source expectation map: rows 40-43 are now durably captured as a five-member source-backed singleton-cluster bundle with exact mounted-source carriers, preserved local spec/replay linkage, and explicit separation between repo-local proof and the still-blocked external human-transport/cloud-verdict ceiling. The single shared external-human-transport wait remains truthful and unchanged. With review cleared, the next active project work is a repo-local ManagedSystem boundary-map pass to extend the capability model using existing source/spec/model evidence while unrelated external asks wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VirtualMachine prerelease/checkin source plus the current maintained repo-local carriers to decide the exact maintained landing and next follow-up for row-26 capacity-based-surge-maxunavailable, without cloud execution and without broadening beyond that dedicated branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622.md"
+      ],
+      "acceptance": [
+        "Evidence cites the mounted AKS RP source files for the row-26 capacity-based-surge-maxunavailable contract, including the exact scenario carrier or bounded absence proof, plus the current maintained feature/spec/replay/model carriers that already represent or partially represent the branch.",
+        "Evidence reaches a concrete canonical decision for the maintained surface: either the current draft/source-grounded carriers are already sufficient and the exact maintained landing/update is named, or the missing dedicated follow-up (such as replay/model landing work) is named precisely enough for the next worker task.",
+        "No cloud mutation, no new external-human wait, and no churn to unrelated VirtualMachines rows beyond the dedicated row-26 branch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:54:31.224Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622_20260622075431",
+        "assigned_at": "2026-06-22T07:54:31.278Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622",
+        "worker_started_attempt_id": "a_virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622_20260622075431",
+        "worker_started_at": "2026-06-22T07:54:57.268Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a row-26-only landing-decision artifact at evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622.md concluding that mounted source plus maintained feature/spec/replay/index/coverage carriers are sufficient, and that the exact remaining follow-up is a bounded knowledge-map model/view repair for the stale row-26 feature/path entries.",
+        "last_worker_completed_at": "2026-06-22T07:56:44.477Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:56:59.502Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 row-26 mounted-source landing evidence: mounted AKS RP source proves Scenario_Capacity_Based_Surge_VMs_MaxUnavailable plus the maintained feature/spec/replay/index/coverage carriers already land the row-26 contract, and the only remaining gap is the stale knowledge-map model/view posture. Replaced further source/spec/replay work with one dedicated row-26 model/view landing repair successor."
+      },
+      "session_id": "s_task_virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622",
+      "session_history": [
+        "s_task_virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622"
+      ],
+      "result": "Produced a row-26-only landing-decision artifact at evidence/archive/virtualmachines-capacity-based-surge-maxunavailable-mounted-source-landing-decision-20260622.md concluding that mounted source plus maintained feature/spec/replay/index/coverage carriers are sufficient, and that the exact remaining follow-up is a bounded knowledge-map model/view repair for the stale row-26 feature/path entries.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:56:59.502Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 row-26 mounted-source landing evidence: mounted AKS RP source proves Scenario_Capacity_Based_Surge_VMs_MaxUnavailable plus the maintained feature/spec/replay/index/coverage carriers already land the row-26 contract, and the only remaining gap is the stale knowledge-map model/view posture. Replaced further source/spec/replay work with one dedicated row-26 model/view landing repair successor."
+      },
+      "status": "done"
+    }
+  ]
+}

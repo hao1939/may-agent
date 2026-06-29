@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T22:30:56.511Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-26 task-completed review accepted the family stale-reminder artifact and keeps this branch maximally compressed: a fresh 2026-06-26 approval-dispatch follow-up to human:operator is durably proven for the narrowed family covering VM prerelease row 33 approval/send-proof return plus shared-identity returns for rows 75-76, so no second same-day chase is needed. Archive the completed reminder/proof and earlier local prep leaves; leave exactly one live blocked child representing the truthful external wait until returned proof, authoritative reply, or changed escalation routing arrives.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row50-execution-host-preflight-and-escalation-decision-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the accepted row-50 handoff and preflight evidence to decide the single truthful next move for spec.cluster-autoscaler.vm-prerelease-statefulset-cordon-scale: either prove a repo-local Azure-ready execution host and approval artifact are now sufficient for an unchanged live run, or package the exact missing owner/escalation proof needed without recreating a generic source/operator wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-execution-host-preflight-and-escalation-decision-20260626.md"
+      ],
+      "acceptance": [
+        "Produces durable repo-local evidence that checks the existing row-50 handoff packet, host-readiness decision packet, and preflight diagnosis against current mounted-source/run-carrier expectations and classifies the remaining blocker as one of: runnable unchanged live-run retry, exact external approval wait, or exact Azure-host readiness/escalation gap.",
+        "If local movement remains, names the concrete next runnable row-50 leaf and its unchanged mutation token/carrier; if no local movement remains, records the exact external owner, proof sought, and resume condition so the passive wait can stay truthful without source-shaped overblocking."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-capacity-surge"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T22:06:02.016Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row50-execution-host-preflight-and-escalation-decision-20260626_20260626220602",
+        "assigned_at": "2026-06-26T22:06:02.062Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row50-execution-host-preflight-and-escalation-decision-20260626",
+        "worker_started_attempt_id": "a_vmpr-row50-execution-host-preflight-and-escalation-decision-20260626_20260626220602",
+        "worker_started_at": "2026-06-26T22:06:25.158Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the durable row-50 execution-host decision packet at evidence/archive/vmpr-row50-execution-host-preflight-and-escalation-decision-20260626.md, concluding the truthful next move is the exact external approval-dispatch + Azure-ready-host-proof-return wait, not a runnable retry or new repo-local host-prep leaf.",
+        "last_worker_completed_at": "2026-06-26T22:07:30.344Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T22:08:06.250Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the durable 2026-06-26 decision artifact: mounted source and carrier remain unchanged, current host still lacks Azure subscription/az/kubectl proof, and the only truthful next state is the existing family-level external approval + Azure-ready-host-proof wait. No runnable retry or new repo-local host/source repair leaf is justified."
+      },
+      "session_id": "s_task_vmpr-row50-execution-host-preflight-and-escalation-decision-20260626",
+      "session_history": [
+        "s_task_vmpr-row50-execution-host-preflight-and-escalation-decision-20260626"
+      ],
+      "result": "Produced the durable row-50 execution-host decision packet at evidence/archive/vmpr-row50-execution-host-preflight-and-escalation-decision-20260626.md, concluding the truthful next move is the exact external approval-dispatch + Azure-ready-host-proof-return wait, not a runnable retry or new repo-local host-prep leaf.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T22:08:06.250Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the durable 2026-06-26 decision artifact: mounted source and carrier remain unchanged, current host still lacks Azure subscription/az/kubectl proof, and the only truthful next state is the existing family-level external approval + Azure-ready-host-proof wait. No runnable retry or new repo-local host/source repair leaf is justified."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:44:46.893Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ssh-public-key-update-row40-source-spec-model-reconcile-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Regular learning lane: reconcile the VM prerelease row-40 SSH public-key-update Linux/Windows capability boundary from mounted AKS RP source, canonical spec files, and the 2026-06-26 split-check evidence only. Produce one repo-local source/spec/model note that maps both split scenarios to their spec/path identities, records the current next-action posture for each path, and decides whether the incidental specs/index.json freshness drift should be refreshed now or explicitly deferred.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-source-spec-model-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "An archive note cites exact mounted-source and repo-local anchors for both Scenario_Update_SSH_Public_Key_Linux and Scenario_Update_SSH_Public_Key_Windows, including OS-specific verification targets and the split replay/spec/path identities.",
+        "The note reconciles the current row-40 Linux/Windows model posture and the specs/index.json freshness drift precisely, including either a safe repo-local refresh path or a bounded deferral with reason.",
+        "No --execute run, cloud mutation, row-39 Disable SSH work, or unrelated VM prerelease widening is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:node-pool-config-ssh-public-key-update"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T10:32:32.282Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ssh-public-key-update-row40-source-spec-model-reconcile-20260626_20260626103232",
+        "assigned_at": "2026-06-26T10:32:32.336Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ssh-public-key-update-row40-source-spec-model-reconcile-20260626",
+        "worker_started_attempt_id": "a_ssh-public-key-update-row40-source-spec-model-reconcile-20260626_20260626103232",
+        "worker_started_at": "2026-06-26T10:32:42.593Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new bounded archive note reconciling row-40 SSH public-key-update Linux/Windows source/spec/model posture and explicitly deferred the incidental specs/index.json freshness drift as owner-follow-up only.",
+        "last_worker_completed_at": "2026-06-26T10:34:21.504Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T10:34:55.480Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-source-spec-model-reconcile-20260626.md cites exact mounted-source/spec/replay/model anchors for both Linux and Windows row-40 carriers, keeps both paths unknown-but-execute-capable, and explicitly defers the incidental shared specs/index.json freshness drift without widening scope."
+      },
+      "session_id": "s_task_ssh-public-key-update-row40-source-spec-model-reconcile-20260626",
+      "session_history": [
+        "s_task_ssh-public-key-update-row40-source-spec-model-reconcile-20260626"
+      ],
+      "result": "Authored a new bounded archive note reconciling row-40 SSH public-key-update Linux/Windows source/spec/model posture and explicitly deferred the incidental specs/index.json freshness drift as owner-follow-up only.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T10:34:55.480Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note at ../aks-rp-e2e/evidence/archive/ssh-public-key-update-row40-source-spec-model-reconcile-20260626.md cites exact mounted-source/spec/replay/model anchors for both Linux and Windows row-40 carriers, keeps both paths unknown-but-execute-capable, and explicitly defers the incidental shared specs/index.json freshness drift without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

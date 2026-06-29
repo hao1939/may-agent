@@ -1,0 +1,808 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T18:19:18.015Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner review cleared the remaining single-spec review wedge. The branch now records: net-integration-nsg-control retry evidence accepted as dispatch-contract repaired then blocked by VNet-create HTTP 429; machines-agentpool-api-crud accepted as a real environment block at VirtualMachines pool add HTTP 400 state=Unknown; rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease accepted as source/check-only with live-execution follow-up required; and storage-csi-file-pvc-dynamic-provision accepted as a runner/result-ingest mismatch requiring local repair instead of a cloud rerun.",
+  "archived": 12,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the repaired single-spec workflow for spec.net-integration-nsg-control, capture launch/run evidence, and record the reviewed pass/fail/blocked/error disposition now that the shared dispatch-contract mismatch is resolved.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md"
+      ],
+      "acceptance": [
+        "The single-spec workflow dispatch launches without the prior unexpected input 'spec' 422 contract failure and the artifact records the exact command, workflow/run identifier, and launch evidence.",
+        "The artifact records the reviewed spec outcome as pass, fail, blocked, or error with the exact linked run evidence and any bounded next blocker, without broadening beyond spec.net-integration-nsg-control.",
+        "Spec-loop/project state is updated to reflect the retried dispatch result for this exact spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-net-integration-nsg-control"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T15:54:19.454Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626_20260626162119",
+        "assigned_at": "2026-06-26T16:21:19.174Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626_20260626162119",
+        "worker_started_at": "2026-06-26T16:21:33.584Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Retried the single-spec workflow for spec.net-integration.nsg-control, proved the dispatch launched without the old 422 spec-input contract failure, captured run 28252720033 as a blocked environment result (VNet creation HTTP 429), and updated spec-loop state plus a durable evidence artifact.",
+        "last_worker_completed_at": "2026-06-26T17:07:29.690Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:12:03.374Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review could not accept the retry leaf because the expected durable artifact spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md is missing from the repo, so the claimed dispatch-contract repair and HTTP 429 blocked-environment result are not yet substantiated by repo-local evidence. Replaced by reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626 to rebuild the exact review artifact before any accept/rerun decision."
+      },
+      "session_id": "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626",
+      "session_history": [
+        "s_task_verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626"
+      ],
+      "result": "Retried the single-spec workflow for spec.net-integration.nsg-control, proved the dispatch launched without the old 422 spec-input contract failure, captured run 28252720033 as a blocked environment result (VNet creation HTTP 429), and updated spec-loop state plus a durable evidence artifact.",
+      "evidence": [],
+      "resolution": "replaced",
+      "done_at": "2026-06-26T18:12:03.374Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review could not accept the retry leaf because the expected durable artifact spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md is missing from the repo, so the claimed dispatch-contract repair and HTTP 429 blocked-environment result are not yet substantiated by repo-local evidence. Replaced by reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626 to rebuild the exact review artifact before any accept/rerun decision."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-storage-csi-file-pvc-dynamic-provision",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.storage-csi.file-pvc-dynamic-provision through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.storage-csi.file-pvc-dynamic-provision",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.storage-csi.file-pvc-dynamic-provision"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.storage-csi.file-pvc-dynamic-provision",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner reviewed run 28252830212 via the accepted triage artifact and accepts this verify leaf as completed review work: repo-local artifacts still classify the run as error/nonpassing because parsed artifact summary ingestion failed even though scenario stdout reports 12/12 pass assertions, so follow-up is a result-ingest repair task rather than a cloud rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:41:17.399Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:55:46.633Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-storage-csi-file-pvc-dynamic-provision_20260626165718",
+        "assigned_at": "2026-06-26T16:57:18.222Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-storage-csi-file-pvc-dynamic-provision",
+        "worker_started_attempt_id": "a_verify-spec-storage-csi-file-pvc-dynamic-provision_20260626165718",
+        "worker_started_at": "2026-06-26T16:58:27.530Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.storage-csi.file-pvc-dynamic-provision workflow run 28252830212 classified as error. Loop key: verify-spec-storage-csi-file-pvc-dynamic-provision-a_verify-spec-storage-csi-file-pvc-dyna. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28252830212 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28252830212/aks-rp-e2e-28252830212-spec-test-results/test-results/single-storage-csi-file-pvc-dynamic-provision_851811/artifacts/storage-csi-file-pvc-dynamic-provision/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-26T17:07:29.596Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:19:12.926Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner reviewed run 28252830212 via the accepted triage artifact and accepts this verify leaf as completed review work: repo-local artifacts still classify the run as error/nonpassing because parsed artifact summary ingestion failed even though scenario stdout reports 12/12 pass assertions, so follow-up is a result-ingest repair task rather than a cloud rerun."
+      },
+      "session_id": "s_task_verify-spec-storage-csi-file-pvc-dynamic-provision",
+      "session_history": [
+        "s_task_verify-spec-storage-csi-file-pvc-dynamic-provision"
+      ],
+      "result": "Spec spec.storage-csi.file-pvc-dynamic-provision workflow run 28252830212 classified as error. Loop key: verify-spec-storage-csi-file-pvc-dynamic-provision-a_verify-spec-storage-csi-file-pvc-dyna. Spec ended with error. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28252830212 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28252830212/aks-rp-e2e-28252830212-spec-test-results/test-results/single-storage-csi-file-pvc-dynamic-provision_851811/artifacts/storage-csi-file-pvc-dynamic-provision/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:19:12.926Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-machines-agentpool-api-crud",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.machines.agentpool-api-crud through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.machines.agentpool-api-crud",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.machines.agentpool-api-crud"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.machines.agentpool-api-crud",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner reviewed run 28253322988 via the accepted triage artifact and accepts this verify leaf as completed review work: the run is a real environment block at VirtualMachines pool add (HTTP 400, state=Unknown), matching path.machines-agentpool-api-crud.machine-crud-blocked, so no blind rerun or duplicate blocker leaf is warranted now."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:41:17.409Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-machines-agentpool-api-crud_20260626170735",
+        "assigned_at": "2026-06-26T17:07:35.020Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-machines-agentpool-api-crud",
+        "worker_started_attempt_id": "a_verify-spec-machines-agentpool-api-crud_20260626170735",
+        "worker_started_at": "2026-06-26T17:07:40.457Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.machines.agentpool-api-crud workflow run 28253322988 classified as blocked. Loop key: verify-spec-machines-agentpool-api-crud-a_verify-spec-machines-agentpool-api-crud_20260626. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253322988 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253322988/aks-rp-e2e-28253322988-spec-test-results/test-results/single-machines-agentpool-api-crud_806723/artifacts/machines-agentpool-api-crud/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-26T17:12:27.790Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:19:12.821Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner reviewed run 28253322988 via the accepted triage artifact and accepts this verify leaf as completed review work: the run is a real environment block at VirtualMachines pool add (HTTP 400, state=Unknown), matching path.machines-agentpool-api-crud.machine-crud-blocked, so no blind rerun or duplicate blocker leaf is warranted now."
+      },
+      "session_id": "s_task_verify-spec-machines-agentpool-api-crud",
+      "session_history": [
+        "s_task_verify-spec-machines-agentpool-api-crud"
+      ],
+      "result": "Spec spec.machines.agentpool-api-crud workflow run 28253322988 classified as blocked. Loop key: verify-spec-machines-agentpool-api-crud-a_verify-spec-machines-agentpool-api-crud_20260626. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253322988 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253322988/aks-rp-e2e-28253322988-spec-test-results/test-results/single-machines-agentpool-api-crud_806723/artifacts/machines-agentpool-api-crud/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:19:12.821Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-stop-start",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-cluster-lifecycle.stop-start through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.stop-start",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.stop-start"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.stop-start",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted run 28253641952 as a real pass: linked spec-runner/result.json shows status=passed, phase=completed, probeExitCode=0, and stdout reports 4/4 claims passed for spec.rp-cluster-lifecycle.stop-start."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:41:17.417Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-stop-start_20260626171338",
+        "assigned_at": "2026-06-26T17:13:38.966Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-stop-start",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-stop-start_20260626171338",
+        "worker_started_at": "2026-06-26T17:13:41.674Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.stop-start workflow run 28253641952 classified as pass. Loop key: verify-spec-rp-cluster-lifecycle-stop-start-a_verify-spec-rp-cluster-lifecycle-stop-start_. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253641952 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253641952/aks-rp-e2e-28253641952-spec-test-results/test-results/single-rp-cluster-lifecycle-stop-start_407264/artifacts/rp-cluster-lifecycle-stop-start/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-26T17:26:43.131Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T17:59:46.213Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted run 28253641952 as a real pass: linked spec-runner/result.json shows status=passed, phase=completed, probeExitCode=0, and stdout reports 4/4 claims passed for spec.rp-cluster-lifecycle.stop-start."
+      },
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-stop-start",
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-stop-start"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.stop-start workflow run 28253641952 classified as pass. Loop key: verify-spec-rp-cluster-lifecycle-stop-start-a_verify-spec-rp-cluster-lifecycle-stop-start_. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253641952 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253641952/aks-rp-e2e-28253641952-spec-test-results/test-results/single-rp-cluster-lifecycle-stop-start_407264/artifacts/rp-cluster-lifecycle-stop-start/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T17:59:46.213Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "review-spec-loop-run-watch-pass-classification-mismatch-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the single-spec verifier/run-watch classification mismatch where GitHub run conclusion failure leaves review tasks blocked even when spec-runner/result.json is passed, and produce repo-local evidence plus an exact repair recommendation or bounded tooling follow-up so future spec-loop reviews trust artifact truth over run-level conclusion noise.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-loop-run-watch-pass-classification-mismatch-20260626.md"
+      ],
+      "acceptance": [
+        "At least the four confirmed affected runs (28250859487, 28250366988, 28249395533, 28249921835) are compared at the run-watch summary level versus the spec-runner/result.json payload and the artifact names the exact mismatch pattern.",
+        "The artifact states whether the bug is in worker classification, planner review expectations, or workflow/run-watch interpretation, and names the smallest truthful repair or compensating rule for future reviews.",
+        "The task stays bounded to repo-local review/tooling diagnosis; it does not rerun cloud specs and does not duplicate per-spec review leaves already accepted as pass by owner review."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-classification-mismatch"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T16:55:40.280Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-loop-run-watch-pass-classification-mismatch-20260626_20260626175930",
+        "assigned_at": "2026-06-26T17:59:30.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-loop-run-watch-pass-classification-mismatch-20260626",
+        "worker_started_attempt_id": "a_review-spec-loop-run-watch-pass-classification-mismatch-20260626_20260626175930",
+        "worker_started_at": "2026-06-26T17:59:32.073Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the bounded repo-local diagnosis artifact at evidence/archive/spec-loop-run-watch-pass-classification-mismatch-20260626.md, comparing the four required runs’ review summaries against both result.json layers and recommending artifact-truth-over-run-conclusion as the smallest truthful repair.",
+        "last_worker_completed_at": "2026-06-26T18:03:59.533Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:08:54.473Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/spec-loop-run-watch-pass-classification-mismatch-20260626.md: the four required runs are artifact-pass at both test-results/result.json and spec-runner/result.json, so blocked/error worker claims were run-watch classification noise and artifact truth must win future spec-loop review."
+      },
+      "session_id": "s_task_review-spec-loop-run-watch-pass-classification-mismatch-20260626",
+      "session_history": [
+        "s_task_review-spec-loop-run-watch-pass-classification-mismatch-20260626"
+      ],
+      "result": "Produced the bounded repo-local diagnosis artifact at evidence/archive/spec-loop-run-watch-pass-classification-mismatch-20260626.md, comparing the four required runs’ review summaries against both result.json layers and recommending artifact-truth-over-run-conclusion as the smallest truthful repair.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.473Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/spec-loop-run-watch-pass-classification-mismatch-20260626.md: the four required runs are artifact-pass at both test-results/result.json and spec-runner/result.json, so blocked/error worker claims were run-watch classification noise and artifact truth must win future spec-loop review."
+      },
+      "status": "done"
+    },
+    {
+      "id": "review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review run 28251715320 for spec.cloud-provider.ccm-lifecycle as a real nonpassing outcome, write a durable evidence note quoting the failed shared-mode update assertion, and update the capability-model/verdict recommendation for path.cloud-provider.ccm-lifecycle without rerunning the probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-cloud-provider-ccm-lifecycle-failure-review-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact quotes the linked result.json status=failed, summary, failed assertion setup.shared-mode-update-with-preview-header, and diagnosis=implementation for run 28251715320, with exact evidence paths.",
+        "The review distinguishes the real spec/product failure from the GitHub conclusion-failure watcher wrapper and states the exact recommended path/model disposition or follow-up fix note for path.cloud-provider.ccm-lifecycle.",
+        "No cloud rerun, no external wait, and no broad spec-loop refill are introduced; this is bounded evidence-feedback/model-update work for the completed CCM run."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.cloud-provider.ccm-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T16:55:55.722Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626_20260626175930",
+        "assigned_at": "2026-06-26T17:59:30.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626",
+        "worker_started_attempt_id": "a_review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626_20260626175930",
+        "worker_started_at": "2026-06-26T17:59:32.041Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed GitHub run 28251715320 as a real nonpassing CCM lifecycle outcome, wrote the durable failure review note at evidence/archive/spec-cloud-provider-ccm-lifecycle-failure-review-20260626.md, and updated model/knowledge-map/model.json so path.cloud-provider.ccm-lifecycle now records the reviewed product-gap disposition and pre-update matches without rerunning the probe.",
+        "last_worker_completed_at": "2026-06-26T18:05:53.609Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:08:54.530Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/spec-cloud-provider-ccm-lifecycle-failure-review-20260626.md: run 28251715320 is a real nonpassing CCM lifecycle outcome with result.json status=failed, failed assertion setup.shared-mode-update-with-preview-header, diagnosis=implementation, and model updated to product-gap without rerun."
+      },
+      "session_id": "s_task_review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626",
+      "session_history": [
+        "s_task_review-spec-cloud-provider-ccm-lifecycle-failure-model-update-20260626"
+      ],
+      "result": "Reviewed GitHub run 28251715320 as a real nonpassing CCM lifecycle outcome, wrote the durable failure review note at evidence/archive/spec-cloud-provider-ccm-lifecycle-failure-review-20260626.md, and updated model/knowledge-map/model.json so path.cloud-provider.ccm-lifecycle now records the reviewed product-gap disposition and pre-update matches without rerunning the probe.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:08:54.530Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/spec-cloud-provider-ccm-lifecycle-failure-review-20260626.md: run 28251715320 is a real nonpassing CCM lifecycle outcome with result.json status=failed, failed assertion setup.shared-mode-update-with-preview-header, diagnosis=implementation, and model updated to product-gap without rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-nodepool-lifecycle-agentpool-operations",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-nodepool-lifecycle.agentpool-operations through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-nodepool-lifecycle.agentpool-operations",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-nodepool-lifecycle.agentpool-operations"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-nodepool-lifecycle.agentpool-operations",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted run 28254310705 as a true pass because spec-runner/result.json reports status=passed for spec.rp-nodepool-lifecycle.agentpool-operations; no duplicate retry or blocker task is warranted."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:57:18.201Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-agentpool-operations_20260626171338",
+        "assigned_at": "2026-06-26T17:13:38.967Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-nodepool-lifecycle-agentpool-operations",
+        "worker_started_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-agentpool-operations_20260626171338",
+        "worker_started_at": "2026-06-26T17:26:43.568Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp-nodepool-lifecycle.agentpool-operations workflow run 28254310705 classified as pass. Loop key: verify-spec-rp-nodepool-lifecycle-agentpool-operations-a_verify-spec-rp-nodepool-lifecycle. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28254310705 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28254310705/aks-rp-e2e-28254310705-spec-test-results/test-results/single-rp-nodepool-lifecycle-agentpool-operations_715291/artifacts/rp-nodepool-lifecycle-agentpool-operations/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-26T17:39:14.224Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:04:02.425Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted run 28254310705 as a true pass because spec-runner/result.json reports status=passed for spec.rp-nodepool-lifecycle.agentpool-operations; no duplicate retry or blocker task is warranted."
+      },
+      "session_id": "s_task_verify-spec-rp-nodepool-lifecycle-agentpool-operations",
+      "session_history": [
+        "s_task_verify-spec-rp-nodepool-lifecycle-agentpool-operations"
+      ],
+      "result": "Spec spec.rp-nodepool-lifecycle.agentpool-operations workflow run 28254310705 classified as pass. Loop key: verify-spec-rp-nodepool-lifecycle-agentpool-operations-a_verify-spec-rp-nodepool-lifecycle. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28254310705 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28254310705/aks-rp-e2e-28254310705-spec-test-results/test-results/single-rp-nodepool-lifecycle-agentpool-operations_715291/artifacts/rp-nodepool-lifecycle-agentpool-operations/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:04:02.425Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-preflight-validation",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-cluster-lifecycle.preflight-validation through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.preflight-validation",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.preflight-validation"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.preflight-validation",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted run 28253578923 as a true pass because spec-runner/result.json reports status=passed with 4/4 preflight assertions and no cluster create; the workflow conclusion noise does not change the spec verdict."
+      },
+      "trace": {
+        "created_at": "2026-06-26T16:57:18.212Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-26T16:57:39.420Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-preflight-validation_20260626170735",
+        "assigned_at": "2026-06-26T17:07:35.020Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-preflight-validation",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-preflight-validation_20260626170735",
+        "worker_started_at": "2026-06-26T17:12:30.693Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.preflight-validation workflow run 28253578923 classified as pass. Loop key: verify-spec-rp-cluster-lifecycle-preflight-validation-a_verify-spec-rp-cluster-lifecycle-p. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253578923 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253578923/aks-rp-e2e-28253578923-spec-test-results/test-results/single-rp-cluster-lifecycle-preflight-validation_303155/artifacts/rp-cluster-lifecycle-preflight-validation/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-26T17:13:37.294Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:04:02.369Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted run 28253578923 as a true pass because spec-runner/result.json reports status=passed with 4/4 preflight assertions and no cluster create; the workflow conclusion noise does not change the spec verdict."
+      },
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-preflight-validation",
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-preflight-validation"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.preflight-validation workflow run 28253578923 classified as pass. Loop key: verify-spec-rp-cluster-lifecycle-preflight-validation-a_verify-spec-rp-cluster-lifecycle-p. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28253578923 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28253578923/aks-rp-e2e-28253578923-spec-test-results/test-results/single-rp-cluster-lifecycle-preflight-validation_303155/artifacts/rp-cluster-lifecycle-preflight-validation/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:04:02.369Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner reviewed run 28255052316 via the accepted triage artifact and accepts this verify leaf as completed review work: the scenario test is source/check-only and blocked before live execution, so follow-up shifts to a bounded live-execution implementation/source-map task rather than rerunning this verify leaf unchanged."
+      },
+      "trace": {
+        "created_at": "2026-06-26T17:17:21.638Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_20260626172136",
+        "assigned_at": "2026-06-26T17:21:36.445Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease",
+        "worker_started_attempt_id": "a_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_20260626172136",
+        "worker_started_at": "2026-06-26T17:40:43.123Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28255052316 classified as blocked. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-a_verify-spec-rp-cluster. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255052316 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255052316/aks-rp-e2e-28255052316-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_102902/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+        "last_worker_completed_at": "2026-06-26T17:41:15.156Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:19:12.872Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner reviewed run 28255052316 via the accepted triage artifact and accepts this verify leaf as completed review work: the scenario test is source/check-only and blocked before live execution, so follow-up shifts to a bounded live-execution implementation/source-map task rather than rerunning this verify leaf unchanged."
+      },
+      "session_id": "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease",
+      "session_history": [
+        "s_task_verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease"
+      ],
+      "result": "Spec spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease workflow run 28255052316 classified as blocked. Loop key: verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-a_verify-spec-rp-cluster. Spec was blocked. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255052316 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255052316/aks-rp-e2e-28255052316-spec-test-results/test-results/single-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease_102902/artifacts/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease/spec-runner/result.json run watch issue: GitHub run completed with conclusion failure",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:19:12.872Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.rp-nodepool-lifecycle.multi-agentpool-runner through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.rp-nodepool-lifecycle.multi-agentpool-runner",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.rp-nodepool-lifecycle.multi-agentpool-runner"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.rp-nodepool-lifecycle.multi-agentpool-runner",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted run 28255416337 as a true pass because spec-runner/result.json shows status=passed with probeExitCode=0 and stdout reports 8/8 assertions passed; no run-watch blocker remains for this leaf."
+      },
+      "trace": {
+        "created_at": "2026-06-26T17:17:21.648Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner_20260626174039",
+        "assigned_at": "2026-06-26T17:40:39.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner",
+        "worker_started_attempt_id": "a_verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner_20260626174039",
+        "worker_started_at": "2026-06-26T17:47:47.728Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.rp-nodepool-lifecycle.multi-agentpool-runner workflow run 28255416337 classified as pass. Loop key: verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner-a_verify-spec-rp-nodepool-lifecyc. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255416337 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255416337/aks-rp-e2e-28255416337-spec-test-results/test-results/single-rp-nodepool-lifecycle-multi-agentpool-runner_816323/artifacts/rp-nodepool-lifecycle-multi-agentpool-runner/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-26T17:59:23.795Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T17:59:59.919Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted run 28255416337 as a true pass because spec-runner/result.json shows status=passed with probeExitCode=0 and stdout reports 8/8 assertions passed; no run-watch blocker remains for this leaf."
+      },
+      "session_id": "s_task_verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner",
+      "session_history": [
+        "s_task_verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner"
+      ],
+      "result": "Spec spec.rp-nodepool-lifecycle.multi-agentpool-runner workflow run 28255416337 classified as pass. Loop key: verify-spec-rp-nodepool-lifecycle-multi-agentpool-runner-a_verify-spec-rp-nodepool-lifecyc. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255416337 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255416337/aks-rp-e2e-28255416337-spec-test-results/test-results/single-rp-nodepool-lifecycle-multi-agentpool-runner_816323/artifacts/rp-nodepool-lifecycle-multi-agentpool-runner/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T17:59:59.919Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-planned-maintenance-configuration-crud-lifecycle",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.planned-maintenance.configuration-crud-lifecycle through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.planned-maintenance.configuration-crud-lifecycle",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.planned-maintenance.configuration-crud-lifecycle"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.planned-maintenance.configuration-crud-lifecycle",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Owner review accepted run 28255081755 as a true pass because spec-runner/result.json reports status=passed for spec.planned-maintenance.configuration-crud-lifecycle; artifact truth satisfies the review without reopening the shared run-watch mismatch family."
+      },
+      "trace": {
+        "created_at": "2026-06-26T17:17:21.655Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-planned-maintenance-configuration-crud-lifecycle_20260626174039",
+        "assigned_at": "2026-06-26T17:40:39.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-planned-maintenance-configuration-crud-lifecycle",
+        "worker_started_attempt_id": "a_verify-spec-planned-maintenance-configuration-crud-lifecycle_20260626174039",
+        "worker_started_at": "2026-06-26T17:41:17.822Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.planned-maintenance.configuration-crud-lifecycle workflow run 28255081755 classified as pass. Loop key: verify-spec-planned-maintenance-configuration-crud-lifecycle-a_verify-spec-planned-mainten. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255081755 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255081755/aks-rp-e2e-28255081755-spec-test-results/test-results/single-planned-maintenance-configuration-crud-lifecycle_142991/artifacts/planned-maintenance-configuration-crud-lifecycle/spec-runner/result.json",
+        "last_worker_completed_at": "2026-06-26T17:47:45.401Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:04:02.300Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted run 28255081755 as a true pass because spec-runner/result.json reports status=passed for spec.planned-maintenance.configuration-crud-lifecycle; artifact truth satisfies the review without reopening the shared run-watch mismatch family."
+      },
+      "session_id": "s_task_verify-spec-planned-maintenance-configuration-crud-lifecycle",
+      "session_history": [
+        "s_task_verify-spec-planned-maintenance-configuration-crud-lifecycle"
+      ],
+      "result": "Spec spec.planned-maintenance.configuration-crud-lifecycle workflow run 28255081755 classified as pass. Loop key: verify-spec-planned-maintenance-configuration-crud-lifecycle-a_verify-spec-planned-mainten. Spec passed. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28255081755 Result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28255081755/aks-rp-e2e-28255081755-spec-test-results/test-results/single-planned-maintenance-configuration-crud-lifecycle_142991/artifacts/planned-maintenance-configuration-crud-lifecycle/spec-runner/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:04:02.300Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconstruct or regenerate the missing durable evidence for spec.net-integration-nsg-control single-spec workflow retry run 28252720033 so owner review can verify the claimed dispatch-contract repair and blocked-environment result from repo-local artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md"
+      ],
+      "acceptance": [
+        "A repo-local artifact exists at the expected path or a corrected exact path is recorded, and it quotes the workflow dispatch/run identifier plus proof that the old unexpected input 'spec' 422 launch contract failure is gone.",
+        "The artifact or bounded note records the reviewed run 28252720033 outcome with exact repo-local evidence for the claimed VNet creation HTTP 429 environment block, or records why that claim cannot be substantiated from local artifacts.",
+        "The follow-up stays bounded to this single spec retry review gap and gives the owner enough evidence to accept, replace, or rerun verify-spec-net-integration-nsg-control-single-spec-workflow-retry-20260626."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop-net-integration-nsg-control-evidence-gap"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:11:54.712Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626_20260626181205",
+        "assigned_at": "2026-06-26T18:12:05.795Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626",
+        "worker_started_attempt_id": "a_reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626_20260626181205",
+        "worker_started_at": "2026-06-26T18:12:39.659Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconstructed the missing durable retry-review artifact at evidence/archive/spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md using repo-local workflow/runtime artifacts for run 28252720033, proving the old 422 dispatch-contract failure was cleared and the retry ended as a VNet-create HTTP 429 environment block, while also documenting that current spec-loop state does not substantiate the prior state-update claim.",
+        "last_worker_completed_at": "2026-06-26T18:15:19.643Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:19:12.722Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the reconstructed durable retry review note because it quotes repo-local artifacts for run 28252720033, proves the old spec-input 422 dispatch-contract failure was cleared, and bounds the retry outcome to a VNet-create HTTP 429 environment block without overclaiming state.json reconciliation."
+      },
+      "session_id": "s_task_reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626",
+      "session_history": [
+        "s_task_reconstruct-spec-net-integration-nsg-control-retry-evidence-20260626"
+      ],
+      "result": "Reconstructed the missing durable retry-review artifact at evidence/archive/spec-net-integration-nsg-control-single-spec-workflow-retry-20260626.md using repo-local workflow/runtime artifacts for run 28252720033, proving the old 422 dispatch-contract failure was cleared and the retry ended as a VNet-create HTTP 429 environment block, while also documenting that current spec-loop state does not substantiate the prior state-update claim.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:19:12.722Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the reconstructed durable retry review note because it quotes repo-local artifacts for run 28252720033, proves the old spec-input 422 dispatch-contract failure was cleared, and bounds the retry outcome to a VNet-create HTTP 429 environment block without overclaiming state.json reconciliation."
+      },
+      "status": "done"
+    }
+  ]
+}

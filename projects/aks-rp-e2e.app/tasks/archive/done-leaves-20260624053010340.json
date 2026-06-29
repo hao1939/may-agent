@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T05:30:10.340Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "Frontier-138 same-path follow-up is now durable accepted history through four bounded repo-local steps: after earlier repairs cleared featurePaths[138].behavior[3].observed, featurePaths[138].behavior[0].variable, and featurePaths[138].behavior[2].variable, the accepted auth.loginVM.kubectlAccess observed cleanup advanced the exact shared-model-validator frontier again without opening cloud work. The active same-conflict residual is now featurePaths[138].behavior[4].observed for path.aad-rbac.managed-v2-lifecycle (aadProfile.adminGroupObjectIDs.updated, currently observed='not reached (create LRO Canceled)'). Preserve the single family-level external-human wait unchanged, keep this whole branch repo-local/no-cloud, and queue one exact post-repair validator/view capture leaf behind the active residual so the branch stays executable when the current task lands.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-followup-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or truthfully classify the next exact shared-model-validator frontier after the accepted cluster.operation.succeeded fix by reconciling featurePaths[138].behavior[2].variable for path.aad-rbac.managed-v2-lifecycle / auth.loginVM.kubectlAccess.afterCreate: inspect the maintained model/view entry, linked replay evidence, mounted source, and repo-local expectation-variable conventions needed to decide whether this unknown variable should map to an existing expectation variable or be represented differently, then make the bounded repo-local repair and rerun validator/view generation to prove that exact residual clears, without widening into sibling residuals, the separate approval-wait branch, or any cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-followup-20260624.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted cluster.create.lro.succeeded frontier-followup artifact as the source of the new frontier, records the exact model/view, linked replay evidence, and any mounted-source or repo-local expectation-variable convention inspected for featurePaths[138].behavior[2].variable, and either documents the truthful bounded repair or captures the exact same-scope reason no repair could be made.",
+        "If a bounded repair is made, the evidence records the exact edits plus validator and maintained-view commands/results showing featurePaths[138].behavior[2].variable no longer appears as the current frontier residual; the task stays within shared-model-validator-frontier, does not modify sibling residuals or blocked waits, and does not run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T05:19:28.481Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-followup-20260624_20260624051928",
+        "assigned_at": "2026-06-24T05:19:28.528Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-follo",
+        "worker_started_attempt_id": "a_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-followup-20260624_20260624051928",
+        "worker_started_at": "2026-06-24T05:19:44.722Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the row-37 AAD managed-v2 frontier by remapping featurePaths[138].behavior[2] from unknown variable auth.loginVM.kubectlAccess.afterCreate to existing expectation variable auth.loginVM.kubectlAccess, regenerated maintained views, and wrote archive evidence proving that exact residual cleared and advanced to the next same-scope observed-value frontier.",
+        "last_worker_completed_at": "2026-06-24T05:22:15.385Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T05:22:54.202Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence shows the bounded repo-local repair remapped featurePaths[138].behavior[2].variable from orphan auth.loginVM.kubectlAccess.afterCreate to maintained variable auth.loginVM.kubectlAccess, reran validator/generator, and proved that exact variable residual cleared while advancing to the next same-scope observed-value frontier without cloud work or sibling-wait changes."
+      },
+      "session_id": "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-follo",
+      "session_history": [
+        "s_task_shared-model-validator-aad-rbac-managed-v2-auth-loginvm-kubectlaccess-aftercreate-frontier-follo"
+      ],
+      "result": "Repaired the row-37 AAD managed-v2 frontier by remapping featurePaths[138].behavior[2] from unknown variable auth.loginVM.kubectlAccess.afterCreate to existing expectation variable auth.loginVM.kubectlAccess, regenerated maintained views, and wrote archive evidence proving that exact residual cleared and advanced to the next same-scope observed-value frontier.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T05:22:54.202Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence shows the bounded repo-local repair remapped featurePaths[138].behavior[2].variable from orphan auth.loginVM.kubectlAccess.afterCreate to maintained variable auth.loginVM.kubectlAccess, reran validator/generator, and proved that exact variable residual cleared while advancing to the next same-scope observed-value frontier without cloud work or sibling-wait changes."
+      },
+      "status": "done"
+    }
+  ]
+}

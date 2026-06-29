@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:49:29.657Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier planning update kept the two blocked leaves unchanged because both are already the single truthful family-level waits with exact resume conditions: external-send-proof-dispatch-family-human-transport-proof-wait-20260621 still waits only for real human send/handoff/escalation proof or authoritative replies outside runtime, and privatecluster-shared-apiserver-subnet-execution-approval-wait-20260621 still waits only for explicit approval to use the existing execute-capable replay. Runnable capacity is already intentionally filled by two assigned non-cloud active leaves, so no duplicate wait, retry, or control branch was added: addonv2-row63-path-summary-live-evidence-shape-normalization-20260621 remains the evidence-feedback/model-update slice for bounded row-63 representation repair, and vmpr-prerelease-mounted-source-coverage-reconciliation-20260621 remains the mounted-source regular-learning slice for VirtualMachine prerelease/checkin coverage reconciliation. Archive the completed predecessor leaves whose durable meaning is already preserved on the root and surviving open branches: the AddonV2 rerun evidence-normalization result now feeds the active path-summary normalization leaf; the AddonV2 owner-send proof is superseded by the single external-send family wait; and the privatecluster same-subnet/source-repair plus run-ready packet leaves already established the local source/spec/replay contract up to the explicit execute-approval ceiling.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review the now-quiescent row-63 after-reconcile rerun artifacts and decide whether path.app-monitoring-addonv2-azure-monitor-metrics can be advanced from existing evidence, or else record the exact remaining bounded evidence gap, without launching a new cloud rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact after-reconcile rerun outputs already present for row 63 and checks whether they are internally complete and stable now that the orphaned PID/session surfaces are proven quiescent.",
+        "Task states whether the maintained AddonV2 row-63 path/model/evidence can now be normalized from those existing artifacts, or names the exact remaining bounded gap if not; it does not infer a verdict beyond what the evidence supports.",
+        "No new cloud execution is performed, and the task stays scoped to evidence/model normalization for path.app-monitoring-addonv2-azure-monitor-metrics rather than reopening product diagnosis."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:44:04.552Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621_20260621104404",
+        "assigned_at": "2026-06-21T10:44:04.599Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621",
+        "worker_started_attempt_id": "a_addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621_20260621104404",
+        "worker_started_at": "2026-06-21T10:44:19.539Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the row-63 after-reconcile evidence set, verified the stale session/process surfaces are now quiescent, and wrote a normalization note at evidence/archive/addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621.md stating the path can advance past the old execution-gated/no-live-run wording while naming the exact remaining bounded evidence-shape gap.",
+        "last_worker_completed_at": "2026-06-21T10:46:34.945Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:47:16.150Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review based on evidence/archive/addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621.md: the existing row-63 after-reconcile artifacts are now quiescent and durable enough to retire stale 'no authorized live run yet' wording, while preserving the bounded remaining gap as evidence-shape normalization only (readback matched; helm detector negative; pods visibly running in detail output; node-exporter not attempted; upgrade-stage runtime still unobserved)."
+      },
+      "session_id": "s_task_addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621",
+      "session_history": [
+        "s_task_addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621"
+      ],
+      "result": "Reviewed the row-63 after-reconcile evidence set, verified the stale session/process surfaces are now quiescent, and wrote a normalization note at evidence/archive/addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621.md stating the path can advance past the old execution-gated/no-live-run wording while naming the exact remaining bounded evidence-shape gap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:47:16.150Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review based on evidence/archive/addonv2-row63-after-reconcile-rerun-evidence-normalization-20260621.md: the existing row-63 after-reconcile artifacts are now quiescent and durable enough to retire stale 'no authorized live run yet' wording, while preserving the bounded remaining gap as evidence-shape normalization only (readback matched; helm detector negative; pods visibly running in detail output; node-exporter not attempted; upgrade-stage runtime still unobserved)."
+      },
+      "status": "done"
+    }
+  ]
+}

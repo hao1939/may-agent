@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T21:42:46.921Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner cleanup after watchdog-review-pending: secops-fips-standalone-registration-slice-landing-20260622 was already accepted before this wake, so the review request is satisfied and the bounded FIPS standalone registration slice now lives as compacted project history rather than live frontier work. Project focus remains the active repo-local carrier landing for network-acns-performance-cilium-upgrade-dedicated-carrier-landing-20260622, while the only open wait remains the single truthful family-level external human proof blocker for the covered VM prerelease and private-cluster asks; no new runnable backlog was created from the completed FIPS slice.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-standalone-registration-slice-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: isolate a truthful standalone SecOps FIPS registration slice by keeping only the three accepted FIPS feature/spec/replay landings and repairing specs/index.json to contain only their required file-list and spec-object registrations, without carrying unrelated residue.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-standalone-registration-slice-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the exact kept files plus the precise specs/index.json file-list/spec-object entries retained for secops-fips-advanced, secops-fips-backwards-compat, and secops-fips-version-gate, and proves unrelated residue was removed from the standalone slice.",
+        "Repo-local changes leave a truthful bounded checkpoint surface for only the three FIPS landings, with exact file targets recorded and no model-wide regeneration, no cloud mutation, and no reopening of the external-human wait family.",
+        "The follow-up states the resulting checkpoint/commit readiness for this isolated slice or documents any exact remaining repo-local shared-surface blocker with concrete file evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-local-secops-fips-registration-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T21:39:42.520Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-standalone-registration-slice-landing-20260622_20260622213942",
+        "assigned_at": "2026-06-22T21:39:42.587Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-standalone-registration-slice-landing-20260622",
+        "worker_started_attempt_id": "a_secops-fips-standalone-registration-slice-landing-20260622_20260622213942",
+        "worker_started_at": "2026-06-22T21:39:54.292Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Isolated the standalone SecOps FIPS registration slice by repairing specs/index.json to retain only the three intended FIPS file-list/spec-object additions, and wrote archive evidence documenting the exact kept entries and removed residue.",
+        "last_worker_completed_at": "2026-06-22T21:41:42.366Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T21:42:17.109Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/secops-fips-standalone-registration-slice-landing-20260622.md records the exact kept FIPS feature/spec/replay files, the only retained specs/index.json file-list and spec-object registrations, and proof unrelated residue was removed; the artifact also states the bounded slice is checkpoint-ready within repo-local-secops-fips-registration-slice while broader repo dirt remains outside this task scope."
+      },
+      "session_id": "s_task_secops-fips-standalone-registration-slice-landing-20260622",
+      "session_history": [
+        "s_task_secops-fips-standalone-registration-slice-landing-20260622"
+      ],
+      "result": "Isolated the standalone SecOps FIPS registration slice by repairing specs/index.json to retain only the three intended FIPS file-list/spec-object additions, and wrote archive evidence documenting the exact kept entries and removed residue.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T21:42:17.109Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/secops-fips-standalone-registration-slice-landing-20260622.md records the exact kept FIPS feature/spec/replay files, the only retained specs/index.json file-list and spec-object registrations, and proof unrelated residue was removed; the artifact also states the bounded slice is checkpoint-ready within repo-local-secops-fips-registration-slice while broader repo dirt remains outside this task scope."
+      },
+      "status": "done"
+    }
+  ]
+}

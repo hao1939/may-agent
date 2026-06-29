@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:24:51.978Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner reconciled a stale watchdog-review-pending wake without reopening completed work. The archived repo-local single-file writebacks now include replays/secops-fips-windows.ts and replays/secure-tls-bootstrap-basic-lifecycle.ts, proving the shared repo-wide bun run check format frontier stepped down to the current exact 10-file warning set after the bounded basic-lifecycle writeback. repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-network-isolated-single-file-writeback-20260624 remains the only live local reducer for repo-wide-bun-check.format-gate under maxConcurrent=1. virtualmachine-prerelease-coverage-ledger-checkpoint-gate-wait-20260624 stays blocked only until the first green repo-wide bun run check, and the four exact external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 remain the single truthful blocked-frontier representation until returned proof or owner follow-up on/after 2026-06-26.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact next single-file warning slice replays/secops-fips-windows.ts from the accepted 12-warning rerun, then rerun targeted verification for that same file and refresh the repo-wide warning count without widening into other files, cloud work, or checkpoint landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/secops-fips-windows.ts, targeted verification output for that same file, and git diff or equivalent proof showing only the intended formatting changes in that file.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the replays/secops-fips-windows.ts writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no formatting outside replays/secops-fips-windows.ts, no cloud execution, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T19:18:44.699Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624_20260624191844",
+        "assigned_at": "2026-06-24T19:18:44.748Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624_20260624191844",
+        "worker_started_at": "2026-06-24T19:19:00.634Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/secops-fips-windows.ts, verified that file is now clean, refreshed the repo-wide bun check warning count to 11, and archived the evidence in the requested artifact.",
+        "last_worker_completed_at": "2026-06-24T19:20:42.698Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T19:21:13.478Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624.md: the task stayed bounded to replays/secops-fips-windows.ts, targeted Prettier verification passed for that same file, and the repo-wide bun run check warning frontier dropped from 12 files to 11 with secure-tls-bootstrap-basic-lifecycle.ts as the exact next local successor."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/secops-fips-windows.ts, verified that file is now clean, refreshed the repo-wide bun check warning count to 11, and archived the evidence in the requested artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T19:21:13.478Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624.md: the task stayed bounded to replays/secops-fips-windows.ts, targeted Prettier verification passed for that same file, and the repo-wide bun run check warning frontier dropped from 12 files to 11 with secure-tls-bootstrap-basic-lifecycle.ts as the exact next local successor."
+      },
+      "status": "done"
+    },
+    {
+      "id": "repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact next single-file warning slice replays/secure-tls-bootstrap-basic-lifecycle.ts from the accepted 11-warning rerun, then rerun targeted verification for that same file and refresh the repo-wide warning count without widening into other files, cloud work, or checkpoint landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/secure-tls-bootstrap-basic-lifecycle.ts, targeted verification output for that same file, and git diff or equivalent proof showing only the intended formatting changes in that file.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the replays/secure-tls-bootstrap-basic-lifecycle.ts writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no formatting outside replays/secure-tls-bootstrap-basic-lifecycle.ts, no cloud execution, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T19:21:13.581Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-24T19:21:16.959Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624_20260624192117",
+        "assigned_at": "2026-06-24T19:21:17.010Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-2",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624_20260624192117",
+        "worker_started_at": "2026-06-24T19:21:46.980Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/secure-tls-bootstrap-basic-lifecycle.ts and recorded targeted verification plus refreshed repo-wide warning count in a new archive artifact.",
+        "last_worker_completed_at": "2026-06-24T19:23:10.877Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T19:23:51.270Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: evidence/archive/repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624.md proves the bounded Prettier writeback touched only replays/secure-tls-bootstrap-basic-lifecycle.ts, targeted prettier --check passed for that file afterward, and repo-wide bun run check refreshed the shared format frontier from 11 warned files down to the exact next 10-file frontier headed by replays/secure-tls-bootstrap-network-isolated.ts."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-2",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-2"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/secure-tls-bootstrap-basic-lifecycle.ts and recorded targeted verification plus refreshed repo-wide warning count in a new archive artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T19:23:51.270Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: evidence/archive/repo-wide-bun-check-replay-frontier-secure-tls-bootstrap-basic-lifecycle-single-file-writeback-20260624.md proves the bounded Prettier writeback touched only replays/secure-tls-bootstrap-basic-lifecycle.ts, targeted prettier --check passed for that file afterward, and repo-wide bun run check refreshed the shared format frontier from 11 warned files down to the exact next 10-file frontier headed by replays/secure-tls-bootstrap-network-isolated.ts."
+      },
+      "status": "done"
+    }
+  ]
+}

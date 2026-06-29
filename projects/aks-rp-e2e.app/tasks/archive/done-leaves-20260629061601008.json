@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T06:16:01.008Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-29 owner review accepts the mounted-source feature-reference repair slice for net-integration.multinic-mixed: the replay/checker now matches the blocked same-pool Dynamic + Standard contract and carries fresh no-cloud evidence, while earlier boundary-mapping/model closure for machines-agentpool-api-crud and multinic-mixed remain archived context. The only remaining live child in this lane is refresh-machines-agentpool-api-crud-blocker-wording-20260629, a bounded repo-local wording/model refresh that should preserve the current environment-blocked add-pool HTTP 400 boundary without reopening cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "map-machines-agentpool-api-crud-blocker-surface-20260629",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map path.machines-agentpool-api-crud.machine-crud-blocked to its checked-in spec, mounted source surfaces, and existing replay/model evidence so the project can decide whether the current environment-blocked verdict is still the narrow truthful carrier or should be refined.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md"
+      ],
+      "acceptance": [
+        "Artifact identifies the exact repo-local source/spec/evidence carriers for the machine CRUD path and states what execution preconditions or product assumptions the path actually depends on.",
+        "Artifact ends with one concrete recommendation for the task tree/model: keep environment-blocked with sharper resume condition, replace with a narrower product/contract verdict, or schedule one bounded replay candidate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:machines-agentpool-api-crud.machine-crud-blocked"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T06:10:51.538Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T06:10:55.350Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_map-machines-agentpool-api-crud-blocker-surface-20260629_20260629061059",
+        "assigned_at": "2026-06-29T06:10:59.462Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_map-machines-agentpool-api-crud-blocker-surface-20260629",
+        "worker_started_attempt_id": "a_map-machines-agentpool-api-crud-blocker-surface-20260629_20260629061059",
+        "worker_started_at": "2026-06-29T06:11:16.686Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the machine CRUD blocker surface into a durable archive note at evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md, tying together the checked-in spec/replay, mounted AKS RP source surfaces, current model carriers, and the 2026-06-26 add-pool HTTP 400 blocker evidence with a sharpened owner recommendation.",
+        "last_worker_completed_at": "2026-06-29T06:13:50.565Z",
+        "last_worker_evidence": [
+          "evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T06:14:50.493Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md truthfully maps the checked-in spec, mounted source, and latest run evidence, showing the path should stay environment-blocked but its carrier wording must move from preview-registration-only to the newer boundary where MachinesPreview was registered and cluster create succeeded before a mode=Machines,type=VirtualMachines agentPools PUT failed with HTTP 400 upstream of Machine CRUD."
+      },
+      "session_id": "s_task_map-machines-agentpool-api-crud-blocker-surface-20260629",
+      "session_history": [
+        "s_task_map-machines-agentpool-api-crud-blocker-surface-20260629"
+      ],
+      "result": "Mapped the machine CRUD blocker surface into a durable archive note at evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md, tying together the checked-in spec/replay, mounted AKS RP source surfaces, current model carriers, and the 2026-06-26 add-pool HTTP 400 blocker evidence with a sharpened owner recommendation.",
+      "evidence": [
+        "evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T06:14:50.493Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/machines-agentpool-api-crud-blocker-surface-20260629.md truthfully maps the checked-in spec, mounted source, and latest run evidence, showing the path should stay environment-blocked but its carrier wording must move from preview-registration-only to the newer boundary where MachinesPreview was registered and cluster create succeeded before a mode=Machines,type=VirtualMachines agentPools PUT failed with HTTP 400 upstream of Machine CRUD."
+      },
+      "status": "done"
+    }
+  ]
+}

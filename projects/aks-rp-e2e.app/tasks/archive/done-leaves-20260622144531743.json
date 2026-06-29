@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:45:31.743Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed follow-up: accepted private-cluster-none-dns-zone-v3 carrier sync is now represented at the project level and archived. Repo-local knowledge for that path stays intentionally unknown because mounted source/spec/replay understanding is aligned and the only remaining gap is exact same-cluster lifecycle observation; future reconsideration stays limited to one accepted exact live run or the existing family-level external operator reply. Current live work remains the mounted-source VirtualMachine prerelease rows 25/50 spec leaf plus the single consolidated external-human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-carrier-sync-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the maintained repo-local model/status carrier for path.private-cluster-none-dns-zone-v3 so it reflects the accepted bounded reconciliation verdict: remain unknown, explain that the remaining gap is exact lifecycle observation rather than source/spec uncertainty, and preserve the two truthful reconsideration triggers (accepted exact live run or later operator reply) without duplicating the external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-carrier-sync-20260622.md"
+      ],
+      "acceptance": [
+        "Produce a durable repo-local artifact that cites the accepted reconciliation artifact and the existing external-human wait, names the maintained carrier(s) touched, and confirms path.private-cluster-none-dns-zone-v3 still reads unknown with the narrowed evidence gap and truthful retest/reconsideration trigger.",
+        "If carrier sync cannot be completed cleanly, record the exact file/tooling limitation and leave one truthful follow-up; do not run cloud mutation, reopen source/spec work, or create another blocked wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:41:43.851Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-carrier-sync-20260622_20260622144143",
+        "assigned_at": "2026-06-22T14:41:43.899Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-carrier-sync-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-carrier-sync-20260622_20260622144143",
+        "worker_started_at": "2026-06-22T14:42:01.463Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Synced the maintained private-cluster none-DNS-zone V3 model carriers so path.private-cluster-none-dns-zone-v3 remains unknown for the narrowed reason of missing exact lifecycle observation, added the existing owner-send proof as a reconsideration trigger in model.json, regenerated views, and wrote the requested archive artifact.",
+        "last_worker_completed_at": "2026-06-22T14:44:21.095Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:44:34.179Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via evidence/archive/private-cluster-none-dns-zone-v3-model-carrier-sync-20260622.md: the repo-local carriers were synced to keep path.private-cluster-none-dns-zone-v3 at unknown, explicitly narrow the gap to exact lifecycle observation rather than source/spec uncertainty, and preserve only the two truthful reconsideration triggers without creating a duplicate blocked wait. This also resolves the watchdog's stale review reference because the missing bounded-model-status-reconciliation leaf was superseded by this completed carrier-sync task."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-carrier-sync-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-carrier-sync-20260622"
+      ],
+      "result": "Synced the maintained private-cluster none-DNS-zone V3 model carriers so path.private-cluster-none-dns-zone-v3 remains unknown for the narrowed reason of missing exact lifecycle observation, added the existing owner-send proof as a reconsideration trigger in model.json, regenerated views, and wrote the requested archive artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:44:34.179Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via evidence/archive/private-cluster-none-dns-zone-v3-model-carrier-sync-20260622.md: the repo-local carriers were synced to keep path.private-cluster-none-dns-zone-v3 at unknown, explicitly narrow the gap to exact lifecycle observation rather than source/spec uncertainty, and preserve only the two truthful reconsideration triggers without creating a duplicate blocked wait. This also resolves the watchdog's stale review reference because the missing bounded-model-status-reconciliation leaf was superseded by this completed carrier-sync task."
+      },
+      "status": "done"
+    }
+  ]
+}

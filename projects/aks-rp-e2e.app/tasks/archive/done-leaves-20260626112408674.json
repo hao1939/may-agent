@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T11:24:08.674Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "The single-spec net-integration loop now has reviewed proof that the current blocker is the shared local launcher surface: single-spec-verifier dispatches via local gh, run-single-spec.yaml exists, and this runtime currently lacks gh/auth. The authorized-service-tags attempt was accepted only as the same launcher-blocker history, not as spec evidence. Next live work is route-single-spec-gh-runtime-owner-escalation-20260626. After runtime capability is restored, create replacement retries for outbound-lb-custom-ip, authorized-ip-ranges, and authorized-service-tags before consuming nsg-control or static-egress-vmss.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-outbound-lb-custom-ip",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.outbound-lb-custom-ip through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.outbound-lb-custom-ip",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Evidence/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.outbound-lb-custom-ip"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.outbound-lb-custom-ip",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted only as a concrete executor blocker, not as a spec verdict: the review showed this runtime cannot launch run-single-spec.yaml because gh is missing, so further work on this spec is replaced by shared task repair-single-spec-workflow-gh-launch-capability before any retry."
+      },
+      "trace": {
+        "created_at": "2026-06-26T11:20:27.523Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-outbound-lb-custom-ip_20260626112027",
+        "assigned_at": "2026-06-26T11:20:27.577Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-outbound-lb-custom-ip",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-outbound-lb-custom-ip_20260626112027",
+        "worker_started_at": "2026-06-26T11:20:28.229Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Unable to run gh CLI for spec.net-integration.outbound-lb-custom-ip: Executable not found in $PATH: \"gh\"",
+        "last_worker_completed_at": "2026-06-26T11:20:28.244Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:21:05.143Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted only as a concrete executor blocker, not as a spec verdict: the review showed this runtime cannot launch run-single-spec.yaml because gh is missing, so further work on this spec is replaced by shared task repair-single-spec-workflow-gh-launch-capability before any retry."
+      },
+      "session_id": "s_task_verify-spec-net-integration-outbound-lb-custom-ip",
+      "session_history": [
+        "s_task_verify-spec-net-integration-outbound-lb-custom-ip"
+      ],
+      "result": "Unable to run gh CLI for spec.net-integration.outbound-lb-custom-ip: Executable not found in $PATH: \"gh\"",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:21:05.143Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "verify-spec-net-integration-authorized-service-tags",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.authorized-service-tags through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.authorized-service-tags",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, blocked, or error.",
+        "Evidence/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.authorized-service-tags"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.authorized-service-tags",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted review as launcher-blocker-only history: this attempt never launched the spec because gh was missing on the single-spec runtime, so it is not spec evidence and must be retried only after the shared gh+auth launcher gate is restored."
+      },
+      "trace": {
+        "created_at": "2026-06-26T11:20:27.546Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-authorized-service-tags_20260626112316",
+        "assigned_at": "2026-06-26T11:23:16.269Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-authorized-service-tags",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-authorized-service-tags_20260626112316",
+        "worker_started_at": "2026-06-26T11:23:17.244Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Unable to run gh CLI for spec.net-integration.authorized-service-tags: Executable not found in $PATH: \"gh\"",
+        "last_worker_completed_at": "2026-06-26T11:23:17.256Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:24:08.517Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review as launcher-blocker-only history: this attempt never launched the spec because gh was missing on the single-spec runtime, so it is not spec evidence and must be retried only after the shared gh+auth launcher gate is restored."
+      },
+      "session_id": "s_task_verify-spec-net-integration-authorized-service-tags",
+      "session_history": [
+        "s_task_verify-spec-net-integration-authorized-service-tags"
+      ],
+      "result": "Unable to run gh CLI for spec.net-integration.authorized-service-tags: Executable not found in $PATH: \"gh\"",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:24:08.517Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    },
+    {
+      "id": "repair-single-spec-workflow-gh-launch-capability",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Restore or reroute single-spec GitHub workflow launch capability for the aks-spec-verification-loop after repeated gh-missing executor failures, and leave one exact retry path for the affected net-integration spec leaves.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-single-spec-workflow-gh-launch-capability-20260626.md"
+      ],
+      "acceptance": [
+        "Repo-local evidence records the exact gh-missing failure in the current runtime and identifies whether the intended execution surface is this runtime or a different approved launcher surface.",
+        "The single-spec loop is updated with one truthful retry/unblock path for the affected net-integration spec leaves, without claiming any spec-level verdict from the failed launches.",
+        "If local repair is impossible, the task leaves one exact escalation or external-wait artifact naming owner, missing capability, and resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-loop"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T11:21:05.094Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-single-spec-workflow-gh-launch-capability_20260626112105",
+        "assigned_at": "2026-06-26T11:21:05.239Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-single-spec-workflow-gh-launch-capability",
+        "worker_started_attempt_id": "a_repair-single-spec-workflow-gh-launch-capability_20260626112105",
+        "worker_started_at": "2026-06-26T11:21:18.764Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded the exact gh-missing single-spec workflow blocker in repo-local evidence and documented the truthful unblock/retry path for the affected spec-loop leaves without claiming any spec verdict.",
+        "last_worker_completed_at": "2026-06-26T11:23:15.687Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T11:24:08.461Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the evidence proves single-spec-verifier currently depends on local gh, the app runtime lacks gh/auth, and the task truthfully leaves one exact runtime-owner unblock plus retry order without claiming any spec verdict."
+      },
+      "session_id": "s_task_repair-single-spec-workflow-gh-launch-capability",
+      "session_history": [
+        "s_task_repair-single-spec-workflow-gh-launch-capability"
+      ],
+      "result": "Recorded the exact gh-missing single-spec workflow blocker in repo-local evidence and documented the truthful unblock/retry path for the affected spec-loop leaves without claiming any spec verdict.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T11:24:08.461Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the evidence proves single-spec-verifier currently depends on local gh, the app runtime lacks gh/auth, and the task truthfully leaves one exact runtime-owner unblock plus retry order without claiming any spec verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

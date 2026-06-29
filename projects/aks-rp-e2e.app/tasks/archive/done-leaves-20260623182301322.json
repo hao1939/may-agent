@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T18:23:01.322Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepts the enterprise addon carrier implementation and keeps the frontier concise: the canonical replay/spec/feature/index now truthfully support a bounded execute-capable enterprise-addon lifecycle, with the next step represented as a separate live-execution leaf. The stale watchdog review request for the old stop/start task needs no new work because that branch was already compacted. Open work now stays focused on one active preview-upgrade live execution, one runnable enterprise-addon live execution follow-up, and the two existing exact blocker families (external approval proof and selected-host SSH environment reachability).",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Convert the current path.network-cni-cilium-preview-upgrade live preflight gap into same-host proof by checking whether kubectl can be provided on this execution host, capturing exact commands/results and the next truthful gated execute step, without broadening beyond the bounded preview-upgrade branch or claiming Azure mutation in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note records the exact host commands/results used to locate, install, or otherwise provide kubectl for the preview-upgrade replay, or records the exact local limitation that still prevents kubectl-present from passing, with timestamp and same-host evidence.",
+        "The note states whether path.network-cni-cilium-preview-upgrade is now execute-clear for the existing gated replay command or remains preflight-blocked, and if still blocked it gives the exact next resume condition without running Azure mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-preview-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:17:53.009Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623_20260623181753",
+        "assigned_at": "2026-06-23T18:17:53.086Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623_20260623181753",
+        "worker_started_at": "2026-06-23T18:18:43.824Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured same-host kubectl preflight diagnosis for the bounded network-cni-cilium-preview-upgrade branch and wrote a durable archive note proving the host has kubectl at /app/.state/.local/bin, while the ambient PATH still blocks the previously documented bare execute command.",
+        "last_worker_completed_at": "2026-06-23T18:19:59.118Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T18:20:31.461Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note records exact same-host kubectl/PATH commands and results, proves kubectl exists at /app/.state/.local/bin, confirms the bare execute command remains ambient-PATH blocked, and identifies the PATH-wrapped gated execute form as the truthful next bounded step."
+      },
+      "session_id": "s_task_network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-preview-upgrade-kubectl-preflight-diagnosis-20260623"
+      ],
+      "result": "Captured same-host kubectl preflight diagnosis for the bounded network-cni-cilium-preview-upgrade branch and wrote a durable archive note proving the host has kubectl at /app/.state/.local/bin, while the ambient PATH still blocks the previously documented bare execute command.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T18:20:31.461Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note records exact same-host kubectl/PATH commands and results, proves kubectl exists at /app/.state/.local/bin, confirms the bare execute command remains ambient-PATH blocked, and identifies the PATH-wrapped gated execute form as the truthful next bounded step."
+      },
+      "status": "done"
+    },
+    {
+      "id": "network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Strengthen the weakly linked Scenario_Cilium_Dataplane_Enterprise branch by upgrading the maintained repo-local carrier into an execute-capable bounded replay that preserves only the mounted addon PUT/DELETE lifecycle, baseline/post-enable surface checks, and helmrelease suspend false->true->false semantics, without widening into ACNS enterprise-tier coverage or running cloud mutation in this task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the exact mounted enterprise.go lineage plus the repo-local feature/spec/replay/model files touched, and proves the canonical replay now carries the bounded enterprise addon lifecycle with truthful execute gating and no widened branch semantics.",
+        "Repo-local validation such as bun <replay> --check and any required project consistency check passes, and the note states the next reviewable execution/evidence step or the exact remaining bounded gap."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-enterprise-addon-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T18:01:38.943Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623_20260623180138",
+        "assigned_at": "2026-06-23T18:01:38.991Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623",
+        "worker_started_attempt_id": "a_network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623_20260623180138",
+        "worker_started_at": "2026-06-23T18:02:00.254Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented an execute-capable bounded replay for the mounted Cilium enterprise addon lifecycle, updated the canonical spec/feature/index metadata to describe truthful execute gating and underlay witness requirements, and wrote the archive note at evidence/archive/network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623.md. Validation passed with the replay’s --check mode and the full project bun run check suite.",
+        "last_worker_completed_at": "2026-06-23T18:22:03.500Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T18:23:01.221Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the archive note cites mounted enterprise.go lineage and touched replay/spec/feature/index files, proves the canonical carrier is now an execute-capable bounded enterprise-addon replay with explicit mutation/underlay witness gating, and records passing validation from bun replays/network-cni-cilium-enterprise-addon-lifecycle.ts --check plus bun run check. The watchdog review request for the older stop/start task is stale because that review leaf no longer exists and its contradiction was already compacted into the project rollup."
+      },
+      "session_id": "s_task_network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623",
+      "session_history": [
+        "s_task_network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623"
+      ],
+      "result": "Implemented an execute-capable bounded replay for the mounted Cilium enterprise addon lifecycle, updated the canonical spec/feature/index metadata to describe truthful execute gating and underlay witness requirements, and wrote the archive note at evidence/archive/network-cni-cilium-enterprise-addon-live-carrier-implementation-20260623.md. Validation passed with the replay’s --check mode and the full project bun run check suite.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T18:23:01.221Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the archive note cites mounted enterprise.go lineage and touched replay/spec/feature/index files, proves the canonical carrier is now an execute-capable bounded enterprise-addon replay with explicit mutation/underlay witness gating, and records passing validation from bun replays/network-cni-cilium-enterprise-addon-lifecycle.ts --check plus bun run check. The watchdog review request for the older stop/start task is stale because that review leaf no longer exists and its contradiction was already compacted into the project rollup."
+      },
+      "status": "done"
+    }
+  ]
+}

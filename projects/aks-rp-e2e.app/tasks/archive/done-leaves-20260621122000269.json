@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:20:00.269Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update dismissed a stale watchdog review for privatecluster-shared-apiserver-subnet-execution-approval-ask-handoff-20260621 after confirming the leaf was already accepted and done at 12:19Z with durable repo-local approval-dispatch proof recorded. The private-cluster family now carries one live repo-local reconciliation task only: privatecluster-private-endpoint-connections-lifecycle-maintained-surface-repair-20260621 must resolve the stale-terminal warning by proving whether path.private-cluster-private-endpoint-connections already truthfully covers lifecycle semantics or whether a distinct lifecycle sibling carrier is still missing, without collapsing the separate list-only sibling. The only truthful blocked family remains external-send-proof-dispatch-family-human-transport-proof-wait-20260621, which centralizes the external human transport ceiling for the covered ask packets until real send/handoff proof or authoritative replies arrive.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "privatecluster-family-source-gap-map-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP e2ev3 private-cluster source family into a bounded repo-local gap map that distinguishes the already wait-gated shared-apiserver-subnet positive execution branch from other private-cluster scenario/input surfaces, and nominate the next non-cloud source/spec target if any uncovered or stale family member remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-family-source-gap-map-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted AKS RP private-cluster e2ev3 source files it inspected and lists the private-cluster scenarios or surfaces reviewed, explicitly separating the existing shared-apiserver-subnet positive execution-approval wait from adjacent family members.",
+        "Artifact truthfully states for each reviewed private-cluster family member whether maintained feature/spec/replay/model surfaces already exist, are stale, or are still missing, and names one concrete next repo-local follow-up only if a bounded gap remains.",
+        "Work stays repo-local and source-grounded: no cloud mutation, no execution-approval request, no human-transport ask handling, and no reopening of the existing shared-apiserver-subnet blocked wait unless new source evidence changes its scope."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-family-source-mapping"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:13:58.739Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-family-source-gap-map-20260621_20260621121358",
+        "assigned_at": "2026-06-21T12:13:58.785Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-family-source-gap-map-20260621",
+        "worker_started_attempt_id": "a_privatecluster-family-source-gap-map-20260621_20260621121358",
+        "worker_started_at": "2026-06-21T12:14:16.957Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped the mounted private-cluster source family into a bounded repo-local gap map and wrote `evidence/archive/privatecluster-family-source-gap-map-20260621.md`, explicitly isolating the existing shared-apiserver-subnet positive wait from adjacent family members and nominating the private-endpoint-connections lifecycle as the next repo-local follow-up.",
+        "last_worker_completed_at": "2026-06-21T12:16:25.189Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:17:12.869Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted evidence/archive/privatecluster-family-source-gap-map-20260621.md after direct artifact check: it cites the mounted private-cluster source family, keeps the shared-apiserver-subnet positive execution branch isolated as an existing wait-gated path, and names the exact private-endpoint-connections lifecycle branch as the next bounded repo-local follow-up. The worker provided no structured evidence array, so acceptance is based on the artifact itself; claims about missing specs/index and maintained model/path projection are carried forward as follow-up validation/repair work rather than treated as independently re-verified repo state here."
+      },
+      "session_id": "s_task_privatecluster-family-source-gap-map-20260621",
+      "session_history": [
+        "s_task_privatecluster-family-source-gap-map-20260621"
+      ],
+      "result": "Mapped the mounted private-cluster source family into a bounded repo-local gap map and wrote `evidence/archive/privatecluster-family-source-gap-map-20260621.md`, explicitly isolating the existing shared-apiserver-subnet positive wait from adjacent family members and nominating the private-endpoint-connections lifecycle as the next repo-local follow-up.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:17:12.869Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted evidence/archive/privatecluster-family-source-gap-map-20260621.md after direct artifact check: it cites the mounted private-cluster source family, keeps the shared-apiserver-subnet positive execution branch isolated as an existing wait-gated path, and names the exact private-endpoint-connections lifecycle branch as the next bounded repo-local follow-up. The worker provided no structured evidence array, so acceptance is based on the artifact itself; claims about missing specs/index and maintained model/path projection are carried forward as follow-up validation/repair work rather than treated as independently re-verified repo state here."
+      },
+      "status": "done"
+    }
+  ]
+}

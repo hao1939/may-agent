@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T08:33:36.857Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed refill pass accepted the OIDC >=1.34 replay request-shape diagnosis packet: the exact repo-local execute blocker is now narrowed to one maintained replay repair (ManagedCluster identity must move from properties to the top-level create body) plus a >=1.34 preflight guard, while observed product behavior for path.oidc.default-by-version.k8s-gte-1.34 remains unknown pending a future authorized rerun. The already-assigned successor leaf oidc-default-by-version-k8s-gte-1-34-replay-request-shape-fix-20260623 is the truthful next action, so this wake adds no broader OIDC exploration, no duplicate blocker, and no cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Trace the blocked OIDC default-by-version execute artifact back to the maintained replay and mounted-source/spec authorities, identify the exact create-body/request-shape mismatch preventing product-branch validation for path.oidc.default-by-version.k8s-gte-1.34, and record the narrowest repo-local replay repair or execute-readiness delta needed before any future authorized >=1.34 verification run, without running a cloud probe.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the blocked execute artifact, the maintained OIDC default-by-version replay, and the mounted-source/spec authorities for the >=1.34 implicit-enable branch, then explains the exact request-shape or create-body mismatch that caused the pre-assertion failure and whether the maintained replay can be corrected repo-locally.",
+        "The note ends with one concrete bounded next step for execute readiness of this exact path (specific replay edit/preflight repair or a precise remaining repo-local blocker), keeps observed product status unknown, and performs no cloud mutation or broadened OIDC exploration."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "oidc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T08:29:07.206Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T08:29:11.944Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623_20260623082914",
+        "assigned_at": "2026-06-23T08:29:14.310Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623",
+        "worker_started_attempt_id": "a_oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623_20260623082914",
+        "worker_started_at": "2026-06-23T08:29:44.027Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable replay-repair packet at evidence/archive/oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623.md tracing the blocked OIDC >=1.34 execute artifact to a precise repo-local request-shape bug in replays/oidc-issuer-default-by-version.ts and documenting the narrowest execute-readiness next step.",
+        "last_worker_completed_at": "2026-06-23T08:31:17.978Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T08:32:28.327Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive packet traces the blocked execute artifact to one exact repo-local replay bug (identity nested under properties instead of top-level) and records the bounded >=1.34 preflight-guard follow-up without claiming product behavior."
+      },
+      "session_id": "s_task_oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623",
+      "session_history": [
+        "s_task_oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623"
+      ],
+      "result": "Wrote a durable replay-repair packet at evidence/archive/oidc-default-by-version-k8s-gte-1-34-replay-request-shape-repair-packet-20260623.md tracing the blocked OIDC >=1.34 execute artifact to a precise repo-local request-shape bug in replays/oidc-issuer-default-by-version.ts and documenting the narrowest execute-readiness next step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T08:32:28.327Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive packet traces the blocked execute artifact to one exact repo-local replay bug (identity nested under properties instead of top-level) and records the bounded >=1.34 preflight-guard follow-up without claiming product behavior."
+      },
+      "status": "done"
+    }
+  ]
+}

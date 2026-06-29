@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:44:16.417Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: validate the existing dedicated overscale-node-stability carrier end-to-end in local check mode only by exercising replays/cluster-autoscaler-vm-prerelease-overscale-node-stability.ts against its dedicated spec, then record selector/linkage/preflight results and any repo-local repair gap without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626.md"
+      ],
+      "acceptance": [
+        "Archive evidence records the exact local command(s) run for the dedicated overscale-node-stability replay in non-mutating check mode and the observed selector/spec/preflight outcome.",
+        "The result verifies or falsifies linkage among path.cluster-autoscaler.vm-prerelease-overscale-node-stability, spec.cluster-autoscaler.vm-prerelease-overscale-node-stability, and replays/cluster-autoscaler-vm-prerelease-overscale-node-stability.ts without widening to adjacent cluster-autoscaler rows or cloud execution.",
+        "If check mode fails, the artifact names one exact repo-local repair gap or handoff; if it passes, the artifact leaves the path explicitly carrier-complete and locally replay-check-validated but still observation-pending."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature/cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T09:24:13.692Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626_20260626092413",
+        "assigned_at": "2026-06-26T09:24:13.744Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626",
+        "worker_started_attempt_id": "a_cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626_20260626092413",
+        "worker_started_at": "2026-06-26T09:24:21.415Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Validated the dedicated VM prerelease row-47 overscale replay in local check mode and wrote an archive evidence report proving path/spec/replay linkage and passing non-mutating preflight.",
+        "last_worker_completed_at": "2026-06-26T09:25:51.092Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T09:26:38.271Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence records the exact non-mutating replay/spec check commands, proves path/spec/replay linkage for path.cluster-autoscaler.vm-prerelease-overscale-node-stability, and shows passing local preflight with no repo-local repair gap, so the dedicated carrier is now check-mode validated and observation-pending only for future live evidence."
+      },
+      "session_id": "s_task_cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626",
+      "session_history": [
+        "s_task_cluster-autoscaler-vm-prerelease-overscale-node-stability-checkmode-validation-20260626"
+      ],
+      "result": "Validated the dedicated VM prerelease row-47 overscale replay in local check mode and wrote an archive evidence report proving path/spec/replay linkage and passing non-mutating preflight.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T09:26:38.271Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence records the exact non-mutating replay/spec check commands, proves path/spec/replay linkage for path.cluster-autoscaler.vm-prerelease-overscale-node-stability, and shows passing local preflight with no repo-local repair gap, so the dedicated carrier is now check-mode validated and observation-pending only for future live evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

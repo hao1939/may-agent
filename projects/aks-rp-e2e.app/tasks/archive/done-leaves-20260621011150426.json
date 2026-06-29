@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:11:50.426Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner accepted the bounded residual-classification pair as durable history: private-cluster-index-metadata-residual-classify-20260621 proved the only remaining private-cluster residue is specs/index.json versus the two APIVNET detail files, and serverless-subnet-model-text-residual-classify-20260621 proved the two model.json Microsoft.ContainerInstance wording edits are a truthful serverless-only checkpoint slice rather than VM prerelease drift. The live project frontier is now intentionally narrow: keep private-cluster-apivnet-spec-registry-detail-parity-repair-20260621 as the sole active repo-local repair/disposition task, and preserve external-send-proof-dispatch-family-20260620 as the single cross-branch external-human transport ceiling until durable send or escalation proof exists.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-index-metadata-residual-classify-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the current residual specs/index.json private-cluster APIVNET metadata diff exposed by the stale VMPR row-30/31/32 audit. Determine whether the changed titles/sourceRefs/status/specState/statusReason entries for spec.private-cluster.apiserver-vnet-integration-create and spec.private-cluster.vnet-integration-private are truthful intended private-cluster updates that should move as their own bounded checkpoint slice, or whether they are workspace drift to exclude from VMPR checkpoint planning. Produce one exact recommendation with supporting diff evidence and any required successor limited to this private-cluster index surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-index-metadata-residual-classify-20260621.md"
+      ],
+      "acceptance": [
+        "The packet cites the exact residual specs/index.json entries named by the accepted audit: spec.private-cluster.apiserver-vnet-integration-create and spec.private-cluster.vnet-integration-private.",
+        "The packet shows bounded diff/status evidence for those entries, explains whether the metadata changes are truthful intended private-cluster updates or workspace drift, and states the exact effect on checkpoint partitioning.",
+        "If follow-up is still needed, the packet ends with one narrower successor or exact resume condition limited to this private-cluster index surface instead of reopening VM prerelease isolation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-index"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:08:42.749Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-index-metadata-residual-classify-20260621_20260621010842",
+        "assigned_at": "2026-06-21T01:08:42.798Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-index-metadata-residual-classify-20260621",
+        "worker_started_attempt_id": "a_private-cluster-index-metadata-residual-classify-20260621_20260621010842",
+        "worker_started_at": "2026-06-21T01:09:03.336Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested private-cluster residual classification packet at evidence/archive/private-cluster-index-metadata-residual-classify-20260621.md. It concludes the two specs/index.json APIVNET entry edits are truthful private-cluster metadata updates in content, but their current registry/detail mismatch makes them workspace drift to exclude from VM prerelease checkpoint planning until a narrow private-cluster parity repair is done.",
+        "last_worker_completed_at": "2026-06-21T01:10:11.842Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:10:46.367Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-index-metadata-residual-classify-20260621.md cites the exact two specs/index.json entries, proves the APIVNET metadata edits are truthful private-cluster intent but current registry/detail mismatch makes them workspace drift for VMPR checkpoint planning, and narrows follow-up to a private-cluster-only parity repair."
+      },
+      "session_id": "s_task_private-cluster-index-metadata-residual-classify-20260621",
+      "session_history": [
+        "s_task_private-cluster-index-metadata-residual-classify-20260621"
+      ],
+      "result": "Produced the requested private-cluster residual classification packet at evidence/archive/private-cluster-index-metadata-residual-classify-20260621.md. It concludes the two specs/index.json APIVNET entry edits are truthful private-cluster metadata updates in content, but their current registry/detail mismatch makes them workspace drift to exclude from VM prerelease checkpoint planning until a narrow private-cluster parity repair is done.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:10:46.367Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-index-metadata-residual-classify-20260621.md cites the exact two specs/index.json entries, proves the APIVNET metadata edits are truthful private-cluster intent but current registry/detail mismatch makes them workspace drift for VMPR checkpoint planning, and narrows follow-up to a private-cluster-only parity repair."
+      },
+      "status": "done"
+    }
+  ]
+}

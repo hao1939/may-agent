@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T06:36:20.503Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-25 owner planning update: this focus branch remains a compressed blocked frontier with six live waits only. Keep the five exact external returned-proof waits plus the 2026-06-26 family follow-up window gate unchanged until authoritative reply evidence arrives or the first bounded follow-up/escalation review window opens; do not reopen local source/spec/setup/model closure inside this branch while repo-local learning continues elsewhere.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "blocked-frontier-family-follow-up-escalation-artifact-20260626",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "If no new authoritative replies arrive by the first owner review window on or after 2026-06-26, produce one bounded follow-up/escalation artifact for the existing five-leaf external-wait family that reuses the already-sent repo-local packets, records the exact channel/owner/recipient touched, maps which waits were covered by the follow-up, and states which waits remain unchanged without reopening local source/spec/setup/model closure or running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/blocked-frontier-family-follow-up-escalation-artifact-20260626.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the 2026-06-26-or-later owner follow-up or escalation attempt with timestamp, channel, sender/owner, recipient/escalation path, the exact linked prior send-proof/approval-packet artifacts it reused, and a coverage table for the five current waits under focus-mounted-source-coverage-closure-and-external-wait-20260623.",
+        "The artifact preserves the current blocker compression by updating one family-level follow-up slice instead of spawning duplicate per-path waits, and it states for each affected wait whether the result was approve, deny, redirect, still waiting, or needs a newly bounded successor leaf.",
+        "No local source rediscovery, environment diagnosis busywork, packet redrafting, or cloud mutation is introduced from this task; unchanged waits remain unchanged until returned proof arrives."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "blocked-frontier.external-returned-proof-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:32:19.693Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-25T06:32:25.274Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-25T06:32:40.008Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Prematurely exposed a runnable backlog leaf before the documented 2026-06-26 follow-up window. Replace it with a date-gated blocked successor so the blocked family stays compressed and no runnable work appears before the first bounded owner follow-up review window or earlier returned proof."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-25T06:32:40.008Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Prematurely exposed a runnable backlog leaf before the documented 2026-06-26 follow-up window. Replace it with a date-gated blocked successor so the blocked family stays compressed and no runnable work appears before the first bounded owner follow-up review window or earlier returned proof."
+      },
+      "status": "done"
+    }
+  ]
+}

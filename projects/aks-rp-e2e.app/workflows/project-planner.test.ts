@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { Database } from "bun:sqlite";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -164,6 +165,103 @@ describe("project owner workflow", () => {
       "Do not stop merely because one rollup or one new leaf was created.",
     );
     expect(prompts[1]).not.toContain("Stop after one small material update");
+  });
+
+  test("compacts oversized packet details before building planner prompts", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const hugePaths = Array.from({ length: 60 }, (_, index) => ({
+      id: `path.synthetic-${index}`,
+      status: index % 2 === 0 ? "unknown" : "blocked",
+      rootCauseClass: "runtime",
+    }));
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify({ featurePaths: hugePaths }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [
+                "review-1",
+                "review-2",
+                "review-3",
+                "review-4",
+                "review-5",
+                "review-6",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            ...Object.fromEntries(
+              Array.from({ length: 6 }, (_, index) => [
+                `review-${index + 1}`,
+                {
+                  id: `review-${index + 1}`,
+                  parent_id: "project",
+                  state: "review",
+                  kind: "domain_leaf",
+                  priority: "P1",
+                  children: [],
+                  goal: `Review task ${index + 1} ${"x".repeat(220)}`,
+                  outputs: [`evidence/archive/review-${index + 1}.md`],
+                  acceptance: ["done"],
+                  trace: {
+                    last_worker_summary: `Summary ${index + 1} ${"y".repeat(
+                      520,
+                    )}`,
+                  },
+                },
+              ]),
+            ),
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return task.includes("Planner Event Review Step")
+          ? { status: "success", message: "EVENT_REVIEW: compact please" }
+          : { status: "success", message: "done" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain('"omitted_non_passing_paths": 20');
+    expect(prompts[1]).toContain('"review_omitted_count": 1');
+    expect(prompts[1]).not.toContain('"id": "path.synthetic-59"');
+    expect(prompts[1]).not.toContain(`Summary 1 ${"y".repeat(520)}`);
   });
 
   test("runs owner review when worker results are pending even with runnable backlog work", async () => {
@@ -663,6 +761,108 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"assigned_task_ids":["backlog-task"]');
     expect(plannerRuns).not.toContain('"steps":["quick-refill"]');
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("aggressive-push mode does not short-circuit underfilled capacity after one refill", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "project.json"),
+      `${JSON.stringify({ policy: { mode: "aggressive-push" } }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Refill underfilled capacity with one bounded task.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-capacity-underfilled",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return task.includes("Planner Event Review Step")
+          ? { status: "success", message: "EVENT_REVIEW: underfilled" }
+          : { status: "success", message: "planner kept pushing" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("aggressive-push mode");
+    expect(dispatched).toHaveLength(1);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).not.toContain(
+      '"steps":["assigned-refill-short-circuit"]',
+    );
+    expect(plannerRuns).toContain('"ran_agent":true');
   });
 
   test("short-circuits blocked-frontier review when all blocked leaves are future-dated exact waits", async () => {
@@ -1320,6 +1520,120 @@ describe("project owner workflow", () => {
     );
   });
 
+  test("skips owner session for stale watchdog-review-pending packets after review is already settled", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "settled-review-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Continue active work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "settled-review-task": {
+              id: "settled-review-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Already accepted review task.",
+              outputs: ["evidence/archive/settled-review-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-review-pending",
+            reviewTasks: [
+              {
+                taskId: "settled-review-task",
+                updatedAt: "2026-06-25T12:20:51.490Z",
+              },
+            ],
+            reviewCount: 1,
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Watchdog review-pending wake is stale");
+    expect(result.message).toContain("settled-review-task");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["stale-review-pending-noop"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain('"active_task_ids":["active-task"]');
+  });
+
   test("skips owner session for stale watchdog-runnable-backlog packets even when unrelated blocked leaves exist", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const treeUpdatedAt = "2026-06-18T01:52:39.649Z";
@@ -1600,6 +1914,110 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("skips owner session for regular-learning tick when active work already covers the frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "blocked-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "blocked-task": {
+              id: "blocked-task",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Exact external wait.",
+              outputs: ["evidence/archive/blocked-task.md"],
+              acceptance: ["done"],
+              blocker: "Awaiting exact external approval.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "regular-learning-tick",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Regular-learning tick is already covered by active work",
+    );
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Regular-learning tick is already covered by active work",
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
   test("skips owner session for already-settled task completion when completedTaskId is nested under trigger data.params", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -1792,6 +2210,145 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain(
       "completed task no longer exists in the live tree",
     );
+  });
+
+  test("skips owner session when another planner session is already running for the same owner", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dbPath = join(appDir, ".state", "may.db");
+    await mkdir(join(appDir, ".state"), { recursive: true });
+    const db = new Database(dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        agent text not null,
+        task text not null,
+        status text not null,
+        kind text,
+        source text,
+        parentSessionId text,
+        requestId text,
+        workflowRunId text,
+        projectId text,
+        startedAt integer not null,
+        endedAt integer,
+        error text,
+        outcome text,
+        opCount integer default 0,
+        stepLabel text,
+        lastActivityAt integer
+      )
+    `);
+    db.query(
+      `insert into sessions (
+        sessionId, agent, task, status, kind, source, startedAt, stepLabel
+      ) values (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "s_existing_planner",
+      "aks-explorer",
+      "existing planner wake",
+      "running",
+      "workflow",
+      "workflow:project-planner",
+      Date.now(),
+      "aks-explorer",
+    );
+    db.close();
+
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "One bounded refill leaf.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const priorDb = process.env.MAY_DB_PATH;
+    process.env.MAY_DB_PATH = dbPath;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, task: string) => {
+          prompts.push(task);
+          return { status: "success", message: "should not run" };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "another owner-planner session is already running",
+      );
+      expect(prompts).toHaveLength(0);
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0]).toMatchObject({
+        type: "project.task.assigned",
+        payload: {
+          taskId: "backlog-task",
+          sessionId: "s_task_backlog-task",
+        },
+      });
+
+      const plannerRuns = await readFile(
+        join(appDir, ".state", "planner-runs.jsonl"),
+        "utf8",
+      );
+      expect(plannerRuns).toContain('"steps":["planner-session-dedupe-noop"]');
+      expect(plannerRuns).toContain('"ran_agent":false');
+    } finally {
+      if (priorDb === undefined) delete process.env.MAY_DB_PATH;
+      else process.env.MAY_DB_PATH = priorDb;
+    }
   });
 
   test("short-circuits planner-timeout-underfilled-frontier wake after first refill assignment", async () => {

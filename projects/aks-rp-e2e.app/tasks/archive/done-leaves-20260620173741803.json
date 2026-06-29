@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:37:41.803Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 watchdog planning update: the mounted-source inventory/repair slice is now compacted into parent knowledge. Accepted repo-local provenance already covers private-cluster mounted-source accounting, VM prerelease mounted-source coverage inventory, the CAS rows-46/47 linkage repair, and the VM prerelease secureTLS exact-carrier authoring batch, so those four done leaves are archived here instead of staying as root clutter. The only live local knowledge-map mover is network-acns-cilium-observability-authoring-from-mounted-source-20260620, already assigned for mounted-source-backed feature/spec/replay/model updates. The only live wait remains external-send-proof-dispatch-family-20260620 under the VM prerelease replacement focus; do not recreate duplicate send, response-await, or source-holder blockers. Next owner action is to review the network ACNS Cilium observability authoring leaf when it produces evidence, and reopen the VM transport family only when durable repo-local send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-mounted-source-coverage-inventory-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the mounted AKS RP Go e2ev3 private-cluster scenario set to current feature/spec/replay/model coverage so the reopened all-scenarios project gains a concrete non-cloud next frontier beyond the VM prerelease transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-mounted-source-coverage-inventory-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted Go private-cluster suite/scenario files inspected and inventories the scenarios they define.",
+        "Each inventoried scenario is mapped to existing feature/spec/replay/model coverage or an explicit uncovered/weak-coverage gap with file references.",
+        "The artifact names the highest-value follow-up authoring or replay leaves needed next for this family without running cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:25:23.846Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-mounted-source-coverage-inventory-20260620_20260620172523",
+        "assigned_at": "2026-06-20T17:25:23.940Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-mounted-source-coverage-inventory-20260620",
+        "worker_started_attempt_id": "a_private-cluster-mounted-source-coverage-inventory-20260620_20260620172523",
+        "worker_started_at": "2026-06-20T17:25:40.016Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/private-cluster-mounted-source-coverage-inventory-20260620.md`, mapping mounted AKS RP Go e2ev3 private-cluster suites/plans to current feature/spec/replay/model coverage and identifying the next non-cloud frontier as suite/registry accounting drift plus weak source-provenance branches.",
+        "last_worker_completed_at": "2026-06-20T17:28:46.762Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T17:29:19.431Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/private-cluster-mounted-source-coverage-inventory-20260620.md: it cites exact mounted private-cluster suite/plan files, inventories the APIServer VNet Integration and PrivateLink scenarios, maps each to current feature/spec/replay/model coverage, and identifies the next bounded non-cloud frontier as suite/registry accounting drift plus weak source-provenance repair."
+      },
+      "session_id": "s_task_private-cluster-mounted-source-coverage-inventory-20260620",
+      "session_history": [
+        "s_task_private-cluster-mounted-source-coverage-inventory-20260620"
+      ],
+      "result": "Created `evidence/archive/private-cluster-mounted-source-coverage-inventory-20260620.md`, mapping mounted AKS RP Go e2ev3 private-cluster suites/plans to current feature/spec/replay/model coverage and identifying the next non-cloud frontier as suite/registry accounting drift plus weak source-provenance branches.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T17:29:19.431Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/private-cluster-mounted-source-coverage-inventory-20260620.md: it cites exact mounted private-cluster suite/plan files, inventories the APIServer VNet Integration and PrivateLink scenarios, maps each to current feature/spec/replay/model coverage, and identifies the next bounded non-cloud frontier as suite/registry accounting drift plus weak source-provenance repair."
+      },
+      "status": "done"
+    }
+  ]
+}

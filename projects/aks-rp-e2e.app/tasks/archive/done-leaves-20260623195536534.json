@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T19:55:36.534Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review accepted the managed-gateway-api create/http mounted-source reconcile and rolled up five completed repo-local closure slices. The branch now preserves that ALB controller, API proxy large-payload/websocket, AppLink cross-cluster/upgrade, AAD RBAC row 37, and managed Gateway API create/http all have truthfully tightened authority boundaries in archive/model carriers, while active capacity stays on OIDC discovery/JWKS, ASM custom-config+egress, and VirtualMachines manual-scale-policy; both blocked waits remain unchanged family-level waits.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "traffic-alb-controller-mounted-source-draft-linkage-repair-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP source plus existing repo-local carriers to reconcile path.traffic-alb-controller.enable-lifecycle, path.traffic-alb-controller.ingress-routing, and path.traffic-alb-controller.upgrade-survival: determine whether each branch has an exact handwritten/source slice or must remain draft/source-grounded, then tighten feature/spec/replay/model wording and archive the evidence without cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/traffic-alb-controller-mounted-source-draft-linkage-repair-20260623.md",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A durable archive artifact cites the exact mounted-source files plus the touched feature/spec/replay/model carriers for the three ALB controller paths, and records whether each path has exact handwritten/source authority or only source-grounded draft support.",
+        "Carrier and model updates keep the three ALB controller paths claim-safe: strengthen linkage only where exact source support exists, otherwise preserve explicit draft/source-grounded wording instead of borrowing neighboring traffic evidence.",
+        "The work stays repo-local and bounded to the three named ALB controller paths only: no cloud mutation, no blocked-wait follow-up, and no widening into unrelated traffic families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "traffic-alb-controller-model-carriers"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T19:39:59.956Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_traffic-alb-controller-mounted-source-draft-linkage-repair-20260623_20260623194004",
+        "assigned_at": "2026-06-23T19:40:04.411Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_traffic-alb-controller-mounted-source-draft-linkage-repair-20260623",
+        "worker_started_attempt_id": "a_traffic-alb-controller-mounted-source-draft-linkage-repair-20260623_20260623194004",
+        "worker_started_at": "2026-06-23T19:40:53.991Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the three traffic ALB controller paths against mounted AKS RP source, wrote a durable archive note, and tightened feature/spec/replay/model carriers so ingress-routing and upgrade-survival are mounted-source-backed drafts while enable-lifecycle remains explicitly source-grounded.",
+        "last_worker_completed_at": "2026-06-23T19:49:30.531Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T19:51:10.764Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the 2026-06-23 archive artifact cites exact mounted ALB datapath/config files, records the per-path authority boundary, and the repo status output now preserves enable-lifecycle as source-grounded while strengthening ingress-routing and upgrade-survival only to mounted-source-backed drafts."
+      },
+      "session_id": "s_task_traffic-alb-controller-mounted-source-draft-linkage-repair-20260623",
+      "session_history": [
+        "s_task_traffic-alb-controller-mounted-source-draft-linkage-repair-20260623"
+      ],
+      "result": "Reconciled the three traffic ALB controller paths against mounted AKS RP source, wrote a durable archive note, and tightened feature/spec/replay/model carriers so ingress-routing and upgrade-survival are mounted-source-backed drafts while enable-lifecycle remains explicitly source-grounded.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T19:51:10.764Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the 2026-06-23 archive artifact cites exact mounted ALB datapath/config files, records the per-path authority boundary, and the repo status output now preserves enable-lifecycle as source-grounded while strengthening ingress-routing and upgrade-survival only to mounted-source-backed drafts."
+      },
+      "status": "done"
+    }
+  ]
+}

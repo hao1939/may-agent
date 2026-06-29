@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T21:35:51.442Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update: compacted the already-accepted batch landing for mounted-source network CNI coverage and the accepted VM prerelease secure-TLS rows 42-43 exactness slice because their durable meaning is already represented in project knowledge and prior evidence. Live frontier is now the assigned Windows2022 Azure CNI overlay dual-stack mounted-source reconcile slice, with three concrete non-cloud network-CNI follow-ons queued behind the shared source-coverage conflict scope (Windows2025 create-time dual-stack, dual-stack migration siblings, and PodCIDR expansion), plus the single family-level external send-proof dispatch wait for the MachinesPreview and VM prerelease outbound packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-mounted-source-coverage-batch1-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the next bounded repo-local scenario-coverage slice for the reopened all-Go-e2ev3 mandate by mapping a first batch of mounted-source network-cni scenarios into current project coverage: identify the exact scenario files/cases, note what features/specs/replays/model paths already exist, and isolate the smallest truthful next authoring leaves needed for uncovered or ambiguously covered network-cni surfaces.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-mounted-source-coverage-batch1-20260620.md"
+      ],
+      "acceptance": [
+        "Use mounted AKS RP Go e2ev3 source to identify a bounded first batch of network-cni scenarios/cases and record exact file/case anchors plus the capability surfaces they exercise, without guessing from model labels alone.",
+        "For each selected scenario/case, compare against current repo-local features/specs/replays/model coverage and classify it as already covered, ambiguously covered, or uncovered, citing the exact local carrier files or the exact absence/gap.",
+        "Conclude with a durable next-slice recommendation that creates the smallest truthful follow-on authoring tasks for uncovered or ambiguous network-cni surfaces, and do not require cloud mutation or external-human input in this coverage-mapping slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-source-coverage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T21:30:33.242Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-mounted-source-coverage-batch1-20260620_20260620213036",
+        "assigned_at": "2026-06-20T21:30:36.119Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-mounted-source-coverage-batch1-20260620",
+        "worker_started_attempt_id": "a_network-cni-mounted-source-coverage-batch1-20260620_20260620213036",
+        "worker_started_at": "2026-06-20T21:30:53.816Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/network-cni-mounted-source-coverage-batch1-20260620.md`, a mounted-source overlay-family coverage map that classifies selected network-cni scenarios as already covered, ambiguously covered, or uncovered and recommends the smallest truthful follow-on authoring leaves.",
+        "last_worker_completed_at": "2026-06-20T21:34:11.857Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T21:34:55.286Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/network-cni-mounted-source-coverage-batch1-20260620.md as a mounted-source overlay-family coverage map: it cites exact Go scenario/file anchors, classifies each selected case as covered/ambiguous/uncovered against current repo-local carriers, and ends with the smallest truthful follow-on authoring sequence."
+      },
+      "session_id": "s_task_network-cni-mounted-source-coverage-batch1-20260620",
+      "session_history": [
+        "s_task_network-cni-mounted-source-coverage-batch1-20260620"
+      ],
+      "result": "Created `evidence/archive/network-cni-mounted-source-coverage-batch1-20260620.md`, a mounted-source overlay-family coverage map that classifies selected network-cni scenarios as already covered, ambiguously covered, or uncovered and recommends the smallest truthful follow-on authoring leaves.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T21:34:55.286Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/network-cni-mounted-source-coverage-batch1-20260620.md as a mounted-source overlay-family coverage map: it cites exact Go scenario/file anchors, classifies each selected case as covered/ambiguous/uncovered against current repo-local carriers, and ends with the smallest truthful follow-on authoring sequence."
+      },
+      "status": "done"
+    }
+  ]
+}

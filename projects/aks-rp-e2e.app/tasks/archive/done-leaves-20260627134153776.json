@@ -1,0 +1,729 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T13:41:53.776Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Owner metric-breach review confirmed the stale original run-command-access principal-type rerun is already closed as replaced by watchdog-refresh-aad-rbac-run-command-access-principal-type-rerun-20260627, so the live spec frontier now truthfully consists of exactly two active AAD RBAC lanes with real running sessions: the watchdog-refresh run-command-access rerun and classify-aad-rbac-managed-v2-eastus2-b2s-skunotavailable-gate-20260627. Preserve the blocked external-wait family unchanged; no refill or duplicate blocker work is needed until one active lane returns new evidence or a worker session actually wedges again.",
+  "archived": 13,
+  "tasks": [
+    {
+      "id": "repair-aad-rbac-automatic-sku-source-alignment-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Align the local azure-rbac-automatic-sku spec/probe contract to mounted source by removing the spurious AKS_RP_E2E_AAD_ADMIN_GROUP_OID prerequisite and re-establishing the authoritative create-body expectation before any rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-automatic-sku-source-alignment-20260627.md"
+      ],
+      "acceptance": [
+        "Mounted source references for Scenario_Azure_RBAC_Automatic_SKU and the current local spec/probe are cited side-by-side with the exact contract mismatch.",
+        "The local replay/spec files or their durable review artifact record the repaired create-time AAD/Azure RBAC contract with no unsupported admin-group prerequisite.",
+        "The artifact ends with the exact rerun command/leaf to use after the repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T12:58:25.663Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T12:58:40.971Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-aad-rbac-automatic-sku-source-alignment-20260627_20260627125859",
+        "assigned_at": "2026-06-27T12:58:59.070Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-aad-rbac-automatic-sku-source-alignment-20260627",
+        "worker_started_attempt_id": "a_repair-aad-rbac-automatic-sku-source-alignment-20260627_20260627125859",
+        "worker_started_at": "2026-06-27T12:59:00.766Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Aligned the azure-rbac-automatic-sku local spec/probe to mounted AKS RP source by removing the unsupported create-time admin-group prerequisite and documenting the repaired rerun contract in a durable evidence artifact.",
+        "last_worker_completed_at": "2026-06-27T13:01:04.646Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:35:20.037Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner spot-check: the artifact cites mounted Scenario_Azure_RBAC_Automatic_SKU source, proves the local admin-group prerequisite contradicted source, records the repaired no-admin-group contract, and ends with the exact rerun shape to use next."
+      },
+      "session_id": "s_task_repair-aad-rbac-automatic-sku-source-alignment-20260627",
+      "session_history": [
+        "s_task_repair-aad-rbac-automatic-sku-source-alignment-20260627"
+      ],
+      "result": "Aligned the azure-rbac-automatic-sku local spec/probe to mounted AKS RP source by removing the unsupported create-time admin-group prerequisite and documenting the repaired rerun contract in a durable evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:35:20.037Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner spot-check: the artifact cites mounted Scenario_Azure_RBAC_Automatic_SKU source, proves the local admin-group prerequisite contradicted source, records the repaired no-admin-group contract, and ends with the exact rerun shape to use next."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-managed-v2-lifecycle-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry spec.aad-rbac.managed-v2-lifecycle once after the prior single-spec workflow ended in SIGTERM/half-written runner state, and classify the next run only if it reaches a clean terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-retry-plan-20260627.md"
+      ],
+      "acceptance": [
+        "The prior interrupted run 28287485766 is cited with the decisive SIGTERM / unfinished status evidence.",
+        "A fresh single-spec run is launched or prepared under the same spec id with a durable note that the retry is only to clear runner interruption noise, not to reinterpret product behavior.",
+        "The successor review leaf points to terminal pass/fail/blocked evidence, or the artifact records that repeated interruption should escalate to runner/workflow investigation instead of another cloud retry."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T12:58:25.776Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T12:58:40.971Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-managed-v2-lifecycle-20260627_20260627130122",
+        "assigned_at": "2026-06-27T13:01:22.726Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-managed-v2-lifecycle-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-managed-v2-lifecycle-20260627_20260627130122",
+        "worker_started_at": "2026-06-27T13:01:24.065Z",
+        "reviewed_at": "2026-06-27T13:17:04.629Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog stale-active review found the assigned session went inactive without a terminal classification, so this leaf is replaced by a fresh rerun leaf that preserves the same spec scope but restarts from a clean owner-issued attempt."
+      },
+      "session_id": "s_task_retry-aad-rbac-managed-v2-lifecycle-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-managed-v2-lifecycle-20260627"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T13:17:04.629Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog stale-active review found the assigned session went inactive without a terminal classification, so this leaf is replaced by a fresh rerun leaf that preserves the same spec scope but restarts from a clean owner-issued attempt."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry spec.runtime-container.kscr-rotation-matrix using the current branch/worktree so workflow packaging resolves the maintained feature-owned probeRef instead of the stale replays/runtime-container-kscr-rotation-matrix.ts carrier, then classify the next truthful terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/runtime-container-kscr-rotation-matrix-current-proberef-retry-20260627.md"
+      ],
+      "acceptance": [
+        "The retry uses current repo-local spec registration/probeRef rather than the stale replays/runtime-container-kscr-rotation-matrix.ts carrier, or the evidence note proves exactly why packaging still diverged.",
+        "The run no longer fails at startup with Cannot find module './lib/arm-rest.ts', or the evidence note captures the exact remaining packaging path that still does.",
+        "The evidence note records the next truthful verdict for spec.runtime-container.kscr-rotation-matrix: pass, product/spec finding, or exact environment/preflight blocker after the import issue is cleared."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.runtime-container.kscr-rotation-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:05:56.591Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627_20260627130607",
+        "assigned_at": "2026-06-27T13:06:07.961Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627",
+        "worker_started_attempt_id": "a_retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627_20260627130607",
+        "worker_started_at": "2026-06-27T13:06:10.244Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Retried spec.runtime-container.kscr-rotation-matrix from the current worktree, confirmed spec-runner now resolves the maintained feature-owned probeRef, and wrote evidence showing the stale ./lib/arm-rest.ts startup failure is cleared; the next truthful terminal result is an Azure subscription-id environment preflight blocker.",
+        "last_worker_completed_at": "2026-06-27T13:07:33.837Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:35:20.100Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner spot-check: the retry artifact proves current packaging now uses the maintained feature-owned probeRef, the historical ./lib/arm-rest.ts startup failure is cleared, and the next truthful terminal state is an Azure subscription-id preflight blocker rather than a replay-packaging bug."
+      },
+      "session_id": "s_task_retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627",
+      "session_history": [
+        "s_task_retry-spec-runtime-container-kscr-rotation-matrix-current-proberef-20260627"
+      ],
+      "result": "Retried spec.runtime-container.kscr-rotation-matrix from the current worktree, confirmed spec-runner now resolves the maintained feature-owned probeRef, and wrote evidence showing the stale ./lib/arm-rest.ts startup failure is cleared; the next truthful terminal result is an Azure subscription-id environment preflight blocker.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:35:20.100Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner spot-check: the retry artifact proves current packaging now uses the maintained feature-owned probeRef, the historical ./lib/arm-rest.ts startup failure is cleared, and the next truthful terminal state is an Azure subscription-id preflight blocker rather than a replay-packaging bug."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-run-command-access-source-aligned-rerun-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the first truthful rerun of spec.aad-rbac.run-command-access after the source-alignment repair, using the token-derived adminUsers carrier and classifying only a clean terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-run-command-access-source-aligned-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The run uses the repaired carrier with no AKS_RP_E2E_AAD_ADMIN_GROUP_OID dependency and records the exact env/mutation gate used.",
+        "The artifact classifies the terminal result against the mounted create/restart/Azure-RBAC expectations, or records the exact bounded blocker if execution cannot start truthfully.",
+        "Any resulting spec/model status update distinguishes this first truthful rerun from the pre-repair admin-group-gated attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.run-command-access"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:07:39.891Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-run-command-access-source-aligned-rerun-20260627_20260627130749",
+        "assigned_at": "2026-06-27T13:07:49.226Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-run-command-access-source-aligned-rerun-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-run-command-access-source-aligned-rerun-20260627_20260627130749",
+        "worker_started_at": "2026-06-27T13:07:50.292Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the first source-aligned live rerun for spec.aad-rbac.run-command-access, captured the truthful terminal blocked outcome, and wrote a durable markdown evidence summary distinguishing it from the pre-repair admin-group-gated attempt.",
+        "last_worker_completed_at": "2026-06-27T13:23:29.343Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:24:17.489Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review because the 2026-06-27 evidence artifact proves the first truthful adminUsers-based rerun actually exercised create, restart, and Azure-RBAC enable steps, distinguished this path from the pre-repair admin-group-gated attempt, and bounded the terminal blocker to likely principal-type mismatch at Azure RBAC Reader assignment; follow-up now lives in retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627 rather than treating the spec path as closed."
+      },
+      "session_id": "s_task_retry-aad-rbac-run-command-access-source-aligned-rerun-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-run-command-access-source-aligned-rerun-20260627"
+      ],
+      "result": "Executed the first source-aligned live rerun for spec.aad-rbac.run-command-access, captured the truthful terminal blocked outcome, and wrote a durable markdown evidence summary distinguishing it from the pre-repair admin-group-gated attempt.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:24:17.489Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review because the 2026-06-27 evidence artifact proves the first truthful adminUsers-based rerun actually exercised create, restart, and Azure-RBAC enable steps, distinguished this path from the pre-repair admin-group-gated attempt, and bounded the terminal blocker to likely principal-type mismatch at Azure RBAC Reader assignment; follow-up now lives in retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627 rather than treating the spec path as closed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Determine whether the exact admin-group and tenant inputs needed for spec.aad-rbac.nonaad-to-aadv2-migration can be sourced locally from mounted source/replay/runtime conventions or must be routed as a concrete external ask, and leave one durable artifact that either unlocks a truthful rerun carrier or names the exact external resume condition.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-nonaad-to-aadv2-admin-group-input-acquisition-20260627.md"
+      ],
+      "acceptance": [
+        "The artifact cites mounted source plus the failed run evidence to prove which inputs are required for the post-migration update step.",
+        "If local derivation is possible, the artifact names the exact env values/carrier to use for the next rerun; if not, it records the exact external ask, owner, and proof gap instead of leaving a generic passive wait.",
+        "The task leaves the spec branch with one truthful next action: rerun-ready carrier details or a concretely routed external-input dependency."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:10:35.459Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:10:47.703Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627_20260627131111",
+        "assigned_at": "2026-06-27T13:11:11.303Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627",
+        "worker_started_attempt_id": "a_source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627_20260627131111",
+        "worker_started_at": "2026-06-27T13:11:12.943Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable acquisition artifact proving the nonAAD→AADv2 admin-group and tenant inputs can be sourced locally from mounted AKS RP source and prior run evidence, and specified the exact rerun carrier env values.",
+        "last_worker_completed_at": "2026-06-27T13:13:01.673Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:15:14.839Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the sourcing review: evidence/archive/aad-rbac-nonaad-to-aadv2-admin-group-input-acquisition-20260627.md proves the missing admin-group and tenant carrier values can be sourced locally from mounted AKS RP source plus prior blocked-run evidence, so spec.aad-rbac.nonaad-to-aadv2-migration is rerun-ready rather than externally blocked."
+      },
+      "session_id": "s_task_source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627",
+      "session_history": [
+        "s_task_source-aad-rbac-nonaad-to-aadv2-admin-group-inputs-20260627"
+      ],
+      "result": "Produced a durable acquisition artifact proving the nonAAD→AADv2 admin-group and tenant inputs can be sourced locally from mounted AKS RP source and prior run evidence, and specified the exact rerun carrier env values.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:15:14.839Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the sourcing review: evidence/archive/aad-rbac-nonaad-to-aadv2-admin-group-input-acquisition-20260627.md proves the missing admin-group and tenant carrier values can be sourced locally from mounted AKS RP source plus prior blocked-run evidence, so spec.aad-rbac.nonaad-to-aadv2-migration is rerun-ready rather than externally blocked."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the shared staging live-capacity preflight blocker that cannot read current AKS cluster count for subscription 26fe00f8-9173-4872-9134-bb1d2e00343a in westus2, then classify whether repo-local repair, alternate execution surface, or exact external escalation is the truthful next move for blocked live reruns.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-live-capacity-preflight-cluster-count-diagnosis-20260627.md"
+      ],
+      "acceptance": [
+        "The artifact identifies the exact preflight operation or command that fails when reading current AKS cluster count for 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2, using repo-local runner code and/or reproduced evidence rather than speculation.",
+        "The artifact classifies the blocker as one of: repo-local runner/config issue, execution-host credential/access issue, Azure subscription/environment issue, or external-owner wait, and cites the evidence for that classification.",
+        "The artifact names at least the affected nonterminal branches (including spec.aad-rbac.nonaad-reset and the VM prerelease row-40 live validations) plus the exact resume condition or next retry trigger so future reruns do not repeat the same blocked launch unchanged."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "env:live-capacity-preflight:26fe00f8-9173-4872-9134-bb1d2e00343a:westus2"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:12:54.395Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:13:05.857Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627_20260627131324",
+        "assigned_at": "2026-06-27T13:13:24.497Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627",
+        "worker_started_attempt_id": "a_diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627_20260627131324",
+        "worker_started_at": "2026-06-27T13:13:25.651Z",
+        "reviewed_at": "2026-06-27T13:14:08.166Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the project.problem.resolved solver result: the shared live-capacity preflight failure was caused by a repo-local runner PATH bug that hid the state-local Azure CLI, and the repair was verified by successful az-based capacity queries against 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. This family-level diagnosis leaf is complete, and affected live reruns should now proceed through fresh retry leaves rather than keeping the diagnosis task active."
+      },
+      "session_id": "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627",
+      "session_history": [
+        "s_task_diagnose-shared-live-capacity-preflight-cluster-count-westus2-20260627"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:14:08.166Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the project.problem.resolved solver result: the shared live-capacity preflight failure was caused by a repo-local runner PATH bug that hid the state-local Azure CLI, and the repair was verified by successful az-based capacity queries against 26fe00f8-9173-4872-9134-bb1d2e00343a/westus2. This family-level diagnosis leaf is complete, and affected live reruns should now proceed through fresh retry leaves rather than keeping the diagnosis task active."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the first fresh rerun of spec.aad-rbac.nonaad-reset after the shared live-capacity preflight fix, using the repaired bodyful ResetAADProfile carrier and classifying the branch only if the run reaches a clean terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The rerun launches after the verified Azure CLI PATH/preflight repair and records the exact command plus the resulting live terminal status instead of repeating the prior preflight-blocked launch.",
+        "If probe execution reaches ResetAADProfile, the artifact captures that the request used a populated clientAppID body and records whether the operation returns HTTP 400 with the mounted-source substring 'is not allowed for AKS clutser without Azure AD integration'.",
+        "If the run still does not reach a terminal product verdict, the artifact must identify the new blocker precisely and explain why it differs from the already-resolved shared live-capacity preflight bug."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-reset"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:14:08.112Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:14:13.419Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627_20260627131441",
+        "assigned_at": "2026-06-27T13:14:41.736Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627_20260627131441",
+        "worker_started_at": "2026-06-27T13:14:42.965Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the fresh post-preflight-fix live rerun for spec.aad-rbac.nonaad-reset, captured a clean terminal pass with HTTP 400 plus the mounted-source error substring, and wrote the requested archive artifact summarizing the rerun and branch classification.",
+        "last_worker_completed_at": "2026-06-27T13:21:45.190Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:22:23.207Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the fresh post-preflight-fix rerun: the archive artifact proves Azure CLI PATH/capacity preflight succeeded on this surface, the repaired bodyful ResetAADProfile carrier executed live, and spec.aad-rbac.nonaad-reset reached a clean terminal pass with HTTP 400 plus the mounted-source 'is not allowed for AKS clutser without Azure AD integration' substring."
+      },
+      "session_id": "s_task_retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-nonaad-reset-post-preflight-fix-rerun-20260627"
+      ],
+      "result": "Executed the fresh post-preflight-fix live rerun for spec.aad-rbac.nonaad-reset, captured a clean terminal pass with HTTP 400 plus the mounted-source error substring, and wrote the requested archive artifact summarizing the rerun and branch classification.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:22:23.207Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the fresh post-preflight-fix rerun: the archive artifact proves Azure CLI PATH/capacity preflight succeeded on this surface, the repaired bodyful ResetAADProfile carrier executed live, and spec.aad-rbac.nonaad-reset reached a clean terminal pass with HTTP 400 plus the mounted-source 'is not allowed for AKS clutser without Azure AD integration' substring."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the first truthful rerun of spec.aad-rbac.nonaad-to-aadv2-migration now that the missing admin-group and tenant carrier inputs are source-backed locally, using AKS_RP_E2E_AAD_ADMIN_GROUP_OID=58527308-c32c-49af-a737-4cc795fa0230, AKS_RP_E2E_AAD_TENANT_ID=72f988bf-86f1-41af-91ab-2d7cd011db47, and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-nonaad-to-aadv2-migration, and classify the branch only if the run reaches a clean terminal result.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The run uses the exact carrier values named in evidence/archive/aad-rbac-nonaad-to-aadv2-admin-group-input-acquisition-20260627.md rather than a guessed or externally requested substitute.",
+        "The artifact records the rerun command, run id, terminal outcome, and whether execution reached the product assertion versus stopping on a precondition or environment gate.",
+        "If the rerun does not finish cleanly, the artifact leaves one precise next action for this spec branch instead of reopening a generic external-input blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:15:25.826Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:15:33.473Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627_20260627131552",
+        "assigned_at": "2026-06-27T13:15:52.827Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627_20260627131552",
+        "worker_started_at": "2026-06-27T13:15:53.650Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the source-aligned live rerun for spec.aad-rbac.nonaad-to-aadv2-migration with the exact locally sourced admin-group and tenant carriers, and wrote a durable evidence summary at evidence/archive/aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627.md documenting the clean product-pass terminal result.",
+        "last_worker_completed_at": "2026-06-27T13:28:44.129Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:31:26.619Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627.md proves the exact sourced admin-group and tenant carriers were used, the run reached product assertions, and the create -> migrate -> update -> disable-rejected -> functional path finished as a clean product pass, so this branch is no longer blocked on missing input history."
+      },
+      "session_id": "s_task_retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627"
+      ],
+      "result": "Executed the source-aligned live rerun for spec.aad-rbac.nonaad-to-aadv2-migration with the exact locally sourced admin-group and tenant carriers, and wrote a durable evidence summary at evidence/archive/aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627.md documenting the clean product-pass terminal result.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:31:26.619Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/aad-rbac-nonaad-to-aadv2-migration-source-aligned-rerun-20260627.md proves the exact sourced admin-group and tenant carriers were used, the run reached product assertions, and the create -> migrate -> update -> disable-rejected -> functional path finished as a clean product pass, so this branch is no longer blocked on missing input history."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun spec.aad-rbac.managed-v2-lifecycle after the prior retry leaf stalled with session-no-activity, reusing the same mounted row-37 replay contract but only accepting a clean terminal result or an exact new environment blocker backed by fresh run evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627.md"
+      ],
+      "acceptance": [
+        "Archive a rerun note with the exact command, environment inputs, result link/log path, and one of: (a) clean pass/fail with model-impact summary, or (b) exact environment blocker proving the unchanged row-37 contract still cannot reach product assertions."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:17:04.687Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:17:14.353Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627_20260627131739",
+        "assigned_at": "2026-06-27T13:17:39.827Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627_20260627131739",
+        "worker_started_at": "2026-06-27T13:17:41.893Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reran the row-37 managed AAD lifecycle replay: a fresh --check passed, and a fresh live execute attempt produced new environment-blocker evidence (login VM create HTTP 409 before cluster creation). Archived the required rerun note under evidence/archive.",
+        "last_worker_completed_at": "2026-06-27T13:24:28.627Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:25:10.507Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archived watchdog rerun note as truthful fresh blocker evidence: --check preserved the row-37 managed-v2 contract, the live execute reached login-VM setup, then setup.login-vm-created returned HTTP 409 and no principalId was produced, so the unchanged path remains environment-blocked before cluster create rather than yielding any new managed-AAD product verdict."
+      },
+      "session_id": "s_task_retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-managed-v2-lifecycle-watchdog-reissue-20260627"
+      ],
+      "result": "Reran the row-37 managed AAD lifecycle replay: a fresh --check passed, and a fresh live execute attempt produced new environment-blocker evidence (login VM create HTTP 409 before cluster creation). Archived the required rerun note under evidence/archive.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:25:10.507Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archived watchdog rerun note as truthful fresh blocker evidence: --check preserved the row-37 managed-v2 contract, the live execute reached login-VM setup, then setup.login-vm-created returned HTTP 409 and no principalId was produced, so the unchanged path remains environment-blocked before cluster create rather than yielding any new managed-AAD product verdict."
+      },
+      "status": "done"
+    },
+    {
+      "id": "retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the source-aligned spec.aad-rbac.run-command-access rerun path so Azure RBAC Reader assignment uses the truthful principal-type contract for the token-derived adminUsers identity, then rerun the same carrier and classify whether the post-assignment success branch is reached while preserving the newly observed pre-Azure-RBAC RunCommand mismatches after create and restart.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-run-command-access-principal-type-repair-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "The evidence identifies the exact repo-local source/replay change, including what principal type is used for the token-derived oid and why that matches mounted-source or bounded live evidence.",
+        "The rerun uses the same adminUsers-based carrier with no AKS_RP_E2E_AAD_ADMIN_GROUP_OID dependency and records whether Azure RBAC Reader assignment now succeeds or the exact terminal blocker if it still fails.",
+        "The artifact preserves classification of the pre-Azure-RBAC RunCommand observations after create and restart so those mismatches are not lost behind the role-assignment repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.run-command-access"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:24:17.431Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-27T13:24:20.345Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627_20260627132429",
+        "assigned_at": "2026-06-27T13:24:29.954Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627",
+        "worker_started_attempt_id": "a_retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627_20260627132429",
+        "worker_started_at": "2026-06-27T13:24:31.525Z",
+        "reviewed_at": "2026-06-27T13:39:57.661Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Watchdog stale-active review found the original active session wedged with no worker activity or review claim after assignment. Replaced it with watchdog-refresh-aad-rbac-run-command-access-principal-type-rerun-20260627 so the spec.aad-rbac.run-command-access rerun can restart on a fresh attempt instead of leaving a dead active lane."
+      },
+      "session_id": "s_task_retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627",
+      "session_history": [
+        "s_task_retry-aad-rbac-run-command-access-principal-type-repair-rerun-20260627"
+      ],
+      "resolution": "replaced",
+      "done_at": "2026-06-27T13:39:57.661Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Watchdog stale-active review found the original active session wedged with no worker activity or review claim after assignment. Replaced it with watchdog-refresh-aad-rbac-run-command-access-principal-type-rerun-20260627 so the spec.aad-rbac.run-command-access rerun can restart on a fresh attempt instead of leaving a dead active lane."
+      },
+      "status": "done"
+    },
+    {
+      "id": "diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Diagnose the fresh spec.aad-rbac.managed-v2-lifecycle login-VM create HTTP 409 ceiling by inspecting the archived live evidence and mounted replay/source surfaces, determine whether the conflict body/detail is preserved or absent, and classify the next truthful action for the unchanged row-37 carrier without rerunning cloud mutation yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-login-vm-http409-diagnosis-20260627.md"
+      ],
+      "acceptance": [
+        "Archive a diagnosis note that cites the fresh watchdog rerun evidence, states whether the HTTP 409 body/detail is preserved anywhere repo-local, classifies the most likely conflict family or evidence gap without guessing, and names the exact next step: bounded local fix/spec update, targeted rerun precondition, or external/environment blocker with resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:25:10.569Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627_20260627132533",
+        "assigned_at": "2026-06-27T13:25:33.845Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627",
+        "worker_started_attempt_id": "a_diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627_20260627132533",
+        "worker_started_at": "2026-06-27T13:25:35.673Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a repo-local diagnosis note at evidence/archive/aad-rbac-managed-v2-login-vm-http409-diagnosis-20260627.md concluding the fresh row-37 watchdog rerun preserves only HTTP 409 status/no body detail, classifying it as an environment-side login-VM create conflict with an evidence-capture gap and recommending a bounded local replay logging fix before any rerun.",
+        "last_worker_completed_at": "2026-06-27T13:27:39.293Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:34:17.526Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: the archived diagnosis cites the fresh watchdog rerun, proves repo-local evidence preserves only HTTP 409 plus missing principalId for setup.login-vm-created, avoids over-claiming the conflict subtype, and identifies the bounded next step as replay-side failure-detail capture before any rerun."
+      },
+      "session_id": "s_task_diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627",
+      "session_history": [
+        "s_task_diagnose-aad-rbac-managed-v2-login-vm-http409-detail-20260627"
+      ],
+      "result": "Archived a repo-local diagnosis note at evidence/archive/aad-rbac-managed-v2-login-vm-http409-diagnosis-20260627.md concluding the fresh row-37 watchdog rerun preserves only HTTP 409 status/no body detail, classifying it as an environment-side login-VM create conflict with an evidence-capture gap and recommending a bounded local replay logging fix before any rerun.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:34:17.526Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: the archived diagnosis cites the fresh watchdog rerun, proves repo-local evidence preserves only HTTP 409 plus missing principalId for setup.login-vm-created, avoids over-claiming the conflict subtype, and identifies the bounded next step as replay-side failure-detail capture before any rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Update the maintained repo-local verdict surfaces for spec.aad-rbac.nonaad-to-aadv2-migration / path.aad-rbac.nonaad-to-aadv2-migration from blocked-on-input history to accepted live pass using the 2026-06-27 source-aligned rerun evidence, preserving the exact carrier and run links and noting any remaining stale branch text.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-sync-20260627.md"
+      ],
+      "acceptance": [
+        "The evidence note names the maintained repo-local surfaces checked for this spec/path verdict (for example model/spec/feature packet surfaces) and records the exact updates made or an explicit no-op finding.",
+        "Any maintained surface that still carried blocked, missing-input, or pre-rerun wording for this branch is updated to the accepted live pass/product_pass truth or the note explains why that surface is not canonical for verdict state.",
+        "The note links the accepted rerun artifact and records any single remaining repo-local follow-up if a directly coupled surface still needs later reconciliation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.nonaad-to-aadv2-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:31:26.679Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627_20260627133142",
+        "assigned_at": "2026-06-27T13:31:42.200Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627",
+        "worker_started_attempt_id": "a_sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627_20260627133142",
+        "worker_started_at": "2026-06-27T13:31:42.950Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Updated the canonical nonAAD→AADv2 maintained verdict surfaces in model/knowledge-map/model.json and regenerated views to attach the accepted 2026-06-27 source-aligned pass evidence; also wrote the requested sync note at evidence/archive/aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-sync-20260627.md documenting updated surfaces and the one remaining non-canonical stale diagnosis surface.",
+        "last_worker_completed_at": "2026-06-27T13:35:19.214Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:35:49.146Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner spot-check: the sync note identifies the canonical maintained verdict surfaces, updates model/view evidence links to the accepted 2026-06-27 rerun, restores aadProfile.tenantID.updated to evidence-backed match on the path, and truthfully limits the remaining stale text to the non-canonical historical diagnosis ledger."
+      },
+      "session_id": "s_task_sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627",
+      "session_history": [
+        "s_task_sync-aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-20260627"
+      ],
+      "result": "Updated the canonical nonAAD→AADv2 maintained verdict surfaces in model/knowledge-map/model.json and regenerated views to attach the accepted 2026-06-27 source-aligned pass evidence; also wrote the requested sync note at evidence/archive/aad-rbac-nonaad-to-aadv2-migration-maintained-verdict-sync-20260627.md documenting updated surfaces and the one remaining non-canonical stale diagnosis surface.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:35:49.146Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner spot-check: the sync note identifies the canonical maintained verdict surfaces, updates model/view evidence links to the accepted 2026-06-27 rerun, restores aadProfile.tenantID.updated to evidence-backed match on the path, and truthfully limits the remaining stale text to the non-canonical historical diagnosis ledger."
+      },
+      "status": "done"
+    },
+    {
+      "id": "rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the unchanged row-37 managed-v2 login-VM carrier after the accepted setup.login-vm-created capture repair so the next repo-local artifact preserves full VM PUT failure detail (or proves the carrier now advances farther), then classify the resulting branch truth for path.aad-rbac.managed-v2-lifecycle without redesigning the scenario.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-rbac-managed-v2-lifecycle-post-capture-repair-rerun-20260627.md"
+      ],
+      "acceptance": [
+        "Execute the same row-37 managed-v2 carrier with the repaired replay and archive one repo-local note that cites the exact run artifact(s), including the improved setup.login-vm-created detail if the helper VM create still fails.",
+        "The note states whether the carrier remains blocked at VM create, advances to a later setup/assertion point, or reaches the modeled product branch, and it distinguishes environment/setup ceilings from product mismatches.",
+        "If the rerun changes the judged branch truth, the note identifies the single exact maintained-surface/model follow-up required next; if it does not, the note preserves the unchanged rerun gate and evidence value added by the repaired diagnostics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.aad-rbac.managed-v2-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T13:37:14.177Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627_20260627133728",
+        "assigned_at": "2026-06-27T13:37:28.547Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627",
+        "worker_started_attempt_id": "a_rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627_20260627133728",
+        "worker_started_at": "2026-06-27T13:37:30.053Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the unchanged row-37 managed-v2 carrier after the login-VM failure-detail capture repair, archived new rerun evidence, and classified the path as still environment-blocked at helper VM create with a specific eastus2 Standard_B2s SkuNotAvailable ceiling.",
+        "last_worker_completed_at": "2026-06-27T13:39:44.469Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-27T13:40:20.477Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the post-capture rerun because the archived note records the unchanged row-37 carrier, preserves the repaired helper-VM create detail (HTTP 409 SkuNotAvailable for Standard_B2s in eastus2), and truthfully classifies the path as still environment-blocked before any managed-AAD product assertion. Follow-up now lives in classify-aad-rbac-managed-v2-eastus2-b2s-skunotavailable-gate-20260627."
+      },
+      "session_id": "s_task_rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627",
+      "session_history": [
+        "s_task_rerun-aad-rbac-managed-v2-lifecycle-post-capture-repair-20260627"
+      ],
+      "result": "Executed the unchanged row-37 managed-v2 carrier after the login-VM failure-detail capture repair, archived new rerun evidence, and classified the path as still environment-blocked at helper VM create with a specific eastus2 Standard_B2s SkuNotAvailable ceiling.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-27T13:40:20.477Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the post-capture rerun because the archived note records the unchanged row-37 carrier, preserves the repaired helper-VM create detail (HTTP 409 SkuNotAvailable for Standard_B2s in eastus2), and truthfully classifies the path as still environment-blocked before any managed-AAD product assertion. Follow-up now lives in classify-aad-rbac-managed-v2-eastus2-b2s-skunotavailable-gate-20260627."
+      },
+      "status": "done"
+    }
+  ]
+}

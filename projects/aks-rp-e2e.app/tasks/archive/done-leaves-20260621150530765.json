@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T15:05:30.765Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 planning update: accepted and archived vm-prerelease-row37-managed-aad-source-audit-20260621 after the bounded review confirmed evidence/archive/vm-prerelease-row37-managed-aad-source-audit-20260621.md truthfully source-backed the mounted adminUsers-backed managed AAD lifecycle carrier and the only in-scope repo-local repair was the features/aad-rbac.yaml wording fix for the create path. The live frontier stays intentionally narrow: private-cluster-authorized-service-tags-source-audit-20260621 remains the single active repo-local source/spec/model follow-up for path.private-cluster-vnet-integration-auth-service-tags, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single compressed external-human-transport wait for the four covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row37-managed-aad-source-audit-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: audit the VM prerelease row-37 managed AAD lifecycle carrier from mounted e2ev3 source plus current repo-local feature/spec/replay/index/model surfaces so the exact adminUsers-backed managed AAD lifecycle contract is source-backed and any missing or misworded repo-local carrier can be repaired repo-locally.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row37-managed-aad-source-audit-20260621.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted VM prerelease row-37 managed AAD handwritten carrier and its suite registration(s), capture the exact create/update/assertion flow and any Linux/Windows or adminUsers-specific split in the mounted source, and write an evidence report comparing that truth to the current repo-local feature/spec/replay/index/model surfaces.",
+        "If any repo-local carrier is missing, collapsed, or misstates the mounted row-37 managed AAD lifecycle contract, update only the minimum relevant repo-local artifact(s); otherwise record that no repair was needed and cite the already-truthful surfaces.",
+        "Keep the task repo-local and bounded to the row-37 managed AAD source family only: no cloud mutation, no external asks, and no broad VM prerelease sweep beyond the exact row-37 carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-row37-managed-aad-source-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T15:01:32.382Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row37-managed-aad-source-audit-20260621_20260621150132",
+        "assigned_at": "2026-06-21T15:01:32.426Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row37-managed-aad-source-audit-20260621",
+        "worker_started_attempt_id": "a_vm-prerelease-row37-managed-aad-source-audit-20260621_20260621150132",
+        "worker_started_at": "2026-06-21T15:01:45.684Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Audited the mounted VM prerelease row-37 managed AAD carrier against repo-local feature/spec/replay/index/model surfaces, wrote a durable evidence report, and repaired the only in-scope miswording in features/aad-rbac.yaml for the adminUsers-backed create path.",
+        "last_worker_completed_at": "2026-06-21T15:04:05.954Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T15:04:24.343Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: worker evidence archive/vm-prerelease-row37-managed-aad-source-audit-20260621.md cites mounted row-37 source authorities, captures the exact adminUsers-backed create/update/assertion flow, compares the repo-local feature/spec/replay/index/model carriers, and records the minimum in-scope repair to features/aad-rbac.yaml without broadening beyond the bounded row-37 source family."
+      },
+      "session_id": "s_task_vm-prerelease-row37-managed-aad-source-audit-20260621",
+      "session_history": [
+        "s_task_vm-prerelease-row37-managed-aad-source-audit-20260621"
+      ],
+      "result": "Audited the mounted VM prerelease row-37 managed AAD carrier against repo-local feature/spec/replay/index/model surfaces, wrote a durable evidence report, and repaired the only in-scope miswording in features/aad-rbac.yaml for the adminUsers-backed create path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T15:04:24.343Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: worker evidence archive/vm-prerelease-row37-managed-aad-source-audit-20260621.md cites mounted row-37 source authorities, captures the exact adminUsers-backed create/update/assertion flow, compares the repo-local feature/spec/replay/index/model carriers, and records the minimum in-scope repair to features/aad-rbac.yaml without broadening beyond the bounded row-37 source family."
+      },
+      "status": "done"
+    }
+  ]
+}

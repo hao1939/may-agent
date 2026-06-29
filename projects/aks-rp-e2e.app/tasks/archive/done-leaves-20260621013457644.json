@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:34:57.644Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Blocked-frontier review confirms the lone blocked family remains a truthful single external-human transport ceiling: keep external-send-proof-dispatch-family-20260620 as the only live carrier until durable repo-local send/escalation proof or an authoritative reply exists for either accepted packet. Active repo-local work remains intentionally narrow: prioritize aad-managed-v2-reset-contract-reconcile-20260621 to reconcile the stale-terminal managed-v2 ResetAAD contract for path.aad-rbac.managed-v2-lifecycle before any retry-style follow-up, while row36-maintained-surface-parity-repair-20260621 continues the VM prerelease maintained-surface parity repair. Archived done children already have durable meaning captured in evidence and this parent summary; no new packet-drafting or passive response-await leaves are warranted.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "row35-carrier-drift-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair VM prerelease row 35 repo-local carrier drift so mounted-source truth and accepted evidence surfaces agree: reconcile model/knowledge-map/model.json, regenerated views/path-summary.json, specs/index.json, and row-35 evidence/status linkage to distinguish the refreshed source-grounded contract from the older 4-claim 2026-06-15 live subset evidence, preserving that live run as subset proof rather than full proof of widened breadth, without cloud execution or replay-body behavior changes.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row35-carrier-drift-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Repair note cites the exact stale row-35 carriers in model/knowledge-map/model.json, views/path-summary.json, specs/index.json, and the 2026-06-15 subset evidence, then records the chosen truthful representation for source-grounded breadth versus execution-backed subset coverage.",
+        "All repo-local row-35 surfaces touched by the repair are consistent with the mounted-source boundary note, and any regenerated view/index output shows the repaired row-35 feature/spec/path linkage without claiming unexecuted breadth as proven; the 2026-06-15 run remains linked only as subset evidence.",
+        "Outcome stays repo-local only: no cloud execution, no duplicate outbound-send waits, and no replay execution-body expansion beyond minimal linkage/metadata if strictly needed for consistency."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row35-carrier-drift"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:24:15.559Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_row35-carrier-drift-repair-20260621_20260621012415",
+        "assigned_at": "2026-06-21T01:24:15.605Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_row35-carrier-drift-repair-20260621",
+        "worker_started_attempt_id": "a_row35-carrier-drift-repair-20260621_20260621012415",
+        "worker_started_at": "2026-06-21T01:24:32.941Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired VM prerelease row-35 repo-local carrier drift by splitting the canonical mounted-source contract from the older 4-claim live subset across model/view/spec-index surfaces, and wrote the repair note at evidence/archive/vm-prerelease-row35-carrier-drift-repair-20260621.md. No cloud execution or replay execute-body expansion was performed.",
+        "last_worker_completed_at": "2026-06-21T01:31:19.251Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:31:50.544Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after targeted repo-local verification: evidence/archive/vm-prerelease-row35-carrier-drift-repair-20260621.md explains the canonical/source-grounded vs historical-4-claim split, model/knowledge-map/model.json now keeps path.secops-identity-binding-system-assigned as draft under feature secops-identity-binding-system-assigned while preserving path.secops-identity.system-assigned-lifecycle as the bounded pass subset, model/knowledge-map/views/path-summary.json mirrors that split with source-grounded-check-replay on the canonical path, and specs/index.json reflects the refreshed row-35 source-grounded contract instead of the older live-subset indexing."
+      },
+      "session_id": "s_task_row35-carrier-drift-repair-20260621",
+      "session_history": [
+        "s_task_row35-carrier-drift-repair-20260621"
+      ],
+      "result": "Repaired VM prerelease row-35 repo-local carrier drift by splitting the canonical mounted-source contract from the older 4-claim live subset across model/view/spec-index surfaces, and wrote the repair note at evidence/archive/vm-prerelease-row35-carrier-drift-repair-20260621.md. No cloud execution or replay execute-body expansion was performed.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:31:50.544Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after targeted repo-local verification: evidence/archive/vm-prerelease-row35-carrier-drift-repair-20260621.md explains the canonical/source-grounded vs historical-4-claim split, model/knowledge-map/model.json now keeps path.secops-identity-binding-system-assigned as draft under feature secops-identity-binding-system-assigned while preserving path.secops-identity.system-assigned-lifecycle as the bounded pass subset, model/knowledge-map/views/path-summary.json mirrors that split with source-grounded-check-replay on the canonical path, and specs/index.json reflects the refreshed row-35 source-grounded contract instead of the older live-subset indexing."
+      },
+      "status": "done"
+    }
+  ]
+}

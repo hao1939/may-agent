@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T18:55:11.725Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-26 owner planning reconciliation: the no-work metric breach was a frontier race, not a true empty project state, because vm-prerelease-mounted-source-triage-external-wait-family-20260626 is already active and remains the current mounted-source triage against the compressed external-wait family. Repair the stale branch summary by making the net-integration.multinic-mixed contradiction explicit again as a fresh runnable leaf: local status/model surfaces still disagree on whether the path is terminal pass or blocked, so the next useful no-cloud work is to inspect the source-equivalent carrier and decide the truthful canonical verdict. Archive the older completed multinic boundary-map/reconcile leaves because their durable meaning is now summarized here, while the branch keeps exactly two live no-cloud follow-ons: the active VM prerelease mounted-source triage and the new runnable multinic contradiction-repair leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-multinic-mixed-status-surface-reconcile-20260626",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale repo-local status/model surface for path.net-integration.multinic-mixed so the project status output no longer contradicts the accepted 2026-06-26 boundary map: identify which generated or checked-in surface still reports terminal pass/verdictFinal, update the bounded source-backed status/evidence linkage to the truthful blocked/source-grounded state, and record the exact correction evidence without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-multinic-mixed-status-surface-reconcile-20260626.md"
+      ],
+      "acceptance": [
+        "Durable repo-local evidence identifies the exact stale surface(s) for path.net-integration.multinic-mixed, cites the authoritative mounted-source/spec/model surfaces, and records the bounded correction made or the exact repo-local reason the stale status cannot yet be corrected.",
+        "After the bounded correction, the relevant local status/model/view command or file surface agrees that path.net-integration.multinic-mixed is not a terminal pass but a blocked/source-grounded path pending exact replay repair, all without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:net-integration.multinic-mixed"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T18:40:25.893Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-multinic-mixed-status-surface-reconcile-20260626_20260626184025",
+        "assigned_at": "2026-06-26T18:40:25.941Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-multinic-mixed-status-surface-reconcile-20260626",
+        "worker_started_attempt_id": "a_net-integration-multinic-mixed-status-surface-reconcile-20260626_20260626184025",
+        "worker_started_at": "2026-06-26T18:40:40.037Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled repo-local multinic-mixed status surfaces by fixing the spec’s packet reference, correcting stale contradiction text in the packet, and adding a durable evidence note that identifies the remaining pass-looking surfaces as replay/dry-run/history rather than current accepted verdict surfaces.",
+        "last_worker_completed_at": "2026-06-26T18:46:20.135Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T18:47:36.653Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: durable evidence shows the maintained model/path/spec/status surfaces already classify path.net-integration.multinic-mixed as blocked/source-grounded, fixes the stale packet/spec linkage text, and truthfully narrows the remaining misleading pass-shaped surface to the replay carrier/dry-run/history family. Successor replay-carrier repair remains the single active bounded follow-up."
+      },
+      "session_id": "s_task_net-integration-multinic-mixed-status-surface-reconcile-20260626",
+      "session_history": [
+        "s_task_net-integration-multinic-mixed-status-surface-reconcile-20260626"
+      ],
+      "result": "Reconciled repo-local multinic-mixed status surfaces by fixing the spec’s packet reference, correcting stale contradiction text in the packet, and adding a durable evidence note that identifies the remaining pass-looking surfaces as replay/dry-run/history rather than current accepted verdict surfaces.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T18:47:36.653Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: durable evidence shows the maintained model/path/spec/status surfaces already classify path.net-integration.multinic-mixed as blocked/source-grounded, fixes the stale packet/spec linkage text, and truthfully narrows the remaining misleading pass-shaped surface to the replay carrier/dry-run/history family. Successor replay-carrier repair remains the single active bounded follow-up."
+      },
+      "status": "done"
+    }
+  ]
+}

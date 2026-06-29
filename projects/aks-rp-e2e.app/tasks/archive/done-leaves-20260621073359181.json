@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:33:59.181Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update accepted the network-cni create-time Windows sibling landing: evidence/archive/network-cni-create-time-windows-siblings-accepted-model-landing-20260621.md records exact accepted-model additions for the Azure overlay dual-stack Windows2022 and Windows2025 create-time sibling paths, with existing source-backed specs/replays indexed and the generic row-94 plus migration-family carriers preserved as separate adjacent paths. No refill is needed on this task-completed wake because the truthful active frontier is already at maxConcurrent=5 (secops-fips extension carrier, VM prerelease row 150 kube-proxy carrier authoring, autoscaling row-anchor reconciliation, App Routing row reconciliation, and network-family source disposition); keep addonv2 row-63 rerun, Windows-variant reconciliation, and AKSConformance alias packet as queued next work, and leave external-send-proof-dispatch-family-20260620 as the single exact external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-create-time-windows-siblings-accepted-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact accepted-model coverage for the overlay dual-stack create-time Windows2022 and Windows2025 siblings using the already-authored source-backed specs/replays, keeping the migration family and the generic row-94 dual-stack path as separate adjacent carriers.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-create-time-windows-siblings-accepted-model-landing-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites overlay_dualstack_win.go plus the exact existing Windows2022 and Windows2025 specs/replays and records the exact model/path ids that should carry each create-time sibling.",
+        "Task updates the maintained knowledge-map surfaces so the create-time Windows2022 and Windows2025 overlay dual-stack sibling paths are present as exact accepted entries, while path.network-cni-azure-overlay-dual-stack and path.network-cni-azure-overlay-dual-stack-migration remain distinct adjacent carriers.",
+        "Artifact records the exact files changed, the resulting path/model identifiers now present, and any bounded leftover follow-up; no new cloud execution or migration-family replay authoring is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T07:24:43.181Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-create-time-windows-siblings-accepted-model-landing-20260621_20260621072552",
+        "assigned_at": "2026-06-21T07:25:52.597Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-create-time-windows-siblings-accepted-model-landing-20260621",
+        "worker_started_attempt_id": "a_network-cni-create-time-windows-siblings-accepted-model-landing-20260621_20260621072552",
+        "worker_started_at": "2026-06-21T07:25:53.568Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the accepted-model coverage for the Azure overlay dual-stack Windows2022 and Windows2025 create-time siblings in model/knowledge-map/model.json, preserved the generic row-94 and migration-family carriers as separate paths, added the missing spec index entries required by the existing source-spec checks, regenerated path-summary, and wrote the requested evidence artifact.",
+        "last_worker_completed_at": "2026-06-21T07:30:55.164Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:31:18.250Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/network-cni-create-time-windows-siblings-accepted-model-landing-20260621.md cites overlay_dualstack_win.go plus the exact Windows2022/Windows2025 and migration carriers, and grep-confirmed model/knowledge-map/model.json plus regenerated path-summary output now contain the exact create-time sibling paths path.network-cni-azure-overlay-dual-stack-windows2022 and path.network-cni-azure-overlay-dual-stack-windows2025 while preserving the generic and migration adjacent carriers as separate branches."
+      },
+      "session_id": "s_task_network-cni-create-time-windows-siblings-accepted-model-landing-20260621",
+      "session_history": [
+        "s_task_network-cni-create-time-windows-siblings-accepted-model-landing-20260621"
+      ],
+      "result": "Landed the accepted-model coverage for the Azure overlay dual-stack Windows2022 and Windows2025 create-time siblings in model/knowledge-map/model.json, preserved the generic row-94 and migration-family carriers as separate paths, added the missing spec index entries required by the existing source-spec checks, regenerated path-summary, and wrote the requested evidence artifact.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:31:18.250Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/network-cni-create-time-windows-siblings-accepted-model-landing-20260621.md cites overlay_dualstack_win.go plus the exact Windows2022/Windows2025 and migration carriers, and grep-confirmed model/knowledge-map/model.json plus regenerated path-summary output now contain the exact create-time sibling paths path.network-cni-azure-overlay-dual-stack-windows2022 and path.network-cni-azure-overlay-dual-stack-windows2025 while preserving the generic and migration adjacent carriers as separate branches."
+      },
+      "status": "done"
+    }
+  ]
+}

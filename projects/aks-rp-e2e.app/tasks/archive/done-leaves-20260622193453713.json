@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:34:53.713Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the private-cluster none-dns-zone-v3 maintained-status landing as a repo-local truth-maintenance review: the new archive confirms no carrier edits were needed and path.private-cluster-none-dns-zone-v3 must stay unknown until accepted same-cluster system->none live evidence or later operator reply arrives. Together with the earlier model-judgment review, the private-cluster branch now has settled source/spec/replay/model wording and one compressed external-human wait only; the remaining live frontier is the active KSCR row-9 execute-gated replay authoring task plus the existing family-level external wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the maintained model/view wording for path.private-cluster-none-dns-zone-v3 so repo-local status surfaces explicitly record that the exact system->none lifecycle carriers are source-aligned while product verdict remains unknown pending accepted live execution evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence cites the accepted reconcile and bounded-judgment artifacts plus the exact model/view files updated or reviewed for path.private-cluster-none-dns-zone-v3, and makes the repo-local evidence ceiling explicit.",
+        "The resulting repo-local model/status surface keeps path.private-cluster-none-dns-zone-v3 at unknown for the right reason: aligned feature/spec/replay carriers but missing accepted same-cluster system->none execution evidence, with no cloud run and no duplicate external-human wait."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3-model-status"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:31:26.635Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622_20260622193126",
+        "assigned_at": "2026-06-22T19:31:26.688Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622_20260622193126",
+        "worker_started_at": "2026-06-22T19:31:46.633Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reviewed the private-cluster none-DNS-zone V3 mounted source, maintained carriers, and prior audit/readiness evidence; confirmed the canonical model/path-summary landing was already truthful and added a durable landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T19:31:46.648Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:32:13.345Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: landing archive proves the maintained private-cluster none-dns-zone-v3 surfaces were rechecked against the accepted reconcile/judgment packets, required no repo-local edits, and correctly keep path.private-cluster-none-dns-zone-v3 at unknown pending accepted same-cluster system->none live execution evidence; the earlier stale blocked claim is superseded rather than recreated as a new wait."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622"
+      ],
+      "result": "Reviewed the private-cluster none-DNS-zone V3 mounted source, maintained carriers, and prior audit/readiness evidence; confirmed the canonical model/path-summary landing was already truthful and added a durable landing note at evidence/archive/private-cluster-none-dns-zone-v3-maintained-model-status-landing-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:32:13.345Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: landing archive proves the maintained private-cluster none-dns-zone-v3 surfaces were rechecked against the accepted reconcile/judgment packets, required no repo-local edits, and correctly keep path.private-cluster-none-dns-zone-v3 at unknown pending accepted same-cluster system->none live execution evidence; the earlier stale blocked claim is superseded rather than recreated as a new wait."
+      },
+      "status": "done"
+    }
+  ]
+}

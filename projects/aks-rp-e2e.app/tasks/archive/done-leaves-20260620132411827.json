@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T13:24:11.828Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "runner-and-replays",
+  "summary": "2026-06-20 owner blocked-frontier reconciliation: the accepted row-35 linkage repair removed the old row-closure wait as a live runner/replay blocker. Archive vm-prerelease-plan-rerun-wait-for-row-closures-20260620 as superseded by current truth; the only open child in this lane is vm-prerelease-plan-rerun-post-row35-proof-20260620, which now owns the exact post-row35 plan plus dry-run rerun and must state whether the residual selector mismatch still stays at rows 46 and 47 or changed.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-plan-rerun-wait-for-row-closures-20260620",
+      "parent_id": "runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep one truthful blocked carrier for the VM prerelease authoritative-plan rerun until the remaining row-35 missing-spec linkage repair lands, then rerun the exact features-file planner proof against the reviewed replacement set and restate any residual exact-selector mismatch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-plan-rerun-wait-for-row-closures-20260620.md"
+      ],
+      "acceptance": [
+        "Task cites evidence/archive/vm-prerelease-plan-regenerate-and-proof-20260620.md plus the accepted evidence/archive/vm-prerelease-candidate-only-row-closure-packet-20260620.md and preserves the updated resume condition: reopen only after the row-35 missing-spec linkage repair lands for the current reviewed replacement-set inventory.",
+        "The live follow-up is exact: rerun bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt plus dry-run execute proof against the reviewed row inventory, then restate whether the remaining exact-selector mismatch is still rows 46 and 47 or has been repaired.",
+        "This task remains the single truthful live representation of the remaining row-closure dependency for final VM prerelease replacement-plan proof and does not broaden into unrelated source discovery or speculative cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:replays"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:16:07.839Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-20T13:23:27.203Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced because the accepted row-35 repair artifact has landed; the truthful next state is a runnable authoritative rerun/proof task rather than a passive row-closure wait."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-20T13:23:27.203Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced because the accepted row-35 repair artifact has landed; the truthful next state is a runnable authoritative rerun/proof task rather than a passive row-closure wait."
+      },
+      "replaced_by": [
+        "vm-prerelease-plan-rerun-post-row35-proof-20260620"
+      ],
+      "supersededBy": [
+        "vm-prerelease-plan-rerun-post-row35-proof-20260620"
+      ],
+      "summary": "Replaced after row-35 linkage repair landed; the next truthful action is the active post-row35 authoritative planner proof task.",
+      "status": "done"
+    }
+  ]
+}

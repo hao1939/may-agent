@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:21:59.849Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted VM prerelease row 33 as a durable repo-local feature packet in ../aks-rp-e2e/features/virtualmachines-accelerated-networking.yaml: mounted source lineage now links prerelease.go/checkin.go/plans/vms_accelerated_networking.go to spec.virtualmachines.accelerated-networking, path.virtualmachines.accelerated-networking, the replay wrapper, coverage row, and row-33 check evidence without cloud execution. Keep source-vm-prerelease-row35-mounted-source-boundary-20260621 as the single active next repo-local VM prerelease learning leaf, and preserve external-send-proof-dispatch-family-20260620 as the only live external-human transport ceiling for the send-ready MachinesPreview and VM prerelease bundles.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "source-vm-prerelease-row33-feature-packet-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the dedicated repo-local feature packet for VM prerelease row 33 (accelerated networking), binding mounted-source lineage from prerelease.go/checkin.go plus the directly referenced row-33 scenario definition(s) to the existing spec/model/evidence surfaces without changing replay bodies or running cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/virtualmachines-accelerated-networking.yaml"
+      ],
+      "acceptance": [
+        "Feature packet cites the mounted source lineage from prerelease.go, checkin.go, and the directly referenced row-33 scenario definition(s) for the accelerated-networking path.",
+        "Feature packet records the accepted input path, expectation path, rejected/unknown edges, and links the packet to the existing spec.virtualmachines.accelerated-networking and path.virtualmachines.accelerated-networking carriers plus relevant row-33 evidence.",
+        "Outcome is repo-local only: no cloud execution, no outbound-send wait recreation, and no replay-body changes beyond linkage/context if needed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row33-feature-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:18:43.515Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_source-vm-prerelease-row33-feature-packet-20260621_20260621011843",
+        "assigned_at": "2026-06-21T01:18:43.563Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_source-vm-prerelease-row33-feature-packet-20260621",
+        "worker_started_attempt_id": "a_source-vm-prerelease-row33-feature-packet-20260621_20260621011843",
+        "worker_started_at": "2026-06-21T01:19:02.108Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the new repo-local feature packet features/virtualmachines-accelerated-networking.yaml for VM prerelease row 33, grounding mounted-source lineage from prerelease.go/checkin.go/vms_accelerated_networking.go and linking it to the existing spec, model path, replay, coverage row, and row-33 evidence without changing replay bodies or running cloud work.",
+        "last_worker_completed_at": "2026-06-21T01:20:42.030Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:21:16.578Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of ../aks-rp-e2e/features/virtualmachines-accelerated-networking.yaml and the worker trace: the packet cites prerelease.go, checkin.go, and plans/vms_accelerated_networking.go for the exact row-33 accelerated-networking carrier, records the accepted input/expectation path plus rejected and unknown edges, and links the existing spec.virtualmachines.accelerated-networking, path.virtualmachines.accelerated-networking, replay, coverage row, and row-33 evidence without adding cloud execution claims."
+      },
+      "session_id": "s_task_source-vm-prerelease-row33-feature-packet-20260621",
+      "session_history": [
+        "s_task_source-vm-prerelease-row33-feature-packet-20260621"
+      ],
+      "result": "Authored the new repo-local feature packet features/virtualmachines-accelerated-networking.yaml for VM prerelease row 33, grounding mounted-source lineage from prerelease.go/checkin.go/vms_accelerated_networking.go and linking it to the existing spec, model path, replay, coverage row, and row-33 evidence without changing replay bodies or running cloud work.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:21:16.578Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of ../aks-rp-e2e/features/virtualmachines-accelerated-networking.yaml and the worker trace: the packet cites prerelease.go, checkin.go, and plans/vms_accelerated_networking.go for the exact row-33 accelerated-networking carrier, records the accepted input/expectation path plus rejected and unknown edges, and links the existing spec.virtualmachines.accelerated-networking, path.virtualmachines.accelerated-networking, replay, coverage row, and row-33 evidence without adding cloud execution claims."
+      },
+      "status": "done"
+    }
+  ]
+}

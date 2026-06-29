@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:05:06.117Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update confirmed the stale-active metric breach was a false positive caused by recent requeue timing: both live children under focus-live-boundary-managedsystem-vmpr-20260621 are freshly assigned and remain the only truthful active frontier. Keep app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621 as the sole bounded cloud-mutation leaf for row 63, keep managedsystem-boundary-model-tightening-20260621 as the parallel repo-local model/spec tightening leaf, and leave external-send-proof-dispatch-family-20260620 as the single exact external-human transport wait unchanged. Archive the stale safe done triage child because its durable meaning is already represented by this project rollup plus the accepted maintained-five checkpoint evidence and should not remain as visible review debt.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-dirty-workspace-checkpoint-slice-triage-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Triage the current large untracked VM prerelease feature/spec/replay/evidence slice in the domain workspace into coherent checkpointable done families versus active residue so future domain checkpoints do not mix this backlog with the active ManagedSystem matrix or Azure Monitor Metrics rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-dirty-workspace-checkpoint-slice-triage-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current git-status untracked VM prerelease families and groups them into coherent feature/spec/replay/evidence slices rather than one undifferentiated backlog dump.",
+        "Artifact names at least one done-only slice that would be safe for a future domain:checkpoint (or states exact evidence-backed reason no safe slice exists yet) without mixing with the active ManagedSystem or Azure Monitor Metrics branches.",
+        "Artifact identifies the remaining active residue families that must stay out of any checkpoint and gives one concrete next action for the highest-value slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-workspace-hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:55:11.619Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-dirty-workspace-checkpoint-slice-triage-20260621_20260621065518",
+        "assigned_at": "2026-06-21T06:55:18.282Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-dirty-workspace-checkpoint-slice-triage-20260621",
+        "worker_started_attempt_id": "a_vmpr-dirty-workspace-checkpoint-slice-triage-20260621_20260621065518",
+        "worker_started_at": "2026-06-21T06:55:41.132Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-21T06:55:41.144Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:56:08.615Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner rejected the review leaf as non-terminal because the worker ended blocked/error with no durable evidence. Replaced it with vmpr-dirty-workspace-checkpoint-slice-evidence-retry-20260621, which restates the same domain goal as a concrete local evidence pass using git-status/diff plus mounted VM prerelease source families."
+      },
+      "session_id": "s_task_vmpr-dirty-workspace-checkpoint-slice-triage-20260621",
+      "session_history": [
+        "s_task_vmpr-dirty-workspace-checkpoint-slice-triage-20260621"
+      ],
+      "result": "error",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:56:08.615Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner rejected the review leaf as non-terminal because the worker ended blocked/error with no durable evidence. Replaced it with vmpr-dirty-workspace-checkpoint-slice-evidence-retry-20260621, which restates the same domain goal as a concrete local evidence pass using git-status/diff plus mounted VM prerelease source families."
+      },
+      "status": "done"
+    }
+  ]
+}

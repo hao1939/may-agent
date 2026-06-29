@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T02:04:42.265Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the remaining completed June 21 private-cluster/source prep slice now that its durable meaning is captured in project context: private-cluster-shared-apiserver-subnet-model-landing-20260621 landed the shared API server subnet success branch into maintained model/view surfaces, and source-private-cluster-scenario-coverage-map-20260621 captured the mounted-source private-cluster scenario inventory needed for bounded follow-on expansion. The live frontier is intentionally two-leaf only: private-cluster-next-source-backed-gap-candidate-20260621 remains the single active repo-local next step to select the highest-value uncovered private-cluster branch and package exact source/spec anchors plus the next durable action, while external-send-proof-dispatch-family-20260620 remains the single truthful external-human transport ceiling until durable send/escalation proof or an authoritative reply exists for one prepared packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-shared-apiserver-subnet-model-landing-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact shared-API-server-subnet private-cluster success branch into the maintained knowledge-map/model surfaces so path.private-cluster-vnet-integration-shared-apiserver-subnet is explicitly represented in model/knowledge-map/model.json and generated views instead of remaining spec-only.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "Mounted source facts from /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/shared_subnet.go and repo-local carriers specs/private-cluster-vnet-integration-shared-apiserver-subnet.json plus the adjacent negative sibling specs/private-cluster-vnet-integration-shared-subnet.json are reconciled into a truthful model/path landing for path.private-cluster-vnet-integration-shared-apiserver-subnet.",
+        "Regenerated knowledge-map views expose the exact shared-API-server-subnet success branch as a separate maintained path without collapsing it into the negative same-subnet rejection path or claiming unearned pass coverage.",
+        "Work stays repo-local, records exact source/spec anchors used, and preserves external-send-proof-dispatch-family-20260620 as the only live external-human blocker family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:57:30.089Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-shared-apiserver-subnet-model-landing-20260621_20260621015730",
+        "assigned_at": "2026-06-21T01:57:30.136Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-shared-apiserver-subnet-model-landing-20260621",
+        "worker_started_attempt_id": "a_private-cluster-shared-apiserver-subnet-model-landing-20260621_20260621015730",
+        "worker_started_at": "2026-06-21T01:57:48.337Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the shared-API-server-subnet private-cluster branch into model/knowledge-map/model.json with a dedicated scenario, input DAG, feature, feature path, and evidence note; regenerated knowledge-map views now expose path.private-cluster-vnet-integration-shared-apiserver-subnet as a separate maintained draft/source-grounded path distinct from the same-subnet rejection path.",
+        "last_worker_completed_at": "2026-06-21T02:02:01.851Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T02:02:46.328Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the June 21 repo-local landing truthfully added path.private-cluster-vnet-integration-shared-apiserver-subnet to maintained model/view surfaces as a distinct shared-API-server-subnet success branch, kept source/spec anchors explicit, and did not disturb external-send-proof-dispatch-family-20260620 as the only live external-human blocker family."
+      },
+      "session_id": "s_task_private-cluster-shared-apiserver-subnet-model-landing-20260621",
+      "session_history": [
+        "s_task_private-cluster-shared-apiserver-subnet-model-landing-20260621"
+      ],
+      "result": "Landed the shared-API-server-subnet private-cluster branch into model/knowledge-map/model.json with a dedicated scenario, input DAG, feature, feature path, and evidence note; regenerated knowledge-map views now expose path.private-cluster-vnet-integration-shared-apiserver-subnet as a separate maintained draft/source-grounded path distinct from the same-subnet rejection path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T02:02:46.328Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the June 21 repo-local landing truthfully added path.private-cluster-vnet-integration-shared-apiserver-subnet to maintained model/view surfaces as a distinct shared-API-server-subnet success branch, kept source/spec anchors explicit, and did not disturb external-send-proof-dispatch-family-20260620 as the only live external-human blocker family."
+      },
+      "status": "done"
+    }
+  ]
+}

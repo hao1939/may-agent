@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T12:41:36.010Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review keeps the single truthful external-human family wait unchanged and repairs stale top-level SGX sequencing: row-58 Icelake is accepted completed context, row-59 in-proc quote-helper-disabled is the only active mounted-source branch, and row-60 legacy-addon is now the concrete same-lane backlog follower to start only after the shared model conflict clears or row-59 finishes. Completed row-57/row-58 source-boundary notes roll up to the project root; do not reopen covered repo-local work or invent new external escalation from silence alone.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row57-sgx-addon-coffeelake-source-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VM prerelease source plus existing repo-local artifacts to map path.sgx-addon.vm-prerelease.coffeelake-out-of-proc from handwritten row 57: identify the exact carrier, extract accepted inputs, expected behavior, rejected or adjacent edges, and existing replay/model coverage, then record whether the path can move from unknown to a narrower source-backed status without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/",
+        "../aks-rp-e2e/model/knowledge-map/"
+      ],
+      "acceptance": [
+        "Mounted source evidence from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or referenced scenario definitions is cited to show the exact row-57 SGX Coffeelake carrier and its create/update or runtime intent.",
+        "A durable archive note records the row-57 input path, expected behavior path, existing replay/model coverage, accepted and rejected or adjacent edges, and the precise remaining gap without launching cloud execution.",
+        "If evidence is strong enough, the capability model or knowledge-map is updated to a narrower status or verdict; otherwise the task leaves one exact next bounded replay or spec leaf naming the missing evidence needed to progress."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:path.sgx-addon.vm-prerelease.coffeelake-out-of-proc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:29:18.032Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-26T12:29:45.705Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by the same bounded row-57 SGX Coffeelake source-mapping work under the new durable mounted-source boundary-mapping lane so the backlog stays organized under feature-knowledge work rather than a root-level leaf."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-26T12:29:45.705Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by the same bounded row-57 SGX Coffeelake source-mapping work under the new durable mounted-source boundary-mapping lane so the backlog stays organized under feature-knowledge work rather than a root-level leaf."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP VM prerelease source plus existing repo-local artifacts to map path.sgx-addon.vm-prerelease.icelake-out-of-proc from handwritten row 58: identify the exact carrier, extract accepted inputs, expected behavior, rejected or adjacent edges, and existing replay/model coverage, then record whether the path can move from unknown to a narrower source-backed status without any cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/",
+        "../aks-rp-e2e/model/knowledge-map/"
+      ],
+      "acceptance": [
+        "Mounted source evidence from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go or referenced scenario definitions is cited to show the exact row-58 SGX Icelake carrier and its create/update or runtime intent.",
+        "A durable archive note records the row-58 input path, expected behavior path, existing replay/model coverage, accepted and rejected or adjacent edges, and the precise remaining gap without launching cloud execution.",
+        "If evidence is strong enough, the capability model or knowledge-map is updated to a narrower status or verdict; otherwise the task leaves one exact next bounded replay or spec leaf naming the missing evidence needed to progress."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:vm-prerelease-mounted-source-boundary-maps"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T12:33:57.314Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626_20260626123357",
+        "assigned_at": "2026-06-26T12:33:57.370Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626_20260626123357",
+        "worker_started_at": "2026-06-26T12:34:14.545Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped VM prerelease SGX row 58 Icelake out-of-proc from mounted AKS RP source into a durable boundary note and narrowed the maintained knowledge-map classification for path.sgx-addon.vm-prerelease.icelake-out-of-proc from unknown to source-grounded, then regenerated views.",
+        "last_worker_completed_at": "2026-06-26T12:38:14.707Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T12:38:53.573Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vmpr-row58-icelake-mounted-source-boundary-map-20260626.md cites the exact mounted row-58 Icelake carrier, accepted/adjacent boundaries, replay gap, and remaining live-verification need; model/knowledge-map/model.json now narrows path.sgx-addon.vm-prerelease.icelake-out-of-proc from generic unknown to source-grounded unknown without claiming cloud verdict."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-boundary-mapping-row58-icelake-20260626"
+      ],
+      "result": "Mapped VM prerelease SGX row 58 Icelake out-of-proc from mounted AKS RP source into a durable boundary note and narrowed the maintained knowledge-map classification for path.sgx-addon.vm-prerelease.icelake-out-of-proc from unknown to source-grounded, then regenerated views.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T12:38:53.573Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vmpr-row58-icelake-mounted-source-boundary-map-20260626.md cites the exact mounted row-58 Icelake carrier, accepted/adjacent boundaries, replay gap, and remaining live-verification need; model/knowledge-map/model.json now narrows path.sgx-addon.vm-prerelease.icelake-out-of-proc from generic unknown to source-grounded unknown without claiming cloud verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

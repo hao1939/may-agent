@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:36:32.049Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier review: archive the remaining accepted repo-local done leaves so the visible frontier stays truthful and minimal. storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623 and private-cluster-vnet-integration-update-mounted-wording-sync-20260623 are now preserved as completed source-backed learning under archive evidence. The only live repo-local work remains private-cluster-authorized-service-tags-mounted-wording-sync-20260623, and the only live wait remains external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 with the same exact out-of-runtime proof resume condition and no reopened local authoring.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "private-cluster-vnet-integration-update-mounted-wording-sync-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the maintained private-cluster APIServer VNet Integration update carrier against mounted update_public.go so repo-local feature/model wording truthfully reflects the handwritten two-step lifecycle public -> public APIVNET -> private APIVNET, or records a deliberate evidence-backed reason to keep the maintained surface coarser.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-mounted-wording-sync-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites mounted source /app/sources/aks-rp/test/e2ev3/sigs/speculor/privatecluster/plans/apiservervnetintegration/update_public.go, the maintained carrier files reviewed, and the exact current-vs-mounted wording/model mismatch or evidence-backed reason no change was needed.",
+        "If a repo-local truthfulness repair is warranted, the maintained surface for path.private-cluster-vnet-integration-update is updated in the relevant packet/model files so the two-step public -> public APIVNET -> private APIVNET lifecycle is visible and cross-linked without inventing new live evidence.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no external-send/escalation work, no reopening of external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, and no widening into other private-cluster families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:31:32.495Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-vnet-integration-update-mounted-wording-sync-20260623_20260623063132",
+        "assigned_at": "2026-06-23T06:31:32.543Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-vnet-integration-update-mounted-wording-sync-20260623",
+        "worker_started_attempt_id": "a_private-cluster-vnet-integration-update-mounted-wording-sync-20260623_20260623063132",
+        "worker_started_at": "2026-06-23T06:32:14.001Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the mounted-source wording gap for the public APIVNET update path by updating the repo-local feature/spec/model surfaces to explicitly describe mounted update_public.go as a two-step public→public APIVNET→private APIVNET lifecycle while documenting that the maintained runnable carrier intentionally remains first-hop-only. Wrote a durable archive note and regenerated path-summary so reviewers now see the exact mounted lifecycle and the evidence-backed coarsening decision.",
+        "last_worker_completed_at": "2026-06-23T06:32:14.023Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:32:46.730Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/private-cluster-vnet-integration-update-mounted-wording-sync-20260623.md cites mounted update_public.go, documents the exact public->public APIVNET->private APIVNET lifecycle, and records the repo-local truthfulness repair that keeps the maintained path first-hop-only while regenerating the knowledge-map view surface."
+      },
+      "session_id": "s_task_private-cluster-vnet-integration-update-mounted-wording-sync-20260623",
+      "session_history": [
+        "s_task_private-cluster-vnet-integration-update-mounted-wording-sync-20260623"
+      ],
+      "result": "Reconciled the mounted-source wording gap for the public APIVNET update path by updating the repo-local feature/spec/model surfaces to explicitly describe mounted update_public.go as a two-step public→public APIVNET→private APIVNET lifecycle while documenting that the maintained runnable carrier intentionally remains first-hop-only. Wrote a durable archive note and regenerated path-summary so reviewers now see the exact mounted lifecycle and the evidence-backed coarsening decision.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:32:46.730Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/private-cluster-vnet-integration-update-mounted-wording-sync-20260623.md cites mounted update_public.go, documents the exact public->public APIVNET->private APIVNET lifecycle, and records the repo-local truthfulness repair that keeps the maintained path first-hop-only while regenerating the knowledge-map view surface."
+      },
+      "status": "done"
+    },
+    {
+      "id": "storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create the bounded repo-local feature packet for the aggregate VM-prerelease Storage CSI Linux matrix so the packet layer matches the already-maintained mounted-source/spec/replay/model carrier for rows 12-18 and 20-22, or archive the exact evidence ceiling if the current aggregate artifacts already make an additional packet file redundant.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the accepted VM prerelease coverage audit plus the exact mounted storage authorities reviewed there (azurediskcsi.go, azurefilecsi.go, blobcsi.go, csidrivers.go) and records whether features/storage-csi/vm-prerelease-linux-matrix.yaml is added or why a no-op/evidence ceiling is the truthful result.",
+        "If a new packet file is warranted, it is created at features/storage-csi/vm-prerelease-linux-matrix.yaml and explicitly cross-links the existing aggregate carriers spec.storage-csi.vm-prerelease-linux-matrix, replays/storage-csi-vm-prerelease-linux-matrix.ts, and path.storage-csi.vm-prerelease-linux-matrix, with non-mutating validation commands cited in the archive note.",
+        "Scope stays bounded to the aggregate VM-prerelease Storage CSI Linux matrix rows 12-18 and 20-22 only: no cloud mutation, no widening into Windows/BYOK/VM lifecycle verdict work, and no reopening of external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:27:07.143Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623_20260623062735",
+        "assigned_at": "2026-06-23T06:27:35.174Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623",
+        "worker_started_attempt_id": "a_storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623_20260623062735",
+        "worker_started_at": "2026-06-23T06:27:36.763Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added the missing aggregate packet file features/storage-csi/vm-prerelease-linux-matrix.yaml and wrote the archive note evidence/archive/storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623.md documenting the accepted audit basis, mounted source authorities, and bounded scope. Verified the packet’s cross-links and ran the existing aggregate spec in check mode, which passed and emitted non-mutating evidence.",
+        "last_worker_completed_at": "2026-06-23T06:30:45.333Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:33:38.628Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note evidence/archive/storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623.md cites the mounted storage authorities, bounded audit basis, and non-mutating spec check evidence, and features/storage-csi/vm-prerelease-linux-matrix.yaml now truthfully cross-links the existing aggregate spec/replay/path carrier for VM-prerelease Linux Storage CSI rows 12-18 and 20-22 without widening scope."
+      },
+      "session_id": "s_task_storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623",
+      "session_history": [
+        "s_task_storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623"
+      ],
+      "result": "Added the missing aggregate packet file features/storage-csi/vm-prerelease-linux-matrix.yaml and wrote the archive note evidence/archive/storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623.md documenting the accepted audit basis, mounted source authorities, and bounded scope. Verified the packet’s cross-links and ran the existing aggregate spec in check mode, which passed and emitted non-mutating evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:33:38.628Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note evidence/archive/storage-csi-vm-prerelease-linux-matrix-feature-packet-20260623.md cites the mounted storage authorities, bounded audit basis, and non-mutating spec check evidence, and features/storage-csi/vm-prerelease-linux-matrix.yaml now truthfully cross-links the existing aggregate spec/replay/path carrier for VM-prerelease Linux Storage CSI rows 12-18 and 20-22 without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}

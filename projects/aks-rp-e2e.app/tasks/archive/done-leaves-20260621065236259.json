@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:52:36.259Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner review accepted the mounted-source VM prerelease catalog: prerelease.go is an alias of checkin.go, current maintained coverage is 56/56 repo-local carriers for the handwritten VM prerelease suite, and no new bounded local source/spec task remains beyond the single external-send-proof family for rows 25 and 50. Live movement stays focused on the Azure Monitor Metrics allowed-vmsize rerun while the cross-branch send-proof wait remains the only truthful external blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-mounted-source-scenario-catalog-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect mounted AKS RP Go source at test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and checkin.go, plus the existing repo-local VM prerelease specs/evidence already referenced by this project, to catalog the prerelease scenario/row surfaces and identify one bounded non-send-proof source/spec gap that can progress without cloud mutation or external-human transport. Produce a source-backed note that distinguishes rows already covered by the blocked send-proof family from any remaining repo-local coverage gap or confirms that no bounded local gap remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-mounted-source-scenario-catalog-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source files inspected and names the prerelease/checkin scenarios or row identifiers relevant to VM prerelease coverage.",
+        "Artifact maps each surfaced row or scenario to existing repo-local coverage status: already covered by accepted source/spec work, currently represented by the blocked external-send-proof family, or still missing a bounded repo-local source/spec packet.",
+        "Artifact ends with one concrete next action for the owner: either a single new bounded source/spec/model task id recommendation for an uncovered local gap, or an evidence-backed statement that VM prerelease has no remaining bounded repo-local gap beyond the existing blocked family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-source-catalog"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:49:58.043Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-mounted-source-scenario-catalog-20260621_20260621064958",
+        "assigned_at": "2026-06-21T06:49:58.090Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-mounted-source-scenario-catalog-20260621",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-mounted-source-scenario-catalog-20260621_20260621064958",
+        "worker_started_at": "2026-06-21T06:50:14.424Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/virtualmachine-prerelease-mounted-source-scenario-catalog-20260621.md`, a source-backed catalog showing the mounted VM prerelease/checkin suite is now fully covered repo-locally (56/56 handwritten rows covered) and that only the existing external send-proof family remains blocked for rows 25 and 50.",
+        "last_worker_completed_at": "2026-06-21T06:52:26.622Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:52:36.214Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted source-backed artifact: mounted AKS RP prerelease.go/checkin.go catalog plus current coverage ledger prove the VM prerelease handwritten suite is repo-locally closed at 56/56 covered, with rows 25 and 50 only remaining inside the existing external-send-proof family and no new bounded local source/spec follow-up warranted."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-mounted-source-scenario-catalog-20260621",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-mounted-source-scenario-catalog-20260621"
+      ],
+      "result": "Produced `evidence/archive/virtualmachine-prerelease-mounted-source-scenario-catalog-20260621.md`, a source-backed catalog showing the mounted VM prerelease/checkin suite is now fully covered repo-locally (56/56 handwritten rows covered) and that only the existing external send-proof family remains blocked for rows 25 and 50.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:52:36.214Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted source-backed artifact: mounted AKS RP prerelease.go/checkin.go catalog plus current coverage ledger prove the VM prerelease handwritten suite is repo-locally closed at 56/56 covered, with rows 25 and 50 only remaining inside the existing external-send-proof family and no new bounded local source/spec follow-up warranted."
+      },
+      "status": "done"
+    }
+  ]
+}

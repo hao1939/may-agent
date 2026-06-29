@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:30:18.946Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog blocked-frontier owner review kept external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful external-human-transport family wait because no new durable send/handoff/reply artifact exists. The active private-cluster-private-endpoint-connections-lifecycle-model-view-landing-20260622 leaf was reframed as a narrow model-granularity repair under an already-final broad sibling path, not a retry of the broad verdict. Added and assigned virtualmachine-prerelease-rows40-43-source-contract-model-20260622 to use mounted AKS RP source for repo-local prerelease contract/model work while the external wait remains compressed. The accepted private-cluster-go-scenario-coverage-inventory-20260622 inventory leaf is now represented by this parent summary and remains available through its accepted artifact for downstream source authority.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-go-scenario-coverage-inventory-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use handwritten Go e2ev3 private-cluster scenarios as the primary source to inventory uncovered private-cluster input/expectation paths, record current feature/spec/replay coverage, and propose the next bounded repo-local follow-up leaves without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-go-scenario-coverage-inventory-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the inspected handwritten private-cluster Go source files/scenarios and lists the concrete scenario or row identities covered by the audit.",
+        "Artifact maps each inspected private-cluster scenario to existing or missing feature/spec/replay/model carriers, distinguishing already-covered paths from uncovered or stale ones.",
+        "Artifact ends with 1-3 concrete next repo-local leaves or a precise blocker/evidence ceiling for the highest-value uncovered private-cluster path, with no cloud execution attempted."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:26:42.744Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-go-scenario-coverage-inventory-20260622_20260622072642",
+        "assigned_at": "2026-06-22T07:26:42.789Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-go-scenario-coverage-inventory-20260622",
+        "worker_started_attempt_id": "a_private-cluster-go-scenario-coverage-inventory-20260622_20260622072642",
+        "worker_started_at": "2026-06-22T07:26:58.956Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested private-cluster handwritten Go scenario coverage inventory at evidence/archive/private-cluster-go-scenario-coverage-inventory-20260622.md, mapping 17 mounted scenarios to current feature/spec/replay/model carriers and identifying three exact rows still missing maintained model/view landing.",
+        "last_worker_completed_at": "2026-06-22T07:28:33.143Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:29:10.601Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 inventory artifact: it cites the mounted handwritten private-cluster Go scenario files and 17 exact scenario rows, maps each row to current feature/spec/replay/model carriers, and ends with three concrete repo-local successor leaves centered on missing maintained model/view landing."
+      },
+      "session_id": "s_task_private-cluster-go-scenario-coverage-inventory-20260622",
+      "session_history": [
+        "s_task_private-cluster-go-scenario-coverage-inventory-20260622"
+      ],
+      "result": "Produced the requested private-cluster handwritten Go scenario coverage inventory at evidence/archive/private-cluster-go-scenario-coverage-inventory-20260622.md, mapping 17 mounted scenarios to current feature/spec/replay/model carriers and identifying three exact rows still missing maintained model/view landing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:29:10.601Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 inventory artifact: it cites the mounted handwritten private-cluster Go scenario files and 17 exact scenario rows, maps each row to current feature/spec/replay/model carriers, and ends with three concrete repo-local successor leaves centered on missing maintained model/view landing."
+      },
+      "status": "done"
+    }
+  ]
+}

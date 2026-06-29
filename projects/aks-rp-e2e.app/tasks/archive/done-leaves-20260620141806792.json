@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T14:18:06.792Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 stale watchdog review reconciliation plus hygiene rollup: the conformance/approuting/remediator batch was already owner-reviewed and accepted, so no new review action was needed from this wake. Durable feature/spec lane truth is now compacted: accepted mounted-source-backed VM prerelease authoring/spec closure is archived for rows 77, 78, 99, 118, 125, 131, 136, 137, 139-143, 150, 155, 164-166, 178, 187, 190, 203, 204, 206, 212/213, 216, 220, and 221, including the conformance/approuting/remediator batch for rows 34, 37, 38, 41, 42, 46, 47, 49, and 163-source split follow-up evidence. The only live feature/spec work remains two active authoring fronts: identity/vnet/runner rows 152/153/154/161/162/174 and row 163 node-not-ready restart authoring. MachinesPreview remains the single truthful external-send wait until a human records send/handoff proof or an authoritative reply. No new backlog/refill leaf is needed while those active authoring tasks are already assigned.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows212-213-windows-gpu-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact VM prerelease Windows GPU row-212/213 surfaces from mounted source, preserving the NV GRID versus NC CUDA distinctions before any shared replay/selector updates.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-gap-batch-windows-vms-20260620.md",
+        "../aks-rp-e2e/specs/windows-gpu-vm-prerelease-matrix.json",
+        "../aks-rp-e2e/replays/windows-vm-prerelease-matrix.ts"
+      ],
+      "acceptance": [
+        "Artifact anchors both rows to mounted windowsgpu source and proves whether one shared or two distinct specs/replays are required without collapsing NV GRID and NC CUDA semantics by assumption.",
+        "Coverage/features files update only the rows and selectors proven by the landed Windows GPU surface.",
+        "Any new or changed replay passes non-mutating check where applicable, or the artifact names one exact repo-local blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "row212-213-windows-gpu"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T13:50:16.063Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T13:52:15.307Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows212-213-windows-gpu-authoring-20260620_20260620135745",
+        "assigned_at": "2026-06-20T13:57:45.832Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows212-213-windows-gpu-authoring-20260620",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rows 212 and 213 now have exact mounted-source Windows GPU GRID/CUDA matrix coverage; replay, schema, wiring, and plan selection passed.",
+        "last_worker_completed_at": "2026-06-20T13:57:45.958Z",
+        "last_worker_evidence": [],
+        "review_summary": "review accepted; rows 212/213 closed",
+        "reviewed_at": "2026-06-20T13:57:46.075Z",
+        "reviewed_by": "task-tree-tool"
+      },
+      "session_id": "s_task_vm-prerelease-rows212-213-windows-gpu-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows212-213-windows-gpu-authoring-20260620"
+      ],
+      "result": "Rows 212 and 213 now have exact mounted-source Windows GPU GRID/CUDA matrix coverage; replay, schema, wiring, and plan selection passed.",
+      "evidence": [],
+      "context": {
+        "acceptance_note": "review accepted; rows 212/213 closed"
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-20T13:57:46.075Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

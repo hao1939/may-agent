@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T16:26:23.135Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed review accepted: vm-prerelease-row55-standalone-metadata-packet-repair-20260622 is validated from evidence/archive/vm-prerelease-row55-standalone-metadata-packet-repair-20260622.md as an archive-backed repo-local audit only, not a model/spec rewrite. It confirms row 55 already has a current non-superseded carrier via specs/managedsystem-rest-add-existing.json execution variant metadata, so no repo-local linkage change was needed. The truthful frontier remains narrow: keep vm-prerelease-direct-model-linkage-audit-retry-20260622 as the single active virtualmachine-prerelease-source task for rows 1,3-5,9; leave vm-prerelease-storage-matrix-model-linkage-audit-20260622 waiting on that same conflict scope; preserve the single compressed external human-transport wait unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rebuild the row-54 VirtualMachine prerelease create-time ManagedSystem execution-readiness packet after the evidence-free worker error so future live-ask decisions rely on a durable repo-local contract and gate summary.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622.md"
+      ],
+      "acceptance": [
+        "Starting from evidence/archive/virtualmachine-prerelease-suite-source-coverage-packet-20260622.md, inspect the repo-local row-54 feature/spec/replay/model carriers and summarize the exact create-time ManagedSystem + VirtualMachines input path, expected assertions, and current unknown edges.",
+        "State whether row 54 is ready for a future live execute ask, needs only repo-local model/spec clarification first, or would require a distinct explicit gate/wait; if an existing external wait already covers it, link that exact family-level wait instead of creating duplicates.",
+        "Record that vm-prerelease-row54-managedsystem-create-time-execute-readiness-packet-20260622 ended in worker error with no evidence, list the exact repo-local files inspected, and keep the task repo-local only: no cloud execution and no reopening the compressed external wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachine-prerelease-execution-readiness"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T16:23:13.759Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T16:23:23.510Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622_20260622162325",
+        "assigned_at": "2026-06-22T16:23:25.688Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622_20260622162325",
+        "worker_started_at": "2026-06-22T16:23:36.805Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rebuilt the repo-local row-54 ManagedSystem create-time readiness packet at evidence/archive/vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622.md, documenting the exact input/assertion contract, predecessor worker-error/no-evidence state, and that the branch is ready for a future mutation-gated live ask without reopening any external wait family.",
+        "last_worker_completed_at": "2026-06-22T16:25:08.220Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T16:25:21.780Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622.md: the retry now provides the missing durable repo-local readiness packet, cites exact source/spec/replay/model carriers for row 54, records the predecessor worker-error/no-evidence state, and concludes the branch is ready only for a future mutation-gated live ask without reopening any external wait family."
+      },
+      "session_id": "s_task_vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622"
+      ],
+      "result": "Rebuilt the repo-local row-54 ManagedSystem create-time readiness packet at evidence/archive/vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622.md, documenting the exact input/assertion contract, predecessor worker-error/no-evidence state, and that the branch is ready for a future mutation-gated live ask without reopening any external wait family.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T16:25:21.780Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/vm-prerelease-row54-managedsystem-create-time-readiness-retry-20260622.md: the retry now provides the missing durable repo-local readiness packet, cites exact source/spec/replay/model carriers for row 54, records the predecessor worker-error/no-evidence state, and concludes the branch is ready only for a future mutation-gated live ask without reopening any external wait family."
+      },
+      "status": "done"
+    }
+  ]
+}

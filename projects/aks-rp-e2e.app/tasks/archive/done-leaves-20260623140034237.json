@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:00:34.238Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 blocked-frontier owner review kept external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 as the single truthful family-level external-human wait with no new reply evidence and the same resume trigger (returned proof immediately, or watchdog review after 2026-06-26 if still silent). Repo-local progress remains in evidence-feedback/model-update work: serverless-addonv2-aci-connector-model-path-reconciliation-20260623 stays active, and serverless-schedulerctrl-enable-on-create-model-path-reconciliation-20260623 is queued as the next bounded learning/model-repair slice so capacity can move without reopening VM/private-cluster closure or widening cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-standard-model-path-reconciliation-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: reconcile the repo-local accepted carrier for spec.serverless-virtualnodes.standard with the now truthfully execute-capable replay/spec closure proven in the 2026-06-23 contract landing artifact. Update the bounded model/path wording in model/knowledge-map/model.json and, if stale for the same carrier truth, the directly coupled specs/index.json mutation-gate or status wording so accepted metadata no longer understates current replay/spec truth while preserving the exact mounted extension-plane boundary and draft/live-observation distinction. Do not run cloud execution and do not widen into addon-plane or subnet-validation semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-standard-model-path-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "The archive output cites the mounted source anchors plus the current replay/spec evidence and explains exactly which accepted model/path wording was stale, whether specs/index.json carried the same stale truth, and how each bounded carrier was corrected or intentionally left unchanged.",
+        "Bounded repo-local edits update model/knowledge-map/model.json and only directly coupled carrier text needed for the same truth surface (including specs/index.json when stale) so path.serverless-virtualnodes.standard reflects an execute-capable replay/spec carrier behind explicit gating without claiming live product verification; no addon-plane semantics or cloud mutation are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtualnodes.standard"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T13:53:08.570Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-model-path-reconciliation-20260623_20260623135308",
+        "assigned_at": "2026-06-23T13:53:08.625Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-model-path-reconciliation-20260623",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-model-path-reconciliation-20260623_20260623135308",
+        "worker_started_at": "2026-06-23T13:53:35.111Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the accepted serverless VirtualNodes standard carrier in model/knowledge-map/model.json and added a durable archive note so path.serverless-virtualnodes.standard now reflects source-grounded, check-verified, execute-capable-but-gated truth without widening into addon-plane semantics.",
+        "last_worker_completed_at": "2026-06-23T13:57:45.534Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T13:58:26.988Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence and repo-local model/spec references show the path was reconciled from stale draft-linkage wording to execute-capable-but-gated carrier truth for path.serverless-virtualnodes.standard, with bounded model-only scope and no addon-plane widening or live-verdict inflation."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-model-path-reconciliation-20260623",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-model-path-reconciliation-20260623"
+      ],
+      "result": "Reconciled the accepted serverless VirtualNodes standard carrier in model/knowledge-map/model.json and added a durable archive note so path.serverless-virtualnodes.standard now reflects source-grounded, check-verified, execute-capable-but-gated truth without widening into addon-plane semantics.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T13:58:26.988Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence and repo-local model/spec references show the path was reconciled from stale draft-linkage wording to execute-capable-but-gated carrier truth for path.serverless-virtualnodes.standard, with bounded model-only scope and no addon-plane widening or live-verdict inflation."
+      },
+      "status": "done"
+    }
+  ]
+}

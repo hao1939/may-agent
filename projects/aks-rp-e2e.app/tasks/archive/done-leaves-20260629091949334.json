@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T09:19:49.334Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 aggressive-push owner update accepts two new passing single-spec reviews and keeps one narrowed diagnosis leaf as the immediate truth-maintaining next step. Accepted passes: spec.net-integration.outbound-lb-custom-ip (run 28361356374, 3/3 claims OK) and spec.net-integration.node-public-ip (run 28361391946, 4/4 assertions OK with enableNodePublicIP persisted and VMSS publicIPAddressConfiguration present). The weak generic blocked outcome for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease was not accepted as a final blocker classification; its completed verifier leaf is superseded by diagnose-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-run-28361552076-artifacts, which must review stdout/stderr/spec-runner artifacts before any blocker-family link, model update, or rerun decision. The live frontier for this lane is the remaining in-flight single-spec verification leaves plus that diagnosis leaf; no new passive blocker family should be created from run 28361552076 until the diagnosis narrows the surface.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-net-integration-outbound-lb-custom-ip",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.net-integration.outbound-lb-custom-ip through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.net-integration.outbound-lb-custom-ip",
+        "workflow:run-single-spec.yaml",
+        "target:staging"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.net-integration.outbound-lb-custom-ip"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.net-integration.outbound-lb-custom-ip",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted worker review: GitHub run 28361356374 finished with pass classification, the cited spec-runner/result.json reported Outbound LB Custom IP passed with 3/3 claims OK, and no contradictory blocker/failure evidence is present in the task trace."
+      },
+      "trace": {
+        "created_at": "2026-06-29T09:12:16.481Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-net-integration-outbound-lb-custom-ip_20260629091216",
+        "assigned_at": "2026-06-29T09:12:16.563Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-net-integration-outbound-lb-custom-ip",
+        "worker_started_attempt_id": "a_verify-spec-net-integration-outbound-lb-custom-ip_20260629091216",
+        "worker_started_at": "2026-06-29T09:13:19.715Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.net-integration.outbound-lb-custom-ip workflow run 28361356374 classified as pass. Loop key: verify-spec-net-integration-outbound-lb-custom-ip-a_verify-spec-net-integration-outbound-l. Outbound LB Custom IP passed: 3/3 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361356374 Result: runs/test-results/single-net-integration-outbound-lb-custom-ip_343544/artifacts/net-integration-outbound-lb-custom-ip/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361356374/aks-rp-e2e-28361356374-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361356374/aks-rp-e2e-28361356374-spec-test-results/test-results/single-net-integration-outbound-lb-custom-ip_343544/result.json",
+        "last_worker_completed_at": "2026-06-29T09:18:44.210Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T09:19:15.458Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: GitHub run 28361356374 finished with pass classification, the cited spec-runner/result.json reported Outbound LB Custom IP passed with 3/3 claims OK, and no contradictory blocker/failure evidence is present in the task trace."
+      },
+      "session_id": "s_task_verify-spec-net-integration-outbound-lb-custom-ip",
+      "session_history": [
+        "s_task_verify-spec-net-integration-outbound-lb-custom-ip"
+      ],
+      "result": "Spec spec.net-integration.outbound-lb-custom-ip workflow run 28361356374 classified as pass. Loop key: verify-spec-net-integration-outbound-lb-custom-ip-a_verify-spec-net-integration-outbound-l. Outbound LB Custom IP passed: 3/3 claims OK. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28361356374 Result: runs/test-results/single-net-integration-outbound-lb-custom-ip_343544/artifacts/net-integration-outbound-lb-custom-ip/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361356374/aks-rp-e2e-28361356374-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28361356374/aks-rp-e2e-28361356374-spec-test-results/test-results/single-net-integration-outbound-lb-custom-ip_343544/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T09:19:15.458Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

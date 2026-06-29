@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T05:52:22.820Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update after the accepted row-33 provenance review: row30 mixed-sku-deallocate ownership-linkage audit plus archived-output repair remain accepted and summarized as closed app-workspace maintenance for their exact replay/spec pair; the rows31-32 auto-zone family review is accepted as the bounded family-level evidence baseline for the exact single-sku and mixed-sku auto-zone replay/spec quartet; and the row33 duplicate-archive provenance review is accepted as provenance-only work showing the same archived task id persists across two done-leaves bundles because two distinct historical rollup snapshots were preserved, with retain-as-is the smallest truthful action unless a future supported archive-dedup primitive is added. The only active domain work remains vmpr-rows31-32-auto-zone-ownership-linkage-audit-20260621 to decide exact archived-owner linkage for the maintained auto-zone quartet and perform only the smallest supported archived-output metadata repair if evidence supports it. The only blocked family remains external-send-proof-dispatch-family-20260620 as the single live external-human transport ceiling wait for send-ready packets; the 2026-06-21 source-exactness warning was reviewed as a false positive and no additional bounded source/spec/replay work remains for that family.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the exact supported archived-output metadata repair for row-30 by attaching replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json to accepted archived task virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json with task-tree set-archived-outputs, then rerun bounded domain:checkpoint on the exact pair and record the post-repair result without editing replay/spec/model contents, committing, cleanup, staging, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vmpr-row30-mixed-sku-deallocate-ownership-linkage-audit-20260621.md and records the exact supported task-tree set-archived-outputs command applied to virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json.",
+        "Archive note records bounded post-repair domain:checkpoint output for replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json, including whether the exact pair now resolves to the accepted archived owner instead of accepted_tasks: [].",
+        "Archive note explicitly states that no replay/spec/model edits, commit, cleanup, staging, or cloud execution were performed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T05:47:31.842Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621_20260621054825",
+        "assigned_at": "2026-06-21T05:48:25.208Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621",
+        "worker_started_attempt_id": "a_vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621_20260621054825",
+        "worker_started_at": "2026-06-21T05:48:42.328Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the exact archived-output metadata repair for row-30 mixed-SKU deallocate in the archived task bundle, then reran bounded domain:checkpoint and recorded that the replay/spec pair now resolves to the accepted archived owner.",
+        "last_worker_completed_at": "2026-06-21T05:49:25.122Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T05:49:49.089Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-21: evidence/archive/vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621.md records the exact set-archived-outputs repair on virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json plus bounded post-repair domain:checkpoint output showing replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json now resolve to the accepted archived owner."
+      },
+      "session_id": "s_task_vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621",
+      "session_history": [
+        "s_task_vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621"
+      ],
+      "result": "Applied the exact archived-output metadata repair for row-30 mixed-SKU deallocate in the archived task bundle, then reran bounded domain:checkpoint and recorded that the replay/spec pair now resolves to the accepted archived owner.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T05:49:49.089Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-21: evidence/archive/vmpr-row30-mixed-sku-deallocate-archived-output-repair-20260621.md records the exact set-archived-outputs repair on virtualmachines-mixed-sku-deallocate-live-body-implementation-20260621 in tasks/archive/done-leaves-20260621030639307.json plus bounded post-repair domain:checkpoint output showing replays/virtualmachines-mixed-sku-deallocate.ts and specs/virtualmachines-mixed-sku-deallocate.json now resolve to the accepted archived owner."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T16:38:21.085Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 owner completion review accepted verify-spec-node-pool-config-trusted-launch with artifact-backed pass evidence from workflow run 28387050195: the top-level result.json reports status=passed and spec.node-pool-config.trusted-launch=pass, with SecureBoot+vTPM persisted and validated on a 2-node cluster, and workflow-metadata loop_key matches the verifier attempt. The spec-verification lane otherwise remains intentionally saturated at targetRunning=10/openChildren=10 with the same active verifier wave and repo-local follow-up leaves, so no new refill or rerun was created from this wake. Existing blocked family waits for aad-rbac artifact publication, westus2 preflight recovery, and ACNS retina-enterprise promotion remain the single truthful passive waits after prior owner rechecks; no new blocker family was introduced by this pass.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "verify-spec-node-pool-config-trusted-launch",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run and review spec.node-pool-config.trusted-launch through the single-spec workflow.",
+      "inputs": [
+        "spec:spec.node-pool-config.trusted-launch",
+        "workflow:run-single-spec.yaml",
+        "target:staging",
+        "timeoutMinutes:60"
+      ],
+      "outputs": [
+        ".state/spec-loop/state.json",
+        "runs/test-results/",
+        "test-results/"
+      ],
+      "acceptance": [
+        "GitHub workflow run completed or produced a concrete blocker.",
+        "result.json and summary artifacts were reviewed when available.",
+        "Spec status was classified as pass, fail, or error.",
+        "Test result/model update or fix PR was proposed when needed.",
+        "Spec-loop state was updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.trusted-launch"
+      ],
+      "workflow": "single-spec-verifier",
+      "context": {
+        "specId": "spec.node-pool-config.trusted-launch",
+        "githubWorkflow": "run-single-spec.yaml",
+        "target": "staging",
+        "branch": "dev",
+        "timeoutMinutes": "60",
+        "stateRef": ".state/spec-loop/state.json",
+        "loopTaskId": "aks-spec-verification-loop",
+        "acceptance_note": "Accepted worker-completion review using artifact-backed pass evidence from workflow run 28387050195: top-level result.json shows status=passed and spec.node-pool-config.trusted-launch=pass with Trusted Launch validation reason; workflow-metadata loop_key matches verify-spec-node-pool-config-trusted-launch attempt a_verify-spec-node-pool-config-trusted-launch_20260629162617."
+      },
+      "trace": {
+        "created_at": "2026-06-29T16:26:17.122Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-spec-node-pool-config-trusted-launch_20260629162617",
+        "assigned_at": "2026-06-29T16:26:17.141Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-spec-node-pool-config-trusted-launch",
+        "worker_started_attempt_id": "a_verify-spec-node-pool-config-trusted-launch_20260629162617",
+        "worker_started_at": "2026-06-29T16:26:26.013Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Spec spec.node-pool-config.trusted-launch workflow run 28387050195 classified as pass. Loop key: verify-spec-node-pool-config-trusted-launch-a_verify-spec-node-pool-config-trusted-launch_. Trusted Launch validation passed: 4/4 claim assertions OK. Cluster created with SecureBoot + vTPM, 2 nodes. GET confirmed security profile persisted, Trusted Launch features validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387050195 Result: runs/test-results/single-node-pool-config-trusted-launch_654013/artifacts/node-pool-config-trusted-launch/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387050195/aks-rp-e2e-28387050195-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387050195/aks-rp-e2e-28387050195-spec-test-results/test-results/single-node-pool-config-trusted-launch_654013/result.json",
+        "last_worker_completed_at": "2026-06-29T16:33:17.301Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T16:38:02.532Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker-completion review using artifact-backed pass evidence from workflow run 28387050195: top-level result.json shows status=passed and spec.node-pool-config.trusted-launch=pass with Trusted Launch validation reason; workflow-metadata loop_key matches verify-spec-node-pool-config-trusted-launch attempt a_verify-spec-node-pool-config-trusted-launch_20260629162617."
+      },
+      "session_id": "s_task_verify-spec-node-pool-config-trusted-launch",
+      "session_history": [
+        "s_task_verify-spec-node-pool-config-trusted-launch"
+      ],
+      "result": "Spec spec.node-pool-config.trusted-launch workflow run 28387050195 classified as pass. Loop key: verify-spec-node-pool-config-trusted-launch-a_verify-spec-node-pool-config-trusted-launch_. Trusted Launch validation passed: 4/4 claim assertions OK. Cluster created with SecureBoot + vTPM, 2 nodes. GET confirmed security profile persisted, Trusted Launch features validated. Run: https://github.com/azure-management-and-platforms/aks-rp-e2e/actions/runs/28387050195 Result: runs/test-results/single-node-pool-config-trusted-launch_654013/artifacts/node-pool-config-trusted-launch/spec-runner/result.json Workflow metadata: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387050195/aks-rp-e2e-28387050195-spec-test-results/workflow-metadata.json Top-level result: /app/projects/aks-rp-e2e.app/.state/spec-loop/artifacts/28387050195/aks-rp-e2e-28387050195-spec-test-results/test-results/single-node-pool-config-trusted-launch_654013/result.json",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T16:38:02.532Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

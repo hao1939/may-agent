@@ -1,0 +1,514 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T03:54:51.878Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-24 owner planning update ignored the stale watchdog-review-pending trigger because the referenced review leaf is already absent from the live tree and no review frontier exists. This focus branch now compresses nine safe completed shared-model-validator repair slices whose durable meaning already lives in accepted archive evidence and prior rollups, leaving one active repo-local residual repair leaf (inputDags[252].nodes[2][0].value operation=create-cluster), one exact family-level blocked external-human wait, and a newly seeded same-scope follow-on leaf to capture maintained-view/next-frontier state immediately after the active slice clears. Keep this branch repo-local/no-cloud only: do not recreate the stale review leaf, reopen archived closure work, split duplicate waits, or start live execution from this branch.",
+  "archived": 9,
+  "tasks": [
+    {
+      "id": "shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the next bounded shared-model-validator repair slice repo-locally by fixing only the adjacent Storage CSI file placeholder invalid-assignment family named by the accepted post-slice artifact: path.storage-csi-file-verify-nfs, path.storage-csi-file-smb-unmount-volume, path.storage-csi-file-nfs-unmount-volume, and path.storage-csi-file-private-endpoint. Preserve source-grounded expectations/evidence/notes and alignment, but remove or truthfully reshape only domain-invalid observed placeholder values so this exact family no longer fails validation, without widening into unrelated validator classes or live execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Update only the four named Storage CSI file feature paths and capture the exact model edits plus before/after validator evidence for the invalid-assignment-value placeholder family; do not widen into unrelated feature families, schema/linkage repair, or cloud work.",
+        "Rerun the exact repo-local validator command used by the accepted predecessor, record whether the targeted featurePaths 654-657 invalid-assignment failures clear, and note any still-open residual validator families without attempting to solve them in the same task.",
+        "Keep the repair truthful to the first-slice pattern: preserve expected behavior, evidence links, explanatory notes, and alignment where appropriate; only remove or reshape observed values that are outside the declared domain because no valid runtime observation exists."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:22:29.236Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624_20260624032229",
+        "assigned_at": "2026-06-24T03:22:29.282Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624_20260624032229",
+        "worker_started_at": "2026-06-24T03:22:43.946Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Cleared the assigned Storage CSI file placeholder-observed validator slice by removing only domain-invalid observed placeholders from the four named feature paths in model/knowledge-map/model.json, and wrote the bounded before/after evidence note at evidence/archive/shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624.md.",
+        "last_worker_completed_at": "2026-06-24T03:25:16.944Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:25:54.407Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624.md shows only model/knowledge-map/model.json changed, the exact featurePaths[654-657] placeholder-observed invalid-assignment family cleared under the same repo-local validator command, and the remaining featurePaths[654]/features[576] mountPath expectation-domain mismatch is explicitly recorded as a separate residual frontier outside this slice."
+      },
+      "session_id": "s_task_shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624"
+      ],
+      "result": "Cleared the assigned Storage CSI file placeholder-observed validator slice by removing only domain-invalid observed placeholders from the four named feature paths in model/knowledge-map/model.json, and wrote the bounded before/after evidence note at evidence/archive/shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:25:54.407Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/shared-model-validator-storage-csi-file-placeholder-repair-slice-20260624.md shows only model/knowledge-map/model.json changed, the exact featurePaths[654-657] placeholder-observed invalid-assignment family cleared under the same repo-local validator command, and the remaining featurePaths[654]/features[576] mountPath expectation-domain mismatch is explicitly recorded as a separate residual frontier outside this slice."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the next bounded shared-model-validator repair slice repo-locally for the now-exposed Storage CSI verify-NFS mount-path expectation/domain mismatch at path.storage-csi-file-verify-nfs (featurePaths[654]) mirrored in features[576]. Using mounted AKS RP source and the current model, determine whether pod.volumeMount.mountPath should stay /mnt/azure with a widened truthful domain or be corrected to the source-grounded expected value, then repair only that exact expectation/domain pair without widening into other validator families, other Storage CSI paths, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted source and current model only for path.storage-csi-file-verify-nfs / features[576], record the exact source-backed expectation contract for the verify-NFS mount path, and capture the precise model fields changed to resolve the expectation/domain disagreement without touching unrelated feature paths or validator classes.",
+        "Rerun the exact repo-local validator command against model/knowledge-map/model.json, record whether the targeted featurePaths[654].behavior[2].expected and mirrored features[576].expectationPath[2].value invalid-assignment lines clear, and note any residual validator output without broadening the task.",
+        "Preserve existing evidence links, notes, status/alignment context, and source-grounded reasoning wherever still truthful; only revise the exact expected value and/or declared domain entries needed to make this verify-NFS mount-path contract consistent with the source-backed model."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:25:54.458Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624_20260624032554",
+        "assigned_at": "2026-06-24T03:25:54.507Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624_20260624032554",
+        "worker_started_at": "2026-06-24T03:26:15.990Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the verify-NFS mount-path expectation/domain mismatch by widening the shared pod.volumeMount.mountPath domain in model/knowledge-map/model.json to include /mnt/azure, and wrote a bounded evidence note documenting the mounted-source basis and validator rerun results.",
+        "last_worker_completed_at": "2026-06-24T03:28:55.283Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:29:32.179Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624.md shows mounted AKS RP source anchors for verify-NFS use /mnt/azure, documents the exact model-domain-only repair on expectationVariables[id=pod.volumeMount.mountPath], and records that the targeted featurePaths[654] / features[576] invalid-assignment lines cleared on the exact repo-local validator rerun."
+      },
+      "session_id": "s_task_shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624"
+      ],
+      "result": "Repaired the verify-NFS mount-path expectation/domain mismatch by widening the shared pod.volumeMount.mountPath domain in model/knowledge-map/model.json to include /mnt/azure, and wrote a bounded evidence note documenting the mounted-source basis and validator rerun results.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:29:32.179Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/shared-model-validator-storage-csi-verify-nfs-mountpath-domain-repair-slice-20260624.md shows mounted AKS RP source anchors for verify-NFS use /mnt/azure, documents the exact model-domain-only repair on expectationVariables[id=pod.volumeMount.mountPath], and records that the targeted featurePaths[654] / features[576] invalid-assignment lines cleared on the exact repo-local validator rerun."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Apply the next bounded shared-model-validator repair slice repo-locally for the residual generic CAS scale-from-zero-taints-criticaladdonsonly family, starting by reconciling the current stale-terminal-retry warning against path.cluster-autoscaler.scale-from-zero-taints-criticaladdonsonly. Using mounted AKS RP source plus the current model, determine whether the residual is a true unknown-scenario/input-DAG/evidence mapping gap or a stale model-status/verdictFinal mismatch, then make the smallest truthful repo-local model/evidence/view change that resolves that exact residual family without widening into unrelated validator classes or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Inspect the exact mounted-source and current-model surfaces behind path.cluster-autoscaler.scale-from-zero-taints-criticaladdonsonly, explicitly record whether the current pass/verdictFinal status is stale versus the active residual validator findings, and capture whether the path should reference an existing dedicated VM prerelease scenario/DAG/evidence set or instead be narrowed/retired/retargeted.",
+        "Rerun the exact repo-local validator command against model/knowledge-map/model.json, record whether the targeted unknown-scenario/unknown-input-dag/unknown-evidence residual lines for path.cluster-autoscaler.scale-from-zero-taints-criticaladdonsonly clear, and note any remaining residual validator output without broadening the task.",
+        "Preserve truthful existing evidence links, notes, and status context wherever still valid; only revise the exact generic path/scenario/input-DAG/evidence/status metadata needed to make this residual family internally consistent with the mounted source and accepted model."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:32:57.510Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-20260624_20260624033257",
+        "assigned_at": "2026-06-24T03:32:57.559Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-2026",
+        "worker_started_attempt_id": "a_shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-20260624_20260624033257",
+        "worker_started_at": "2026-06-24T03:33:15.907Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the generic CAS scale-from-zero-taints-criticaladdonsonly residual family repo-locally by adding the missing generic DAG and evidence registration in model/knowledge-map/model.json, wiring the generic paths to the normalized scenario/DAG, regenerating path-summary, and documenting the source-backed rationale in a new evidence note.",
+        "last_worker_completed_at": "2026-06-24T03:37:06.585Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:37:42.302Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review on 2026-06-24: the archive note cites the exact mounted-source plan, records the pre-fix unknown-scenario/unknown-input-dag/unknown-evidence residual lines, documents the smallest truthful model+DAG+evidence registration repair, and captures the repo-local validator rerun showing the targeted residual family cleared without widening beyond the remaining behavior warning."
+      },
+      "session_id": "s_task_shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-2026",
+      "session_history": [
+        "s_task_shared-model-validator-generic-cas-scale-from-zero-taints-criticaladdonsonly-residual-slice-2026"
+      ],
+      "result": "Repaired the generic CAS scale-from-zero-taints-criticaladdonsonly residual family repo-locally by adding the missing generic DAG and evidence registration in model/knowledge-map/model.json, wiring the generic paths to the normalized scenario/DAG, regenerating path-summary, and documenting the source-backed rationale in a new evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:37:42.302Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review on 2026-06-24: the archive note cites the exact mounted-source plan, records the pre-fix unknown-scenario/unknown-input-dag/unknown-evidence residual lines, documents the smallest truthful model+DAG+evidence registration repair, and captures the repo-local validator rerun showing the targeted residual family cleared without widening beyond the remaining behavior warning."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-post-generic-cas-frontier-capture-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After the active generic CAS scale-from-zero-taints-criticaladdonsonly residual slice lands, capture the exact post-repair shared-model-validator frontier and land the smallest truthful maintained-view/evidence update for what remains. Use the rerun validator output plus the current model to record the next residual family, refresh the maintained frontier view if needed, and preserve the no-cloud repo-local focus.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md"
+      ],
+      "acceptance": [
+        "Run the exact repo-local shared-model-validator command after the generic CAS residual slice is accepted, capture the resulting remaining frontier in the archive note, and identify the next bounded residual family from exact output rather than guesswork.",
+        "If the maintained validator view or closely-coupled model status summary needs a small truthful refresh to match the new frontier, land only that exact repo-local update and cite the changed files/fields; otherwise record why no view regeneration was needed.",
+        "Do not widen into cloud execution, broad multi-family cleanup, or duplicate blocked waits; this leaf only converts the accepted generic CAS repair into an exact next-frontier artifact and minimal maintained-view consistency update."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:33:52.090Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-post-generic-cas-frontier-capture-20260624_20260624033710",
+        "assigned_at": "2026-06-24T03:37:10.456Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-post-generic-cas-frontier-capture-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-post-generic-cas-frontier-capture-20260624_20260624033710",
+        "worker_started_at": "2026-06-24T03:37:13.181Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Captured the exact post-generic-CAS shared validator frontier in evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md, confirming the path-level generic CAS linkage errors are gone and the next bounded residual is the generic CAS node-taints domain mismatch.",
+        "last_worker_completed_at": "2026-06-24T03:38:58.983Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:39:32.880Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted based on archive evidence: the repo-local validator rerun is captured in evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md, confirms the generic CAS path-level linkage errors are gone, and identifies the exact next bounded residual as the agentPool.nodeTaints invalid-assignment-value mismatch for the generic CAS CriticalAddonsOnly DAG."
+      },
+      "session_id": "s_task_shared-model-validator-post-generic-cas-frontier-capture-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-post-generic-cas-frontier-capture-20260624"
+      ],
+      "result": "Captured the exact post-generic-CAS shared validator frontier in evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md, confirming the path-level generic CAS linkage errors are gone and the next bounded residual is the generic CAS node-taints domain mismatch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:39:32.880Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted based on archive evidence: the repo-local validator rerun is captured in evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md, confirms the generic CAS path-level linkage errors are gone, and identifies the exact next bounded residual as the agentPool.nodeTaints invalid-assignment-value mismatch for the generic CAS CriticalAddonsOnly DAG."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the next exact shared-model-validator residual surfaced after the accepted generic CAS frontier capture: make the generic CAS scale-from-zero-taints-criticaladdonsonly DAG assignment for agentPool.nodeTaints conform to the current modeled domain while preserving the exact CriticalAddonsOnly=true:NoSchedule source fact in explanatory metadata/evidence, then rerun the validator to prove this specific invalid-assignment-value is gone without widening into other residual families or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Land the smallest truthful repo-local model update that resolves the exact current validator line from evidence/archive/shared-model-validator-post-generic-cas-frontier-capture-20260624.md: invalid-assignment-value on dag.cluster-autoscaler.scale-from-zero-taints-criticaladdonsonly for agentPool.nodeTaints=CriticalAddonsOnly=true:NoSchedule outside domain [custom].",
+        "Preserve the exact mounted-source/scenario fact that the pool taint is CriticalAddonsOnly=true:NoSchedule in notes/sourceRefs/evidence context as appropriate, but make the modeled DAG assignment conform to the current variable contract rather than broadening into unrelated node-taints cleanup.",
+        "Rerun the exact shared-model-validator command repo-locally, capture the before/after evidence in the archive note, and show that this specific generic CAS invalid-assignment-value no longer appears; if adjacent residuals remain, record only the immediate next truthful frontier surfaced by the rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:39:32.930Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624_20260624033932",
+        "assigned_at": "2026-06-24T03:39:32.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624_20260624033932",
+        "worker_started_at": "2026-06-24T03:39:43.904Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact generic CAS node-taints DAG assignment in model/knowledge-map/model.json, preserved the CriticalAddonsOnly=true:NoSchedule source fact in metadata, reran the validator to prove that specific invalid-assignment-value is gone, regenerated maintained views, and archived the before/after evidence note.",
+        "last_worker_completed_at": "2026-06-24T03:41:39.079Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:42:23.461Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted on owner review: the archive note proves the exact generic CAS agentPool.nodeTaints invalid-assignment-value was repaired by normalizing only the targeted DAG node to the current [custom] token while preserving the mounted-source CriticalAddonsOnly=true:NoSchedule fact in metadata, and the validator rerun shows that exact residual is gone. The broader dirty worktree/model churn is treated as pre-existing carryover noise rather than a reason to reject this narrowly evidenced repair slice."
+      },
+      "session_id": "s_task_shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-generic-cas-node-taints-domain-repair-slice-20260624"
+      ],
+      "result": "Repaired the exact generic CAS node-taints DAG assignment in model/knowledge-map/model.json, preserved the CriticalAddonsOnly=true:NoSchedule source fact in metadata, reran the validator to prove that specific invalid-assignment-value is gone, regenerated maintained views, and archived the before/after evidence note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:42:23.461Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted on owner review: the archive note proves the exact generic CAS agentPool.nodeTaints invalid-assignment-value was repaired by normalizing only the targeted DAG node to the current [custom] token while preserving the mounted-source CriticalAddonsOnly=true:NoSchedule fact in metadata, and the validator rerun shows that exact residual is gone. The broader dirty worktree/model churn is treated as pre-existing carryover noise rather than a reason to reject this narrowly evidenced repair slice."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the next exact shared-model-validator residual surfaced after the accepted generic CAS node-taints slice: investigate the immediate invalid-assignment-value frontier for cluster.operation=create-cluster at inputDags[240].nodes[6][0], confirm the truthful bounded contract from mounted source/spec/model context, land the smallest repo-local model repair needed for that exact mismatch, then rerun the validator to prove this specific residual is gone without widening into other residual families or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Use mounted source/spec/model context to identify the exact scenario/input-DAG node behind validator residual inputDags[240].nodes[6][0].value and explain why cluster.operation=create-cluster is or is not the truthful normalized assignment under the current variable domain before editing anything.",
+        "Land only the smallest truthful repo-local model update that resolves that exact cluster.operation invalid-assignment-value residual, keeping any exact source wording preserved in notes/labels/evidence context rather than widening the variable domain or sweeping adjacent cluster.operation cleanup.",
+        "Rerun the exact shared-model-validator command repo-locally, archive before/after evidence, and show that this specific cluster.operation=create-cluster residual no longer appears; if another residual remains, record only the immediate next truthful frontier surfaced by the rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:42:23.509Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624_20260624034223",
+        "assigned_at": "2026-06-24T03:42:23.558Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624_20260624034223",
+        "worker_started_at": "2026-06-24T03:42:42.974Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact shared-model validator frontier at dag.network-acns-retina-basic by normalizing cluster.operation from create-cluster to create, and archived evidence showing the original inputDags[240].nodes[6][0] residual is gone while the next frontier moved to inputDags[241].nodes[8][0].",
+        "last_worker_completed_at": "2026-06-24T03:45:02.200Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:45:35.713Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via archive evidence/archive/shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624.md: it ties inputDags[240].nodes[6][0] to dag.network-acns-retina-basic, shows mounted-source-backed normalization from cluster.operation=create-cluster to create, and proves the exact residual disappeared on rerun while the immediate next frontier moved to inputDags[241].nodes[8][0] in dag.network-acns-retina-enterprise."
+      },
+      "session_id": "s_task_shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624"
+      ],
+      "result": "Repaired the exact shared-model validator frontier at dag.network-acns-retina-basic by normalizing cluster.operation from create-cluster to create, and archived evidence showing the original inputDags[240].nodes[6][0] residual is gone while the next frontier moved to inputDags[241].nodes[8][0].",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:45:35.713Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via archive evidence/archive/shared-model-validator-cluster-operation-create-cluster-domain-repair-slice-20260624.md: it ties inputDags[240].nodes[6][0] to dag.network-acns-retina-basic, shows mounted-source-backed normalization from cluster.operation=create-cluster to create, and proves the exact residual disappeared on rerun while the immediate next frontier moved to inputDags[241].nodes[8][0] in dag.network-acns-retina-enterprise."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the next exact shared-model-validator residual now surfaced for cluster.operation=create-cluster at inputDags[241].nodes[8][0]: identify the mounted-source/spec/model truth for dag.network-acns-retina-enterprise, confirm whether create is the truthful normalized value for this exact lifecycle-create node, land the smallest repo-local model repair needed for that one mismatch, and rerun the validator to prove this exact residual is gone without widening into adjacent residuals or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Use mounted source/spec/model context to identify the exact scenario/input-DAG node behind validator residual inputDags[241].nodes[8][0].value and explain why cluster.operation=create-cluster is or is not the truthful normalized assignment under the current variable domain before editing anything.",
+        "Land only the smallest truthful repo-local model update that resolves that exact cluster.operation invalid-assignment-value residual for dag.network-acns-retina-enterprise, keeping any exact source wording preserved in notes/labels/evidence context rather than widening the variable domain or sweeping adjacent cluster.operation cleanup.",
+        "Rerun the exact shared-model-validator command repo-locally, archive before/after evidence, and show that this specific cluster.operation=create-cluster residual no longer appears; if another residual remains, record only the immediate next truthful frontier surfaced by the rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:45:35.763Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624_20260624034535",
+        "assigned_at": "2026-06-24T03:45:35.811Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20",
+        "worker_started_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624_20260624034535",
+        "worker_started_at": "2026-06-24T03:45:52.251Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact Retina Enterprise shared-model validator residual by normalizing `input.network-acns-retina-enterprise.lifecycle-create` from `create-cluster` to `create` in `model/knowledge-map/model.json`, and archived the bounded before/after evidence in `evidence/archive/shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624.md`.",
+        "last_worker_completed_at": "2026-06-24T03:47:09.858Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:48:02.015Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: archived evidence cites mounted source /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/retina_enterprise.go, explains why the exact create-only DAG node truthfully normalizes cluster.operation from create-cluster to create, and records that validator residual inputDags[241].nodes[8][0].value disappeared while the immediate next frontier surfaced at inputDags[243].nodes[7][0].value. Owner spot-check confirmed model/knowledge-map/model.json now sets input.network-acns-retina-enterprise.lifecycle-create to value=create."
+      },
+      "session_id": "s_task_shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20",
+      "session_history": [
+        "s_task_shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20"
+      ],
+      "result": "Repaired the exact Retina Enterprise shared-model validator residual by normalizing `input.network-acns-retina-enterprise.lifecycle-create` from `create-cluster` to `create` in `model/knowledge-map/model.json`, and archived the bounded before/after evidence in `evidence/archive/shared-model-validator-cluster-operation-create-cluster-retina-enterprise-domain-repair-slice-20260624.md`.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:48:02.015Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: archived evidence cites mounted source /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/retina_enterprise.go, explains why the exact create-only DAG node truthfully normalizes cluster.operation from create-cluster to create, and records that validator residual inputDags[241].nodes[8][0].value disappeared while the immediate next frontier surfaced at inputDags[243].nodes[7][0].value. Owner spot-check confirmed model/knowledge-map/model.json now sets input.network-acns-retina-enterprise.lifecycle-create to value=create."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the immediate next shared-model-validator residual now surfaced at inputDags[243].nodes[7][0].value: identify the exact DAG/scenario and mounted-source/spec/model truth behind this cluster.operation=create-cluster assignment, determine whether create is again the truthful normalized value or whether a different in-domain operation is required, land only the smallest repo-local model repair for this one mismatch, and rerun the validator to prove this exact residual is gone without widening into adjacent cleanup or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Use mounted source/spec/model context to identify the exact scenario and node behind validator residual inputDags[243].nodes[7][0].value before editing anything, and explain why cluster.operation=create-cluster is or is not the truthful normalized assignment for that exact node under the current variable domain.",
+        "Land only the smallest truthful repo-local model update that resolves that exact cluster.operation invalid-assignment-value residual, preserving any more specific lifecycle wording in labels/notes/evidence rather than widening the variable domain or sweeping sibling cleanup.",
+        "Rerun the exact shared-model-validator command repo-locally, archive before/after evidence, and show that residual inputDags[243].nodes[7][0].value no longer appears; if another residual remains, record only the immediate next truthful frontier surfaced by the rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:48:02.094Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624_20260624034802",
+        "assigned_at": "2026-06-24T03:48:02.170Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-202606",
+        "worker_started_attempt_id": "a_shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624_20260624034802",
+        "worker_started_at": "2026-06-24T03:48:23.800Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact shared-model validator frontier at inputDags[243].nodes[7][0] by normalizing dag.network-acns-retina-enterprise-k8s-upgrade cluster.operation from create-cluster to create, and archived evidence showing the targeted residual disappeared while the next frontier moved to inputDags[246].nodes[2][0].",
+        "last_worker_completed_at": "2026-06-24T03:50:27.495Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:50:59.139Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted via archived proof in evidence/archive/shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624.md: the slice identified dag.network-acns-retina-enterprise-k8s-upgrade inputDags[243].nodes[7][0].value, normalized cluster.operation from create-cluster to truthful in-domain create, and rerun validator evidence showed that exact residual disappeared while the next frontier advanced to inputDags[246].nodes[2][0].value enableRBAC=true outside domain [True]."
+      },
+      "session_id": "s_task_shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-202606",
+      "session_history": [
+        "s_task_shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-202606"
+      ],
+      "result": "Repaired the exact shared-model validator frontier at inputDags[243].nodes[7][0] by normalizing dag.network-acns-retina-enterprise-k8s-upgrade cluster.operation from create-cluster to create, and archived evidence showing the targeted residual disappeared while the next frontier moved to inputDags[246].nodes[2][0].",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:50:59.139Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted via archived proof in evidence/archive/shared-model-validator-cluster-operation-create-cluster-next-frontier-domain-repair-slice-20260624.md: the slice identified dag.network-acns-retina-enterprise-k8s-upgrade inputDags[243].nodes[7][0].value, normalized cluster.operation from create-cluster to truthful in-domain create, and rerun validator evidence showed that exact residual disappeared while the next frontier advanced to inputDags[246].nodes[2][0].value enableRBAC=true outside domain [True]."
+      },
+      "status": "done"
+    },
+    {
+      "id": "shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair only the immediate next shared-model-validator residual now surfaced at inputDags[246].nodes[2][0].value: identify the exact DAG/scenario and mounted-source/spec/model truth behind this enableRBAC=true assignment, determine whether True is the truthful normalized value or whether a different in-domain value is required, land only the smallest repo-local model repair for this one mismatch, and rerun the validator to prove this exact residual is gone without widening into adjacent cleanup or cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624.md"
+      ],
+      "acceptance": [
+        "Use mounted source/spec/model context to identify the exact scenario and node behind validator residual inputDags[246].nodes[2][0].value before editing anything, and explain why enableRBAC=true is or is not the truthful normalized assignment for that exact node under the current variable domain.",
+        "Land only the smallest truthful repo-local model update that resolves that exact enableRBAC invalid-assignment-value residual, preserving any more specific lifecycle or casing nuance in labels/notes/evidence rather than widening the variable domain or sweeping sibling cleanup.",
+        "Rerun the exact shared-model-validator command repo-locally, archive before/after evidence, and show that residual inputDags[246].nodes[2][0].value no longer appears; if another residual remains, record only the immediate next truthful frontier surfaced by the rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "shared-model-validator-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T03:50:59.194Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624_20260624035059",
+        "assigned_at": "2026-06-24T03:50:59.265Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624",
+        "worker_started_attempt_id": "a_shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624_20260624035059",
+        "worker_started_at": "2026-06-24T03:51:22.593Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the exact shared-model validator frontier at inputDags[246].nodes[2][0] by normalizing the row-37 managed-AAD enableRBAC node from `true` to in-domain `True` in model/knowledge-map/model.json, and archived bounded before/after evidence in evidence/archive/shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624.md.",
+        "last_worker_completed_at": "2026-06-24T03:53:18.049Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T03:53:54.000Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review from evidence/archive/shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624.md: it identifies the exact row-37 managed-AAD DAG/node at inputDags[246].nodes[2][0], records the bounded model edit true->True in model/knowledge-map/model.json, and proves the exact residual disappeared on rerun while surfacing the immediate next frontier at inputDags[252].nodes[2][0].value (operation=create-cluster)."
+      },
+      "session_id": "s_task_shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624",
+      "session_history": [
+        "s_task_shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624"
+      ],
+      "result": "Repaired the exact shared-model validator frontier at inputDags[246].nodes[2][0] by normalizing the row-37 managed-AAD enableRBAC node from `true` to in-domain `True` in model/knowledge-map/model.json, and archived bounded before/after evidence in evidence/archive/shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T03:53:54.000Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review from evidence/archive/shared-model-validator-enable-rbac-true-next-frontier-domain-repair-slice-20260624.md: it identifies the exact row-37 managed-AAD DAG/node at inputDags[246].nodes[2][0], records the bounded model edit true->True in model/knowledge-map/model.json, and proves the exact residual disappeared on rerun while surfacing the immediate next frontier at inputDags[252].nodes[2][0].value (operation=create-cluster)."
+      },
+      "status": "done"
+    }
+  ]
+}

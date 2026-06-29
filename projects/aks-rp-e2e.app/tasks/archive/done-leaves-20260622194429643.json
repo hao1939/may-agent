@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T19:44:29.643Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 stale-watchdog reconciliation: managedsystem-row54, private-cluster none-dns-zone-v3 maintained landing, and VM prerelease row-9 maintained landing are all already reviewed/accepted and their durable meaning is now captured at the project root. Keep the live frontier to one active repo-local serverless subnet-validation source-boundary/status task plus the single family-level external-human transport wait; do not reopen the stale watchdog review target. Next repo-local follow-on after the serverless landing should shift to mounted-source VM prerelease boundary extraction rather than new external-wait duplication.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-row54-boundary-map-maintained-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP source plus existing repo-local carriers to land the exact row-54 path.virtualmachines.managedsystem-agentpool-vm-prerelease boundary in durable project artifacts: accepted input path, expected behavior assertions, current source-grounded unknown-status ceiling, the adjacent final unsupported path.virtualmachines.managedsystem-combined contrast, and the exact remaining live-verification gate, without claiming a cloud verdict or creating any new external wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-row54-boundary-map-maintained-landing-20260622.md"
+      ],
+      "acceptance": [
+        "Archive evidence names the canonical feature/spec/replay/path ids for row 54, summarizes the accepted input and expected-behavior contract from mounted source and checked-in carriers for path.virtualmachines.managedsystem-agentpool-vm-prerelease, and contrasts that exact row with the separate final unsupported combined path path.virtualmachines.managedsystem-combined.",
+        "Repo-local model/view or feature/spec wording is either updated or explicitly confirmed truthful for row 54 only, preserving source-grounded unknown status plus the precise future live-verification gate while leaving the final product-gap verdict attached only to path.virtualmachines.managedsystem-combined; no duplicate external-human wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem-row54"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T19:39:43.656Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-row54-boundary-map-maintained-landing-20260622_20260622193943",
+        "assigned_at": "2026-06-22T19:39:43.707Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-row54-boundary-map-maintained-landing-20260622",
+        "worker_started_attempt_id": "a_managedsystem-row54-boundary-map-maintained-landing-20260622_20260622193943",
+        "worker_started_at": "2026-06-22T19:40:03.829Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable row-54 ManagedSystem boundary confirmation packet at evidence/archive/managedsystem-row54-boundary-map-maintained-landing-20260622.md, confirming the maintained feature/spec/replay/model/view surfaces are already truthful for the exact VM prerelease create-time carrier and clearly separated from the adjacent unsupported explicit combined PUT path.",
+        "last_worker_completed_at": "2026-06-22T19:41:51.239Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T19:42:22.875Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: ../aks-rp-e2e/evidence/archive/managedsystem-row54-boundary-map-maintained-landing-20260622.md proves the exact row-54 create-time appended ManagedSystem carrier is already truthfully separated from the adjacent final path.virtualmachines.managedsystem-combined product-gap branch, keeps row 54 source-grounded unknown with the existing replay-specific execute gate, and required no new external wait or cloud verdict."
+      },
+      "session_id": "s_task_managedsystem-row54-boundary-map-maintained-landing-20260622",
+      "session_history": [
+        "s_task_managedsystem-row54-boundary-map-maintained-landing-20260622"
+      ],
+      "result": "Created a durable row-54 ManagedSystem boundary confirmation packet at evidence/archive/managedsystem-row54-boundary-map-maintained-landing-20260622.md, confirming the maintained feature/spec/replay/model/view surfaces are already truthful for the exact VM prerelease create-time carrier and clearly separated from the adjacent unsupported explicit combined PUT path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T19:42:22.875Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: ../aks-rp-e2e/evidence/archive/managedsystem-row54-boundary-map-maintained-landing-20260622.md proves the exact row-54 create-time appended ManagedSystem carrier is already truthfully separated from the adjacent final path.virtualmachines.managedsystem-combined product-gap branch, keeps row 54 source-grounded unknown with the existing replay-specific execute gate, and required no new external wait or cloud verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

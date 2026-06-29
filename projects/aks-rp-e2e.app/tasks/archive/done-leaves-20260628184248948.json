@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T18:42:48.948Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-28 blocked-frontier owner review: archive the safe done aks-feature-reference-loop branch because its durable meaning already lives in the current project lanes and archived evidence. Keep the live project frontier explicit: aks-spec-verification-loop now carries two active reconciliation leaves plus one newly assigned local follow-up-matrix task to prepare the 2026-06-29 operator-response checkpoint for its five blocked waits, while focus-mounted-source-coverage-closure-and-external-wait-20260623 remains the separate long-lived external-wait branch for LocalDNS/private-cluster/send-proof families.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aks-feature-reference-loop",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run the durable feature-reference collection loop over feature packets, using official Microsoft Learn documentation and Azure REST API specs, and keep a bounded high-throughput child frontier until the reopened backlog is exhausted or explicitly held again.",
+      "inputs": [
+        "../aks-rp-e2e/features/",
+        "../aks-rp-e2e/features/README.md",
+        "../aks-rp-e2e/features/SCHEMA.md"
+      ],
+      "outputs": [
+        ".state/feature-reference-loop/state.json",
+        "../aks-rp-e2e/evidence/archive/"
+      ],
+      "acceptance": [
+        "Controller pulses keep a bounded child frontier filled from pending feature-reference items.",
+        "Dormant no-evidence backlog is reopened by owner request; stale-with-evidence items remain out of active refill unless separately selected.",
+        "Each child collects official Learn/API references or records a concrete blocker, then updates feature-reference loop state.",
+        "The loop remains present in tasks/tree.json until explicitly retired."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-reference-loop"
+      ],
+      "depends_on": [],
+      "workflow": "feature-reference-loop-controller",
+      "context": {
+        "windowSize": 30,
+        "stateRef": ".state/feature-reference-loop/state.json",
+        "draftDir": "../aks-rp-e2e/evidence/archive",
+        "workflowProgress": {
+          "completionReady": true,
+          "reason": "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path",
+          "pending": 0,
+          "running": 0,
+          "done": 263,
+          "blocked": 0,
+          "error": 0,
+          "dormant": 0,
+          "stale": 24,
+          "holdMode": "dormant-backlog-preserved",
+          "noRefillNow": false,
+          "openChildren": 17,
+          "lastPulseCreated": 0,
+          "lastPulseAssigned": 0,
+          "updatedAt": "2026-06-28T16:36:45.008Z"
+        },
+        "rollup_summary": "2026-06-28 watchdog blocked-frontier hygiene: this feature-reference lane is now purely durable completed/supporting work for the current focus. Its accepted collectors and repair leaves already live in archived evidence plus prior parent rollups, and no open child remains under this parent. Archive the remaining safe done children so the live tree stays compact; reopen this lane only on a concrete feature-reference repair, citation, or mounted-source coverage signal that produces new repo-local evidence.",
+        "archived_done_leaf_count": 99,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260628183456966.json",
+            "archived": 25,
+            "at": "2026-06-28T18:34:56.967Z",
+            "summary": "2026-06-28 watchdog blocked-frontier hygiene: this feature-reference lane is now purely durable completed/supporting work for the current focus. Its accepted collectors and repair leaves already live in archived evidence plus prior parent rollups, and no open child remains under this parent. Archive the remaining safe done children so the live tree stays compact; reopen this lane only on a concrete feature-reference repair, citation, or mounted-source coverage signal that produces new repo-local evidence.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-virtualmachines-auto-zone-single-sku",
+              "collect-feature-reference-virtualmachines-capacity-based-surge",
+              "collect-feature-reference-virtualmachines-capacity-based-surge-maxunavailable",
+              "collect-feature-reference-virtualmachines-managedsystem-agentpool-vm-prerelease",
+              "collect-feature-reference-virtualmachines-mixed-sku-deallocate",
+              "collect-feature-reference-virtualmachines-mixed-sku-upgrade",
+              "collect-feature-reference-workload-autoscaler",
+              "collect-feature-reference-workload-autoscaler-keda-profile-state",
+              "collect-feature-reference-workload-autoscaler-keda-upgrade-survival",
+              "collect-feature-reference-workload-autoscaler-vpa-cert-renewal-runtime",
+              "collect-feature-reference-workload-autoscaler-vpa-upgrade-survival-runtime",
+              "collect-feature-reference-workload-health",
+              "collect-feature-reference-workload-health-core-dns-readiness",
+              "collect-feature-reference-workload-health-konnectivity-readiness",
+              "collect-feature-reference-workload-health-metrics-server-readiness",
+              "collect-feature-reference-workload-identity",
+              "collect-feature-reference-workload-identity-public-api-create",
+              "normalize-feature-reference-virtualmachines-capacity-based-surge-maxunavailable-headings-20260628",
+              "normalize-feature-reference-virtualmachines-review-batch-headings-20260628",
+              "repair-feature-reference-workload-autoscaler-keda-upgrade-survival-headings-20260628",
+              "repair-feature-reference-workload-identity-capability-packet-20260628",
+              "repair-feature-reference-workload-identity-public-api-create-20260628",
+              "repair-feature-packet-workload-identity-public-api-create-contract-cleanup-20260628",
+              "source-back-spec-gpu-multi-gpu-workload-execution-contract-20260628",
+              "source-back-spec-cluster-autoscaler-vm-prerelease-scale-from-zero-labels-fips-carrier-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628183236685.json",
+            "archived": 50,
+            "at": "2026-06-28T18:32:36.686Z",
+            "summary": "2026-06-28 owner hygiene rollup: this lane is completed/supporting work for the current focus, and the durable meaning of its accepted collectors and repairs already lives in the archived evidence plus parent summary. Archive another large safe batch of finished storage-csi, traffic, trusted-access, virtualmachines, workload-autoscaler, workload-health, and workload-identity leaves so the tree keeps only the compact durable record; reopen this lane only on a concrete packet/source repair signal or new human steering, not to invent refill during blocked-frontier review.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-storage-csi-disk-raw-block",
+              "collect-feature-reference-storage-csi-disk-resize",
+              "collect-feature-reference-storage-csi-disk-xfs",
+              "collect-feature-reference-storage-csi-encryption-at-host",
+              "collect-feature-reference-storage-csi-file-clone",
+              "collect-feature-reference-storage-csi-file-nfs-unmount-boundary",
+              "collect-feature-reference-storage-csi-file-private-endpoint",
+              "collect-feature-reference-storage-csi-file-pvc-dynamic",
+              "collect-feature-reference-storage-csi-file-resize",
+              "collect-feature-reference-storage-csi-full-cache-os-disk",
+              "collect-feature-reference-storage-csi-full-cache-os-disk-negative",
+              "collect-feature-reference-storage-csi-mcr-mirror-monitor",
+              "collect-feature-reference-storage-csi-ultrassd",
+              "collect-feature-reference-storage-csi-vm-prerelease-linux-matrix",
+              "collect-feature-reference-storage-csi-windows",
+              "collect-feature-reference-storage-csi-windows-base",
+              "collect-feature-reference-traffic-alb-controller",
+              "collect-feature-reference-traffic-api-proxy",
+              "collect-feature-reference-traffic-api-proxy-enable-lifecycle",
+              "repair-feature-reference-storage-csi-file-resize-20260628",
+              "repair-feature-reference-storage-csi-full-cache-os-disk-20260628",
+              "collect-feature-reference-storage-csi-advanced-disk",
+              "collect-feature-reference-storage-csi-blob-driver-enable",
+              "collect-feature-reference-storage-csi-blob-fuse2-clone",
+              "collect-feature-reference-storage-csi-blob-pvc-dynamic",
+              "collect-feature-reference-storage-csi-blob-verify-nfs",
+              "collect-feature-reference-storage-csi-byok",
+              "collect-feature-reference-storage-csi-csidrivers",
+              "collect-feature-reference-storage-csi-disk-clone",
+              "collect-feature-reference-storage-csi-disk-driver-enable",
+              "collect-feature-reference-traffic-api-proxy-private-cluster-connectivity",
+              "collect-feature-reference-traffic-applink",
+              "collect-feature-reference-traffic-azure-service-mesh",
+              "collect-feature-reference-traffic-azure-service-mesh-enable-lifecycle",
+              "collect-feature-reference-traffic-azure-service-mesh-mtls-enforcement",
+              "collect-feature-reference-traffic-azure-service-mesh-revision-upgrade",
+              "collect-feature-reference-traffic-azure-service-mesh-sidecar-injection",
+              "collect-feature-reference-traffic-managed-gateway-api",
+              "collect-feature-reference-trusted-access",
+              "collect-feature-reference-trusted-access-control-plane-lifecycle",
+              "collect-feature-reference-trusted-access-dataplane-token-gateway",
+              "collect-feature-reference-upgrade",
+              "collect-feature-reference-virtualmachine-prerelease-row61-core-addon-compatibility",
+              "collect-feature-reference-virtualmachine-prerelease-row75-aksconformance-core",
+              "collect-feature-reference-virtualmachine-prerelease-row76-aksconformance-tunnel",
+              "collect-feature-reference-virtualmachines-accelerated-networking",
+              "collect-feature-reference-virtualmachines-agentpool",
+              "collect-feature-reference-virtualmachines-agentpool-cli-add-multi-sku",
+              "collect-feature-reference-virtualmachines-agentpool-cli-add-single-sku",
+              "collect-feature-reference-virtualmachines-auto-zone-mixed-sku"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628174521093.json",
+            "archived": 1,
+            "at": "2026-06-28T17:45:21.094Z",
+            "summary": "2026-06-28 owner review: accepted the GPU multi-gpu workload carrier repair after confirming mounted source exposes no exact multi_gpu_workload.go / Scenario_GPU_MultiGPU_Workload slice and that linux_gpu.go remains the nearest handwritten authority. This branch now also records that spec.gpu.multi-gpu-workload is source-grounded inferred coverage with an explicit multi-GPU SKU rerun gate and a prohibition on inheriting Standard_D2s_v3 or other non-GPU defaults; no new active work is created from this acceptance.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628172636769.json",
+            "archived": 11,
+            "at": "2026-06-28T17:26:36.770Z",
+            "summary": "2026-06-28 owner review compression: accepted the latest virtualmachines/workload-* feature-reference collector outputs plus the mixed-SKU heading repair and the storage-csi batch header normalization. This branch now carries durable archive notes for virtualmachines-autoscaled-vms-crud, virtualmachines-managedsystem-combined, virtualmachines-mixed-sku-lifecycle, virtualmachines-vmas-to-vms-migration-slb, windows, workload-autoscaler-keda-vm-prerelease-matrix, workload-autoscaler-vpa-profile-state, workload-health-kube-proxy-readiness, and workload-identity-automatic-sku. Remaining open work in this lane is the smaller review/repair tail (for example workload-identity packet cleanup) rather than basic collector acceptance.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-virtualmachines-autoscaled-vms-crud",
+              "collect-feature-reference-virtualmachines-managedsystem-combined",
+              "collect-feature-reference-virtualmachines-mixed-sku-lifecycle",
+              "collect-feature-reference-virtualmachines-vmas-to-vms-migration-slb",
+              "collect-feature-reference-windows",
+              "collect-feature-reference-workload-autoscaler-keda-vm-prerelease-matrix",
+              "collect-feature-reference-workload-autoscaler-vpa-profile-state",
+              "collect-feature-reference-workload-health-kube-proxy-readiness",
+              "collect-feature-reference-workload-identity-automatic-sku",
+              "repair-feature-reference-virtualmachines-mixed-sku-lifecycle-headings-20260628",
+              "normalize-feature-reference-storage-csi-review-batch-headings-20260628"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260628155307922.json",
+            "archived": 1,
+            "at": "2026-06-28T15:53:07.922Z",
+            "summary": "2026-06-28 owner hygiene rollup: archived the accepted storage-csi disk-pvc-dynamic reference leaf because its durable meaning is already represented by the current storage-csi reference-batch archive summary. This branch keeps the official-reference seed set already accepted for advanced-disk, blob-driver-enable, blob-fuse2-clone, blob-pvc-dynamic, blob-verify-nfs, byok, byok-ephemeral-os, csidrivers, disk-clone, disk-driver-enable, and disk-pvc-dynamic; remaining open storage-csi reference leaves should extend the packet set instead of recollecting covered slices.",
+            "reason": "owner rolled up completed child tasks",
+            "task_ids": [
+              "collect-feature-reference-storage-csi-disk-pvc-dynamic"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-28T12:38:25.929Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-28T12:38:38.125Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aks-feature-reference-loop",
+        "last_controller_pulse_at": "2026-06-28T16:36:44.966Z",
+        "last_controller_pulse_summary": "Feature reference loop aks-feature-reference-loop controller pulse created 0 child task(s); releasing controller slot before child assignment.",
+        "rolled_up_at": "2026-06-28T18:34:56.967Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_aks-feature-reference-loop",
+      "session_history": [
+        "s_task_aks-feature-reference-loop"
+      ],
+      "result": "Child review pending: collect-feature-reference-storage-csi-advanced-disk, collect-feature-reference-storage-csi-blob-driver-enable, collect-feature-reference-storage-csi-blob-fuse2-clone, collect-feature-reference-storage-csi-blob-pvc-dynamic, collect-feature-reference-storage-csi-blob-verify-nfs, collect-feature-reference-storage-csi-byok, collect-feature-reference-storage-csi-byok-ephemeral-os, collect-feature-reference-storage-csi-csidrivers, collect-feature-reference-storage-csi-disk-clone, collect-feature-reference-storage-csi-disk-driver-enable.",
+      "status": "done"
+    }
+  ]
+}

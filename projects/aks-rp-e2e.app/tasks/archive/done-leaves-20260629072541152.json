@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T07:25:41.152Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 accepted KEDA VM-prerelease matrix preflight repair. The canonical KEDA row anchors now match the current VM-prerelease coverage ledger (147/148/149), the feature-owned scenario test passes in check mode, and the source-grounded carrier remains non-cloud until row-exact live evidence exists. Preserve await-staging-westus2-cluster-count-preflight-family-recovery-20260628 as the only live spec-loop wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the remaining repo-local missing-reference/preflight drift around spec.workload-autoscaler.keda-vm-prerelease-matrix by reconciling current spec, replay, packet, and plan-warning surfaces into one accepted durable explanation or fix, without rerunning live cloud work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/workload-autoscaler/specs/workload-autoscaler-keda-vm-prerelease-matrix.json",
+        "../aks-rp-e2e/features/workload-autoscaler/packets/keda-vm-prerelease-matrix.yaml",
+        "../aks-rp-e2e/features/workload-autoscaler/tests/workload-autoscaler-keda-vm-prerelease-matrix.ts",
+        "../aks-rp-e2e/features/workload-autoscaler/tests/workload-autoscaler-keda-vm-prerelease-matrix.test.ts",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/model/knowledge-map/views/graph-view.json",
+        "../aks-rp-e2e/model/knowledge-map/views/evidence-index.md",
+        "../aks-rp-e2e/model/knowledge-map/views/model.generated.md",
+        "../aks-rp-e2e/runner/generated/spec-catalog.json",
+        "../aks-rp-e2e/evidence/archive/repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629.md"
+      ],
+      "acceptance": [
+        "A durable archive note names the exact remaining missing-reference/preflight symptom for the KEDA VM-prerelease matrix and cites the current repo-local evidence surface that proves it.",
+        "If a repo-local linkage or carrier drift is fixable, the touched spec/replay/packet/model surfaces are repaired and validated; otherwise the evidence note records the exact repo-local ceiling and the next truthful resume condition.",
+        "The task finishes without live cloud execution and leaves the KEDA matrix family in a clearer reviewed state for the next owner pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:workload-autoscaler",
+        "spec:spec.workload-autoscaler.keda-vm-prerelease-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T07:20:34.105Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629_20260629072036",
+        "assigned_at": "2026-06-29T07:20:36.134Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629",
+        "worker_started_attempt_id": "a_repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629_20260629072036",
+        "worker_started_at": "2026-06-29T07:21:00.985Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Resolved KEDA VM-prerelease matrix repo-local preflight drift: current coverage ledger maps KEDA to rows 147/148/149, so spec, packet, scenario test, model text, generated views, and spec catalog were reconciled. No live cloud run was performed. Focused check and Vitest wrapper pass; broader bun run check stops on unrelated net-integration Prettier debt.",
+        "last_worker_completed_at": "2026-06-29T07:25:19.799Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-29T07:25:28.871Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "review accepted: KEDA matrix now matches rows 147/148/149, source-owned scenario test check passes, and remaining broad validation blockers are unrelated existing model/format debt"
+      },
+      "session_id": "s_task_repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629",
+      "session_history": [
+        "s_task_repair-workload-autoscaler-keda-matrix-missing-reference-preflight-20260629"
+      ],
+      "result": "Resolved KEDA VM-prerelease matrix repo-local preflight drift: current coverage ledger maps KEDA to rows 147/148/149, so spec, packet, scenario test, model text, generated views, and spec catalog were reconciled. No live cloud run was performed. Focused check and Vitest wrapper pass; broader bun run check stops on unrelated net-integration Prettier debt.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-29T07:25:28.871Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "review accepted: KEDA matrix now matches rows 147/148/149, source-owned scenario test check passes, and remaining broad validation blockers are unrelated existing model/format debt"
+      },
+      "status": "done"
+    }
+  ]
+}

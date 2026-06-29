@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T07:33:07.988Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning-update treated the watchdog-review-pending wake as stale because storage-csi-file-resize-mounted-source-landing-20260623 was already reviewed done with accepted archive/carrier checks. This rollup preserves the newly accepted resize mounted-source landing, the storage-csi disk-clone variable-catalog closure, and the repeated worker no-evidence triage as durable root knowledge while simplifying the visible frontier. The next truthful project action is unchanged: storage-csi-file-clone-mounted-source-landing-20260623 remains the only active repo-local source-backed leaf, and external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single exact family-level blocked wait with no duplicate reopen work.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repeated-worker-no-evidence-error-triage-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Inspect the repeated blocked/error/no-evidence worker outcomes across the 2026-06-23 mounted-source leaves and produce a single durable diagnosis that distinguishes executor/runtime failure, duplicate bad task seeding, and real domain blockers, naming the affected task ids and the exact retry, close-as-duplicate, or unblock action for each.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repeated-worker-no-evidence-error-triage-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites the relevant session/task evidence for storage-csi-file-resize-mounted-source-landing-20260623, network-cni-cilium-connectivity-preview-upgrade-mounted-source-landing-20260623, and private-cluster-vnet-integration-update-wording-sync-20260623, including the duplicate-leaf problem note at ../aks-rp-e2e/evidence/archive/private-cluster-vnet-integration-update-wording-sync-problem-20260623.md.",
+        "The note identifies at least one concrete next action for the affected tasks: retry unchanged because the issue was executor/runtime only, close as duplicate when owner-seeded duplicate work is proven, or a narrower follow-up/blocker with exact resume condition if a real task-specific cause is proven."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "worker-runtime"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T07:25:41.764Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T07:25:46.877Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_repeated-worker-no-evidence-error-triage-20260623_20260623072546",
+        "assigned_at": "2026-06-23T07:25:46.936Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repeated-worker-no-evidence-error-triage-20260623",
+        "worker_started_attempt_id": "a_repeated-worker-no-evidence-error-triage-20260623_20260623072546",
+        "worker_started_at": "2026-06-23T07:26:35.926Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a durable runtime-triage note at evidence/archive/repeated-worker-no-evidence-error-triage-20260623.md distinguishing shared executor/runtime failures from task-specific follow-up for the storage-csi, network-cni, and private-cluster leaves, with exact retry/unblock actions for each.",
+        "last_worker_completed_at": "2026-06-23T07:29:25.277Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T07:29:43.015Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/repeated-worker-no-evidence-error-triage-20260623.md cites concrete session/runtime evidence across the storage-csi, network-cni, and private-cluster leaves, proves the shared no-evidence failures were executor/runtime noise rather than domain blockers, and names the exact next action for each affected task."
+      },
+      "session_id": "s_task_repeated-worker-no-evidence-error-triage-20260623",
+      "session_history": [
+        "s_task_repeated-worker-no-evidence-error-triage-20260623"
+      ],
+      "result": "Produced a durable runtime-triage note at evidence/archive/repeated-worker-no-evidence-error-triage-20260623.md distinguishing shared executor/runtime failures from task-specific follow-up for the storage-csi, network-cni, and private-cluster leaves, with exact retry/unblock actions for each.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T07:29:43.015Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/repeated-worker-no-evidence-error-triage-20260623.md cites concrete session/runtime evidence across the storage-csi, network-cni, and private-cluster leaves, proves the shared no-evidence failures were executor/runtime noise rather than domain blockers, and names the exact next action for each affected task."
+      },
+      "status": "done"
+    }
+  ]
+}

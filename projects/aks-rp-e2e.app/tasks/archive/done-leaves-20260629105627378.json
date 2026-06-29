@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T10:56:27.378Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "2026-06-29 planning update accepted the spec.node-pool-config.ephemeral-disk recovery review: the earlier portal-export timeout wait is superseded for branch truth by later same-carrier pass run 28366097333, so follow-up now moves through repo-local classification/model update. The pass also repaired frontier health by converting the Automatic/ManagedSystem capacity family from a passive wait into active diagnosis/escalation work, and by adding owner review for the newly surfaced spec.aad-rbac.managed-v2-lifecycle row-37 fail so the single failing claim is classified before any rerun decision.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Review whether spec.node-pool-config.ephemeral-disk still needs an external Azure evidence return, or whether mounted source, repo-local artifacts, prior run outputs, or a bounded alternate environment/escalation can sharpen the branch into a final evidence ceiling or a more truthful next ask.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-node-pool-config-ephemeral-disk-recovery-reconciliation-20260629.md"
+      ],
+      "acceptance": [
+        "Evidence cites the current recovery note, the accepted dispatch/send-proof state, and any mounted-source or repo-local artifacts relevant to the post-timeout failure boundary.",
+        "Outcome either (a) preserves a single justified external wait with exact owner/resume condition, or (b) replaces it with a sharper repo-local follow-up, alternate-environment move, or final evidence-ceiling classification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.node-pool-config.ephemeral-disk"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:51:30.266Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629_20260629105130",
+        "assigned_at": "2026-06-29T10:51:30.320Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629",
+        "worker_started_attempt_id": "a_reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629_20260629105130",
+        "worker_started_at": "2026-06-29T10:51:58.188Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested reconciliation note showing the earlier external portal-export wait for spec.node-pool-config.ephemeral-disk is superseded by a later same-carrier repo-local pass, and recommended replacing the blocked external wait with a repo-local classification/model-update follow-up.",
+        "last_worker_completed_at": "2026-06-29T10:53:34.919Z",
+        "last_worker_evidence": [
+          "evidence/archive/spec-node-pool-config-ephemeral-disk-recovery-reconciliation-20260629.md"
+        ],
+        "reviewed_at": "2026-06-29T10:56:14.854Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the reconciliation note: the earlier external portal-export wait is superseded for spec-level truth by later same-carrier repo-local pass run 28366097333, so the branch should move through repo-local classification/model update rather than continue waiting on operator-returned timeout forensics."
+      },
+      "session_id": "s_task_reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629",
+      "session_history": [
+        "s_task_reconcile-spec-node-pool-config-ephemeral-disk-recovery-path-20260629"
+      ],
+      "result": "Wrote the requested reconciliation note showing the earlier external portal-export wait for spec.node-pool-config.ephemeral-disk is superseded by a later same-carrier repo-local pass, and recommended replacing the blocked external wait with a repo-local classification/model-update follow-up.",
+      "evidence": [
+        "evidence/archive/spec-node-pool-config-ephemeral-disk-recovery-reconciliation-20260629.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T10:56:14.854Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the reconciliation note: the earlier external portal-export wait is superseded for spec-level truth by later same-carrier repo-local pass run 28366097333, so the branch should move through repo-local classification/model update rather than continue waiting on operator-returned timeout forensics."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wait-automatic-managedsystem-capacity-recovery-signal-20260629",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single truthful signal-based wait for the Automatic/ManagedSystem create capacity family after accepted same-contract westus2 and eastus2 AKSCapacityHeavyUsage evidence showed no sharper local reroute or timer checkpoint exists today.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/automatic-managedsystem-capacity-recovery-probe-20260629.md"
+      ],
+      "acceptance": [
+        "Resume only on reviewed westus2 recovery proof, reviewed third-region same-contract success, or authoritative external capacity-recovery evidence for the Automatic/ManagedSystem create family.",
+        "Branch context preserves that current evidence does not justify a new operator escalation or a time-only checkpoint."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "environment:westus2-managedsystem-capacity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T10:42:38.681Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-29T10:56:15.427Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced the passive capacity-recovery wait with an active diagnosis/escalation leaf so the environment-overblock warning is handled through concrete third-region/setup/escalation analysis instead of leaving the family parked unchanged."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-29T10:56:15.427Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced the passive capacity-recovery wait with an active diagnosis/escalation leaf so the environment-overblock warning is handled through concrete third-region/setup/escalation analysis instead of leaving the family parked unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

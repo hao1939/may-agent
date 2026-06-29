@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T06:23:48.688Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier owner review keeps the single external-human-transport family wait unchanged because no new send/reply proof exists beyond the accepted 2026-06-21/2026-06-22 audit artifacts. The row-53 LocalDNS maintained-visibility decision is accepted and archived at the project root: maintained canonical surfaces stay generic while the exact VM-prerelease row-53 carrier remains adjacent-only with source-backed rationale. The active repo-local checkpoint-readiness audit for row-27 and row-36 remains the current in-flight slice, and a new backlog matrix for VM-prerelease rows 44-49 now preserves one clear next non-mutating source/spec/model follow-up after that audit.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-row53-maintained-visibility-decision-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile whether VM prerelease row 53 LocalDNS should be visible on the maintained canonical path surfaces or remain an adjacent exact carrier, using current repo-local model/view/spec/replay state plus the existing source-grounded row-53 evidence without running cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-row53-maintained-visibility-decision-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the current maintained surfaces for path.localdns.enable-disable-lifecycle and the exact row-53 spec/replay carriers, then makes one bounded truth claim: either land row-53 execution-variant visibility in maintained model/views or explicitly keep the maintained path generic with evidence-backed rationale.",
+        "If model/view changes are needed, the task updates model/knowledge-map/model.json plus regenerated affected views and records the exact files touched; if no changes are needed, the artifact documents the adjacent-only disposition and why the current maintained generic mapping stays truthful.",
+        "Task remains repo-local and non-mutating: it does not request human transport, does not run cloud execution, and names any further follow-up as one bounded repo-local leaf only if the maintained visibility decision still cannot be completed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map/model.json"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T06:18:55.263Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-row53-maintained-visibility-decision-20260622_20260622061857",
+        "assigned_at": "2026-06-22T06:18:57.730Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-row53-maintained-visibility-decision-20260622",
+        "worker_started_attempt_id": "a_localdns-row53-maintained-visibility-decision-20260622_20260622061857",
+        "worker_started_at": "2026-06-22T06:19:15.944Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-53 LocalDNS maintained-visibility decision as a repo-local evidence artifact. Kept maintained model/view surfaces generic and documented why the exact VM-prerelease row-53 carrier should remain adjacent-only for now.",
+        "last_worker_completed_at": "2026-06-22T06:21:51.152Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T06:22:16.702Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result after review: evidence/archive/localdns-row53-maintained-visibility-decision-20260622.md cites the maintained path/model/view surface for path.localdns.enable-disable-lifecycle plus the exact row-53 spec/replay carriers, shows spec.localdns.vm-prerelease.enable-disable remains source-grounded with noExecutionCoverageClaim=true, and makes the bounded truthful decision to keep the canonical maintained path generic rather than promote row-53 into maintained execution visibility without cloud-backed evidence."
+      },
+      "session_id": "s_task_localdns-row53-maintained-visibility-decision-20260622",
+      "session_history": [
+        "s_task_localdns-row53-maintained-visibility-decision-20260622"
+      ],
+      "result": "Completed the row-53 LocalDNS maintained-visibility decision as a repo-local evidence artifact. Kept maintained model/view surfaces generic and documented why the exact VM-prerelease row-53 carrier should remain adjacent-only for now.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T06:22:16.702Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result after review: evidence/archive/localdns-row53-maintained-visibility-decision-20260622.md cites the maintained path/model/view surface for path.localdns.enable-disable-lifecycle plus the exact row-53 spec/replay carriers, shows spec.localdns.vm-prerelease.enable-disable remains source-grounded with noExecutionCoverageClaim=true, and makes the bounded truthful decision to keep the canonical maintained path generic rather than promote row-53 into maintained execution visibility without cloud-backed evidence."
+      },
+      "status": "done"
+    }
+  ]
+}

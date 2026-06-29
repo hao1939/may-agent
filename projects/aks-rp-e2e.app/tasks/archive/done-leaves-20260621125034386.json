@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T12:50:34.386Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner blocked-frontier review confirmed the tree still has one legitimate external-human-transport blocker and one live execution lane. Archived the four safe done leaves now that project-level knowledge already preserves their accepted results: VM prerelease rows 25+50 source boundary map, row-50 maintained-surface/model reconciliation, row-75 maintained-surface repairs, and rows31-32 auto-zone boundary mapping. The open frontier remains intentionally narrow: vmpr-row34-maintained-surface-sync-20260621 stays active as the next repo-local evidence/model reconciliation step, while external-send-proof-dispatch-family-human-transport-proof-wait-20260621 remains the single truthful family-level wait until durable proof of real human send/handoff/escalation or authoritative replies exists for the covered asks; no duplicate blocker or local rework was created because packet evidence already proved repo-local prep and dispatch capture complete.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-row50-model-view-reconcile-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: reconcile VM prerelease row 50 into the maintained knowledge-map/model/views using the accepted 2026-06-21 source boundary map so the project has a dedicated truthful carrier for the statefulset cordon scale path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row50-model-view-reconcile-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted evidence/archive/vmpr-source-rows25-50-boundary-map-20260621.md plus exact modified model/view files and shows the dedicated row-50 path/spec entry exists in model/knowledge-map outputs.",
+        "Update preserves the exact row-50 truth boundary: VM prerelease envelope, kube 1.33 pin, dual StatefulSets, cordon/uncordon, 3->4->3 expectation, and explicit note that effective runtime pool-type resolution still awaits execution evidence.",
+        "Artifact ends with any remaining execution or approval dependency for row 50 and performs no cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T12:33:44.574Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row50-model-view-reconcile-20260621_20260621123344",
+        "assigned_at": "2026-06-21T12:33:44.669Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row50-model-view-reconcile-20260621",
+        "worker_started_attempt_id": "a_vmpr-row50-model-view-reconcile-20260621_20260621123344",
+        "worker_started_at": "2026-06-21T12:33:57.641Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled VM prerelease row 50 into the maintained knowledge map by adding a dedicated row-50 feature/scenario/input-DAG/path to model/knowledge-map/model.json, regenerating model views, and writing evidence/archive/vmpr-row50-model-view-reconcile-20260621.md documenting the exact preserved boundary and remaining execute dependency.",
+        "last_worker_completed_at": "2026-06-21T12:37:32.739Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T12:38:16.246Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: artifact evidence/archive/vmpr-row50-model-view-reconcile-20260621.md cites the accepted source boundary map, names exact maintained model/view files, and spot-check verification confirmed the dedicated row-50 path/scenario/input/assertion carriers exist in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json while preserving the row-50 runtime-resolution caveat without cloud mutation."
+      },
+      "session_id": "s_task_vmpr-row50-model-view-reconcile-20260621",
+      "session_history": [
+        "s_task_vmpr-row50-model-view-reconcile-20260621"
+      ],
+      "result": "Reconciled VM prerelease row 50 into the maintained knowledge map by adding a dedicated row-50 feature/scenario/input-DAG/path to model/knowledge-map/model.json, regenerating model views, and writing evidence/archive/vmpr-row50-model-view-reconcile-20260621.md documenting the exact preserved boundary and remaining execute dependency.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T12:38:16.246Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: artifact evidence/archive/vmpr-row50-model-view-reconcile-20260621.md cites the accepted source boundary map, names exact maintained model/view files, and spot-check verification confirmed the dedicated row-50 path/scenario/input/assertion carriers exist in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json while preserving the row-50 runtime-resolution caveat without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

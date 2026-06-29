@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T03:56:14.486Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner planning update after task-completed review: accepted the bounded private-cluster lifecycle landing, which restored path.private-cluster-private-endpoint-connections-lifecycle in the knowledge map without changing the sibling private-endpoint-connections verdict semantics. The live frontier is now intentionally narrow: continue managedsystem-author-create-time-boundary-matrix-from-mounted-source-20260622 as the only active repo-local worked-example boundary task for path.managedsystem.create-time-initial-pool, while keeping external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single truthful family-level external-human wait for MachinesPreview/VM prerelease asks. No new private-cluster follow-up is required in this wake.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "privatecluster-land-lifecycle-branch-bounded-json-append-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land path.private-cluster-private-endpoint-connections-lifecycle in the accepted knowledge-map by appending only the missing lifecycle feature/scenario/input-DAG/path/evidence records to model/knowledge-map/model.json using a bounded JSON append/edit method that preserves the existing sibling path.private-cluster-private-endpoint-connections verdict/evidence unchanged, then regenerate derived views.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/privatecluster-land-lifecycle-branch-bounded-json-append-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted private_endpoint_connections.go source anchors, the maintained private-endpoint lifecycle YAML carriers, and the exact accepted-model insertion method used to add only the missing lifecycle feature/scenario/input-DAG/path/evidence records.",
+        "model/knowledge-map/model.json contains path.private-cluster-private-endpoint-connections-lifecycle and its required adjacent records while an explicit before/after check shows the sibling path.private-cluster-private-endpoint-connections keeps the same final verdict/evidence semantics unchanged.",
+        "Regenerated model/knowledge-map/views/path-summary.json exposes path.private-cluster-private-endpoint-connections-lifecycle, and the resulting diff stays bounded to the intended lifecycle additions plus generated view noise rather than unrelated whole-file reserialization churn."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:43:29.729Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_privatecluster-land-lifecycle-branch-bounded-json-append-20260622_20260622034329",
+        "assigned_at": "2026-06-22T03:43:29.837Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_privatecluster-land-lifecycle-branch-bounded-json-append-20260622",
+        "worker_started_attempt_id": "a_privatecluster-land-lifecycle-branch-bounded-json-append-20260622_20260622034329",
+        "worker_started_at": "2026-06-22T03:43:49.335Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Restored the missing private-cluster lifecycle branch into the accepted knowledge map with bounded top-level array appends in model/knowledge-map/model.json, regenerated model/knowledge-map/views/path-summary.json, and documented the exact insertion method and sibling-preservation proof in evidence/archive/privatecluster-land-lifecycle-branch-bounded-json-append-20260622.md.",
+        "last_worker_completed_at": "2026-06-22T03:54:47.258Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:55:27.743Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive proves a bounded top-level-array append restored path.private-cluster-private-endpoint-connections-lifecycle, regenerated path-summary.json, and preserved sibling path.private-cluster-private-endpoint-connections with identical before/after hash evidence."
+      },
+      "session_id": "s_task_privatecluster-land-lifecycle-branch-bounded-json-append-20260622",
+      "session_history": [
+        "s_task_privatecluster-land-lifecycle-branch-bounded-json-append-20260622"
+      ],
+      "result": "Restored the missing private-cluster lifecycle branch into the accepted knowledge map with bounded top-level array appends in model/knowledge-map/model.json, regenerated model/knowledge-map/views/path-summary.json, and documented the exact insertion method and sibling-preservation proof in evidence/archive/privatecluster-land-lifecycle-branch-bounded-json-append-20260622.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:55:27.743Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive proves a bounded top-level-array append restored path.private-cluster-private-endpoint-connections-lifecycle, regenerated path-summary.json, and preserved sibling path.private-cluster-private-endpoint-connections with identical before/after hash evidence."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After vmpr-author-windows-password-reset-carrier-row205-20260622 is accepted and row 205 has an accepted dedicated Windows password-reset / credential-validation carrier plus maintained coverage linkage, refresh ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt from the final ledger and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt to generate the full replacement plan.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-refresh-feature-selector-and-full-plan-after-row-closure-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact records the final closed-row inventory and the exact commands used to regenerate evidence/pipelines/virtualmachine-prerelease.features.txt and run bun run plan --features @evidence/pipelines/virtualmachine-prerelease.features.txt.",
+        "Updated feature selector file is durable in ../aks-rp-e2e/evidence/pipelines/virtualmachine-prerelease.features.txt and reflects the final accepted row dispositions rather than stale candidate-only/missing-spec rows.",
+        "Plan output is archived with enough evidence to show whether the full replacement pipeline is ready, and the task does not claim readiness until the remaining non-covered row is closed or has an explicit accepted keep-open reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-plan-refresh"
+      ],
+      "depends_on": [
+        "vmpr-author-windows-password-reset-carrier-row205-20260622"
+      ],
+      "trace": {
+        "created_at": "2026-06-22T03:50:25.205Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T03:52:04.548Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622_20260622035204",
+        "assigned_at": "2026-06-22T03:52:04.594Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622",
+        "worker_started_attempt_id": "a_vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622_20260622035204",
+        "worker_started_at": "2026-06-22T03:52:20.284Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the VM prerelease selector/ledger are already in final post-row205 state, reran full planning from evidence/pipelines/virtualmachine-prerelease.features.txt, and refreshed the archive artifact with the accepted-row205 task id plus new plan/dry-run evidence.",
+        "last_worker_completed_at": "2026-06-22T03:54:28.404Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:55:27.789Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive proves row 205 is covered, the selector file was already in final post-row205 state, generated plan plan_20260622035310568_z52aes.json passes coverage for all 232 rows, and dry-run execution passed cleanly."
+      },
+      "session_id": "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622",
+      "session_history": [
+        "s_task_vmpr-refresh-feature-selector-and-full-plan-after-row205-acceptance-20260622"
+      ],
+      "result": "Verified the VM prerelease selector/ledger are already in final post-row205 state, reran full planning from evidence/pipelines/virtualmachine-prerelease.features.txt, and refreshed the archive artifact with the accepted-row205 task id plus new plan/dry-run evidence.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:55:27.789Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive proves row 205 is covered, the selector file was already in final post-row205 state, generated plan plan_20260622035310568_z52aes.json passes coverage for all 232 rows, and dry-run execution passed cleanly."
+      },
+      "status": "done"
+    }
+  ]
+}

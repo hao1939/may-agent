@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T17:47:50.354Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 task-completed owner update: the root frontier remains intentionally minimal and truthful. network-acns-cilium-observability-authoring-from-mounted-source-20260620 is accepted done: mounted cilium_observability.go plus k8s_versions.go now back a distinct repo-local ACNS Cilium observability feature/spec/replay/model packet, and adjacent generic ACNS observability plus ACNS Cilium network policy lineage claims were downgraded to avoid over-claiming. Remaining active work stays focused on exact mounted-source follow-through for network-acns-cilium-network-policy-mounted-source-lineage-audit-20260620 and the VM prerelease row-26 capacity-based-surge maxUnavailable packet. external-send-proof-dispatch-family-20260620 remains the single truthful external transport wait for human send/escalation proof or authoritative reply.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-acns-cilium-observability-authoring-from-mounted-source-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the repo-local network-acns-cilium-observability feature/spec/replay/model packet from mounted cilium_observability.go plus k8s_versions.go, and downgrade any remaining exact-lineage claims that currently point this mounted source at the generic ACNS observability or Cilium-network-policy branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-acns-cilium-observability-authoring-from-mounted-source-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the exact mounted source files /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/cilium_observability.go and /app/sources/aks-rp/test/e2ev3/sigs/network/plans/acns/k8s_versions.go and preserves their Cilium-observability contract in repo-local artifacts.",
+        "Repo-local feature/spec/replay/model surfaces are added or updated for a distinct network-acns-cilium-observability branch, including the exact create-contract fields and the mounted expectation surface with precise file references.",
+        "The artifact records any lineage downgrades or adjacent-branch notes needed so neither network-cni-acns-observability nor network-acns-cilium-network-policy over-claims this mounted source as exact coverage, without cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-acns-cilium-observability"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T17:33:14.860Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-acns-cilium-observability-authoring-from-mounted-source-20260620_20260620173314",
+        "assigned_at": "2026-06-20T17:33:14.905Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-acns-cilium-observability-authoring-from-mounted-source-20260620",
+        "worker_started_attempt_id": "a_network-acns-cilium-observability-authoring-from-mounted-source-20260620_20260620173314",
+        "worker_started_at": "2026-06-20T17:33:30.397Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored a new mounted-source-grounded ACNS Cilium observability branch across feature/spec/replay/model surfaces and added evidence-backed lineage downgrades so generic ACNS observability and ACNS Cilium network policy no longer over-claim the mounted source as exact coverage.",
+        "last_worker_completed_at": "2026-06-20T17:46:21.758Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T17:46:48.546Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result: the evidence packet cites mounted cilium_observability.go and k8s_versions.go, records the exact create-contract and verification surface, and documents repo-local feature/spec/replay/model updates plus adjacency downgrades so the new network-acns-cilium-observability branch stands on distinct source-backed lineage without cloud mutation."
+      },
+      "session_id": "s_task_network-acns-cilium-observability-authoring-from-mounted-source-20260620",
+      "session_history": [
+        "s_task_network-acns-cilium-observability-authoring-from-mounted-source-20260620"
+      ],
+      "result": "Authored a new mounted-source-grounded ACNS Cilium observability branch across feature/spec/replay/model surfaces and added evidence-backed lineage downgrades so generic ACNS observability and ACNS Cilium network policy no longer over-claim the mounted source as exact coverage.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T17:46:48.546Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result: the evidence packet cites mounted cilium_observability.go and k8s_versions.go, records the exact create-contract and verification surface, and documents repo-local feature/spec/replay/model updates plus adjacency downgrades so the new network-acns-cilium-observability branch stands on distinct source-backed lineage without cloud mutation."
+      },
+      "status": "done"
+    }
+  ]
+}

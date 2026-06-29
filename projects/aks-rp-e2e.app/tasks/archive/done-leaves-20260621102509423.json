@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:25:09.423Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner rollup accepted the two completed VM prerelease boundary-review leaves as durable history: the shared-carrier isolation pass and the non-VM residue isolation pass together prove the future row-27/29/30/31/32/33/34 checkpoint is still blocked by non-VM residue rather than VM-only residue, with network-cni still the broadest surviving family and model/knowledge-map/views/model.generated.md confirmed as the smallest next cleanup slice. The live frontier therefore stays intentionally narrow: approval-dispatch-message-created-wrapper-slice-20260621 remains the app-local send-proof follow-up, vmpr-row27-34-model-generated-nonvm-cleanup-slice-20260621 remains the assigned workspace cleanup successor, and the addonv2 runtime-tooling plus shared external-send waits stay unchanged.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vmpr-row27-34-shared-carrier-isolation-pass-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Do one narrow workspace-only isolation pass for the accepted VM prerelease row-27/29/30/31/32/33/34 future done slice by reducing the named shared tracked carriers to row-family content only, explicitly leaving runs/index.jsonl out, and recording whether the resulting file boundary is now checkpoint-ready or which exact carriers remain mixed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row27-34-shared-carrier-isolation-pass-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted isolation-plan review plus fresh repo-local diff/status evidence, and records the exact outcome for each named shared carrier: cleaned to row-27/29/30/31/32/33/34-only content, still mixed with named residue, or intentionally excluded from the future checkpoint boundary.",
+        "Artifact ends with one truthful checkpoint-readiness state only: either the smallest coherent row-27/29/30/31/32/33/34 done slice is now explicitly ready for a later owner checkpoint attempt with exact included file scope, or the exact remaining mixed carriers and minimum next follow-up are named.",
+        "Task stays in the user-review/workspace lane only: no commit, no file deletion/move, no cloud mutation, and no reopening of blocked external-send or runtime waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:18:25.950Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row27-34-shared-carrier-isolation-pass-20260621_20260621101825",
+        "assigned_at": "2026-06-21T10:18:25.996Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row27-34-shared-carrier-isolation-pass-20260621",
+        "worker_started_attempt_id": "a_vmpr-row27-34-shared-carrier-isolation-pass-20260621_20260621101825",
+        "worker_started_at": "2026-06-21T10:18:41.962Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the requested workspace-only row-27/29/30/31/32/33/34 shared-carrier isolation pass and wrote evidence/archive/vmpr-row27-34-shared-carrier-isolation-pass-20260621.md. The artifact confirms runs/index.jsonl remains intentionally excluded, while the other named shared carriers are still mixed with specific non-target residue, so the row-family slice is not checkpoint-ready.",
+        "last_worker_completed_at": "2026-06-21T10:20:47.336Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:21:08.557Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vmpr-row27-34-shared-carrier-isolation-pass-20260621.md re-audited the current row-27/29/30/31/32/33/34 boundary, kept runs/index.jsonl explicitly excluded, and truthfully proved the other 11 named shared carriers still contain specific non-target residue, so this pass completed its checkpoint-readiness review without authorizing a checkpoint."
+      },
+      "session_id": "s_task_vmpr-row27-34-shared-carrier-isolation-pass-20260621",
+      "session_history": [
+        "s_task_vmpr-row27-34-shared-carrier-isolation-pass-20260621"
+      ],
+      "result": "Completed the requested workspace-only row-27/29/30/31/32/33/34 shared-carrier isolation pass and wrote evidence/archive/vmpr-row27-34-shared-carrier-isolation-pass-20260621.md. The artifact confirms runs/index.jsonl remains intentionally excluded, while the other named shared carriers are still mixed with specific non-target residue, so the row-family slice is not checkpoint-ready.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:21:08.557Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vmpr-row27-34-shared-carrier-isolation-pass-20260621.md re-audited the current row-27/29/30/31/32/33/34 boundary, kept runs/index.jsonl explicitly excluded, and truthfully proved the other 11 named shared carriers still contain specific non-target residue, so this pass completed its checkpoint-readiness review without authorizing a checkpoint."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-row27-34-nonvm-residue-isolation-pass-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Do one narrower workspace-only follow-up for the VM prerelease row-27/29/30/31/32/33/34 future done slice by re-auditing the 11 still-mixed shared carriers and isolating or explicitly preserving only the non-VM residue families (private-cluster, network-cni, serverless, managedsystem, addonv2/azure-monitor-metrics), so the project can tell whether the remaining blocker is now only VM-internal residue or still broader cross-feature mixing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted shared-carrier-isolation-pass review plus fresh repo-local diff/status evidence for the 11 still-mixed carriers, and for each carrier records whether the named non-VM residue families were removed from the current changed-line boundary, are still present with exact surviving families, or were intentionally left untouched with why.",
+        "Artifact ends with one truthful next-boundary statement only: either the row-27/29/30/31/32/33/34 slice is reduced to VM-only residue (naming the exact remaining VM residue families/files), or the exact non-VM residue still blocking a truthful future checkpoint is named with the smallest next cleanup slice.",
+        "Task stays in the user-review/workspace lane only: no commit, no file deletion/move, no cloud mutation, no checkpoint attempt, and no reopening of blocked external-send or runtime waits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-workspace"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:21:08.605Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-row27-34-nonvm-residue-isolation-pass-20260621_20260621102108",
+        "assigned_at": "2026-06-21T10:21:08.653Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-row27-34-nonvm-residue-isolation-pass-20260621",
+        "worker_started_attempt_id": "a_vmpr-row27-34-nonvm-residue-isolation-pass-20260621_20260621102108",
+        "worker_started_at": "2026-06-21T10:21:21.162Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md`, re-auditing the 11 still-mixed shared carriers against fresh git diff evidence and classifying surviving non-VM residue families per carrier. The artifact concludes the row-27/29/30/31/32/33/34 slice is still blocked by non-VM residue, with `network-cni` as the broadest remaining blocker and `model.generated.md` as the smallest next cleanup slice.",
+        "last_worker_completed_at": "2026-06-21T10:22:38.951Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:23:30.440Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md against the task acceptance: it cites the prior shared-carrier review, records fresh repo-local status/diff evidence for all 11 carriers, truthfully concludes the slice is still blocked by non-VM residue, and names model.generated.md as the smallest next cleanup slice without leaving the workspace/review lane."
+      },
+      "session_id": "s_task_vmpr-row27-34-nonvm-residue-isolation-pass-20260621",
+      "session_history": [
+        "s_task_vmpr-row27-34-nonvm-residue-isolation-pass-20260621"
+      ],
+      "result": "Produced `evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md`, re-auditing the 11 still-mixed shared carriers against fresh git diff evidence and classifying surviving non-VM residue families per carrier. The artifact concludes the row-27/29/30/31/32/33/34 slice is still blocked by non-VM residue, with `network-cni` as the broadest remaining blocker and `model.generated.md` as the smallest next cleanup slice.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:23:30.440Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md against the task acceptance: it cites the prior shared-carrier review, records fresh repo-local status/diff evidence for all 11 carriers, truthfully concludes the slice is still blocked by non-VM residue, and names model.generated.md as the smallest next cleanup slice without leaving the workspace/review lane."
+      },
+      "status": "done"
+    }
+  ]
+}

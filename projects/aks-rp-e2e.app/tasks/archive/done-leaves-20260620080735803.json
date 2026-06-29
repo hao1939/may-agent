@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T08:07:35.803Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge and specs lane rollup: completed children now contribute durable evidence ceilings and source-grounded boundary packets represented in features/, specs/, evidence/archive/, and model/knowledge-map/. Keep only live blocked/source-holder waits, current bounded source-equivalent probes, and unresolved knowledge gaps visible on the frontier.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Test the source-exactness blocker for path.app-monitoring-addonv2-azure-monitor-metrics by producing one bounded evidence-ceiling decision from existing repo-local authorities: either identify truthful spec/replay/model progress that can proceed without handwritten source, or prove the exact residual ambiguity that still blocks bounded progress.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-63 contract repair plus the blocked staging execute artifact and names the exact remaining ambiguity in request-body/runtime-assertion terms.",
+        "The note ends with exactly one owner-usable verdict: a concrete bounded follow-up task that can proceed now, or an explicit evidence ceiling showing why no further truthful repo-local spec/replay progress remains without authoritative source proof.",
+        "No cloud execution or unrelated addon-family rediscovery occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T07:58:04.962Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620_20260620075831",
+        "assigned_at": "2026-06-20T07:58:31.464Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620_20260620075831",
+        "worker_started_at": "2026-06-20T07:58:48.996Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested bounded evidence-ceiling archive note for the app-monitoring AddonV2 Azure Monitor Metrics row-63 path, citing the accepted contract repair, blocked staging execute artifact, and the exact remaining request-body/runtime ambiguity that prevents further truthful repo-local progress.",
+        "last_worker_completed_at": "2026-06-20T07:59:33.543Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:00:16.640Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620.md: it cites the row-63 contract repair and blocked staging execute artifact, narrows the remaining request-body/runtime-assertion ambiguity, and gives a clear evidence-ceiling verdict that no further truthful repo-local progress remains without authoritative row-63 proof."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:00:16.640Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-bounded-evidence-ceiling-20260620.md: it cites the row-63 contract repair and blocked staging execute artifact, narrows the remaining request-body/runtime-assertion ambiguity, and gives a clear evidence-ceiling verdict that no further truthful repo-local progress remains without authoritative row-63 proof."
+      },
+      "status": "done"
+    },
+    {
+      "id": "ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Test the source-exactness blocker for path.ccp-connected-cluster-proxy-auth by producing one bounded evidence-ceiling decision from existing repo-local authorities: either identify truthful spec/replay/model progress that can proceed now without handwritten source, or prove the exact residual ambiguity that still blocks bounded progress.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted source ask/handoff packet, the normalized source-semantics response-await leaf, and the current blocked source-semantics leaf, then names the exact remaining ambiguity in request-surface/runtime-assertion terms.",
+        "The note ends with exactly one owner-usable verdict: a concrete bounded follow-up task that can proceed now, or an explicit evidence ceiling showing why no further truthful repo-local spec/replay progress remains without authoritative source proof.",
+        "No cloud execution, outbound contact, or unrelated CCP-family rediscovery occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:ccp-connected-cluster-proxy-auth"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:00:00.550Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620_20260620080000",
+        "assigned_at": "2026-06-20T08:00:00.605Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620",
+        "worker_started_attempt_id": "a_ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620_20260620080000",
+        "worker_started_at": "2026-06-20T08:00:31.699Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested bounded evidence-ceiling note at evidence/archive/ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620.md, tracing the accepted ask/handoff/wait chain and concluding there is still one truthful repo-local follow-up: a blocked model/view sync for path.ccp.connected-cluster-proxy-auth rather than further spec/replay rediscovery.",
+        "last_worker_completed_at": "2026-06-20T08:01:51.068Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:03:34.573Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after artifact validation: the note truthfully shows CCP is not at a full repo-local ceiling and identifies exactly one remaining bounded repo-local follow-up, a model/view sync for path.ccp.connected-cluster-proxy-auth from existing accepted split-gate evidence only."
+      },
+      "session_id": "s_task_ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620",
+      "session_history": [
+        "s_task_ccp-connected-cluster-proxy-auth-bounded-evidence-ceiling-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:03:34.573Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after artifact validation: the note truthfully shows CCP is not at a full repo-local ceiling and identifies exactly one remaining bounded repo-local follow-up, a model/view sync for path.ccp.connected-cluster-proxy-auth from existing accepted split-gate evidence only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "secops-identity-binding-removal-bounded-evidence-ceiling-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Test the source-exactness blocker for path.secops-identity-binding-removal by producing one bounded evidence-ceiling decision from existing repo-local authorities: either identify truthful spec/replay/model progress that can proceed now without handwritten source, or prove the exact residual ambiguity that still blocks bounded progress.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-identity-binding-removal-bounded-evidence-ceiling-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted 2026-06-20 removal source packet, the accepted row-scoped ask packet, and the current blocked source-semantics leaf, then names the exact remaining ambiguity in request-surface/expected-outcome terms.",
+        "The note ends with exactly one owner-usable verdict: a concrete bounded follow-up task that can proceed now, or an explicit evidence ceiling showing why no further truthful repo-local spec/replay progress remains without authoritative source proof.",
+        "No cloud execution, outbound contact, or unrelated SecOps-family rediscovery occurs."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:secops-identity-binding-removal"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T08:00:16.745Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-identity-binding-removal-bounded-evidence-ceiling-20260620_20260620080016",
+        "assigned_at": "2026-06-20T08:00:16.800Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-identity-binding-removal-bounded-evidence-ceiling-20260620",
+        "worker_started_attempt_id": "a_secops-identity-binding-removal-bounded-evidence-ceiling-20260620_20260620080016",
+        "worker_started_at": "2026-06-20T08:00:31.793Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded evidence-ceiling note for SecOps identity binding removal at evidence/archive/secops-identity-binding-removal-bounded-evidence-ceiling-20260620.md, proving repo-local progress is at an explicit source-semantic ceiling and should remain blocked pending authoritative proof.",
+        "last_worker_completed_at": "2026-06-20T08:01:23.706Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T08:05:39.804Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker review: the bounded evidence-ceiling note narrowed identity-binding-removal to the remaining control-plane-vs-kubelet-vs-both ambiguity and proved no further truthful repo-local spec/replay progress remains without authoritative source proof."
+      },
+      "session_id": "s_task_secops-identity-binding-removal-bounded-evidence-ceiling-20260620",
+      "session_history": [
+        "s_task_secops-identity-binding-removal-bounded-evidence-ceiling-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T08:05:39.804Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker review: the bounded evidence-ceiling note narrowed identity-binding-removal to the remaining control-plane-vs-kubelet-vs-both ambiguity and proved no further truthful repo-local spec/replay progress remains without authoritative source proof."
+      },
+      "status": "done"
+    }
+  ]
+}

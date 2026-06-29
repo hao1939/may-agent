@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T13:15:35.478Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed planning update accepts the VM prerelease row-54 mounted-source boundary map as already rolled-up knowledge and keeps its bounded successor managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622 as the only needed follow-up for that branch: align feature-level metadata with the accepted source-grounded/unknown conclusion without reopening any final ManagedSystem verdict. Archive the now-accepted authorized-ip-ranges mounted-source variant-attachment repair as summarized knowledge; live repo-local capacity stays on the two active leaves localdns-fips-source-backed-verdict-reconciliation-20260622 and managedsystem-vmpr-row54-feature-status-metadata-alignment-20260622, while external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 remains the single truthful family-level external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Attach the exact mounted speculor authorized-ip-ranges LoadBalancer and ManagedNATGateway variants to the existing canonical repo-local carrier set, while isolating the repair to the bounded authorized-ip-ranges carrier files only and removing/avoiding unrelated churn before owner review.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622.md"
+      ],
+      "acceptance": [
+        "The task cites exact mounted-source references for Scenario_Authorized_IP_Ranges_ManagedNATGateway and Scenario_Authorized_IP_Ranges_LoadBalancer and preserves them explicitly on the canonical authorized-ip-ranges branch.",
+        "The resulting repo-local change is isolated to the bounded carrier set for this repair only: features/net-integration/authorized-ip-ranges.yaml, specs/net-integration-authorized-ip-ranges.json, the corresponding bounded specs/index.json entry if needed, the exact model/view metadata required for path.net-integration.authorized-ip-ranges, and the archive artifact; unrelated file additions, broad index reformats, or unrelated branch churn are removed or absent.",
+        "The artifact names the exact files touched or confirmed, explains why the work is a variant-attachment/source-precision repair rather than a new product branch, keeps path.net-integration.authorized-ip-ranges as the canonical branch, does not reopen path.net-integration.outbound-nat-gateway, and performs no cloud mutation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "speculor-authorized-ip-ranges-variants"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T13:03:02.299Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-22T13:09:35.560Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_retry_20260622130935",
+        "worker_started_attempt_id": "a_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_20260622130935",
+        "worker_started_at": "2026-06-22T13:09:53.799Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Isolated the authorized-ip-ranges mounted-source variant-attachment repair to the intended bounded carrier set: only the feature packet, canonical spec file, and archive note remain changed; unrelated specs/index and model churn were explicitly reverted and the note updated to match reality.",
+        "last_worker_completed_at": "2026-06-22T13:13:19.424Z",
+        "last_worker_evidence": [],
+        "review_rejected_at": "2026-06-22T13:09:32.815Z",
+        "review_rejected_by": "task-tree-tool",
+        "review_reject_reason": "Review not accepted: archive note is coherent, but repo diff is broader than this task's bounded variant-attachment scope. Before acceptance, isolate the authorized-ip-ranges repair to the claimed carrier set only and remove unrelated churn, especially the broad specs/index.json reformat and the unrelated network-acns-basic-retina-update-retina-enterprise.json addition, while keeping path.net-integration.authorized-ip-ranges as the canonical branch.",
+        "review_reject_fresh_session": true,
+        "previous_attempt_id": "a_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_20260622130302",
+        "current_attempt_id": "a_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_20260622130935",
+        "reviewed_at": "2026-06-22T13:13:52.338Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the exact mounted authorized_ip_ranges.go variants and explains why they attach to the canonical authorized-ip-ranges branch only; the bounded carrier diff is isolated to features/net-integration/authorized-ip-ranges.yaml and specs/net-integration-authorized-ip-ranges.json with no duplicate replay/spec/model branch reopened."
+      },
+      "session_history": [
+        "s_task_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622",
+        "s_task_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_retry_20260622130935"
+      ],
+      "result": "Isolated the authorized-ip-ranges mounted-source variant-attachment repair to the intended bounded carrier set: only the feature packet, canonical spec file, and archive note remain changed; unrelated specs/index and model churn were explicitly reverted and the note updated to match reality.",
+      "evidence": [],
+      "session_id": "s_task_net-integration-authorized-ip-ranges-mounted-source-variant-attachments-20260622_retry_20260622130935",
+      "resolution": "completed",
+      "done_at": "2026-06-22T13:13:52.338Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the exact mounted authorized_ip_ranges.go variants and explains why they attach to the canonical authorized-ip-ranges branch only; the bounded carrier diff is isolated to features/net-integration/authorized-ip-ranges.yaml and specs/net-integration-authorized-ip-ranges.json with no duplicate replay/spec/model branch reopened."
+      },
+      "status": "done"
+    }
+  ]
+}

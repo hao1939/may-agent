@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T14:40:07.784Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 watchdog review follow-up: archived the accepted mounted-source boundary map for path.private-cluster-none-dns-zone-v3 now that its durable meaning is represented at the project level. Project frontier remains intentionally compressed to one active repo-local model-status reconciliation leaf that must use the accepted source boundary plus current replay/preflight and owner-send evidence to decide whether the path stays unknown or can be reclassified, while one family-level external-human wait continues to hold only the later out-of-runtime completion proof for covered asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build a repo-local mounted-source/spec/e2ev3 boundary map for path.private-cluster-none-dns-zone-v3 so local learning can progress independently of the external runtime-prereq transport wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites mounted AKS RP source/spec/e2ev3 files or equivalent repo-local references for the private-cluster none DNS zone V3 path, and records the inferred scenario intent, concrete input path/boundary (accepted + rejected edges where visible), and expected behavior assertions without requiring cloud execution.",
+        "The artifact states what is still unknown for path.private-cluster-none-dns-zone-v3, distinguishes repo-local model gaps from external runtime prerequisites, and names the next safe verification or evidence task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster-none-dns-zone-v3-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T14:33:20.296Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622_20260622143320",
+        "assigned_at": "2026-06-22T14:33:20.341Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622_20260622143320",
+        "worker_started_at": "2026-06-22T14:34:00.556Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive artifact `evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622.md`, grounding path.private-cluster-none-dns-zone-v3 in mounted AKS RP source/spec carriers and clearly separating repo-local understanding from external runtime prerequisites.",
+        "last_worker_completed_at": "2026-06-22T14:35:38.267Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T14:37:51.341Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact grounds path.private-cluster-none-dns-zone-v3 in mounted AKS RP source/spec/e2ev3, confirms the authoritative V3 boundary is same-cluster system->none rather than direct create-with-none, and cleanly separates closed repo-local learning from the remaining live-runtime evidence gap."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622"
+      ],
+      "result": "Created the requested archive artifact `evidence/archive/private-cluster-none-dns-zone-v3-mounted-source-boundary-map-20260622.md`, grounding path.private-cluster-none-dns-zone-v3 in mounted AKS RP source/spec carriers and clearly separating repo-local understanding from external runtime prerequisites.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T14:37:51.341Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact grounds path.private-cluster-none-dns-zone-v3 in mounted AKS RP source/spec/e2ev3, confirms the authoritative V3 boundary is same-cluster system->none rather than direct create-with-none, and cleanly separates closed repo-local learning from the remaining live-runtime evidence gap."
+      },
+      "status": "done"
+    }
+  ]
+}

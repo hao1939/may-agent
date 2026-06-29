@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T12:38:39.799Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 owner rollup after blocked-frontier review: accepted VM prerelease prep plus completed authoring slices for rows 3/4, 36, and 39/40 remain durably represented by the row-closure, authoring-plan, selector-proof, and row evidence artifacts. Open work in this lane is now the active row 1 PPG slice, row 9 KSCR matrix slice, repaired row 44 IP-based LB backend-pool slice, new row 35 system-assigned identity refresh slice, and the single truthful MachinesPreview external-send wait.",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the VirtualMachine prerelease authoring slice for row 36 by refreshing app-monitoring coverage and adding the Azure Monitor AAD-auth spec/replay contract grounded in the accepted mounted source.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Using evidence/archive/vm-prerelease-e2ev3-missing-spec-authoring-batch-plan-20260620.md and the mounted-source mappings it cites, refresh features/app-monitoring.yaml and add specs/replays for the omsagent + workspace + useAADAuth=true Azure Monitor contract without reopening source discovery.",
+        "Artifact summarizes the exact files landed, the monitoring-specific semantics captured, and any bounded follow-up needed; work stays within row 36 only.",
+        "Do not edit evidence/pipelines/virtualmachine-prerelease.features.txt, model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, or checkpoint-held files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:26:47.500Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T12:26:51.772Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620_20260620122701",
+        "assigned_at": "2026-06-20T12:27:01.518Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620_20260620122701",
+        "worker_started_at": "2026-06-20T12:27:22.913Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the row-36 Azure Monitor AAD-auth authoring slice by refreshing features/app-monitoring.yaml, adding specs/msi-azure-monitor-aad-auth-vm-prerelease.json and replays/msi-azure-monitor-aad-auth-vm-prerelease.ts, updating spec/coverage/selector ledgers, and writing the requested archive artifact.",
+        "last_worker_completed_at": "2026-06-20T12:34:09.273Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:34:53.220Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620.md ties row 36 to mounted sources (checkin/prerelease suite alias plus azure_monitor_aad_auth.go), records the landed feature/spec/replay files, and repo diff shows the expected bounded authoring slice in features/app-monitoring.yaml, specs/msi-azure-monitor-aad-auth-vm-prerelease.json, replays/msi-azure-monitor-aad-auth-vm-prerelease.ts, specs/index.json, and prerelease coverage ledgers. The worker stayed within the row-36 contract and did not reopen blocked checkpoint-held model files."
+      },
+      "session_id": "s_task_vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:34:53.220Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/vm-prerelease-row36-azure-monitor-aad-auth-authoring-20260620.md ties row 36 to mounted sources (checkin/prerelease suite alias plus azure_monitor_aad_auth.go), records the landed feature/spec/replay files, and repo diff shows the expected bounded authoring slice in features/app-monitoring.yaml, specs/msi-azure-monitor-aad-auth-vm-prerelease.json, replays/msi-azure-monitor-aad-auth-vm-prerelease.ts, specs/index.json, and prerelease coverage ledgers. The worker stayed within the row-36 contract and did not reopen blocked checkpoint-held model files."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows3-4-rp-nodepool-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the VirtualMachine prerelease authoring slice for rows 3 and 4 by refreshing the rp-nodepool-lifecycle feature packet and adding exact spec/replay coverage for agentpool operations and agentpool upgrade-resume semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows3-4-rp-nodepool-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Using evidence/archive/vm-prerelease-e2ev3-missing-spec-authoring-batch-plan-20260620.md and the mounted-source mappings it cites, refresh features/rp-nodepool-lifecycle.yaml and add specs/replays for rp-nodepool-lifecycle-agentpool-operations and rp-nodepool-lifecycle-agentpool-upgrade-resume so rows 3 and 4 are represented without reopening source discovery.",
+        "Artifact summarizes the exact files landed, the mounted-source-backed contract captured for each row, and any bounded follow-up needed; work stays within rows 3 and 4 only.",
+        "Do not edit evidence/pipelines/virtualmachine-prerelease.features.txt, model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, or checkpoint-held files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:rp-nodepool-lifecycle"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:26:38.494Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T12:26:51.772Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows3-4-rp-nodepool-authoring-20260620_20260620122701",
+        "assigned_at": "2026-06-20T12:27:01.426Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows3-4-rp-nodepool-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows3-4-rp-nodepool-authoring-20260620_20260620122701",
+        "worker_started_at": "2026-06-20T12:27:22.823Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the rows 3-4 RP nodepool authoring slice: refreshed features/rp-nodepool-lifecycle.yaml, added two source-grounded spec/replay pairs, updated specs/index.json and virtualmachine-prerelease coverage rows 3-4, and wrote the requested evidence artifact.",
+        "last_worker_completed_at": "2026-06-20T12:33:01.286Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:34:01.419Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-rows3-4-rp-nodepool-authoring-20260620.md documents the mounted-source-backed row-3/4 contracts, and the repo now contains features/rp-nodepool-lifecycle.yaml plus the exact rp-nodepool-lifecycle agentpool operations/upgrade-resume spec+replay files required by acceptance."
+      },
+      "session_id": "s_task_vm-prerelease-rows3-4-rp-nodepool-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows3-4-rp-nodepool-authoring-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:34:01.419Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-rows3-4-rp-nodepool-authoring-20260620.md documents the mounted-source-backed row-3/4 contracts, and the repo now contains features/rp-nodepool-lifecycle.yaml plus the exact rp-nodepool-lifecycle agentpool operations/upgrade-resume spec+replay files required by acceptance."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-rows39-40-ssh-authoring-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the VirtualMachine prerelease authoring slice for rows 39 and 40 by seeding the node-pool-config feature root and adding exact SSH disable and SSH public-key-update specs/replays, keeping row 40 split into Linux and Windows artifacts.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows39-40-ssh-authoring-20260620.md"
+      ],
+      "acceptance": [
+        "Using evidence/archive/vm-prerelease-e2ev3-missing-spec-authoring-batch-plan-20260620.md and the mounted-source mappings it cites, create features/node-pool-config.yaml plus specs/replays for disable-ssh lifecycle and separate Linux/Windows ssh-public-key-update coverage without reopening source discovery.",
+        "Artifact summarizes the exact files landed, preserves the row-40 Linux/Windows split, and names any bounded follow-up needed; work stays within rows 39 and 40 only.",
+        "Do not edit evidence/pipelines/virtualmachine-prerelease.features.txt, model/knowledge-map/model.json, model/knowledge-map/views/path-summary.json, or checkpoint-held files."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:node-pool-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:26:47.546Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-20T12:26:51.772Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows39-40-ssh-authoring-20260620_20260620122701",
+        "assigned_at": "2026-06-20T12:27:01.568Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows39-40-ssh-authoring-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows39-40-ssh-authoring-20260620_20260620122701",
+        "worker_started_at": "2026-06-20T12:27:22.885Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Implemented the VM prerelease SSH authoring slice for rows 39 and 40 by adding features/node-pool-config.yaml, three exact SSH specs/replays, coverage/index wiring, and a durable evidence summary under evidence/archive/vm-prerelease-rows39-40-ssh-authoring-20260620.md.",
+        "last_worker_completed_at": "2026-06-20T12:33:29.944Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:34:01.463Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-rows39-40-ssh-authoring-20260620.md documents the mounted-source-backed SSH row-39/40 contracts, and the repo now contains features/node-pool-config.yaml plus the exact disable-ssh and split Linux/Windows SSH public-key-update spec+replay files required by acceptance."
+      },
+      "session_id": "s_task_vm-prerelease-rows39-40-ssh-authoring-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows39-40-ssh-authoring-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:34:01.463Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-rows39-40-ssh-authoring-20260620.md documents the mounted-source-backed SSH row-39/40 contracts, and the repo now contains features/node-pool-config.yaml plus the exact disable-ssh and split Linux/Windows SSH public-key-update spec+replay files required by acceptance."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the VirtualMachine prerelease selector and exact reviewed coverage accounting after the accepted post-row-closure proof showed row 46 path.cluster-autoscaler.mincount-recovery and row 47 path.cluster-autoscaler.overscale-node-stability are still mechanically selected but should not count as exact reviewed replacement coverage today.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620.md"
+      ],
+      "acceptance": [
+        "Using evidence/archive/vm-prerelease-plan-regenerate-and-proof-after-row-closure-20260620.md plus the accepted row-closure/candidate-only artifacts it cites, decide one truthful bounded outcome for rows 46 and 47: prune one or both selector entries from evidence/pipelines/virtualmachine-prerelease.features.txt, or preserve them only with explicit evidence that they remain execution-only and are excluded from exact reviewed replacement accounting.",
+        "Artifact records the exact files inspected/changed, names the row-46 and row-47 path/accounting decision separately, and reports the resulting selector/coverage state so the VM prerelease replacement surface is truthful again for exact reviewed accounting.",
+        "If exact replacement cannot yet be made truthful without new VM-specific authoring, the artifact names that next authoring gap precisely for row 46 and/or row 47 instead of leaving the selector discrepancy implicit."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:virtualmachine-prerelease-selector"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T12:29:08.684Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620_20260620122908",
+        "assigned_at": "2026-06-20T12:29:08.729Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620_20260620122908",
+        "worker_started_at": "2026-06-20T12:29:32.668Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Pruned rows 46 and 47 from `evidence/pipelines/virtualmachine-prerelease.features.txt` and wrote `evidence/archive/vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620.md` documenting that both rows remain candidate-only generic-adjacent coverage, not exact reviewed VM-prerelease replacement paths.",
+        "last_worker_completed_at": "2026-06-20T12:30:57.333Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T12:31:41.165Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner validation: evidence/archive/vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620.md records the bounded candidate-only accounting decision, and evidence/pipelines/virtualmachine-prerelease.features.txt now keeps rows 46/47 as comments only with no exact-reviewed selector entries for path.cluster-autoscaler.mincount-recovery or path.cluster-autoscaler.overscale-node-stability."
+      },
+      "session_id": "s_task_vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T12:31:41.165Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner validation: evidence/archive/vm-prerelease-selector-fidelity-rows46-47-reconciliation-20260620.md records the bounded candidate-only accounting decision, and evidence/pipelines/virtualmachine-prerelease.features.txt now keeps rows 46/47 as comments only with no exact-reviewed selector entries for path.cluster-autoscaler.mincount-recovery or path.cluster-autoscaler.overscale-node-stability."
+      },
+      "status": "done"
+    }
+  ]
+}

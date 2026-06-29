@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T13:02:46.797Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner planning update after accepting the cloud-provider credential-provider proof-enrichment blueprint: archive the two safe completed leaves whose durable meaning is already captured in accepted archive notes, keep the live frontier truthful and repo-local only, and carry forward exactly three assigned active leaves — cloud-provider credential-provider baseline proof implementation, private-cluster AddonV2 execute-readiness blueprint, and Speculor privatecluster/apiservervnetintegration source inventory — plus the unchanged single family-level external-human proof wait. Do not create extra cloud-provider follow-ons from this wake because the bounded successor is already active.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: produce a bounded repo-local proof-enrichment blueprint for baseline path.cloud-provider.credential-provider that converts the accepted evidence-strength gap packet into exact next-run assertion/artifact requirements and smallest replay-stage changes needed to separately prove Linux credential-provider flags, Windows credential-provider flags, kubelet-identity AcrPull effectiveness, Linux nginx pull, and Windows IIS pull, while keeping path/spec identity unchanged and excluding upgrade rows 189/214.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md"
+      ],
+      "acceptance": [
+        "Produce an archive note that maps each of the five missing mounted-source stages to concrete replay assertions/artifact fields or review checkpoints for the existing baseline carrier, with exact file/path anchors in the current replay/spec surfaces and no cloud execution.",
+        "Name the smallest credible implementation or review-only follow-up for landing those stronger proofs, keep scope limited to baseline create-time credential-provider behavior, and explicitly exclude normalized-model reopening plus VM prerelease rows 189/214."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud-provider.credential-provider"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T12:57:43.311Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623_20260623125743",
+        "assigned_at": "2026-06-23T12:57:43.356Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623_20260623125743",
+        "worker_started_at": "2026-06-23T12:58:10.733Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested repo-local proof-enrichment blueprint at evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md, mapping the five missing baseline credential-provider proof stages to exact replay assertions, artifact detail requirements, and smallest bounded follow-up changes while explicitly excluding rows 189/214 and normalized-model reopening.",
+        "last_worker_completed_at": "2026-06-23T13:01:04.447Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T13:01:26.996Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md: the archive note stays repo-local, anchors the mounted source/spec/replay surfaces, maps each of the five missing proof stages to exact spec-aligned claim/assertion and artifact requirements, names the smallest bounded replay-only follow-up, and explicitly excludes normalized-model reopening plus VM prerelease rows 189/214."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623"
+      ],
+      "result": "Authored the requested repo-local proof-enrichment blueprint at evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md, mapping the five missing baseline credential-provider proof stages to exact replay assertions, artifact detail requirements, and smallest bounded follow-up changes while explicitly excluding rows 189/214 and normalized-model reopening.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T13:01:26.996Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/cloud-provider-credential-provider-replay-proof-enrichment-blueprint-20260623.md: the archive note stays repo-local, anchors the mounted source/spec/replay surfaces, maps each of the five missing proof stages to exact spec-aligned claim/assertion and artifact requirements, names the smallest bounded replay-only follow-up, and explicitly excludes normalized-model reopening plus VM prerelease rows 189/214."
+      },
+      "status": "done"
+    }
+  ]
+}

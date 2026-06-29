@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T22:05:03.038Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner planning update reconciled the stale watchdog-runnable-backlog wake with current tree state: no runnable backlog remains because the only cited leaf is already active. Durable project knowledge now preserves three completed slices at the root level: (1) knowledge-map validator debt baseline captured the bounded validator debt starting point, (2) serverless-virtual-nodes source boundary mapping established the mounted-source/replay-backed subnet-validation contract, and (3) VM prerelease source boundary mapping for rows 25 and 50 established the source-backed prerelease expectation surface that feeds the live-operator bundle. Remaining live work is unchanged and explicit: active repo-local execution stays on delegation-service-string hygiene for serverless virtual-nodes and the bounded node-http-proxy normalized DAG repair, while the only true wait remains the consolidated external send-proof dispatch family under the VM prerelease replacement focus branch.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-source-boundary-map-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use mounted AKS RP handwritten e2ev3 source and existing repo artifacts to map the exact source-backed input/expectation boundary for path.serverless-virtual-nodes.subnet-validation, so the current runtime-blocked verdict has a durable local evidence packet and the next bounded action is explicit without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-map-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect the mounted AKS RP handwritten e2ev3 cases and any directly referenced scenario/config fragments relevant to serverless virtual nodes subnet/delegation validation, plus the repo-local model/spec/evidence carriers already attached to this path as needed to keep the packet truthful.",
+        "Write a durable evidence packet that lists the concrete input knobs, preconditions, expected subnet/delegation or witness-placement assertions, and the exact boundary between source-backed intent and the currently blocked runtime observation for path.serverless-virtual-nodes.subnet-validation.",
+        "Do not run cloud execution or broad model rewrites in this slice; end with the smallest truthful next step or evidence ceiling for this path so later verification or model-update work can proceed deliberately."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtual-nodes-source-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:01:51.681Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-source-boundary-map-20260620_20260620220151",
+        "assigned_at": "2026-06-20T22:01:51.731Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-source-boundary-map-20260620",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-source-boundary-map-20260620_20260620220151",
+        "worker_started_at": "2026-06-20T22:02:09.005Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a durable source-boundary evidence packet at evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-map-20260620.md that maps the mounted handwritten source ceiling, repo-local extension boundary, current blocked runtime observation, and the smallest truthful next step for path.serverless-virtual-nodes.subnet-validation.",
+        "last_worker_completed_at": "2026-06-20T22:03:44.713Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:04:13.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the evidence packet cites mounted virtualnodes handwritten source, cleanly separates source-backed family intent from repo-local extension, preserves the runtime-blocked placement ceiling for aci.containerGroup.inDelegatedSubnet, and records the no-rerun-until-material-signal next step."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-source-boundary-map-20260620",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-source-boundary-map-20260620"
+      ],
+      "result": "Created a durable source-boundary evidence packet at evidence/archive/serverless-virtual-nodes-subnet-validation-source-boundary-map-20260620.md that maps the mounted handwritten source ceiling, repo-local extension boundary, current blocked runtime observation, and the smallest truthful next step for path.serverless-virtual-nodes.subnet-validation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:04:13.239Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the evidence packet cites mounted virtualnodes handwritten source, cleanly separates source-backed family intent from repo-local extension, preserves the runtime-blocked placement ceiling for aci.containerGroup.inDelegatedSubnet, and records the no-rerun-until-material-signal next step."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-source-boundary-map-rows25-50-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP e2ev3 VirtualMachine prerelease and checkin suites to map the exact source-backed input/expectation coverage relevant to the VM prerelease rows-25-and-50 live-operator bundle, so the project can keep learning locally while the external send-proof family waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-source-boundary-map-rows25-50-20260620.md"
+      ],
+      "acceptance": [
+        "Inspect /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go and /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go plus any directly referenced scenario definitions needed to understand the covered prerelease paths.",
+        "Write a durable evidence packet that lists the handwritten cases or scenario fragments relevant to the live-operator rows 25 and 50 ask, including the concrete input knobs, expected behavior assertions, and any obvious adjacency or gaps for the current knowledge map/spec surfaces.",
+        "Do not run cloud execution or edit the accepted model in this slice; keep the work source-backed and bounded so it can run safely alongside the validator-debt baseline task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-source-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T22:00:26.159Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-source-boundary-map-rows25-50-20260620_20260620220028",
+        "assigned_at": "2026-06-20T22:00:28.836Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-source-boundary-map-rows25-50-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-source-boundary-map-rows25-50-20260620_20260620220028",
+        "worker_started_at": "2026-06-20T22:00:37.765Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested durable source-backed boundary packet at evidence/archive/vm-prerelease-source-boundary-map-rows25-50-20260620.md, mapping exact mounted AKS RP prerelease/checkin source coverage, concrete input knobs, expectations, adjacencies, and remaining execution-proof gap for VM prerelease rows 25 and 50.",
+        "last_worker_completed_at": "2026-06-20T22:02:41.051Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T22:03:15.365Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-source-boundary-map-rows25-50-20260620.md is source-backed from mounted AKS RP prerelease/checkin and row-local plan files, maps exact rows 25 and 50 inputs and assertions, and shows the remaining ceiling is the existing external-send-proof-dispatch-family-20260620 transport wait rather than any local-source blocker."
+      },
+      "session_id": "s_task_vm-prerelease-source-boundary-map-rows25-50-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-source-boundary-map-rows25-50-20260620"
+      ],
+      "result": "Produced the requested durable source-backed boundary packet at evidence/archive/vm-prerelease-source-boundary-map-rows25-50-20260620.md, mapping exact mounted AKS RP prerelease/checkin source coverage, concrete input knobs, expectations, adjacencies, and remaining execution-proof gap for VM prerelease rows 25 and 50.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T22:03:15.365Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-source-boundary-map-rows25-50-20260620.md is source-backed from mounted AKS RP prerelease/checkin and row-local plan files, maps exact rows 25 and 50 inputs and assertions, and shows the remaining ceiling is the existing external-send-proof-dispatch-family-20260620 transport wait rather than any local-source blocker."
+      },
+      "status": "done"
+    }
+  ]
+}

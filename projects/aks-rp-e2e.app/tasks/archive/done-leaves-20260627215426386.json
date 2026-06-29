@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-27T21:54:26.386Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-spec-verification-loop",
+  "summary": "Owner blocked-frontier review preserves the bounded app-routing verification shape. The only live spec-verification work now is one active repo-local repair-plus-rerun leaf for spec.app-routing.default-domain-http-reachability, one blocked terminal-review wait for run 28298043331, and one blocked shared operator-response family wait for the existing-cluster target asks. Archive the superseded scenario-specific waits and malformed placeholder done child because their durable meaning is now captured by the family-level wait plus the accepted lane summary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "--parent",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the single shared operator-response wait for the current App Routing existing-cluster target family until human:operator replies to either already-dispatched ask with target identifiers, a decline, a redirect, or an exact blocker; preserve both affected spec waits under one owner-review trigger at 2026-06-28T21:24:48Z.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/operator-response-latency-followup-spec-app-routing-family-20260627.md"
+      ],
+      "acceptance": [
+        "The task remains the single truthful live wait only while no authoritative operator reply/decline/redirect/blocker exists for either already-dispatched App Routing target-identifiers ask and the 2026-06-28T21:24:48Z review/send trigger remains the next family action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "operator-response:app-routing-existing-cluster-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-27T21:51:33.014Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-27T21:51:41.917Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Superseded immediately by await-operator-response-spec-app-routing-existing-cluster-family-20260627 after a planner add-command syntax mistake created this placeholder task id; no project meaning lives here."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-27T21:51:41.917Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Superseded immediately by await-operator-response-spec-app-routing-existing-cluster-family-20260627 after a planner add-command syntax mistake created this placeholder task id; no project meaning lives here."
+      },
+      "status": "done"
+    }
+  ]
+}

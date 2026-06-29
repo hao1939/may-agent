@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T09:11:53.402Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge/specs lane remains completed-only for this wake: the ManagedSystem first worked-example boundary packet is now accepted and captures the durable repo-local split between the accepted minimal REST add-existing control path, the maintained count/type rejection paths, the create-time initial/default-pool product-gap, and the terminal VirtualMachines+ManagedSystem incompatibility. No new feature-spec authoring is needed from this completion; forward motion stays with the already-active ManagedSystem create-time rerun-contract task in spec-runner-and-replays, while the shared seven-file checkpoint carrier remains the single truthful wait in evidence-feedback-and-model-update.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the ManagedSystem Pool first-worked-example boundary packet from current repo-local evidence and model state, capturing accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the next bounded unknown without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current repo-local ManagedSystem carriers it used, including the existing model-status product-gap entries for create-time initial/default pool and VirtualMachines+ManagedSystem combined, plus any inspected feature/spec/evidence files.",
+        "The resulting packet truthfully distinguishes accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and unknown edges for ManagedSystem Pool without cloud execution or unrelated VM prerelease rediscovery.",
+        "The task updates or explicitly confirms every repo-local carrier it touched for this first worked example and records one concrete next probe or gap only if a bounded unknown remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "managedsystem:boundary-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T09:08:44.610Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620_20260620090844",
+        "assigned_at": "2026-06-20T09:08:44.675Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620",
+        "worker_started_attempt_id": "a_managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620_20260620090844",
+        "worker_started_at": "2026-06-20T09:09:00.124Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive boundary packet at evidence/archive/managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620.md, synthesizing current repo-local ManagedSystem carriers, mounted AKS RP source intent, accepted/rejected inputs, expected/observed behavior, adjacent surfaces, and the one bounded remaining unknown without cloud execution.",
+        "last_worker_completed_at": "2026-06-20T09:10:21.175Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T09:11:01.989Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620.md cites the required repo-local model/status, feature/spec/evidence, and mounted-source carriers; it cleanly separates accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the one bounded remaining unknown for ManagedSystem without cloud execution, while explicitly confirming the touched carriers needed no content repair."
+      },
+      "session_id": "s_task_managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620",
+      "session_history": [
+        "s_task_managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-20T09:11:01.989Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/managedsystem-first-worked-example-boundary-map-from-current-evidence-20260620.md cites the required repo-local model/status, feature/spec/evidence, and mounted-source carriers; it cleanly separates accepted inputs, rejected inputs, expected behavior, observed behavior, adjacent surfaces, and the one bounded remaining unknown for ManagedSystem without cloud execution, while explicitly confirming the touched carriers needed no content repair."
+      },
+      "status": "done"
+    }
+  ]
+}

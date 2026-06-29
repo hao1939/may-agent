@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T15:14:37.285Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "2026-06-20 watchdog blocked-frontier review refresh: this lane now has one active repo-local leaf and one exact external wait. Keep vm-prerelease-rows46-47-accepted-model-path-representation-20260620 as the sole actionable feature/spec focus for landing truthful accepted model/path representation for VM prerelease rows 46 and 47 based on the prior dedicated authoring proofs and accepted-surface ceiling review. Keep machinespreview-external-send-proof-or-reply-wait-20260620 as the single truthful MachinesPreview wait because repo-local work is send-ready only and no further drafting or response-await leaf is truthful until durable proof of real external send/escalation or the authoritative reply is preserved repo-locally. Archive the completed accepted-surface landing leaf because its durable meaning is now represented by the active representation task plus the blocked-carrier evidence boundary.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-rows46-47-accepted-surface-landing-20260620",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Add the accepted reviewed-surface treatment for the dedicated VM prerelease CAS row-46 and row-47 carriers, or prove the exact remaining accepted-surface ceiling, so coverage can move beyond candidate-only without overclaiming generic CAS paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rows46-47-accepted-surface-landing-20260620.md"
+      ],
+      "acceptance": [
+        "The work compares the dedicated row-46 and row-47 carriers against model/knowledge-map/model.json, regenerated views, and the VM prerelease coverage ledger, then names the exact accepted reviewed-surface treatment for each row rather than assuming the generic CAS paths are sufficient.",
+        "If a truthful accepted treatment exists, the task lands the minimal repo-local updates across model/knowledge-map/model.json, regenerated views, evidence/pipelines/virtualmachine-prerelease-coverage.json/.md, and evidence/pipelines/virtualmachine-prerelease.features.txt, and validates them with the relevant non-cloud checks; otherwise it leaves those surfaces unchanged and records the precise accepted-surface blocker/ceiling.",
+        "The evidence note cites the dedicated row-46 and row-47 authoring proofs plus the promotion-decision review, states the final path/spec/replay mapping or non-landing reason for each row, and leaves one clear next project action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "coverage.virtualmachine-prerelease.rows46-47"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T15:09:25.057Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-rows46-47-accepted-surface-landing-20260620_20260620150925",
+        "assigned_at": "2026-06-20T15:09:25.105Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-rows46-47-accepted-surface-landing-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-rows46-47-accepted-surface-landing-20260620_20260620150925",
+        "worker_started_at": "2026-06-20T15:09:37.915Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-46/47 accepted-surface audit and wrote evidence/archive/vm-prerelease-rows46-47-accepted-surface-landing-20260620.md. Verified both dedicated carriers via fresh check-mode evidence and confirmed the reviewed/model surfaces must remain unchanged because accepted path/view support is still missing.",
+        "last_worker_completed_at": "2026-06-20T15:11:20.413Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T15:11:59.753Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-rows46-47-accepted-surface-landing-20260620.md truthfully proves rows 46 and 47 still lack accepted dedicated model/path representation, so reviewed/model surfaces were correctly left unchanged and the next work is accepted-surface representation."
+      },
+      "session_id": "s_task_vm-prerelease-rows46-47-accepted-surface-landing-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-rows46-47-accepted-surface-landing-20260620"
+      ],
+      "result": "Completed the row-46/47 accepted-surface audit and wrote evidence/archive/vm-prerelease-rows46-47-accepted-surface-landing-20260620.md. Verified both dedicated carriers via fresh check-mode evidence and confirmed the reviewed/model surfaces must remain unchanged because accepted path/view support is still missing.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T15:11:59.753Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-rows46-47-accepted-surface-landing-20260620.md truthfully proves rows 46 and 47 still lack accepted dedicated model/path representation, so reviewed/model surfaces were correctly left unchanged and the next work is accepted-surface representation."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T07:01:35.461Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+  "summary": "2026-06-21 owner planning-update accepted vmpr-maintained-five-checkpoint-candidate-rerun-20260621: evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md confirms the exact maintained-five knowledge-map slice (model/knowledge-map/model.json plus the four views) is still a truthful bounded checkpoint candidate with no active/review/blocked task holds, while broader VM prerelease/ManagedSystem/Azure Monitor residue stays explicitly excluded. Archive that completed hygiene leaf because its durable meaning is now represented here. The only remaining live focus child is app-monitoring-addonv2-azure-monitor-metrics-live-execute-allowed-vmsize-rerun-20260621, which should continue as the sole bounded cloud mutation to capture the first truthful post-Standard_D4s_v3 boundary for row 63 after explicit allowed Linux/Windows VM-size overrides.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vmpr-maintained-five-checkpoint-candidate-rerun-20260621",
+      "parent_id": "focus-live-boundary-managedsystem-vmpr-20260621",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Rerun the bounded domain:checkpoint helper for the exact five maintained knowledge-map/view files identified by the accepted VM prerelease workspace triage, then capture whether that maintained-five packet is still a truthful checkpoint candidate without widening into specs/index.json, prerelease coverage carriers, ManagedSystem, or Azure Monitor Metrics residue.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact records the exact domain:checkpoint -- --json bounded-slice command for model/knowledge-map/model.json plus the four model/knowledge-map/views/*.json maintained files, and captures recommendation plus active/review/blocked task hits from that rerun.",
+        "If the bounded helper still returns candidate, the artifact names the exact five checkpoint-safe paths, confirms that specs/index.json, evidence/pipelines/virtualmachine-prerelease-coverage.*, features/virtualmachines-managedsystem-combined.yaml, and the VM replay/spec families remain excluded residue, and gives the exact owner-only next checkpoint command for that slice; otherwise it names the first conflicting task or surface.",
+        "Task does not stage, commit, or widen the packet beyond the maintained-five slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vmpr-workspace-hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:59:55.399Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-maintained-five-checkpoint-candidate-rerun-20260621_20260621065957",
+        "assigned_at": "2026-06-21T06:59:57.055Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-maintained-five-checkpoint-candidate-rerun-20260621",
+        "worker_started_attempt_id": "a_vmpr-maintained-five-checkpoint-candidate-rerun-20260621_20260621065957",
+        "worker_started_at": "2026-06-21T07:00:05.712Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the required rerun artifact at evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md documenting the fresh bounded domain:checkpoint command/result for the exact maintained-five slice and confirming it remains a truthful checkpoint candidate with broader VMPR/ManagedSystem/Azure Monitor residue excluded.",
+        "last_worker_completed_at": "2026-06-21T07:01:03.552Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T07:01:30.052Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md: the fresh bounded domain:checkpoint rerun for only model/knowledge-map/model.json plus the four knowledge-map view files still returns recommendation=candidate with no active/review or blocked task holds, and the artifact explicitly proves broader VM prerelease/ManagedSystem/Azure Monitor residue remains outside this maintained-five slice."
+      },
+      "session_id": "s_task_vmpr-maintained-five-checkpoint-candidate-rerun-20260621",
+      "session_history": [
+        "s_task_vmpr-maintained-five-checkpoint-candidate-rerun-20260621"
+      ],
+      "result": "Wrote the required rerun artifact at evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md documenting the fresh bounded domain:checkpoint command/result for the exact maintained-five slice and confirming it remains a truthful checkpoint candidate with broader VMPR/ManagedSystem/Azure Monitor residue excluded.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T07:01:30.052Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/vmpr-maintained-five-checkpoint-candidate-rerun-20260621.md: the fresh bounded domain:checkpoint rerun for only model/knowledge-map/model.json plus the four knowledge-map view files still returns recommendation=candidate with no active/review or blocked task holds, and the artifact explicitly proves broader VM prerelease/ManagedSystem/Azure Monitor residue remains outside this maintained-five slice."
+      },
+      "status": "done"
+    }
+  ]
+}

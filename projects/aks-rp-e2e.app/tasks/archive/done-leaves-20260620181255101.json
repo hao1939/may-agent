@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T18:12:55.102Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+  "summary": "2026-06-20 owner planning-update after watchdog-review mismatch: vm-prerelease-shared-model-checkpoint-partition-20260620 is already accepted durable provenance, not pending review. Its evidence artifact proves the truthful split is a 7-file shared-model hold carrier plus a 20-file VM draft-promotion evidence subpartition that still needs repo-local owner-linkage repair. The watchdog-only review reference private-cluster-shared-source-truthfulness-repair-20260620 is absent from the live tree and is treated as stale residue rather than work to rematerialize until new domain evidence appears. This focus branch therefore reduces to one exact external-human transport wait, external-send-proof-dispatch-family-20260620, while the actual repo-local next mover for this wake remains the separately active root task vm-prerelease-draft-promotion-owner-linkage-repair-20260620.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-shared-model-checkpoint-partition-20260620",
+      "parent_id": "focus-vm-prerelease-pipeline-replacement-20260620",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted 27-file VM prerelease/shared-model dirty partition into a checkpointable repo-local slice by isolating it from the MachinesPreview blocked residue and naming the smallest truthful next commit/hold unit.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-shared-model-checkpoint-partition-20260620.md"
+      ],
+      "acceptance": [
+        "Evidence cites the accepted dirty-slice reconcile partition, lists the exact VM prerelease/shared-model files that belong in the local partition, and explicitly leaves the 5-file MachinesPreview blocked slice plus the superseded westus2 blocker packet out of this unit.",
+        "Evidence states whether the VM prerelease/shared-model partition is helper-clean as one checkpointable slice; if not, it names the smallest remaining repo-local subpartition or hold reason with exact file list and the next concrete owner/worker action.",
+        "No cloud mutation, outbound send, or blocked-wait duplication occurs; the artifact is purely a repo-local checkpointability packet for the VM prerelease/shared-model work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-shared-model-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T18:06:49.160Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-shared-model-checkpoint-partition-20260620_20260620180649",
+        "assigned_at": "2026-06-20T18:06:49.209Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-shared-model-checkpoint-partition-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-shared-model-checkpoint-partition-20260620_20260620180649",
+        "worker_started_at": "2026-06-20T18:07:03.562Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested checkpointability artifact at evidence/archive/vm-prerelease-shared-model-checkpoint-partition-20260620.md, isolating the accepted 27-file VM prerelease/shared-model partition from the excluded 5-file MachinesPreview blocked slice and superseded westus2 blocker, and identifying the smallest truthful next units as a 7-file shared-model hold plus a 20-file VM-evidence ownership-repair subpartition.",
+        "last_worker_completed_at": "2026-06-20T18:08:47.084Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T18:09:57.700Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the artifact truthfully isolates the accepted 27-file VM prerelease/shared-model partition from the excluded 5-file MachinesPreview blocked slice and superseded westus2 blocker residue, and it gives the smallest truthful next units as a 7-file shared-model hold plus a 20-file VM draft-promotion ownership-linkage repair successor. The bounded helper verdicts are accepted only as checkpointability-planning input; follow-up local owner-linkage repair is still required before any VM-only checkpoint claim."
+      },
+      "session_id": "s_task_vm-prerelease-shared-model-checkpoint-partition-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-shared-model-checkpoint-partition-20260620"
+      ],
+      "result": "Wrote the requested checkpointability artifact at evidence/archive/vm-prerelease-shared-model-checkpoint-partition-20260620.md, isolating the accepted 27-file VM prerelease/shared-model partition from the excluded 5-file MachinesPreview blocked slice and superseded westus2 blocker, and identifying the smallest truthful next units as a 7-file shared-model hold plus a 20-file VM-evidence ownership-repair subpartition.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T18:09:57.700Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the artifact truthfully isolates the accepted 27-file VM prerelease/shared-model partition from the excluded 5-file MachinesPreview blocked slice and superseded westus2 blocker residue, and it gives the smallest truthful next units as a 7-file shared-model hold plus a 20-file VM draft-promotion ownership-linkage repair successor. The bounded helper verdicts are accepted only as checkpointability-planning input; follow-up local owner-linkage repair is still required before any VM-only checkpoint claim."
+      },
+      "status": "done"
+    }
+  ]
+}

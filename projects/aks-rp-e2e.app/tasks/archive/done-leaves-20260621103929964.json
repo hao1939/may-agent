@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:39:29.964Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 blocked-frontier owner review confirmed the three live waits remain the only truthful blockers: addonv2 row-63 is still an exact may-agent runtime/session reconciliation wait, the shared external-send family is still waiting on real human transport or authoritative replies, and the privatecluster shared-apiserver-subnet branch is still waiting only on explicit cloud-execution approval. The local-dispatch proof leaf and the privatecluster run-ready packet leaf are now durable history because their meaning is preserved on the project root and the surviving blocked leaves: repo-local dispatch proof exists for the four covered asks, and the mounted-source plus replay/check work for the privatecluster shared-subnet success branch is already complete up to the execute-approval ceiling. Archive those completed leaves to keep the frontier readable, then refill runnable capacity with adjacent non-cloud learning work instead of reopening any wait unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "external-send-proof-covered-packets-local-dispatch-proof-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted approval-dispatch wrapper to emit durable repo-local message.created records for the four already-prepared external-send family ask packets (MachinesPreview handoff, VM prerelease rows 25+50 operator bundle, row-76 shared-identity ask, and row-33 execute-approval ask), then record exactly which branches now have local dispatch proof and what external-human transport/reply facts still remain blocked.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/external-send-proof-covered-packets-local-dispatch-proof-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted approval-dispatch wrapper slice plus the accepted external-send family audit, enumerates the exact four covered ask packets with packetPath/pathId/requestedAction metadata, and records the concrete app invocation shape used for each dispatch.",
+        "Artifact includes repo-local evidence (events, message.created payloads, and/or .state/approval-dispatch-runs.jsonl rows) proving durable packet-linked local dispatch proof was emitted for each covered ask or records the exact packet-specific app boundary that prevented dispatch.",
+        "Artifact ends with a family-status table stating which local-proof gaps are now closed for MachinesPreview, VM prerelease rows 25+50, row-76 shared-identity, and row-33 execute-approval, and what exact external human transport/reply fields still keep the family blocked; no cloud mutation, no packet redrafting beyond existing metadata, and no fake human-send claims."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "external-send-proof-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:28:37.032Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_external-send-proof-covered-packets-local-dispatch-proof-20260621_20260621102837",
+        "assigned_at": "2026-06-21T10:28:37.080Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_external-send-proof-covered-packets-local-dispatch-proof-20260621",
+        "worker_started_attempt_id": "a_external-send-proof-covered-packets-local-dispatch-proof-20260621_20260621102837",
+        "worker_started_at": "2026-06-21T10:28:49.781Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Emitted repo-local local-dispatch proof for the four covered external-send packets using the accepted approval-dispatch wrapper, then archived the exact packet/path/action metadata and proof status in evidence/archive/external-send-proof-covered-packets-local-dispatch-proof-20260621.md plus a JSON sidecar.",
+        "last_worker_completed_at": "2026-06-21T10:31:44.772Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:32:49.658Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archived artifact plus repo-local dispatch sidecar/run-ledger evidence truthfully prove packet-linked local dispatch proof for all four covered asks, while making no unsupported claim about real external human transport or replies."
+      },
+      "session_id": "s_task_external-send-proof-covered-packets-local-dispatch-proof-20260621",
+      "session_history": [
+        "s_task_external-send-proof-covered-packets-local-dispatch-proof-20260621"
+      ],
+      "result": "Emitted repo-local local-dispatch proof for the four covered external-send packets using the accepted approval-dispatch wrapper, then archived the exact packet/path/action metadata and proof status in evidence/archive/external-send-proof-covered-packets-local-dispatch-proof-20260621.md plus a JSON sidecar.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:32:49.658Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archived artifact plus repo-local dispatch sidecar/run-ledger evidence truthfully prove packet-linked local dispatch proof for all four covered asks, while making no unsupported claim about real external human transport or replies."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:47:05.409Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 blocked-frontier reconciliation keeps the project in the regular learning lane while tightening the only live external-human wait. Parent provenance now absorbs three accepted source-first artifacts: evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md selects path.serverless-schedulerctrl.enable-on-create as the first exact repo-local scheduler-controller authoring slice; evidence/archive/serverless-virtualnodes-standard-scenario-source-packet-20260620.md captures the exact mounted Scenario_Standard_VirtualNodes witness contract; and evidence/archive/serverless-virtualnodes-witness-boundary-note-20260620.md records strict reuse/non-reuse boundaries between that witness and current repo-local virtualnodes surfaces. The live frontier now stays deliberately small and concrete: continue the active scheduler-controller enable-on-create spec/replay authoring leaf, create an owner-facing external-send-proof handoff refresh leaf to package the exact dispatch/proof requirements for the VM/MachinesPreview family, and preserve external-send-proof-dispatch-family-20260620 as the single truthful blocked carrier until durable human send/escalation proof or an authoritative reply is captured.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-first-runnable-candidate-note-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write a durable non-cloud scheduler-controller first-runnable-candidate note that compares the four exact lifecycle leaves (enable-on-create, enable-on-existing, disable-after-create, disable-after-enable) on assertion density, mutation cost, checkpoint count, cleanup complexity, and diagnostic cleanliness, and recommends exactly one first repo-local spec/replay authoring target without launching cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md"
+      ],
+      "acceptance": [
+        "Artifact cites the mounted scheduler-controller lifecycle scenario files and the current repo-local serverless-schedulerctrl feature/model surfaces, scores each of the four lifecycle leaves on bounded authoring/execution criteria, and preserves the leaves as separate candidates rather than collapsing them into one generic lifecycle probe.",
+        "Artifact ends with an evidence-backed recommendation for exactly one first repo-local spec/replay authoring target plus the reasons sibling leaves are deferred, without editing the model or running cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:42:27.349Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-first-runnable-candidate-note-20260620_20260620194229",
+        "assigned_at": "2026-06-20T19:42:29.245Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-first-runnable-candidate-note-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-first-runnable-candidate-note-20260620_20260620194229",
+        "worker_started_at": "2026-06-20T19:42:49.853Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the durable scheduler-controller first-runnable-candidate note at evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md, comparing the four exact lifecycle leaves and recommending enable-on-create as the first repo-local spec/replay authoring target without cloud execution or model edits.",
+        "last_worker_completed_at": "2026-06-20T19:44:40.207Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:45:04.503Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md cites the mounted scheduler-controller lifecycle scenario files and repo-local serverless-schedulerctrl surfaces, compares the four exact lifecycle leaves on assertion density, mutation cost, checkpoint count, cleanup complexity, and diagnostic cleanliness, and recommends enable-on-create as the single first repo-local spec/replay authoring target without model edits or cloud execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-first-runnable-candidate-note-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-first-runnable-candidate-note-20260620"
+      ],
+      "result": "Created the durable scheduler-controller first-runnable-candidate note at evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md, comparing the four exact lifecycle leaves and recommending enable-on-create as the first repo-local spec/replay authoring target without cloud execution or model edits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:45:04.503Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-schedulerctrl-first-runnable-candidate-note-20260620.md cites the mounted scheduler-controller lifecycle scenario files and repo-local serverless-schedulerctrl surfaces, compares the four exact lifecycle leaves on assertion density, mutation cost, checkpoint count, cleanup complexity, and diagnostic cleanliness, and recommends enable-on-create as the single first repo-local spec/replay authoring target without model edits or cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

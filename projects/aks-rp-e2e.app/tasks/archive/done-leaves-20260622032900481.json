@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T03:29:00.481Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 owner review now accepts the Windows rows 186/205 review artifact alongside the earlier App Routing, Autoscaling, KMS, and Network/Swift/Cilium closure packets. VM prerelease closure is narrowed to: active KMS ledger repair (rows 148/149), waiting network ledger repair (rows 118/178 once vmpr-ledger capacity frees), active other-candidate review (rows 104/121/188), and two new concrete Windows authoring/closure leaves for row 186 combination and row 205 password-reset lifecycle. The full-plan refresh leaf remains truthfully blocked until those remaining closure leaves land; the external human-transport family remains the only live external wait.",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "vmpr-finish-autoscaling-rows125-131-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease autoscaling rows 125 Scenario_AutoScaling_Service_Principal and 131 Scenario_AutoScaling_Spot by starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus referenced autoscaling scenario files/specs/replays, then writing ../aks-rp-e2e/evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md with exact row dispositions (covered linkage, bounded spec/replay/model follow-up, or accepted keep-open proof gap).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact cites prerelease row anchors and mounted autoscaling source files/symbols for rows 125 and 131.",
+        "Each row gets exact disposition: covered linkage, bounded spec/replay/model follow-up, or accepted keep-open proof gap.",
+        "Generic autoscaling adjacency is not used as coverage unless source proves the same carrier exercises the row-specific Service Principal or Spot behavior."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:23:19.670Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-finish-autoscaling-rows125-131-20260622_20260622032341",
+        "assigned_at": "2026-06-22T03:23:41.534Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-finish-autoscaling-rows125-131-20260622",
+        "worker_started_attempt_id": "a_vmpr-finish-autoscaling-rows125-131-20260622_20260622032341",
+        "worker_started_at": "2026-06-22T03:23:47.936Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced `evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md`, closing the assigned analysis by citing mounted autoscaling source and current specs to keep rows 125 and 131 open with exact evidence-backed dispositions rather than promoting them incorrectly.",
+        "last_worker_completed_at": "2026-06-22T03:25:17.055Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:25:39.227Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review of evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md: mounted autoscaling source proves both rows are real handwritten branches, but row 125 remains VMSS+service-principal while the VM prerelease anchor is VirtualMachines+shared-identity, and row 131 remains VMSS+system-assigned spot while the prerelease anchor is VirtualMachines+shared-identity. The artifact cites exact mounted source/spec anchors and provides accepted evidence-backed keep-open reasons for both rows, so this row-family closure is complete without overpromoting coverage."
+      },
+      "session_id": "s_task_vmpr-finish-autoscaling-rows125-131-20260622",
+      "session_history": [
+        "s_task_vmpr-finish-autoscaling-rows125-131-20260622"
+      ],
+      "result": "Produced `evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md`, closing the assigned analysis by citing mounted autoscaling source and current specs to keep rows 125 and 131 open with exact evidence-backed dispositions rather than promoting them incorrectly.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:25:39.227Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review of evidence/archive/vmpr-finish-autoscaling-rows125-131-20260622.md: mounted autoscaling source proves both rows are real handwritten branches, but row 125 remains VMSS+service-principal while the VM prerelease anchor is VirtualMachines+shared-identity, and row 131 remains VMSS+system-assigned spot while the prerelease anchor is VirtualMachines+shared-identity. The artifact cites exact mounted source/spec anchors and provides accepted evidence-backed keep-open reasons for both rows, so this row-family closure is complete without overpromoting coverage."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-finish-kms-rows148-149-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease KMS rows 148 Scenario_KMS_Public_Cluster_v1_Public_Key_Vault and 149 Scenario_KMS_Private_Cluster_v2_Private_Key_Vault by starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus referenced KMS/private-cluster scenario files/specs/replays, then writing ../aks-rp-e2e/evidence/archive/vmpr-finish-kms-rows148-149-20260622.md with exact row dispositions (covered linkage, concrete follow-up, or accepted keep-open proof gap).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-finish-kms-rows148-149-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact names rows 148 and 149 with scenario names, current candidate-only status, and mounted source anchors.",
+        "Each row has exact disposition: covered linkage, concrete follow-up, or keep-open proof gap; public/private cluster and key vault v1/v2 details remain distinct.",
+        "No KMS row is promoted from candidate-only based only on broad KMS family coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "kms"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:23:28.044Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-finish-kms-rows148-149-20260622_20260622032341",
+        "assigned_at": "2026-06-22T03:23:41.535Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-finish-kms-rows148-149-20260622",
+        "worker_started_attempt_id": "a_vmpr-finish-kms-rows148-149-20260622_20260622032341",
+        "worker_started_at": "2026-06-22T03:23:48.088Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a durable closure packet at evidence/archive/vmpr-finish-kms-rows148-149-20260622.md proving rows 148 and 149 no longer need candidate-only status: row 148 maps to the public/public KMS canonical path, and row 149 maps specifically to the private-cluster + API server VNet integration + private KV canonical path.",
+        "last_worker_completed_at": "2026-06-22T03:25:45.547Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:26:00.082Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review of evidence/archive/vmpr-finish-kms-rows148-149-20260622.md: mounted KMS README alias mappings give exact source-backed canonical carriers for both rows, so row 148 closes under the public-cluster/public-KV carrier and row 149 closes under the private-cluster+API-server-VNet-integration/private-KV carrier. The artifact cites exact mounted source/spec/replay/model/pass evidence and proves both rows should stop being candidate-only."
+      },
+      "session_id": "s_task_vmpr-finish-kms-rows148-149-20260622",
+      "session_history": [
+        "s_task_vmpr-finish-kms-rows148-149-20260622"
+      ],
+      "result": "Wrote a durable closure packet at evidence/archive/vmpr-finish-kms-rows148-149-20260622.md proving rows 148 and 149 no longer need candidate-only status: row 148 maps to the public/public KMS canonical path, and row 149 maps specifically to the private-cluster + API server VNet integration + private KV canonical path.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:26:00.082Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review of evidence/archive/vmpr-finish-kms-rows148-149-20260622.md: mounted KMS README alias mappings give exact source-backed canonical carriers for both rows, so row 148 closes under the public-cluster/public-KV carrier and row 149 closes under the private-cluster+API-server-VNet-integration/private-KV carrier. The artifact cites exact mounted source/spec/replay/model/pass evidence and proves both rows should stop being candidate-only."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease Network/Swift/Cilium rows 99 Scenario_Azure_CNI_Overlay_AGIC, 118 Scenario_Cilium_Dataplane_Podsubnet_Enterprise, 119 Scenario_Swift_CNI_Windows2022_vms, 155 Scenario_Network_Plugin_None, 176 Scenario_Swift_CNI_Runner, 178 Scenario_Swift_CNI_VNetScale_Cilium, and 207 Scenario_Swift_CNI_Windows_vms by starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus referenced network/cilium/swift scenario definitions/specs/replays, then writing ../aks-rp-e2e/evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md with exact row dispositions (covered linkage, concrete authoring/repair follow-up, or accepted keep-open proof gap).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact names rows 99, 118, 119, 155, 176, 178, and 207 with scenario names, source files/symbols, and current ledger status.",
+        "Each row gets a disposition: exact covered linkage, concrete authoring/repair follow-up, or accepted keep-open reason with exact missing proof.",
+        "Network family evidence is not overgeneralized; Windows/Swift/Cilium variants are kept distinct unless source proves a shared carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:23:08.990Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622_20260622032341",
+        "assigned_at": "2026-06-22T03:23:41.535Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622",
+        "worker_started_attempt_id": "a_vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622_20260622032341",
+        "worker_started_at": "2026-06-22T03:23:48.332Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested network-family reconciliation artifact at evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md, mapping rows 99/118/119/155/176/178/207 to mounted source symbols, current ledger state, repo-local carriers, and final dispositions without broad tree changes.",
+        "last_worker_completed_at": "2026-06-22T03:25:56.028Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:27:09.911Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review 2026-06-22: evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md names all seven rows with mounted-source anchors and row-specific final dispositions. Rows 99 and 155 are accepted keep-open proof gaps, rows 119/176/207 remain correct candidate-only variants, and rows 118/178 are concretely narrowed to adjacent-carrier ledger repair follow-up rather than generic missing-source blockers."
+      },
+      "session_id": "s_task_vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622",
+      "session_history": [
+        "s_task_vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622"
+      ],
+      "result": "Produced the requested network-family reconciliation artifact at evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md, mapping rows 99/118/119/155/176/178/207 to mounted source symbols, current ledger state, repo-local carriers, and final dispositions without broad tree changes.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:27:09.911Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review 2026-06-22: evidence/archive/vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622.md names all seven rows with mounted-source anchors and row-specific final dispositions. Rows 99 and 155 are accepted keep-open proof gaps, rows 119/176/207 remain correct candidate-only variants, and rows 118/178 are concretely narrowed to adjacent-carrier ledger repair follow-up rather than generic missing-source blockers."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-finish-windows-rows186-205-207-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease Windows variant candidate-only rows 186, 205, and 207 by inspecting mounted Windows/Swift source and existing Windows specs/replays to promote exact carriers or record accepted keep-open reasons.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-finish-windows-rows186-205-207-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact names rows 186, 205, and 207 with scenario names, source files/symbols, and candidate-only reason.",
+        "Each row receives exact disposition: covered linkage, concrete authoring/repair follow-up, or accepted keep-open proof gap.",
+        "Windows2022/Windows2025 combination, password/containerd, and Swift Windows variants are not collapsed unless mounted source proves a shared maintained carrier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:23:36.226Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-22T03:24:30.411Z",
+        "promoted_by": "task-tree-tool",
+        "reviewed_at": "2026-06-22T03:24:54.139Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced with a non-duplicated Windows leaf covering only rows 186 and 205. Row 207 Scenario_Swift_CNI_Windows_vms remains owned by vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622 so every remaining non-covered row appears in exactly one live row-closure task."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-22T03:24:54.139Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced with a non-duplicated Windows leaf covering only rows 186 and 205. Row 207 Scenario_Swift_CNI_Windows_vms remains owned by vmpr-finish-network-swift-cilium-rows99-118-119-155-176-178-207-20260622 so every remaining non-covered row appears in exactly one live row-closure task."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vmpr-finish-windows-rows186-205-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close VM prerelease Windows-only candidate rows 186 Scenario_Windows2022_Windows2025_Combination_vms and 205 Scenario_Windows_Password_Containerd_vms by starting from /app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go plus the referenced Windows scenario files/specs/replays, then writing ../aks-rp-e2e/evidence/archive/vmpr-finish-windows-rows186-205-20260622.md with exact row dispositions (covered linkage, bounded authoring/repair follow-up, or accepted keep-open proof gap).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vmpr-finish-windows-rows186-205-20260622.md"
+      ],
+      "acceptance": [
+        "Artifact names rows 186 and 205 with scenario names, source files/symbols, and current candidate-only reason.",
+        "Each row receives exact disposition: covered linkage, concrete authoring/repair follow-up, or accepted keep-open proof gap.",
+        "Windows2022/Windows2025 combination and password/containerd are evaluated independently and row 207 stays owned by the Network/Swift family task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "windows"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T03:24:54.091Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vmpr-finish-windows-rows186-205-20260622_20260622032527",
+        "assigned_at": "2026-06-22T03:25:27.754Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vmpr-finish-windows-rows186-205-20260622",
+        "worker_started_attempt_id": "a_vmpr-finish-windows-rows186-205-20260622_20260622032527",
+        "worker_started_at": "2026-06-22T03:26:16.235Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested Windows row disposition artifact at evidence/archive/vmpr-finish-windows-rows186-205-20260622.md, grounding rows 186 and 205 in mounted source and concluding both require bounded authoring/metadata follow-up rather than exact coverage or proof-gap wait.",
+        "last_worker_completed_at": "2026-06-22T03:27:38.077Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T03:29:00.258Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted 2026-06-22 Windows rows 186/205 artifact: mounted source and adjacent carrier checks prove both rows are source-understood but not exact-covered, each with a distinct bounded authoring/repair follow-up; row 207 remains correctly scoped to the Network/Swift family."
+      },
+      "session_id": "s_task_vmpr-finish-windows-rows186-205-20260622",
+      "session_history": [
+        "s_task_vmpr-finish-windows-rows186-205-20260622"
+      ],
+      "result": "Produced the requested Windows row disposition artifact at evidence/archive/vmpr-finish-windows-rows186-205-20260622.md, grounding rows 186 and 205 in mounted source and concluding both require bounded authoring/metadata follow-up rather than exact coverage or proof-gap wait.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T03:29:00.258Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted 2026-06-22 Windows rows 186/205 artifact: mounted source and adjacent carrier checks prove both rows are source-understood but not exact-covered, each with a distinct bounded authoring/repair follow-up; row 207 remains correctly scoped to the Network/Swift family."
+      },
+      "status": "done"
+    }
+  ]
+}

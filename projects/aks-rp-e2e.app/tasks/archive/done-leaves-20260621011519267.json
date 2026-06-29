@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:15:19.267Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Owner reconciled the watchdog-review-pending wake against durable history and kept the frontier intentionally narrow. The cited private-cluster APIVNET review task was already accepted and archived with evidence in ../aks-rp-e2e/evidence/archive/private-cluster-apivnet-spec-registry-detail-parity-repair-20260621.md, so no private-cluster retry or replacement leaf is needed. Current live work remains source-vm-prerelease-mounted-go-spec-boundary-20260621 as the sole repo-local learning lane, aimed at converting bounded mounted Go source from prerelease.go/checkin.go into one concrete VM prerelease input/expectation boundary plus the exact next spec/replay/model action. external-send-proof-dispatch-family-20260620 remains the single truthful cross-branch external-human transport ceiling for the send-ready MachinesPreview and VM prerelease packets; do not duplicate waits until durable repo-local send or escalation proof exists.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-subnet-model-text-residual-classify-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify the current residual model/knowledge-map/model.json serverless subnet-validation wording diff exposed by the stale VMPR row-30/31/32 audit. Determine whether the two Microsoft.ContainerInstance delegation-string corrections are truthful intended model updates that should be carried as a bounded serverless checkpoint slice, or whether they are workspace drift that should be excluded from future checkpoint candidates. Produce one exact recommendation with supporting diff evidence and any required successor limited to this serverless surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-subnet-model-text-residual-classify-20260621.md"
+      ],
+      "acceptance": [
+        "The packet cites the exact residual model.json fields named by the accepted audit: scenario.serverless-virtual-nodes.subnet-validation.intent and assert.subnet.delegation.valid.behavior.",
+        "The packet shows bounded diff/status evidence for those two lines, explains whether the Microsoft.ContainerInstance wording correction is a truthful intended update or workspace drift, and states the exact effect on future checkpoint partitioning.",
+        "If follow-up is still needed, the packet ends with one narrower successor or exact resume condition limited to this serverless surface instead of reopening VM prerelease isolation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-subnet-model"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:08:42.659Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-subnet-model-text-residual-classify-20260621_20260621010842",
+        "assigned_at": "2026-06-21T01:08:42.704Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-subnet-model-text-residual-classify-20260621",
+        "worker_started_attempt_id": "a_serverless-subnet-model-text-residual-classify-20260621_20260621010842",
+        "worker_started_at": "2026-06-21T01:09:03.314Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested serverless residual-classification packet at evidence/archive/serverless-subnet-model-text-residual-classify-20260621.md. It shows the exact two-line model.json diff, proves the singular delegation string from mounted AKS RP source, and recommends treating the change as a bounded serverless checkpoint slice rather than workspace drift.",
+        "last_worker_completed_at": "2026-06-21T01:09:57.663Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:10:46.314Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/serverless-subnet-model-text-residual-classify-20260621.md cites the exact two model.json carriers, proves from mounted AKS RP source that the singular Microsoft.ContainerInstance delegation string is correct, and classifies the diff as a bounded serverless checkpoint slice rather than workspace drift."
+      },
+      "session_id": "s_task_serverless-subnet-model-text-residual-classify-20260621",
+      "session_history": [
+        "s_task_serverless-subnet-model-text-residual-classify-20260621"
+      ],
+      "result": "Produced the requested serverless residual-classification packet at evidence/archive/serverless-subnet-model-text-residual-classify-20260621.md. It shows the exact two-line model.json diff, proves the singular delegation string from mounted AKS RP source, and recommends treating the change as a bounded serverless checkpoint slice rather than workspace drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:10:46.314Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/serverless-subnet-model-text-residual-classify-20260621.md cites the exact two model.json carriers, proves from mounted AKS RP source that the singular Microsoft.ContainerInstance delegation string is correct, and classifies the diff as a bounded serverless checkpoint slice rather than workspace drift."
+      },
+      "status": "done"
+    }
+  ]
+}

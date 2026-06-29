@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-24T19:20:50.255Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-24 owner kept the stale watchdog-review-pending trigger closed and compacted completed repo-local format-gate work at the root. The archived single-file writebacks collectively prove the shared bun run check warning frontier stepped down file-by-file through replays/secops-fips-version-gate.ts to the current exact 12-file frontier; repo-wide-bun-check-replay-frontier-secops-fips-windows-single-file-writeback-20260624 remains the only live local reducer for repo-wide-bun-check.format-gate. virtualmachine-prerelease-coverage-ledger-checkpoint-gate-wait-20260624 stays blocked only until the first green repo-wide bun run check, and the four external waits under focus-mounted-source-coverage-closure-and-external-wait-20260623 remain the single truthful blocked-frontier representation until returned proof or owner follow-up on/after 2026-06-26.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce the shared repo-wide format gate with one bounded Prettier writeback only on the exact next single-file warning slice replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts from the accepted 20-warning rerun, then rerun targeted verification for that same file and refresh the repo-wide warning count without widening into other files, cloud work, or checkpoint landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624.md"
+      ],
+      "acceptance": [
+        "The archive artifact records the exact bounded writeback command or commands for only replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts, targeted verification output for that same file, and git diff or equivalent proof showing only the intended formatting changes in that file.",
+        "The artifact records a repo-wide bun run check or equivalent exact warning-count refresh after the replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts writeback and states the new remaining warned-file count or exact next frontier truth needed for the VM prerelease checkpoint gate.",
+        "The task remains repo-local and bounded: no formatting outside replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts, no cloud execution, and no domain:checkpoint landing attempt."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo-wide-bun-check.format-gate"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-24T18:57:05.485Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624_20260624185705",
+        "assigned_at": "2026-06-24T18:57:05.529Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-wri",
+        "worker_started_attempt_id": "a_repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624_20260624185705",
+        "worker_started_at": "2026-06-24T18:57:19.545Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a bounded Prettier writeback only to replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts and wrote an evidence artifact documenting targeted verification, file-scoped diff proof, and the refreshed repo-wide warning count dropping from 20 to 19.",
+        "last_worker_completed_at": "2026-06-24T18:59:06.964Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-24T18:59:49.265Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624.md: targeted prettier --check failed only for replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts, bounded prettier --write touched only that file, targeted re-check passed, and repo-wide bun run check refreshed the shared warning frontier from 20 files to 19 without widening into cloud work or checkpoint landing."
+      },
+      "session_id": "s_task_repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-wri",
+      "session_history": [
+        "s_task_repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-wri"
+      ],
+      "result": "Applied a bounded Prettier writeback only to replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts and wrote an evidence artifact documenting targeted verification, file-scoped diff proof, and the refreshed repo-wide warning count dropping from 20 to 19.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-24T18:59:49.265Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review of evidence/archive/repo-wide-bun-check-replay-frontier-rp-cluster-lifecycle-new-vnet-runner-variant-single-file-writeback-20260624.md: targeted prettier --check failed only for replays/rp-cluster-lifecycle-new-vnet-runner-variant.ts, bounded prettier --write touched only that file, targeted re-check passed, and repo-wide bun run check refreshed the shared warning frontier from 20 files to 19 without widening into cloud work or checkpoint landing."
+      },
+      "status": "done"
+    }
+  ]
+}

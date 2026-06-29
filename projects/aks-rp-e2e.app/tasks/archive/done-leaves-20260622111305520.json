@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T11:13:05.520Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed wake accepted the mounted-source VM prerelease row-contract reconcile as completed repo-local evidence: rows 25+50, 40-43, 33, and 76 are now locally reconciled against mounted source/spec/model surfaces, so no new local source/spec/model leaf is needed for that family. The only remaining external residue for those asks stays compressed in external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622, while the single live repo-local action is node-custom-ca-trust-post-rerun-surface-validation-20260622 to verify the orphaned node-custom-ca-trust completion across replay/model/view/status surfaces without cloud mutation.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-mounted-source-row-contract-reconcile-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the mounted AKS RP Go source plus current repo-local specs/model to reconcile the VirtualMachine prerelease rows called out by the shared external-human-transport wait (rows 25+50, 40-43, 33, and 76): identify what each row actually asserts, which parts are already covered locally, which remaining gaps can be closed with source/spec/model updates only, and which exact residue truly still depends on later human/operator proof.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-mounted-source-row-contract-reconcile-20260622.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted source files and maps rows 25+50, 40-43, 33, and 76 to exact scenario/step/assertion intent, with exact repo-local file paths for any existing replay/spec/model coverage.",
+        "The work names at least one concrete repo-local follow-up per uncovered row family when bounded progress is possible (spec update, replay prep, model/view reconciliation, or evidence-ceiling classification), and explicitly distinguishes that work from the shared external-human-transport wait.",
+        "No cloud mutation or out-of-runtime messaging is performed; this is mounted-source/spec/model reconciliation only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path-virtualmachines-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T11:08:17.416Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-mounted-source-row-contract-reconcile-20260622_20260622110819",
+        "assigned_at": "2026-06-22T11:08:19.841Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-mounted-source-row-contract-reconcile-20260622",
+        "worker_started_attempt_id": "a_vm-prerelease-mounted-source-row-contract-reconcile-20260622_20260622110819",
+        "worker_started_at": "2026-06-22T11:08:33.179Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created `evidence/archive/vm-prerelease-mounted-source-row-contract-reconcile-20260622.md`, reconciling VM prerelease rows 25+50, 40-43, 33, and 76 against mounted AKS RP source and current repo-local spec/model/replay surfaces. The artifact concludes that all scoped row families are locally reconciled and that only external human/operator proof residue remains.",
+        "last_worker_completed_at": "2026-06-22T11:11:37.307Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T11:12:22.126Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/vm-prerelease-mounted-source-row-contract-reconcile-20260622.md: it cites the mounted AKS RP source and maps rows 25+50, 40-43, 33, and 76 to exact repo-local spec/replay/model carriers, with no remaining repo-local residue beyond the shared later external proof wait."
+      },
+      "session_id": "s_task_vm-prerelease-mounted-source-row-contract-reconcile-20260622",
+      "session_history": [
+        "s_task_vm-prerelease-mounted-source-row-contract-reconcile-20260622"
+      ],
+      "result": "Created `evidence/archive/vm-prerelease-mounted-source-row-contract-reconcile-20260622.md`, reconciling VM prerelease rows 25+50, 40-43, 33, and 76 against mounted AKS RP source and current repo-local spec/model/replay surfaces. The artifact concludes that all scoped row families are locally reconciled and that only external human/operator proof residue remains.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T11:12:22.126Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/vm-prerelease-mounted-source-row-contract-reconcile-20260622.md: it cites the mounted AKS RP source and maps rows 25+50, 40-43, 33, and 76 to exact repo-local spec/replay/model carriers, with no remaining repo-local residue beyond the shared later external proof wait."
+      },
+      "status": "done"
+    }
+  ]
+}

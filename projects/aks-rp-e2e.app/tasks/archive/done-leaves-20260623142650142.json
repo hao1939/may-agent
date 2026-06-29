@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T14:26:50.142Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+  "summary": "2026-06-23 owner accepted private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623 and archived it into this branch summary. The exact mounted same-cluster system->none private-cluster lifecycle remains fully carrier-complete repo-local: feature/spec/replay/model surfaces are aligned, the canonical path verdict for path.private-cluster-none-dns-zone-v3 truthfully stays unknown with ceilingCategory=execution, and no model/view/spec/replay edit is warranted because execution-readiness is already represented on the spec surface while accepted full-lifecycle live observation is still absent. This focus branch should now carry exactly one open child only — external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622 — until returned authoritative operator proof or reply changes scope; do not reopen completed private-cluster source/spec/replay/model closure or split the shared wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623",
+      "parent_id": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: review the accepted private-cluster none-dns-zone-v3 execution-readiness packet and current model/view entries, then make the truthful repo-local status/diagnosis update for path.private-cluster-none-dns-zone-v3 (or record the exact evidence ceiling if status must stay unknown) without cloud execution or reopening the completed source/spec/replay closure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623.md"
+      ],
+      "acceptance": [
+        "The task cites the accepted readiness evidence and current model/view state, then either updates the relevant repo-local model/view artifacts to the most truthful status/diagnosis/retest condition for path.private-cluster-none-dns-zone-v3 or records exact bounded evidence for why unknown must remain.",
+        "No cloud mutation occurs, no covered external-human wait scope is widened, and the note explains any model/view file edits or preserves the exact next repo-local successor needed if a truthful status change cannot yet be made."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster.none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T14:25:58.046Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623_20260623142558",
+        "assigned_at": "2026-06-23T14:25:58.093Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623",
+        "worker_started_attempt_id": "a_private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623_20260623142558",
+        "worker_started_at": "2026-06-23T14:26:10.728Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested reconciliation artifact at evidence/archive/private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623.md, concluding the path should remain unknown because execution-readiness is already represented on the spec surface while the canonical path verdict still lacks accepted full lifecycle observation.",
+        "last_worker_completed_at": "2026-06-23T14:26:10.741Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T14:26:50.094Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites mounted source, maintained spec/replay/model surfaces, and the shared external wait to prove path.private-cluster-none-dns-zone-v3 should remain unknown with ceilingCategory=execution because execution-readiness already lives on the spec surface while accepted exact-lifecycle live observation is still missing."
+      },
+      "session_id": "s_task_private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623",
+      "session_history": [
+        "s_task_private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623"
+      ],
+      "result": "Produced the requested reconciliation artifact at evidence/archive/private-cluster-none-dns-zone-v3-model-status-reconciliation-20260623.md, concluding the path should remain unknown because execution-readiness is already represented on the spec surface while the canonical path verdict still lacks accepted full lifecycle observation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T14:26:50.094Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites mounted source, maintained spec/replay/model surfaces, and the shared external wait to prove path.private-cluster-none-dns-zone-v3 should remain unknown with ceilingCategory=execution because execution-readiness already lives on the spec surface while accepted exact-lifecycle live observation is still missing."
+      },
+      "status": "done"
+    }
+  ]
+}

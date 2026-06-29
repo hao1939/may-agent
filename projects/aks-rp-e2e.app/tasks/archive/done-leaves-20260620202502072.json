@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T20:25:02.072Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner rollup: accepted the repo-local Cilium stop/start maintained-surface linkage and the VM prerelease row-25 path-summary truthfulness repair, so the project now preserves one active repo-local authoring leaf for the dedicated VM prerelease row-51 carrier plus one family-level external-human send-proof wait for the already send-ready MachinesPreview and VM prerelease operator packets.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "network-cni-cilium-stop-start-model-replay-linkage-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Wire the new exact repo-local Cilium stop/start source contract into maintained replay/model surfaces so later workers can reopen the overlay+Cilium create->stop->start branch without rediscovery or ambiguity.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/replays/network-cni-cilium-stop-start.ts",
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "Repo-local replay/model updates consume specs/network-cni-cilium-stop-start.json and preserve the exact mounted Scenario_Cilium_Stop_Start lineage: Azure CNI overlay + Cilium create, stop, start, kept distinct from create-only, upgrade, topology, and Automatic-SKU mutant branches.",
+        "Maintained surfaces register at least one stable path/spec/scenario linkage for path.network-cni-cilium-stop-start, and any required feature-packet note or evidence note explains what was linked or intentionally deferred.",
+        "Outcome remains repo-local only: no cloud execution is launched and no passive blocker is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni-cilium-stop-start-maintained-surfaces"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:15:24.493Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-cilium-stop-start-model-replay-linkage-20260620_20260620201524",
+        "assigned_at": "2026-06-20T20:15:24.539Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-cilium-stop-start-model-replay-linkage-20260620",
+        "worker_started_attempt_id": "a_network-cni-cilium-stop-start-model-replay-linkage-20260620_20260620201524",
+        "worker_started_at": "2026-06-20T20:15:39.370Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Added repo-local stop/start replay wiring at replays/network-cni-cilium-stop-start.ts and linked the exact mounted Scenario_Cilium_Stop_Start branch into model/knowledge-map/model.json, specs/network-cni-cilium-stop-start.json, and specs/index.json without launching any cloud execution.",
+        "last_worker_completed_at": "2026-06-20T20:21:55.688Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:22:32.623Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after file-level validation: replays/network-cni-cilium-stop-start.ts now anchors path.network-cni-cilium-stop-start to spec.network-cni.cilium-stop-start and Scenario_Cilium_Stop_Start; model/knowledge-map/model.json registers stable path/spec/scenario linkage and exact-authoring evidence; specs/network-cni-cilium-stop-start.json plus specs/index.json preserve the exact overlay+Cilium create->stop->start boundary and Automatic-SKU exclusion. Repo-local only; no cloud execution or new blocker."
+      },
+      "session_id": "s_task_network-cni-cilium-stop-start-model-replay-linkage-20260620",
+      "session_history": [
+        "s_task_network-cni-cilium-stop-start-model-replay-linkage-20260620"
+      ],
+      "result": "Added repo-local stop/start replay wiring at replays/network-cni-cilium-stop-start.ts and linked the exact mounted Scenario_Cilium_Stop_Start branch into model/knowledge-map/model.json, specs/network-cni-cilium-stop-start.json, and specs/index.json without launching any cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:22:32.623Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted after file-level validation: replays/network-cni-cilium-stop-start.ts now anchors path.network-cni-cilium-stop-start to spec.network-cni.cilium-stop-start and Scenario_Cilium_Stop_Start; model/knowledge-map/model.json registers stable path/spec/scenario linkage and exact-authoring evidence; specs/network-cni-cilium-stop-start.json plus specs/index.json preserve the exact overlay+Cilium create->stop->start boundary and Automatic-SKU exclusion. Repo-local only; no cloud execution or new blocker."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the stale row-25 derived model/view wording so the VM prerelease capacity-based-surge path truthfully states that an execute-capable local replay already exists.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json"
+      ],
+      "acceptance": [
+        "Reconcile the row-25 path-summary wording against the accepted repo-local spec, replay, and coverage ledger so the derived surface no longer says the live replay implementation remains separate when an execute-capable local replay is already present.",
+        "Update any directly coupled repo-local summary/evidence surface needed to keep the wording change internally consistent, and cite the exact files compared.",
+        "Outcome remains repo-local only: no cloud execution and no change to the external send-proof family blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "vm-prerelease-row25-path-summary"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T20:20:52.340Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620_20260620202052",
+        "assigned_at": "2026-06-20T20:20:52.387Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620",
+        "worker_started_attempt_id": "a_vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620_20260620202052",
+        "worker_started_at": "2026-06-20T20:21:05.256Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired VM prerelease row-25 wording in the accepted model and regenerated derived views so the capacity-based-surge path now truthfully states that an execute-capable local replay already exists, while keeping live execution gated and external blockers unchanged.",
+        "last_worker_completed_at": "2026-06-20T20:22:36.468Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T20:23:25.741Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner review accepted after file-level validation: model/knowledge-map/views/path-summary.json now states row 25 already has an execute-gated repo-local replay at replays/virtualmachines-capacity-based-surge.ts, and specs/virtualmachines-capacity-based-surge.json carries the same statusReason/probeRef linkage, so the stale 'implementation remains separate' wording is removed without changing external blocker state."
+      },
+      "session_id": "s_task_vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620",
+      "session_history": [
+        "s_task_vm-prerelease-row25-path-summary-truthfulness-cleanup-20260620"
+      ],
+      "result": "Repaired VM prerelease row-25 wording in the accepted model and regenerated derived views so the capacity-based-surge path now truthfully states that an execute-capable local replay already exists, while keeping live execution gated and external blockers unchanged.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T20:23:25.741Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner review accepted after file-level validation: model/knowledge-map/views/path-summary.json now states row 25 already has an execute-gated repo-local replay at replays/virtualmachines-capacity-based-surge.ts, and specs/virtualmachines-capacity-based-surge.json carries the same statusReason/probeRef linkage, so the stale 'implementation remains separate' wording is removed without changing external blocker state."
+      },
+      "status": "done"
+    }
+  ]
+}

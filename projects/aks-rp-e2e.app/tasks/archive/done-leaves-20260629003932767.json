@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T00:39:32.768Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-29 blocked-frontier owner review keeps the tree intentionally compact and blocked-only. The westus2 cluster-count preflight family warning was rechecked against accepted diagnosis/dispatch evidence and still has no smaller truthful repo-local setup, alternate-environment, or escalation leaf beyond the single shared wait under aks-spec-verification-loop. The two focus-mounted-source human/operator waits also remain exact until an earlier durable reply/proof/redirect/decline or the shared 2026-06-29T16:45:00Z checkpoint. Archive the three completed project-level normalization/reconciliation leaves because their durable meaning already lives in accepted evidence/model updates and no new runnable follow-up is truthful before one of those explicit resume conditions changes.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "reconcile-private-cluster-none-dns-zone-v3-status-20260629",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile path.private-cluster-none-dns-zone-v3 from unknown to the strongest truthful repo-local status by reviewing mounted source, canonical spec/replay carriers, accepted artifacts, and current model text; if it must stay unknown, record the exact residual gap and why no stronger repo-local verdict is justified.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md"
+      ],
+      "acceptance": [
+        "Durable artifact cites the exact mounted source carrier, current spec/replay linkage, and accepted evidence for path.private-cluster-none-dns-zone-v3.",
+        "Any model/view/spec text touched by the review is updated to the strongest truthful repo-local status without claiming a cloud verdict that was not reached.",
+        "If the path remains unknown or blocked, the artifact states the exact missing execution or source fact needed to move it and preserves a safe next action."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:private-cluster-none-dns-zone-v3"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-29T00:23:45.668Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-29T00:23:52.113Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_reconcile-private-cluster-none-dns-zone-v3-status-20260629_20260629002355",
+        "assigned_at": "2026-06-29T00:23:55.785Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_reconcile-private-cluster-none-dns-zone-v3-status-20260629",
+        "worker_started_attempt_id": "a_reconcile-private-cluster-none-dns-zone-v3-status-20260629_20260629002355",
+        "worker_started_at": "2026-06-29T00:24:07.441Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled path.private-cluster-none-dns-zone-v3 to the strongest truthful repo-local status, updated model/view references to current canonical replay and present 2026-06-28 evidence, and wrote a durable reconciliation artifact at evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md.",
+        "last_worker_completed_at": "2026-06-29T00:26:54.527Z",
+        "last_worker_evidence": [
+          "evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md",
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json"
+        ],
+        "reviewed_at": "2026-06-29T00:27:22.084Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md truthfully keeps path.private-cluster-none-dns-zone-v3 at unknown/execution ceiling, cites the exact mounted source carrier and canonical replay, and the maintained model/view now point to present 2026-06-28 evidence without overclaiming a live verdict."
+      },
+      "session_id": "s_task_reconcile-private-cluster-none-dns-zone-v3-status-20260629",
+      "session_history": [
+        "s_task_reconcile-private-cluster-none-dns-zone-v3-status-20260629"
+      ],
+      "result": "Reconciled path.private-cluster-none-dns-zone-v3 to the strongest truthful repo-local status, updated model/view references to current canonical replay and present 2026-06-28 evidence, and wrote a durable reconciliation artifact at evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md.",
+      "evidence": [
+        "evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-29T00:27:22.084Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/reconcile-private-cluster-none-dns-zone-v3-status-20260629.md truthfully keeps path.private-cluster-none-dns-zone-v3 at unknown/execution ceiling, cites the exact mounted source carrier and canonical replay, and the maintained model/view now point to present 2026-06-28 evidence without overclaiming a live verdict."
+      },
+      "status": "done"
+    }
+  ]
+}

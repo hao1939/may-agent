@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T07:41:33.229Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 task-completed review accepted the shared API-server subnet success landing: the maintained model/view carriers now expose path.private-cluster-vnet-integration-shared-apiserver-subnet grounded to Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 while the existing negative shared-subnet verdict remains separate and final. Current executable frontier stays intentionally narrow: keep private-cluster-byo-dns-topology-exact-contract-reconcile-20260622 active to resolve the stale-terminal-retry warning on path.private-cluster-byo-dns-server and unlock the waiting custom-DNS-zone reconcile leaf, keep cluster-autoscaler-vm-prerelease-long-unregistered-nodes-model-view-landing-20260622 active as the independent row-51 model landing, and preserve external-send-proof-dispatch-family-human-transport-proof-wait-20260621 as the single shared external human-transport wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land only the handwritten shared API-server subnet success sibling into the maintained knowledge map as path.private-cluster-vnet-integration-shared-apiserver-subnet, using the bounded source/scenario contract from Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 while explicitly preserving the already-final broad shared-subnet rejection verdict as a separate existing row and not retrying or reopening that terminal verdict.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "model/knowledge-map/model.json gains a source-backed maintained path for the shared API-server subnet success contract, keyed separately as path.private-cluster-vnet-integration-shared-apiserver-subnet and anchored to Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 from the mounted /app/sources/aks-rp handwritten source.",
+        "Regenerated maintained views show the new success sibling distinctly in model/knowledge-map/views/path-summary.json (and any other touched derived views) while the existing broad shared-subnet rejection row stays unchanged as its own final verdict rather than being retried or rewritten.",
+        "Task records concise repo-local evidence citing evidence/archive/private-cluster-next-unmodeled-scenario-candidates-20260622.md plus the mounted source anchor, with no cloud execution, no external-send wait changes, and no unrelated private-cluster path edits."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T07:34:10.559Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622_20260622073410",
+        "assigned_at": "2026-06-22T07:34:10.619Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622",
+        "worker_started_attempt_id": "a_private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622_20260622073410",
+        "worker_started_at": "2026-06-22T07:34:27.079Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the shared API-server subnet success sibling into model/knowledge-map/model.json and regenerated maintained views so path.private-cluster-vnet-integration-shared-apiserver-subnet now appears distinctly while the negative shared-subnet sibling remains unchanged and final.",
+        "last_worker_completed_at": "2026-06-22T07:39:23.659Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T07:40:21.476Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted worker result: repo-local grep now shows path.private-cluster-vnet-integration-shared-apiserver-subnet present in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json with Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 source grounding, satisfying the maintained landing while preserving the separate negative shared-subnet sibling."
+      },
+      "session_id": "s_task_private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622",
+      "session_history": [
+        "s_task_private-cluster-shared-apiserver-subnet-success-model-view-landing-20260622"
+      ],
+      "result": "Landed the shared API-server subnet success sibling into model/knowledge-map/model.json and regenerated maintained views so path.private-cluster-vnet-integration-shared-apiserver-subnet now appears distinctly while the negative shared-subnet sibling remains unchanged and final.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T07:40:21.476Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted worker result: repo-local grep now shows path.private-cluster-vnet-integration-shared-apiserver-subnet present in model/knowledge-map/model.json and model/knowledge-map/views/path-summary.json with Scenario_APIServer_Vnet_Integration_Shared_Subnet_V3 source grounding, satisfying the maintained landing while preserving the separate negative shared-subnet sibling."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-28T17:45:21.093Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "aks-feature-reference-loop",
+  "summary": "2026-06-28 owner review: accepted the GPU multi-gpu workload carrier repair after confirming mounted source exposes no exact multi_gpu_workload.go / Scenario_GPU_MultiGPU_Workload slice and that linux_gpu.go remains the nearest handwritten authority. This branch now also records that spec.gpu.multi-gpu-workload is source-grounded inferred coverage with an explicit multi-GPU SKU rerun gate and a prohibition on inheriting Standard_D2s_v3 or other non-GPU defaults; no new active work is created from this acceptance.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628",
+      "parent_id": "aks-feature-reference-loop",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local carrier for spec.gpu.multi-gpu-workload so mounted-source truth, expected assertions, and rerun prerequisites are explicit: remove or relabel the missing handwritten multi_gpu_workload.go / Scenario_GPU_MultiGPU_Workload source claim, either narrow the spec to the single-GPU linux_gpu.go contract or mark the path as inferred multi-GPU coverage, and record the exact GPU-SKU execution gate required before any rerun (proving the run no longer inherits Standard_D2s_v3 or any other non-GPU override).",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628.md"
+      ],
+      "acceptance": [
+        "features/gpu/specs/gpu-multi-gpu-workload.json and features/gpu.yaml no longer cite a nonexistent mounted handwritten source or overclaim unsupported multi-GPU assertions without explanation.",
+        "The repair note quotes the mounted source-backed basis for the surviving contract and names whether the path is handwritten-equivalent or inferred coverage.",
+        "The note ends with the minimal truthful rerun gate, including the required GPU-capable VM size and the prohibition on inheriting Standard_D2s_v3 or other non-GPU carrier defaults."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.gpu.multi-gpu-workload"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-28T17:37:42.346Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628_20260628173746",
+        "assigned_at": "2026-06-28T17:37:46.508Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628",
+        "worker_started_attempt_id": "a_repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628_20260628173746",
+        "worker_started_at": "2026-06-28T17:38:00.305Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the GPU multi-GPU carrier to remove the nonexistent handwritten source claim, downgraded it to a source-grounded inferred draft, and added a durable repair note with the exact multi-GPU execution gate and Standard_D2s_v3 prohibition.",
+        "last_worker_completed_at": "2026-06-28T17:41:38.986Z",
+        "last_worker_evidence": [
+          "features/gpu/specs/gpu-multi-gpu-workload.json",
+          "features/gpu.yaml",
+          "evidence/archive/repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628.md"
+        ],
+        "reviewed_at": "2026-06-28T17:42:40.367Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: the multi-GPU carrier no longer overclaims a nonexistent handwritten source, records truthful inferred coverage, and now carries an exact GPU-SKU rerun gate."
+      },
+      "session_id": "s_task_repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628",
+      "session_history": [
+        "s_task_repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628"
+      ],
+      "result": "Repaired the GPU multi-GPU carrier to remove the nonexistent handwritten source claim, downgraded it to a source-grounded inferred draft, and added a durable repair note with the exact multi-GPU execution gate and Standard_D2s_v3 prohibition.",
+      "evidence": [
+        "features/gpu/specs/gpu-multi-gpu-workload.json",
+        "features/gpu.yaml",
+        "evidence/archive/repair-spec-gpu-multi-gpu-workload-carrier-and-execution-gate-20260628.md"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-28T17:42:40.367Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: the multi-GPU carrier no longer overclaims a nonexistent handwritten source, records truthful inferred coverage, and now carries an exact GPU-SKU rerun gate."
+      },
+      "status": "done"
+    }
+  ]
+}

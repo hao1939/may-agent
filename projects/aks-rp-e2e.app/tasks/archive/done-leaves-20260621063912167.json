@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T06:39:12.167Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning-update after the accepted Azure Monitor Metrics run-plan completion: archived four safe done leaves now that their durable outcomes are already represented in the project rollup and linked evidence. Current live work remains the single assigned app-monitoring-addonv2-azure-monitor-metrics-live-execute-body-repair-20260621 follow-on to replace the row-63 execute-gated stub with a bounded authorized live-body path and validation evidence. The only blocked branch remains external-send-proof-dispatch-family-20260620, which truthfully carries the shared external-human transport wait for the MachinesPreview and VM prerelease send-ready packets until durable send/escalation proof or authoritative reply exists.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "For Scenario_Addonv2_Azure_Monitor_Metrics row 63, turn the accepted source-semantics packet into one execution-ready replay packet that preserves the pinned properties.azureMonitorProfile.metrics.enabled contract, enumerates the exact create/upgrade verdict hooks, and records the precise authorization/preflight/cleanup gate for any future live run without broadening beyond this row-scoped branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621.md"
+      ],
+      "acceptance": [
+        "The artifact cites the accepted source-semantics packet plus the maintained replay/spec/model carriers and gives the exact check and execute commands, required AKS_RP_E2E_ALLOW_CLOUD_MUTATION value, expected evidence files, and create/upgrade verdict hooks for this row-scoped replay.",
+        "Repo-local durable carriers are updated as warranted so the row-63 app-monitoring branch exposes a truthful next safe action and execution gate in maintained knowledge-map/spec/replay surfaces without reintroducing generic source ambiguity.",
+        "The artifact records validation commands/checks used and states whether the branch is immediately ready for external authorization/live execution or still needs one narrower local repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-monitoring-addonv2-azure-monitor-metrics"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T06:35:16.297Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621_20260621063518",
+        "assigned_at": "2026-06-21T06:35:18.180Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621",
+        "worker_started_attempt_id": "a_app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621_20260621063518",
+        "worker_started_at": "2026-06-21T06:35:40.344Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the row-63 execution-ready replay packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621.md and verified the exact check/gate commands plus maintained carrier state for the Azure Monitor Metrics branch.",
+        "last_worker_completed_at": "2026-06-21T06:37:17.902Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T06:38:24.715Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after evidence review: evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621.md cites the accepted row-63 source-semantics packet, preserves the exact create/upgrade verdict hooks and execute gate, records the exact check and execute-shaped commands plus expected evidence files, and truthfully concludes the branch still needs one narrower local execute-body repair before live authorization."
+      },
+      "session_id": "s_task_app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621",
+      "session_history": [
+        "s_task_app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621"
+      ],
+      "result": "Produced the row-63 execution-ready replay packet at evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621.md and verified the exact check/gate commands plus maintained carrier state for the Azure Monitor Metrics branch.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T06:38:24.715Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after evidence review: evidence/archive/app-monitoring-addonv2-azure-monitor-metrics-execute-run-plan-20260621.md cites the accepted row-63 source-semantics packet, preserves the exact create/upgrade verdict hooks and execute gate, records the exact check and execute-shaped commands plus expected evidence files, and truthfully concludes the branch still needs one narrower local execute-body repair before live authorization."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T05:57:29.689Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 regular-learning owner pass: keep cluster-autoscaler-vm-prerelease-service-principal-repo-local-carrier-truth-repair-20260626 as the sole live no-cloud execution lane under maxConcurrent=1, preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the single truthful family-level external wait pending returned proof, and archive the completed row-40 SSH plus autoscaler profile/local-storage/source-boundary closure leaves whose durable meaning is already captured by linked evidence and prior rollups.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the exact VM prerelease row-40 SSH public-key update carrier from mounted AKS RP source plus checked-in repo artifacts without cloud execution: determine whether Linux and Windows are one shared carrier or split carriers, capture accepted inputs, rejected/unsupported edges, expected behavior, observed checked-in evidence, adjacent surfaces, and the concrete spec/replay/model gaps that remain for the row-40 VirtualMachines path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md"
+      ],
+      "acceptance": [
+        "The archive cites the exact mounted source file(s), scenario/plan names, and row mapping for the VM prerelease row-40 SSH public-key update carrier, and it states clearly whether Linux and Windows belong to one shared carrier or two distinct bounded branches.",
+        "The archive names the current repo-local spec/replay/model coverage for the row-40 path(s), documents accepted inputs, rejected/unsupported edges, expectations, observed evidence, adjacent surfaces, and unknowns, and recommends the next bounded no-cloud follow-up leaf if coverage is still incomplete."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "node-pool-config-vm-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T04:54:07.591Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626_20260626045407",
+        "assigned_at": "2026-06-26T04:54:07.652Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+        "worker_started_attempt_id": "a_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626_20260626045407",
+        "worker_started_at": "2026-06-26T04:54:21.062Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive evidence at evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md, mapping the mounted-source VM prerelease SSH public-key boundary, confirming Linux/Windows are split carriers, and documenting the remaining repo-local spec/replay/model gaps.",
+        "last_worker_completed_at": "2026-06-26T04:56:46.083Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T04:57:21.479Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive cites exact mounted AKS RP source files and suite scenarios, proves the row-40 SSH public-key carrier is split into distinct Linux and Windows branches, captures accepted/rejected edges and repo-local evidence, and truthfully limits the new contradiction to replay/spec-model drift rather than the assigned boundary question."
+      },
+      "session_id": "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626",
+      "session_history": [
+        "s_task_node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626"
+      ],
+      "result": "Created the requested archive evidence at evidence/archive/node-pool-config-vm-prerelease-row40-ssh-public-key-mounted-source-boundary-map-20260626.md, mapping the mounted-source VM prerelease SSH public-key boundary, confirming Linux/Windows are split carriers, and documenting the remaining repo-local spec/replay/model gaps.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T04:57:21.479Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive cites exact mounted AKS RP source files and suite scenarios, proves the row-40 SSH public-key carrier is split into distinct Linux and Windows branches, captures accepted/rejected edges and repo-local evidence, and truthfully limits the new contradiction to replay/spec-model drift rather than the assigned boundary question."
+      },
+      "status": "done"
+    }
+  ]
+}

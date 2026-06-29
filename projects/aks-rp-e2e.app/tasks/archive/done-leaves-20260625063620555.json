@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T06:36:20.555Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner planning update: boundary closure for serverless virtual-nodes multi-pod burst is already preserved in history, and the only active regular-learning work remains serverless-virtualnodes-multi-pod-burst-carrier-authoring-20260625 to turn that bounded no-cloud slice into the maintained spec/replay/model carrier. Keep the external-wait focus branch compressed and blocked-only until returned proof or the 2026-06-26 follow-up window; do not refill more learning work unless the active carrier-authoring task goes stale or returns for review.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author one no-cloud spec carrier draft for serverless virtual-nodes multi-pod burst that turns the accepted boundary decision into a distinct repo-local spec surface with exact burst inputs, exact count/cardinality expectations, the existing ACI witness-authority disclaimer, and the next-safe replay/model implications without running cloud mutation or creating duplicate blocked waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625.md"
+      ],
+      "acceptance": [
+        "The archive draft cites the accepted boundary packet evidence/archive/serverless-virtualnodes-multi-pod-burst-boundary-packet-20260625.md plus the exact existing pod-scheduling/network-connectivity repo-local surfaces it inherits from or stays separate from, and it defines the distinct burst input shape (pod.count=3+ or equivalent) and count-based expectations (all scheduled, all running, container-group count matches pod count).",
+        "The draft states one exact carrier recommendation for the repo-local spec/replay/model stack: what new spec id/path name should exist or which maintained carrier should be extended, what witness-authority disclaimer must remain, and what replay/model work would follow next if the draft is accepted.",
+        "The draft remains no-cloud, does not claim observed pass/fail, does not widen path.serverless-virtual-nodes.subnet-validation, and does not create duplicate external waits or execution asks."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "family.serverless-virtual-nodes"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T06:33:09.490Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625_20260625063309",
+        "assigned_at": "2026-06-25T06:33:09.537Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625_20260625063309",
+        "worker_started_at": "2026-06-25T06:33:43.236Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the no-cloud archive draft `evidence/archive/serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625.md`, grounding the burst branch in the accepted boundary packet, distinguishing it from pod-scheduling and network-connectivity, preserving the ACI witness-authority disclaimer, and recommending the exact next spec/replay/model carrier shape without opening cloud work or duplicate waits.",
+        "last_worker_completed_at": "2026-06-25T06:34:54.050Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T06:35:33.703Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the no-cloud archive draft after review: it cites the accepted boundary packet, keeps multi-pod burst separate from pod-scheduling/network-connectivity and subnet-validation, preserves the ACI witness-authority disclaimer, and recommends the exact next repo-local carrier shape without opening cloud work or duplicate waits."
+      },
+      "session_id": "s_task_serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625",
+      "session_history": [
+        "s_task_serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625"
+      ],
+      "result": "Authored the no-cloud archive draft `evidence/archive/serverless-virtualnodes-multi-pod-burst-spec-carrier-draft-20260625.md`, grounding the burst branch in the accepted boundary packet, distinguishing it from pod-scheduling and network-connectivity, preserving the ACI witness-authority disclaimer, and recommending the exact next spec/replay/model carrier shape without opening cloud work or duplicate waits.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T06:35:33.703Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the no-cloud archive draft after review: it cites the accepted boundary packet, keeps multi-pod burst separate from pod-scheduling/network-connectivity and subnet-validation, preserves the ACI witness-authority disclaimer, and recommends the exact next repo-local carrier shape without opening cloud work or duplicate waits."
+      },
+      "status": "done"
+    }
+  ]
+}

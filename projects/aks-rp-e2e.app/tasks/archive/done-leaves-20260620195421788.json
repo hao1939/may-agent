@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-20T19:54:21.788Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-20 owner review accepts the first repo-local scheduler-controller enable-on-create slice as structurally complete: specs/serverless-schedulerctrl-enable-on-create.json, replays/serverless-schedulerctrl-enable-on-create.ts, specs/index.json wiring, and evidence/archive/local-schedulerctrl-enable-on-create-check-serverless-schedulerctrl-enable-on-create.json together prove the mounted ManagedByCRD create-time boundary and local spec/replay wiring without claiming cloud execution. The earlier VirtualNodes standard source-authority slice remains absorbed at the project level. Remaining open work stays in four bounded lanes: classify the managed-AAD-v2 create-cancel artifact, finish VirtualNodes standard replay authoring, write the VirtualNodes subnet-validation gap note, and continue the next scheduler-controller sibling authoring slice while the single external send-proof family wait remains unchanged.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the first repo-local scheduler-controller runnable contract by creating the exact enable-on-create spec and replay files recommended by the accepted first-runnable-candidate note, preserving the mounted create-time ManagedByCRD leaf and its overlay/managed-underlay/reconciliation checkpoints without adding sibling transitions or launching cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/serverless-schedulerctrl-enable-on-create.json",
+        "../aks-rp-e2e/replays/serverless-schedulerctrl-enable-on-create.ts"
+      ],
+      "acceptance": [
+        "Spec file defines the first exact repo-local scheduler-controller contract for feature path path.serverless-schedulerctrl.enable-on-create, cites the mounted enable-on-create authority already captured in the accepted evidence, and preserves the create-time ManagedByCRD boundary without collapsing sibling lifecycle leaves.",
+        "Replay file mirrors only the enable-on-create leaf checkpoints (overlay resources valid, managed underlay valid, SchedulerConfiguration reconciliation valid), reuses shared scheduler-controller helpers when available, and does not add enable-on-existing, disable-after-create, or disable-after-enable transitions or run cloud execution in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-schedulerctrl-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:45:23.786Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620_20260620194523",
+        "assigned_at": "2026-06-20T19:45:23.834Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620",
+        "worker_started_attempt_id": "a_serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620_20260620194523",
+        "worker_started_at": "2026-06-20T19:45:40.225Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the first repo-local scheduler-controller enable-on-create contract by adding specs/serverless-schedulerctrl-enable-on-create.json, replays/serverless-schedulerctrl-enable-on-create.ts, and indexing the spec in specs/index.json; local wiring and replay check now pass without cloud execution.",
+        "last_worker_completed_at": "2026-06-20T19:51:18.311Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:52:43.374Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: specs/serverless-schedulerctrl-enable-on-create.json and replays/serverless-schedulerctrl-enable-on-create.ts preserve the mounted enable-on-create ManagedByCRD boundary, specs/index.json now registers the spec, and replay source/spec wiring passes locally without cloud execution."
+      },
+      "session_id": "s_task_serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620",
+      "session_history": [
+        "s_task_serverless-schedulerctrl-enable-on-create-spec-replay-authoring-20260620"
+      ],
+      "result": "Authored the first repo-local scheduler-controller enable-on-create contract by adding specs/serverless-schedulerctrl-enable-on-create.json, replays/serverless-schedulerctrl-enable-on-create.ts, and indexing the spec in specs/index.json; local wiring and replay check now pass without cloud execution.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:52:43.374Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: specs/serverless-schedulerctrl-enable-on-create.json and replays/serverless-schedulerctrl-enable-on-create.ts preserve the mounted enable-on-create ManagedByCRD boundary, specs/index.json now registers the spec, and replay source/spec wiring passes locally without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-virtualnodes-standard-spec-authoring-20260620",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the exact repo-local VirtualNodes standard scenario contract as a spec file using the accepted mounted Scenario_Standard_VirtualNodes packet and witness-boundary note as authority, preserving the extension-backed standard witness while explicitly excluding addon-family selector, toleration, or expected-node semantics that the boundary note rejected as exact carry-forward.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/specs/serverless-virtualnodes-standard.json"
+      ],
+      "acceptance": [
+        "Spec cites the accepted mounted Scenario_Standard_VirtualNodes source packet and witness-boundary note as its exact authorities, and records which standard-scenario checkpoints are exact carry-forward versus explicitly non-reused from addon-family artifacts.",
+        "Spec stays bounded to the standard VirtualNodes scenario only, does not add cloud execution or sibling serverless flows, and leaves a later replay-authoring task with a clean exact-authority contract rather than guessed expected-node, selector, or toleration semantics."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "serverless-virtualnodes-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-20T19:50:41.137Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtualnodes-standard-spec-authoring-20260620_20260620195041",
+        "assigned_at": "2026-06-20T19:50:41.182Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtualnodes-standard-spec-authoring-20260620",
+        "worker_started_attempt_id": "a_serverless-virtualnodes-standard-spec-authoring-20260620_20260620195041",
+        "worker_started_at": "2026-06-20T19:50:58.851Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored specs/serverless-virtualnodes-standard.json as a new exact-authority source-grounded spec for Scenario_Standard_VirtualNodes, citing the accepted mounted source packet and witness-boundary note while preserving extension-backed checkpoints and explicitly excluding addon-family selector/toleration/node-name semantics.",
+        "last_worker_completed_at": "2026-06-20T19:52:24.546Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-20T19:53:03.692Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after owner review: specs/serverless-virtualnodes-standard.json cites the mounted Scenario_Standard_VirtualNodes packet and witness-boundary note, preserves the extension-backed standard checkpoints, and explicitly excludes addon-family selector/toleration/node-name semantics so later replay authoring has an exact bounded contract."
+      },
+      "session_id": "s_task_serverless-virtualnodes-standard-spec-authoring-20260620",
+      "session_history": [
+        "s_task_serverless-virtualnodes-standard-spec-authoring-20260620"
+      ],
+      "result": "Authored specs/serverless-virtualnodes-standard.json as a new exact-authority source-grounded spec for Scenario_Standard_VirtualNodes, citing the accepted mounted source packet and witness-boundary note while preserving extension-backed checkpoints and explicitly excluding addon-family selector/toleration/node-name semantics.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-20T19:53:03.692Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after owner review: specs/serverless-virtualnodes-standard.json cites the mounted Scenario_Standard_VirtualNodes packet and witness-boundary note, preserves the extension-backed standard checkpoints, and explicitly excludes addon-family selector/toleration/node-name semantics so later replay authoring has an exact bounded contract."
+      },
+      "status": "done"
+    }
+  ]
+}

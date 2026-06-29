@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T01:52:07.679Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Accepted the 2026-06-21 repo-local repair slice: aad-managed-v2-reset-contract-repair-20260621 clarified the Managed AAD v2 reset contract, and vm-prerelease-rows-25-50-source-map-20260621 proved rows 25 and 50 now have mounted-source-backed spec/replay/model carriers with no remaining local source ambiguity. Keep managedsystem-boundary-map-20260621 as the active next repo-local reconciliation for path.managedsystem.create-time-initial-pool and adjacent ManagedSystem/VirtualMachines surfaces, and keep external-send-proof-dispatch-family-20260620 as the single live external-human transport ceiling for the MachinesPreview and VM prerelease packets.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "aad-managed-v2-reset-contract-repair-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the repo-local managed-v2 ResetAAD contract for path.aad-rbac.managed-v2-lifecycle so specs/aad-rbac-managed-v2-lifecycle.json, features/aad-rbac.yaml, features/aad-rbac/managed-v2-lifecycle.yaml, model/knowledge-map/model.json, derived views, and replays/aad-rbac-managed-v2-lifecycle.ts all align to mounted-source Scenario_AAD truth: ResetAADProfile uses a raw ManagedClusterAADProfile contract, is expected to be rejected for managed AAD rather than succeed, and the stale final product-gap framing on this path is removed from the model/judgment surfaces before any retry planning.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/aad-managed-v2-reset-contract-repair-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the exact mounted-source lineage already reconciled for Scenario_AAD plus the repo-local surfaces repaired, and explains how the stale success-oriented/product-gap framing was removed.",
+        "After repair, the maintained spec/feature/model/replay surfaces consistently model path.aad-rbac.managed-v2-lifecycle reset behavior as managed-AAD rejection-by-design with source-aligned raw ManagedClusterAADProfile request shape, regenerated views reflect that judgment, and the stale-terminal path status is reconciled rather than left as a final product-gap retry target.",
+        "Outcome stays repo-local only: no cloud execution, no duplicate external-send waits, and no new success-oriented/body-wrapper discriminator remains for this path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "aad-managed-v2-reset-contract"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T01:36:53.797Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-managed-v2-reset-contract-repair-20260621_20260621013653",
+        "assigned_at": "2026-06-21T01:36:53.842Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-managed-v2-reset-contract-repair-20260621",
+        "worker_started_attempt_id": "a_aad-managed-v2-reset-contract-repair-20260621_20260621013653",
+        "worker_started_at": "2026-06-21T01:37:04.250Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the managed-v2 ResetAAD contract repo-locally: spec/feature/model/replay now align to mounted-source Scenario_AAD as a raw ManagedClusterAADProfile managed-AAD rejection-by-design path, and regenerated knowledge-map views reflect the updated truth.",
+        "last_worker_completed_at": "2026-06-21T01:50:08.688Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T01:50:23.491Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/aad-managed-v2-reset-contract-repair-20260621.md cites mounted-source Scenario_AAD lineage, shows repo-local spec/feature/model/replay repairs, and reconciles path.aad-rbac.managed-v2-lifecycle from stale success/product-gap framing to source-aligned managed-AAD rejection-by-design without cloud execution."
+      },
+      "session_id": "s_task_aad-managed-v2-reset-contract-repair-20260621",
+      "session_history": [
+        "s_task_aad-managed-v2-reset-contract-repair-20260621"
+      ],
+      "result": "Repaired the managed-v2 ResetAAD contract repo-locally: spec/feature/model/replay now align to mounted-source Scenario_AAD as a raw ManagedClusterAADProfile managed-AAD rejection-by-design path, and regenerated knowledge-map views reflect the updated truth.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T01:50:23.491Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/aad-managed-v2-reset-contract-repair-20260621.md cites mounted-source Scenario_AAD lineage, shows repo-local spec/feature/model/replay repairs, and reconciles path.aad-rbac.managed-v2-lifecycle from stale success/product-gap framing to source-aligned managed-AAD rejection-by-design without cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

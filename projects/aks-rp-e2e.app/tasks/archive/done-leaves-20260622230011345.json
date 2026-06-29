@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-22T23:00:11.345Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-22 blocked-frontier refill: accepted the mounted-source App Routing selector-lineage audit, the blocked-path delta audit, and the run-id archive-spill triage, then converted their findings into concrete next leaves instead of leaving review work dangling. Live repo-local work is now the active OSM external-lineage audit plus the assigned AAD/PPG fast reclass, with runnable backlog for the five-path App Routing blocked-vs-unknown audit, the RP nodepool non-rollback status calibration, and the bounded 2152502634 archive-family checkpoint review; keep the single exact external-human proof wait unchanged.",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "app-routing-vm-prerelease-selector-lineage-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: use mounted AKS RP app-routing VM prerelease source plus referenced scenario definitions to recover the exact selector/body field lineage and row-equivalence facts behind the still source-blocked app-routing VM prerelease variants (default/internal and OSM/internal branches) after the current spec-path repair, without broadening into live execution or replay redesign.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-selector-lineage-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/app-routing-vm-prerelease-selector-lineage-audit-20260622.md cites the mounted AKS RP source files and referenced scenario helpers used to determine the exact request/body selector fields, internal/external exposure assertions, and any truthful row-equivalence for the still source-blocked app-routing VM prerelease variants (including rows 82/83/84/85/87/89 as applicable).",
+        "The artifact clearly separates facts already repaired by the active spec-path-records leaf from the new selector/body-lineage findings, and names any residual unknown that truly remains after mounted-source inspection rather than repeating a generic source blocker.",
+        "Maintained repo-local carrier/model/spec wording is updated only as needed so the bounded app-routing source-blocked wording is reduced or made more exact, bun run check passes after the bounded repair, and no cloud mutation or new external-human wait is introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "app-routing.vm-prerelease.selector-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:48:46.458Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-vm-prerelease-selector-lineage-audit-20260622_20260622224848",
+        "assigned_at": "2026-06-22T22:48:48.793Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-vm-prerelease-selector-lineage-audit-20260622",
+        "worker_started_attempt_id": "a_app-routing-vm-prerelease-selector-lineage-audit-20260622_20260622224848",
+        "worker_started_at": "2026-06-22T22:49:05.288Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the mounted-source App Routing VM prerelease selector-lineage audit, wrote evidence/archive/app-routing-vm-prerelease-selector-lineage-audit-20260622.md, and tightened bounded repo-local wording in App Routing source packets/specs/model to replace generic selector blockers with mounted-source-backed addon/controller/runtime-lineage facts. bun run check passed; model view generation still reports pre-existing unrelated validation errors outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-22T22:58:31.440Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:59:52.981Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact cites the mounted AKS RP source files and scenario helpers, narrows the OSM/default/internal selector lineage to addon/controller/runtime-flow facts, records the truthful residual row-84/89 unknowns, and the worker reported bun run check passing without introducing cloud work or duplicate waits."
+      },
+      "session_id": "s_task_app-routing-vm-prerelease-selector-lineage-audit-20260622",
+      "session_history": [
+        "s_task_app-routing-vm-prerelease-selector-lineage-audit-20260622"
+      ],
+      "result": "Completed the mounted-source App Routing VM prerelease selector-lineage audit, wrote evidence/archive/app-routing-vm-prerelease-selector-lineage-audit-20260622.md, and tightened bounded repo-local wording in App Routing source packets/specs/model to replace generic selector blockers with mounted-source-backed addon/controller/runtime-lineage facts. bun run check passed; model view generation still reports pre-existing unrelated validation errors outside this task’s scope.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:59:52.981Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact cites the mounted AKS RP source files and scenario helpers, narrows the OSM/default/internal selector lineage to addon/controller/runtime-flow facts, records the truthful residual row-84/89 unknowns, and the worker reported bun run check passing without introducing cloud work or duplicate waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "model-blocked-path-count-delta-audit-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Evidence feedback/model update lane: audit the blocked-path metric breach by comparing the latest model status against the recent 41→46→45 trend, identify which path families account for the blocked-count increase, and determine whether any of those paths should now be reclassified, linked to an existing shared blocker family, or queued for exact repo-local follow-up without cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/model-blocked-path-count-delta-audit-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/model-blocked-path-count-delta-audit-20260622.md names the exact path ids or feature families responsible for the recent blocked-count increase, cites the status/model sources used, and explains why the latest local count is 45 even though the alert fired at 46.",
+        "The artifact classifies each changed family into one of: correct terminal blocked state, should move to another terminal class, already represented by an existing shared blocker/wait, or needs one concrete repo-local follow-up leaf; it proposes exact next tree actions rather than restating the alert.",
+        "No cloud mutation, no duplicate external-human wait, and no broad model churn are introduced; any recommended follow-up remains bounded to one family or one precise reclassification path."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model.blocked-path-count.delta"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:54:32.562Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_model-blocked-path-count-delta-audit-20260622_20260622225432",
+        "assigned_at": "2026-06-22T22:54:32.616Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_model-blocked-path-count-delta-audit-20260622",
+        "worker_started_attempt_id": "a_model-blocked-path-count-delta-audit-20260622_20260622225432",
+        "worker_started_at": "2026-06-22T22:54:54.543Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested audit artifact at evidence/archive/model-blocked-path-count-delta-audit-20260622.md, identifying the exact path families behind the blocked-path metric increase and explaining why runtime metric current=46 while plain local blocked count is 45.",
+        "last_worker_completed_at": "2026-06-22T22:57:57.102Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T22:59:53.032Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the audit artifact names the exact families behind the 41->46->45 movement, explains the 46-vs-45 metric/count difference via the pre-existing blocked-infra path, and proposes bounded next actions (exact reclasses plus two family audits) without broad model churn or duplicate external waits."
+      },
+      "session_id": "s_task_model-blocked-path-count-delta-audit-20260622",
+      "session_history": [
+        "s_task_model-blocked-path-count-delta-audit-20260622"
+      ],
+      "result": "Wrote the requested audit artifact at evidence/archive/model-blocked-path-count-delta-audit-20260622.md, identifying the exact path families behind the blocked-path metric increase and explaining why runtime metric current=46 while plain local blocked count is 45.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T22:59:53.032Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the audit artifact names the exact families behind the 41->46->45 movement, explains the 46-vs-45 metric/count difference via the pre-existing blocked-infra path, and proposes bounded next actions (exact reclasses plus two family audits) without broad model churn or duplicate external waits."
+      },
+      "status": "done"
+    },
+    {
+      "id": "user-review-runid-archive-spill-family-triage-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "User review workspace lane: audit the dirty run-id-prefixed evidence/archive spill families called out by the refreshed checkpoint-slicing review (2152502634, 2154650578, 2184435111, 2190051087, 2215959359), map each batch to its likely generator/frontier, and decide whether any family is checkpoint-safe, should become one later grouped slice, or must remain excluded as mixed residue without touching cloud execution or reopening the external-human wait.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/user-review-runid-archive-spill-family-triage-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/user-review-runid-archive-spill-family-triage-20260622.md names the exact run-id-prefixed evidence/archive families currently dirty, cites the repo-local status/audit sources used to inspect them, and explains the likely producing run or maintained frontier each family belongs to.",
+        "The artifact classifies each family into one of: safe for a later evidence-only checkpoint slice, still mixed/unsafe because it spans active or shared maintained work, or needs one exact follow-up cleanup/review leaf; any recommended next tree action stays bounded to one family-level follow-up rather than reopening broad checkpoint work.",
+        "No commit, no cloud mutation, and no duplicate or reopened external-human wait are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "user-review.archive-spill"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-22T22:56:28.729Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-runid-archive-spill-family-triage-20260622_20260622225630",
+        "assigned_at": "2026-06-22T22:56:30.916Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-runid-archive-spill-family-triage-20260622",
+        "worker_started_attempt_id": "a_user-review-runid-archive-spill-family-triage-20260622_20260622225630",
+        "worker_started_at": "2026-06-22T22:56:58.359Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive spill family triage artifact at evidence/archive/user-review-runid-archive-spill-family-triage-20260622.md, mapping each dirty run-id family to its likely generating plan frontier and classifying only 2152502634 as follow-up-worthy while the other four remain unsafe due to active/resume overlap.",
+        "last_worker_completed_at": "2026-06-22T22:59:03.493Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-22T23:00:11.227Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive artifact names the exact dirty run-id archive families, maps each to repo-local plan/run lineage, shows only 2152502634 as a closed standalone spill worth bounded follow-up, and keeps the other four excluded because they are still tied to active or resumed executor frontiers."
+      },
+      "session_id": "s_task_user-review-runid-archive-spill-family-triage-20260622",
+      "session_history": [
+        "s_task_user-review-runid-archive-spill-family-triage-20260622"
+      ],
+      "result": "Wrote the requested archive spill family triage artifact at evidence/archive/user-review-runid-archive-spill-family-triage-20260622.md, mapping each dirty run-id family to its likely generating plan frontier and classifying only 2152502634 as follow-up-worthy while the other four remain unsafe due to active/resume overlap.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-22T23:00:11.227Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive artifact names the exact dirty run-id archive families, maps each to repo-local plan/run lineage, shows only 2152502634 as a closed standalone spill worth bounded follow-up, and keeps the other four excluded because they are still tied to active or resumed executor frontiers."
+      },
+      "status": "done"
+    }
+  ]
+}

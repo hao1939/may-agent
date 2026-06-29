@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T09:30:37.088Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 owner review kept the private-cluster focus branch active while confirming the previously accepted Network CNI Swift-v2 carrier-selection slice is now durable in archive evidence and the ACNS observability follow-on. Archive the low-value completed Network CNI leaf so the visible frontier stays compact around one active private-cluster send-proof task, one waiting none-dns-zone-v3 readiness packet behind the same conflict scope, and the single family-level external-human wait.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land durable executionVariants metadata for mounted Scenario_ACNS_Cilium_Observability_K8s_1_31/_1_32/_1_33/_1_34 under the existing canonical spec.network-acns.cilium-observability / path.network-acns-cilium-observability carrier, reusing the proven per-minor variant pattern already used for Network CNI Cilium connectivity, without introducing new specs, new replays, or cloud execution.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623.md"
+      ],
+      "acceptance": [
+        "Repo-local carrier/model updates add durable executionVariants coverage for mounted Scenario_ACNS_Cilium_Observability_K8s_1_31/_1_32/_1_33/_1_34 under the existing canonical ACNS Cilium observability feature/spec/path lineage, with mounted-source-backed notes preserving that 1.31 and 1.32 apply CreateManagedCluster.LTS() while 1.33 and 1.34 keep the base contract.",
+        "The work reuses the existing canonical feature/spec/replay carriers, regenerates any affected derived knowledge-map views, writes a durable archive note naming the exact touched files and mounted-source anchors, and introduces no new spec/replay family, cloud mutation, duplicate external wait, or reopening of accepted Swift v2 branches."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "network-cni"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T09:21:21.542Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-23T09:21:21.836Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623_20260623092146",
+        "assigned_at": "2026-06-23T09:21:46.532Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623",
+        "worker_started_attempt_id": "a_network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623_20260623092146",
+        "worker_started_at": "2026-06-23T09:21:48.000Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed ACNS Cilium observability per-minor execution-variant metadata under the existing canonical carrier in features/network-cni.yaml and model/knowledge-map/model.json, regenerated derived views, and wrote a durable archive note at evidence/archive/network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623.md.",
+        "last_worker_completed_at": "2026-06-23T09:25:20.970Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T09:26:12.038Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Owner accepted the worker result after reviewing the durable archive note and repo-local anchors. The packet cites mounted source anchors for Scenario_ACNS_Cilium_Observability_K8s_1_31/_1_32/_1_33/_1_34, features/network-cni.yaml now carries attached executionVariants under the canonical spec/path lineage, model/knowledge-map/model.json and views/path-summary.json preserve sourceVariantPathIds on path.network-acns-cilium-observability, and no new spec/replay/cloud work was introduced."
+      },
+      "session_id": "s_task_network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623",
+      "session_history": [
+        "s_task_network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623"
+      ],
+      "result": "Landed ACNS Cilium observability per-minor execution-variant metadata under the existing canonical carrier in features/network-cni.yaml and model/knowledge-map/model.json, regenerated derived views, and wrote a durable archive note at evidence/archive/network-cni-acns-cilium-observability-per-minor-executionvariants-landing-20260623.md.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T09:26:12.038Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Owner accepted the worker result after reviewing the durable archive note and repo-local anchors. The packet cites mounted source anchors for Scenario_ACNS_Cilium_Observability_K8s_1_31/_1_32/_1_33/_1_34, features/network-cni.yaml now carries attached executionVariants under the canonical spec/path lineage, model/knowledge-map/model.json and views/path-summary.json preserve sourceVariantPathIds on path.network-acns-cilium-observability, and no new spec/replay/cloud work was introduced."
+      },
+      "status": "done"
+    }
+  ]
+}

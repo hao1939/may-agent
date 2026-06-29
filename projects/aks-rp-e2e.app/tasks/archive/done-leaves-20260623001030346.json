@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T00:10:30.346Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 watchdog review reconciliation: the cloud-provider credential-provider upgrade readiness packet was already accepted/done, so the watchdog concern is cleared without reopening repo-local work. Archived the two safe done leaves because their durable meaning now lives in accepted archive evidence and this rollup; live frontier remains the two bounded active non-cloud tasks (egress-lockdown VM-prerelease VHD readiness packet and spec-path batch7 authoring) plus the single truthful external-human proof wait.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Runner/replays lane: turn the completed execute-body authoring for path.cloud-provider.vm-prerelease-credential-provider-upgrade-matrix into one bounded live-run readiness packet without cloud mutation. Use the accepted authoring archive plus the replay/spec surfaces to record the exact gated execute contract, required env/tool inputs, row-189/214 row-selection options, cleanup expectations, and the single next later execute command set so a future owner can run the probe deliberately instead of rediscovering prerequisites.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md cites the execute-body authoring evidence plus the exact replay/spec files reviewed, records the mutation gate, explicit --execute requirement, required runtime env vars/tools, bounded row-189/214 selection contract, and the exact later execute command(s) and cleanup expectations for a safe future run without performing cloud mutation.",
+        "Any directly affected repo-local spec/model/view/evidence surfaces needed to keep that readiness truth coherent are updated consistently, bun run check passes, and the next action for this path is clearer than the current missing-tree review mismatch."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "replay.cloud-provider.credential-provider-upgrade-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:03:19.532Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623_20260623000321",
+        "assigned_at": "2026-06-23T00:03:21.513Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623",
+        "worker_started_attempt_id": "a_cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623_20260623000321",
+        "worker_started_at": "2026-06-23T00:03:35.761Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the live-run readiness packet for the credential-provider upgrade matrix at evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md and revalidated the replay/spec carrier with fresh check, dry-run, and repo check evidence without performing cloud mutation.",
+        "last_worker_completed_at": "2026-06-23T00:08:41.915Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:09:42.974Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive packet at ../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md cites execute-body authoring plus exact replay/spec/source surfaces, records the explicit --execute + AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, bounded rows 189/214 contract, exact later execute commands, cleanup expectations, and fresh non-mutating replay check/spec dry-run/repo check revalidation, so the next live action is now explicit without claiming cloud execution."
+      },
+      "session_id": "s_task_cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623",
+      "session_history": [
+        "s_task_cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623"
+      ],
+      "result": "Authored the live-run readiness packet for the credential-provider upgrade matrix at evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md and revalidated the replay/spec carrier with fresh check, dry-run, and repo check evidence without performing cloud mutation.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:09:42.974Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive packet at ../aks-rp-e2e/evidence/archive/cloud-provider-credential-provider-upgrade-matrix-live-run-readiness-packet-20260623.md cites execute-body authoring plus exact replay/spec/source surfaces, records the explicit --execute + AKS_RP_E2E_ALLOW_CLOUD_MUTATION gate, bounded rows 189/214 contract, exact later execute commands, cleanup expectations, and fresh non-mutating replay check/spec dry-run/repo check revalidation, so the next live action is now explicit without claiming cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "spec-path-record-batch6-post-batch5-authoring-20260622",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: author the next bounded batch of 10 missing spec-path records left after the accepted batch5 pass so the reopened Go e2ev3 coverage map keeps converging without reopening execution-blocked families. Limit scope to the exact next 10 residual rows named in evidence/archive/spec-path-record-batch5-post-batch4-authoring-20260622.md (network-cni-azure-overlay-dual-stack-windows2022, network-cni-azure-overlay-dual-stack-windows2025, network-cni-azure-overlay-podcidr-expansion, network-cni-cilium-enterprise-addon-lifecycle, network-cni.cilium-enterprise-addon-vm-prerelease, network-cni-kubenet-network-policy-calico, network-cni.none-byo-cni-vm-prerelease-lifecycle, network-cni.vm-prerelease-azure-npm-matrix, network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix, network-cni.vm-prerelease-azure-overlay-upgrade-matrix), update only directly affected spec/feature/model surfaces plus a durable archive note, and do not do cloud mutation or external messaging.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md"
+      ],
+      "acceptance": [
+        "Archive artifact ../aks-rp-e2e/evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md lists the exact 10 residual missing spec-path records selected from the accepted batch5 residual frontier (network-cni-azure-overlay-dual-stack-windows2022, network-cni-azure-overlay-dual-stack-windows2025, network-cni-azure-overlay-podcidr-expansion, network-cni-cilium-enterprise-addon-lifecycle, network-cni.cilium-enterprise-addon-vm-prerelease, network-cni-kubenet-network-policy-calico, network-cni.none-byo-cni-vm-prerelease-lifecycle, network-cni.vm-prerelease-azure-npm-matrix, network-cni.vm-prerelease-azure-overlay-multi-subnet-matrix, network-cni.vm-prerelease-azure-overlay-upgrade-matrix), the files updated for each, and any residual unresolved records intentionally left for later batches.",
+        "bun run check passes after the bounded authoring batch, and the resulting check output shows those targeted residual records removed or clearly reclassified without introducing unrelated model/view drift."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-path-records.batch6"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T00:00:33.981Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_spec-path-record-batch6-post-batch5-authoring-20260622_20260623000038",
+        "assigned_at": "2026-06-23T00:00:38.736Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_spec-path-record-batch6-post-batch5-authoring-20260622",
+        "worker_started_attempt_id": "a_spec-path-record-batch6-post-batch5-authoring-20260622_20260623000038",
+        "worker_started_at": "2026-06-23T00:01:05.502Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the 10 targeted batch6 spec-path records into the accepted knowledge-map model, regenerated derived views, and wrote the durable archive note at evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md. Verified bun run check passes and model-hygiene missingSpecPathRecords dropped from 101 to 91, removing the assigned frontier rows.",
+        "last_worker_completed_at": "2026-06-23T00:05:46.914Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T00:06:18.565Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md documents the exact 10 residual missingSpecPathRecords carried from the accepted batch5 frontier, records the direct model/view surfaces updated, and reports the expected model-hygiene delta from 101 to 91 with those 10 targeted rows removed; bun run check passed, so this bounded batch is complete."
+      },
+      "session_id": "s_task_spec-path-record-batch6-post-batch5-authoring-20260622",
+      "session_history": [
+        "s_task_spec-path-record-batch6-post-batch5-authoring-20260622"
+      ],
+      "result": "Landed the 10 targeted batch6 spec-path records into the accepted knowledge-map model, regenerated derived views, and wrote the durable archive note at evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md. Verified bun run check passes and model-hygiene missingSpecPathRecords dropped from 101 to 91, removing the assigned frontier rows.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T00:06:18.565Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/spec-path-record-batch6-post-batch5-authoring-20260622.md documents the exact 10 residual missingSpecPathRecords carried from the accepted batch5 frontier, records the direct model/view surfaces updated, and reports the expected model-hygiene delta from 101 to 91 with those 10 targeted rows removed; bun run check passed, so this bounded batch is complete."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-25T02:00:50.103Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-25 owner review accepted virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625: the repo-local row-44 audit now confirms spec/path cloud-provider ipbased-lb-backend-pool is fully represented across maintained selector/coverage/spec/replay/path carriers, and the 2026-06-20 promotion note is superseded. The only open project frontier remains focus-mounted-source-coverage-closure-and-external-wait-20260623, which truthfully compresses five exact external returned-proof waits with no local retry lane before the 2026-06-26 follow-up/escalation window.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Audit VM prerelease row 44 current carrier/status surfaces against stale 2026-06-20 promotion notes, then archive one repo-local evidence-ceiling reconciliation stating whether spec.cloud-provider.ipbased-lb-backend-pool is now fully represented in the maintained prerelease coverage/selector story and what stale historical note should be treated as superseded.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625.md"
+      ],
+      "acceptance": [
+        "The archive artifact cites the mounted row-44 source anchors plus current maintained repo-local carriers/evidence, identifies any stale or superseded 2026-06-20 row-44 promotion note, and states the present-tense evidence ceiling for spec.cloud-provider.ipbased-lb-backend-pool without reopening unrelated VM-suite rows.",
+        "The task remains repo-local only: no cloud mutation, no new external wait, and no spec/replay rewrite unless the audit finds a concrete present-tense inconsistency that is documented with exact file anchors."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path.virtualmachines.prerelease.row44-ipbased-lb-backend-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-25T01:58:20.781Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625_20260625015820",
+        "assigned_at": "2026-06-25T01:58:20.826Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625",
+        "worker_started_attempt_id": "a_virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625_20260625015820",
+        "worker_started_at": "2026-06-25T01:58:42.316Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived the requested repo-local row-44 evidence-ceiling reconciliation at evidence/archive/virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625.md, citing mounted source anchors, maintained selector/coverage/path carriers, and the superseded 2026-06-20 promotion note.",
+        "last_worker_completed_at": "2026-06-25T02:00:06.276Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-25T02:00:42.073Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after checking evidence/archive/virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625.md: it cites mounted row-44 source anchors, current selector/coverage/spec/path carriers, identifies the stale 2026-06-20 promotion note as superseded, and narrows the remaining gap to live verdict only."
+      },
+      "session_id": "s_task_virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625",
+      "session_history": [
+        "s_task_virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625"
+      ],
+      "result": "Archived the requested repo-local row-44 evidence-ceiling reconciliation at evidence/archive/virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625.md, citing mounted source anchors, maintained selector/coverage/path carriers, and the superseded 2026-06-20 promotion note.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-25T02:00:42.073Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after checking evidence/archive/virtualmachine-prerelease-row44-evidence-ceiling-reconcile-20260625.md: it cites mounted row-44 source anchors, current selector/coverage/spec/path carriers, identifies the stale 2026-06-20 promotion note as superseded, and narrows the remaining gap to live verdict only."
+      },
+      "status": "done"
+    }
+  ]
+}

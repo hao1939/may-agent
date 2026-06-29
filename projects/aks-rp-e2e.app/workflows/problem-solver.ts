@@ -167,6 +167,7 @@ function emitProblemResult(
 ): void {
   try {
     ctx.dispatchEvent(input.type, {
+      target: { project: "aks-rp-e2e" },
       project: "aks-rp-e2e",
       problemKey: input.problemKey,
       problem_key: input.problemKey,

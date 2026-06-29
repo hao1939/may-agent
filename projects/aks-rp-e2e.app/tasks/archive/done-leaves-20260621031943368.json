@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T03:19:43.368Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "Archived the accepted VM prerelease maintained-surface done leaves for rows 25/26/27/29/32/34-equivalent surfaces now represented at parent level: capacity-based-surge, capacity-based-surge-maxUnavailable, mixed-SKU upgrade, mixed-SKU lifecycle implementation plus bounded model-evidence repair, auto-zone mixed SKU, and VMAS-to-VMS migration SLB all carry mounted-source/live-body evidence in their archive notes. The next truthful frontier stays narrow: virtualmachines-capacity-surge-model-status-reconciliation-20260621 remains the primary active leaf to reconcile rows 25 and 26 model status/evidence linkage, while vmpr-maintained-slice-checkpoint-isolation-20260621 stays as the repo-local checkpoint-slice mapping follow-up that becomes commit-ready only after that reconciliation is accepted. external-send-proof-dispatch-family-20260620 remains the single external-human transport blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Implement the bounded row-32 VirtualMachines auto-zone mixed-SKU live-body replay surface from mounted AKS RP source so the maintained branch can advance from source/spec wrapper only to an execute-gated product probe without broadening beyond the unchanged availabilityZones=[auto] two-manual-profile mixed-SKU contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621.md",
+        "../aks-rp-e2e/replays/virtualmachines-auto-zone-mixed-sku.ts"
+      ],
+      "acceptance": [
+        "replays/virtualmachines-auto-zone-mixed-sku.ts (and any tightly coupled maintained replay/spec/model references it needs) are updated so check mode validates a bounded row-32 live-body implementation for the unchanged VirtualMachines auto-zone two-manual-profile mixed-SKU contract.",
+        "The implementation preserves the row-32 assertions already modeled for availabilityZones=[auto] acceptance, initial VirtualMachineNodesStatus total and per-SKU counts, scale-up contract, and post-scale per-SKU validation; it records the exact mounted source anchors used and keeps explicit execute-gate / Azure-auth prerequisites for any later live run.",
+        "Worker runs the needed repo-local validation commands for the changed replay surfaces and records exact commands, results, and any remaining nextAction/resumeCondition wording in the archive note."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "virtualmachines-auto-zone-mixed-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T03:09:55.434Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621_20260621030955",
+        "assigned_at": "2026-06-21T03:09:55.482Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621",
+        "worker_started_attempt_id": "a_virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621_20260621030955",
+        "worker_started_at": "2026-06-21T03:10:14.360Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Validated the row-32 VirtualMachines auto-zone mixed-SKU execute-gated replay surface, wrote an archive note with exact mounted-source anchors and validation results, and confirmed check-mode plus execute-gate behavior. Repo-wide bun run check still fails at the existing format stage, which I recorded as non-row-32-specific drift.",
+        "last_worker_completed_at": "2026-06-21T03:12:04.541Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T03:12:58.592Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review from evidence/archive/virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621.md: the archive note cites exact mounted-source anchors in auto_zone.go, shows row-32 replay/spec/model surfaces were updated for the two-manual-profile availabilityZones=[auto] mixed-SKU contract, records successful row-local --check validation plus execute-gate proof, and documents repo-wide bun run check failure as pre-existing formatting drift rather than a row-32-specific defect."
+      },
+      "session_id": "s_task_virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621",
+      "session_history": [
+        "s_task_virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621"
+      ],
+      "result": "Validated the row-32 VirtualMachines auto-zone mixed-SKU execute-gated replay surface, wrote an archive note with exact mounted-source anchors and validation results, and confirmed check-mode plus execute-gate behavior. Repo-wide bun run check still fails at the existing format stage, which I recorded as non-row-32-specific drift.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T03:12:58.592Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review from evidence/archive/virtualmachines-auto-zone-mixed-sku-live-body-implementation-20260621.md: the archive note cites exact mounted-source anchors in auto_zone.go, shows row-32 replay/spec/model surfaces were updated for the two-manual-profile availabilityZones=[auto] mixed-SKU contract, records successful row-local --check validation plus execute-gate proof, and documents repo-wide bun run check failure as pre-existing formatting drift rather than a row-32-specific defect."
+      },
+      "status": "done"
+    }
+  ]
+}

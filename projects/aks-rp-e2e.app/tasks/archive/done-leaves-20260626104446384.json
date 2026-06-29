@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-26T10:44:46.384Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-26 watchdog blocked-frontier owner review reconfirmed the frontier is already minimal and truthful under maxConcurrent=1: preserve focus-mounted-source-coverage-closure-and-external-wait-20260623 as the only open branch, carrying exactly one blocked family-level external-human wait external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622. All sibling repo-local mounted-source/spec/replay/model leaves now roll up as completed context only across cluster-autoscaler VM prerelease boundaries, ManagedSystem/SGX source boundaries, row-60/61 addon packets, and row-39/40 node-pool-config and SSH-update source/replay/model repairs. Do not reopen local rediscovery, create duplicate waits, or invent live/cloud work from silence alone; resume only on returned external proof/reply or explicit new human steering that changes scope.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Feature knowledge/specs lane: map the exact mounted-source carrier, accepted input boundary, expected behavior, and current repo-local coverage for path.sgx-addon.vm-prerelease.coffeelake-out-of-proc (VM prerelease row 57 SGX addon Coffeelake out-of-proc exact branch), then write a bounded source-backed archive artifact and update only the exact repo-local feature/model/spec linkage if the canonical surfaces are missing or drifted; stay repo-local and do not run cloud execution or widen into adjacent SGX/VirtualMachines rows.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626.md"
+      ],
+      "acceptance": [
+        "The task cites the mounted Go source and existing repo-local feature/model/spec/replay surfaces for path.sgx-addon.vm-prerelease.coffeelake-out-of-proc, names the exact scenario/suite attachment and expected behavior boundary, and records whether canonical repo-local coverage already exists or what exact repo-local gap remains.",
+        "If a canonical repo-local surface for this exact path is missing or drifted, the task updates only the minimally required feature/model/spec linkage for this path and explains the change with exact citations; if no edit is needed, the artifact says why.",
+        "No cloud execution, no external-human waits, and no adjacent SGX/VirtualMachines rows are introduced."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:sgx-addon-vm-prerelease-coffeelake-out-of-proc"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-26T10:00:33.796Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626_20260626100033",
+        "assigned_at": "2026-06-26T10:00:33.851Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626",
+        "worker_started_attempt_id": "a_sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626_20260626100033",
+        "worker_started_at": "2026-06-26T10:00:41.271Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote `evidence/archive/sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626.md`, a bounded mounted-source-backed audit showing that `path.sgx-addon.vm-prerelease.coffeelake-out-of-proc` already has complete canonical repo-local feature/spec/replay/model linkage and needs no repo-local edit.",
+        "last_worker_completed_at": "2026-06-26T10:01:44.906Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-26T10:02:21.042Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626.md proves the exact mounted Scenario_ACCSGX_Coffeelake_Out_Of_Proc -> accsgx suite linkage, preserves the row-local path.sgx-addon.vm-prerelease.coffeelake-out-of-proc boundary, confirms existing canonical feature/spec/replay/model coverage, and correctly concludes no repo-local edit or cloud/external action was needed."
+      },
+      "session_id": "s_task_sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626",
+      "session_history": [
+        "s_task_sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626"
+      ],
+      "result": "Wrote `evidence/archive/sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626.md`, a bounded mounted-source-backed audit showing that `path.sgx-addon.vm-prerelease.coffeelake-out-of-proc` already has complete canonical repo-local feature/spec/replay/model linkage and needs no repo-local edit.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-26T10:02:21.042Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/sgx-vm-prerelease-coffeelake-out-of-proc-source-boundary-20260626.md proves the exact mounted Scenario_ACCSGX_Coffeelake_Out_Of_Proc -> accsgx suite linkage, preserves the row-local path.sgx-addon.vm-prerelease.coffeelake-out-of-proc boundary, confirms existing canonical feature/spec/replay/model coverage, and correctly concludes no repo-local edit or cloud/external action was needed."
+      },
+      "status": "done"
+    }
+  ]
+}

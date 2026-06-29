@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-21T10:23:37.897Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-21 owner planning update consumed a stale watchdog review event without reopening approval-dispatch-generic-packet-app-surface-followup-20260621, trusted the accepted done state already recorded there, and reviewed the only live VM prerelease review leaf. The accepted artifact evidence/archive/vmpr-row27-34-nonvm-residue-isolation-pass-20260621.md confirms the row-27/29/30/31/32/33/34 future checkpoint is still blocked by non-VM residue rather than VM-only residue, with network-cni still present in all 11 mixed carriers and model/knowledge-map/views/model.generated.md identified as the smallest next cleanup slice. The frontier now intentionally keeps the approval-dispatch app-local implementation slice active, adds one assigned runnable VM prerelease cleanup slice for model.generated.md, and preserves the two unrelated family-level waits (runtime tooling reconciliation and external human transport proof) unchanged.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "approval-dispatch-generic-packet-app-surface-followup-20260621",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the accepted network-cni owner-handoff/app-gap artifact to map the smallest bounded generic approval-packet dispatch surface the project app could support, or prove the exact tooling boundary that still prevents it, without sending any cloud mutation or reopening unrelated blocked waits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/approval-dispatch-generic-packet-app-surface-followup-20260621.md"
+      ],
+      "acceptance": [
+        "Artifact cites the accepted network-cni owner-handoff/app-gap evidence plus the checked app-boundary files/tests and records whether a reusable approval-packet dispatch surface already exists, can be exposed with a bounded app-local change, or is still blocked by one exact tooling boundary.",
+        "Artifact names the minimum concrete next step only: either an exact app action/workflow/test slice that would emit a durable packet-linked human-facing record, or a precise evidence-backed reason that no such bounded slice is locally possible yet.",
+        "Task stays workspace/app-local only: no cloud mutation, no packet redrafting beyond packet-link metadata, and no conversion of the path into an external-response wait unless durable send proof for the exact packet is captured."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "approval-dispatch-app"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-21T10:20:24.786Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_approval-dispatch-generic-packet-app-surface-followup-20260621_20260621102024",
+        "assigned_at": "2026-06-21T10:20:24.841Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_approval-dispatch-generic-packet-app-surface-followup-20260621",
+        "worker_started_attempt_id": "a_approval-dispatch-generic-packet-app-surface-followup-20260621_20260621102024",
+        "worker_started_at": "2026-06-21T10:20:40.215Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested local app-surface analysis at evidence/archive/approval-dispatch-generic-packet-app-surface-followup-20260621.md, showing no generic approval-packet dispatch action exists today but that a bounded app-local wrapper around the proven message.created path is feasible and is the minimum next step.",
+        "last_worker_completed_at": "2026-06-21T10:21:52.879Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-21T10:22:41.832Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/approval-dispatch-generic-packet-app-surface-followup-20260621.md cites the accepted network-cni owner-handoff/app-gap chain, checks the local app/workflow/test/runtime boundary, and truthfully shows no generic approval-packet dispatch action exists today but a bounded app-local wrapper around the already-proven message.created path is the minimum next step."
+      },
+      "session_id": "s_task_approval-dispatch-generic-packet-app-surface-followup-20260621",
+      "session_history": [
+        "s_task_approval-dispatch-generic-packet-app-surface-followup-20260621"
+      ],
+      "result": "Produced the requested local app-surface analysis at evidence/archive/approval-dispatch-generic-packet-app-surface-followup-20260621.md, showing no generic approval-packet dispatch action exists today but that a bounded app-local wrapper around the proven message.created path is feasible and is the minimum next step.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-21T10:22:41.832Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/approval-dispatch-generic-packet-app-surface-followup-20260621.md cites the accepted network-cni owner-handoff/app-gap chain, checks the local app/workflow/test/runtime boundary, and truthfully shows no generic approval-packet dispatch action exists today but a bounded app-local wrapper around the already-proven message.created path is the minimum next step."
+      },
+      "status": "done"
+    }
+  ]
+}

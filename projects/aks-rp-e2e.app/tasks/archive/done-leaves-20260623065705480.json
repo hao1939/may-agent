@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-23T06:57:05.480Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "project",
+  "summary": "2026-06-23 task-completed refill checkpoint: archive the accepted repo-local mounted-source closures whose durable meaning is now preserved at the project level. The project now knows that secops-fips ubuntu-compat, storage-csi Azure Disk raw block, and VM prerelease row 37 managed AAD are source-backed carrier landings already represented in repo-local feature/spec/replay/model surfaces; the serverless virtual nodes and speculor mounted-source audits narrowed the next exact carrier gaps to the active standard virtual-nodes branch and active MultiNIC Mixed branch; and the storage-csi mounted-source audit already selected the completed raw-block slice. The truthful live frontier is therefore just the two active mounted-source learning leaves (serverless-virtual-nodes-standard-mounted-source-landing-20260623 and netintegration-multinic-mixed-mounted-source-feature-reconcile-20260623) plus the unchanged single external-human proof wait family, with no new execution or duplicate blocker work opened.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "secops-fips-ubuntu-compat-mounted-source-landing-20260623",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the exact mounted secops-fips handwritten scenario Scenario_Cluster_FIPS_Ubuntu_Compat into repo-local carriers so the k8s>=1.35 Ubuntu 22.04 FIPS compatibility packet is represented as a direct source-backed branch instead of only adjacent node-fips OSSKU coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/secops-fips-ubuntu-compat-mounted-source-landing-20260623.md"
+      ],
+      "acceptance": [
+        "A durable archive note cites /app/sources/aks-rp/test/e2ev3/sigs/secops/clusterfips/plans/cluster_fips_ubuntu_compat.go plus its mounted suite/plan-set entrypoints, and states the exact scenario contract: Ubuntu 22.04 FIPS, Kubernetes >=1.35.0, and the compatibility framing preserved by that handwritten packet.",
+        "The relevant repo-local carrier surfaces are updated so this exact mounted scenario is visible without widening scope: at minimum the note names the exact feature/spec/replay/model files added or updated for a dedicated secops-fips ubuntu-compat slice, or records precise repo-local evidence showing why one narrower carrier change is the truthful limit.",
+        "Scope stays repo-local and source-backed only: no cloud mutation, no external-send/escalation work, and no reopening of the existing external-human wait family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "secops-fips"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-23T06:45:02.704Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_secops-fips-ubuntu-compat-mounted-source-landing-20260623_20260623064502",
+        "assigned_at": "2026-06-23T06:45:02.754Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_secops-fips-ubuntu-compat-mounted-source-landing-20260623",
+        "worker_started_attempt_id": "a_secops-fips-ubuntu-compat-mounted-source-landing-20260623_20260623064502",
+        "worker_started_at": "2026-06-23T06:45:26.345Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the direct mounted-source carrier for Scenario_Cluster_FIPS_Ubuntu_Compat by adding dedicated feature/spec/replay/archive evidence, wiring it into specs/index.json and the accepted knowledge model, and validating the new replay in check mode.",
+        "last_worker_completed_at": "2026-06-23T06:52:28.774Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-23T06:54:18.438Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review of evidence/archive/secops-fips-ubuntu-compat-mounted-source-landing-20260623.md plus the landed carrier files. The artifact cites mounted clusterfips source and suite anchors, preserves the exact Ubuntu 22.04 on Kubernetes >=1.35 FIPS compatibility contract, lands dedicated repo-local carriers at features/secops/fips-ubuntu-compat.yaml, specs/secops-fips-ubuntu-compat.json, and replays/secops-fips-ubuntu-compat.ts, updates model/views/spec index, and records a successful non-mutating replay check proving the source/spec/path wiring without widening scope."
+      },
+      "session_id": "s_task_secops-fips-ubuntu-compat-mounted-source-landing-20260623",
+      "session_history": [
+        "s_task_secops-fips-ubuntu-compat-mounted-source-landing-20260623"
+      ],
+      "result": "Landed the direct mounted-source carrier for Scenario_Cluster_FIPS_Ubuntu_Compat by adding dedicated feature/spec/replay/archive evidence, wiring it into specs/index.json and the accepted knowledge model, and validating the new replay in check mode.",
+      "evidence": [],
+      "resolution": "completed",
+      "done_at": "2026-06-23T06:54:18.438Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review of evidence/archive/secops-fips-ubuntu-compat-mounted-source-landing-20260623.md plus the landed carrier files. The artifact cites mounted clusterfips source and suite anchors, preserves the exact Ubuntu 22.04 on Kubernetes >=1.35 FIPS compatibility contract, lands dedicated repo-local carriers at features/secops/fips-ubuntu-compat.yaml, specs/secops-fips-ubuntu-compat.json, and replays/secops-fips-ubuntu-compat.ts, updates model/views/spec index, and records a successful non-mutating replay check proving the source/spec/path wiring without widening scope."
+      },
+      "status": "done"
+    }
+  ]
+}
