@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { eventData, eventDetails, eventString, projectOwnerEvent, projectPlanningEvent } from "./project-app.js";
+import { eventData, eventDetails, eventString } from "./project-app.js";
 
 describe("project-app event helpers", () => {
   it("merges data, payload, and params in eventData", () => {
@@ -41,24 +41,6 @@ describe("project-app event helpers", () => {
       type: "metric.breach",
       metricId: "m1",
       status: "red",
-    });
-  });
-
-  it("creates canonical project owner events", () => {
-    expect(projectOwnerEvent("p1", "manual", { maxConcurrent: 2 })).toEqual({
-      type: "project.owner.requested",
-      project: "p1",
-      reason: "manual",
-      params: { maxConcurrent: 2 },
-    });
-  });
-
-  it("keeps projectPlanningEvent as a compatibility alias", () => {
-    expect(projectPlanningEvent("p1", "manual")).toEqual({
-      type: "project.owner.requested",
-      project: "p1",
-      reason: "manual",
-      params: {},
     });
   });
 });
