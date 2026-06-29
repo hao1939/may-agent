@@ -2539,20 +2539,20 @@ export const create: HandlerModule["create"] = (
 
     // ── DB row retention for large tables (events, sessions, workflow_runs, session_digests, evaluations, event_pair_runs) ──
     // These tables grow without bound and are the primary drivers of DB bloat.
-    // As of 2026-06-28: events ~1116 MB (3 days), sessions ~546 MB (7 days),
-    // workflow_runs ~473 MB (7 days), event_pair_runs ~7 MB (10 days unbounded).
-    // Total DB size: 2506 MB. Target: ≤1200 MB.
-    // Retention windows: events 2d (~740MB), sessions/workflows 7d (~1019MB).
-    // Combined with VACUUM, expected steady-state ~1800-2000MB declining over time.
-    // Runs only during minute 0-4 of each hour (same as session history cleanup).
+    // As of 2026-06-29: events ~1051 MB (2 days, 525 MB/day), sessions ~635 MB
+    // (7 days, 90 MB/day), workflow_runs ~423 MB (7 days, 60 MB/day),
+    // session_digests ~97 MB (7 days), evaluations ~11 MB (14 days).
+    // Total DB size: 2509 MB. Target: ≤1200 MB.
+    // Previous retention (events 2d, others 7d) produced ~2200 MB steady-state.
+    // Tightened: events 1d (~525 MB), sessions/workflows/digests 3d (~510 MB),
+    // evals 7d (~6 MB), event_pairs 3d (~2 MB). Expected steady-state: ~1050 MB.
+    // Runs every snapshot cycle (every ~5 min) — batched deletes are lightweight.
     try {
-      const minuteForRetention = new Date(now).getMinutes();
-      if (minuteForRetention < 5) {
-        const EVENT_RETENTION_MS = 2 * 86400000; // 2 days (reduced from 3d; events avg 370MB/day)
-        const SESSION_RETENTION_MS = 7 * 86400000; // 7 days
-        const WORKFLOW_RETENTION_MS = 7 * 86400000; // 7 days
-        const DIGEST_RETENTION_MS = 7 * 86400000; // 7 days
-        const EVAL_RETENTION_MS = 14 * 86400000; // 14 days
+        const EVENT_RETENTION_MS = 1 * 86400000; // 1 day (reduced from 2d; events avg 525 MB/day)
+        const SESSION_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; sessions avg 90 MB/day)
+        const WORKFLOW_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; workflows avg 60 MB/day)
+        const DIGEST_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; digests avg 14 MB/day)
+        const EVAL_RETENTION_MS = 7 * 86400000; // 7 days (reduced from 14d; evals ~0.8 MB/day)
 
         const eventCutoff = now - EVENT_RETENTION_MS;
         const sessionCutoff = now - SESSION_RETENTION_MS;
@@ -2564,7 +2564,7 @@ export const create: HandlerModule["create"] = (
         const BATCH = 5000;
         let totalDeleted = 0;
 
-        // Events: largest table, 2-day retention
+        // Events: largest table, 1-day retention
         let batch: any;
         do {
           batch = db.run(
@@ -2576,7 +2576,7 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Sessions: 7-day retention
+        // Sessions: 3-day retention
         do {
           batch = db.run(
             `DELETE FROM sessions WHERE rowid IN (
@@ -2587,7 +2587,7 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Workflow runs: 7-day retention
+        // Workflow runs: 3-day retention
         do {
           batch = db.run(
             `DELETE FROM workflow_runs WHERE rowid IN (
@@ -2598,7 +2598,7 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Session digests: 7-day retention
+        // Session digests: 3-day retention
         do {
           batch = db.run(
             `DELETE FROM session_digests WHERE rowid IN (
@@ -2609,7 +2609,7 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Evaluations: 14-day retention
+        // Evaluations: 7-day retention
         do {
           batch = db.run(
             `DELETE FROM evaluations WHERE rowid IN (
@@ -2620,8 +2620,8 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Event pair runs: 7-day retention (missed in original implementation)
-        const EVENT_PAIR_RETENTION_MS = 7 * 86400000; // 7 days
+        // Event pair runs: 3-day retention (reduced from 7d; ~2 MB total)
+        const EVENT_PAIR_RETENTION_MS = 3 * 86400000; // 3 days
         const eventPairCutoff = now - EVENT_PAIR_RETENTION_MS;
         do {
           batch = db.run(
@@ -2636,7 +2636,7 @@ export const create: HandlerModule["create"] = (
         if (totalDeleted > 0) {
           ctx.sdk.log(
             "info",
-            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:2d, sessions/workflows/digests:7d, evals:14d, event_pairs:7d)`,
+            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:1d, sessions/workflows/digests/event_pairs:3d, evals:7d)`,
           );
         }
 
@@ -2730,7 +2730,6 @@ export const create: HandlerModule["create"] = (
             `[metrics-snapshot] Error during VACUUM: ${vacErr}`,
           );
         }
-      }
     } catch (e) {
       ctx.sdk.log(
         "info",
