@@ -954,9 +954,25 @@ function scoutSourcedArtifacts24h(root: string, now: number): number {
 
 function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
   const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+  // Walk agents + shared normally; for projects, walk specific relevant subtrees
+  // to avoid the 5000-file cap being exhausted by huge irrelevant dirs (aks-rp-e2e, _archive).
+  const projectsDir = join(root, "projects");
+  const projectSubdirs: string[] = [];
+  try {
+    for (const entry of readdirSync(projectsDir)) {
+      // Skip huge irrelevant directories that exhaust the walk cap
+      if (entry === "aks-rp-e2e" || entry === "aks-rp-e2e.app" || entry === "runs") continue;
+      if (entry === "_archive" || entry === "aks-explorer") continue;
+      const p = join(projectsDir, entry);
+      try {
+        if (statSync(p).isDirectory()) projectSubdirs.push(p);
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+
   return [
     ...walkMarkdownFiles(join(root, "agents")),
-    ...walkMarkdownFiles(join(root, "projects")),
+    ...projectSubdirs.flatMap((d) => walkMarkdownFiles(d)),
     ...walkMarkdownFiles(join(root, "shared", "may-agent-docs")),
   ].filter((file) => {
     // Exclude scout's own files (both legacy and new paths)
@@ -967,6 +983,7 @@ function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
       return fileContainsAny(file, [
         /agents\/scout\/knowledge/i,
         /scout-second-brain-learning/i,
+        /scout-knowledge-lib/i,
         /\bScout\b/,
       ]);
     } catch {
