@@ -181,6 +181,16 @@ export type TaskTreeRepairResult = {
   repaired: Array<{ taskId: string; from: string; to: string }>;
 };
 
+export type TaskTreePruneMissingChildrenResult = {
+  changed: boolean;
+  parentId: string;
+  removedChildIds: string[];
+  remainingChildIds: string[];
+  lifecycle?: string;
+  active_task_ids: string[];
+  repaired: Array<{ taskId: string; from: string; to: string }>;
+};
+
 export type TaskTreeCompactResult = {
   changed: boolean;
   archived: number;
@@ -337,14 +347,14 @@ function hasExternalBlockSignal(task: TaskNode): boolean {
     return false;
   if (
     /validation|validator|check failed|failed required|not executable|no-work|waiting claims are not terminal/i.test(
-      task.blocker || "",
+      blockerText(task.blocker) || "",
     )
   )
     return false;
   if (record.blocked === true) return true;
   if (record.blocker_type === "external") return true;
   if (record.blocked_by === "human") return true;
-  const text = [task.goal, task.blocker, ...normalizeStringArray(record.gates)].filter(Boolean).join("\n");
+  const text = [task.goal, blockerText(task.blocker), ...normalizeStringArray(record.gates)].filter(Boolean).join("\n");
   return /(?:external|credential|auth|token|azure cli|\baz\b|owner|capacity|quota|rollout|environment|precondition|human|input|approval|unsafe|safety|not installed|unavailable|source signal|subscription|msi|hcp|staging)/i.test(
     text,
   );
@@ -453,6 +463,22 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
   return "done";
 }
 
+function reviewResultForChildren(tree: TaskTree, task: TaskNode): string {
+  const reviewIds = normalizeStringArray(task.children).filter((id) => tree.tasks[id]?.status === "review");
+  return `Child review pending: ${reviewIds.join(", ") || "review work"}.`;
+}
+
+function blockedConditionForChildren(tree: TaskTree, task: TaskNode): string {
+  const blockedIds = normalizeStringArray(task.children).filter((id) => tree.tasks[id]?.status === "blocked");
+  return `Child blocked: ${blockedIds.join(", ") || "blocked work"}.`;
+}
+
+function hasBlockerCondition(task: TaskNode): boolean {
+  const blocker = task.blocker;
+  if (typeof blocker === "string") return blocker.trim().length > 0;
+  return Boolean(blocker?.condition?.trim());
+}
+
 function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
   const repaired: TaskTreeRepairResult["repaired"] = [];
   const visit = (taskId: string): void => {
@@ -469,6 +495,17 @@ function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
       });
       task.status = nextState;
       task.state = nextState;
+    }
+    if (nextState === "review" && !task.result?.trim()) {
+      task.result = reviewResultForChildren(tree, task);
+    }
+    if (nextState === "blocked" && !hasBlockerCondition(task)) {
+      task.blocker = {
+        condition: blockedConditionForChildren(tree, task),
+        category: "child-blocked",
+        owner: task.owner,
+        resume_condition: "Resume when the blocked child task is resolved or replaced.",
+      };
     }
   };
   if (tree.root_task_id) visit(tree.root_task_id);
@@ -506,6 +543,57 @@ export function repairTaskTreeRollups(config: ToolConfig): TaskTreeRepairResult 
       });
     }
     return result;
+  });
+}
+
+export function pruneMissingChildren(
+  config: ToolConfig,
+  input: { parentId: string },
+): TaskTreePruneMissingChildrenResult {
+  const parentId = input.parentId.trim();
+  if (!parentId) throw new Error("Parent id cannot be empty");
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const parent = tree.tasks[parentId];
+    if (!parent) throw new Error(`Parent task not found: ${parentId}`);
+
+    const beforeChildren = normalizeStringArray(parent.children);
+    const remainingChildIds = beforeChildren.filter((childId) => Boolean(tree.tasks[childId]));
+    const removedChildIds = beforeChildren.filter((childId) => !tree.tasks[childId]);
+
+    parent.children = remainingChildIds;
+    const result = applyTaskTreeRollups(tree);
+    if (!removedChildIds.length && !result.changed) {
+      return {
+        changed: false,
+        parentId: parent.id,
+        removedChildIds,
+        remainingChildIds,
+        lifecycle: result.lifecycle,
+        active_task_ids: result.active_task_ids,
+        repaired: result.repaired,
+      };
+    }
+
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_tree_missing_children_pruned",
+      parent_id: parent.id,
+      removed_child_ids: removedChildIds,
+      remaining_child_ids: remainingChildIds,
+      lifecycle: result.lifecycle,
+      active_task_ids: result.active_task_ids,
+      repaired: result.repaired,
+    });
+    return {
+      changed: removedChildIds.length > 0 || result.changed,
+      parentId: parent.id,
+      removedChildIds,
+      remainingChildIds,
+      lifecycle: result.lifecycle,
+      active_task_ids: result.active_task_ids,
+      repaired: result.repaired,
+    };
   });
 }
 
@@ -895,6 +983,14 @@ function truncate(value: string | undefined, max = 900): string | undefined {
   return value.length > max ? `${value.slice(0, max)}...` : value;
 }
 
+function blockerText(blocker: TaskNode["blocker"]): string | undefined {
+  if (typeof blocker === "string") return blocker;
+  if (!blocker) return undefined;
+  return [blocker.condition, blocker.resume_condition]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" Resume: ");
+}
+
 function compactArray(values: unknown, limit = 8): string[] {
   return normalizeStringArray(values)
     .slice(0, limit)
@@ -943,7 +1039,7 @@ function compactTask(task: TaskNode, readinessReasons?: string[]): TaskPlanningS
     acceptance: compactArray(task.acceptance),
     conflict_scope: compactArray(task.conflict_scope),
     depends_on: compactArray(task.depends_on),
-    blocker: truncate(task.blocker, 700),
+    blocker: truncate(blockerText(task.blocker), 700),
     readiness_reasons: readinessReasons?.slice(0, 6).map((reason) => truncate(reason, 260) ?? ""),
     trace: Object.keys(trace).length ? trace : undefined,
   };
@@ -957,7 +1053,8 @@ function openChildCount(tree: TaskTree, parent: TaskNode): number {
 }
 
 function blockerSourceText(task: TaskNode): string {
-  if (typeof task.blocker === "string" && task.blocker.trim()) return task.blocker;
+  const blocker = blockerText(task.blocker);
+  if (blocker?.trim()) return blocker;
   return [task.goal, compactArray(task.acceptance, 2).join(" ")]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");
@@ -1245,7 +1342,24 @@ function loadModelStatusSummary(config: ToolConfig): ModelStatusSummary | undefi
   if (!existsSync(modelPath)) return undefined;
   try {
     const raw = JSON.parse(readFileSync(modelPath, "utf-8"));
-    const paths: Array<Record<string, unknown>> = Array.isArray(raw?.paths) ? raw.paths : [];
+    const featurePaths: Array<Record<string, unknown>> = Array.isArray(raw?.featurePaths)
+      ? raw.featurePaths
+      : [];
+    const mirrorPaths: Array<Record<string, unknown>> = Array.isArray(raw?.paths)
+      ? raw.paths
+      : [];
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const entry of mirrorPaths) {
+      const id = typeof entry?.id === "string" ? entry.id.trim() : "";
+      if (!id) continue;
+      byId.set(id, { ...entry, id });
+    }
+    for (const entry of featurePaths) {
+      const id = typeof entry?.id === "string" ? entry.id.trim() : "";
+      if (!id) continue;
+      byId.set(id, { ...byId.get(id), ...entry, id });
+    }
+    const paths = [...byId.values()];
     if (paths.length === 0) return undefined;
     const passing = paths.filter((p) => p.status === "pass");
     const nonPassing = paths.filter((p) => p.status !== "pass");
@@ -1341,14 +1455,22 @@ function createAssignmentForTask(
 ): TaskAssignment {
   const attemptId =
     input.attemptId ?? `a_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}_${now.replace(/\D/g, "").slice(0, 14)}`;
+  const trace = task.trace ?? {};
+  const previousWorkerErrored =
+    typeof trace.review_rejected_at === "string" &&
+    typeof trace.last_worker_summary === "string" &&
+    trace.last_worker_summary.trim().toLowerCase() === "error";
   const wantsFreshSession =
-    (task.trace?.review_reject_fresh_session === true || task.trace?.stale_active_fresh_session === true) &&
-    !task.session_id;
+    trace.review_reject_fresh_session === true ||
+    trace.stale_active_fresh_session === true ||
+    previousWorkerErrored;
   const defaultSessionId = wantsFreshSession
     ? `${stableTaskSessionId(task)}_retry_${now.replace(/\D/g, "").slice(0, 14)}`
     : stableTaskSessionId(task);
   const sessionId =
-    typeof task.session_id === "string" && task.session_id.trim() ? task.session_id.trim() : defaultSessionId;
+    !wantsFreshSession && typeof task.session_id === "string" && task.session_id.trim()
+      ? task.session_id.trim()
+      : defaultSessionId;
   const worker = input.worker ?? task.owner ?? config.worker;
   task.status = "active";
   task.state = "active";
@@ -1650,6 +1772,8 @@ export function completeTask(
     };
     task.status = "review";
     task.state = "review";
+    task.result = input.summary;
+    task.evidence = input.evidence ?? [];
     task.blocker = undefined;
     task.trace = trace;
     tree.active_task_ids = activeIds(tree);
