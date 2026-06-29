@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": "ops-health",
-    "summary": "Owner review 2026-06-29T17:40Z. Confirmed stable: 0 platform-owned handler.failed/session.resume_failed/message.delivery_failed/subscriber.failed/agent.config_invalid in 1h. Open alert #2167 aks-rp-e2e.planner.slow-count-24h=7 (aks-explorer-owned, 3d open, stable). evaluation-aftermath-scan 180/24h steady ~7/hr (evaluator-owned). metric.breach 2x aks-explorer-owned, both self-recovered. Owner sessions 30/24h: 28 done, 1 error (isolated 13h ago), 1 running. handler.success-rate=96.5%, session.error-rate=4.6%, heartbeat-coverage=100%. 14/14 tests pass, integrity clean, TS clean. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2). No new platform work needed."
+    "summary": "Owner review 2026-06-29T23:06Z. 0 platform-owned failures in 2h. handler.failed 8 in 1h: all evaluator-owned (evaluation-aftermath-scan ~8/hr, requires sessionId — evaluator-app contract bug). project-app-event-router burst 6h ago (20 failures, aks-rp-e2e onEvent race, self-resolved, 0 in 6h). Open alert: #2167 aks-rp-e2e.planner.slow-count-24h=6 (aks-explorer-owned, 78h old, stable). Error session s_1782770191206_283: transient provider error (opCount=23), next session succeeded. handler.success-rate=98.25% (1h). project.json/runtime in sync. 14/14 tests pass, TS clean, integrity passes. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2). No new platform work needed."
   },
-  "updatedAt": "2026-06-29T17:40:00.000Z"
+  "updatedAt": "2026-06-29T23:06:00.000Z"
 }
