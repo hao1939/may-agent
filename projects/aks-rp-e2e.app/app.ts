@@ -1,8 +1,4 @@
-import {
-  defineProjectApp,
-  projectOwnerEvent as sdkProjectOwnerEvent,
-  workflowHandlers,
-} from "@may-agent/sdk";
+import { defineProjectApp, workflowHandlers } from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
@@ -17,16 +13,25 @@ const taskTreeContext = [
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go",
 ];
 
-function projectOwnerEvent(
+function eventParams(params: unknown): Record<string, unknown> {
+  return params && typeof params === "object" && !Array.isArray(params)
+    ? (params as Record<string, unknown>)
+    : {};
+}
+
+function ownerRequested(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectOwnerEvent(projectId, reason, {
-    maxConcurrent: projectPolicyMaxConcurrent,
-    ...(params && typeof params === "object" && !Array.isArray(params)
-      ? (params as Record<string, unknown>)
-      : {}),
-  });
+  return {
+    type: "project.owner.requested",
+    project: projectId,
+    reason,
+    params: {
+      maxConcurrent: projectPolicyMaxConcurrent,
+      ...eventParams(params),
+    },
+  };
 }
 
 export default defineProjectApp({
@@ -71,34 +76,24 @@ export default defineProjectApp({
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
-      event: {
-        type: "project.owner.requested",
-        project: projectId,
-        reason: "owner-heartbeat",
-        maxConcurrent: projectPolicyMaxConcurrent,
-        params: {
-          instruction:
-            "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
-          reviewChecklist: [
-            "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
-            "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
-            "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
-            "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
-            "No-op is valid when the task tree already has clear active/review/runnable work.",
-          ],
-        },
-      },
+      event: ownerRequested("owner-heartbeat", {
+        instruction:
+          "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
+        reviewChecklist: [
+          "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
+          "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
+          "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
+          "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
+          "No-op is valid when the task tree already has clear active/review/runnable work.",
+        ],
+      }),
     },
     {
       id: "blocked-frontier-owner-review",
       enabled: true,
       intervalMs: 7_200_000,
       event: {
-        type: "project.owner.requested",
-        project: projectId,
-        reason: "scheduled-blocked-frontier-review",
-        urgency: "high",
-        params: {
+        ...ownerRequested("scheduled-blocked-frontier-review", {
           instruction:
             "Periodic blocked-frontier owner review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and assign unrelated runnable work so the project keeps moving.",
           reviewChecklist: [
@@ -108,7 +103,8 @@ export default defineProjectApp({
             "Prefer one shared problem/unblock task for a shared root cause.",
             "Every sampled blocked task should leave review with a path toward closure: solved, reworked, escalated/sent, terminal-done, or a precise response-await with next review trigger.",
           ],
-        },
+        }),
+        urgency: "high",
       },
     },
     {
@@ -373,7 +369,7 @@ export default defineProjectApp({
       type: "async",
       description: "Request live execution for selected replanned paths.",
       event(params) {
-        return projectOwnerEvent("execute-run-action", {
+        return ownerRequested("execute-run-action", {
           action: "execute-run",
           params,
         });
@@ -384,14 +380,14 @@ export default defineProjectApp({
       description:
         "Advance the project task tree until genuinely blocked, complete, or interrupted by an infra guard.",
       event(params) {
-        return projectOwnerEvent("manual-action", params);
+        return ownerRequested("manual-action", params);
       },
     },
     watch: {
       type: "async",
       description: "Start or resume owner review through the task tree.",
       event(params) {
-        return projectOwnerEvent("watch-request", params);
+        return ownerRequested("watch-request", params);
       },
     },
     "request-focus-plan": {

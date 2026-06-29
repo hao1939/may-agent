@@ -3,7 +3,6 @@ import {
   defineProjectApp,
   eventDetails,
   eventString,
-  projectOwnerEvent as sdkProjectOwnerEvent,
   type ProjectAppContext,
 } from "@may-agent/sdk";
 
@@ -21,11 +20,19 @@ const taskTreeContext = [
   "projects/may-agent/README.md",
 ];
 
-function projectOwnerEvent(
+function ownerRequested(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectOwnerEvent(projectId, reason, params);
+  return {
+    type: "project.owner.requested",
+    project: projectId,
+    reason,
+    params:
+      params && typeof params === "object" && !Array.isArray(params)
+        ? (params as Record<string, unknown>)
+        : {},
+  };
 }
 
 function appendDiscussionRecord(
@@ -64,12 +71,12 @@ async function routePlatformEvent(
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
     const commentId = appendDiscussionRecord(ctx, event);
-    return ctx.emit(projectOwnerEvent("project-comment", { commentId }));
+    return ctx.emit(ownerRequested("project-comment", { commentId }));
   }
 
   if (event.type === "project.tick") {
     return ctx.emit(
-      projectOwnerEvent("scheduled-project-review", eventDetails(event)),
+      ownerRequested("scheduled-project-review", eventDetails(event)),
     );
   }
 
@@ -86,7 +93,7 @@ async function routePlatformEvent(
   }
 
   if (event.type === "project.action.invoked") {
-    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
+    return ctx.emit(ownerRequested("project-action", eventDetails(event)));
   }
 
   if (
@@ -180,12 +187,12 @@ async function routePlatformEvent(
       );
     }
 
-    return ctx.emit(projectOwnerEvent("metric-signal", eventDetails(event)));
+    return ctx.emit(ownerRequested("metric-signal", eventDetails(event)));
   }
 
   if (event.type === "project.tasks.ready") {
     return ctx.emit(
-      projectOwnerEvent("ready-tasks-available", eventDetails(event)),
+      ownerRequested("ready-tasks-available", eventDetails(event)),
     );
   }
 
@@ -237,7 +244,7 @@ export default defineProjectApp({
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 43_200_000, // 12h — budget-aware: platform-review (6h, 4/day) + heartbeat (12h, 2/day) = 6/day matching sessionsPerDay budget
-      event: projectOwnerEvent("owner-heartbeat", {
+      event: ownerRequested("owner-heartbeat", {
         instruction:
           "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
         reviewChecklist: [
@@ -463,7 +470,7 @@ export default defineProjectApp({
       description:
         "Ask tech-lead to review and advance the May-agent platform project.",
       event(params) {
-        return projectOwnerEvent("manual-advance", params);
+        return ownerRequested("manual-advance", params);
       },
     },
   },

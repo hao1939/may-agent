@@ -1,8 +1,8 @@
 # AgentSDK
 
 > **Update (2026-06-18):** The SDK now also exports project-app primitives:
-> `defineProjectApp`, `projectOwnerEvent`, `eventDetails`, `eventData`,
-> `eventString`. These are used in `*.app/app.ts` declarations. See
+> `defineProjectApp`, `eventDetails`, `eventData`, `eventString`, and
+> `workflowHandlers`. These are used in `*.app/app.ts` declarations. See
 > [project-app-v3.md](project-app-v3.md) §Shared SDK Boundary.
 >
 > The task-tree SDK (`planningPacket`, `seedModelGapBacklog`,

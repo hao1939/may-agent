@@ -1,7 +1,6 @@
 import {
   defineProjectApp,
   eventDetails,
-  projectOwnerEvent as sdkProjectOwnerEvent,
   type ProjectAppContext,
 } from "@may-agent/sdk";
 
@@ -20,11 +19,19 @@ const scoutContext = [
   "projects/scout-knowledge-lib.app/project.json",
 ];
 
-function projectOwnerEvent(
+function ownerRequested(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectOwnerEvent(projectId, reason, params);
+  return {
+    type: "project.owner.requested",
+    project: projectId,
+    reason,
+    params:
+      params && typeof params === "object" && !Array.isArray(params)
+        ? (params as Record<string, unknown>)
+        : {},
+  };
 }
 
 async function routeScoutEvent(
@@ -43,21 +50,21 @@ async function routeScoutEvent(
   }
 
   if (event.type === "project.comment.created") {
-    return ctx.emit(projectOwnerEvent("project-comment", eventDetails(event)));
+    return ctx.emit(ownerRequested("project-comment", eventDetails(event)));
   }
 
   if (event.type === "project.tick") {
     return ctx.emit(
-      projectOwnerEvent("scheduled-library-maintenance", eventDetails(event)),
+      ownerRequested("scheduled-library-maintenance", eventDetails(event)),
     );
   }
 
   if (event.type === "project.action.invoked") {
-    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
+    return ctx.emit(ownerRequested("project-action", eventDetails(event)));
   }
 
   if (event.type === "metric.breach") {
-    return ctx.emit(projectOwnerEvent("metric-breach", eventDetails(event)));
+    return ctx.emit(ownerRequested("metric-breach", eventDetails(event)));
   }
 
   if (event.type === "project.knowledge.maintained") {
@@ -98,7 +105,7 @@ export default defineProjectApp({
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
-      event: projectOwnerEvent("owner-heartbeat", {
+      event: ownerRequested("owner-heartbeat", {
         instruction:
           "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
         reviewChecklist: [
@@ -301,7 +308,7 @@ export default defineProjectApp({
       description:
         "Ask Scout to review the knowledge library and update it if useful.",
       event(params) {
-        return projectOwnerEvent("manual-library-review", params);
+        return ownerRequested("manual-library-review", params);
       },
     },
     "repair-index": {
@@ -309,7 +316,7 @@ export default defineProjectApp({
       description:
         "Ask Scout to repair knowledge/INDEX.md and related navigation.",
       event(params) {
-        return projectOwnerEvent("repair-index", params);
+        return ownerRequested("repair-index", params);
       },
     },
     "explore-now": {

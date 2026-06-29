@@ -201,15 +201,16 @@ Move reusable mechanics into `@may-agent/sdk` when they are domain-neutral:
 - project-app manifest types and `defineProjectApp`
 - event normalization helpers such as `eventData`, `eventString`, and
   `eventDetails`
-- canonical app event constructors such as `projectOwnerEvent`
 - JSON task-tree read/write, summaries, kanban projection, assignment, and
   completion helpers
 - workflow trigger-input parsing helpers
 
 Do not move domain policy into the SDK. AKS model-gap seeding, evaluator
 criteria, Scout knowledge-library rules, platform repair policy, and app
-prompts stay local. The SDK should make those workflows easier to write and
-check; it should not decide what the project should do.
+prompts stay local. App-specific event constructors also stay local unless they
+are a genuinely typed, shared platform contract. The SDK should make those
+workflows easier to write and check; it should not decide what the project
+should do.
 
 ## App Package
 
