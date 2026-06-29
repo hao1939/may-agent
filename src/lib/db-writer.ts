@@ -29,6 +29,11 @@ const DURABLE_COMMAND_EVENTS = new Set([
 
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
+// Task assignment pairs use a longer TTL because project tasks legitimately
+// take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
+// batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
+// the event.pair-orphan-count threshold.
+const TASK_ASSIGNED_PAIR_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
   if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
@@ -107,7 +112,7 @@ function openingPair(eventType: string): { name: string; base: string; timeoutMs
     return {
       name: eventType.slice(0, -".assigned".length),
       base: eventType.slice(0, -".assigned".length),
-      timeoutMs: DEFAULT_PAIR_TTL_MS,
+      timeoutMs: TASK_ASSIGNED_PAIR_TTL_MS,
     };
   return undefined;
 }
@@ -353,6 +358,24 @@ export class DbWriter {
     if (!pair) return;
     const key = correlationKey(eventType, payload);
     if (!key) return;
+    // When a task is re-assigned with a new attemptId, supersede older open/orphan
+    // pairs for the same taskId to prevent orphan accumulation from re-attempts.
+    if (eventType === "project.task.assigned") {
+      const taskId = keyPart(payload.taskId);
+      if (taskId) {
+        this.db.run(
+          `UPDATE event_pair_runs
+           SET status = 'closed',
+               closed_at = ?,
+               note = 'superseded by new task attempt'
+           WHERE status IN ('open', 'orphan')
+             AND pair_name = ?
+             AND correlation_key LIKE ? || ':%'
+             AND correlation_key != ?`,
+          [openedAt, pair.name, taskId, key],
+        );
+      }
+    }
     this.db.run(
       `INSERT OR IGNORE INTO event_pair_runs
        (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
