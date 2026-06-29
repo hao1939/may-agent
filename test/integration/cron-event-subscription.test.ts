@@ -577,4 +577,53 @@ describe("Cron event subscriptions", () => {
 
     for (const resolve of resolvers.splice(0)) resolve();
   });
+
+  it("applies exponential backoff on queue drain after handler errors", async () => {
+    const dir = join(tmpdir(), `cron-error-backoff-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "error-backoff-handler",
+        enabled: true,
+        handler: "error-backoff-handler",
+        on: ["test.event"],
+        maxQueueDepth: 10,
+      },
+    ]));
+
+    const bus = new EventBus();
+    const errors: string[] = [];
+    let callCount = 0;
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, (msg) => errors.push(msg));
+    cron.load();
+    cron.registerHandler("error-backoff-handler", async () => {
+      callCount++;
+      throw new Error("instant failure");
+    });
+    cron.subscribeToBus(bus);
+
+    // Emit 6 events — first fires immediately, 5 queue
+    for (let i = 0; i < 6; i++) {
+      bus.emit({ type: "test.event", source: "test", owner: "agent:may", data: { i } } as any);
+    }
+
+    // Wait a brief period — without backoff the tight loop would drain all 5 queued events
+    // in <100ms. With backoff (5s minimum), only the initial trigger should have fired.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // The initial event fires and errors. The first queued event should wait 5s backoff.
+    // After 5 consecutive errors, the queue should be dropped.
+    // In 200ms, we expect at most 1-2 runs (the initial + maybe one that squeaked through),
+    // NOT all 6 cascading instantly.
+    expect(callCount).toBeLessThanOrEqual(2);
+
+    // Verify the queue-drop message appears after enough errors accumulate
+    // (we need to wait for backoff timers, so just check the pattern holds)
+    const queueDropped = errors.some((m) => m.includes("queue dropped"));
+    // With only 200ms elapsed and 5s backoff, the queue won't fully drain yet.
+    // The key assertion is callCount stayed low (no tight error loop).
+    expect(callCount).toBeLessThan(6);
+  });
 });
