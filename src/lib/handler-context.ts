@@ -19,6 +19,13 @@ export interface EventEnvelope {
   timestamp?: number;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
+  target?: {
+    project?: string;
+    taskId?: string;
+    owner?: string;
+    sessionId?: string;
+    human?: boolean;
+  };
   data: Record<string, unknown>;
 }
 
@@ -46,7 +53,10 @@ export interface HandlerContext {
   /** Upsert a digest record (create or update). */
   upsertDigest(input: DigestInput): Promise<DigestRow | null>;
   /** Classify a digest to determine action (resume/requeue/escalate/kill/nothing). */
-  classifyDigest(digest: { outcome: string; still_open: string | null; what_happened: string }, trigger: string): { action: DigestAction; reason: string };
+  classifyDigest(
+    digest: { outcome: string; still_open: string | null; what_happened: string },
+    trigger: string,
+  ): { action: DigestAction; reason: string };
 
   // ── Session data (used by session-eval) ───────────────────────────
   /** Read session metadata by sessionId. */

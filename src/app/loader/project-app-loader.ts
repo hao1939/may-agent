@@ -11,11 +11,38 @@ import { getDb } from "../../lib/requests.js";
 import { Cron } from "../cron.js";
 import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
 
+type EventUrgency = "low" | "normal" | "high" | "immediate";
+
+type EventTarget = {
+  project?: string;
+  taskId?: string;
+  owner?: string;
+  sessionId?: string;
+  human?: boolean;
+};
+
+type AppEvent = {
+  type?: string;
+  target?: EventTarget;
+  source?: string;
+  owner?: string;
+  urgency?: EventUrgency;
+  ttlMs?: number;
+  ttl_ms?: number;
+  timestamp?: number;
+  data?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 type EventSelector =
   | string
   | {
       type: string;
+      target?: EventTarget;
       project?: string;
+      owner?: string;
+      urgency?: EventUrgency;
       actions?: string[];
       metricIds?: string[];
     };
@@ -41,13 +68,15 @@ type ProjectApp = {
     id: string;
     enabled?: boolean;
     intervalMs?: number;
-    event: Record<string, unknown>;
+    emits?: AppEvent[];
+    event?: AppEvent;
   }>;
   workflowHandlers?: Array<{
     name: string;
     enabled?: boolean;
     description?: string;
     maxConcurrentTriggers?: number;
+    accepts?: EventSelector[];
     on?: string[];
     handler: {
       workflow: string;
@@ -251,20 +280,36 @@ function syncProjectReadModel(opts: ProjectAppLoaderOptions, descriptor: Project
   );
 }
 
-function normalizeEvent(event: Record<string, unknown>, defaults: { source: string; owner: string }): EventEnvelope {
+const envelopeFieldNames = new Set([
+  "type",
+  "source",
+  "owner",
+  "timestamp",
+  "urgency",
+  "ttlMs",
+  "ttl_ms",
+  "target",
+  "data",
+]);
+
+function normalizeEvent(event: AppEvent, defaults: { source: string; owner: string }): EventEnvelope {
   const type = typeof event.type === "string" ? event.type : "project.event";
   const source = typeof event.source === "string" ? event.source : defaults.source;
   const owner = typeof event.owner === "string" ? event.owner : defaults.owner;
   const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
   const urgency = typeof event.urgency === "string" ? event.urgency : undefined;
-  const ttlMs = typeof event.ttl_ms === "number" ? event.ttl_ms : undefined;
-  const data = isRecord(event.data)
-    ? event.data
-    : Object.fromEntries(
-        Object.entries(event).filter(
-          ([key]) => !["type", "source", "owner", "timestamp", "urgency", "ttl_ms"].includes(key),
-        ),
-      );
+  const ttlMs =
+    typeof event.ttl_ms === "number" ? event.ttl_ms : typeof event.ttlMs === "number" ? event.ttlMs : undefined;
+  const target = isRecord(event.target) ? (event.target as EventTarget) : undefined;
+  const flatPayload = Object.fromEntries(Object.entries(event).filter(([key]) => !envelopeFieldNames.has(key)));
+  const data = {
+    ...(isRecord(event.data) ? event.data : {}),
+    ...flatPayload,
+  };
+  if (target?.project && typeof data.project !== "string") data.project = target.project;
+  if (target?.taskId && typeof data.taskId !== "string") data.taskId = target.taskId;
+  if (target?.taskId && typeof data.task_id !== "string") data.task_id = target.taskId;
+  if (target && !isRecord(data.target)) data.target = target;
   return {
     type,
     source,
@@ -272,6 +317,7 @@ function normalizeEvent(event: Record<string, unknown>, defaults: { source: stri
     timestamp,
     ...(urgency ? { urgency: urgency as EventEnvelope["urgency"] } : {}),
     ...(typeof ttlMs === "number" ? { ttl_ms: ttlMs } : {}),
+    ...(target ? { target } : {}),
     data,
   };
 }
@@ -324,6 +370,10 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
 function projectValue(event: Record<string, unknown>): string {
   const direct = event.project ?? event.projectId;
   if (typeof direct === "string") return direct;
+  if (isRecord(event.target)) {
+    const targetedProject = event.target.project;
+    if (typeof targetedProject === "string") return targetedProject;
+  }
   const path = event.projectPath;
   if (typeof path === "string") {
     const normalized = path.replace(/\\/g, "/");
@@ -333,10 +383,32 @@ function projectValue(event: Record<string, unknown>): string {
   return "";
 }
 
+function selectorProject(selector: Exclude<EventSelector, string>): string {
+  return typeof selector.target?.project === "string" && selector.target.project.trim()
+    ? selector.target.project.trim()
+    : typeof selector.project === "string" && selector.project.trim()
+      ? selector.project.trim()
+      : "";
+}
+
+function taskIdValue(event: Record<string, unknown>): string {
+  const direct = event.taskId ?? event.task_id;
+  if (typeof direct === "string") return direct;
+  if (isRecord(event.target)) {
+    const targetedTaskId = event.target.taskId;
+    if (typeof targetedTaskId === "string") return targetedTaskId;
+  }
+  return "";
+}
+
 function matchesSelector(selector: EventSelector, event: Record<string, unknown>, appId: string): boolean {
   if (typeof selector === "string") return event.type === selector;
   if (event.type !== selector.type) return false;
-  if (selector.project && projectValue(event) !== selector.project) return false;
+  const project = selectorProject(selector);
+  if (project && projectValue(event) !== project) return false;
+  if (selector.target?.taskId && taskIdValue(event) !== selector.target.taskId) return false;
+  if (selector.owner && ownerAgentValue(event) !== selector.owner.replace(/^agent:/, "")) return false;
+  if (selector.urgency && event.urgency !== selector.urgency) return false;
   if (selector.actions?.length) {
     const action = typeof event.action === "string" ? event.action : "";
     if (!selector.actions.includes(action)) return false;
@@ -346,6 +418,25 @@ function matchesSelector(selector: EventSelector, event: Record<string, unknown>
     if (!selector.metricIds.includes(metricId)) return false;
   }
   return true;
+}
+
+function eventTypeFromSelector(selector: EventSelector): string | null {
+  if (typeof selector === "string") return selector;
+  return typeof selector.type === "string" && selector.type.trim() ? selector.type.trim() : null;
+}
+
+function handlerAccepts(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): EventSelector[] {
+  return handler.accepts ?? handler.on ?? [];
+}
+
+function handlerAcceptedEventTypes(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): string[] {
+  return [
+    ...new Set(
+      handlerAccepts(handler)
+        .map(eventTypeFromSelector)
+        .filter((type): type is string => Boolean(type)),
+    ),
+  ];
 }
 
 function isProjectScopedForApp(event: Record<string, unknown>, appId: string): boolean {
@@ -385,7 +476,9 @@ function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId
 function hasExplicitWorkflowHandler(app: ProjectApp, eventType: unknown): boolean {
   return (
     typeof eventType === "string" &&
-    (app.workflowHandlers ?? []).some((handler) => handler.enabled !== false && (handler.on ?? []).includes(eventType))
+    (app.workflowHandlers ?? []).some(
+      (handler) => handler.enabled !== false && handlerAcceptedEventTypes(handler).includes(eventType),
+    )
   );
 }
 
@@ -514,7 +607,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
       enabled: handler.enabled !== false,
       description: handler.description,
       maxConcurrentTriggers: handler.maxConcurrentTriggers,
-      on: handler.on ?? [],
+      on: handlerAcceptedEventTypes(handler),
       context: handler.context,
       agent: agentName,
       handler: {
@@ -535,6 +628,10 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
     const includeEvent = workflow.includeEvent;
     const handlerName = handler.name;
     cron.registerHandler(handlerName, async (event?: EventEnvelope) => {
+      if (event) {
+        const flattened = flattenEvent(event as unknown as AgentEvent);
+        if (!handlerAccepts(handler).some((selector) => matchesSelector(selector, flattened, descriptor.id))) return;
+      }
       const runtime = requireWorkflowRuntimeOptions(opts);
       const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
       const task =
@@ -627,11 +724,14 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
       handler: "__project_app_schedule__",
     };
     cron.registerHandler(entryName, async () => {
-      const envelope = normalizeEvent(schedule.event, {
-        source: `project-app:${descriptor.id}:schedule:${schedule.id}`,
-        owner: `agent:${descriptor.owner}`,
-      });
-      opts.bus.emit(envelope as unknown as AgentEvent);
+      const events = schedule.emits ?? (schedule.event ? [schedule.event] : []);
+      for (const event of events) {
+        const envelope = normalizeEvent(event, {
+          source: `project-app:${descriptor.id}:schedule:${schedule.id}`,
+          owner: `agent:${descriptor.owner}`,
+        });
+        opts.bus.emit(envelope as unknown as AgentEvent);
+      }
     });
     cron.addSyntheticEntry(entry);
     count++;

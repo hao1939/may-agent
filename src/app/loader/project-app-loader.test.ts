@@ -129,7 +129,7 @@ describe("project app loader", () => {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: [{ type: "project.work", target: { project: "sample" } }],
           handler: { workflow: "worker", task: "work" }
         }]
       }`,
@@ -150,6 +150,7 @@ describe("project app loader", () => {
       expect(entries).toHaveLength(1);
       expect(entries[0]).toMatchObject({
         name: "sample-worker",
+        on: ["project.work"],
         agent: "sample-owner",
         handler: {
           workflow: "worker",
@@ -182,7 +183,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description: "Generated workflow-backed event handler.",
-      on: ["project.work"],
+      accepts: [{ type: "project.work", target: { project: "sample" } }],
       handler: { workflow: "worker", task: "work", timeoutMs: 60000 },
       context: []
     }
@@ -986,13 +987,13 @@ export async function execute(ctx: any) {
           id: "urgent-review",
           enabled: true,
           intervalMs: 60000,
-          event: {
+          emits: [{
             type: "project.owner.requested",
-            project: "sample",
-            reason: "urgent-review",
+            target: { project: "sample", taskId: "review-task" },
+            data: { reason: "urgent-review" },
             urgency: "high",
-            ttl_ms: 5000
-          }
+            ttlMs: 5000
+          }]
         }]
       }`,
       );
@@ -1018,10 +1019,72 @@ export async function execute(ctx: any) {
           type: "project.owner.requested",
           urgency: "high",
           ttl_ms: 5000,
+          target: { project: "sample", taskId: "review-task" },
           data: expect.objectContaining({
             project: "sample",
+            taskId: "review-task",
+            task_id: "review-task",
             reason: "urgent-review",
           }),
+        }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("emits every event declared by a project app schedule emits list", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "multi",
+          enabled: true,
+          intervalMs: 60000,
+          emits: [
+            { type: "project.tick", target: { project: "sample" }, data: { lane: "learning" } },
+            { type: "project.watchdog.tick", target: { project: "sample" } }
+          ]
+        }]
+      }`,
+      );
+
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      const agentCrons = new Map<string, Cron>();
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      expect(agentCrons.get("sample-owner")!.triggerNow("sample-schedule-multi", { force: true })).toBe(true);
+      await waitUntil(
+        () => observed.filter((event) => event.source === "project-app:sample:schedule:multi").length === 2,
+      );
+
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "project.tick",
+          target: { project: "sample" },
+          data: expect.objectContaining({ project: "sample", lane: "learning" }),
+        }),
+      );
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "project.watchdog.tick",
+          target: { project: "sample" },
+          data: expect.objectContaining({ project: "sample" }),
         }),
       );
     } finally {
