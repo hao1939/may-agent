@@ -25,6 +25,7 @@ type ProjectJson = {
 type WorkflowHandler = {
   name?: string;
   enabled?: boolean;
+  accepts?: unknown;
   on?: unknown;
   emits?: unknown;
   intervalMs?: number;
@@ -42,6 +43,10 @@ type Schedule = {
   id?: string;
   enabled?: boolean;
   intervalMs?: number;
+  emits?: Array<{
+    type?: string;
+    [key: string]: unknown;
+  }>;
   event?: {
     type?: string;
     [key: string]: unknown;
@@ -52,7 +57,13 @@ type EventSelector =
   | string
   | {
       type?: string;
+      target?: {
+        project?: string;
+        taskId?: string;
+      };
       project?: string;
+      owner?: string;
+      urgency?: string;
       actions?: string[];
       metricIds?: string[];
     };
@@ -360,9 +371,10 @@ function validateWorkflowHandlers(
         `workflow handler ${handler.name} references missing workflows/${workflow}.ts`,
       );
 
-    if (!Array.isArray(handler.on))
-      fail(`workflow handler ${handler.name} must declare on[]`);
-    else if (handler.enabled !== false && handler.on.length === 0)
+    const inputs = workflowHandlerInputEvents(handler);
+    if (!Array.isArray(handler.accepts) && !Array.isArray(handler.on))
+      fail(`workflow handler ${handler.name} must declare accepts[]`);
+    else if (handler.enabled !== false && inputs.length === 0)
       fail(`workflow handler ${handler.name} must be triggered by an event`);
     if (!handler.handler?.task)
       fail(`workflow handler ${handler.name} missing handler.task`);
@@ -388,8 +400,12 @@ function validateSchedules(projectApp: ProjectApp): void {
       fail(`enabled schedule ${schedule.id} missing intervalMs`);
     if (schedule.intervalMs !== undefined && schedule.intervalMs < 10_000)
       fail(`schedule ${schedule.id} intervalMs is too low`);
-    if (!schedule.event?.type)
-      fail(`schedule ${schedule.id} missing event.type`);
+    const events = scheduleEvents(schedule);
+    if (events.length === 0)
+      fail(`schedule ${schedule.id} must declare emits[]`);
+    for (const event of events) {
+      if (!event.type) fail(`schedule ${schedule.id} missing emits[].type`);
+    }
   }
 }
 
@@ -398,6 +414,25 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
   return typeof selector.type === "string" && selector.type.trim()
     ? selector.type.trim()
     : null;
+}
+
+function workflowHandlerSelectors(handler: WorkflowHandler): EventSelector[] {
+  const raw = handler.accepts ?? handler.on;
+  return Array.isArray(raw) ? (raw as EventSelector[]) : [];
+}
+
+function workflowHandlerInputEvents(handler: WorkflowHandler): string[] {
+  return workflowHandlerSelectors(handler)
+    .map(eventTypeFromSelector)
+    .filter((event): event is string => Boolean(event));
+}
+
+function scheduleEvents(schedule: Schedule): Array<{ type?: string }> {
+  return Array.isArray(schedule.emits)
+    ? schedule.emits
+    : schedule.event
+      ? [schedule.event]
+      : [];
 }
 
 function addMapValue(map: Map<string, string[]>, key: string, value: string) {
@@ -482,10 +517,8 @@ function validateEventGraph(projectApp: ProjectApp): void {
   const handlerConsumers = new Map<string, string[]>();
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false) continue;
-    for (const event of Array.isArray(handler.on) ? handler.on : []) {
-      if (typeof event === "string" && event.trim()) {
-        addMapValue(handlerConsumers, event, handler.name ?? "unnamed-handler");
-      }
+    for (const event of workflowHandlerInputEvents(handler)) {
+      addMapValue(handlerConsumers, event, handler.name ?? "unnamed-handler");
     }
   }
 
@@ -526,12 +559,14 @@ function validateEventGraph(projectApp: ProjectApp): void {
   }
 
   for (const schedule of projectApp.schedules ?? []) {
-    const event = schedule.event?.type;
-    if (!event) continue;
-    if (!consumed.has(event)) {
-      fail(
-        `schedule ${schedule.id ?? "unnamed"} emits unhandled event ${event}`,
-      );
+    for (const emitted of scheduleEvents(schedule)) {
+      const event = emitted.type;
+      if (!event) continue;
+      if (!consumed.has(event)) {
+        fail(
+          `schedule ${schedule.id ?? "unnamed"} emits unhandled event ${event}`,
+        );
+      }
     }
   }
 
@@ -550,8 +585,7 @@ function validateEventGraph(projectApp: ProjectApp): void {
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false || !handler.name) continue;
     const emits = Array.isArray(handler.emits) ? handler.emits : [];
-    for (const input of Array.isArray(handler.on) ? handler.on : []) {
-      if (typeof input !== "string") continue;
+    for (const input of workflowHandlerInputEvents(handler)) {
       for (const output of emits) edge(input, output);
     }
   }

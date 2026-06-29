@@ -98,7 +98,7 @@ async function makeFixture() {
   workflowHandlers: [
     {
       name: "feature-reference-loop-handler",
-      on: ["project.task.tick"],
+      accepts: [{ type: "project.task.tick", target: { project: "aks-rp-e2e.app" } }],
       handler: {
         workflow: "feature-reference-loop-controller",
         task: "app: /tmp\\nproject: /tmp",

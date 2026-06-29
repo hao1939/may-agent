@@ -13,27 +13,6 @@ const taskTreeContext = [
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go",
 ];
 
-function eventParams(params: unknown): Record<string, unknown> {
-  return params && typeof params === "object" && !Array.isArray(params)
-    ? (params as Record<string, unknown>)
-    : {};
-}
-
-function ownerRequested(
-  reason: string,
-  params: unknown = {},
-): Record<string, unknown> {
-  return {
-    type: "project.owner.requested",
-    project: projectId,
-    reason,
-    params: {
-      maxConcurrent: projectPolicyMaxConcurrent,
-      ...eventParams(params),
-    },
-  };
-}
-
 export default defineProjectApp({
   id: projectId,
   version: 1,
@@ -57,75 +36,113 @@ export default defineProjectApp({
       id: "regular-learning",
       enabled: true,
       intervalMs: 3_600_000,
-      event: {
-        type: "project.tick",
-        project: projectId,
-        lane: "learning",
-      },
+      emits: [
+        {
+          type: "project.tick",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            lane: "learning",
+          },
+        },
+      ],
     },
     {
       id: "project-execution-watchdog",
       enabled: true,
       intervalMs: 300_000,
-      event: {
-        type: "project.watchdog.tick",
-        project: projectId,
-      },
+      emits: [
+        {
+          type: "project.watchdog.tick",
+          target: { project: projectId },
+          data: { project: projectId },
+        },
+      ],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
-      event: ownerRequested("owner-heartbeat", {
-        instruction:
-          "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
-        reviewChecklist: [
-          "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
-          "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
-          "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
-          "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
-          "No-op is valid when the task tree already has clear active/review/runnable work.",
-        ],
-      }),
+      emits: [
+        {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "owner-heartbeat",
+            params: {
+              maxConcurrent: projectPolicyMaxConcurrent,
+              instruction:
+                "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
+              reviewChecklist: [
+                "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
+                "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
+                "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
+                "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
+                "No-op is valid when the task tree already has clear active/review/runnable work.",
+              ],
+            },
+          },
+        },
+      ],
     },
     {
       id: "blocked-frontier-owner-review",
       enabled: true,
       intervalMs: 7_200_000,
-      event: {
-        ...ownerRequested("scheduled-blocked-frontier-review", {
-          instruction:
-            "Periodic blocked-frontier owner review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and assign unrelated runnable work so the project keeps moving.",
-          reviewChecklist: [
-            "Do not treat blocked as final.",
-            "Do not retry a blocked leaf unchanged.",
-            "Do not assign blocked work back to the same worker without a changed condition or a new bounded task.",
-            "Prefer one shared problem/unblock task for a shared root cause.",
-            "Every sampled blocked task should leave review with a path toward closure: solved, reworked, escalated/sent, terminal-done, or a precise response-await with next review trigger.",
-          ],
-        }),
-        urgency: "high",
-      },
+      emits: [
+        {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          urgency: "high",
+          data: {
+            project: projectId,
+            reason: "scheduled-blocked-frontier-review",
+            params: {
+              maxConcurrent: projectPolicyMaxConcurrent,
+              instruction:
+                "Periodic blocked-frontier owner review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and assign unrelated runnable work so the project keeps moving.",
+              reviewChecklist: [
+                "Do not treat blocked as final.",
+                "Do not retry a blocked leaf unchanged.",
+                "Do not assign blocked work back to the same worker without a changed condition or a new bounded task.",
+                "Prefer one shared problem/unblock task for a shared root cause.",
+                "Every sampled blocked task should leave review with a path toward closure: solved, reworked, escalated/sent, terminal-done, or a precise response-await with next review trigger.",
+              ],
+            },
+          },
+        },
+      ],
     },
     {
       id: "focus-plan-proposal",
       enabled: true,
       intervalMs: 86_400_000,
-      event: {
-        type: "project.focus.plan.requested",
-        project: projectId,
-        reason: "scheduled-mid-term-focus-plan",
-      },
+      emits: [
+        {
+          type: "project.focus.plan.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "scheduled-mid-term-focus-plan",
+          },
+        },
+      ],
     },
     {
       id: "focus-progress-review",
       enabled: true,
       intervalMs: 21_600_000,
-      event: {
-        type: "project.focus.review.requested",
-        project: projectId,
-        reason: "scheduled-focus-progress-review",
-      },
+      emits: [
+        {
+          type: "project.focus.review.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "scheduled-focus-progress-review",
+          },
+        },
+      ],
     },
   ],
 
@@ -142,23 +159,26 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 3_600_000,
       },
-      on: [
-        "project.owner.requested",
-        "project.planning.requested",
-        "project.comment.created",
-        "project.tick",
-        "project.action.invoked",
-        "project.focus.approval.submitted",
-        "project.task.completed",
-        "project.problem.resolved",
-        "project.problem.escalated",
-        "project.problem.unknown",
-        "task.requeued",
-        "escalation.resolved",
-        "escalation.dismissed",
-        "metric.breach",
-        "metric.recovered",
-        "coverage.gap.detected",
+      accepts: [
+        { type: "project.owner.requested", target: { project: projectId } },
+        { type: "project.planning.requested", target: { project: projectId } },
+        { type: "project.comment.created", target: { project: projectId } },
+        { type: "project.tick", target: { project: projectId } },
+        { type: "project.action.invoked", target: { project: projectId } },
+        {
+          type: "project.focus.approval.submitted",
+          target: { project: projectId },
+        },
+        { type: "project.task.completed", target: { project: projectId } },
+        { type: "project.problem.resolved", target: { project: projectId } },
+        { type: "project.problem.escalated", target: { project: projectId } },
+        { type: "project.problem.unknown", target: { project: projectId } },
+        { type: "task.requeued", target: { project: projectId } },
+        { type: "escalation.resolved", owner: "agent:aks-explorer" },
+        { type: "escalation.dismissed", owner: "agent:aks-explorer" },
+        { type: "metric.breach", owner: "agent:aks-explorer" },
+        { type: "metric.recovered", owner: "agent:aks-explorer" },
+        { type: "coverage.gap.detected", target: { project: projectId } },
       ],
       emits: ["project.task.assigned"],
       context: taskTreeContext,
@@ -176,7 +196,9 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 3_600_000,
       },
-      on: ["project.task.assigned"],
+      accepts: [
+        { type: "project.task.assigned", target: { project: projectId } },
+      ],
       emits: [
         "project.task.completed",
         "project.spec-loop.tick",
@@ -198,7 +220,9 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxAttempts: 1`,
         timeoutMs: 1_800_000,
       },
-      on: ["project.problem.requested"],
+      accepts: [
+        { type: "project.problem.requested", target: { project: projectId } },
+      ],
       emits: [
         "project.problem.resolved",
         "project.problem.escalated",
@@ -212,7 +236,9 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Five-minute liveness guard. Observes task/session state and wakes the owner when review is needed.",
-      on: ["project.watchdog.tick"],
+      accepts: [
+        { type: "project.watchdog.tick", target: { project: projectId } },
+      ],
       handler: {
         workflow: "project-execution-watchdog",
         task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
@@ -234,7 +260,9 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 600_000,
       },
-      on: ["project.spec-loop.tick"],
+      accepts: [
+        { type: "project.spec-loop.tick", target: { project: projectId } },
+      ],
       emits: ["project.task.assigned"],
       context: [
         ...taskTreeContext,
@@ -256,7 +284,12 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxConcurrent: 30`,
         timeoutMs: 600_000,
       },
-      on: ["project.feature-reference-loop.tick"],
+      accepts: [
+        {
+          type: "project.feature-reference-loop.tick",
+          target: { project: projectId },
+        },
+      ],
       emits: ["project.task.assigned"],
       context: [
         ...taskTreeContext,
@@ -278,7 +311,12 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxConcurrent: 20`,
         timeoutMs: 600_000,
       },
-      on: ["project.feature-compact-loop.tick"],
+      accepts: [
+        {
+          type: "project.feature-compact-loop.tick",
+          target: { project: projectId },
+        },
+      ],
       emits: ["project.task.assigned"],
       context: [
         ...taskTreeContext,
@@ -300,7 +338,16 @@ export default defineProjectApp({
         task: `${appTaskContext}\nagent: aks-explorer\nmaxConcurrent: 5`,
         timeoutMs: 1_800_000,
       },
-      on: ["project.focus.plan.requested", "project.focus.review.requested"],
+      accepts: [
+        {
+          type: "project.focus.plan.requested",
+          target: { project: projectId },
+        },
+        {
+          type: "project.focus.review.requested",
+          target: { project: projectId },
+        },
+      ],
       emits: ["project.owner.requested", "message.created"],
       context: [
         ...taskTreeContext,
@@ -321,9 +368,15 @@ export default defineProjectApp({
         task: `${appTaskContext}\nagent: aks-explorer\nmaxAttempts: 1`,
         timeoutMs: 600_000,
       },
-      on: [
-        "project.approval.dispatch.requested",
-        "project.approval.dispatch.submitted",
+      accepts: [
+        {
+          type: "project.approval.dispatch.requested",
+          target: { project: projectId },
+        },
+        {
+          type: "project.approval.dispatch.submitted",
+          target: { project: projectId },
+        },
       ],
       emits: ["message.created"],
       context: [
@@ -367,10 +420,19 @@ export default defineProjectApp({
       type: "async",
       description: "Request live execution for selected replanned paths.",
       event(params) {
-        return ownerRequested("execute-run-action", {
-          action: "execute-run",
-          params,
-        });
+        return {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "execute-run-action",
+            params: {
+              maxConcurrent: projectPolicyMaxConcurrent,
+              action: "execute-run",
+              params,
+            },
+          },
+        };
       },
     },
     "advance-project": {
@@ -378,14 +440,44 @@ export default defineProjectApp({
       description:
         "Advance the project task tree until genuinely blocked, complete, or interrupted by an infra guard.",
       event(params) {
-        return ownerRequested("manual-action", params);
+        const input =
+          params && typeof params === "object" && !Array.isArray(params)
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-action",
+            params: {
+              maxConcurrent: projectPolicyMaxConcurrent,
+              ...input,
+            },
+          },
+        };
       },
     },
     watch: {
       type: "async",
       description: "Start or resume owner review through the task tree.",
       event(params) {
-        return ownerRequested("watch-request", params);
+        const input =
+          params && typeof params === "object" && !Array.isArray(params)
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "watch-request",
+            params: {
+              maxConcurrent: projectPolicyMaxConcurrent,
+              ...input,
+            },
+          },
+        };
       },
     },
     "request-focus-plan": {
@@ -395,9 +487,15 @@ export default defineProjectApp({
       event(params) {
         return {
           type: "project.focus.plan.requested",
-          project: projectId,
-          reason: "manual-focus-plan-request",
-          params: params && typeof params === "object" ? params : {},
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-focus-plan-request",
+            params:
+              params && typeof params === "object" && !Array.isArray(params)
+                ? params
+                : {},
+          },
         };
       },
     },
@@ -408,9 +506,15 @@ export default defineProjectApp({
       event(params) {
         return {
           type: "project.approval.dispatch.requested",
-          project: projectId,
-          reason: "manual-approval-packet-dispatch-request",
-          params: params && typeof params === "object" ? params : {},
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-approval-packet-dispatch-request",
+            params:
+              params && typeof params === "object" && !Array.isArray(params)
+                ? params
+                : {},
+          },
         };
       },
     },
@@ -421,9 +525,15 @@ export default defineProjectApp({
       event(params) {
         return {
           type: "project.focus.review.requested",
-          project: projectId,
-          reason: "manual-focus-progress-review",
-          params: params && typeof params === "object" ? params : {},
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-focus-progress-review",
+            params:
+              params && typeof params === "object" && !Array.isArray(params)
+                ? params
+                : {},
+          },
         };
       },
     },
@@ -442,12 +552,14 @@ export default defineProjectApp({
             : "aks-spec-verification-loop";
         return {
           type: "project.spec-loop.tick",
-          project: projectId,
-          taskId,
-          task_id: taskId,
-          target: { taskId },
-          reason: "manual-spec-loop-pulse",
-          params: input,
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            reason: "manual-spec-loop-pulse",
+            params: input,
+          },
         };
       },
     },
@@ -466,12 +578,14 @@ export default defineProjectApp({
             : "aks-feature-reference-loop";
         return {
           type: "project.feature-reference-loop.tick",
-          project: projectId,
-          taskId,
-          task_id: taskId,
-          target: { taskId },
-          reason: "manual-feature-reference-loop-pulse",
-          params: input,
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            reason: "manual-feature-reference-loop-pulse",
+            params: input,
+          },
         };
       },
     },
@@ -490,12 +604,14 @@ export default defineProjectApp({
             : "aks-feature-compact-loop";
         return {
           type: "project.feature-compact-loop.tick",
-          project: projectId,
-          taskId,
-          task_id: taskId,
-          target: { taskId },
-          reason: "manual-feature-compact-loop-pulse",
-          params: input,
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            reason: "manual-feature-compact-loop-pulse",
+            params: input,
+          },
         };
       },
     },

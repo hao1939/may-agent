@@ -4,6 +4,7 @@ import app from "../app.ts";
 type WorkflowHandler = {
   name?: string;
   on?: string[];
+  accepts?: Array<string | { type?: string }>;
   handler?: {
     workflow?: string;
   };
@@ -36,12 +37,16 @@ function handler(name: string): WorkflowHandler {
 }
 
 function handlerEvents(name: string): string[] {
-  return handler(name).on ?? [];
+  return (handler(name).accepts ?? handler(name).on ?? [])
+    .map((selector) =>
+      typeof selector === "string" ? selector : selector.type,
+    )
+    .filter((type): type is string => Boolean(type));
 }
 
 function handlersForEvent(eventType: string): string[] {
   return (appManifest.workflowHandlers ?? [])
-    .filter((entry) => entry.on?.includes(eventType))
+    .filter((entry) => handlerEvents(entry.name ?? "").includes(eventType))
     .map((entry) => entry.name)
     .filter((name): name is string => Boolean(name));
 }
@@ -93,22 +98,22 @@ describe("app event contract", () => {
   test("worker and controllers own their targeted task events", () => {
     expect(handler("aks-rp-e2e-task-execution-worker")).toMatchObject({
       handler: { workflow: "task-worker" },
-      on: ["project.task.assigned"],
+      accepts: [{ type: "project.task.assigned" }],
     });
     expect(handler("aks-rp-e2e-spec-loop-controller")).toMatchObject({
       handler: { workflow: "spec-loop-controller" },
-      on: ["project.spec-loop.tick"],
+      accepts: [{ type: "project.spec-loop.tick" }],
     });
     expect(
       handler("aks-rp-e2e-feature-reference-loop-controller"),
     ).toMatchObject({
       handler: { workflow: "feature-reference-loop-controller" },
-      on: ["project.feature-reference-loop.tick"],
+      accepts: [{ type: "project.feature-reference-loop.tick" }],
     });
     expect(handler("aks-rp-e2e-feature-compact-loop-controller")).toMatchObject(
       {
         handler: { workflow: "feature-compact-loop-controller" },
-        on: ["project.feature-compact-loop.tick"],
+        accepts: [{ type: "project.feature-compact-loop.tick" }],
       },
     );
   });
@@ -116,13 +121,13 @@ describe("app event contract", () => {
   test("problem and approval workflows use explicit request events", () => {
     expect(handler("aks-rp-e2e-problem-solver")).toMatchObject({
       handler: { workflow: "problem-solver" },
-      on: ["project.problem.requested"],
+      accepts: [{ type: "project.problem.requested" }],
     });
     expect(handler("aks-rp-e2e-approval-dispatch")).toMatchObject({
       handler: { workflow: "approval-dispatch" },
-      on: [
-        "project.approval.dispatch.requested",
-        "project.approval.dispatch.submitted",
+      accepts: [
+        { type: "project.approval.dispatch.requested" },
+        { type: "project.approval.dispatch.submitted" },
       ],
     });
   });
@@ -152,15 +157,21 @@ describe("app event contract", () => {
     expect(schedule).toMatchObject({
       enabled: true,
       intervalMs: 7_200_000,
-      event: {
-        type: "project.owner.requested",
-        project: projectId,
-        reason: "scheduled-blocked-frontier-review",
-        urgency: "high",
-      },
+      emits: [
+        {
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "scheduled-blocked-frontier-review",
+          },
+          urgency: "high",
+        },
+      ],
     });
-    const params = (schedule?.event as { params?: { instruction?: string } })
-      ?.params;
+    const params = (
+      schedule?.emits as Array<{ data?: { params?: { instruction?: string } } }>
+    )?.at(0)?.data?.params;
     expect(String(params?.instruction)).toContain(
       "Periodic blocked-frontier owner review",
     );
@@ -173,30 +184,41 @@ describe("app event contract", () => {
       }),
     ).toMatchObject({
       type: "project.approval.dispatch.requested",
-      project: projectId,
-      reason: "manual-approval-packet-dispatch-request",
-      params: {
-        packetPath: "evidence/archive/example.md",
+      target: { project: projectId },
+      data: {
+        project: projectId,
+        reason: "manual-approval-packet-dispatch-request",
+        params: {
+          packetPath: "evidence/archive/example.md",
+        },
       },
     });
 
     expect(actionEvent("request-focus-plan")).toMatchObject({
       type: "project.focus.plan.requested",
-      project: projectId,
-      reason: "manual-focus-plan-request",
+      target: { project: projectId },
+      data: {
+        project: projectId,
+        reason: "manual-focus-plan-request",
+      },
     });
 
     expect(actionEvent("review-focus-progress")).toMatchObject({
       type: "project.focus.review.requested",
-      project: projectId,
-      reason: "manual-focus-progress-review",
+      target: { project: projectId },
+      data: {
+        project: projectId,
+        reason: "manual-focus-progress-review",
+      },
     });
 
     expect(actionEvent("pulse-spec-loop", { taskId: "loop-a" })).toMatchObject({
       type: "project.spec-loop.tick",
-      project: projectId,
-      taskId: "loop-a",
-      target: { taskId: "loop-a" },
+      target: { project: projectId, taskId: "loop-a" },
+      data: {
+        project: projectId,
+        taskId: "loop-a",
+      },
     });
   });
 

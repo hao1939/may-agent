@@ -271,7 +271,9 @@ export default defineProjectApp({
     {
       name: "aks-rp-e2e-project-planner",
       enabled: true,
-      on: ["project.owner.requested"],
+      accepts: [
+        { type: "project.owner.requested", target: { project: "aks-rp-e2e" } },
+      ],
       handler: {
         workflow: "project-planner",
         includeEvent: true,
@@ -326,9 +328,10 @@ retry policy, domain verification, or worker-result interpretation.
 Keep the responsibility split explicit:
 
 - `app.ts` declares what events exist at the app boundary.
-- `schedules` produce events.
+- `schedules` produce typed events through `emits[]`.
 - `actions` produce events.
-- `onEvent: workflowHandlers([...])` declares which workflows consume events.
+- `onEvent: workflowHandlers([...])` declares which workflows consume typed
+  event selectors through `accepts[]`.
 - `eventGraph` documents only audit metadata that cannot be derived from the
   handler declarations.
 - `workflows/*` implement behavior and emit structured result events.
@@ -339,8 +342,8 @@ In other words, `app.ts` should read primarily as an event-handler manifest:
 
 ```text
 onEvent -> generated workflow handlers
-actions -> events
-schedules -> events
+actions -> typed events
+schedules -> typed events
 ```
 
 The normal case is declarative handler generation:
@@ -349,16 +352,61 @@ The normal case is declarative handler generation:
 onEvent: workflowHandlers([
   {
     name: "aks-rp-e2e-project-planner",
-    on: ["project.owner.requested"],
+    accepts: [
+      { type: "project.owner.requested", target: { project: "aks-rp-e2e" } },
+    ],
     handler: { workflow: "project-planner", ... },
   },
   {
     name: "aks-rp-e2e-task-execution-worker",
-    on: ["project.task.assigned"],
+    accepts: [
+      { type: "project.task.assigned", target: { project: "aks-rp-e2e" } },
+    ],
     handler: { workflow: "task-worker", ... },
   },
 ])
 ```
+
+Events at the manifest boundary use one small shape:
+
+```ts
+type AppEvent = {
+  type: string;
+  target?: {
+    project?: string;
+    taskId?: string;
+    owner?: string;
+    sessionId?: string;
+    human?: boolean;
+  };
+  source?: string;
+  owner?: string;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttlMs?: number;
+  data?: Record<string, unknown>;
+};
+```
+
+Selectors use the same target-first idea:
+
+```ts
+type AppEventSelector =
+  | "project.owner.requested"
+  | {
+      type: "project.task.assigned";
+      target?: { project?: string; taskId?: string };
+      owner?: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      actions?: string[];
+      metricIds?: string[];
+    };
+```
+
+The runtime lowers selectors to cron's event-type subscription list, but the
+manifest keeps the target visible. For compatibility during migration,
+`on: ["event.type"]` means `accepts: ["event.type"]`, and schedule
+`event: {...}` means `emits: [{...}]`. New app manifests should use
+`accepts[]` and `emits[]`.
 
 There is one event-handling model: an event is accepted through `onEvent`.
 `workflowHandlers(...)` is a helper that returns generated event handlers whose
@@ -377,7 +425,7 @@ Recommended app structure:
 app.ts
   identity
   workspace
-  schedules
+  schedules with emits[]
   onEvent: workflowHandlers(...)
   eventGraph audit metadata
   actions
@@ -422,7 +470,8 @@ This lets the app be reviewed as a state machine:
 
 The movement invariant is intentionally strict:
 
-1. **Every generated handler declares the event types it consumes in `on`.**
+1. **Every generated handler declares the event selectors it consumes in
+   `accepts`.**
 2. **Every generated handler declares the event types it may emit in `emits`.**
 3. **Every schedule/action output is handled by a generated handler or marked as
    an external platform event.**
@@ -438,12 +487,12 @@ the app, declare it in `externalEvents`.
 Do not add a top-level app `events` list for generated handlers. That creates a
 second place to name the same event and makes review harder. Event names such as
 `escalation.resolved` or `metric.breach` are normal when they appear in a
-handler's `on` list: they are platform events that target the app's owner
+handler's `accepts` list: they are platform events that target the app's owner
 workflow. They are not a separate event registry.
 
 Do not put handler edges under `eventGraph.handlers` or
 `eventGraph.adapters`. Those fields duplicate derivable information. A generated
-handler's `on` and `emits` fields are the source of truth for event flow.
+handler's `accepts` and `emits` fields are the source of truth for event flow.
 
 Integrity checks should fail on:
 
