@@ -27,6 +27,8 @@ type WorkflowHandler = {
   enabled?: boolean;
   on?: unknown;
   emits?: unknown;
+  intervalMs?: number;
+  offsetMs?: number;
   handler?: {
     workflow?: string;
     agent?: string;
@@ -344,6 +346,11 @@ function validateWorkflowHandlers(
     if (seen.has(handler.name))
       fail(`duplicate workflow handler name: ${handler.name}`);
     seen.add(handler.name);
+    if (handler.intervalMs !== undefined || handler.offsetMs !== undefined) {
+      fail(
+        `workflow handler ${handler.name} must be event-only; put intervalMs/offsetMs on schedules instead`,
+      );
+    }
 
     const workflow = handler.handler?.workflow;
     if (!workflow)

@@ -210,8 +210,6 @@ export default defineProjectApp({
       name: "aks-rp-e2e-project-watchdog",
       type: "job",
       enabled: true,
-      intervalMs: 300_000,
-      offsetMs: 120_000,
       description:
         "Five-minute liveness guard. Observes task/session state and wakes the owner when review is needed.",
       on: ["project.watchdog.tick"],

@@ -317,7 +317,25 @@ metrics misleading.
 
 ## Event Handler Manifest
 
-`app.ts` should read primarily as an event-handler manifest:
+The main shape is the design: `app.ts` is a manifest. It is the readable map of
+identity, workspace binding, schedules, actions, event subscriptions, and
+non-derivable event-graph metadata. It is not the project brain, not a hidden
+router, and not a place to encode task planning, task completion judgment,
+retry policy, domain verification, or worker-result interpretation.
+
+Keep the responsibility split explicit:
+
+- `app.ts` declares what events exist at the app boundary.
+- `schedules` produce events.
+- `actions` produce events.
+- `onEvent: workflowHandlers([...])` declares which workflows consume events.
+- `eventGraph` documents only audit metadata that cannot be derived from the
+  handler declarations.
+- `workflows/*` implement behavior and emit structured result events.
+- infra delivers events, starts workflow runs, enforces capacity, persists
+  traces, and applies target-first routing.
+
+In other words, `app.ts` should read primarily as an event-handler manifest:
 
 ```text
 onEvent -> generated workflow handlers
@@ -440,6 +458,11 @@ The project owner is the brain, whether the app calls the implementation
 workflow `project-planner`, `owner-review`, or something domain-specific. The
 app manifest must make the event loop visible enough for humans, LLMs, and
 tooling to audit.
+
+If a future change makes `app.ts` harder to review as a manifest, move that
+behavior into a workflow or SDK/runtime primitive. The app manifest may create a
+small local event builder for readability, but it should not hide routing,
+state-machine transitions, or project judgment behind helper code.
 
 ## Convention Defaults
 

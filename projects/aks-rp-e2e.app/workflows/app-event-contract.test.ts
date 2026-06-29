@@ -137,6 +137,13 @@ describe("app event contract", () => {
     ]);
   });
 
+  test("generated workflow handlers are event-only", () => {
+    for (const entry of appManifest.workflowHandlers ?? []) {
+      expect(entry).not.toHaveProperty("intervalMs");
+      expect(entry).not.toHaveProperty("offsetMs");
+    }
+  });
+
   test("manifest schedules periodic blocked-frontier owner review", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "blocked-frontier-owner-review",
