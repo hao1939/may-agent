@@ -20,8 +20,8 @@
   ],
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
-    "taskId": null,
-    "summary": "Owner review 2026-06-25T07:00Z. Fixed root cause of DB size metric oscillation: metrics-snapshot used statSync(db+wal+shm) which caught WAL checkpoint transients (~4.4GB spikes every 3h). Replaced with PRAGMA page_count * page_size for stable logical size (~2.2GB). This eliminates 17+ breach→recover cycles/day. Open alert #2119 (aks-rp-e2e.planner.slow-count-24h) owned by aks-explorer — not platform-actionable. 0 handler.failed/session.resume_failed in 24h. DB stable at 2229MB. Tests: 14/14 app pass. 73 tasks: 65 done, 8 backlog (all P2)."
+    "taskId": "ops-health",
+    "summary": "Owner review 2026-06-29T11:20Z. Fixed SDK eventGraph type gap: added handlers/adapters to ProjectApp.eventGraph type (packages/sdk/src/project-app.ts). bun run check now passes clean (was failing typecheck with TS2353/TS2339). Open alerts: #2167 aks-rp-e2e.planner.slow-count-24h (aks-explorer-owned, not platform); #2240 resolved. handler.failed 8/1h: all evaluation-aftermath-scan (evaluator-owned, blocked:requires-sessionId, 179/24h, steady ~7/hr). Platform-owned failures 0 in 2h. Runtime metrics all green: stale-sessions=0, orphan-schedules=0, daemon-heartbeat=0, heartbeat-coverage=1.0, handler.success-rate=0.973, session.error-rate=0.0016. 14/14 app tests pass. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2)."
   },
-  "updatedAt": "2026-06-25T07:00:00.000Z"
+  "updatedAt": "2026-06-29T11:20:00.000Z"
 }
