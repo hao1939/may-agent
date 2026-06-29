@@ -35,8 +35,6 @@ export type ProjectWorkflowHandler = {
   type: "job";
   enabled: boolean;
   description: string;
-  intervalMs?: number;
-  offsetMs?: number;
   maxConcurrentTriggers?: number;
   on: string[];
   emits?: string[];

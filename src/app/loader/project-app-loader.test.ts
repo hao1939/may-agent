@@ -972,6 +972,63 @@ export async function execute(ctx: any) {
     }
   });
 
+  it("preserves project app schedule envelope metadata", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "urgent-review",
+          enabled: true,
+          intervalMs: 60000,
+          event: {
+            type: "project.owner.requested",
+            project: "sample",
+            reason: "urgent-review",
+            urgency: "high",
+            ttl_ms: 5000
+          }
+        }]
+      }`,
+      );
+
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      const agentCrons = new Map<string, Cron>();
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      expect(agentCrons.get("sample-owner")!.triggerNow("sample-schedule-urgent-review", { force: true })).toBe(true);
+      await waitUntil(() => observed.some((event) => event.type === "project.owner.requested"));
+
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "project.owner.requested",
+          urgency: "high",
+          ttl_ms: 5000,
+          data: expect.objectContaining({
+            project: "sample",
+            reason: "urgent-review",
+          }),
+        }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not resolve project app schedule handlers as files after cron has started", async () => {
     const root = tempRoot();
     try {
