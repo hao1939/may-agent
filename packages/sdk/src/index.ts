@@ -913,15 +913,16 @@ export {
 } from "./heartbeat-data.js";
 
 // ── Project-app manifest/event helpers ───────────────────────────────
-export {
-  defineProjectApp,
-  eventData,
-  eventDetails,
-  eventString,
-  projectOwnerEvent,
-  projectPlanningEvent,
+export { defineProjectApp, eventData, eventDetails, eventString, workflowHandlers } from "./project-app.js";
+export type {
+  EventSelector,
+  GeneratedProjectEventHandlers,
+  ProjectApp,
+  ProjectAppAction,
+  ProjectAppContext,
+  ProjectAppOnEvent,
+  ProjectWorkflowHandler,
 } from "./project-app.js";
-export type { EventSelector, ProjectApp, ProjectAppAction, ProjectAppContext } from "./project-app.js";
 
 // ── JSON task-tree helpers for project apps ──────────────────────────
 export {

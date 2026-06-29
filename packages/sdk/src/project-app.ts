@@ -97,10 +97,7 @@ export type ProjectApp = {
   events?: EventSelector[];
   eventGraph?: {
     /** Handler emit declarations for integrity checking. */
-    handlers?: Record<
-      string,
-      { emits?: string[]; description?: string }
-    >;
+    handlers?: Record<string, { emits?: string[]; description?: string }>;
     /** Adapter declarations: event→emits for integrity checking. */
     adapters?: Array<{
       event: string;
@@ -165,17 +162,4 @@ export function eventDetails(event: Record<string, unknown>): Record<string, unk
       ),
     ),
   };
-}
-
-export function projectOwnerEvent(projectId: string, reason: string, params: unknown = {}): Record<string, unknown> {
-  return {
-    type: "project.owner.requested",
-    project: projectId,
-    reason,
-    params: params && typeof params === "object" && !Array.isArray(params) ? params : {},
-  };
-}
-
-export function projectPlanningEvent(projectId: string, reason: string, params: unknown = {}): Record<string, unknown> {
-  return projectOwnerEvent(projectId, reason, params);
 }
