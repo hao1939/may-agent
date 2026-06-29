@@ -26,15 +26,29 @@ orchestration pattern around sessions.
 ```typescript
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
-  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
-  emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
+  runWorkflow(
+    name: string,
+    task: string,
+    opts?: RunOpts,
+  ): Promise<WorkflowResult>;
+  emit(
+    type: string,
+    data?: Record<string, unknown>,
+    envelope?: EventEnvelopeOptions,
+  ): void;
   metrics: MetricAPI;
   query: QueryAPI;
-  getDb(): Database;  // compatibility escape hatch
+  getDb(): Database; // compatibility escape hatch
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
   escalate(reason: string, opts?: EscalationOptions): void;
-  paths: { persist: string; root: string; agents: string; shared: string; projects: string };
+  paths: {
+    persist: string;
+    root: string;
+    agents: string;
+    shared: string;
+    projects: string;
+  };
 }
 
 type EventEnvelopeOptions = {
@@ -69,7 +83,7 @@ bookkeeping, and keep those reads bounded.
 ```typescript
 export const create = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: EventEnvelope) => {
-    const sdk = ctx.sdk;           // ← the SDK
+    const sdk = ctx.sdk; // ← the SDK
     await sdk.runWorkflow("metric-alert-triage", "task/context from event", {
       source: entry.name,
     });
@@ -80,18 +94,18 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 
 ## Method Reference
 
-| Method | Does what |
-|--------|-----------|
-| `runAgent(agent, task)` | Run one named agent session and wait for its result. |
-| `runWorkflow(name, task)` | Run a pre-orchestrated set of sessions/functions and wait for its result. Same execution shape as `runAgent`, broader internal plan. |
-| `emit(type, data, envelope?)` | Emit a canonical event envelope. `data` carries event-specific facts; `envelope.owner` carries responsibility/routing. |
-| `metrics` | Define, record, alert, resolve, evaluate, and list metrics. |
-| `query` | Preferred bounded read surface for sessions, events, metrics, alerts, and projects. |
-| `getDb()` | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`. |
-| `log(level, msg)` | Log a diagnostic message. |
-| `message(target, content)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
-| `escalate(reason, opts?)` | Create `escalation.created`; defaults to `owner: "agent:may"` and `severity: "P2"`. |
-| `paths` | `{ persist, root, agents, shared, projects }` — system directories. |
+| Method                        | Does what                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `runAgent(agent, task)`       | Run one named agent session and wait for its result.                                                                                 |
+| `runWorkflow(name, task)`     | Run a pre-orchestrated set of sessions/functions and wait for its result. Same execution shape as `runAgent`, broader internal plan. |
+| `emit(type, data, envelope?)` | Emit a canonical event envelope. `data` carries event-specific facts; `envelope.owner` carries responsibility/routing.               |
+| `metrics`                     | Define, record, alert, resolve, evaluate, and list metrics.                                                                          |
+| `query`                       | Preferred bounded read surface for sessions, events, metrics, alerts, and projects.                                                  |
+| `getDb()`                     | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`.                                                              |
+| `log(level, msg)`             | Log a diagnostic message.                                                                                                            |
+| `message(target, content)`    | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox.                                                      |
+| `escalate(reason, opts?)`     | Create `escalation.created`; defaults to `owner: "agent:may"` and `severity: "P2"`.                                                  |
+| `paths`                       | `{ persist, root, agents, shared, projects }` — system directories.                                                                  |
 
 For escalations that should return to the original session after resolution,
 include `sourceSessionId` or `resume: { kind: "session", checkpointRef }`.
@@ -132,6 +146,7 @@ shapes in the codebase. Workflow `.ts` files (via `WorkflowContext`) see the
 the **external** shape. The mapping happens in `sdk-impl.ts`.
 
 **Internal** (what `ctx.done()` and `ctx.blocked()` return inside a workflow):
+
 ```typescript
 type WorkflowResult =
   | { type: "done"; summary: string }
@@ -139,6 +154,7 @@ type WorkflowResult =
 ```
 
 **External** (what `sdk.runWorkflow()` returns to handlers):
+
 ```typescript
 interface WorkflowResult {
   status: "done" | "blocked";
@@ -153,8 +169,8 @@ Workflow context interface (what workflow `execute()` functions receive):
 interface WorkflowContext {
   task: string;
   agent: string;
-  done(summary: string): WorkflowResult;          // internal shape, no opts
-  blocked(reason: string, context?: unknown): WorkflowResult;  // internal shape
+  done(summary: string): WorkflowResult; // internal shape, no opts
+  blocked(reason: string, context?: unknown): WorkflowResult; // internal shape
   escalate(reason: string, context?: unknown): WorkflowResult; // deprecated alias for blocked()
   // ... plus runAgent, runWorkflow, emit, query, getDb, etc.
 }
@@ -233,15 +249,15 @@ or unsafe to continue.
 
 The SDK and agent tools are two sides of the same coin:
 
-| Agent thinks | Agent tool | SDK method |
-|---|---|---|
-| "Ask dev and wait for the answer" | `agents.call("dev", task)` | `await sdk.runAgent("dev", task)` |
-| "Start dev in the background" | `agents.fork("dev", task)` | — (no SDK equivalent) |
-| "Something happened" | — | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
-| "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
-| "Tell dev" | `message({ to: "dev", content })` | `sdk.message("dev", msg)` |
-| "I'm done" | `finish()` | `workflow.done(summary)` |
-| "I'm stuck" | `finish({ blocked })` | `sdk.escalate(reason)` |
+| Agent thinks                      | Agent tool                        | SDK method                                                 |
+| --------------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| "Ask dev and wait for the answer" | `agents.call("dev", task)`        | `await sdk.runAgent("dev", task)`                          |
+| "Start dev in the background"     | `agents.fork("dev", task)`        | — (no SDK equivalent)                                      |
+| "Something happened"              | —                                 | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
+| "Tell humans"                     | Telegram/human message            | `sdk.message("human", msg)`                                |
+| "Tell dev"                        | `message({ to: "dev", content })` | `sdk.message("dev", msg)`                                  |
+| "I'm done"                        | `finish()`                        | `workflow.done(summary)`                                   |
+| "I'm stuck"                       | `finish({ blocked })`             | `sdk.escalate(reason)`                                     |
 
 ## Implementation
 

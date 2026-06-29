@@ -106,7 +106,7 @@ describe("daily-ops-digest", () => {
     insertMetric(db, "runtime.daemon-heartbeat-stale", "tech-lead", "P0");
     insertMetric(
       db,
-      "evaluator.stale-running-session-count",
+      "runtime.stale-running-session-count",
       "agent:evaluator",
       "P2",
     );
@@ -125,7 +125,7 @@ describe("daily-ops-digest", () => {
       db.run(
         "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at, resolved_at) VALUES (?, ?, ?, ?, ?)",
         [
-          "evaluator.stale-running-session-count",
+          "runtime.stale-running-session-count",
           "threshold",
           `stale session transient ${i}`,
           now - (i + 1) * 60 * 60_000,
@@ -141,7 +141,7 @@ describe("daily-ops-digest", () => {
         "metric-alert-triage",
         "agent:tech-lead",
         JSON.stringify({
-          metricId: "evaluator.stale-running-session-count",
+          metricId: "runtime.stale-running-session-count",
           operation: "calibrate_metric",
         }),
         now - 10 * 60_000,
@@ -180,7 +180,7 @@ describe("daily-ops-digest", () => {
     const report = readFileSync(reportPath, "utf8");
     expect(report).toContain("# Daily Ops Digest");
     expect(report).toContain("runtime.daemon-heartbeat-stale");
-    expect(report).toContain("evaluator.stale-running-session-count");
+    expect(report).toContain("runtime.stale-running-session-count");
     expect(report).toContain("latest judgment: calibrate_metric");
   });
 

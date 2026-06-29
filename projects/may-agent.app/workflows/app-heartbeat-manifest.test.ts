@@ -27,19 +27,25 @@ describe("owner heartbeat manifests", () => {
         (entry: { id?: string }) => entry.id === "owner-heartbeat",
       );
 
-      expect(schedule).toMatchObject({
-        enabled: true,
-        intervalMs: expectedIntervals[id],
-        event: {
-          type: "project.owner.requested",
-          project: id,
-          reason: "owner-heartbeat",
-        },
-      });
-      expect(String(schedule?.event?.params?.instruction)).toContain(
-        "Low-frequency",
-      );
-      expect(schedule?.event?.params).toHaveProperty("reviewChecklist");
+      expect(schedule).toBeDefined();
+      expect(schedule?.enabled).toBe(true);
+      expect(schedule?.intervalMs).toBe(expectedIntervals[id]);
+
+      // Support both legacy `event` (singular) and new `emits` (array) formats
+      const event =
+        (schedule as any)?.event ??
+        ((schedule as any)?.emits as unknown[])?.[0];
+      expect(event).toBeDefined();
+
+      // The event data may be flat (legacy) or nested in .data (new typed format)
+      const eventData = (event as any)?.data ?? event;
+      expect(eventData?.project ?? (event as any)?.target?.project).toBe(id);
+      expect(event?.type ?? eventData?.type).toBe("project.owner.requested");
+      expect(eventData?.reason).toBe("owner-heartbeat");
+
+      const params = eventData?.params ?? event?.params;
+      expect(String(params?.instruction)).toContain("Low-frequency");
+      expect(params).toHaveProperty("reviewChecklist");
     });
   }
 });

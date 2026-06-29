@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": "ops-health",
-    "summary": "Owner review 2026-06-29T11:20Z. Fixed SDK eventGraph type gap: added handlers/adapters to ProjectApp.eventGraph type (packages/sdk/src/project-app.ts). bun run check now passes clean (was failing typecheck with TS2353/TS2339). Open alerts: #2167 aks-rp-e2e.planner.slow-count-24h (aks-explorer-owned, not platform); #2240 resolved. handler.failed 8/1h: all evaluation-aftermath-scan (evaluator-owned, blocked:requires-sessionId, 179/24h, steady ~7/hr). Platform-owned failures 0 in 2h. Runtime metrics all green: stale-sessions=0, orphan-schedules=0, daemon-heartbeat=0, heartbeat-coverage=1.0, handler.success-rate=0.973, session.error-rate=0.0016. 14/14 app tests pass. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2)."
+    "summary": "Owner review 2026-06-29T17:40Z. Confirmed stable: 0 platform-owned handler.failed/session.resume_failed/message.delivery_failed/subscriber.failed/agent.config_invalid in 1h. Open alert #2167 aks-rp-e2e.planner.slow-count-24h=7 (aks-explorer-owned, 3d open, stable). evaluation-aftermath-scan 180/24h steady ~7/hr (evaluator-owned). metric.breach 2x aks-explorer-owned, both self-recovered. Owner sessions 30/24h: 28 done, 1 error (isolated 13h ago), 1 running. handler.success-rate=96.5%, session.error-rate=4.6%, heartbeat-coverage=100%. 14/14 tests pass, integrity clean, TS clean. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2). No new platform work needed."
   },
-  "updatedAt": "2026-06-29T11:20:00.000Z"
+  "updatedAt": "2026-06-29T17:40:00.000Z"
 }

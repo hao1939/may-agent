@@ -113,3 +113,8 @@ __pycache__/
 /packages/
 /may-agent-latest
 /chrome-profile/
+
+# Temp runtime modules
+.may-runtime-module-*
+shared/guards/.may-runtime-module-*
+agents/may/handlers/.may-runtime-module-*

@@ -235,9 +235,17 @@ function reapIdleAutocloseSessions(ctx: HandlerContext): void {
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: EventEnvelope) => {
-    if (!event || event.type === "timer.tick") {
+    // Always run stale session reap — timer ticks are permanently preempted
+    // by the high rate of session.completed events, so reap must piggyback
+    // on event-driven invocations too. The reap logic is idempotent and fast
+    // (~100ms DB scan + conditional updates). Guard against missing getDb
+    // in test mocks.
+    if (typeof ctx.sdk.getDb === "function") {
       reapStaleAutocloseSessions(ctx);
       reapIdleAutocloseSessions(ctx);
+    }
+
+    if (!event || event.type === "timer.tick") {
       return;
     }
 

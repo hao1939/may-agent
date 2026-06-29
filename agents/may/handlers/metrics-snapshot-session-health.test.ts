@@ -180,7 +180,7 @@ describe("metrics-snapshot session health metrics", () => {
       threshold: 0.8,
       priority: "P3",
     });
-    expect(metric("evaluator.stale-running-session-count")).toMatchObject({
+    expect(metric("runtime.stale-running-session-count")).toMatchObject({
       current: 1,
       target: 0,
       threshold: 1,

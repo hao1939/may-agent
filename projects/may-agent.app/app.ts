@@ -4,6 +4,7 @@ import {
   eventDetails,
   eventString,
   type ProjectAppContext,
+  type ProjectAppEvent,
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
@@ -20,10 +21,7 @@ const taskTreeContext = [
   "projects/may-agent/README.md",
 ];
 
-function ownerRequested(
-  reason: string,
-  params: unknown = {},
-): Record<string, unknown> {
+function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   return {
     type: "project.owner.requested",
     project: projectId,
@@ -179,6 +177,36 @@ async function routePlatformEvent(
       // timer fire. Repeated breaches burn session budget with no actionable
       // fix. Captured in scheduled project.tick (4h) for trend awareness.
       "handler.heartbeat-coverage",
+      // Category 8: DB size oscillates near threshold (2500MB) because
+      // event ingestion (~3MB/5min) outpaces hourly retention (~8-10MB drop).
+      // The owner cannot resolve this in a single session — it requires
+      // retention window reduction or threshold adjustment (human decisions).
+      // Waking on each breach creates breach→review→recover oscillation.
+      // Captured in scheduled project.tick (4h) for trend awareness;
+      // human notified via daily ops digest if sustained above threshold.
+      "infra.persist.db-size-mb",
+      // Category 9: agent config-invalid fires transiently during hot-reload
+      // races (e.g. schedule timer fire coincides with project-app-loader
+      // re-evaluating agents). The 1h window means events age out naturally.
+      // The binary includes cli-delegation in VALID_TOOL_PRESETS; false
+      // positives come from timing, not a code defect. Self-resolves.
+      "agent.config-invalid-count-1h",
+      // Category 10: provider-error-count measures provider errors at any
+      // turn across ALL agents. Same class as first-turn-error-count: ~100%
+      // of triggers are aks-rp-e2e planner/worker burst failures (opCount=0
+      // instant errors during workflow restarts). Not platform-actionable —
+      // aks-rp-e2e.app owns its session reliability. The platform cannot fix
+      // upstream provider errors. Kept in scheduled review (4h) for trend.
+      "session.provider-error-count-1h",
+      // Category 11: event pair orphan count measures open event_pair_runs
+      // rows past their expected_close_at. ~95% are project.task pairs from
+      // aks-rp-e2e bulk task dispatch (100+ tasks assigned per planning
+      // cycle with 4h TTL). These pairs orphan when tasks take longer than
+      // expected — a normal aks-rp-e2e operational pattern, not a platform
+      // defect. The platform owner cannot control task completion timing.
+      // Breaches correlate with planning cycle size, not platform failures.
+      // Captured in scheduled project.tick (6h) for trend awareness.
+      "event.pair-orphan-count",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {

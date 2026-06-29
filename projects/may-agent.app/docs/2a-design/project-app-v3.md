@@ -37,9 +37,10 @@ The app then declares the domain workspace it drives.
 
 ```text
 Event   = delivery envelope
-Target  = which project/session/human should receive it
+Source  = who says the event happened
+Target  = the concrete object the event is about
+Owner   = who is accountable if the target does not handle it
 Context = what the owner needs to understand the request/result
-Owner   = brain that judges, plans, accepts, rejects, assigns, or escalates
 Result  = event/state update that closes the loop
 ```
 
@@ -48,9 +49,101 @@ tracks workflow/event traces, reminds on missing closure, and surfaces
 unhandled/stale work. Infra must not decide project strategy, task-tree shape,
 retry policy, acceptance, or domain truth. Those are owner decisions.
 
+There is one event model. There are not separate "platform events" and "app
+events"; events differ by scope and owner. A runtime metric breach, a project
+task completion, and a human approval request all use the same envelope shape:
+
+```json
+{
+  "type": "project.task.completed",
+  "source": "agent:aks-explorer",
+  "owner": "project:aks-rp-e2e",
+  "target": {
+    "project": "aks-rp-e2e",
+    "taskId": "verify-spec-node-http-proxy-update"
+  },
+  "data": {}
+}
+```
+
+- `source` answers: who emitted this?
+- `target` answers: what did it happen to, and where should delivery start?
+- `owner` answers: who is accountable if the target does not handle it?
+- `data` carries the handoff payload for the selected handler.
+
+An owner is any durable routable subject that can be accountable for closing or
+escalating an event. It is not the same thing as a handler. A handler is code
+that may process an event; an owner is the responsibility boundary used when the
+target does not fully handle it.
+
+Good owner identities have:
+
+- stable identity;
+- durable state or authority;
+- clear close/escalate responsibility;
+- a default handler or delegate path.
+
+Examples:
+
+- `project:aks-rp-e2e` owns project policy, task-tree judgment, acceptance, and
+  escalation.
+- `human:operator` owns approval and direction decisions.
+- `agent:aks-explorer` owns agent-private/runtime work.
+- `task:aks-rp-e2e/aks-spec-verification-loop` can own a long-lived controller
+  task if that task has durable state and a clear completion/escalation rule.
+
+Most task ids should be targets, not owners. Most workflows are handlers, not
+owners, because they are implementation units and usually have no durable
+authority outside the owner that invoked them.
+
+This is intentionally close to browser event common sense: an event starts at a
+concrete target, then falls back through ownership boundaries. For project apps,
+the project is a first-class owner. The configured project-owner agent is the
+project's delegate/executor, not the owner identity for project events.
+
+Owner inference should be automatic and deterministic:
+
+```text
+owner = explicit owner
+     ?? owner inferred from target
+     ?? owner inferred from project/workflow context
+     ?? owner inferred from source agent
+     ?? agent:may
+```
+
+Recommended inference:
+
+- `target.project` -> `owner: "project:<project>"`
+- workflow context `projectId` -> `owner: "project:<projectId>"`
+- `target.human` or `to: "human"` on human-message/approval events ->
+  `owner: "human:operator"`
+- otherwise source agent -> `owner: "agent:<agent>"`
+
+Explicit owner always wins. App code should usually set `target` and let the
+runtime infer `owner`. `target.taskId` by itself does not infer
+`owner: "task:..."`; most task ids are concrete delivery targets. Use an
+explicit task owner only for durable controller tasks that meet the owner rules
+above.
+
 Use a small event vocabulary. Prefer context-rich `project.owner.requested`
-events over many narrow event names. The event type routes to the owner; the
-event data explains intent, subject, evidence, and expected closure.
+events over many narrow event names. The event type describes what happened; the
+target and owner decide where it goes; the data explains intent, subject,
+evidence, and expected closure.
+
+Task-targeted events start at the task and roll up. A completion event targeted
+at `{ project, taskId }` first offers exact task handlers, then parent/loop task
+handlers when available, then the project owner:
+
+```text
+task:verify-spec-node-http-proxy-update
+  -> task:aks-spec-verification-loop
+  -> project:aks-rp-e2e
+  -> project-owner delegate agent
+```
+
+Target matching is containment-based. A selector for `{ project: "aks-rp-e2e" }`
+matches an event targeted at `{ project: "aks-rp-e2e", taskId: "..." }`; a
+selector with `taskId` only matches that task.
 
 ## Goals
 
@@ -463,7 +556,7 @@ This lets the app be reviewed as a state machine:
 
 - produced events from schedules, actions, and workflows
 - consumed events through generated handlers
-- external events intentionally handed to the platform
+- external events intentionally handed outside this app
 - declared cycles that are expected control loops
 - undeclared cycles that are likely tight loops
 - conflicts such as multiple generated handlers for one event
@@ -474,21 +567,21 @@ The movement invariant is intentionally strict:
    `accepts`.**
 2. **Every generated handler declares the event types it may emit in `emits`.**
 3. **Every schedule/action output is handled by a generated handler or marked as
-   an external platform event.**
+   an external event owned outside this app.**
 4. **Every generated handler output is handled by a generated handler or marked
-   as an external platform event.**
+   as an external event owned outside this app.**
 
 This avoids dead ends where a project appears active but no next event is
 created. A handler may decide at runtime that no domain mutation is appropriate,
 but it should still emit a state/event outcome such as completion, planning,
-resolved, escalated, or a platform-owned notification. If an event truly leaves
-the app, declare it in `externalEvents`.
+resolved, escalated, or a notification targeted outside the app. If an event
+truly leaves the app, declare it in `externalEvents`.
 
 Do not add a top-level app `events` list for generated handlers. That creates a
 second place to name the same event and makes review harder. Event names such as
 `escalation.resolved` or `metric.breach` are normal when they appear in a
-handler's `accepts` list: they are platform events that target the app's owner
-workflow. They are not a separate event registry.
+handler's `accepts` list: they are ordinary events from outside the app that
+target this project owner. They are not a separate event registry.
 
 Do not put handler edges under `eventGraph.handlers` or
 `eventGraph.adapters`. Those fields duplicate derivable information. A generated
@@ -750,7 +843,7 @@ project.task.assigned
   -> task-owned agent session
   -> domain work
   -> worker workflow emits project.task.completed
-  -> app event layer emits project.owner.requested
+  -> owner workflow accepts project.task.completed and reviews the result
 ```
 
 Failure/blocking uses the same event shape, but makes the problem large and
@@ -758,12 +851,12 @@ auditable instead of letting blocked tasks silently accumulate:
 
 ```text
 project.task.completed with blocked/failed/error claim
-  -> app event layer emits project.problem.requested
+  -> owner workflow accepts the task result and requests problem solving when needed
   -> problem-solver workflow investigates one stable problemKey
   -> solver fixes/verifies local runner or replay defects, or escalates with
      exact external resume conditions
   -> solver emits project.problem.resolved or project.problem.escalated
-  -> app event layer emits project.owner.requested
+  -> owner workflow accepts the solver result
   -> owner reconciles affected task branches in tasks/tree.json
 ```
 
@@ -794,13 +887,18 @@ alias, but new app code should emit `project.owner.requested`.
 Human task-tree steering should use `project.owner.requested` directly. If
 the user gives explicit owner context from a project UI, the UI posts the
 typed event through `/api/events`. The HTTP envelope carries `type`, `source`,
-and `owner`; the event payload that handlers consume lives under `data`:
+`target`, and either an explicit `owner` or enough target/project context for
+the runtime to infer the owner. The event payload that handlers consume lives
+under `data`:
 
 ```json
 {
   "type": "project.owner.requested",
   "source": "web-ui",
-  "owner": "agent:aks-explorer",
+  "owner": "project:aks-rp-e2e",
+  "target": {
+    "project": "aks-rp-e2e"
+  },
   "urgency": "high",
   "data": {
     "project": "aks-rp-e2e",
@@ -819,6 +917,12 @@ For HTTP ingress, do not rely on top-level `project`, `reason`, or `params`
 alone; the runtime stores and dispatches the durable payload from `data`.
 Explicit human steering should use `urgency: "high"` so it is not buried behind
 routine watchdog/refill wakes.
+
+During migration, owner-scoped agent events such as
+`owner: "agent:aks-explorer"` may still be accepted for metrics, escalation
+lifecycle events, and older clients. Treat them as compatibility input. New
+project-scoped events should prefer `target: { project }` and inferred
+`owner: "project:<project>"`.
 
 Owner workflows should also query/surface recent high-priority human steering
 when building the planning packet. The current trigger may be a watchdog or
@@ -994,6 +1098,9 @@ Metric breach handling stays event-based:
 ```text
 metrics-snapshot
   -> metric.breach
+     source: runtime:metrics
+     target: { project }
+     owner: project:<project> (inferred or explicit)
   -> project app onEvent
   -> project.owner.requested with metric context
   -> project-owner agent reads task tree + metric context

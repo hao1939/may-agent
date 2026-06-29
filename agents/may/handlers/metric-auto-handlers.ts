@@ -4,7 +4,7 @@
  * This module exports a registry of metrics that have deterministic fixes,
  * plus a runner that checks the registry before falling through to LLM triage.
  *
- * PoC: handles `evaluator.stale-running-session-count` by killing stale sessions.
+ * PoC: handles `runtime.stale-running-session-count` by killing stale sessions.
  *
  * Integration: called from metric-alert-reactor before dispatching triage workflow.
  * If an auto-handler matches and cooldown has elapsed, it runs the action and
@@ -30,7 +30,7 @@ const lastFired = new Map<string, number>();
  */
 export const AUTO_HANDLER_REGISTRY: MetricAutoHandler[] = [
   {
-    metricId: "evaluator.stale-running-session-count",
+    metricId: "runtime.stale-running-session-count",
     description: "Kill sessions running >30min with no recent activity",
     trigger: { op: ">", threshold: 0 },
     cooldownMs: 10 * 60 * 1000, // 10 minutes
@@ -77,7 +77,7 @@ export const AUTO_HANDLER_REGISTRY: MetricAutoHandler[] = [
       }
 
       ctx.sdk.emit("metric.auto_handled", {
-        metricId: "evaluator.stale-running-session-count",
+        metricId: "runtime.stale-running-session-count",
         handler: "stale-session-reaper",
         sessionsReaped: stale.length,
         sessionIds: stale.map(s => s.sessionId),

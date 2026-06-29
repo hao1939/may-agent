@@ -172,6 +172,10 @@ const DEFERRED_METRIC_IDS = new Set([
   "metric.stale-active-count",
   "session.first-turn-error-count-1h",
   "handler.heartbeat-coverage",
+  "infra.persist.db-size-mb",
+  "agent.config-invalid-count-1h",
+  "session.provider-error-count-1h",
+  "event.pair-orphan-count",
 ]);
 
 function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
@@ -283,6 +287,19 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   // evaluation.app blocked runs (evaluator-aftermath, evaluator-heartbeat)
   // and other project-owned workflows are not platform-actionable —
   // they should be surfaced by their own project's ops-health observer.
+  //
+  // For workflows with projectId IS NULL (legacy global handlers like
+  // metric-alert-triage), also exclude runs whose result_reason identifies
+  // them as belonging to other projects (e.g., "aks-rp-e2e.*" metrics).
+  // Without this filter, global handler failures for other projects' metrics
+  // trigger continuous hourly owner wakes with no platform-actionable fix.
+  //
+  // Additionally exclude "missing original task" session-recovery blocks.
+  // These occur when a session's task text wasn't preserved in the DB, so
+  // session-recovery correctly blocks because it can't build a requeue task.
+  // No owner action can fix these — the task text is permanently lost.
+  // They belong to cross-project agents (aks-explorer, scout) but don't
+  // contain project-name strings in result_reason.
   const staleBlockedWorkflowRuns = queryRows(ctx, () =>
     ctx.query.sql(
       `SELECT workflow,
@@ -295,7 +312,12 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
         WHERE status IN ('blocked', 'escalated')
           AND COALESCE(endedAt, startedAt) < ?
           AND COALESCE(endedAt, startedAt) >= ?
-          AND (projectId = 'may-agent' OR projectId IS NULL)
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
+          AND (projectId = 'may-agent'
+               OR (projectId IS NULL
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%scout-knowledge%'
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%evaluation.%'))
         GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
         ORDER BY count DESC, newestAt DESC`,
       [staleEscalationCutoff, chronicallyStaleFloor],
@@ -314,7 +336,12 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
          FROM workflow_runs
         WHERE status IN ('blocked', 'escalated')
           AND COALESCE(endedAt, startedAt) < ?
-          AND (projectId = 'may-agent' OR projectId IS NULL)
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
+          AND (projectId = 'may-agent'
+               OR (projectId IS NULL
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%scout-knowledge%'
+                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%evaluation.%'))
         GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
         ORDER BY count DESC, newestAt DESC`,
       [chronicallyStaleFloor],
@@ -327,9 +354,28 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const overduePendingEvents = rowArray(deliveryHealth.overduePendingEvents);
   const orphanPairs = rowArray(deliveryHealth.orphanPairs);
   const overdueOpenPairs = rowArray(deliveryHealth.overdueOpenPairs);
+  // All repeated symptoms for the observations packet (context/awareness).
   const repeatedSymptoms = groupEventSymptoms(recentAbnormalEvents).filter(
     (row) => numberValue(row.count) >= 3,
   );
+  // Only platform-owned repeated symptoms generate wake signals.
+  // Cross-project handler.failed events (e.g. evaluator-owned evaluation-aftermath-scan)
+  // are not platform-actionable and should not trigger hourly owner wakes.
+  // The same ownership filter pattern used for metric alerts and escalations.
+  const platformOwnerSet = new Set([
+    ownerEventOwner,
+    "agent:may",
+    "may",
+    "tech-lead",
+  ]);
+  const platformOwnedAbnormalEvents = recentAbnormalEvents.filter((row) => {
+    const eventOwner = stringValue(row.owner);
+    // Events with no owner or platform-owned events are platform-actionable.
+    return !eventOwner || platformOwnerSet.has(eventOwner);
+  });
+  const platformRepeatedSymptoms = groupEventSymptoms(
+    platformOwnedAbnormalEvents,
+  ).filter((row) => numberValue(row.count) >= 3);
 
   const signals: Signal[] = [];
   // Exclude deferred metrics from generating wake signals.
@@ -378,12 +424,12 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(staleBlockedWorkflowRuns, 8),
     });
   }
-  if (repeatedSymptoms.length > 0) {
+  if (platformRepeatedSymptoms.length > 0) {
     signals.push({
       kind: "repeated-runtime-symptom",
       severity: "P1",
-      reason: `${repeatedSymptoms.length} repeated runtime symptom group(s) in the last hour.`,
-      evidence: compactRows(repeatedSymptoms, 8),
+      reason: `${platformRepeatedSymptoms.length} repeated platform-owned runtime symptom group(s) in the last hour.`,
+      evidence: compactRows(platformRepeatedSymptoms, 8),
     });
   }
   if (unhandledEvents.length > 0 || overduePendingEvents.length > 0) {

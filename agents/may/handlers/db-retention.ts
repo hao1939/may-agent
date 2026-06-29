@@ -41,7 +41,7 @@ const DIGEST_RETENTION_DAYS = 14; // session_digests: matches session retention
 const WORKFLOW_RETENTION_DAYS = 14; // workflow_runs: matches session retention
 const SNAPSHOT_RETENTION_DAYS = 14;
 const EVALUATION_RETENTION_DAYS = 30; // evaluations: analytical value, retain longer
-const VACUUM_THRESHOLD = 1000; // Run VACUUM if total deletions exceed this
+const VACUUM_THRESHOLD = 500; // Run VACUUM if total deletions exceed this (lowered from 1000: hourly runs delete ~837 rows but VACUUM never fired at 1000 threshold → alert #2213 DB 2518MB)
 const OVERSIZED_ROW_BYTES = 1_048_576; // 1 MB — KE-1986: platform-owner-review context cascade
 
 export const create: HandlerModule["create"] = (

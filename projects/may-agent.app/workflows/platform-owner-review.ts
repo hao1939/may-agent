@@ -295,7 +295,11 @@ function buildReviewPacket(
       "metric.recovered",
       "metric.stalled",
       "session.resume_failed",
+      "session.recovery_failed",
       "handler.failed",
+      "subscriber.failed",
+      "message.delivery_failed",
+      "agent.config_invalid",
     ];
     for (const type of signalTypes) {
       for (const ownerAlias of platformOwnerAliases) {
