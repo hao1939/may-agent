@@ -2,6 +2,7 @@ export interface CanonicalEventEnvelopeOptions {
   source?: unknown;
   owner?: unknown;
   target?: unknown;
+  action?: unknown;
   urgency?: unknown;
   ttl_ms?: unknown;
   timestamp?: unknown;
@@ -55,6 +56,7 @@ function hasOnlyEnvelopeFields(event: Record<string, unknown>): boolean {
       key === "source" ||
       key === "owner" ||
       key === "target" ||
+      key === "action" ||
       key === "urgency" ||
       key === "ttl_ms" ||
       key === "timestamp" ||
@@ -76,10 +78,11 @@ export function buildCanonicalEventEnvelope(
     };
   }
 
-  const { type: _inputType, source, owner, target, urgency, ttl_ms, timestamp, data, ...payload } = input;
+  const { type: _inputType, source, owner, target, action, urgency, ttl_ms, timestamp, data, ...payload } = input;
 
   const eventData = isRecord(data) ? { ...data, ...payload } : payload;
   const envelopeTarget = isRecord(target) ? target : isRecord(defaults.target) ? defaults.target : undefined;
+  const envelopeAction = nonEmptyString(action) ?? nonEmptyString(defaults.action);
   const envelopeUrgency = nonEmptyString(urgency) ?? nonEmptyString(defaults.urgency);
   const envelopeTtl = typeof ttl_ms === "number" ? ttl_ms : defaults.ttl_ms;
   const envelopeTimestamp = typeof timestamp === "number" ? timestamp : defaults.timestamp;
@@ -89,6 +92,7 @@ export function buildCanonicalEventEnvelope(
     source: nonEmptyString(source) ?? nonEmptyString(defaults.source) ?? "control",
     owner: inferEventOwner({ owner, target: envelopeTarget, fallback: defaults.owner }),
     ...(envelopeTarget ? { target: envelopeTarget } : {}),
+    ...(envelopeAction ? { action: envelopeAction } : {}),
     ...(envelopeUrgency ? { urgency: envelopeUrgency } : {}),
     ...(typeof envelopeTtl === "number" ? { ttl_ms: envelopeTtl } : {}),
     ...(typeof envelopeTimestamp === "number" ? { timestamp: envelopeTimestamp } : {}),

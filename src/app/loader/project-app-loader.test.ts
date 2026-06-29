@@ -652,6 +652,125 @@ export default defineProjectApp({
     }
   });
 
+  it("routes workflow handlers by top-level action", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-loop",
+          enabled: true,
+          accepts: [{
+            type: "project.task.tick",
+            target: { project: "sample" },
+            actions: ["known-loop"]
+          }],
+          handler: { workflow: "loop", task: "work", includeEvent: true }
+        }],
+        onEvent() { return undefined; }
+      }`,
+      );
+
+      const fired: any[] = [];
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      const cron = agentCrons.get("sample-owner")!;
+      cron.registerHandler("sample-loop", async (event) => {
+        fired.push(event);
+      });
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.task.tick",
+        source: "test",
+        owner: "project:sample",
+        target: { project: "sample", taskId: "loop-a" },
+        action: "known-loop",
+        data: { project: "sample" },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(fired).toHaveLength(1);
+      expect(fired[0]).toMatchObject({
+        type: "project.task.tick",
+        action: "known-loop",
+        target: { project: "sample", taskId: "loop-a" },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves scheduled event action on the envelope", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "pulse",
+          enabled: true,
+          intervalMs: 60000,
+          emits: [{
+            type: "project.task.tick",
+            target: { project: "sample", taskId: "loop-a" },
+            action: "known-loop",
+            data: { project: "sample", reason: "test-pulse" }
+          }]
+        }],
+        workflowHandlers: [],
+        actions: {}
+      }`,
+      );
+
+      const events: any[] = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => {
+        if (event.type === "project.task.tick") events.push(event);
+      });
+      const agentCrons = new Map<string, Cron>();
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      const cron = agentCrons.get("sample-owner")!;
+      cron.triggerNow("sample-schedule-pulse", { force: true });
+      await waitUntil(() => events.length === 1);
+
+      expect(events[0]).toMatchObject({
+        type: "project.task.tick",
+        owner: "project:sample",
+        target: { project: "sample", taskId: "loop-a" },
+        action: "known-loop",
+        data: { project: "sample", reason: "test-pulse" },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("dispatches project events to installed workflow handler entries", async () => {
     const root = tempRoot();
     try {

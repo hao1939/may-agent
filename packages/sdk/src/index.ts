@@ -373,6 +373,7 @@ export interface EventEnvelopeOptions {
   owner?: string;
   source?: string;
   target?: Record<string, unknown>;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
 }
@@ -431,6 +432,7 @@ export interface EventEnvelope {
   source: string;
   owner: string;
   timestamp?: number;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
   data: Record<string, unknown>;
@@ -481,8 +483,7 @@ export interface HandlerModule {
 
 type MaybePromise<T> = T | Promise<T>;
 type ValueResolver<T> =
-  | T
-  | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
+  T | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
 
 export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;

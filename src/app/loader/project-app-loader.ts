@@ -289,6 +289,7 @@ const envelopeFieldNames = new Set([
   "ttlMs",
   "ttl_ms",
   "target",
+  "action",
   "data",
 ]);
 
@@ -297,6 +298,7 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
   const source = typeof event.source === "string" ? event.source : defaults.source;
   const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
   const urgency = typeof event.urgency === "string" ? event.urgency : undefined;
+  const action = typeof event.action === "string" && event.action.trim() ? event.action.trim() : undefined;
   const ttlMs =
     typeof event.ttl_ms === "number" ? event.ttl_ms : typeof event.ttlMs === "number" ? event.ttlMs : undefined;
   const target = isRecord(event.target) ? (event.target as EventTarget) : undefined;
@@ -316,6 +318,7 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
     owner,
     timestamp,
     ...(urgency ? { urgency: urgency as EventEnvelope["urgency"] } : {}),
+    ...(action ? { action } : {}),
     ...(typeof ttlMs === "number" ? { ttl_ms: ttlMs } : {}),
     ...(target ? { target } : {}),
     data,

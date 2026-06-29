@@ -17,6 +17,7 @@ export interface EventEnvelope {
   source: string;
   owner: string;
   timestamp?: number;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
   target?: {
