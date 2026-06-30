@@ -10,6 +10,7 @@ import {
   taskState,
   withTreeLock,
   type TaskTreeConfig,
+  type TaskBlocker,
   type TaskNode,
   type TaskTree,
 } from "./project-task-tree-store.js";
@@ -228,6 +229,10 @@ export type CreateTaskInput = {
   depends_on?: string[];
   context?: Record<string, unknown>;
   blocker?: string;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  resumeAt?: string;
 };
 
 export type MarkTaskDoneInput = {
@@ -246,6 +251,10 @@ export type UpdateTaskTextInput = {
   goal?: string;
   acceptance?: string[];
   blocker?: string;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  resumeAt?: string;
   clearBlocker?: boolean;
 };
 
@@ -983,10 +992,70 @@ function truncate(value: string | undefined, max = 900): string | undefined {
   return value.length > max ? `${value.slice(0, max)}...` : value;
 }
 
+type TaskBlockerInput = {
+  blocker?: string;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  resumeAt?: string;
+};
+
+function trimmed(value: string | undefined): string | undefined {
+  const text = value?.trim();
+  return text ? text : undefined;
+}
+
+function hasStructuredBlockerInput(input: TaskBlockerInput): boolean {
+  return Boolean(
+    trimmed(input.blockerCategory) ||
+    trimmed(input.blockerOwner) ||
+    trimmed(input.resumeCondition) ||
+    trimmed(input.resumeAt),
+  );
+}
+
+function blockerCondition(blocker: TaskBlocker | undefined): string | undefined {
+  if (typeof blocker === "string") return trimmed(blocker);
+  return trimmed(blocker?.condition);
+}
+
+function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
+  const condition = trimmed(input.blocker);
+  if (!hasStructuredBlockerInput(input)) return condition;
+
+  return {
+    ...(condition ? { condition } : {}),
+    ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
+    ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
+    ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
+    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
+  };
+}
+
+function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput): TaskBlocker | undefined {
+  if (!hasStructuredBlockerInput(input)) return trimmed(input.blocker);
+  const existingRecord = existing && typeof existing === "object" && !Array.isArray(existing) ? existing : {};
+  const condition = trimmed(input.blocker) ?? blockerCondition(existing);
+  return {
+    ...existingRecord,
+    ...(condition ? { condition } : {}),
+    ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
+    ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
+    ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
+    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
+  };
+}
+
+function hasBlockerInput(input: TaskBlockerInput): boolean {
+  return typeof input.blocker === "string" || hasStructuredBlockerInput(input);
+}
+
 function blockerText(blocker: TaskNode["blocker"]): string | undefined {
   if (typeof blocker === "string") return blocker;
   if (!blocker) return undefined;
-  return [blocker.condition, blocker.resume_condition]
+  const resumeCondition = blocker.resume_condition ?? blocker.resumeCondition;
+  const resumeAt = blocker.resume_at ?? blocker.resumeAt;
+  return [blocker.condition, resumeCondition, resumeAt ? `Resume at: ${resumeAt}` : undefined]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" Resume: ");
 }
@@ -1342,12 +1411,8 @@ function loadModelStatusSummary(config: ToolConfig): ModelStatusSummary | undefi
   if (!existsSync(modelPath)) return undefined;
   try {
     const raw = JSON.parse(readFileSync(modelPath, "utf-8"));
-    const featurePaths: Array<Record<string, unknown>> = Array.isArray(raw?.featurePaths)
-      ? raw.featurePaths
-      : [];
-    const mirrorPaths: Array<Record<string, unknown>> = Array.isArray(raw?.paths)
-      ? raw.paths
-      : [];
+    const featurePaths: Array<Record<string, unknown>> = Array.isArray(raw?.featurePaths) ? raw.featurePaths : [];
+    const mirrorPaths: Array<Record<string, unknown>> = Array.isArray(raw?.paths) ? raw.paths : [];
     const byId = new Map<string, Record<string, unknown>>();
     for (const entry of mirrorPaths) {
       const id = typeof entry?.id === "string" ? entry.id.trim() : "";
@@ -1461,9 +1526,7 @@ function createAssignmentForTask(
     typeof trace.last_worker_summary === "string" &&
     trace.last_worker_summary.trim().toLowerCase() === "error";
   const wantsFreshSession =
-    trace.review_reject_fresh_session === true ||
-    trace.stale_active_fresh_session === true ||
-    previousWorkerErrored;
+    trace.review_reject_fresh_session === true || trace.stale_active_fresh_session === true || previousWorkerErrored;
   const defaultSessionId = wantsFreshSession
     ? `${stableTaskSessionId(task)}_retry_${now.replace(/\D/g, "").slice(0, 14)}`
     : stableTaskSessionId(task);
@@ -1677,8 +1740,10 @@ export function createTask(config: ToolConfig, input: CreateTaskInput): TaskNode
     if (!parent) throw new Error(`Parent task not found: ${input.parentId}`);
     const requestedState = input.state ?? input.status ?? "backlog";
     const status = requestedState === "blocked" ? "blocked" : "backlog";
-    if (status === "blocked" && !input.blocker?.trim()) throw new Error("Blocked tasks require --blocker");
-    if (status !== "blocked" && input.blocker?.trim()) throw new Error("--blocker is only valid with --status blocked");
+    const blocker = buildBlocker(input);
+    if (status === "blocked" && !blockerCondition(blocker)) throw new Error("Blocked tasks require --blocker");
+    if (status !== "blocked" && hasBlockerInput(input))
+      throw new Error("--blocker fields are only valid with --status blocked");
 
     const task: TaskNode = {
       id: input.id,
@@ -1698,7 +1763,7 @@ export function createTask(config: ToolConfig, input: CreateTaskInput): TaskNode
       depends_on: input.depends_on,
       workflow: input.workflow,
       context: input.context,
-      blocker: input.blocker,
+      blocker,
       trace: {
         created_at: new Date().toISOString(),
         created_by: "task-tree-tool",
@@ -1854,11 +1919,12 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
 
     const hasGoal = typeof input.goal === "string";
     const hasAcceptance = input.acceptance !== undefined;
-    const hasBlocker = typeof input.blocker === "string";
+    const hasBlocker = hasBlockerInput(input);
     const clearBlocker = input.clearBlocker === true;
     if (!hasGoal && !hasAcceptance && !hasBlocker && !clearBlocker) {
       throw new Error("Provide at least one of goal, acceptance, blocker, or clearBlocker");
     }
+    if (clearBlocker && hasBlocker) throw new Error("Cannot combine clearBlocker with blocker fields");
 
     if (hasGoal) {
       const goal = input.goal?.trim() ?? "";
@@ -1877,8 +1943,11 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
       task.blocker = undefined;
     }
     if (hasBlocker) {
-      const blocker = input.blocker?.trim() ?? "";
-      task.blocker = blocker || undefined;
+      const blocker = mergeBlocker(task.blocker, input);
+      if (hasStructuredBlockerInput(input) && !blockerCondition(blocker)) {
+        throw new Error("Structured blocker updates require --blocker or an existing blocker condition");
+      }
+      task.blocker = blockerCondition(blocker) ? blocker : undefined;
     }
 
     saveTaskTreeWithKanbanSnapshot(config, tree);
