@@ -13,9 +13,12 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
   assignRunnableBacklogTasks,
+  createTask,
   drainTaskAssignments,
+  markTaskDone,
   planningPacket,
   readTask,
+  rejectTaskReview,
   repairTaskTreeRollups,
   taskTreeConfig,
   type TaskAssignment,
@@ -54,6 +57,17 @@ type RuntimeEventRow = {
   urgency?: unknown;
   data?: unknown;
   timestamp?: unknown;
+};
+
+type ReviewDecision = "accept" | "redo" | "followup" | "blocked" | "escalate";
+
+type ReviewedTaskApplyResult = {
+  handled: boolean;
+  applied: boolean;
+  decision?: ReviewDecision;
+  taskId?: string;
+  message: string;
+  successorTaskId?: string;
 };
 
 function truncateText(value: string, max = 280): string {
@@ -298,7 +312,7 @@ function recentHumanSteering(ctx: WorkflowContext): Record<string, unknown>[] {
     const query = ctx.query;
     if (!query?.events) return [];
     const since = Date.now() - 2 * 60 * 60_000;
-    const rows = ["project.owner.requested", "project.planning.requested"]
+    const rows = ["project.planning.requested"]
       .flatMap(
         (type) =>
           query.events({
@@ -414,7 +428,7 @@ Core operating model:
   single exact owner escalation/wait for the shared environment cause, then move
   unrelated work forward.
 - When project.problem.resolved, project.problem.escalated, or
-  project.problem.unknown wakes you, reconcile the solver result into the
+  project.problem.inconclusive wakes you, reconcile the solver result into the
   affected task branch: retry or supersede affected tasks when resolved; mark
   precise external blockers or human escalation state when escalated; triage or
   request follow-up investigation when the solver could not classify the result.
@@ -490,13 +504,13 @@ Use these commands from the app directory:
 - bun run task-tree packet
 - bun run task-tree frontier
 - bun run task-tree confirm-runnable --limit 10
-- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked]
+- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO]
 - bun run task-tree mark-done <task-id> --summary "why the review is accepted"
 - bun run task-tree mark-done <task-id> --resolution replaced --summary "why this blocked leaf is replaced by the family-level wait"
 - bun run task-tree rollup-parent <parent-id> --summary "what this branch now knows and what remains" [--archive-done <child-id> ...] [--limit 50]
 - bun run task-tree compact-done --limit 50  # recovery only; prefer rollup-parent after owner summary
 - bun run task-tree assign <task-id> [--worker ${input.agent}]
-- bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
+- bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--clear-blocker]
 - bun run task-tree show <task-id>
 - bun run domain:checkpoint
 - bun run domain:checkpoint -- --json
@@ -648,6 +662,320 @@ function dispatchAssignedTasks(
       // Local tests may not provide a dispatcher.
     }
   }
+}
+
+function taskState(task: NonNullable<ReturnType<typeof readTask>>): string {
+  const state = task.status ?? task.state;
+  return typeof state === "string" ? state : "backlog";
+}
+
+function taskTrace(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): Record<string, unknown> {
+  return task.trace &&
+    typeof task.trace === "object" &&
+    !Array.isArray(task.trace)
+    ? (task.trace as Record<string, unknown>)
+    : {};
+}
+
+function currentAttemptId(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): string {
+  const value = taskTrace(task).current_attempt_id;
+  return typeof value === "string" ? value : "";
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function stringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+      .filter(Boolean);
+  }
+  const text = stringValue(value);
+  return text ? [text] : [];
+}
+
+function reviewObject(trigger: ReturnType<typeof parseTriggerEvent>) {
+  const review = triggerValue(trigger, "review");
+  return review && typeof review === "object" && !Array.isArray(review)
+    ? (review as Record<string, unknown>)
+    : {};
+}
+
+function reviewValue(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+  key: string,
+): unknown {
+  const topLevel = triggerValue(trigger, key);
+  if (topLevel !== undefined) return topLevel;
+  return reviewObject(trigger)[key];
+}
+
+function reviewString(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+  key: string,
+): string {
+  return stringValue(reviewValue(trigger, key));
+}
+
+function reviewStringList(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+  key: string,
+): string[] {
+  return stringList(reviewValue(trigger, key));
+}
+
+function normalizeReviewDecision(value: unknown): ReviewDecision | null {
+  return value === "accept" ||
+    value === "redo" ||
+    value === "followup" ||
+    value === "blocked" ||
+    value === "escalate"
+    ? value
+    : null;
+}
+
+function firstText(...groups: string[][]): string {
+  for (const group of groups) {
+    const found = group.find((entry) => entry.trim());
+    if (found) return found.trim();
+  }
+  return "";
+}
+
+function taskPriority(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): "P0" | "P1" | "P2" | "P3" {
+  return task.priority === "P0" ||
+    task.priority === "P1" ||
+    task.priority === "P2" ||
+    task.priority === "P3"
+    ? task.priority
+    : "P2";
+}
+
+function taskStringList(
+  task: NonNullable<ReturnType<typeof readTask>>,
+  key: "outputs" | "conflict_scope",
+): string[] {
+  return Array.isArray(task[key])
+    ? task[key].filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function uniqueTaskId(config: TaskTreeConfig, base: string): string {
+  const normalized =
+    base
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "review-followup";
+  if (!readTask(config, normalized)) return normalized;
+  for (let index = 2; index < 1000; index += 1) {
+    const candidate = `${normalized}-${index}`;
+    if (!readTask(config, candidate)) return candidate;
+  }
+  throw new Error(`Could not allocate unique task id for ${base}`);
+}
+
+function createReviewedSuccessor(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  decision: ReviewDecision;
+  attemptId: string;
+  summary: string;
+  findings: string[];
+  feedback: string[];
+  suggestedFollowups: string[];
+}): string {
+  if (!input.task.parent_id) {
+    throw new Error(
+      `Reviewed task ${input.task.id} has no parent for successor`,
+    );
+  }
+  const followupText =
+    firstText(input.suggestedFollowups, input.feedback, input.findings) ||
+    `Resolve reviewed ${input.decision} result for ${input.task.id}.`;
+  const id = uniqueTaskId(
+    input.config,
+    `${input.task.id}-${input.decision === "followup" ? "followup" : input.decision}`,
+  );
+  const isBlocked =
+    input.decision === "blocked" || input.decision === "escalate";
+  const blocker =
+    firstText(input.feedback, input.findings, [input.summary]) ||
+    `Reviewed task ${input.task.id} needs ${input.decision} handling.`;
+  createTask(input.config, {
+    id,
+    parentId: input.task.parent_id,
+    state: isBlocked ? "blocked" : "backlog",
+    kind: input.task.kind ?? "domain_leaf",
+    priority: taskPriority(input.task),
+    owner: input.task.owner,
+    workflow: input.task.workflow,
+    goal: isBlocked
+      ? `Resolve ${input.decision} review for ${input.task.id}: ${blocker}`
+      : followupText,
+    inputs: [`Reviewed task: ${input.task.id}`, `Attempt: ${input.attemptId}`],
+    outputs: taskStringList(input.task, "outputs").length
+      ? taskStringList(input.task, "outputs")
+      : ["tasks/tree.json"],
+    acceptance: isBlocked
+      ? [
+          "The external wait or escalation has a concrete result, or a replacement runnable task is created.",
+          "The affected task branch records the result and next verification step.",
+        ]
+      : [
+          "The review follow-up is resolved with concrete evidence.",
+          "The affected task branch records the result and next verification step.",
+        ],
+    conflict_scope: taskStringList(input.task, "conflict_scope"),
+    context: {
+      reviewedTask: {
+        taskId: input.task.id,
+        attemptId: input.attemptId,
+        decision: input.decision,
+        summary: input.summary,
+        findings: input.findings,
+        feedback: input.feedback,
+        suggestedFollowups: input.suggestedFollowups,
+      },
+    },
+    ...(isBlocked
+      ? {
+          blocker,
+          blockerCategory: "external-wait",
+          blockerOwner: input.decision === "escalate" ? "human" : "external",
+          resumeCondition:
+            firstText(input.suggestedFollowups) ||
+            `Resume when ${input.decision} condition for ${input.task.id} is resolved.`,
+        }
+      : {}),
+  });
+  return id;
+}
+
+function applyReviewedTaskEvent(
+  config: TaskTreeConfig,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): ReviewedTaskApplyResult {
+  if (trigger?.type !== "project.task.reviewed") {
+    return {
+      handled: false,
+      applied: false,
+      message: "Trigger is not project.task.reviewed.",
+    };
+  }
+
+  const taskId =
+    reviewString(trigger, "taskId") || reviewString(trigger, "task_id");
+  const attemptId =
+    reviewString(trigger, "attemptId") || reviewString(trigger, "attempt_id");
+  const decision = normalizeReviewDecision(reviewValue(trigger, "decision"));
+  if (!taskId || !attemptId || !decision) {
+    return {
+      handled: true,
+      applied: false,
+      message:
+        "Ignored project.task.reviewed because taskId, attemptId, and decision are required.",
+    };
+  }
+
+  const task = readTask(config, taskId);
+  if (!task) {
+    return {
+      handled: true,
+      applied: false,
+      decision,
+      taskId,
+      message: `Ignored stale reviewed event for ${taskId}: task was not found.`,
+    };
+  }
+  const state = taskState(task);
+  if (state !== "review") {
+    return {
+      handled: true,
+      applied: false,
+      decision,
+      taskId,
+      message: `Ignored stale reviewed event for ${taskId}: task is ${state}, not review.`,
+    };
+  }
+  const liveAttemptId = currentAttemptId(task);
+  if (liveAttemptId && liveAttemptId !== attemptId) {
+    return {
+      handled: true,
+      applied: false,
+      decision,
+      taskId,
+      message: `Ignored stale reviewed event for ${taskId}: attempt ${attemptId} is not current.`,
+    };
+  }
+
+  const summary =
+    reviewString(trigger, "summary") ||
+    `Reviewer decision ${decision} for ${taskId}.`;
+  const findings = reviewStringList(trigger, "findings");
+  const feedback = reviewStringList(trigger, "feedback");
+  const suggestedFollowups = [
+    ...reviewStringList(trigger, "suggestedFollowups"),
+    ...reviewStringList(trigger, "suggested_followups"),
+  ];
+
+  if (decision === "accept") {
+    markTaskDone(config, { taskId, summary });
+    return {
+      handled: true,
+      applied: true,
+      decision,
+      taskId,
+      message: `Applied accept review for ${taskId}.`,
+    };
+  }
+
+  if (decision === "redo") {
+    rejectTaskReview(config, {
+      taskId,
+      reason: firstText(feedback, findings, [summary]),
+      freshSession: true,
+    });
+    return {
+      handled: true,
+      applied: true,
+      decision,
+      taskId,
+      message: `Applied redo review for ${taskId}.`,
+    };
+  }
+
+  const successorTaskId = createReviewedSuccessor({
+    config,
+    task,
+    decision,
+    attemptId,
+    summary,
+    findings,
+    feedback,
+    suggestedFollowups,
+  });
+  markTaskDone(config, {
+    taskId,
+    resolution: decision === "followup" ? "completed" : "replaced",
+    summary: `Reviewer decision ${decision}; successor ${successorTaskId}: ${summary}`,
+  });
+  return {
+    handled: true,
+    applied: true,
+    decision,
+    taskId,
+    successorTaskId,
+    message: `Applied ${decision} review for ${taskId}; created ${successorTaskId}.`,
+  };
 }
 
 function routineRefillReason(rawTask: string): string | null {
@@ -873,13 +1201,13 @@ function staleReviewPendingNoopResult(input: {
   if (reason !== "watchdog-review-pending") return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
-  if (input.packet.frontier.review.length > 0) return null;
 
   const triggerTasks = triggerReviewTasks(input.rawTask);
   if (triggerTasks.length === 0) return null;
 
   const liveReview = new Set(input.packet.frontier.review);
   if (triggerTasks.some((task) => liveReview.has(task.taskId))) return null;
+  if (input.packet.active_task_ids.length === 0) return null;
 
   const states = triggerTasks.map((task) => {
     const liveTask = readTask(input.config, task.taskId);
@@ -916,6 +1244,8 @@ function staleReviewPendingNoopResult(input: {
 type TriggerBlockedTask = {
   taskId: string;
   blocker: string;
+  resumeAt?: string;
+  resumeCondition?: string;
 };
 
 function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
@@ -933,27 +1263,36 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
         typeof (entry as { blocker?: unknown }).blocker === "string"
           ? ((entry as { blocker?: string }).blocker ?? "")
           : "";
-      return { taskId, blocker };
+      const resumeAt =
+        typeof (entry as { resumeAt?: unknown }).resumeAt === "string"
+          ? ((entry as { resumeAt?: string }).resumeAt ?? "")
+          : typeof (entry as { resume_at?: unknown }).resume_at === "string"
+            ? ((entry as { resume_at?: string }).resume_at ?? "")
+            : "";
+      const resumeCondition =
+        typeof (entry as { resumeCondition?: unknown }).resumeCondition ===
+        "string"
+          ? ((entry as { resumeCondition?: string }).resumeCondition ?? "")
+          : typeof (entry as { resume_condition?: unknown })
+                .resume_condition === "string"
+            ? ((entry as { resume_condition?: string }).resume_condition ?? "")
+            : "";
+      return {
+        taskId,
+        blocker,
+        ...(resumeAt.trim() ? { resumeAt: resumeAt.trim() } : {}),
+        ...(resumeCondition.trim()
+          ? { resumeCondition: resumeCondition.trim() }
+          : {}),
+      };
     })
     .filter((entry): entry is TriggerBlockedTask => Boolean(entry));
 }
 
-function futureResumeDates(text: string): number[] {
-  const matches = [
-    ...text.matchAll(/\b(20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g),
-    ...text.matchAll(/\b(20\d{2}-\d{2}-\d{2})\b/g),
-  ];
-  const now = Date.now();
-  const parsed = matches
-    .map((match) => {
-      const value = match[1];
-      const iso = value.includes("T") ? value : `${value}T00:00:00.000Z`;
-      const ts = Date.parse(iso);
-      return Number.isFinite(ts) ? ts : Number.NaN;
-    })
-    .filter((ts) => Number.isFinite(ts) && ts > now)
-    .sort((a, b) => a - b);
-  return parsed;
+function futureResumeAt(task: TriggerBlockedTask): number | null {
+  if (!task.resumeAt) return null;
+  const ts = Date.parse(task.resumeAt);
+  return Number.isFinite(ts) && ts > Date.now() ? ts : null;
 }
 
 function blockedFrontierFutureWaitNoopResult(input: {
@@ -979,15 +1318,15 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (triggerIds.length !== input.packet.frontier.blocked.length) return null;
   if (triggerIds.some((taskId) => !liveBlocked.has(taskId))) return null;
 
-  const nearestFutureDates = blockedTasks
-    .map((task) => futureResumeDates(task.blocker)[0] ?? Number.NaN)
-    .filter((ts) => Number.isFinite(ts));
-  if (nearestFutureDates.length !== blockedTasks.length) return null;
+  const futureResumeDates = blockedTasks
+    .map(futureResumeAt)
+    .filter((ts): ts is number => typeof ts === "number");
+  if (futureResumeDates.length !== blockedTasks.length) return null;
 
   const earliestResumeAt = new Date(
-    Math.min(...nearestFutureDates),
+    Math.min(...futureResumeDates),
   ).toISOString();
-  return `Blocked-frontier wake is already represented by exact future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited follow-up window is ${earliestResumeAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
+  return `Blocked-frontier wake is already represented by structured future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited follow-up window is ${earliestResumeAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
 }
 
 function singleAssignmentShortCircuitResult(input: {
@@ -1059,6 +1398,39 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   let humanSteering = recentHumanSteering(ctx);
   const initialRepair = repairTaskTreeRollups(config);
+  const trigger = parseTriggerEvent(ctx.task);
+  const reviewedApply = applyReviewedTaskEvent(config, trigger);
+  if (reviewedApply.handled) {
+    assignRunnableBacklogTasks(config, { worker });
+    const assignments = drainTaskAssignments(config);
+    dispatchAssignedTasks(ctx, assignments);
+    const finalRepair = repairTaskTreeRollups(config);
+    const packet = planningPacket(config);
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status: assignments.length
+        ? "assigned"
+        : reviewedApply.applied
+          ? "settled"
+          : "idle",
+      ran_agent: false,
+      steps: reviewedApply.applied
+        ? ["task-reviewed-apply", "quick-refill"]
+        : ["task-reviewed-stale-noop"],
+      assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+      repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
+      active_task_ids: packet.active_task_ids,
+      result: reviewedApply.message,
+    });
+    return ctx.done(
+      assignments.length
+        ? `${reviewedApply.message} Planner assigned ${assignments.length} task(s): ${assignments
+            .map((assignment) => assignment.taskId)
+            .slice(0, 8)
+            .join(", ")}.`
+        : reviewedApply.message,
+    );
+  }
   assignRunnableBacklogTasks(config, { worker });
   const quickAssignments = drainTaskAssignments(config);
   dispatchAssignedTasks(ctx, quickAssignments);
