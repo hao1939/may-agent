@@ -99,12 +99,12 @@ describe("MetricService", () => {
 
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
-      envelope: { owner: "agent:sample-owner", source: "test", urgency: "high" },
+      envelope: { owner: "project:sample-project", source: "test", target: { project: "sample-project" }, urgency: "high" },
       data: {
         metricId: "sample-project.task.no-work",
         metricName: "Sample project no work",
         project: "sample-project",
-        alertId: expect.any(Number),
+        alertId: 1,
         alertType: "threshold",
         current: 1,
         threshold: 0,
