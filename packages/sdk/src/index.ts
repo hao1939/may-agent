@@ -483,7 +483,8 @@ export interface HandlerModule {
 
 type MaybePromise<T> = T | Promise<T>;
 type ValueResolver<T> =
-  T | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
+  | T
+  | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
 
 export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;
@@ -945,7 +946,7 @@ export {
   withTreeLock,
 } from "./project-task-tree-store.js";
 export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
-export type { TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
+export type { TaskBlocker, TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
 
 export {
   appendPlannerRun,

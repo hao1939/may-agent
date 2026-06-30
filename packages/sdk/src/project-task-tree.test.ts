@@ -543,16 +543,12 @@ describe("project task tree SDK", () => {
     expect(summary.total).toBe(2);
     expect(summary.non_passing).toBe(2);
 
-    const burstPath = summary.non_passing_paths.find(
-      (p) => p.id === "path.serverless-virtual-nodes.multi-pod-burst",
-    );
+    const burstPath = summary.non_passing_paths.find((p) => p.id === "path.serverless-virtual-nodes.multi-pod-burst");
     expect(burstPath).toBeDefined();
     expect(burstPath!.status).toBe("blocked");
     expect(burstPath!.rootCauseClass).toBe("runtime");
 
-    const privateClusterPath = summary.non_passing_paths.find(
-      (p) => p.id === "path.private-cluster-none-dns-zone-v3",
-    );
+    const privateClusterPath = summary.non_passing_paths.find((p) => p.id === "path.private-cluster-none-dns-zone-v3");
     expect(privateClusterPath).toBeDefined();
     expect(privateClusterPath!.status).toBe("unknown");
     expect(privateClusterPath!.rootCauseClass).toBe("none");
@@ -1010,6 +1006,64 @@ describe("project task tree SDK", () => {
     const journal = await readFile(join(appDir, ".state", "journal.jsonl"), "utf8");
     expect(journal).toContain('"kind":"task_text_updated"');
     expect(journal).toContain('"task_id":"blocked-leaf"');
+  });
+
+  test("creates and updates structured blockers with resume metadata", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: [],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    const created = createTask(config(appDir), {
+      id: "blocked-leaf",
+      parentId: "project",
+      state: "blocked",
+      goal: "wait for operator proof",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["proof reviewed"],
+      blocker: "Waiting for returned operator proof.",
+      blockerCategory: "external-wait",
+      blockerOwner: "human",
+      resumeCondition: "Resume when proof lands or the follow-up window opens.",
+      resumeAt: "2099-06-26T00:00:00.000Z",
+    });
+
+    expect(created.blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      category: "external-wait",
+      owner: "human",
+      resume_condition: "Resume when proof lands or the follow-up window opens.",
+      resume_at: "2099-06-26T00:00:00.000Z",
+    });
+
+    const updated = updateTaskText(config(appDir), {
+      taskId: "blocked-leaf",
+      resumeAt: "2099-06-27T00:00:00.000Z",
+    });
+
+    expect(updated.blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      category: "external-wait",
+      owner: "human",
+      resume_condition: "Resume when proof lands or the follow-up window opens.",
+      resume_at: "2099-06-27T00:00:00.000Z",
+    });
+
+    const packet = planningPacket(config(appDir));
+    expect(packet.frontier_details.blocked[0].blocker).toContain("Waiting for returned operator proof.");
+    expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-27T00:00:00.000Z");
   });
 
   test("rolls up parent summary and archives selected done child leaves", async () => {
