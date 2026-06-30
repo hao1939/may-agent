@@ -1,6 +1,18 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
+export type TaskBlocker =
+  | string
+  | {
+      condition?: string;
+      category?: string;
+      owner?: string;
+      resume_condition?: string;
+      resume_at?: string;
+      resumeCondition?: string;
+      resumeAt?: string;
+    };
+
 export type TaskNode = {
   id: string;
   parent_id?: string | null;
@@ -23,14 +35,7 @@ export type TaskNode = {
   context?: Record<string, unknown>;
   result?: string;
   evidence?: string[];
-  blocker?:
-    | string
-    | {
-        condition?: string;
-        category?: string;
-        owner?: string;
-        resume_condition?: string;
-      };
+  blocker?: TaskBlocker;
   verification?: unknown;
   trace?: Record<string, unknown>;
   resolution?: string;
@@ -172,7 +177,9 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   // This prevents agent-caused data loss from whole-file overwrites.
   if (!options?.allowShrinkage && existsSync(config.treePath)) {
     try {
-      const existing = JSON.parse(readFileSync(config.treePath, "utf-8")) as { tasks?: Record<string, unknown> | unknown[] };
+      const existing = JSON.parse(readFileSync(config.treePath, "utf-8")) as {
+        tasks?: Record<string, unknown> | unknown[];
+      };
       const existingCount = Array.isArray(existing.tasks)
         ? existing.tasks.length
         : typeof existing.tasks === "object" && existing.tasks !== null
@@ -184,8 +191,8 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
       if (existingCount >= 5 && newCount < existingCount * 0.2) {
         throw new Error(
           `saveTaskTree shrinkage guard: refusing to overwrite ${existingCount} tasks with ${newCount} tasks ` +
-          `(${Math.round((1 - newCount / existingCount) * 100)}% reduction). ` +
-          `Pass { allowShrinkage: true } to override if this is intentional.`
+            `(${Math.round((1 - newCount / existingCount) * 100)}% reduction). ` +
+            `Pass { allowShrinkage: true } to override if this is intentional.`,
         );
       }
     } catch (e) {
