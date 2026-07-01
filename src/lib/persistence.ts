@@ -138,6 +138,15 @@ export function sessionExists(persistDir: string, sessionId: string): boolean {
 const TRANSCRIPT_SECRET_PATTERNS: Array<{ pattern: RegExp; replacement: string }> = [
   // Azure / OAuth JWT tokens (base64-encoded JSON starting with {"typ":"JWT"…})
   { pattern: /eyJ[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, replacement: "[REDACTED-JWT]" },
+  // GitHub Personal Access Tokens (classic: ghp_, fine-grained: github_pat_)
+  // and GitHub App tokens (gho_, ghu_, ghs_, ghr_)
+  // These appear standalone in CLI output, env vars, and resolveGitHubClient() results.
+  { pattern: /ghp_[A-Za-z0-9]{36,}/g, replacement: "[REDACTED-GITHUB-PAT]" },
+  { pattern: /github_pat_[A-Za-z0-9_]{20,}/g, replacement: "[REDACTED-GITHUB-PAT]" },
+  { pattern: /gho_[A-Za-z0-9]{36,}/g, replacement: "[REDACTED-GITHUB-TOKEN]" },
+  { pattern: /ghu_[A-Za-z0-9]{36,}/g, replacement: "[REDACTED-GITHUB-TOKEN]" },
+  { pattern: /ghs_[A-Za-z0-9]{36,}/g, replacement: "[REDACTED-GITHUB-TOKEN]" },
+  { pattern: /ghr_[A-Za-z0-9]{36,}/g, replacement: "[REDACTED-GITHUB-TOKEN]" },
   // Generic bearer tokens in Authorization headers
   { pattern: /(Bearer\s+)[A-Za-z0-9_\-.~+/]{40,}/gi, replacement: "$1[REDACTED-BEARER-TOKEN]" },
   // Azure access tokens as standalone base64 blobs (accessToken: "…")
@@ -209,6 +218,12 @@ function sanitizeMessageForTranscript(message: AgentMessage): AgentMessage {
     !/bearer/i.test(serialized) &&
     !serialized.includes("accessToken") &&
     !serialized.includes("@github.com/") &&
+    !serialized.includes("ghp_") &&
+    !serialized.includes("github_pat_") &&
+    !serialized.includes("gho_") &&
+    !serialized.includes("ghu_") &&
+    !serialized.includes("ghs_") &&
+    !serialized.includes("ghr_") &&
     !/(?:password|secret|token|api[_-]?key)["']?\s*[=:]/i.test(serialized)
   ) {
     return message;
