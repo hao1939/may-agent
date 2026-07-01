@@ -448,7 +448,7 @@ export function saveTaskTreeWithKanbanSnapshot(config: ToolConfig, tree: TaskTre
 
 function activeIds(tree: TaskTree): string[] {
   return Object.values(tree.tasks)
-    .filter((task) => isLeaf(task) && task.status === "active")
+    .filter((task) => task.status === "active" && (isLeaf(task) || isAssignedWorkflowController(task)))
     .sort(taskSort)
     .map((task) => task.id);
 }
@@ -465,11 +465,45 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
     .map((id) => tree.tasks[id]?.status)
     .filter((state): state is string => Boolean(state));
   if (!childStates.length) return task.status ?? "backlog";
+  if (workflowProgressIncomplete(task)) {
+    if (task.status === "active") return "active";
+    if (childStates.includes("active")) return "active";
+    if (childStates.includes("review")) return "review";
+    return "backlog";
+  }
   if (childStates.includes("active")) return "active";
   if (childStates.includes("review")) return "review";
   if (childStates.includes("blocked")) return "blocked";
   if (childStates.includes("backlog")) return "backlog";
   return "done";
+}
+
+function workflowProgressIncomplete(task: TaskNode): boolean {
+  const context =
+    task.context && typeof task.context === "object" && !Array.isArray(task.context)
+      ? (task.context as Record<string, unknown>)
+      : {};
+  const progress = context.workflowProgress;
+  if (!progress || typeof progress !== "object" || Array.isArray(progress)) return false;
+  return (progress as Record<string, unknown>).completionReady === false;
+}
+
+function isWorkflowControllerTask(task: TaskNode): boolean {
+  return (
+    !isLeaf(task) &&
+    typeof task.workflow === "string" &&
+    task.workflow.trim().length > 0 &&
+    workflowProgressIncomplete(task)
+  );
+}
+
+function isAssignedWorkflowController(task: TaskNode): boolean {
+  if (!isWorkflowControllerTask(task)) return false;
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
+  return typeof trace.current_attempt_id === "string" && trace.current_attempt_id.length > 0;
 }
 
 function reviewResultForChildren(tree: TaskTree, task: TaskNode): string {
@@ -515,6 +549,8 @@ function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
         owner: task.owner,
         resume_condition: "Resume when the blocked child task is resolved or replaced.",
       };
+    } else if (nextState !== "blocked" && hasBlockerCondition(task)) {
+      task.blocker = undefined;
     }
   };
   if (tree.root_task_id) visit(tree.root_task_id);
@@ -937,7 +973,7 @@ export function compactDoneLeaves(
 
 function frontierIds(tree: TaskTree, status: string): string[] {
   return Object.values(tree.tasks)
-    .filter((task) => isLeaf(task) && task.status === status)
+    .filter((task) => (task.status ?? taskState(task)) === status && (isLeaf(task) || isWorkflowControllerTask(task)))
     .sort(taskSort)
     .slice(0, 20)
     .map((task) => task.id);
@@ -945,14 +981,62 @@ function frontierIds(tree: TaskTree, status: string): string[] {
 
 function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
-  if (task.status !== "backlog") return false;
+  if ((task.status ?? taskState(task)) !== "backlog") return false;
   if (isPlanningTask(task)) return false;
   if (task.kind === "work" || task.kind === "focus_plan" || task.kind === "durable_lane") return false;
+  if (isWorkflowControllerTask(task) && controllerRefillPaused(task)) return false;
+  return true;
+}
+
+function progressNumber(progress: Record<string, unknown>, key: string): number | undefined {
+  const value = progress[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function controllerRefillPaused(task: TaskNode): boolean {
+  if (!isWorkflowControllerTask(task)) return false;
+  const progress = contextObject(task).workflowProgress;
+  if (!progress || typeof progress !== "object" || Array.isArray(progress)) {
+    return false;
+  }
+  const record = progress as Record<string, unknown>;
+  if (record.noRefillNow === true) return true;
+  if (record.holdMode === "dormant-backlog-preserved") return true;
+
+  const openChildren = progressNumber(record, "openChildren") ?? 0;
+  const openFollowups = progressNumber(record, "openFollowups") ?? 0;
+  const pending = progressNumber(record, "pending") ?? 0;
+  const running = progressNumber(record, "running") ?? 0;
+  const error = progressNumber(record, "error") ?? 0;
+  const retryBudgetExhausted = progressNumber(record, "retryBudgetExhausted");
+
+  if (record.backendBlocked === true && openChildren === 0 && openFollowups === 0 && running === 0) {
+    return true;
+  }
+
+  if (
+    pending === 0 &&
+    running === 0 &&
+    openChildren === 0 &&
+    error > 0 &&
+    retryBudgetExhausted === error
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function isWorkerExecutableController(task: TaskNode): boolean {
+  if (!isWorkflowControllerTask(task)) return false;
+  if ((task.status ?? taskState(task)) !== "backlog") return false;
+  if (isPlanningTask(task)) return false;
+  if (controllerRefillPaused(task)) return false;
   return true;
 }
 
 function isRunnableBacklogLeaf(tree: TaskTree, task: TaskNode): boolean {
-  if (!isWorkerExecutableBacklogLeaf(task)) return false;
+  if (!isWorkerExecutableBacklogLeaf(task) && !isWorkerExecutableController(task)) return false;
   if (!isClearEnough(task)) return false;
   if (!dependenciesSatisfied(tree, task)) return false;
   return !activeLeaves(tree).some((active) => conflictScopesOverlap(active, task));
@@ -1649,9 +1733,12 @@ export function assignRunnableBacklogTasks(
     const limit = Math.max(0, Math.min(input.limit ?? capacity, capacity));
     if (limit <= 0) return { assignments, skipped };
 
-    for (const task of Object.values(tree.tasks).filter(isWorkerExecutableBacklogLeaf).sort(taskSort)) {
+    for (const task of Object.values(tree.tasks)
+      .filter((candidate) => isWorkerExecutableBacklogLeaf(candidate) || isWorkerExecutableController(candidate))
+      .sort(taskSort)) {
       if (assignments.length >= limit) break;
-      if (!isLeaf(task)) {
+      const controllerTask = isWorkerExecutableController(task);
+      if (!isLeaf(task) && !controllerTask) {
         skipped.push({ taskId: task.id, reason: "not-leaf" });
         continue;
       }
@@ -1704,9 +1791,11 @@ export function assignTask(
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
-    if (task.status !== "backlog") throw new Error(`Task ${task.id} is ${task.status}, not runnable backlog`);
-    if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
-    if (!isWorkerExecutableBacklogLeaf(task))
+    const currentState = task.status ?? taskState(task);
+    if (currentState !== "backlog") throw new Error(`Task ${task.id} is ${currentState}, not runnable backlog`);
+    const controllerTask = isWorkerExecutableController(task);
+    if (!isLeaf(task) && !controllerTask) throw new Error(`Task ${task.id} is not a leaf`);
+    if (!isWorkerExecutableBacklogLeaf(task) && !controllerTask)
       throw new Error(`Task ${task.id} is not a worker-executable backlog leaf`);
     if (!isClearEnough(task)) throw new Error(`Task ${task.id} is not clear enough to assign`);
     if (!dependenciesSatisfied(tree, task)) throw new Error(`Task ${task.id} has unsatisfied dependencies`);
