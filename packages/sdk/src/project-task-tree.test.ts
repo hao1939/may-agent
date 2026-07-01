@@ -1355,6 +1355,181 @@ describe("project task tree SDK", () => {
     expect(tree.tasks["lane-b"]).toBeDefined();
   });
 
+  test("suppresses paused feature-compact durable controllers from runnable backlog", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-feature-compact-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "feature-compact-loop-controller",
+          priority: "P1",
+          children: ["wait-compact-signal"],
+          goal: "Keep feature compact planning current.",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason:
+                "feature-compact loop has no runnable planner or support children; the remaining frontier is exact blocked wait stewardship until a stated resume signal lands",
+              pending: 0,
+              running: 0,
+              error: 84,
+              retryBudgetExhausted: 84,
+              noRefillNow: true,
+            },
+          },
+        },
+        "wait-compact-signal": {
+          id: "wait-compact-signal",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for exact compact resume signal.",
+          outputs: ["evidence/archive/wait-compact.md"],
+          acceptance: ["Signal returned"],
+          blocker: {
+            condition: "external signal required",
+            category: "external-wait"
+          }
+        },
+      },
+    });
+
+    expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
+  });
+
+  test("suppresses backend-blocked spec-loop durable controllers from runnable backlog", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-spec-verification-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "spec-loop-controller",
+          priority: "P1",
+          children: ["wait-spec-auth"],
+          goal: "Keep spec verification moving.",
+          outputs: [".state/spec-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              executionDrained: false,
+              backendBlocked: true,
+              backendBlocker: "gh auth login required",
+              reason: "spec-loop live backend is unavailable",
+              pending: 242,
+              running: 0,
+              error: 121,
+              openChildren: 0,
+              openFollowups: 0,
+            },
+          },
+        },
+        "wait-spec-auth": {
+          id: "wait-spec-auth",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for GitHub auth restoration.",
+          outputs: ["evidence/archive/wait-spec-auth.md"],
+          acceptance: ["Auth restored"],
+          blocker: {
+            condition: "GitHub auth required",
+            category: "external-wait"
+          }
+        },
+      },
+    });
+
+    expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
+  });
+
+  test("suppresses retry-exhausted feature-reference durable controllers from runnable backlog", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-feature-reference-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-reference-loop": {
+          id: "aks-feature-reference-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "feature-reference-loop-controller",
+          priority: "P1",
+          children: ["recorded-collector"],
+          goal: "Keep feature references current.",
+          outputs: [".state/feature-reference-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason: "feature-reference loop state still has non-terminal features",
+              pending: 0,
+              running: 0,
+              done: 245,
+              error: 46,
+              retryBudgetExhausted: 46,
+              openChildren: 0,
+            },
+          },
+        },
+        "recorded-collector": {
+          id: "recorded-collector",
+          parent_id: "aks-feature-reference-loop",
+          state: "done",
+          status: "done",
+          goal: "Previously recorded collector task.",
+          outputs: ["evidence/archive/feature-reference.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
+  });
+
   test("rollup parent refuses to archive unfinished child leaves", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
