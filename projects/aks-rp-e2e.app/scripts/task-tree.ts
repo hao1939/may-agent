@@ -41,7 +41,7 @@ function usage(): never {
   bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
-  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked]
+  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO]
   bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
@@ -50,7 +50,7 @@ function usage(): never {
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
   bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
   bun run task-tree set-archived-outputs <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --output <path> [--output <path> ...]
-  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
+  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--clear-blocker]
   bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
   bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
@@ -140,6 +140,22 @@ function contextOption(): Record<string, unknown> | undefined {
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
     throw new Error("--context-json must be a JSON object");
   return parsed as Record<string, unknown>;
+}
+
+function blockerOptions(): {
+  blocker?: string;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  resumeAt?: string;
+} {
+  return {
+    blocker: option("--blocker"),
+    blockerCategory: option("--blocker-category"),
+    blockerOwner: option("--blocker-owner"),
+    resumeCondition: option("--resume-condition"),
+    resumeAt: option("--resume-at"),
+  };
 }
 
 const appDir = resolve(
@@ -288,7 +304,7 @@ if (command === "summary") {
         conflict_scope: commaListOption("--conflict-scope"),
         depends_on: commaListOption("--depends-on"),
         context: contextOption(),
-        blocker: option("--blocker"),
+        ...blockerOptions(),
       }),
       null,
       2,
@@ -401,12 +417,12 @@ if (command === "summary") {
   if (!taskId) usage();
   const goal = option("--goal");
   const acceptance = repeatedStringOption("--acceptance");
-  const blocker = option("--blocker");
+  const blocker = blockerOptions();
   const clearBlocker = hasFlag("--clear-blocker");
   if (
     !goal &&
     acceptance.length === 0 &&
-    blocker === undefined &&
+    Object.values(blocker).every((value) => value === undefined) &&
     !clearBlocker
   )
     usage();
@@ -416,7 +432,7 @@ if (command === "summary") {
         taskId,
         goal,
         acceptance: acceptance.length ? acceptance : undefined,
-        blocker,
+        ...blocker,
         clearBlocker,
       }),
       null,

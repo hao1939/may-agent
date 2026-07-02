@@ -1,7 +1,7 @@
 /**
  * problem-solver — focused unblock workflow for aks-rp-e2e.
  *
- * Handles project.problem.requested by waking a focused solver session. The
+ * Handles project.problem.investigation.requested by waking a focused solver session. The
  * solver investigates and may fix local runner/app/domain defects, but the
  * project owner remains responsible for task-tree reconciliation.
  */
@@ -89,7 +89,7 @@ Boundaries:
 
 Finish with one explicit line:
 
-  PROBLEM_RESULT: resolved | escalated
+  PROBLEM_RESULT: resolved | escalated | inconclusive
 
 Also include:
 - ROOT_CAUSE:
@@ -133,11 +133,13 @@ function problemResultType(
 ):
   | "project.problem.resolved"
   | "project.problem.escalated"
-  | "project.problem.unknown" {
+  | "project.problem.inconclusive" {
   if (/PROBLEM_RESULT:\s*resolved/i.test(text))
     return "project.problem.resolved";
   if (/PROBLEM_RESULT:\s*escalated/i.test(text))
     return "project.problem.escalated";
+  if (/PROBLEM_RESULT:\s*inconclusive/i.test(text))
+    return "project.problem.inconclusive";
 
   // Backward-compatibility fallback for older solver sessions that returned a
   // concrete fixed/verified summary without the explicit marker line.
@@ -149,8 +151,8 @@ function problemResultType(
   }
 
   // Agent didn't declare a result — don't guess from unrelated free text.
-  // The owner will see "unknown" and decide.
-  return "project.problem.unknown";
+  // The owner will see "inconclusive" and decide.
+  return "project.problem.inconclusive";
 }
 
 function emitProblemResult(
@@ -159,7 +161,7 @@ function emitProblemResult(
     type:
       | "project.problem.resolved"
       | "project.problem.escalated"
-      | "project.problem.unknown";
+      | "project.problem.inconclusive";
     problemKey: string;
     affectedTasks: string[];
     summary: string;
@@ -205,9 +207,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
 
-  if (trigger?.type !== "project.problem.requested") {
+  if (trigger?.type !== "project.problem.investigation.requested") {
     return ctx.done(
-      `Problem solver ignored trigger ${String(trigger?.type ?? "unknown")}; use project.problem.requested.`,
+      `Problem solver ignored trigger ${String(trigger?.type ?? "unknown")}; use project.problem.investigation.requested.`,
     );
   }
 

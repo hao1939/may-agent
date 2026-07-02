@@ -40,6 +40,10 @@ import {
   updateSpecLoopSpec,
   type SpecLoopSpecStatus,
 } from "./lib/spec-loop-store.ts";
+import {
+  writeGitHubDispatchMetadata,
+  type GitHubDispatchMetadata,
+} from "./lib/github-actions.ts";
 
 export const name = "single-spec-verifier";
 export const description =
@@ -105,6 +109,12 @@ type WorkflowMetadata = {
   loop_key?: string;
 };
 
+type SpecRunnerArtifact = {
+  specId?: string;
+  status?: string;
+  phase?: string;
+};
+
 type ArtifactIdentityInspection = {
   bundlePath: string;
   metadataPath: string | null;
@@ -114,6 +124,17 @@ type ArtifactIdentityInspection = {
   artifactFamily: string;
   artifactResultPath: string;
   artifactIdentityPath: string;
+  artifactLocalResultPath: string;
+  artifactLocalStatusPath: string;
+  childStatusPath: string;
+  childResultPath: string;
+  childSpecId: string;
+  childStatus: string;
+  childPhase: string;
+  topLevelStatus: string;
+  topLevelSpecResultsCount: number;
+  sameSpecChildEvidence: boolean;
+  sameSpecAggregationFailure: boolean;
   projectResult: ProjectResult | null;
   mismatches: string[];
 };
@@ -124,6 +145,15 @@ type DownloadedArtifactInspection = {
   responseKind: "zip" | "json" | "other" | "missing";
   jsonBody?: Record<string, unknown>;
 };
+
+function commandEnv(): NodeJS.ProcessEnv {
+  const localBin = "/app/.state/.local/bin";
+  const path = process.env.PATH ?? "";
+  return {
+    ...process.env,
+    PATH: path.split(":").includes(localBin) ? path : `${localBin}:${path}`,
+  };
+}
 
 function currentAttemptIsStillActive(
   config: TaskTreeConfig,
@@ -176,7 +206,7 @@ function runCommand(
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf-8",
-    env: process.env,
+    env: commandEnv(),
     timeout: timeoutMs,
   });
   return {
@@ -255,7 +285,12 @@ function resolveGitHubRepo(projectDir: string): GitHubRepo | null {
 }
 
 function resolveGitHubToken(projectDir: string): string {
-  const envToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+  const envToken =
+    process.env.GH_TOKEN ||
+    process.env.GITHUB_TOKEN ||
+    process.env.GITHUB_PAT ||
+    process.env.MAY_GITHUB_TOKEN ||
+    process.env.MAY_GITHUB_PAT;
   if (envToken?.trim()) return envToken.trim();
   try {
     const url = new URL(readOriginRemoteUrl(projectDir));
@@ -278,7 +313,17 @@ function resolveGitHubClient(projectDir: string): {
 
   const ghVersion = runCommand(projectDir, "gh", ["--version"], 30_000);
   if (ghVersion.ok) {
-    return { client: { kind: "gh" } };
+    const ghAuth = runCommand(projectDir, "gh", ["auth", "status"], 30_000);
+    if (ghAuth.ok) {
+      return { client: { kind: "gh" } };
+    }
+    return {
+      client: null,
+      reason:
+        ghAuth.stderr ||
+        ghAuth.stdout ||
+        "GitHub API unavailable because no token was found and gh CLI is not authenticated.",
+    };
   }
 
   if (!repo) {
@@ -873,6 +918,14 @@ function readWorkflowMetadata(path: string): WorkflowMetadata | null {
   }
 }
 
+function readSpecRunnerArtifact(path: string): SpecRunnerArtifact | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf-8")) as SpecRunnerArtifact;
+  } catch {
+    return null;
+  }
+}
+
 function expectedArtifactFamily(specId: string): string {
   return specId.replace(/^spec\./, "").replace(/\./g, "-");
 }
@@ -921,6 +974,10 @@ function readArtifactIdentity(input: {
   const resultSpecId = String(
     projectResult?.specResults?.[0]?.specId ?? "",
   ).trim();
+  const topLevelStatus = String(projectResult?.status ?? "").trim();
+  const topLevelSpecResultsCount = Array.isArray(projectResult?.specResults)
+    ? projectResult.specResults.length
+    : 0;
   const expectedFamily = expectedArtifactFamily(input.expectedSpecId);
   const artifactRefs = Array.isArray(
     projectResult?.specResults?.[0]?.artifactRefs,
@@ -943,6 +1000,65 @@ function readArtifactIdentity(input: {
     /\/artifacts\/([^/]+)\/spec-runner\/(?:result|status)\.json$/i,
   );
   const artifactFamily = artifactFamilyMatch?.[1] ?? "";
+  const artifactLocalResultPath = artifactFamily
+    ? (findFiles(bundlePath, "result.json")
+        .filter((path) =>
+          new RegExp(
+            `/artifacts/${escapeRegExp(artifactFamily)}/spec-runner/result\\.json$`,
+            "i",
+          ).test(path),
+        )
+        .sort((a, b) => a.localeCompare(b))[0] ?? "")
+    : "";
+  const artifactLocalStatusPath = artifactFamily
+    ? (findFiles(bundlePath, "status.json")
+        .filter((path) =>
+          new RegExp(
+            `/artifacts/${escapeRegExp(artifactFamily)}/spec-runner/status\\.json$`,
+            "i",
+          ).test(path),
+        )
+        .sort((a, b) => a.localeCompare(b))[0] ?? "")
+    : "";
+  const childStatusPath =
+    findFiles(bundlePath, "status.json")
+      .filter((path) =>
+        new RegExp(
+          `/artifacts/${expectedFamily}/spec-runner/status\\.json$`,
+          "i",
+        ).test(path),
+      )
+      .sort((a, b) => a.localeCompare(b))[0] ?? "";
+  const childResultPath =
+    findFiles(bundlePath, "result.json")
+      .filter((path) =>
+        new RegExp(
+          `/artifacts/${expectedFamily}/spec-runner/result\\.json$`,
+          "i",
+        ).test(path),
+      )
+      .sort((a, b) => a.localeCompare(b))[0] ?? "";
+  const childStatusArtifact = childStatusPath
+    ? readSpecRunnerArtifact(childStatusPath)
+    : null;
+  const childResultArtifact = childResultPath
+    ? readSpecRunnerArtifact(childResultPath)
+    : null;
+  const childSpecId = String(
+    childResultArtifact?.specId ?? childStatusArtifact?.specId ?? "",
+  ).trim();
+  const childStatus = String(
+    childResultArtifact?.status ?? childStatusArtifact?.status ?? "",
+  ).trim();
+  const childPhase = String(
+    childResultArtifact?.phase ?? childStatusArtifact?.phase ?? "",
+  ).trim();
+  const sameSpecChildEvidence =
+    !!childSpecId && childSpecId === input.expectedSpecId;
+  const sameSpecAggregationFailure =
+    !resultSpecId &&
+    sameSpecChildEvidence &&
+    loopKeyFamily(loopKey) === input.expectedLoopFamily;
   const mismatches: string[] = [];
 
   if (!loopKey) {
@@ -957,7 +1073,9 @@ function readArtifactIdentity(input: {
   }
 
   if (!resultSpecId) {
-    mismatches.push("top-level result.json missing specResults[0].specId");
+    if (!sameSpecAggregationFailure) {
+      mismatches.push("top-level result.json missing specResults[0].specId");
+    }
   } else if (resultSpecId !== input.expectedSpecId) {
     mismatches.push(
       `top-level result specId=${resultSpecId} does not match expected ${input.expectedSpecId}`,
@@ -988,6 +1106,17 @@ function readArtifactIdentity(input: {
     artifactFamily,
     artifactResultPath,
     artifactIdentityPath,
+    artifactLocalResultPath,
+    artifactLocalStatusPath,
+    childStatusPath,
+    childResultPath,
+    childSpecId,
+    childStatus,
+    childPhase,
+    topLevelStatus,
+    topLevelSpecResultsCount,
+    sameSpecChildEvidence,
+    sameSpecAggregationFailure,
     projectResult,
     mismatches,
   };
@@ -1023,9 +1152,9 @@ function classifyProjectResult(
       compactReason.includes("capacity restrictions"))
   ) {
     return {
-      loopStatus: "done",
-      claim: "done",
-      reason: `Fixed-target staging capacity unavailable; accepted environment disposition. ${reason}`,
+      loopStatus: "error",
+      claim: "partial",
+      reason: `Fixed-target staging capacity unavailable; keep visible for retry or test repair. ${reason}`,
     };
   }
   if (
@@ -1035,9 +1164,9 @@ function classifyProjectResult(
       compactReason.includes("not directly live-executable"))
   ) {
     return {
-      loopStatus: "done",
-      claim: "done",
-      reason: `Direct single-spec staging run needs a carrier; accepted reviewed execution disposition. ${reason}`,
+      loopStatus: "error",
+      claim: "partial",
+      reason: `Direct single-spec staging run needs a carrier; keep visible until a runnable carrier or compact test exists. ${reason}`,
     };
   }
 
@@ -1053,28 +1182,28 @@ function classifyProjectResult(
   }
   if (["skip", "skipped"].includes(status)) {
     return {
-      loopStatus: "done",
-      claim: "done",
-      reason: reason || "Spec is not directly live-executable by this runner.",
+      loopStatus: "error",
+      claim: "partial",
+      reason: reason || "Spec did not produce a live pass verdict.",
     };
   }
   if (["fail", "failed", "failure"].includes(status)) {
     return {
       loopStatus: "fail",
-      claim: "blocked",
+      claim: "partial",
       reason: reason || "Spec failed.",
     };
   }
   if (["block", "blocked"].includes(status)) {
     return {
       loopStatus: "error",
-      claim: "blocked",
+      claim: "partial",
       reason: reason || "Spec ended before a runnable test verdict.",
     };
   }
   return {
     loopStatus: "error",
-    claim: "blocked",
+    claim: "partial",
     reason: reason || `Spec ended with ${status}.`,
   };
 }
@@ -1093,6 +1222,67 @@ function knownWorkflowRunUrl(task: TaskNode): string {
     contextOptionalText(task, "runUrl") ||
     contextOptionalText(task, "workflowRunUrl");
   return value.trim();
+}
+
+function dispatchMetadataPath(input: {
+  appDir: string;
+  taskId: string;
+  attemptId: string;
+}): string {
+  return join(
+    input.appDir,
+    ".state",
+    "spec-loop",
+    "dispatches",
+    `${input.taskId}-${input.attemptId}.json`,
+  );
+}
+
+function dispatchMetadataPayload(input: {
+  dispatchedAt: string;
+  workflow: string;
+  branch: string;
+  specId: string;
+  target: string;
+  loopKey: string;
+  taskId: string;
+  attemptId: string;
+  timeoutMinutes?: string;
+  includeLoopKey: boolean;
+  dispatch: CommandResult;
+}): GitHubDispatchMetadata {
+  const inputs: Record<string, string> = {
+    specs: input.specId,
+    target: input.target,
+  };
+  if (input.timeoutMinutes) {
+    inputs.timeout_minutes = input.timeoutMinutes;
+  }
+  if (input.includeLoopKey) {
+    inputs.metadata = JSON.stringify({ loop_key: input.loopKey });
+  }
+  return {
+    dispatchedAt: input.dispatchedAt,
+    workflow: input.workflow,
+    branch: input.branch,
+    inputs,
+    loopKey: input.loopKey,
+    taskId: input.taskId,
+    attemptId: input.attemptId,
+    dispatchResult: {
+      ok: input.dispatch.ok,
+      status: input.dispatch.status,
+      stdout: input.dispatch.stdout,
+      stderr: input.dispatch.stderr,
+      ...(input.dispatch.error ? { error: input.dispatch.error } : {}),
+    },
+  };
+}
+
+export function buildLoopKey(taskId: string, attemptId: string): string {
+  return `${taskId}-${attemptId}`
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/-+$/g, "");
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -1224,6 +1414,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       : "";
   const recoveredWorkflowRunId = knownWorkflowRunId(task);
   const recoveredWorkflowRunUrl = knownWorkflowRunUrl(task);
+  const startedAt = Date.now();
+  const loopKey = buildLoopKey(taskId, attemptId);
+  const metadataPath = dispatchMetadataPath({
+    appDir,
+    taskId,
+    attemptId,
+  });
   if (recoveredWorkflowRunId && !reusableWorkflowRunId) {
     withTreeLock(config, () => {
       const latest = loadSpecLoopState({
@@ -1243,6 +1440,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             ? task.session_id.trim()
             : null,
         status: "running",
+        loopKey,
+        dispatchMetadataPath: metadataPath,
       });
       saveSpecLoopState(statePath, latest);
     });
@@ -1250,6 +1449,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     publishState({
       status: "running",
       attempts: (attemptState.specs[specId]?.attempts ?? 0) + 1,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
       activeAttemptId: attemptId,
       activeTaskSessionId:
         typeof task.session_id === "string" && task.session_id.trim()
@@ -1286,11 +1487,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(summary);
   }
 
-  const startedAt = Date.now();
-  const loopKey = `${taskId}-${attemptId}`
-    .replace(/[^A-Za-z0-9_.-]+/g, "-")
-    .slice(0, 90)
-    .replace(/-+$/g, "");
   const preferredWorkflowRunId =
     reusableWorkflowRunId || recoveredWorkflowRunId;
   let run: GhRun | null = preferredWorkflowRunId
@@ -1328,6 +1524,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
       return ctx.done(summary);
     }
+    const dispatchedAt = new Date(startedAt).toISOString();
     let includeLoopKey = true;
     let dispatch = dispatchWorkflow({
       client: github.client,
@@ -1354,6 +1551,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         timeoutMinutes,
       });
     }
+    writeGitHubDispatchMetadata(
+      metadataPath,
+      dispatchMetadataPayload({
+        dispatchedAt,
+        workflow,
+        branch,
+        specId,
+        target,
+        loopKey,
+        taskId,
+        attemptId,
+        timeoutMinutes,
+        includeLoopKey,
+        dispatch,
+      }),
+    );
+    publishState({
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+    });
     if (!dispatch.ok) {
       const summary = `GitHub workflow dispatch failed for ${specId}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
       publishState({
@@ -1393,9 +1610,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       await sleepMs(runLookupPollIntervalMs());
     }
     if (!run?.databaseId) {
-      const summary = `Dispatched ${workflow} for ${specId}, but could not find the GitHub run id.`;
+      const summary = `Dispatched ${workflow} for ${specId}, but could not find the GitHub run id. Loop key: ${loopKey}. Dispatch metadata: ${metadataPath}.`;
       publishState({
         status: "error",
+        lastWorkflowLoopKey: loopKey,
+        lastDispatchMetadataPath: metadataPath,
         activeAttemptId: null,
         activeTaskSessionId: null,
         activeWorkflowRunId: null,
@@ -1420,6 +1639,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     runId = String(run.databaseId);
   }
   publishState({
+    lastWorkflowLoopKey: loopKey,
+    lastDispatchMetadataPath: metadataPath,
     activeWorkflowRunId: runId,
     heartbeatAt: new Date().toISOString(),
   });
@@ -1461,27 +1682,74 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     expectedSpecId: specId,
     expectedLoopFamily: taskId,
   });
-  const resultPath =
-    identity?.artifactResultPath ||
-    identity?.artifactIdentityPath ||
-    identity?.topLevelResultPath ||
-    "";
+  const sameSpecAggregationFailure = !!identity?.sameSpecAggregationFailure;
+  const identityMismatch =
+    !!identity && identity.mismatches.length > 0 && !sameSpecAggregationFailure;
+  const resultPath = sameSpecAggregationFailure
+    ? identity?.childResultPath ||
+      identity?.childStatusPath ||
+      identity?.topLevelResultPath ||
+      identity?.artifactLocalResultPath ||
+      identity?.artifactLocalStatusPath ||
+      identity?.artifactResultPath ||
+      identity?.artifactIdentityPath ||
+      ""
+    : identityMismatch
+      ? identity?.artifactLocalResultPath ||
+        identity?.artifactLocalStatusPath ||
+        identity?.topLevelResultPath ||
+        identity?.artifactResultPath ||
+        identity?.artifactIdentityPath ||
+        ""
+      : identity?.childResultPath ||
+        identity?.childStatusPath ||
+        identity?.topLevelResultPath ||
+        identity?.artifactLocalResultPath ||
+        identity?.artifactLocalStatusPath ||
+        identity?.artifactResultPath ||
+        identity?.artifactIdentityPath ||
+        "";
   const projectResult = identity?.projectResult ?? null;
-  const identityMismatch = !!identity && identity.mismatches.length > 0;
-  const classification = identityMismatch
+  const classification = sameSpecAggregationFailure
     ? {
         loopStatus: "error" as SpecLoopSpecStatus,
         claim: "blocked" as const,
         reason: [
-          `artifact-routing-mismatch for ${specId}`,
+          `aggregation/publication failure for ${specId}`,
           `run=${runId}`,
-          identity.bundlePath ? `bundle=${identity.bundlePath}` : "",
-          ...identity.mismatches,
+          identity?.bundlePath ? `bundle=${identity.bundlePath}` : "",
+          identity?.topLevelStatus
+            ? `top-level result status=${identity.topLevelStatus}`
+            : "top-level result status missing",
+          `top-level specResults count=${String(identity?.topLevelSpecResultsCount ?? 0)}`,
+          identity?.childSpecId ? `child specId=${identity.childSpecId}` : "",
+          identity?.childStatus ? `child status=${identity.childStatus}` : "",
+          identity?.childPhase ? `child phase=${identity.childPhase}` : "",
+          identity?.childResultPath
+            ? `child result=${identity.childResultPath}`
+            : "",
+          identity?.childStatusPath
+            ? `child status path=${identity.childStatusPath}`
+            : "",
+          "same-loop/same-spec child evidence exists while top-level result.json remained empty or omitted specResults[0].specId",
         ]
           .filter(Boolean)
           .join("; "),
       }
-    : classifyProjectResult(projectResult, specId);
+    : identityMismatch
+      ? {
+          loopStatus: "error" as SpecLoopSpecStatus,
+          claim: "blocked" as const,
+          reason: [
+            `artifact-routing-mismatch for ${specId}`,
+            `run=${runId}`,
+            identity.bundlePath ? `bundle=${identity.bundlePath}` : "",
+            ...identity.mismatches,
+          ]
+            .filter(Boolean)
+            .join("; "),
+        }
+      : classifyProjectResult(projectResult, specId);
   const summary = [
     `Spec ${specId} workflow run ${runId} classified as ${classification.loopStatus}.`,
     `Loop key: ${loopKey}.`,

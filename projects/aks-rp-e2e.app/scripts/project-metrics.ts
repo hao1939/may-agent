@@ -519,7 +519,7 @@ function activeTaskWorkerSessionRow(
   if (!existsSync(stateDbPath)) return null;
   const db = new Database(stateDbPath, { readonly: true });
   const taskIdPattern = new RegExp(
-    String.raw`"taskId"\s*:\s*"${taskId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`,
+    String.raw`"(?:taskId|id)"\s*:\s*"${taskId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`,
   );
   try {
     const rows = db

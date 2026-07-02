@@ -63,12 +63,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked task count",
     type: "gauge",
     target: 0,
-    threshold: 5,
+    threshold: 20,
     unit: "count",
     alertOp: ">",
-    priority: "P1",
+    priority: "P3",
     description:
-      "Too many blocked leaves means the project needs unblock or branch repair.",
+      "Blocked-leaf review signal: the accepted steady-state frontier often carries 16-18 exact blocked waits while active repo-local work continues, so this should stay a dashboard/consolidation signal until blocked leaves grow materially beyond that floor or begin crowding out active work. Calibrated 2026-07-01 from the observed 17-18 blocked-wait plateau.",
   },
   {
     id: "aks-rp-e2e.task.completed-24h",

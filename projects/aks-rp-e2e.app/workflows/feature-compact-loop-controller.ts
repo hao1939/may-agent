@@ -8,6 +8,7 @@ import {
   appendToolJournal,
   assignTask,
   createTask,
+  markTaskDone,
   saveTaskTreeWithKanbanSnapshot,
 } from "./lib/task-tree-tools.ts";
 import {
@@ -33,17 +34,25 @@ import {
   safeFeatureCompactTaskId,
   saveFeatureCompactLoopState,
   updateFeatureCompactItem,
+  type FeatureCompactItemState,
   type FeatureCompactLoopState,
 } from "./lib/feature-compact-loop-store.ts";
 import {
-  acceptDoneReviewChildren,
   consumeDispatchedAssignments,
+  reopenControllerRootWhenIncomplete,
   requeueOrphanedActiveChildren,
 } from "./lib/loop-controller-repair.ts";
+import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
+import {
+  activeWorkflowRuns,
+  resolveGitHubClient,
+} from "./lib/github-actions.ts";
 
 export const name = "feature-compact-loop-controller";
 export const description =
   "Keep a bounded frontier of feature compact planning tasks.";
+
+const liveAksProofVersion = "live-aks-proof-v2";
 
 function isFeatureCompactLoopTick(trigger: TriggerEvent | null): boolean {
   return (
@@ -58,6 +67,29 @@ function taskContext(task: TaskNode): Record<string, unknown> {
     !Array.isArray(task.context)
     ? (task.context as Record<string, unknown>)
     : {};
+}
+
+function taskTrace(task: TaskNode): Record<string, unknown> {
+  return task.trace &&
+    typeof task.trace === "object" &&
+    !Array.isArray(task.trace)
+    ? (task.trace as Record<string, unknown>)
+    : {};
+}
+
+function traceString(task: TaskNode, key: string): string {
+  const value = taskTrace(task)[key];
+  return typeof value === "string" ? value : "";
+}
+
+function safeTaskIdPart(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "unknown"
+  );
 }
 
 function numberContext(task: TaskNode, key: string, fallback: number): number {
@@ -189,6 +221,340 @@ function openChildCount(
     }).length;
 }
 
+function activeFeatureChildCount(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): number {
+  return (loopTask.children ?? [])
+    .map((childId) => tasks[childId])
+    .filter(isFeatureCompactChild)
+    .filter((task) => taskStatus(task) === "active").length;
+}
+
+function compactPlannerSlotLimit(input: {
+  windowSize: number;
+  activeGithubRuns: number;
+  githubActiveRunLimit: number;
+  dispatchHold: string;
+}): number {
+  if (input.dispatchHold) return 0;
+  const remainingGithubSlots = Math.max(
+    0,
+    input.githubActiveRunLimit - input.activeGithubRuns,
+  );
+  return Math.max(0, Math.min(input.windowSize, remainingGithubSlots));
+}
+
+function openSupportChildCount(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): number {
+  return (loopTask.children ?? [])
+    .map((childId) => tasks[childId])
+    .filter((task) => !!task && !isFeatureCompactChild(task))
+    .filter((task) => {
+      const status = taskStatus(task);
+      return status !== "done" && status !== "blocked";
+    }).length;
+}
+
+function blockedWaitChildCount(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): number {
+  return (loopTask.children ?? [])
+    .map((childId) => tasks[childId])
+    .filter((task) => !!task && !isFeatureCompactChild(task))
+    .filter((task) => taskStatus(task) === "blocked").length;
+}
+
+function blockedWaitFeatureKeys(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): Set<string> {
+  const keys = new Set<string>();
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child || isFeatureCompactChild(child)) continue;
+    if (taskStatus(child) !== "blocked") continue;
+
+    const explicitFeatureKey = taskContext(child).featureKey;
+    if (typeof explicitFeatureKey === "string" && explicitFeatureKey.trim()) {
+      keys.add(explicitFeatureKey.trim());
+    }
+
+    const conflictScope = Array.isArray(
+      (child as { conflict_scope?: unknown }).conflict_scope,
+    )
+      ? (child as { conflict_scope: unknown[] }).conflict_scope
+      : [];
+    for (const scope of conflictScope) {
+      if (typeof scope !== "string") continue;
+      const trimmed = scope.trim();
+      if (!trimmed.startsWith("feature-compact:")) continue;
+      const featureKey = trimmed.slice("feature-compact:".length).trim();
+      if (featureKey) keys.add(featureKey);
+    }
+  }
+  return keys;
+}
+
+function compactErrorClass(item: FeatureCompactItemState): string {
+  const summary = (item.lastSummary ?? "").toLowerCase();
+  if (summary.includes("partial") || summary.includes("not ready")) {
+    return "package-partial";
+  }
+  if (summary.includes("coverage") || summary.includes("selected")) {
+    return "coverage-gap";
+  }
+  if (summary.includes("check-mode") || summary.includes("check result")) {
+    return "check-failure";
+  }
+  if (
+    summary.includes("github") ||
+    summary.includes("workflow") ||
+    summary.includes("dispatch") ||
+    summary.includes("run id")
+  ) {
+    return "live-workflow";
+  }
+  if (
+    summary.includes("capacity") ||
+    summary.includes("quota") ||
+    summary.includes("managed clusters")
+  ) {
+    return "staging-capacity";
+  }
+  if (summary.includes("cleanup")) return "cleanup";
+  return "compact-error";
+}
+
+type CompactFollowupGroup = {
+  errorClass: string;
+  count: number;
+  featureKeys: string[];
+  lastFeatureUpdatedAt: string;
+};
+
+function compactFollowupGroups(
+  state: FeatureCompactLoopState,
+  input: { maxDirectAttemptsPerFeature: number; maxGroups: number },
+): CompactFollowupGroup[] {
+  const groups = new Map<string, CompactFollowupGroup>();
+  for (const [featureKey, item] of Object.entries(state.features)) {
+    if (
+      item.status !== "error" ||
+      (item.attempts ?? 0) < input.maxDirectAttemptsPerFeature
+    ) {
+      continue;
+    }
+    const errorClass = compactErrorClass(item);
+    const group = groups.get(errorClass) ?? {
+      errorClass,
+      count: 0,
+      featureKeys: [],
+      lastFeatureUpdatedAt: "",
+    };
+    group.count += 1;
+    if (group.featureKeys.length < 20) group.featureKeys.push(featureKey);
+    if (item.updatedAt && item.updatedAt > group.lastFeatureUpdatedAt) {
+      group.lastFeatureUpdatedAt = item.updatedAt;
+    }
+    groups.set(errorClass, group);
+  }
+  return [...groups.values()]
+    .sort(
+      (a, b) => b.count - a.count || a.errorClass.localeCompare(b.errorClass),
+    )
+    .slice(0, input.maxGroups);
+}
+
+function compactFollowupTaskId(group: CompactFollowupGroup): string {
+  return `reconcile-compact-loop-${safeTaskIdPart(group.errorClass)}`;
+}
+
+function taskTimestamp(task: TaskNode, key: string): number | null {
+  const direct = (task as Record<string, unknown>)[key];
+  const traced = taskTrace(task)[key];
+  const value = typeof direct === "string" ? direct : traced;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function compactFollowupTaskCoversGroup(
+  task: TaskNode,
+  group: CompactFollowupGroup,
+): boolean {
+  const context = taskContext(task);
+  if (context.featureCompactFollowup !== true) return false;
+  if (context.errorClass !== group.errorClass) return false;
+
+  const totalFeatureCount = context.totalFeatureCount;
+  if (
+    typeof totalFeatureCount === "number" &&
+    totalFeatureCount !== group.count
+  ) {
+    return false;
+  }
+
+  const sampledFeatureKeys = Array.isArray(context.sampledFeatureKeys)
+    ? context.sampledFeatureKeys.filter(
+        (featureKey): featureKey is string => typeof featureKey === "string",
+      )
+    : [];
+  if (
+    sampledFeatureKeys.length > 0 &&
+    sampledFeatureKeys.join("\n") !== group.featureKeys.join("\n")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function terminalCompactFollowupIsCurrent(
+  task: TaskNode,
+  group: CompactFollowupGroup,
+): boolean {
+  if (!compactFollowupTaskCoversGroup(task, group)) return false;
+  if (task.resolution === "cancelled") return false;
+
+  const terminalAt =
+    taskTimestamp(task, "done_at") ?? taskTimestamp(task, "reviewed_at");
+  if (terminalAt === null) return false;
+
+  const lastFeatureUpdatedAt = Date.parse(group.lastFeatureUpdatedAt);
+  if (!Number.isFinite(lastFeatureUpdatedAt)) return false;
+  return terminalAt >= lastFeatureUpdatedAt;
+}
+
+function existingOpenCompactFollowupTaskId(
+  tasks: Record<string, TaskNode>,
+  group: CompactFollowupGroup,
+): string | null {
+  for (const task of Object.values(tasks)) {
+    if (!compactFollowupTaskCoversGroup(task, group)) continue;
+
+    const status = taskStatus(task);
+    if (status !== "done" && status !== "blocked" && status !== "cancelled") {
+      return task.id;
+    }
+  }
+  return null;
+}
+
+function existingCurrentTerminalCompactFollowupTaskId(
+  tasks: Record<string, TaskNode>,
+  group: CompactFollowupGroup,
+): string | null {
+  for (const task of Object.values(tasks)) {
+    const status = taskStatus(task);
+    if (status !== "done" && status !== "blocked" && status !== "cancelled") {
+      continue;
+    }
+    if (terminalCompactFollowupIsCurrent(task, group)) return task.id;
+  }
+  return null;
+}
+
+function nextCompactFollowupTaskId(
+  tasks: Record<string, TaskNode>,
+  group: CompactFollowupGroup,
+): string | null {
+  if (existingOpenCompactFollowupTaskId(tasks, group)) return null;
+  if (existingCurrentTerminalCompactFollowupTaskId(tasks, group)) return null;
+
+  const base = compactFollowupTaskId(group);
+  const existing = tasks[base];
+  if (!existing) return base;
+
+  const existingStatus = taskStatus(existing);
+  if (
+    existingStatus !== "done" &&
+    existingStatus !== "blocked" &&
+    existingStatus !== "cancelled"
+  ) {
+    return null;
+  }
+
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[^0-9]/g, "")
+    .slice(0, 12);
+  const suffix = `-${stamp}`;
+  const prefix = base.slice(0, Math.max(1, 120 - suffix.length));
+  let candidate = `${prefix}${suffix}`;
+  let counter = 2;
+  while (tasks[candidate]) {
+    const nextSuffix = `${suffix}-${counter}`;
+    candidate = `${base.slice(0, Math.max(1, 120 - nextSuffix.length))}${nextSuffix}`;
+    counter += 1;
+  }
+  return candidate;
+}
+
+function materializeFeatureCompactFollowups(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    loopTask: TaskNode;
+    state: FeatureCompactLoopState;
+    stateRef: string;
+    target: string;
+    branch: string;
+    maxDirectAttemptsPerFeature: number;
+    maxGroups: number;
+  },
+): string[] {
+  const groups = compactFollowupGroups(input.state, {
+    maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
+    maxGroups: input.maxGroups,
+  });
+  const createdTaskIds: string[] = [];
+  for (const group of groups) {
+    const latestTree = readTaskTree(config);
+    const taskId = nextCompactFollowupTaskId(latestTree.tasks, group);
+    if (!taskId) continue;
+    createTask(config, {
+      id: taskId,
+      parentId: input.loopTask.id,
+      priority: "P1",
+      goal: `Reconcile ${group.count} retry-drained feature compact error(s) in the ${group.errorClass} family, repair what is fixable, and requeue live proof only after a meaningful package/runtime change.`,
+      inputs: [
+        `errorClass:${group.errorClass}`,
+        `target:${input.target}`,
+        `branch:${input.branch}`,
+        `state:${input.stateRef}`,
+        ...group.featureKeys.map((featureKey) => `feature:${featureKey}`),
+      ],
+      outputs: [input.stateRef, "features/", "evidence/archive/"],
+      acceptance: [
+        "Every sampled compact feature has a concrete root-cause classification.",
+        "Every fixable package, planner, generated-test, or workflow issue was repaired and the affected feature was requeued for a meaningful live run.",
+        "If no bounded repo-local fix remains, an exact escalation or wait records owner/environment/product reason, affected features, attempted fixes, and resume condition.",
+        "Feature compact state and feature-owned compact artifacts were updated to match the repair, requeue, or escalation decision.",
+      ],
+      conflict_scope: [
+        `feature-compact-followup:${group.errorClass}`,
+        ...group.featureKeys
+          .slice(0, 8)
+          .map((featureKey) => `feature:${featureKey}`),
+      ],
+      context: {
+        featureCompactFollowup: true,
+        errorClass: group.errorClass,
+        totalFeatureCount: group.count,
+        sampledFeatureKeys: group.featureKeys,
+        stateRef: input.stateRef,
+        target: input.target,
+        branch: input.branch,
+      },
+    });
+    createdTaskIds.push(taskId);
+  }
+  return createdTaskIds;
+}
+
 function existingFeatureKeys(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
@@ -197,11 +563,28 @@ function existingFeatureKeys(
   for (const childId of loopTask.children ?? []) {
     const child = tasks[childId];
     if (!isFeatureCompactChild(child)) continue;
+    const status = taskStatus(child);
+    if (status !== "active" && status !== "backlog" && status !== "waiting")
+      continue;
     const featureKey = taskContext(child).featureKey;
     if (typeof featureKey === "string" && featureKey.trim())
       keys.add(featureKey.trim());
   }
   return keys;
+}
+
+function hasCurrentLiveProof(
+  item:
+    | {
+        lastLiveProofVersion?: string | null;
+        lastWorkflowRunId?: string | null;
+      }
+    | undefined,
+): boolean {
+  return (
+    item?.lastLiveProofVersion === liveAksProofVersion &&
+    Boolean(item.lastWorkflowRunId)
+  );
 }
 
 function backlogChildTaskIds(
@@ -212,6 +595,69 @@ function backlogChildTaskIds(
     const child = tasks[childId];
     return isFeatureCompactChild(child) && taskStatus(child) === "backlog";
   });
+}
+
+function backlogSupportChildTaskIds(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): string[] {
+  return (loopTask.children ?? []).filter((childId) => {
+    const child = tasks[childId];
+    return (
+      !!child &&
+      !isFeatureCompactChild(child) &&
+      taskStatus(child) === "backlog"
+    );
+  });
+}
+
+function retryTaskIdForFeature(
+  featureKey: string,
+  tasks: Record<string, TaskNode>,
+  sequence: number,
+): string {
+  const base = safeFeatureCompactTaskId(featureKey);
+  if (!tasks[base]) return base;
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[^0-9]/g, "")
+    .slice(0, 12);
+  const suffix = `-retry-${stamp}-${sequence}`;
+  const prefix = base.slice(0, Math.max(1, 120 - suffix.length));
+  let candidate = `${prefix}${suffix}`;
+  let counter = 2;
+  while (tasks[candidate]) {
+    const nextSuffix = `${suffix}-${counter}`;
+    candidate = `${base.slice(0, Math.max(1, 120 - nextSuffix.length))}${nextSuffix}`;
+    counter += 1;
+  }
+  return candidate;
+}
+
+function releaseStaleRunningFeatures(input: {
+  state: FeatureCompactLoopState;
+  existing: Set<string>;
+  activeWorkflowRunIds: Set<string>;
+}): number {
+  let released = 0;
+  for (const [featureKey, feature] of Object.entries(input.state.features)) {
+    if (feature.status !== "running" || input.existing.has(featureKey))
+      continue;
+    if (
+      feature.lastWorkflowRunId &&
+      input.activeWorkflowRunIds.has(String(feature.lastWorkflowRunId))
+    ) {
+      continue;
+    }
+    updateFeatureCompactItem(input.state, featureKey, {
+      status: feature.lastWorkflowRunId ? "error" : "pending",
+      lastSummary: feature.lastWorkflowRunId
+        ? `Reopened compact feature ${featureKey}: loop state was running but no planner child is open; reconcile GitHub run ${feature.lastWorkflowRunId} before marking done.`
+        : `Reopened compact feature ${featureKey}: local package/check evidence exists but no live GitHub workflow run id was captured.`,
+    });
+    released += 1;
+  }
+  return released;
 }
 
 function syncOpenChildStatuses(input: {
@@ -226,10 +672,57 @@ function syncOpenChildStatuses(input: {
     const featureKey = taskContext(child).featureKey;
     if (typeof featureKey !== "string" || !featureKey.trim()) continue;
     const status = taskStatus(child);
+    const result = traceString(child, "last_worker_result");
+    const summary = traceString(child, "last_worker_summary");
     if (status === "active") {
-      updateFeatureCompactItem(input.state, featureKey, { status: "running" });
+      updateFeatureCompactItem(input.state, featureKey, {
+        status: "running",
+        taskId: child.id,
+      });
     } else if (status === "backlog") {
-      updateFeatureCompactItem(input.state, featureKey, { status: "pending" });
+      updateFeatureCompactItem(input.state, featureKey, {
+        status: "pending",
+        taskId: child.id,
+      });
+    } else if (
+      (status === "review" || status === "done") &&
+      result === "done"
+    ) {
+      const item = input.state.features[featureKey];
+      updateFeatureCompactItem(
+        input.state,
+        featureKey,
+        hasCurrentLiveProof(item)
+          ? {
+              status: "done",
+              taskId: child.id,
+              lastSummary: summary || item?.lastSummary,
+            }
+          : {
+              status: "error",
+              taskId: child.id,
+              lastSummary:
+                "Recorded compact planner result predates the current live AKS proof gate; rerun this feature compact workflow before marking it done.",
+            },
+      );
+    } else if (
+      (status === "review" || status === "done") &&
+      ["partial", "error", "fail"].includes(result)
+    ) {
+      const item = input.state.features[featureKey];
+      if (hasCurrentLiveProof(item)) {
+        updateFeatureCompactItem(input.state, featureKey, {
+          status: "done",
+          taskId: item?.taskId ?? child.id,
+          lastSummary: item?.lastSummary,
+        });
+        continue;
+      }
+      updateFeatureCompactItem(input.state, featureKey, {
+        status: "error",
+        taskId: child.id,
+        lastSummary: summary || input.state.features[featureKey]?.lastSummary,
+      });
     }
   }
 }
@@ -250,10 +743,16 @@ function dispatchAssignment(
 }
 
 function compactLoopWorkflowProgress(input: {
-  state: { features: Record<string, { status?: string }> };
+  state: { features: Record<string, { status?: string; attempts?: number }> };
   openChildren: number;
+  openSupportChildren: number;
+  blockedWaitChildren: number;
   created: number;
   assigned: number;
+  maxDirectAttemptsPerFeature: number;
+  dispatchHold?: string;
+  activeGithubRuns?: number;
+  githubActiveRunLimit?: number;
 }): Record<string, unknown> {
   const counts: Record<string, number> = {};
   for (const feature of Object.values(input.state.features)) {
@@ -262,23 +761,106 @@ function compactLoopWorkflowProgress(input: {
   }
   const pending = counts.pending ?? 0;
   const running = counts.running ?? 0;
-  const completionReady = pending === 0 && running === 0;
+  const error = counts.error ?? 0;
+  const retryBudgetExhausted = Object.values(input.state.features).filter(
+    (feature) =>
+      feature.status === "error" &&
+      (feature.attempts ?? 0) >= input.maxDirectAttemptsPerFeature,
+  ).length;
+  const unrepresentedNonTerminalCount =
+    pending + running + (input.openSupportChildren > 0 ? 0 : error);
+  const noRefillNow =
+    pending === 0 &&
+    running === 0 &&
+    input.openChildren === 0 &&
+    input.openSupportChildren === 0 &&
+    unrepresentedNonTerminalCount === 0 &&
+    error === retryBudgetExhausted &&
+    input.blockedWaitChildren > 0;
+  const completionReady = pending === 0 && running === 0 && error === 0;
   return {
     completionReady,
+    dispatchHeld: input.dispatchHold ? true : undefined,
+    dispatchHold: input.dispatchHold || undefined,
+    noRefillNow: noRefillNow ? true : undefined,
     reason: completionReady
-      ? "feature-compact loop state has no pending or running features"
-      : "feature-compact loop state still has non-terminal features",
+      ? "feature-compact loop state has no pending, running, or error features"
+      : input.dispatchHold
+        ? input.dispatchHold
+        : noRefillNow
+          ? "feature-compact loop has no runnable planner or support children; the remaining frontier is exact blocked wait stewardship until a stated resume signal lands"
+          : "feature-compact loop state still has non-terminal features",
     pending,
     running,
-    ready: counts.ready ?? 0,
-    partial: counts.partial ?? 0,
-    blocked: counts.blocked ?? 0,
-    error: counts.error ?? 0,
+    done: counts.done ?? 0,
+    error,
+    retryBudgetExhausted,
+    maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
+    unrepresentedNonTerminalCount,
+    activeGithubRuns: input.activeGithubRuns,
+    githubActiveRunLimit: input.githubActiveRunLimit,
     openChildren: input.openChildren,
+    openSupportChildren: input.openSupportChildren,
+    blockedWaitChildren: input.blockedWaitChildren,
     lastPulseCreated: input.created,
     lastPulseAssigned: input.assigned,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function acceptRecordedCompactReviewChildren(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    loopTask: TaskNode | undefined;
+    tasks: Record<string, TaskNode>;
+    state: FeatureCompactLoopState;
+  },
+): string[] {
+  if (!input.loopTask) return [];
+  const accepted: string[] = [];
+  for (const childId of input.loopTask.children ?? []) {
+    const child = input.tasks[childId];
+    if (!isFeatureCompactChild(child) || taskStatus(child) !== "review") {
+      continue;
+    }
+
+    const featureKey = taskContext(child).featureKey;
+    if (typeof featureKey !== "string" || !featureKey.trim()) continue;
+    const item = input.state.features[featureKey];
+    const result = traceString(child, "last_worker_result");
+    const summary = traceString(child, "last_worker_summary");
+    const exactRecorded = item?.taskId === child.id;
+
+    if (
+      result === "done" &&
+      item?.status === "done" &&
+      exactRecorded &&
+      hasCurrentLiveProof(item)
+    ) {
+      markTaskDone(config, {
+        taskId: child.id,
+        summary: `Feature compact loop accepted recorded live-verified planner result.${summary ? ` ${summary}` : ""}`,
+        resolution: "completed",
+      });
+      accepted.push(child.id);
+      continue;
+    }
+
+    if (
+      ["partial", "error", "fail"].includes(result) &&
+      item?.status === "error" &&
+      exactRecorded &&
+      Boolean(item.lastSummary)
+    ) {
+      markTaskDone(config, {
+        taskId: child.id,
+        summary: `Feature compact loop accepted recorded planner attempt as terminal; feature remains error for bounded repair.${summary ? ` ${summary}` : ""}`,
+        resolution: "terminal",
+      });
+      accepted.push(child.id);
+    }
+  }
+  return accepted;
 }
 
 function updateControllerWorkflowProgress(input: {
@@ -302,6 +884,13 @@ function updateControllerWorkflowProgress(input: {
     if (!task) return;
     if (input.progress.completionReady === false) {
       task.blocker = undefined;
+      reopenControllerRootWhenIncomplete({
+        task,
+        progress: input.progress,
+        reason: exactBlockedWaitStewardshipProgress(input.progress)
+          ? "feature-compact loop frontier is exact blocked wait stewardship; keep the durable root blocked until one named wait resolves or is replaced"
+          : "feature-compact loop progress is incomplete; durable controller root must stay runnable until every compact feature has live proof or exact escalation",
+      });
     }
     task.context = {
       ...taskContext(task),
@@ -344,6 +933,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const windowSize = numberContext(loopTask, "windowSize", 1);
+  const maxDirectAttemptsPerFeature = numberContext(
+    loopTask,
+    "maxDirectAttemptsPerFeature",
+    2,
+  );
   const stateRef = stringContext(
     loopTask,
     "stateRef",
@@ -351,6 +945,59 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   const target = stringContext(loopTask, "target", "staging");
   const checkParallel = numberContext(loopTask, "checkParallel", 50);
+  const liveParallel = numberContext(loopTask, "liveParallel", checkParallel);
+  const branch = stringContext(loopTask, "branch", "dev");
+  const githubAccess = resolveGitHubClient(projectDir);
+  const githubActiveRunLimit = numberContext(
+    loopTask,
+    "githubActiveRunLimit",
+    6,
+  );
+  const activeGithubRunList = githubAccess.client
+    ? activeWorkflowRuns({
+        client: githubAccess.client,
+        projectDir,
+        branch,
+      })
+    : [];
+  const activeGithubRuns = activeGithubRunList.length;
+  const activeGithubRunIds = new Set(
+    activeGithubRunList
+      .map((run) => run.databaseId)
+      .filter((runId): runId is number => typeof runId === "number")
+      .map((runId) => String(runId)),
+  );
+  const dispatchHold = !githubAccess.client
+    ? (githubAccess.reason ??
+      "GitHub Actions access is unavailable for live compact verification.")
+    : activeGithubRuns >= githubActiveRunLimit
+      ? `feature-compact loop live dispatch held because ${activeGithubRuns} GitHub workflow run(s) are already in progress on ${branch}; limit=${githubActiveRunLimit}`
+      : "";
+  const githubWorkflow = stringContext(
+    loopTask,
+    "githubWorkflow",
+    "aks-rp-e2e-plan-execute.yaml",
+  );
+  const testTimeoutSeconds = numberContext(
+    loopTask,
+    "testTimeoutSeconds",
+    7200,
+  );
+  const maxCompactFollowupGroups = numberContext(
+    loopTask,
+    "maxCompactFollowupGroups",
+    8,
+  );
+  const maxCompactSupportAssignments = numberContext(
+    loopTask,
+    "maxCompactSupportAssignments",
+    3,
+  );
+  const githubWaitTimeoutMinutes = numberContext(
+    loopTask,
+    "githubWaitTimeoutMinutes",
+    720,
+  );
   const featureKeys = stringArrayContext(loopTask, "featureKeys");
   const {
     state,
@@ -389,7 +1036,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       result !== "done" &&
       state.features[featureKey]?.status === "running"
     ) {
-      updateFeatureCompactItem(state, featureKey, { status: "blocked" });
+      updateFeatureCompactItem(state, featureKey, { status: "error" });
     }
   }
 
@@ -400,27 +1047,66 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     reason:
       "feature-compact loop found active planner child with no queued assignment and no worker start",
   });
-  const acceptedReviewChildren = acceptDoneReviewChildren(config, {
-    loopTaskId: loopTask.id,
-    isChild: isFeatureCompactChild,
-    summaryPrefix:
-      "Feature compact loop accepted generated package with passing check-mode tests.",
-  });
-
   const refreshedTree = readTaskTree(config);
   const refreshedLoopTask = refreshedTree.tasks[loopTask.id];
-  const alreadyOpen = openChildCount(refreshedLoopTask, refreshedTree.tasks);
-  const existing = existingFeatureKeys(refreshedLoopTask, refreshedTree.tasks);
-  const pending = orderedPendingFeatureCompactKeys(state).filter(
-    (featureKey) => !existing.has(featureKey),
+  syncOpenChildStatuses({
+    loopTask: refreshedLoopTask,
+    tasks: refreshedTree.tasks,
+    state,
+  });
+  const acceptedRecordedChildren = acceptRecordedCompactReviewChildren(config, {
+    loopTask: refreshedLoopTask,
+    tasks: refreshedTree.tasks,
+    state,
+  });
+  const postAcceptTree = acceptedRecordedChildren.length
+    ? readTaskTree(config)
+    : refreshedTree;
+  const postAcceptLoopTask = postAcceptTree.tasks[loopTask.id];
+  const alreadyOpen = openChildCount(postAcceptLoopTask, postAcceptTree.tasks);
+  const plannerSlotLimit = compactPlannerSlotLimit({
+    windowSize,
+    activeGithubRuns,
+    githubActiveRunLimit,
+    dispatchHold,
+  });
+  const existing = existingFeatureKeys(
+    postAcceptLoopTask,
+    postAcceptTree.tasks,
   );
+  const blockedWaits = postAcceptLoopTask
+    ? blockedWaitFeatureKeys(postAcceptLoopTask, postAcceptTree.tasks)
+    : new Set<string>();
+  const releasedStaleRunning = releaseStaleRunningFeatures({
+    state,
+    existing: new Set<string>([...existing, ...blockedWaits]),
+    activeWorkflowRunIds: activeGithubRunIds,
+  });
+  const pending = dispatchHold
+    ? []
+    : orderedPendingFeatureCompactKeys(state).filter((featureKey) => {
+        if (existing.has(featureKey) || blockedWaits.has(featureKey))
+          return false;
+        const feature = state.features[featureKey];
+        if (
+          feature?.status === "error" &&
+          feature.attempts >= maxDirectAttemptsPerFeature
+        ) {
+          return false;
+        }
+        return true;
+      });
   const createdTaskIds: string[] = [];
-  const toCreate = Math.max(0, windowSize - alreadyOpen);
+  const toCreate = Math.max(0, plannerSlotLimit - alreadyOpen);
   for (const featureKey of pending.slice(0, toCreate)) {
     const item = state.features[featureKey];
     if (!item) continue;
-    const taskId = safeFeatureCompactTaskId(featureKey);
-    if (refreshedTree.tasks[taskId]) continue;
+    const attemptNumber = (item.attempts ?? 0) + 1;
+    const taskId = retryTaskIdForFeature(
+      featureKey,
+      refreshedTree.tasks,
+      createdTaskIds.length + 1,
+    );
     createTask(config, {
       id: taskId,
       parentId: loopTask.id,
@@ -439,9 +1125,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `features/${item.capabilityId}/compact/${target}.diagnostics.json`,
       ],
       acceptance: [
-        "Feature compact package was generated or a concrete blocker was recorded.",
+        "Feature compact package covers every feature-owned spec, or records an error with exact missing coverage.",
         "Generated check-mode Vitest tests were run.",
-        "Feature compact loop state was updated as ready, partial, blocked, or error.",
+        "The compact plan passed the live GitHub plan-execute workflow.",
+        "If live GitHub verification cannot pass after every bounded repo-local repair, an escalation task records the exact owner/environment/product reason and resume condition.",
       ],
       conflict_scope: [`feature-compact:${featureKey}`],
       context: {
@@ -452,13 +1139,35 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         specCount: item.specCount,
         target,
         checkParallel,
+        liveParallel,
+        branch,
+        githubWorkflow,
+        testTimeoutSeconds,
+        githubWaitTimeoutMinutes,
+        maxDirectAttemptsPerFeature,
+        attemptNumber,
         stateRef,
         loopTaskId: loopTask.id,
       },
     });
-    updateFeatureCompactItem(state, featureKey, { status: "pending" });
+    updateFeatureCompactItem(state, featureKey, {
+      status: "pending",
+      taskId,
+      attempts: attemptNumber,
+    });
     createdTaskIds.push(taskId);
   }
+  const createdSupportTaskIds = postAcceptLoopTask
+    ? materializeFeatureCompactFollowups(config, {
+        loopTask: postAcceptLoopTask,
+        state,
+        stateRef,
+        target,
+        branch,
+        maxDirectAttemptsPerFeature,
+        maxGroups: maxCompactFollowupGroups,
+      })
+    : [];
 
   if (
     trigger?.type === "project.task.assigned" ||
@@ -476,12 +1185,35 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const assignableTree = readTaskTree(config);
   const assignableLoopTask = assignableTree.tasks[loopTask.id];
   const assignmentCandidateIds = assignableLoopTask
-    ? backlogChildTaskIds(assignableLoopTask, assignableTree.tasks)
+    ? dispatchHold
+      ? []
+      : backlogChildTaskIds(assignableLoopTask, assignableTree.tasks)
     : [];
-  for (const taskId of assignmentCandidateIds) {
+  const supportCandidateIds = assignableLoopTask
+    ? backlogSupportChildTaskIds(assignableLoopTask, assignableTree.tasks)
+    : [];
+  const activeChildren = assignableLoopTask
+    ? activeFeatureChildCount(assignableLoopTask, assignableTree.tasks)
+    : 0;
+  const assignableSlots = Math.max(0, plannerSlotLimit - activeChildren);
+  for (const taskId of assignmentCandidateIds.slice(0, assignableSlots)) {
     try {
       const assignment = assignTask(config, { taskId });
       assignments.push(assignment);
+      dispatchAssignment(ctx, assignment);
+    } catch {
+      break;
+    }
+  }
+  let assignedSupportChildren = 0;
+  for (const taskId of supportCandidateIds.slice(
+    0,
+    maxCompactSupportAssignments,
+  )) {
+    try {
+      const assignment = assignTask(config, { taskId });
+      assignments.push(assignment);
+      assignedSupportChildren += 1;
       dispatchAssignment(ctx, assignment);
     } catch {
       break;
@@ -499,6 +1231,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: latestTree.tasks,
     state,
   });
+  const finalReleasedStaleRunning = releaseStaleRunningFeatures({
+    state,
+    existing: latestLoopTask
+      ? existingFeatureKeys(latestLoopTask, latestTree.tasks)
+      : new Set<string>(),
+    activeWorkflowRunIds: activeGithubRunIds,
+  });
   saveFeatureCompactLoopState(statePath, state);
   updateControllerWorkflowProgress({
     appDir,
@@ -509,8 +1248,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       openChildren: latestLoopTask
         ? openChildCount(latestLoopTask, latestTree.tasks)
         : 0,
+      openSupportChildren: latestLoopTask
+        ? openSupportChildCount(latestLoopTask, latestTree.tasks)
+        : 0,
+      blockedWaitChildren: latestLoopTask
+        ? blockedWaitChildCount(latestLoopTask, latestTree.tasks)
+        : 0,
       created: createdTaskIds.length,
       assigned: assignments.length,
+      maxDirectAttemptsPerFeature,
+      dispatchHold,
+      activeGithubRuns,
+      githubActiveRunLimit,
     }),
   });
 
@@ -518,12 +1267,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Feature compact loop ${loopTask.id} pulse complete.`,
     created ? "Initialized feature-compact loop state." : "",
     `Created ${createdTaskIds.length} child task(s).`,
+    createdSupportTaskIds.length
+      ? `Created ${createdSupportTaskIds.length} grouped compact repair task(s).`
+      : "",
     `Assigned ${assignments.length} child task(s).`,
+    assignedSupportChildren
+      ? `Assigned ${assignedSupportChildren} compact repair task(s).`
+      : "",
+    dispatchHold ? `Dispatch held: ${dispatchHold}` : "",
+    `Active GitHub workflow runs: ${activeGithubRuns}/${githubActiveRunLimit}.`,
     requeuedOrphaned.length
       ? `Requeued ${requeuedOrphaned.length} orphaned child assignment(s).`
       : "",
-    acceptedReviewChildren.length
-      ? `Accepted ${acceptedReviewChildren.length} completed compact package review(s).`
+    acceptedRecordedChildren.length
+      ? `Accepted ${acceptedRecordedChildren.length} recorded compact package review(s).`
+      : "",
+    releasedStaleRunning + finalReleasedStaleRunning
+      ? `Released ${releasedStaleRunning + finalReleasedStaleRunning} stale running feature(s).`
       : "",
     `Tracked features: ${Object.keys(state.features).length}.`,
   ]
@@ -534,10 +1294,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     kind: "feature_compact_loop_controller_pulse",
     task_id: loopTask.id,
     created_task_ids: createdTaskIds,
+    created_support_task_ids: createdSupportTaskIds,
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
-    accepted_review_task_ids: acceptedReviewChildren,
+    accepted_review_task_ids: acceptedRecordedChildren,
+    released_stale_running_count:
+      releasedStaleRunning + finalReleasedStaleRunning,
     state_path: statePath,
   });
 

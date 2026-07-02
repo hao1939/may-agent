@@ -234,7 +234,7 @@ function configuredAgentName(dirName: string): string | null {
   }
 }
 
-function inferOwner(): string | null {
+function inferOwner(projectJson: ProjectJson | null): string | null {
   const agentsRoot = join(appDir, "agents");
   if (!existsSync(agentsRoot)) {
     fail("agents/ does not exist; app owner cannot be inferred");
@@ -256,6 +256,12 @@ function inferOwner(): string | null {
     );
 
   if (agents.length === 1) return agents[0].name;
+  if (typeof projectJson?.owner === "string" && projectJson.owner.trim()) {
+    const configuredOwner = agents.find(
+      (entry) => entry.name === projectJson.owner,
+    );
+    if (configuredOwner) return configuredOwner.name;
+  }
   const owner =
     agents.find((entry) => entry.dirName === "owner") ??
     agents.find((entry) => entry.dirName === "project-owner");
@@ -742,11 +748,41 @@ function validateTaskTree(
     return (task.children ?? []).length === 0;
   }
 
+  function workflowProgressIncomplete(task: TaskNode): boolean {
+    const context = record(task.context);
+    const progress = record(context.workflowProgress);
+    return progress.completionReady === false;
+  }
+
+  function isWorkflowControllerTask(task: TaskNode): boolean {
+    return (
+      !isLeaf(task) &&
+      typeof task.workflow === "string" &&
+      task.workflow.trim().length > 0 &&
+      workflowProgressIncomplete(task)
+    );
+  }
+
+  function isAssignedWorkflowController(task: TaskNode): boolean {
+    if (!isWorkflowControllerTask(task)) return false;
+    const trace = record((task as Record<string, unknown>).trace);
+    return (
+      typeof trace.current_attempt_id === "string" &&
+      trace.current_attempt_id.length > 0
+    );
+  }
+
   function rolledUpParentState(task: TaskNode): string {
     const childStates = (task.children ?? [])
       .map((childId) => taskState(tasks[childId]))
       .filter(Boolean);
     if (childStates.length === 0) return taskState(task);
+    if (workflowProgressIncomplete(task)) {
+      if (taskState(task) === "active") return "active";
+      if (childStates.includes("active")) return "active";
+      if (childStates.includes("review")) return "review";
+      return "backlog";
+    }
     if (childStates.includes("active")) return "active";
     if (childStates.includes("review")) return "review";
     if (childStates.includes("blocked")) return "blocked";
@@ -765,15 +801,22 @@ function validateTaskTree(
     }
   }
 
-  const activeLeaves = Object.values(tasks)
-    .filter((task) => isLeaf(task) && taskState(task) === "active")
+  const activeExecutableTasks = Object.values(tasks)
+    .filter(
+      (task) =>
+        taskState(task) === "active" &&
+        (isLeaf(task) || isAssignedWorkflowController(task)),
+    )
     .map((task) => task.id)
     .filter((id): id is string => Boolean(id))
     .sort();
   const configuredActiveLeaves = [...(tree.active_task_ids ?? [])].sort();
-  if (JSON.stringify(configuredActiveLeaves) !== JSON.stringify(activeLeaves)) {
+  if (
+    JSON.stringify(configuredActiveLeaves) !==
+    JSON.stringify(activeExecutableTasks)
+  ) {
     fail(
-      `active_task_ids (${configuredActiveLeaves.join(", ") || "none"}) must match active leaf tasks (${activeLeaves.join(", ") || "none"})`,
+      `active_task_ids (${configuredActiveLeaves.join(", ") || "none"}) must match active executable tasks (${activeExecutableTasks.join(", ") || "none"})`,
     );
   }
   const expectedActiveTaskId =
@@ -877,7 +920,7 @@ validatePackageJson();
 const projectApp = app as ProjectApp;
 const projectJson = readJson<ProjectJson>("project.json");
 const taskTree = readJson<TaskTree>("tasks/tree.json");
-const owner = inferOwner();
+const owner = inferOwner(projectJson);
 const workflowNames = listWorkflowNames();
 
 validateProjectAndApp(projectJson, projectApp, owner);

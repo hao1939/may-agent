@@ -33,7 +33,7 @@ describe("problem solver", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.problem.requested",
+          type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",
           affectedTasks: ["feature-a-live-execute"],
@@ -94,7 +94,7 @@ describe("problem solver", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.problem.requested",
+          type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problem_key: "aks-rp-e2e:azure-quota",
           affected_tasks: ["quota-blocked-task"],
@@ -141,7 +141,7 @@ describe("problem solver", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.problem.requested",
+          type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",
           affectedTasks: ["staging-replay-task"],
@@ -188,7 +188,7 @@ describe("problem solver", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.problem.requested",
+          type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:task-problem:test-empty-text",
           affectedTasks: ["triage-task"],
@@ -213,7 +213,7 @@ describe("problem solver", () => {
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
-      type: "project.problem.unknown",
+      type: "project.problem.inconclusive",
       payload: {
         project: "aks-rp-e2e",
         problemKey: "aks-rp-e2e:task-problem:test-empty-text",
@@ -236,7 +236,7 @@ describe("problem solver", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.problem.requested",
+          type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:task-problem:test",
           affectedTasks: ["triage-task"],

@@ -41,11 +41,15 @@ export default defineProjectApp({
       intervalMs: 3_600_000,
       emits: [
         {
-          type: "project.tick",
+          type: "project.planning.requested",
           target: { project: projectId },
           data: {
             project: projectId,
-            lane: "learning",
+            reason: "scheduled-learning",
+            params: {
+              lane: "learning",
+              maxConcurrent: projectPolicyMaxConcurrent,
+            },
           },
         },
       ],
@@ -56,7 +60,7 @@ export default defineProjectApp({
       intervalMs: 300_000,
       emits: [
         {
-          type: "project.watchdog.tick",
+          type: "project.watchdog.check.requested",
           target: { project: projectId },
           data: { project: projectId },
         },
@@ -68,7 +72,7 @@ export default defineProjectApp({
       intervalMs: 14_400_000,
       emits: [
         {
-          type: "project.owner.requested",
+          type: "project.planning.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -95,7 +99,7 @@ export default defineProjectApp({
       intervalMs: 7_200_000,
       emits: [
         {
-          type: "project.owner.requested",
+          type: "project.planning.requested",
           target: { project: projectId },
           urgency: "high",
           data: {
@@ -123,11 +127,12 @@ export default defineProjectApp({
       intervalMs: 86_400_000,
       emits: [
         {
-          type: "project.focus.plan.requested",
+          type: "project.focus.review.requested",
           target: { project: projectId },
           data: {
             project: projectId,
             reason: "scheduled-mid-term-focus-plan",
+            mode: "plan",
           },
         },
       ],
@@ -143,6 +148,7 @@ export default defineProjectApp({
           data: {
             project: projectId,
             reason: "scheduled-focus-progress-review",
+            mode: "progress",
           },
         },
       ],
@@ -163,26 +169,50 @@ export default defineProjectApp({
         timeoutMs: 3_600_000,
       },
       accepts: [
-        { type: "project.owner.requested", target: { project: projectId } },
         { type: "project.planning.requested", target: { project: projectId } },
         { type: "project.comment.created", target: { project: projectId } },
-        { type: "project.tick", target: { project: projectId } },
         {
-          type: "project.focus.approval.submitted",
+          type: "project.approval.submitted",
           target: { project: projectId },
         },
-        { type: "project.task.completed", target: { project: projectId } },
+        { type: "project.task.reviewed", target: { project: projectId } },
+        { type: "project.test_run.completed", target: { project: projectId } },
+        { type: "project.stall.reviewed", target: { project: projectId } },
         { type: "project.problem.resolved", target: { project: projectId } },
         { type: "project.problem.escalated", target: { project: projectId } },
-        { type: "project.problem.unknown", target: { project: projectId } },
-        { type: "task.requeued", target: { project: projectId } },
+        {
+          type: "project.problem.inconclusive",
+          target: { project: projectId },
+        },
         { type: "escalation.resolved", owner: "agent:aks-explorer" },
         { type: "escalation.dismissed", owner: "agent:aks-explorer" },
         { type: "metric.breach", owner: "agent:aks-explorer" },
         { type: "metric.recovered", owner: "agent:aks-explorer" },
         { type: "coverage.gap.detected", target: { project: projectId } },
       ],
-      emits: ["project.task.assigned"],
+      emits: [
+        "project.task.assigned",
+        "project.problem.investigation.requested",
+      ],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-task-reviewer",
+      type: "job",
+      enabled: true,
+      description:
+        "Read-only task completion review. Emits structured review decisions for the planner to apply.",
+      maxConcurrentTriggers: projectPolicyMaxConcurrent,
+      handler: {
+        workflow: "task-reviewer",
+        includeEvent: true,
+        task: `${appTaskContext}\nagent: aks-reviewer\nmaxAttempts: 1`,
+        timeoutMs: 900_000,
+      },
+      accepts: [
+        { type: "project.task.completed", target: { project: projectId } },
+      ],
+      emits: ["project.task.reviewed"],
       context: taskTreeContext,
     },
     {
@@ -196,7 +226,7 @@ export default defineProjectApp({
         workflow: "task-worker",
         includeEvent: true,
         task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
-        timeoutMs: 3_600_000,
+        timeoutMs: 13 * 60 * 60_000,
       },
       accepts: [
         { type: "project.task.assigned", target: { project: projectId } },
@@ -218,12 +248,15 @@ export default defineProjectApp({
         timeoutMs: 1_800_000,
       },
       accepts: [
-        { type: "project.problem.requested", target: { project: projectId } },
+        {
+          type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
       ],
       emits: [
         "project.problem.resolved",
         "project.problem.escalated",
-        "project.problem.unknown",
+        "project.problem.inconclusive",
       ],
       context: taskTreeContext,
     },
@@ -234,14 +267,39 @@ export default defineProjectApp({
       description:
         "Five-minute liveness guard. Observes task/session state and wakes the owner when review is needed.",
       accepts: [
-        { type: "project.watchdog.tick", target: { project: projectId } },
+        {
+          type: "project.watchdog.check.requested",
+          target: { project: projectId },
+        },
       ],
       handler: {
         workflow: "project-execution-watchdog",
         task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 1_800_000,
       },
-      emits: ["project.owner.requested"],
+      emits: ["project.planning.requested", "project.stall.review.requested"],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-project-stall-review",
+      type: "job",
+      enabled: true,
+      description:
+        "Owner deep-dive fallback. Collects liveness state, performs safe mechanical repair, asks the agent to judge the stall, and emits a reviewed fact for planner reconciliation.",
+      maxConcurrentTriggers: 1,
+      accepts: [
+        {
+          type: "project.stall.review.requested",
+          target: { project: projectId },
+        },
+      ],
+      handler: {
+        workflow: "project-stall-review",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        timeoutMs: 1_800_000,
+      },
+      emits: ["project.stall.reviewed", "project.task.tick"],
       context: taskTreeContext,
     },
     {
@@ -343,15 +401,11 @@ export default defineProjectApp({
       },
       accepts: [
         {
-          type: "project.focus.plan.requested",
-          target: { project: projectId },
-        },
-        {
           type: "project.focus.review.requested",
           target: { project: projectId },
         },
       ],
-      emits: ["project.owner.requested", "message.created"],
+      emits: ["project.planning.requested", "message.created"],
       context: [
         ...taskTreeContext,
         "projects/aks-rp-e2e.app/project.json",
@@ -373,11 +427,7 @@ export default defineProjectApp({
       },
       accepts: [
         {
-          type: "project.approval.dispatch.requested",
-          target: { project: projectId },
-        },
-        {
-          type: "project.approval.dispatch.submitted",
+          type: "project.approval.requested",
           target: { project: projectId },
         },
       ],
@@ -391,20 +441,32 @@ export default defineProjectApp({
   ]),
 
   eventGraph: {
-    externalEvents: ["message.created", "escalation.created"],
+    externalEvents: [
+      "message.created",
+      "project.comment.created",
+      "project.approval.submitted",
+      "project.test_run.completed",
+      "metric.breach",
+      "metric.recovered",
+      "escalation.resolved",
+      "escalation.dismissed",
+      "coverage.gap.detected",
+    ],
     intentionalCycles: [
       {
         id: "owner-worker-review-loop",
         events: [
-          "project.owner.requested",
+          "project.planning.requested",
           "project.task.assigned",
           "project.task.completed",
+          "project.task.reviewed",
           "project.task.tick",
-          "project.problem.requested",
+          "project.stall.review.requested",
+          "project.stall.reviewed",
+          "project.problem.investigation.requested",
           "project.problem.resolved",
           "project.problem.escalated",
-          "project.problem.unknown",
-          "project.focus.plan.requested",
+          "project.problem.inconclusive",
           "project.focus.review.requested",
         ],
         reason:
@@ -422,7 +484,7 @@ export default defineProjectApp({
       description: "Request live execution for selected replanned paths.",
       event(params) {
         return {
-          type: "project.owner.requested",
+          type: "project.planning.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -446,7 +508,7 @@ export default defineProjectApp({
             ? (params as Record<string, unknown>)
             : {};
         return {
-          type: "project.owner.requested",
+          type: "project.planning.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -468,7 +530,7 @@ export default defineProjectApp({
             ? (params as Record<string, unknown>)
             : {};
         return {
-          type: "project.owner.requested",
+          type: "project.planning.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -481,17 +543,59 @@ export default defineProjectApp({
         };
       },
     },
+    "investigate-problem": {
+      type: "async",
+      description:
+        "Ask the problem solver to investigate one bounded blocker or root cause.",
+      event(params) {
+        const input =
+          params && typeof params === "object" && !Array.isArray(params)
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.problem.investigation.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-problem-investigation-request",
+            params: input,
+          },
+        };
+      },
+    },
+    "review-stall-risk": {
+      type: "async",
+      description:
+        "Ask the owner deep-dive fallback to collect and judge suspicious stalled work without pulsing controllers.",
+      event(params) {
+        const input =
+          params && typeof params === "object" && !Array.isArray(params)
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.stall.review.requested",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            reason: "manual-stall-risk-review",
+            mode: "risk-review",
+            params: input,
+          },
+        };
+      },
+    },
     "request-focus-plan": {
       type: "async",
       description:
         "Ask the project owner to propose or refresh the next mid-term focus plan.",
       event(params) {
         return {
-          type: "project.focus.plan.requested",
+          type: "project.focus.review.requested",
           target: { project: projectId },
           data: {
             project: projectId,
             reason: "manual-focus-plan-request",
+            mode: "plan",
             params:
               params && typeof params === "object" && !Array.isArray(params)
                 ? params
@@ -506,7 +610,7 @@ export default defineProjectApp({
         "Create one packet-linked human-facing approval message record using the proven message.created path.",
       event(params) {
         return {
-          type: "project.approval.dispatch.requested",
+          type: "project.approval.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -530,6 +634,7 @@ export default defineProjectApp({
           data: {
             project: projectId,
             reason: "manual-focus-progress-review",
+            mode: "progress",
             params:
               params && typeof params === "object" && !Array.isArray(params)
                 ? params
@@ -550,7 +655,7 @@ export default defineProjectApp({
         const taskId =
           typeof input.taskId === "string" && input.taskId.trim()
             ? input.taskId.trim()
-            : "aks-spec-verification-loop";
+            : specLoopTaskId;
         return {
           type: "project.task.tick",
           action: "spec-loop",
@@ -578,7 +683,7 @@ export default defineProjectApp({
         const taskId =
           typeof input.taskId === "string" && input.taskId.trim()
             ? input.taskId.trim()
-            : "aks-feature-reference-loop";
+            : featureReferenceLoopTaskId;
         return {
           type: "project.task.tick",
           action: "feature-reference-loop",
@@ -606,7 +711,7 @@ export default defineProjectApp({
         const taskId =
           typeof input.taskId === "string" && input.taskId.trim()
             ? input.taskId.trim()
-            : "aks-feature-compact-loop";
+            : featureCompactLoopTaskId;
         return {
           type: "project.task.tick",
           action: "feature-compact-loop",

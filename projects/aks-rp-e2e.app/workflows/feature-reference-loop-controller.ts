@@ -8,6 +8,7 @@ import {
   appendToolJournal,
   assignTask,
   createTask,
+  markTaskDone,
   saveTaskTreeWithKanbanSnapshot,
 } from "./lib/task-tree-tools.ts";
 import {
@@ -29,6 +30,9 @@ import {
 import {
   defaultFeatureReferenceDraftDir,
   defaultFeatureReferenceLoopStatePath,
+  featureReferenceCollectorContractVersion,
+  featureReferenceOutputQuality,
+  findPromotableFeatureReferenceOutput,
   loadFeatureReferenceLoopState,
   orderedPendingFeatureKeys,
   safeFeatureReferenceTaskId,
@@ -39,8 +43,10 @@ import {
 import {
   acceptDoneReviewChildren,
   consumeDispatchedAssignments,
+  reopenControllerRootWhenIncomplete,
   requeueOrphanedActiveChildren,
 } from "./lib/loop-controller-repair.ts";
+import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
 
 export const name = "feature-reference-loop-controller";
 export const description =
@@ -183,6 +189,15 @@ function existingFeatureKeys(
   const keys = new Set<string>();
   for (const childId of loopTask.children ?? []) {
     const child = tasks[childId];
+    const status = taskStatus(child);
+    if (
+      status !== "active" &&
+      status !== "backlog" &&
+      status !== "review" &&
+      status !== "waiting"
+    ) {
+      continue;
+    }
     const context = child ? taskContext(child) : {};
     const featureKey = context.featureKey;
     if (typeof featureKey === "string" && featureKey.trim())
@@ -218,6 +233,29 @@ function backlogChildTaskIds(
   });
 }
 
+function retryTaskIdForFeature(
+  featureKey: string,
+  tasks: Record<string, TaskNode>,
+  sequence: number,
+): string {
+  const base = safeFeatureReferenceTaskId(featureKey);
+  if (!tasks[base]) return base;
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[^0-9]/g, "")
+    .slice(0, 12);
+  const suffix = `-retry-${stamp}-${sequence}`;
+  const prefix = base.slice(0, Math.max(1, 120 - suffix.length));
+  let candidate = `${prefix}${suffix}`;
+  let counter = 2;
+  while (tasks[candidate]) {
+    const nextSuffix = `${suffix}-${counter}`;
+    candidate = `${base.slice(0, Math.max(1, 120 - nextSuffix.length))}${nextSuffix}`;
+    counter += 1;
+  }
+  return candidate;
+}
+
 function taskTrace(task: TaskNode): Record<string, unknown> {
   return task.trace &&
     typeof task.trace === "object" &&
@@ -233,7 +271,33 @@ function collectorOutputPath(summary: string): string | null {
   return match?.[1] ?? null;
 }
 
+function bestFeatureReferenceOutput(input: {
+  projectDir: string;
+  featureKey: string;
+  candidateOutputPath: string | null;
+  currentOutputPath: string | null | undefined;
+}): string | null {
+  const candidateQuality = featureReferenceOutputQuality({
+    projectDir: input.projectDir,
+    outputPath: input.candidateOutputPath,
+  });
+  const currentQuality = featureReferenceOutputQuality({
+    projectDir: input.projectDir,
+    outputPath: input.currentOutputPath,
+  });
+  const seed =
+    candidateQuality.missing.length <= currentQuality.missing.length
+      ? input.candidateOutputPath
+      : (input.currentOutputPath ?? input.candidateOutputPath);
+  return findPromotableFeatureReferenceOutput({
+    projectDir: input.projectDir,
+    featureKey: input.featureKey,
+    outputPath: seed,
+  });
+}
+
 function syncOpenChildStatuses(input: {
+  projectDir: string;
   loopTask: TaskNode | undefined;
   tasks: Record<string, TaskNode>;
   state: FeatureReferenceLoopState;
@@ -268,22 +332,58 @@ function syncOpenChildStatuses(input: {
       (status === "review" || status === "done") &&
       lastWorkerResult === "done"
     ) {
+      const outputPath = bestFeatureReferenceOutput({
+        projectDir: input.projectDir,
+        featureKey,
+        candidateOutputPath: collectorOutputPath(lastSummary),
+        currentOutputPath: input.state.features[featureKey]?.lastOutputPath,
+      });
+      const quality = featureReferenceOutputQuality({
+        projectDir: input.projectDir,
+        outputPath,
+      });
       updateFeatureReferenceItem(input.state, featureKey, {
-        status: "done",
+        status: quality.missing.length === 0 ? "done" : "error",
         taskId: child.id,
-        lastOutputPath:
-          collectorOutputPath(lastSummary) ??
-          input.state.features[featureKey]?.lastOutputPath ??
-          null,
+        lastOutputPath: outputPath,
         lastSummary:
-          lastSummary || input.state.features[featureKey]?.lastSummary || null,
+          quality.missing.length === 0
+            ? lastSummary ||
+              input.state.features[featureKey]?.lastSummary ||
+              null
+            : `Feature reference artifact ${outputPath ?? "unknown"} is incomplete: missing ${quality.missing.join(" and ")}.`,
+      });
+    } else if (
+      (status === "review" || status === "done") &&
+      lastWorkerResult === "partial"
+    ) {
+      const outputPath = bestFeatureReferenceOutput({
+        projectDir: input.projectDir,
+        featureKey,
+        candidateOutputPath: collectorOutputPath(lastSummary),
+        currentOutputPath: input.state.features[featureKey]?.lastOutputPath,
+      });
+      const quality = featureReferenceOutputQuality({
+        projectDir: input.projectDir,
+        outputPath,
+      });
+      updateFeatureReferenceItem(input.state, featureKey, {
+        status: quality.missing.length === 0 ? "done" : "error",
+        taskId: child.id,
+        lastOutputPath: outputPath,
+        lastSummary:
+          quality.missing.length === 0
+            ? `Collected official feature references for ${featureKey}: ${outputPath}.`
+            : lastSummary ||
+              input.state.features[featureKey]?.lastSummary ||
+              null,
       });
     } else if (
       (status === "review" || status === "done") &&
       lastWorkerResult === "blocked"
     ) {
       updateFeatureReferenceItem(input.state, featureKey, {
-        status: "blocked",
+        status: "error",
         taskId: child.id,
         lastSummary:
           lastSummary || input.state.features[featureKey]?.lastSummary || null,
@@ -309,7 +409,7 @@ function dispatchAssignment(
 
 function featureReferenceWorkflowProgress(input: {
   state: {
-    features: Record<string, { status?: string }>;
+    features: Record<string, { status?: string; attempts?: number }>;
     holdState?: {
       mode?: string;
       staleFeatureKeys?: string[];
@@ -320,6 +420,7 @@ function featureReferenceWorkflowProgress(input: {
   openChildren: number;
   created: number;
   assigned: number;
+  maxDirectAttemptsPerFeature: number;
 }): Record<string, unknown> {
   const counts: Record<string, number> = {};
   for (const feature of Object.values(input.state.features)) {
@@ -333,6 +434,7 @@ function featureReferenceWorkflowProgress(input: {
   const dormantCount = dormantFeatureKeys.length;
   const pending = counts.pending ?? 0;
   const running = counts.running ?? 0;
+  const error = counts.error ?? 0;
   const activePending = Object.entries(input.state.features).filter(
     ([featureKey, feature]) =>
       feature.status === "pending" && !heldFeatureKeys.has(featureKey),
@@ -341,36 +443,107 @@ function featureReferenceWorkflowProgress(input: {
     ([featureKey, feature]) =>
       feature.status === "running" && !heldFeatureKeys.has(featureKey),
   ).length;
+  const activeError = Object.entries(input.state.features).filter(
+    ([featureKey, feature]) =>
+      feature.status === "error" && !heldFeatureKeys.has(featureKey),
+  ).length;
+  const retryBudgetExhausted = Object.entries(input.state.features).filter(
+    ([featureKey, feature]) =>
+      feature.status === "error" &&
+      !heldFeatureKeys.has(featureKey) &&
+      (feature.attempts ?? 0) >= input.maxDirectAttemptsPerFeature,
+  ).length;
   const holdMode = input.state.holdState?.mode === "dormant-backlog-preserved";
+  const noRefillNow = holdMode
+    ? input.state.holdState?.noRefillNow !== false
+    : activePending === 0 &&
+      activeRunning === 0 &&
+      input.openChildren === 0 &&
+      activeError > 0 &&
+      retryBudgetExhausted === activeError;
   const completionReady = holdMode
-    ? activePending === 0 && activeRunning === 0
-    : pending === 0 && running === 0;
+    ? activePending === 0 && activeRunning === 0 && activeError === 0
+    : pending === 0 && running === 0 && error === 0;
   const reason = completionReady
     ? holdMode
       ? "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path"
-      : "feature-reference loop state has no pending or running features"
+      : "feature-reference loop state has no pending, running, or error features"
     : holdMode
       ? "feature-reference loop still has active non-held features"
-      : "feature-reference loop state still has non-terminal features";
+      : noRefillNow
+        ? "feature-reference loop has no runnable collector children; the remaining frontier is exact unresolved official-reference backlog or held state until a stronger refill reason exists"
+        : "feature-reference loop state still has non-terminal features";
   return {
     completionReady,
     reason,
     pending: holdMode ? activePending : pending,
     running: holdMode ? activeRunning : running,
     done: counts.done ?? 0,
-    blocked: counts.blocked ?? 0,
-    error: counts.error ?? 0,
+    error: holdMode ? activeError : error,
+    retryBudgetExhausted,
+    maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
     dormant: dormantCount,
     stale: staleCount,
     holdMode: holdMode ? "dormant-backlog-preserved" : undefined,
-    noRefillNow: holdMode
-      ? input.state.holdState?.noRefillNow !== false
-      : undefined,
+    noRefillNow: noRefillNow ? true : undefined,
     openChildren: input.openChildren,
     lastPulseCreated: input.created,
     lastPulseAssigned: input.assigned,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function acceptRecordedCollectorReviewChildren(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    loopTask: TaskNode | undefined;
+    tasks: Record<string, TaskNode>;
+    state: FeatureReferenceLoopState;
+  },
+): string[] {
+  if (!input.loopTask) return [];
+  const accepted: string[] = [];
+  for (const childId of input.loopTask.children ?? []) {
+    const child = input.tasks[childId];
+    if (!isFeatureReferenceChild(child) || taskStatus(child) !== "review") {
+      continue;
+    }
+
+    const featureKey = taskContext(child).featureKey;
+    if (typeof featureKey !== "string" || !featureKey.trim()) continue;
+    const item = input.state.features[featureKey];
+    const result = String(taskTrace(child).last_worker_result ?? "");
+    const summary = String(taskTrace(child).last_worker_summary ?? "");
+
+    const exactRecordedError =
+      item?.status === "error" &&
+      item.taskId === child.id &&
+      Boolean(item.lastOutputPath || item.lastSummary);
+    const exactRecordedDone =
+      item?.status === "done" &&
+      item.taskId === child.id &&
+      Boolean(item.lastOutputPath || item.lastSummary);
+
+    if ((result === "done" || result === "partial") && exactRecordedDone) {
+      markTaskDone(config, {
+        taskId: child.id,
+        summary: `Feature-reference loop accepted recorded collector result.${summary ? ` ${summary}` : ""}`,
+        resolution: "completed",
+      });
+      accepted.push(child.id);
+      continue;
+    }
+
+    if ((result === "partial" || result === "blocked") && exactRecordedError) {
+      markTaskDone(config, {
+        taskId: child.id,
+        summary: `Feature-reference loop accepted recorded collector attempt as terminal; feature remains error for follow-up.${summary ? ` ${summary}` : ""}`,
+        resolution: "terminal",
+      });
+      accepted.push(child.id);
+    }
+  }
+  return accepted;
 }
 
 function updateControllerWorkflowProgress(input: {
@@ -394,6 +567,13 @@ function updateControllerWorkflowProgress(input: {
     if (!task) return;
     if (input.progress.completionReady === false) {
       task.blocker = undefined;
+      reopenControllerRootWhenIncomplete({
+        task,
+        progress: input.progress,
+        reason: exactBlockedWaitStewardshipProgress(input.progress)
+          ? "feature-reference loop frontier is exact blocked wait stewardship; keep the durable root blocked until one named wait resolves or is replaced"
+          : "feature-reference loop progress is incomplete; durable controller root must stay runnable until all feature references are done or exactly escalated",
+      });
     }
     task.context = {
       ...taskContext(task),
@@ -436,6 +616,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const windowSize = numberContext(loopTask, "windowSize", 5);
+  const maxDirectAttemptsPerFeature = numberContext(
+    loopTask,
+    "maxDirectAttemptsPerFeature",
+    2,
+  );
   const stateRef = stringContext(
     loopTask,
     "stateRef",
@@ -482,9 +667,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         triggerString(trigger, "result") ||
         triggerString(trigger, "claim") ||
         "done";
+      const outputPath = bestFeatureReferenceOutput({
+        projectDir,
+        featureKey,
+        candidateOutputPath: collectorOutputPath(
+          triggerString(trigger, "summary"),
+        ),
+        currentOutputPath: state.features[featureKey]?.lastOutputPath,
+      });
+      const quality = featureReferenceOutputQuality({
+        projectDir,
+        outputPath,
+      });
       updateFeatureReferenceItem(state, featureKey, {
-        status: result === "done" ? "done" : "blocked",
+        status:
+          result === "done" && quality.missing.length === 0 ? "done" : "error",
         taskId: completedChildTaskId,
+        lastOutputPath: outputPath,
+        lastSummary:
+          result === "done" && quality.missing.length > 0
+            ? `Feature reference artifact ${outputPath ?? "unknown"} is incomplete: missing ${quality.missing.join(" and ")}.`
+            : state.features[featureKey]?.lastSummary,
       });
     }
   }
@@ -496,7 +699,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     reason:
       "feature-reference loop found active collector child with no queued assignment and no worker start",
   });
-  const acceptedReviewChildren = acceptDoneReviewChildren(config, {
+  const acceptedDoneChildren = acceptDoneReviewChildren(config, {
     loopTaskId: loopTask.id,
     isChild: isFeatureReferenceChild,
     summaryPrefix:
@@ -506,26 +709,53 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const refreshedTree = readTaskTree(config);
   const refreshedLoopTask = refreshedTree.tasks[loopTask.id];
   syncOpenChildStatuses({
+    projectDir,
     loopTask: refreshedLoopTask,
     tasks: refreshedTree.tasks,
     state,
   });
+  const acceptedRecordedChildren = acceptRecordedCollectorReviewChildren(
+    config,
+    {
+      loopTask: refreshedLoopTask,
+      tasks: refreshedTree.tasks,
+      state,
+    },
+  );
   const alreadyOpen = openChildCount(refreshedLoopTask, refreshedTree.tasks);
   const existing = existingFeatureKeys(refreshedLoopTask, refreshedTree.tasks);
   const releasedStaleRunning = releaseStaleRunningFeatures({
     state,
     existing,
   });
-  const pending = orderedPendingFeatureKeys(state).filter(
-    (featureKey) => !existing.has(featureKey),
-  );
+  const pending = orderedPendingFeatureKeys(state).filter((featureKey) => {
+    if (existing.has(featureKey)) return false;
+    const feature = state.features[featureKey];
+    if (
+      feature?.status === "error" &&
+      feature.attempts >= maxDirectAttemptsPerFeature &&
+      feature.collectorContractVersion ===
+        featureReferenceCollectorContractVersion
+    ) {
+      return false;
+    }
+    return true;
+  });
   const createdTaskIds: string[] = [];
   const toCreate = Math.max(0, windowSize - alreadyOpen);
   for (const featureKey of pending.slice(0, toCreate)) {
     const item = state.features[featureKey];
     if (!item) continue;
-    const taskId = safeFeatureReferenceTaskId(featureKey);
-    if (refreshedTree.tasks[taskId]) continue;
+    const attemptNumber =
+      item.status === "error" &&
+      item.collectorContractVersion !== featureReferenceCollectorContractVersion
+        ? 1
+        : (item.attempts ?? 0) + 1;
+    const taskId = retryTaskIdForFeature(
+      featureKey,
+      refreshedTree.tasks,
+      createdTaskIds.length + 1,
+    );
     createTask(config, {
       id: taskId,
       parentId: loopTask.id,
@@ -539,9 +769,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ],
       outputs: [stateRef, "evidence/archive/"],
       acceptance: [
-        "Draft feature reference packet was written under evidence/archive/ or a concrete blocker was recorded.",
-        "Microsoft Learn documentation references were checked.",
-        "Azure REST API specs references were checked.",
+        "Draft feature reference packet was written under evidence/archive/.",
+        "At least one official Microsoft Learn documentation reference is present, or the state records an error with exact missing source detail.",
+        "At least one Azure REST API spec reference is present, or the state records an error with exact missing source detail.",
         "Gaps or contradictions against existing feature packets/specs were summarized.",
         "Feature-reference loop state was updated.",
       ],
@@ -556,12 +786,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         stateRef,
         loopTaskId: loopTask.id,
         draftDir,
+        attemptNumber,
         referenceFixtureDir: referenceFixtureDir || undefined,
       },
     });
     updateFeatureReferenceItem(state, featureKey, {
       status: "pending",
       taskId,
+      attempts: attemptNumber,
     });
     createdTaskIds.push(taskId);
   }
@@ -602,6 +834,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const latestTree = readTaskTree(config);
   const latestLoopTask = latestTree.tasks[loopTask.id];
   syncOpenChildStatuses({
+    projectDir,
     loopTask: latestLoopTask,
     tasks: latestTree.tasks,
     state,
@@ -618,6 +851,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : 0,
       created: createdTaskIds.length,
       assigned: assignments.length,
+      maxDirectAttemptsPerFeature,
     }),
   });
 
@@ -629,8 +863,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     requeuedOrphaned.length
       ? `Requeued ${requeuedOrphaned.length} orphaned child assignment(s).`
       : "",
-    acceptedReviewChildren.length
-      ? `Accepted ${acceptedReviewChildren.length} completed collector review(s).`
+    acceptedDoneChildren.length || acceptedRecordedChildren.length
+      ? `Accepted ${
+          acceptedDoneChildren.length + acceptedRecordedChildren.length
+        } recorded collector review(s).`
       : "",
     releasedStaleRunning
       ? `Released ${releasedStaleRunning} stale running feature(s).`
@@ -647,7 +883,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
-    accepted_review_task_ids: acceptedReviewChildren,
+    accepted_review_task_ids: [
+      ...acceptedDoneChildren,
+      ...acceptedRecordedChildren,
+    ],
     state_path: statePath,
   });
 

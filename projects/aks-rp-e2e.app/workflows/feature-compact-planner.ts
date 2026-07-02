@@ -3,8 +3,15 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from "node:fs";
+import { join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   buildTaskTreeConfig,
@@ -12,6 +19,7 @@ import {
   emitTaskCompleted,
   markAttemptStartedOnce,
 } from "./default-task-worker.ts";
+import { buildLoopKey } from "./single-spec-verifier.ts";
 import {
   field,
   maxConcurrent,
@@ -25,9 +33,23 @@ import {
   loadFeatureCompactLoopState,
   saveFeatureCompactLoopState,
   updateFeatureCompactItem,
-  type FeatureCompactStatus,
 } from "./lib/feature-compact-loop-store.ts";
+import {
+  activeWorkflowRuns,
+  downloadWorkflowRunArtifacts,
+  dispatchWorkflow,
+  githubPollIntervalMs,
+  githubRunLookupPollIntervalMs,
+  newestWorkflowRun,
+  resolveGitHubClient,
+  sleepMs,
+  waitForWorkflowRun,
+  writeGitHubDispatchMetadata,
+  type GitHubClient,
+  type GitHubWorkflowRun,
+} from "./lib/github-actions.ts";
 import type { TaskNode } from "./lib/task-tree-store.ts";
+import { readTaskTree } from "./lib/task-tree-store.ts";
 import type { TaskCompletionClaim } from "./lib/task-tree-tools.ts";
 
 export const name = "feature-compact-planner";
@@ -43,15 +65,71 @@ type CommandResult = {
 };
 
 type Diagnostics = {
+  feature?: {
+    specCount?: number;
+  };
   packageStatus?: string;
   planPath?: string;
   summaryPath?: string;
+  selectedSpecIds?: string[];
   metrics?: {
     specsSelected?: number;
     clustersNeeded?: number;
     baselineClusterCount?: number;
     clustersSaved?: number;
   };
+  materialization?: {
+    status?: string;
+    runnableSpecCount?: number;
+    unrunnableSpecIds?: string[];
+  };
+};
+
+type ProjectResult = {
+  status?: string;
+  target?: {
+    surface?: string;
+    subscriptionId?: string;
+    location?: string;
+  };
+  planPath?: string | null;
+  counts?: {
+    pass?: number;
+    fail?: number;
+    error?: number;
+    skipped?: number;
+  };
+  specResults?: Array<{
+    specId?: string;
+    status?: string;
+    reason?: string;
+    category?: string;
+    durationMs?: number;
+  }>;
+};
+
+type LiveResultProof = {
+  ok: boolean;
+  resultPath?: string;
+  result?: ProjectResult;
+  clusterEvidence?: string[];
+  detail: string;
+};
+
+const liveAksProofVersion = "live-aks-proof-v2";
+
+const clearLiveWorkflowState = {
+  lastWorkflowRunId: null,
+  lastWorkflowRunUrl: null,
+  lastWorkflowLoopKey: null,
+  lastDispatchMetadataPath: null,
+  lastLiveProofVersion: null,
+};
+
+const clearLiveRunState = {
+  lastWorkflowRunId: null,
+  lastWorkflowRunUrl: null,
+  lastLiveProofVersion: null,
 };
 
 function taskContext(task: TaskNode): Record<string, unknown> {
@@ -76,6 +154,64 @@ function contextNumber(task: TaskNode, key: string, fallback: number): number {
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
   }
   return fallback;
+}
+
+function taskStringList(task: TaskNode, key: "outputs"): string[] {
+  const value = task[key];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function reviewedTaskId(task: TaskNode): string {
+  const reviewedTask = taskContext(task).reviewedTask;
+  if (
+    reviewedTask &&
+    typeof reviewedTask === "object" &&
+    !Array.isArray(reviewedTask)
+  ) {
+    const taskId = (reviewedTask as Record<string, unknown>).taskId;
+    return typeof taskId === "string" ? taskId : "";
+  }
+  return "";
+}
+
+function compactFeatureFromOutputs(task: TaskNode): string {
+  for (const output of taskStringList(task, "outputs")) {
+    const match = output.match(/^features\/([^/]+)\/compact\//);
+    if (match?.[1]) return match[1];
+  }
+  return "";
+}
+
+function compactFeatureFromTaskId(taskId: string): string {
+  if (!taskId.startsWith("compact-feature-")) return "";
+  return taskId
+    .slice("compact-feature-".length)
+    .replace(/-retry-\d{12,}-\d+(?:-.+)?$/, "")
+    .replace(/-(?:followup|blocked|escalate)(?:-\d+)?$/, "");
+}
+
+function featureCompactIdentity(task: TaskNode): {
+  featureKey: string;
+  capabilityId: string;
+} {
+  const explicitFeatureKey = contextString(task, "featureKey");
+  const explicitCapabilityId = contextString(
+    task,
+    "capabilityId",
+    explicitFeatureKey,
+  );
+  const outputCapabilityId = compactFeatureFromOutputs(task);
+  const reviewedFeatureKey = compactFeatureFromTaskId(reviewedTaskId(task));
+  const ownFeatureKey = compactFeatureFromTaskId(task.id);
+  const featureKey =
+    explicitFeatureKey ||
+    outputCapabilityId ||
+    reviewedFeatureKey ||
+    ownFeatureKey;
+  const capabilityId = explicitCapabilityId || outputCapabilityId || featureKey;
+  return { featureKey, capabilityId };
 }
 
 function runCommand(
@@ -107,10 +243,299 @@ function readJson<T>(path: string, fallback: T): T {
   }
 }
 
-function compactStatus(value: string | undefined): FeatureCompactStatus {
-  if (value === "ready" || value === "partial" || value === "blocked")
-    return value;
-  return "partial";
+function appRelative(appDir: string, path: string): string {
+  const rel = relative(appDir, path);
+  return rel && !rel.startsWith("..") ? rel : path;
+}
+
+function findFiles(root: string, name: string): string[] {
+  if (!existsSync(root)) return [];
+  const found: string[] = [];
+  for (const entry of readdirSync(root)) {
+    const path = join(root, entry);
+    let stat;
+    try {
+      stat = statSync(path);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) found.push(...findFiles(path, name));
+    else if (entry === name) found.push(path);
+  }
+  return found;
+}
+
+function findAllFiles(root: string): string[] {
+  if (!existsSync(root)) return [];
+  const found: string[] = [];
+  for (const entry of readdirSync(root)) {
+    const path = join(root, entry);
+    let stat;
+    try {
+      stat = statSync(path);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) found.push(...findAllFiles(path));
+    else found.push(path);
+  }
+  return found;
+}
+
+function clusterEvidenceFromArtifactDir(
+  appDir: string,
+  artifactDir: string,
+): string[] {
+  const evidence: string[] = [];
+  for (const file of findAllFiles(artifactDir)) {
+    const rel = appRelative(appDir, file);
+    if (/\/shared-clusters\/[^/]+\.json$/i.test(rel)) {
+      const record = readJson<Record<string, unknown> | null>(file, null);
+      if (sharedClusterRecordProvesLiveAks(record)) {
+        evidence.push(rel);
+      }
+      continue;
+    }
+    if (!/\.(jsonl|log|txt|md)$/i.test(file)) continue;
+    let text = "";
+    try {
+      text = readFileSync(file, "utf-8");
+    } catch {
+      continue;
+    }
+    if (
+      /setup\.resource-group-created|resource-group-created|create resource group|resource group created|creating cluster|cluster-created|shared-cluster\.(create|ready)|cluster create succeeded|managed cluster create succeeded|cleanup\.resource-group-deleted|cleanup-resource-group|requested deletion of rg-/i.test(
+        text,
+      )
+    ) {
+      evidence.push(rel);
+    }
+  }
+  return [...new Set(evidence)].sort();
+}
+
+function sharedClusterRecordProvesLiveAks(
+  record: Record<string, unknown> | null,
+): boolean {
+  if (!record?.resourceGroup || !record?.clusterName) return false;
+  const cleanupStatus = String(record.cleanupStatus || "");
+  const note = String(record.note || "");
+  return (
+    Boolean(record.cleanupStartedAt || record.cleanupReason) ||
+    /^(delete-started|deleted|delete-failed)$/i.test(cleanupStatus) ||
+    /Shared AKS cluster fixture is ready/i.test(note)
+  );
+}
+
+function validateLiveResult(input: {
+  result: ProjectResult | null;
+  resultPath: string;
+  planRel: string;
+  clusterEvidence: string[];
+}): LiveResultProof {
+  const result = input.result;
+  if (!result) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      detail: `No parseable result.json was found at ${input.resultPath}.`,
+    };
+  }
+  const surface = String(result.target?.surface || "");
+  const status = String(result.status || "");
+  const specResults = Array.isArray(result.specResults)
+    ? result.specResults
+    : [];
+  const passCount =
+    Number(result.counts?.pass || 0) ||
+    specResults.filter((item) => item?.status === "pass").length;
+  const failCount = Number(result.counts?.fail || 0);
+  const errorCount = Number(result.counts?.error || 0);
+  const resultPlanPath = String(result.planPath || "");
+  if (resultPlanPath && resultPlanPath !== input.planRel) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      detail: `GitHub artifact result plan ${resultPlanPath} does not match compact plan ${input.planRel}.`,
+    };
+  }
+  if (surface !== "live-azure-run") {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      detail: `GitHub artifact result surface is ${surface || "(missing)"}, not live-azure-run.`,
+    };
+  }
+  if (status !== "passed") {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      detail: `GitHub artifact live result status is ${status || "(missing)"}, not passed.`,
+    };
+  }
+  if (specResults.length === 0 || passCount < 1) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      detail: "GitHub artifact live result has no passing spec result.",
+    };
+  }
+  if (failCount || errorCount) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      detail: `GitHub artifact live result has fail/error counts: fail=${failCount} error=${errorCount}.`,
+    };
+  }
+  const checkOnlyPass = specResults.find((item) =>
+    /without Azure resource changes|no Azure resource changes (?:were )?attempted|without cloud mutation|no cloud mutation/i.test(
+      String(item?.reason || ""),
+    ),
+  );
+  if (checkOnlyPass?.specId) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      clusterEvidence: input.clusterEvidence,
+      detail: `GitHub artifact live result includes check-only pass for ${checkOnlyPass.specId}; live compact proof requires real Azure resource changes.`,
+    };
+  }
+  if (input.clusterEvidence.length === 0) {
+    return {
+      ok: false,
+      resultPath: input.resultPath,
+      result,
+      clusterEvidence: input.clusterEvidence,
+      detail:
+        "GitHub artifact live result has no AKS cluster creation evidence.",
+    };
+  }
+  return {
+    ok: true,
+    resultPath: input.resultPath,
+    result,
+    clusterEvidence: input.clusterEvidence,
+    detail: `GitHub artifact proves live Azure pass with ${passCount} passing spec result(s) and AKS cluster evidence.`,
+  };
+}
+
+function capacityPreflightReason(proof: LiveResultProof): string | null {
+  const result = proof.result;
+  if (!result) return null;
+  const specResults = Array.isArray(result.specResults)
+    ? result.specResults
+    : [];
+  const text = [
+    result.status,
+    proof.detail,
+    ...specResults.flatMap((item) => [item.status, item.category, item.reason]),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  if (
+    !/capacity preflight|managed clusters|cluster create slots|concurrent new cluster|quota|capacity/i.test(
+      text,
+    )
+  ) {
+    return null;
+  }
+  if (
+    specResults.length > 0 &&
+    specResults.every((item) => item.category === "environment_blocker")
+  ) {
+    return (
+      specResults.find((item) => item.reason)?.reason ??
+      "Live workflow was blocked by staging AKS capacity preflight."
+    );
+  }
+  return /capacity preflight|managed clusters|cluster create slots/i.test(text)
+    ? "Live workflow was blocked by staging AKS capacity preflight."
+    : null;
+}
+
+function inspectLiveWorkflowArtifacts(input: {
+  client: GitHubClient;
+  projectDir: string;
+  appDir: string;
+  runId: string;
+  featureKey: string;
+  planRel: string;
+}): LiveResultProof {
+  const artifactDir = join(
+    input.appDir,
+    ".state",
+    "feature-compact-loop",
+    "artifacts",
+    input.runId,
+  );
+  rmSync(artifactDir, { recursive: true, force: true });
+  mkdirSync(artifactDir, { recursive: true });
+  const download = downloadWorkflowRunArtifacts({
+    client: input.client,
+    projectDir: input.projectDir,
+    artifactDir,
+    runId: input.runId,
+  });
+  if (!download.ok) {
+    return {
+      ok: false,
+      detail: `GitHub artifact download failed: ${download.stderr || download.stdout || download.error || "unknown error"}`,
+    };
+  }
+  const clusterEvidence = clusterEvidenceFromArtifactDir(
+    input.appDir,
+    artifactDir,
+  );
+  const resultPaths = findFiles(artifactDir, "result.json")
+    .filter(
+      (path) => !/\/artifacts\/[^/]+\/spec-runner\/result\.json$/i.test(path),
+    )
+    .sort((a, b) => a.localeCompare(b));
+  const candidates = resultPaths
+    .map((path) => ({
+      path,
+      result: readJson<ProjectResult | null>(path, null),
+    }))
+    .filter(({ result }) => {
+      const planPath = String(result?.planPath || "");
+      return !planPath || planPath === input.planRel;
+    });
+  for (const candidate of candidates) {
+    const proof = validateLiveResult({
+      result: candidate.result,
+      resultPath: appRelative(input.appDir, candidate.path),
+      planRel: input.planRel,
+      clusterEvidence,
+    });
+    if (proof.ok) return proof;
+  }
+  const first = candidates[0] ?? resultPaths[0];
+  if (typeof first === "string") {
+    return validateLiveResult({
+      result: readJson<ProjectResult | null>(first, null),
+      resultPath: appRelative(input.appDir, first),
+      planRel: input.planRel,
+      clusterEvidence,
+    });
+  }
+  if (first) {
+    return validateLiveResult({
+      result: first.result,
+      resultPath: appRelative(input.appDir, first.path),
+      planRel: input.planRel,
+      clusterEvidence,
+    });
+  }
+  return {
+    ok: false,
+    detail: `No top-level result.json was found in GitHub artifacts for compact feature ${input.featureKey}.`,
+  };
 }
 
 function firstOutputMatch(output: string, pattern: RegExp): string | null {
@@ -134,6 +559,166 @@ function commandSummary(command: string, result: CommandResult): string {
   return pieces.join("\n");
 }
 
+function compactCoverageProblem(input: {
+  diagnostics: Diagnostics;
+  expectedSpecCount: number;
+}): string | null {
+  const selected =
+    input.diagnostics.metrics?.specsSelected ??
+    input.diagnostics.selectedSpecIds?.length;
+  if (selected !== input.expectedSpecCount) {
+    return `Compact package selected ${selected ?? "unknown"} of ${input.expectedSpecCount} feature spec(s).`;
+  }
+  const unrunnable = input.diagnostics.materialization?.unrunnableSpecIds ?? [];
+  if (unrunnable.length > 0) {
+    return `Compact package has ${unrunnable.length} unrunnable spec(s): ${unrunnable.join(", ")}.`;
+  }
+  if (
+    input.diagnostics.materialization?.status &&
+    input.diagnostics.materialization.status !== "ready"
+  ) {
+    return `Compact package materialization status is ${input.diagnostics.materialization.status}.`;
+  }
+  const runnable = input.diagnostics.materialization?.runnableSpecCount;
+  if (runnable !== undefined && runnable !== input.expectedSpecCount) {
+    return `Compact package materialized ${runnable} runnable spec(s), expected ${input.expectedSpecCount}.`;
+  }
+  return null;
+}
+
+function workflowRunMatches(input: {
+  run: GitHubWorkflowRun;
+  loopKey: string;
+  planPath: string;
+  capabilityId: string;
+}): boolean {
+  const title = String(input.run.displayTitle ?? "");
+  if (!title) return false;
+  return (
+    title.includes(input.loopKey) ||
+    title.includes(input.planPath) ||
+    title.includes(input.capabilityId)
+  );
+}
+
+function isUnexpectedMetadataDispatchError(result: CommandResult): boolean {
+  const detail = `${result.stderr}\n${result.stdout}\n${result.error ?? ""}`;
+  return (
+    (result.status === 422 || /"status"\s*:\s*"?422"?/i.test(detail)) &&
+    /unexpected inputs provided/i.test(detail) &&
+    /(loop_key|metadata)/i.test(detail)
+  );
+}
+
+function compactDispatchInputs(input: {
+  target: string;
+  planPath: string;
+  parallel: number;
+  testTimeoutSeconds: number;
+  loopKey: string;
+  includeMetadata: boolean;
+}): Record<string, string> {
+  return {
+    target: input.target,
+    plan_path: input.planPath,
+    parallel: String(input.parallel),
+    test_timeout_seconds: String(input.testTimeoutSeconds),
+    ...(input.includeMetadata
+      ? { metadata: JSON.stringify({ loop_key: input.loopKey }) }
+      : {}),
+  };
+}
+
+async function waitForDispatchCapacity(input: {
+  client: GitHubClient;
+  projectDir: string;
+  branch: string;
+  limit: number;
+  timeoutMinutes: number;
+}): Promise<{ ok: true } | { ok: false; detail: string }> {
+  if (!Number.isFinite(input.limit) || input.limit <= 0) {
+    return { ok: true };
+  }
+  const deadline = Date.now() + Math.max(1, input.timeoutMinutes) * 60_000;
+  let lastCount = 0;
+  while (Date.now() <= deadline) {
+    const active = activeWorkflowRuns({
+      client: input.client,
+      projectDir: input.projectDir,
+      branch: input.branch,
+    });
+    lastCount = active.length;
+    if (active.length < input.limit) return { ok: true };
+    await sleepMs(githubPollIntervalMs());
+  }
+  return {
+    ok: false,
+    detail: `GitHub live dispatch capacity did not open: ${lastCount}/${input.limit} workflow run(s) still in progress on ${input.branch}.`,
+  };
+}
+
+function dispatchMetadataPath(input: {
+  appDir: string;
+  taskId: string;
+  attemptId: string;
+}): string {
+  return join(
+    input.appDir,
+    ".state",
+    "feature-compact-loop",
+    "dispatches",
+    input.taskId,
+    `${input.attemptId}.json`,
+  );
+}
+
+function compactDispatchMetadata(input: {
+  dispatchedAt: string;
+  workflow: string;
+  branch: string;
+  target: string;
+  planPath: string;
+  parallel: number;
+  testTimeoutSeconds: number;
+  loopKey: string;
+  taskId: string;
+  attemptId: string;
+  capabilityId: string;
+  includeMetadata: boolean;
+  dispatch: CommandResult;
+}): {
+  dispatchedAt: string;
+  workflow: string;
+  branch: string;
+  inputs: Record<string, string>;
+  loopKey: string;
+  taskId: string;
+  attemptId: string;
+  planPath: string;
+  capabilityId: string;
+  dispatchResult: CommandResult;
+} {
+  return {
+    dispatchedAt: input.dispatchedAt,
+    workflow: input.workflow,
+    branch: input.branch,
+    inputs: compactDispatchInputs({
+      target: input.target,
+      planPath: input.planPath,
+      parallel: input.parallel,
+      testTimeoutSeconds: input.testTimeoutSeconds,
+      loopKey: input.loopKey,
+      includeMetadata: input.includeMetadata,
+    }),
+    loopKey: input.loopKey,
+    taskId: input.taskId,
+    attemptId: input.attemptId,
+    planPath: input.planPath,
+    capabilityId: input.capabilityId,
+    dispatchResult: input.dispatch,
+  };
+}
+
 function completion(
   ctx: WorkflowContext,
   config: ReturnType<typeof buildTaskTreeConfig>,
@@ -142,6 +727,13 @@ function completion(
     attemptId: string;
     claim: TaskCompletionClaim;
     summary: string;
+    evidence?: string[];
+    problem?: {
+      action: "none" | "request";
+      category?: string;
+      diagnosis?: string;
+      resumeCondition?: string;
+    };
   },
 ): WorkflowResult {
   const completed = completeStartedAttempt(config, {
@@ -155,6 +747,8 @@ function completion(
       attemptId: input.attemptId,
       result: input.claim,
       summary: input.summary,
+      evidence: input.evidence,
+      problem: input.problem,
     });
   }
   return ctx.done(input.summary);
@@ -191,8 +785,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const start = markAttemptStartedOnce(config, { taskId, attemptId });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
-  const featureKey = contextString(task, "featureKey");
-  const capabilityId = contextString(task, "capabilityId", featureKey);
+  const { featureKey, capabilityId } = featureCompactIdentity(task);
   const target = contextString(task, "target", "staging");
   const stateRef = contextString(
     task,
@@ -205,6 +798,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "aks-feature-compact-loop",
   );
   const checkParallel = contextNumber(task, "checkParallel", 50);
+  const liveParallel = contextNumber(task, "liveParallel", checkParallel);
+  const workflow = contextString(
+    task,
+    "githubWorkflow",
+    "aks-rp-e2e-plan-execute.yaml",
+  );
+  const branch = contextString(task, "branch", "dev");
+  const testTimeoutSeconds = contextNumber(task, "testTimeoutSeconds", 7200);
+  const githubWaitTimeoutMinutes = contextNumber(
+    task,
+    "githubWaitTimeoutMinutes",
+    720,
+  );
+  const attemptNumber = contextNumber(task, "attemptNumber", 0);
   const statePath = stateRef.startsWith("/")
     ? stateRef
     : join(appDir, stateRef);
@@ -223,14 +830,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return completion(ctx, config, {
       task,
       attemptId,
-      claim: "blocked",
+      claim: "partial",
       summary,
+      problem: {
+        action: "request",
+        category: "feature-compact-task-input",
+        diagnosis: summary,
+      },
     });
   }
 
   updateFeatureCompactItem(state, featureKey, {
     status: "running",
-    attempts: (state.features[featureKey]?.attempts ?? 0) + 1,
+    taskId: task.id,
+    attempts: Math.max(
+      state.features[featureKey]?.attempts ?? 0,
+      attemptNumber || (state.features[featureKey]?.attempts ?? 0) + 1,
+    ),
   });
   saveFeatureCompactLoopState(statePath, state);
 
@@ -242,18 +858,31 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   if (!generate.ok) {
     const summary = `Feature compact package generation failed for ${featureKey}. ${commandSummary("bun runner/feature-compact.ts", generate)}`;
+    const blocked = generate.stderr.includes("No feature-owned specs");
     updateFeatureCompactItem(state, featureKey, {
-      status: generate.stderr.includes("No feature-owned specs")
-        ? "blocked"
-        : "error",
+      status: "error",
+      ...clearLiveWorkflowState,
       lastSummary: summary,
     });
     saveFeatureCompactLoopState(statePath, state);
     return completion(ctx, config, {
       task,
       attemptId,
-      claim: "blocked",
+      claim: "partial",
       summary,
+      problem: blocked
+        ? {
+            action: "request",
+            category: "feature-compact-external-blocker",
+            diagnosis: summary,
+            resumeCondition:
+              "Add feature-owned specs or remove this feature from the compact loop.",
+          }
+        : {
+            action: "request",
+            category: "feature-compact-generation",
+            diagnosis: summary,
+          },
     });
   }
 
@@ -277,6 +906,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Feature compact package generation for ${featureKey} did not write ${planRel}.`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      ...clearLiveWorkflowState,
       lastDiagnosticsPath: diagnosticsRel,
       lastSummary: summary,
     });
@@ -284,8 +914,48 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return completion(ctx, config, {
       task,
       attemptId,
-      claim: "blocked",
+      claim: "partial",
       summary,
+      evidence: [diagnosticsRel],
+      problem: {
+        action: "request",
+        category: "feature-compact-generation",
+        diagnosis: summary,
+      },
+    });
+  }
+
+  const coverageProblem = compactCoverageProblem({
+    diagnostics,
+    expectedSpecCount:
+      contextNumber(task, "specCount", 0) ||
+      diagnostics.feature?.specCount ||
+      diagnostics.metrics?.specsSelected ||
+      diagnostics.selectedSpecIds?.length ||
+      0,
+  });
+  if (coverageProblem) {
+    const summary = `Feature compact package is incomplete for ${featureKey}. ${coverageProblem} Plan: ${planRel}. Diagnostics: ${diagnosticsRel}.`;
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      ...clearLiveWorkflowState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel],
+      problem: {
+        action: "request",
+        category: "feature-compact-coverage",
+        diagnosis: summary,
+      },
     });
   }
 
@@ -304,6 +974,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Generated tests failed for ${featureKey}. ${commandSummary("bun run execute --check", check)}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      ...clearLiveWorkflowState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
       lastDiagnosticsPath: diagnosticsRel,
@@ -314,18 +985,487 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return completion(ctx, config, {
       task,
       attemptId,
-      claim: "blocked",
+      claim: "partial",
       summary,
+      evidence: [planRel, summaryRel, diagnosticsRel].filter(Boolean),
+      problem: {
+        action: "request",
+        category: "feature-compact-local-check",
+        diagnosis: summary,
+      },
     });
   }
 
-  const status = compactStatus(diagnostics.packageStatus);
+  if (diagnostics.packageStatus && diagnostics.packageStatus !== "ready") {
+    const summary = [
+      `Feature compact package for ${featureKey} is ${diagnostics.packageStatus}; live GitHub dispatch is intentionally blocked until the package becomes ready.`,
+      `Plan: ${planRel}.`,
+      `Summary: ${summaryRel}.`,
+      `Diagnostics: ${diagnosticsRel}.`,
+      resultPath ? `Check result: ${resultPath}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      ...clearLiveWorkflowState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "feature-compact-package-status",
+        diagnosis: summary,
+        resumeCondition:
+          "Regenerate the compact package only after excluded or quarantined members are repaired, promoted, or reclassified so packageStatus becomes ready.",
+      },
+    });
+  }
+
+  const github = resolveGitHubClient(projectDir);
+  if (!github.client) {
+    const summary = `Unable to access GitHub Actions for ${featureKey}: ${github.reason || "unknown error"}`;
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      ...clearLiveWorkflowState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "github-actions-access",
+        diagnosis: summary,
+        resumeCondition:
+          "Provide gh CLI authentication or GH_TOKEN/GITHUB_TOKEN access to the aks-rp-e2e repository.",
+      },
+    });
+  }
+
+  const latestTreeBeforeDispatch = readTaskTree(config);
+  const loopTask = latestTreeBeforeDispatch.tasks[loopTaskId];
+  const githubActiveRunLimit = loopTask
+    ? contextNumber(loopTask, "githubActiveRunLimit", 6)
+    : contextNumber(task, "githubActiveRunLimit", 6);
+  const githubDispatchWaitTimeoutMinutes = loopTask
+    ? contextNumber(
+        loopTask,
+        "githubDispatchWaitTimeoutMinutes",
+        contextNumber(task, "githubDispatchWaitTimeoutMinutes", 120),
+      )
+    : contextNumber(task, "githubDispatchWaitTimeoutMinutes", 120);
+  const dispatchCapacity = await waitForDispatchCapacity({
+    client: github.client,
+    projectDir,
+    branch,
+    limit: githubActiveRunLimit,
+    timeoutMinutes: githubDispatchWaitTimeoutMinutes,
+  });
+  if (dispatchCapacity.ok === false) {
+    const summary = `Live compact dispatch is waiting for GitHub workflow capacity for ${featureKey}. ${dispatchCapacity.detail}`;
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      ...clearLiveRunState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "feature-compact-live-dispatch-capacity",
+        diagnosis: summary,
+        resumeCondition:
+          "Retry this compact feature after active staging GitHub live runs finish and cleanup frees AKS cluster slots.",
+      },
+    });
+  }
+
+  const startedAt = Date.now();
+  const loopKey = buildLoopKey(task.id, attemptId);
+  const dispatchedAt = new Date(startedAt).toISOString();
+  const metadataPath = dispatchMetadataPath({
+    appDir,
+    taskId: task.id,
+    attemptId,
+  });
+  let includeMetadata = true;
+  let dispatch = dispatchWorkflow({
+    client: github.client,
+    projectDir,
+    workflow,
+    branch,
+    inputs: compactDispatchInputs({
+      target,
+      planPath: planRel,
+      parallel: liveParallel,
+      testTimeoutSeconds,
+      loopKey,
+      includeMetadata,
+    }),
+  });
+  if (!dispatch.ok && isUnexpectedMetadataDispatchError(dispatch)) {
+    includeMetadata = false;
+    dispatch = dispatchWorkflow({
+      client: github.client,
+      projectDir,
+      workflow,
+      branch,
+      inputs: compactDispatchInputs({
+        target,
+        planPath: planRel,
+        parallel: liveParallel,
+        testTimeoutSeconds,
+        loopKey,
+        includeMetadata,
+      }),
+    });
+  }
+  writeGitHubDispatchMetadata(
+    metadataPath,
+    compactDispatchMetadata({
+      dispatchedAt,
+      workflow,
+      branch,
+      target,
+      planPath: planRel,
+      parallel: liveParallel,
+      testTimeoutSeconds,
+      loopKey,
+      taskId: task.id,
+      attemptId,
+      capabilityId,
+      includeMetadata,
+      dispatch,
+    }),
+  );
+  updateFeatureCompactItem(state, featureKey, {
+    lastWorkflowLoopKey: loopKey,
+    lastDispatchMetadataPath: metadataPath,
+  });
+  saveFeatureCompactLoopState(statePath, state);
+  if (!dispatch.ok) {
+    const summary = `GitHub live compact workflow dispatch failed for ${featureKey}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      ...clearLiveRunState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "github-actions-dispatch",
+        diagnosis: summary,
+        resumeCondition:
+          "Fix GitHub workflow dispatch access or workflow input schema, then retry this compact feature.",
+      },
+    });
+  }
+
+  let run: GitHubWorkflowRun | null = null;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    run = newestWorkflowRun({
+      client: github.client,
+      projectDir,
+      workflow,
+      branch,
+      sinceMs: startedAt,
+      match: (candidate) =>
+        workflowRunMatches({
+          run: candidate,
+          loopKey,
+          planPath: planRel,
+          capabilityId,
+        }),
+    });
+    if (run?.databaseId) break;
+    await sleepMs(githubRunLookupPollIntervalMs());
+  }
+
+  if (!run?.databaseId) {
+    const summary = `Dispatched ${workflow} for compact feature ${featureKey}, but could not find the GitHub run id. Plan: ${planRel}. Dispatch metadata: ${metadataPath}.`;
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "github-actions-run-lookup",
+        diagnosis: summary,
+        resumeCondition:
+          "Confirm the dispatched workflow run exists or restore GitHub run listing access.",
+      },
+    });
+  }
+
+  const runId = String(run.databaseId);
+  updateFeatureCompactItem(state, featureKey, {
+    lastWorkflowRunId: runId,
+    lastWorkflowRunUrl: run.url ?? null,
+    lastWorkflowLoopKey: loopKey,
+    lastDispatchMetadataPath: metadataPath,
+  });
+  saveFeatureCompactLoopState(statePath, state);
+
+  const watch = await waitForWorkflowRun({
+    client: github.client,
+    projectDir,
+    runId,
+    timeoutMs: githubWaitTimeoutMinutes * 60_000,
+    onPoll: (observedRun) => {
+      if (!observedRun?.url) return;
+      updateFeatureCompactItem(state, featureKey, {
+        lastWorkflowRunId: runId,
+        lastWorkflowRunUrl: observedRun.url,
+        lastWorkflowLoopKey: loopKey,
+        lastDispatchMetadataPath: metadataPath,
+      });
+      saveFeatureCompactLoopState(statePath, state);
+    },
+  });
+  const finalRun = watch.run ?? run;
+  const liveEvidence = [
+    planRel,
+    summaryRel,
+    diagnosticsRel,
+    resultPath ?? "",
+    finalRun.url ?? "",
+  ].filter(Boolean);
+
+  if (!watch.ok) {
+    const stillRunning = finalRun.status && finalRun.status !== "completed";
+    const failedRunProof =
+      !stillRunning && finalRun.status === "completed"
+        ? inspectLiveWorkflowArtifacts({
+            client: github.client,
+            projectDir,
+            appDir,
+            runId,
+            featureKey,
+            planRel,
+          })
+        : null;
+    const capacityReason = failedRunProof
+      ? capacityPreflightReason(failedRunProof)
+      : null;
+    if (capacityReason) {
+      const summary = [
+        `Feature compact live workflow is waiting on staging capacity for ${featureKey}.`,
+        `Plan: ${planRel}.`,
+        `Run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
+        capacityReason,
+        failedRunProof.resultPath
+          ? `GitHub artifact result: ${failedRunProof.resultPath}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      updateFeatureCompactItem(state, featureKey, {
+        status: "error",
+        lastPlanPath: planRel,
+        lastSummaryPath: summaryRel,
+        lastDiagnosticsPath: diagnosticsRel,
+        lastResultPath: failedRunProof.resultPath ?? resultPath,
+        lastWorkflowRunId: runId,
+        lastWorkflowRunUrl: finalRun.url ?? null,
+        lastWorkflowLoopKey: loopKey,
+        lastDispatchMetadataPath: metadataPath,
+        lastSummary: summary,
+      });
+      saveFeatureCompactLoopState(statePath, state);
+      return completion(ctx, config, {
+        task,
+        attemptId,
+        claim: "partial",
+        summary,
+        evidence: [
+          planRel,
+          summaryRel,
+          diagnosticsRel,
+          resultPath ?? "",
+          failedRunProof.resultPath ?? "",
+          finalRun.url ?? "",
+        ].filter(Boolean),
+        problem: {
+          action: "request",
+          category: "feature-compact-capacity",
+          diagnosis: summary,
+          resumeCondition:
+            "Free staging AKS managed-cluster capacity, increase quota, or rerun after at least one cluster create slot is available.",
+        },
+      });
+    }
+    const status = "error";
+    const claim: TaskCompletionClaim = "partial";
+    const summary = [
+      `Feature compact live workflow did not pass for ${featureKey}.`,
+      `Plan: ${planRel}.`,
+      `Run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
+      watch.detail || "workflow run did not complete successfully",
+    ].join(" ");
+    updateFeatureCompactItem(state, featureKey, {
+      status,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastWorkflowRunId: runId,
+      lastWorkflowRunUrl: finalRun.url ?? null,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim,
+      summary,
+      evidence: liveEvidence,
+      problem: {
+        action: "request",
+        category: stillRunning
+          ? "github-actions-runner-wait"
+          : "feature-compact-live-test",
+        diagnosis: summary,
+        resumeCondition: stillRunning
+          ? "GitHub workflow runner capacity or the still-running workflow must finish before this feature can be marked done."
+          : "Inspect the live workflow failure, fix the compact plan/spec/runtime, and retry this feature.",
+      },
+    });
+  }
+
+  const liveProof = inspectLiveWorkflowArtifacts({
+    client: github.client,
+    projectDir,
+    appDir,
+    runId,
+    featureKey,
+    planRel,
+  });
+
+  if (!liveProof.ok) {
+    const summary = [
+      `Feature compact live workflow did not prove a live Azure pass for ${featureKey}.`,
+      `Plan: ${planRel}.`,
+      `Run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
+      liveProof.detail,
+      resultPath ? `Local check result: ${resultPath}.` : "",
+      liveProof.resultPath
+        ? `GitHub artifact result: ${liveProof.resultPath}.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: liveProof.resultPath ?? resultPath,
+      lastWorkflowRunId: runId,
+      lastWorkflowRunUrl: finalRun.url ?? null,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [
+        planRel,
+        summaryRel,
+        diagnosticsRel,
+        resultPath ?? "",
+        liveProof.resultPath ?? "",
+        finalRun.url ?? "",
+      ].filter(Boolean),
+      problem: {
+        action: "request",
+        category: "feature-compact-live-proof",
+        diagnosis: summary,
+        resumeCondition:
+          "Rerun the compact GitHub workflow after the workflow uploads a passing live-azure-run result artifact for this compact plan.",
+      },
+    });
+  }
+
   const summary = [
-    `Feature compact package ${status} for ${featureKey}.`,
+    `Feature compact package done for ${featureKey}; live GitHub workflow passed.`,
     `Plan: ${planRel}.`,
     `Summary: ${summaryRel}.`,
     `Diagnostics: ${diagnosticsRel}.`,
-    resultPath ? `Test result: ${resultPath}.` : "",
+    liveProof.resultPath ? `Live test result: ${liveProof.resultPath}.` : "",
+    resultPath ? `Local check result: ${resultPath}.` : "",
+    `Workflow run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
+    diagnostics.packageStatus
+      ? `Package status: ${diagnostics.packageStatus}.`
+      : "",
     diagnostics.metrics
       ? `Specs=${diagnostics.metrics.specsSelected ?? "?"}, clusters=${diagnostics.metrics.clustersNeeded ?? "?"}, saved=${diagnostics.metrics.clustersSaved ?? "?"}.`
       : "",
@@ -333,18 +1473,31 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     .filter(Boolean)
     .join(" ");
   updateFeatureCompactItem(state, featureKey, {
-    status,
+    status: "done",
     lastPlanPath: planRel,
     lastSummaryPath: summaryRel,
     lastDiagnosticsPath: diagnosticsRel,
-    lastResultPath: resultPath,
+    lastResultPath: liveProof.resultPath ?? resultPath,
+    lastWorkflowRunId: runId,
+    lastWorkflowRunUrl: finalRun.url ?? null,
+    lastWorkflowLoopKey: loopKey,
+    lastDispatchMetadataPath: metadataPath,
+    lastLiveProofVersion: liveAksProofVersion,
     lastSummary: summary,
   });
   saveFeatureCompactLoopState(statePath, state);
   return completion(ctx, config, {
     task,
     attemptId,
-    claim: status === "blocked" ? "blocked" : "done",
+    claim: "done",
     summary,
+    evidence: [
+      planRel,
+      summaryRel,
+      diagnosticsRel,
+      resultPath ?? "",
+      liveProof.resultPath ?? "",
+      finalRun.url ?? "",
+    ].filter(Boolean),
   });
 }

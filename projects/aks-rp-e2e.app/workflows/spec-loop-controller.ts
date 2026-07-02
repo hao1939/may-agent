@@ -3,6 +3,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
@@ -39,8 +40,14 @@ import {
 import {
   acceptTerminalReviewChildren,
   consumeDispatchedAssignments,
+  reopenControllerRootWhenIncomplete,
   requeueOrphanedActiveChildren,
 } from "./lib/loop-controller-repair.ts";
+import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
+import {
+  activeWorkflowRuns,
+  resolveGitHubClient,
+} from "./lib/github-actions.ts";
 
 export const name = "spec-loop-controller";
 export const description =
@@ -77,13 +84,23 @@ function taskText(task: TaskNode): string {
     .join("\n");
 }
 
-function staleNonDirectLiveErrorIsDone(task: TaskNode): boolean {
+function staleNonDirectLiveErrorNeedsLiveRun(task: TaskNode): boolean {
   const text = taskText(task).toLowerCase();
   return (
     text.includes("source/check-only") ||
     text.includes("not directly live-executable") ||
     text.includes("requires an existing-cluster carrier") ||
     text.includes("requires a shared-cluster carrier")
+  );
+}
+
+function dispatchFailedBeforeWorkflowRun(task: TaskNode): boolean {
+  const text = taskText(task).toLowerCase();
+  return (
+    text.includes("github workflow dispatch failed") ||
+    text.includes("gh auth login") ||
+    text.includes("populate the gh_token") ||
+    text.includes("workflow dispatch failed")
   );
 }
 
@@ -115,7 +132,7 @@ function archivedTasksById(appDir: string, taskId: string): TaskNode[] {
   return matches;
 }
 
-function reconcileArchivedDoneStatuses(input: {
+function reconcileArchivedNonLiveErrors(input: {
   appDir: string;
   tasks: Record<string, TaskNode>;
   state: SpecLoopState;
@@ -126,11 +143,11 @@ function reconcileArchivedDoneStatuses(input: {
       continue;
     }
     const archivedTasks = archivedTasksById(input.appDir, spec.taskId);
-    if (!archivedTasks.some(staleNonDirectLiveErrorIsDone)) {
+    if (!archivedTasks.some(staleNonDirectLiveErrorNeedsLiveRun)) {
       continue;
     }
     updateSpecLoopSpec(input.state, specId, {
-      status: "done",
+      status: "error",
       taskId: spec.taskId,
     });
     reconciled += 1;
@@ -152,6 +169,92 @@ function numberContext(task: TaskNode, key: string, fallback: number): number {
 function stringContext(task: TaskNode, key: string, fallback: string): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function optionalBooleanContext(task: TaskNode, key: string): boolean | null {
+  const value = taskContext(task)[key];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes"].includes(normalized)) return true;
+    if (["false", "0", "no"].includes(normalized)) return false;
+  }
+  return null;
+}
+
+function shouldPreflightGitHubAccess(input: {
+  projectDir: string;
+  loopTask: TaskNode;
+}): boolean {
+  const explicit = optionalBooleanContext(
+    input.loopTask,
+    "githubAccessPreflight",
+  );
+  if (explicit !== null) return explicit;
+  return existsSync(join(input.projectDir, ".git"));
+}
+
+function shouldPreflightSpecExecutionPolicy(input: {
+  projectDir: string;
+  loopTask: TaskNode;
+}): boolean {
+  const explicit = optionalBooleanContext(
+    input.loopTask,
+    "specExecutionPolicyPreflight",
+  );
+  if (explicit !== null) return explicit;
+  return ["check-private-source-policy.ts", "check-live-admission.ts"].some(
+    (script) => existsSync(join(input.projectDir, "runner", script)),
+  );
+}
+
+type SpecExecutionPolicyResult = { ok: true } | { ok: false; reason: string };
+
+function compactCommandOutput(output: string): string {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 2_000);
+}
+
+function checkSpecExecutionPolicy(input: {
+  projectDir: string;
+  specId: string;
+  enabled: boolean;
+}): SpecExecutionPolicyResult {
+  if (!input.enabled) return { ok: true };
+  const scripts = [
+    "check-private-source-policy.ts",
+    "check-live-admission.ts",
+  ].filter((script) => existsSync(join(input.projectDir, "runner", script)));
+  for (const script of scripts) {
+    const result = spawnSync(
+      "bun",
+      [`runner/${script}`, "--spec", input.specId],
+      {
+        cwd: input.projectDir,
+        encoding: "utf8",
+        timeout: 30_000,
+        env: process.env,
+      },
+    );
+    if (result.status === 0) continue;
+    const output = compactCommandOutput(
+      [result.stderr, result.stdout, result.error?.message]
+        .filter(Boolean)
+        .join("\n"),
+    );
+    return {
+      ok: false,
+      reason:
+        output ||
+        `${script} failed with status ${String(result.status ?? "unknown")}`,
+    };
+  }
+  return { ok: true };
 }
 
 function loopTaskIdFromTrigger(trigger: TriggerEvent | null): string {
@@ -245,7 +348,7 @@ function releaseContinuingController(input: {
   });
 }
 
-function openChildCount(
+function openSpecVerifierChildCount(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
 ): number {
@@ -256,6 +359,44 @@ function openChildCount(
       const status = taskStatus(task);
       return status === "active" || status === "backlog";
     }).length;
+}
+
+function frontierOpenChildStatuses(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): {
+  openChildren: number;
+  activeChildren: number;
+  reviewChildren: number;
+  waitingChildren: number;
+  backlogChildren: number;
+} {
+  const counts = {
+    openChildren: 0,
+    activeChildren: 0,
+    reviewChildren: 0,
+    waitingChildren: 0,
+    backlogChildren: 0,
+  };
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child || isSpecLoopFollowupChild(child)) continue;
+    const status = taskStatus(child);
+    if (status === "active") {
+      counts.activeChildren += 1;
+      counts.openChildren += 1;
+    } else if (status === "review") {
+      counts.reviewChildren += 1;
+      counts.openChildren += 1;
+    } else if (status === "waiting") {
+      counts.waitingChildren += 1;
+      counts.openChildren += 1;
+    } else if (status === "backlog") {
+      counts.backlogChildren += 1;
+      counts.openChildren += 1;
+    }
+  }
+  return counts;
 }
 
 function openFollowupCount(
@@ -269,6 +410,19 @@ function openFollowupCount(
       const status = taskStatus(task);
       return status === "active" || status === "backlog" || status === "review";
     }).length;
+}
+
+function blockedWaitChildCount(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): number {
+  return (loopTask.children ?? [])
+    .map((childId) => tasks[childId])
+    .filter(
+      (task) =>
+        !!task && !isSpecLoopChild(task) && !isSpecLoopFollowupChild(task),
+    )
+    .filter((task) => taskStatus(task) === "blocked").length;
 }
 
 function activeOrBacklogSpecIds(
@@ -293,7 +447,7 @@ function activeSpecLoopChildCount(
 ): number {
   return (loopTask.children ?? [])
     .map((childId) => tasks[childId])
-    .filter((task) => isSpecLoopChild(task) || isSpecLoopFollowupChild(task))
+    .filter(isSpecLoopChild)
     .filter((task) => taskStatus(task) === "active").length;
 }
 
@@ -344,7 +498,7 @@ function retryTaskIdForSpec(
   return candidate;
 }
 
-type NonPassSpecStatus = "error" | "fail";
+type NonPassSpecStatus = "pending" | "error" | "fail";
 
 type NonPassSpecGroup = {
   status: NonPassSpecStatus;
@@ -369,23 +523,66 @@ function specFamily(specId: string): string {
 
 function hasPendingOrRunningSpecs(state: SpecLoopState): boolean {
   return Object.values(state.specs).some(
-    (spec) => spec.status === "pending" || spec.status === "running",
+    (spec) =>
+      spec.status === "pending" ||
+      spec.status === "running" ||
+      spec.status === "done",
   );
+}
+
+function canDirectlyRunSpec(input: {
+  state: SpecLoopState;
+  specId: string;
+  maxDirectAttemptsPerSpec: number;
+}): boolean {
+  const spec = input.state.specs[input.specId];
+  if (!spec) return false;
+  if (spec.status === "pending" || spec.status === "done") {
+    return (
+      !spec.lastRunUrl || (spec.attempts ?? 0) < input.maxDirectAttemptsPerSpec
+    );
+  }
+  if (spec.status !== "error" && spec.status !== "fail") return false;
+  return (spec.attempts ?? 0) < input.maxDirectAttemptsPerSpec;
+}
+
+function retryBudgetExhaustedCount(input: {
+  state: SpecLoopState;
+  maxDirectAttemptsPerSpec: number;
+}): number {
+  return Object.values(input.state.specs).filter(
+    (spec) =>
+      (spec.status === "error" || spec.status === "fail") &&
+      (spec.attempts ?? 0) >= input.maxDirectAttemptsPerSpec,
+  ).length;
 }
 
 function nonPassSpecGroups(
   state: SpecLoopState,
-  input: { maxGroups: number; maxSpecSamples: number },
+  input: {
+    maxGroups: number;
+    maxSpecSamples: number;
+    maxDirectAttemptsPerSpec: number;
+  },
 ): NonPassSpecGroup[] {
   const groups = new Map<string, NonPassSpecGroup>();
   for (const [specId, spec] of Object.entries(state.specs)) {
-    if (spec.status !== "error" && spec.status !== "fail") {
+    const status = spec.status;
+    const groupedPending =
+      status === "pending" &&
+      !canDirectlyRunSpec({
+        state,
+        specId,
+        maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+      });
+    if (status !== "error" && status !== "fail" && !groupedPending) {
       continue;
     }
+    const groupStatus: NonPassSpecStatus = groupedPending ? "pending" : status;
     const family = specFamily(specId);
-    const key = `${spec.status}:${family}`;
+    const key = `${groupStatus}:${family}`;
     const group = groups.get(key) ?? {
-      status: spec.status,
+      status: groupStatus,
       family,
       count: 0,
       specIds: [],
@@ -399,6 +596,7 @@ function nonPassSpecGroups(
   const statusRank: Record<NonPassSpecStatus, number> = {
     error: 0,
     fail: 1,
+    pending: 2,
   };
   return [...groups.values()]
     .sort(
@@ -424,12 +622,24 @@ function materializeSpecLoopFollowups(
     branch: string;
     maxGroups: number;
     maxSpecSamples: number;
+    maxDirectAttemptsPerSpec: number;
   },
 ): string[] {
-  if (hasPendingOrRunningSpecs(input.state)) return [];
+  const hasRunnableWork = Object.entries(input.state.specs).some(
+    ([specId, spec]) =>
+      spec.status === "running" ||
+      (spec.status === "pending" &&
+        canDirectlyRunSpec({
+          state: input.state,
+          specId,
+          maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+        })),
+  );
+  if (hasRunnableWork) return [];
   const groups = nonPassSpecGroups(input.state, {
     maxGroups: input.maxGroups,
     maxSpecSamples: input.maxSpecSamples,
+    maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
   });
   const createdTaskIds: string[] = [];
   for (const group of groups) {
@@ -440,7 +650,7 @@ function materializeSpecLoopFollowups(
       id: taskId,
       parentId: input.loopTask.id,
       priority: "P1",
-      goal: `Reconcile ${group.count} ${group.status} spec-loop result(s) for the ${group.family} feature family without blindly rerunning unchanged live tests.`,
+      goal: `Reconcile ${group.count} ${group.status} spec-loop result(s) for the ${group.family} feature family by fixing what is fixable, rerunning only meaningful changes, and escalating only after bounded repair paths are exhausted.`,
       inputs: [
         `status:${group.status}`,
         `featureFamily:${group.family}`,
@@ -451,10 +661,10 @@ function materializeSpecLoopFollowups(
       ],
       outputs: [input.stateRef, "evidence/archive/", "features/", "specs/"],
       acceptance: [
-        "Grouped non-pass result root cause was classified as test/spec issue, product issue, environment wait, or rerun-ready.",
-        "Relevant spec-loop state, spec/model files, or evidence notes were updated when the classification changed.",
-        "No live test was rerun unless the blocker changed or a concrete test/spec fix made the rerun meaningful.",
-        "Any remaining blocker has an exact resume condition and affected spec list.",
+        "Every sampled non-pass spec has a concrete root-cause classification.",
+        "Every fixable test/spec/runtime issue was repaired and queued for a meaningful live rerun.",
+        "If no bounded repo-local fix remains, an escalation task records the exact owner/environment/product reason, affected specs, attempted fixes, and resume condition.",
+        "Relevant spec-loop state, spec/model files, or evidence notes were updated to match that pass/fix/escalate decision.",
       ],
       conflict_scope: [
         `spec-loop-followup:${group.status}:${group.family}`,
@@ -476,6 +686,108 @@ function materializeSpecLoopFollowups(
   return createdTaskIds;
 }
 
+function policyFollowupTaskId(specId: string): string {
+  return `repair-spec-loop-policy-${safeTaskIdPart(specFamily(specId))}`;
+}
+
+function createOrUpdatePolicyFollowup(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    loopTask: TaskNode;
+    specId: string;
+    reason: string;
+    stateRef: string;
+    target: string;
+    branch: string;
+  },
+): { taskId: string; created: boolean } {
+  const taskId = policyFollowupTaskId(input.specId);
+  const now = new Date().toISOString();
+  let created = false;
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const existing = tree.tasks[taskId];
+    if (existing) {
+      const context = taskContext(existing);
+      const sampledSpecIds = Array.isArray(context.sampledSpecIds)
+        ? context.sampledSpecIds.filter(
+            (item): item is string => typeof item === "string",
+          )
+        : [];
+      existing.inputs = [
+        ...new Set([
+          ...(existing.inputs ?? []),
+          `spec:${input.specId}`,
+          `target:${input.target}`,
+          `branch:${input.branch}`,
+          `state:${input.stateRef}`,
+        ]),
+      ];
+      existing.context = {
+        ...context,
+        specLoopFollowup: true,
+        status: "error",
+        featureFamily: specFamily(input.specId),
+        sampledSpecIds: [...new Set([...sampledSpecIds, input.specId])],
+        latestPolicyFailure: input.reason,
+        updatedAt: now,
+      };
+      existing.trace = {
+        ...(existing.trace ?? {}),
+        latest_policy_failure_spec_id: input.specId,
+        latest_policy_failure_reason: input.reason,
+        latest_policy_failure_at: now,
+      };
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "spec_loop_policy_followup_updated",
+        task_id: taskId,
+        spec_id: input.specId,
+        reason: input.reason,
+      });
+      return;
+    }
+    created = true;
+  });
+  if (created) {
+    createTask(config, {
+      id: taskId,
+      parentId: input.loopTask.id,
+      priority: "P1",
+      goal: `Repair spec-loop execution policy failures for the ${specFamily(input.specId)} feature family so affected specs can run live on GitHub without private AKS RP source or Azure CLI fallback.`,
+      inputs: [
+        `spec:${input.specId}`,
+        `target:${input.target}`,
+        `branch:${input.branch}`,
+        `state:${input.stateRef}`,
+        `policyFailure:${input.reason}`,
+      ],
+      outputs: [input.stateRef, "features/", "specs/", "runs/test-results/"],
+      acceptance: [
+        "Every sampled spec removes private AKS RP source, Azure CLI fallback, and existing/shared-cluster carrier dependencies from its live execution path.",
+        "Each repaired spec is requeued for a standalone live GitHub run.",
+        "If no repo-local repair remains, the task records the exact external owner, affected specs, attempted fixes, and resume condition.",
+      ],
+      conflict_scope: [
+        `spec-loop-policy:${specFamily(input.specId)}`,
+        `feature:${specFamily(input.specId)}`,
+      ],
+      context: {
+        specLoopFollowup: true,
+        policyFollowup: true,
+        status: "error",
+        featureFamily: specFamily(input.specId),
+        sampledSpecIds: [input.specId],
+        latestPolicyFailure: input.reason,
+        stateRef: input.stateRef,
+        target: input.target,
+        branch: input.branch,
+      },
+    });
+  }
+  return { taskId, created };
+}
+
 function releaseStaleRunningSpecs(input: {
   state: SpecLoopState;
   activeOrBacklog: Set<string>;
@@ -493,14 +805,35 @@ function releaseStaleRunningSpecs(input: {
   return released;
 }
 
+function requeueTerminalSpecsMissingLocalResult(
+  state: SpecLoopState,
+  maxDirectAttemptsPerSpec: number,
+): number {
+  let requeued = 0;
+  for (const [specId, spec] of Object.entries(state.specs)) {
+    if (spec.status !== "error" && spec.status !== "fail") continue;
+    if ((spec.attempts ?? 0) >= maxDirectAttemptsPerSpec) continue;
+    if (!spec.lastRunUrl) continue;
+    if (spec.lastResultPath && existsSync(spec.lastResultPath)) continue;
+    updateSpecLoopSpec(state, specId, {
+      status: "pending",
+      taskId: null,
+      activeAttemptId: null,
+      activeTaskSessionId: null,
+      activeWorkflowRunId: null,
+    });
+    requeued += 1;
+  }
+  return requeued;
+}
+
 function backlogChildTaskIds(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
 ): string[] {
   return (loopTask.children ?? []).filter((childId) => {
     const child = tasks[childId];
-    if (!isSpecLoopChild(child) && !isSpecLoopFollowupChild(child))
-      return false;
+    if (!isSpecLoopChild(child)) return false;
     return child && taskStatus(child) === "backlog";
   });
 }
@@ -530,6 +863,16 @@ function syncOpenChildStatuses(input: {
     } else if (status === "review" || status === "done") {
       const specState = input.state.specs[specId];
       const current = specState?.status;
+      if (dispatchFailedBeforeWorkflowRun(child) && !specState?.lastRunUrl) {
+        updateSpecLoopSpec(input.state, specId, {
+          status: "pending",
+          taskId: null,
+          activeAttemptId: null,
+          activeTaskSessionId: null,
+          activeWorkflowRunId: null,
+        });
+        continue;
+      }
       if (
         (current === "pending" || current === "running") &&
         specState?.taskId !== child.id
@@ -545,8 +888,8 @@ function syncOpenChildStatuses(input: {
       ) {
         updateSpecLoopSpec(input.state, specId, {
           status:
-            current === "error" && staleNonDirectLiveErrorIsDone(child)
-              ? "done"
+            current === "error" && staleNonDirectLiveErrorNeedsLiveRun(child)
+              ? "error"
               : String(current) === "blocked"
                 ? "error"
                 : current,
@@ -554,7 +897,7 @@ function syncOpenChildStatuses(input: {
         });
       } else {
         updateSpecLoopSpec(input.state, specId, {
-          status: status === "done" ? "done" : "error",
+          status: "error",
           taskId: child.id,
         });
       }
@@ -578,51 +921,154 @@ function dispatchAssignment(
 }
 
 function specLoopWorkflowProgress(input: {
-  state: { specs: Record<string, { status?: string }> };
+  state: SpecLoopState;
   openChildren: number;
+  activeChildren: number;
+  reviewChildren: number;
+  waitingChildren: number;
+  backlogChildren: number;
+  openSpecVerifierChildren: number;
   openFollowups: number;
+  blockedWaitChildren: number;
   created: number;
   createdFollowups: number;
   assigned: number;
-  reconciledArchivedDone: number;
+  reconciledArchivedNonLiveErrors: number;
   targetRunning: number;
+  maxDirectAttemptsPerSpec: number;
+  backendBlocker?: string;
+  dispatchHold?: string;
+  activeGithubRuns?: number;
+  githubActiveRunLimit?: number;
 }): Record<string, unknown> {
   const counts: Record<string, number> = {};
-  for (const spec of Object.values(input.state.specs)) {
+  let dispatchablePending = 0;
+  for (const [specId, spec] of Object.entries(input.state.specs)) {
     const status = spec.status || "pending";
     counts[status] = (counts[status] ?? 0) + 1;
+    if (
+      status === "pending" &&
+      canDirectlyRunSpec({
+        state: input.state,
+        specId,
+        maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+      })
+    ) {
+      dispatchablePending += 1;
+    }
   }
-  const pending = counts.pending ?? 0;
-  const running = counts.running ?? 0;
-  const nonPass = (counts.fail ?? 0) + (counts.error ?? 0);
-  const executionDrained = pending === 0 && running === 0;
-  const completionReady = executionDrained && nonPass === 0;
-  const surplusRunning = Math.max(0, running - input.targetRunning);
+  const residuePending = counts.pending ?? 0;
+  const strandedPending = Math.max(0, residuePending - dispatchablePending);
+  const residueRunning = counts.running ?? 0;
+  const done = counts.done ?? 0;
+  const residueError = counts.error ?? 0;
+  const residueFail = counts.fail ?? 0;
+  const residuePrOpen = counts.pr_open ?? 0;
+  const nonPass = residueFail + residueError + residuePrOpen + done;
+  const executionDrained = dispatchablePending === 0 && residueRunning === 0;
+  const completionReady =
+    residuePending === 0 && residueRunning === 0 && nonPass === 0;
+  const surplusRunning = Math.max(0, residueRunning - input.targetRunning);
+  const groupedNonPassResidue = residueError + residueFail + residuePrOpen;
+  const groupedResidue = strandedPending + groupedNonPassResidue;
+  const retryBudgetExhausted = retryBudgetExhaustedCount({
+    state: input.state,
+    maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+  });
+  const unrepresentedNonTerminalCount =
+    dispatchablePending +
+    residueRunning +
+    done +
+    (input.openFollowups > 0 ? 0 : groupedResidue);
+  const exactWaitOnlyFrontier =
+    input.openChildren === 0 &&
+    input.activeChildren === 0 &&
+    input.reviewChildren === 0 &&
+    input.waitingChildren === 0 &&
+    input.backlogChildren === 0 &&
+    input.openFollowups === 0 &&
+    input.blockedWaitChildren > 0;
+  const strandedExhaustedResidueOnly =
+    exactWaitOnlyFrontier &&
+    dispatchablePending === 0 &&
+    residueRunning === 0 &&
+    done === 0 &&
+    residuePrOpen === 0 &&
+    retryBudgetExhausted === residueError + residueFail;
+  const noRefillNow =
+    exactWaitOnlyFrontier && unrepresentedNonTerminalCount === 0;
+  const frontierSummary = [
+    `${input.activeChildren} active child leaf/leaves`,
+    `${input.reviewChildren} review child leaf/leaves`,
+    `${input.waitingChildren} waiting child leaf/leaves`,
+    `${input.backlogChildren} backlog child leaf/leaves`,
+    `${input.blockedWaitChildren} blocked wait leaf/leaves`,
+    `${input.openFollowups} backlog follow-up leaf/leaves`,
+  ].join(", ");
   return {
     completionReady,
     executionDrained,
+    backendBlocked: input.backendBlocker ? true : undefined,
+    backendBlocker: input.backendBlocker || undefined,
+    dispatchHeld: input.dispatchHold ? true : undefined,
+    dispatchHold: input.dispatchHold || undefined,
+    noRefillNow: noRefillNow ? true : undefined,
+    strandedExhaustedResidueOnly: strandedExhaustedResidueOnly
+      ? true
+      : undefined,
     reason: completionReady
-      ? "spec-loop state has no pending, running, fail, or error specs"
-      : executionDrained
-        ? "spec-loop execution is drained but non-pass results need grouped follow-up"
-        : surplusRunning > 0
-          ? `spec-loop has ${running} running verifier(s) above targetRunning=${input.targetRunning}; controller suppresses backlog refill until active work drains`
-          : "spec-loop state still has non-terminal specs",
-    pending,
-    running,
+      ? "spec-loop state has no pending, running, fail, error, or legacy done specs; every spec has a live pass"
+      : input.backendBlocker
+        ? `spec-loop live backend is unavailable; no new verifier leaves will be created until this is fixed: ${input.backendBlocker}`
+        : input.dispatchHold
+          ? input.dispatchHold
+          : noRefillNow
+            ? `spec-loop execution is drained and the remaining frontier is exact wait stewardship: ${frontierSummary}; stranded pending residue=${strandedPending}`
+            : surplusRunning > 0
+              ? `spec-loop has ${residueRunning} running verifier(s) above targetRunning=${input.targetRunning}; controller suppresses backlog refill until active work drains`
+              : input.openChildren > 0 ||
+                  input.openFollowups > 0 ||
+                  input.blockedWaitChildren > 0
+                ? `spec-loop frontier remains narrow while residue is still nonterminal: ${frontierSummary}; residue pending=${residuePending} (dispatchable=${dispatchablePending}, stranded=${strandedPending}), residue running=${residueRunning}, residue error=${residueError}, residue fail=${residueFail}`
+                : executionDrained
+                  ? `spec-loop execution is drained but residue still needs normalization: pending=${residuePending} (dispatchable=${dispatchablePending}, stranded=${strandedPending}), running=${residueRunning}, error=${residueError}, fail=${residueFail}, pr_open=${residuePrOpen}, done=${done}`
+                  : `spec-loop has exact open frontier plus nonterminal residue: ${frontierSummary}; residue pending=${residuePending} (dispatchable=${dispatchablePending}, stranded=${strandedPending}), residue running=${residueRunning}, residue error=${residueError}, residue fail=${residueFail}`,
+    pending: residuePending,
+    dispatchablePending,
+    strandedPending,
+    running: residueRunning,
+    residuePending,
+    residueRunning,
+    residueError,
+    residueFail,
+    residuePrOpen,
     targetRunning: input.targetRunning,
+    maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+    activeGithubRuns: input.activeGithubRuns,
+    githubActiveRunLimit: input.githubActiveRunLimit,
+    retryBudgetExhausted,
+    unrepresentedNonTerminalCount,
     surplusRunning,
     pass: counts.pass ?? 0,
-    fail: counts.fail ?? 0,
-    error: counts.error ?? 0,
+    fail: residueFail,
+    error: residueError,
+    prOpen: residuePrOpen,
     nonPass,
-    done: counts.done ?? 0,
+    done,
     openChildren: input.openChildren,
+    activeChildren: input.activeChildren,
+    reviewChildren: input.reviewChildren,
+    waitingChildren: input.waitingChildren,
+    backlogChildren: input.backlogChildren,
+    openSpecVerifierChildren: input.openSpecVerifierChildren,
     openFollowups: input.openFollowups,
+    blockedWaitChildren: input.blockedWaitChildren,
+    frontierSummary,
     lastPulseCreated: input.created,
     lastPulseCreatedFollowups: input.createdFollowups,
     lastPulseAssigned: input.assigned,
-    lastPulseReconciledArchivedDone: input.reconciledArchivedDone,
+    lastPulseReconciledArchivedNonLiveErrors:
+      input.reconciledArchivedNonLiveErrors,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -646,8 +1092,44 @@ function updateControllerWorkflowProgress(input: {
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) return;
+
+    const trace =
+      task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+        ? (task.trace as Record<string, unknown>)
+        : {};
+    const hasAssignedAttempt =
+      typeof trace.current_attempt_id === "string" &&
+      trace.current_attempt_id.trim().length > 0;
+    const holdReason =
+      typeof input.progress.reason === "string" && input.progress.reason.trim()
+        ? input.progress.reason.trim()
+        : "controller is paused on exact wait stewardship";
+    const holdBlocked =
+      input.progress.noRefillNow === true ||
+      input.progress.backendBlocked === true ||
+      input.progress.dispatchHeld === true;
+
     if (input.progress.completionReady === false) {
       task.blocker = undefined;
+      reopenControllerRootWhenIncomplete({
+        task,
+        progress: input.progress,
+        reason: exactBlockedWaitStewardshipProgress(input.progress)
+          ? "spec loop frontier is exact blocked wait stewardship; keep the durable root blocked until one named wait resolves or is replaced"
+          : "spec loop progress is incomplete; durable controller root must stay runnable until non-pass specs are fixed, rerun, or exactly escalated",
+      });
+
+      if (!hasAssignedAttempt) {
+        if (holdBlocked) {
+          task.status = "blocked";
+          task.state = "blocked";
+          task.blocker = holdReason;
+        } else {
+          task.status = "backlog";
+          task.state = "backlog";
+          task.blocker = undefined;
+        }
+      }
     }
     task.context = {
       ...taskContext(task),
@@ -703,9 +1185,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const target = stringContext(loopTask, "target", "staging");
   const branch = stringContext(loopTask, "branch", "dev");
   const timeoutMinutes = String(numberContext(loopTask, "timeoutMinutes", 60));
+  const maxDirectAttemptsPerSpec = numberContext(
+    loopTask,
+    "maxDirectAttemptsPerSpec",
+    3,
+  );
   const targetRunning = Math.min(
     windowSize,
-    numberContext(loopTask, "targetRunning", Math.min(3, windowSize)),
+    numberContext(loopTask, "targetRunning", windowSize),
   );
   const {
     state,
@@ -751,7 +1238,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             ? String(current) === "blocked"
               ? "error"
               : current
-            : "done"
+            : "error"
           : "error";
       updateSpecLoopSpec(state, specId, {
         status,
@@ -782,12 +1269,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: refreshedTree.tasks,
     state,
   });
-  const reconciledArchivedDone = reconcileArchivedDoneStatuses({
+  const reconciledArchivedNonLiveErrors = reconcileArchivedNonLiveErrors({
     appDir,
     tasks: refreshedTree.tasks,
     state,
   });
-  const alreadyOpen = openChildCount(refreshedLoopTask, refreshedTree.tasks);
+  const alreadyOpen = openSpecVerifierChildCount(
+    refreshedLoopTask,
+    refreshedTree.tasks,
+  );
   const existing = existingSpecIds(refreshedLoopTask, refreshedTree.tasks);
   const releasedStaleRunning = releaseStaleRunningSpecs({
     state,
@@ -796,12 +1286,84 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       refreshedTree.tasks,
     ),
   });
-  const pending = orderedPendingSpecIds(state).filter(
-    (specId) => !existing.has(specId),
+  const requeuedMissingLocalResults = requeueTerminalSpecsMissingLocalResult(
+    state,
+    maxDirectAttemptsPerSpec,
   );
+  const githubAccess = shouldPreflightGitHubAccess({
+    projectDir,
+    loopTask,
+  })
+    ? resolveGitHubClient(projectDir)
+    : { client: { kind: "gh" as const } };
+  const backendBlocker = githubAccess.client
+    ? ""
+    : (githubAccess.reason ??
+      "GitHub Actions access is unavailable for live single-spec verification.");
+  const githubActiveRunLimit = numberContext(
+    loopTask,
+    "githubActiveRunLimit",
+    6,
+  );
+  const activeGithubRuns = githubAccess.client
+    ? activeWorkflowRuns({
+        client: githubAccess.client,
+        projectDir,
+        branch,
+      }).length
+    : 0;
+  const dispatchHold =
+    !backendBlocker && activeGithubRuns >= githubActiveRunLimit
+      ? `spec-loop live dispatch held because ${activeGithubRuns} GitHub workflow run(s) are already in progress on ${branch}; limit=${githubActiveRunLimit}`
+      : "";
+  const specExecutionPolicyPreflight = shouldPreflightSpecExecutionPolicy({
+    projectDir,
+    loopTask,
+  });
+  const pending =
+    backendBlocker || dispatchHold
+      ? []
+      : orderedPendingSpecIds(state).filter(
+          (specId) =>
+            !existing.has(specId) &&
+            canDirectlyRunSpec({ state, specId, maxDirectAttemptsPerSpec }),
+        );
   const createdTaskIds: string[] = [];
+  const policyFailureTaskIds: string[] = [];
+  let policyPreflightFailures = 0;
+  const policyPreflightFailureSamples: string[] = [];
   const toCreate = Math.max(0, windowSize - alreadyOpen);
-  for (const specId of pending.slice(0, toCreate)) {
+  for (const specId of pending) {
+    if (createdTaskIds.length >= toCreate) break;
+    const policy = checkSpecExecutionPolicy({
+      projectDir,
+      specId,
+      enabled: specExecutionPolicyPreflight,
+    });
+    if (policy.ok === false) {
+      policyPreflightFailures += 1;
+      if (policyPreflightFailureSamples.length < 5) {
+        policyPreflightFailureSamples.push(specId);
+      }
+      const followup = createOrUpdatePolicyFollowup(config, {
+        loopTask,
+        specId,
+        reason: policy.reason,
+        stateRef,
+        target,
+        branch,
+      });
+      if (followup.created) policyFailureTaskIds.push(followup.taskId);
+      updateSpecLoopSpec(state, specId, {
+        status: "error",
+        taskId: followup.taskId,
+        attempts: Math.max(
+          state.specs[specId]?.attempts ?? 0,
+          maxDirectAttemptsPerSpec,
+        ),
+      });
+      continue;
+    }
     const taskId = retryTaskIdForSpec(
       specId,
       refreshedTree.tasks,
@@ -821,10 +1383,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ],
       outputs: [stateRef, "runs/test-results/", "test-results/"],
       acceptance: [
-        "GitHub workflow run completed or produced a concrete blocker.",
+        "GitHub workflow run completed against the fixed target environment.",
         "result.json and summary artifacts were reviewed when available.",
-        "Spec status was classified as pass, fail, or error.",
-        "Test result/model update or fix PR was proposed when needed.",
+        "Spec status was classified as pass, fail, or error with exact root cause.",
+        "Any fail/error has a concrete repair-and-rerun path, or an escalation record after bounded fixes are exhausted.",
         "Spec-loop state was updated.",
       ],
       conflict_scope: [`spec:${specId}`],
@@ -842,7 +1404,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     createdTaskIds.push(taskId);
   }
   const createdFollowupTaskIds =
-    refreshedLoopTask && createdTaskIds.length === 0
+    refreshedLoopTask &&
+    createdTaskIds.length === 0 &&
+    policyFailureTaskIds.length === 0
       ? materializeSpecLoopFollowups(config, {
           loopTask: refreshedLoopTask,
           state,
@@ -851,8 +1415,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           branch,
           maxGroups: numberContext(loopTask, "maxFollowupGroups", 12),
           maxSpecSamples: numberContext(loopTask, "maxFollowupSpecSamples", 20),
+          maxDirectAttemptsPerSpec,
         })
       : [];
+  const allCreatedFollowupTaskIds = [
+    ...policyFailureTaskIds,
+    ...createdFollowupTaskIds,
+  ];
 
   if (
     trigger?.type === "project.task.assigned" ||
@@ -873,7 +1442,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ? activeSpecLoopChildCount(assignableLoopTask, assignableTree.tasks)
     : 0;
   const assignmentCandidateIds = assignableLoopTask
-    ? backlogChildTaskIds(assignableLoopTask, assignableTree.tasks)
+    ? backendBlocker || dispatchHold
+      ? []
+      : backlogChildTaskIds(assignableLoopTask, assignableTree.tasks)
     : [];
   for (const taskId of assignmentCandidateIds) {
     if (activeSpecChildren >= targetRunning) break;
@@ -898,24 +1469,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: latestTree.tasks,
     state,
   });
-  saveSpecLoopState(statePath, state);
+  const projectStatePath = join(
+    projectDir,
+    ".state",
+    "spec-loop",
+    "state.json",
+  );
+  saveSpecLoopState(statePath, state, [projectStatePath]);
+  const frontierCounts = latestLoopTask
+    ? frontierOpenChildStatuses(latestLoopTask, latestTree.tasks)
+    : {
+        openChildren: 0,
+        activeChildren: 0,
+        reviewChildren: 0,
+        waitingChildren: 0,
+        backlogChildren: 0,
+      };
+  const openSpecVerifierChildren = latestLoopTask
+    ? openSpecVerifierChildCount(latestLoopTask, latestTree.tasks)
+    : 0;
+  const openFollowups = latestLoopTask
+    ? openFollowupCount(latestLoopTask, latestTree.tasks)
+    : 0;
+  const blockedWaitChildren = latestLoopTask
+    ? blockedWaitChildCount(latestLoopTask, latestTree.tasks)
+    : 0;
   updateControllerWorkflowProgress({
     appDir,
     projectDir,
     taskId: loopTask.id,
     progress: specLoopWorkflowProgress({
       state,
-      openChildren: latestLoopTask
-        ? openChildCount(latestLoopTask, latestTree.tasks)
-        : 0,
+      openChildren: frontierCounts.openChildren,
+      activeChildren: frontierCounts.activeChildren,
+      reviewChildren: frontierCounts.reviewChildren,
+      waitingChildren: frontierCounts.waitingChildren,
+      backlogChildren: frontierCounts.backlogChildren,
+      openSpecVerifierChildren,
       created: createdTaskIds.length,
       assigned: assignments.length,
-      openFollowups: latestLoopTask
-        ? openFollowupCount(latestLoopTask, latestTree.tasks)
-        : 0,
-      createdFollowups: createdFollowupTaskIds.length,
-      reconciledArchivedDone,
+      openFollowups,
+      blockedWaitChildren,
+      createdFollowups: allCreatedFollowupTaskIds.length,
+      reconciledArchivedNonLiveErrors,
       targetRunning,
+      maxDirectAttemptsPerSpec,
+      backendBlocker,
+      dispatchHold,
+      activeGithubRuns,
+      githubActiveRunLimit,
     }),
   });
   const summary = [
@@ -924,6 +1526,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Created ${createdTaskIds.length} child task(s).`,
     createdFollowupTaskIds.length
       ? `Created ${createdFollowupTaskIds.length} grouped follow-up task(s).`
+      : "",
+    policyFailureTaskIds.length
+      ? `Created ${policyFailureTaskIds.length} policy repair follow-up task(s).`
+      : "",
+    policyPreflightFailures
+      ? `Policy-preflighted ${policyPreflightFailures} spec(s) into repair before GitHub dispatch: ${policyPreflightFailureSamples.join(", ")}.`
       : "",
     `Assigned ${assignments.length} child task(s).`,
     requeuedOrphaned.length
@@ -935,7 +1543,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     releasedStaleRunning
       ? `Released ${releasedStaleRunning} stale running spec(s).`
       : "",
+    requeuedMissingLocalResults
+      ? `Requeued ${requeuedMissingLocalResults} terminal spec(s) with missing local result artifacts.`
+      : "",
+    backendBlocker ? `Backend blocked: ${backendBlocker}` : "",
+    dispatchHold ? `Dispatch held: ${dispatchHold}` : "",
     `Target running spec workflows: ${targetRunning}.`,
+    `Active GitHub workflow runs: ${activeGithubRuns}/${githubActiveRunLimit}.`,
+    `Max direct attempts per spec: ${maxDirectAttemptsPerSpec}.`,
     `Priority specs from dev-infra-core: ${state.prioritySpecIds.length}.`,
   ]
     .filter(Boolean)
@@ -945,10 +1560,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     kind: "spec_loop_controller_pulse",
     task_id: loopTask.id,
     created_task_ids: createdTaskIds,
-    created_followup_task_ids: createdFollowupTaskIds,
+    created_followup_task_ids: allCreatedFollowupTaskIds,
+    policy_preflight_failures: policyPreflightFailures,
+    policy_preflight_failure_samples: policyPreflightFailureSamples,
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
+    requeued_missing_local_result_count: requeuedMissingLocalResults,
     accepted_review_task_ids: acceptedReviewChildren,
     state_path: statePath,
   });

@@ -91,13 +91,17 @@ parent-task handlers, then the project owner. A project selector still matches
 task-targeted events for the same project, but a task selector only matches that
 task.
 
-The active execution model is deliberately small:
+The active execution model is deliberately small. See
+`design/project-app-event-contract.md` for the canonical event names.
 
-- The project owner workflow handles `project.owner.requested`.
+- The project planning workflow handles `project.planning.requested`.
   It sends the owner a compact planning packet, runs event review, then runs
   the task-tree update/assignment step.
-- `focus-plan` handles `project.focus.plan.requested` and
-  `project.focus.review.requested`.
+  Its detailed contract is in `design/project-planner-contract.md`: workflow
+  code orchestrates owner review and assignment, while deterministic branches
+  use structured event/task fields instead of parsing prose.
+- `focus-plan` handles `project.focus.review.requested`; `data.mode` selects
+  `plan` or `progress`.
   It runs the slower mid-term planning cadence: propose or refresh the current
   focus branch, review progress every six hours, and emit a human-targeted
   message when direction/risk needs approval or the focus is off track.
@@ -120,8 +124,9 @@ Task completion is not accepted work. The contract is:
    `project.task.completed` envelope when its attempt ends.
 3. The worker or workflow emits any explicit target follow-up, such as a loop
    tick for a known loop parent.
-4. The owner/review step judges the result and requests `project.problem.requested`
-   only when focused problem solving is actually needed.
+4. The owner/review step judges the result and requests
+   `project.problem.investigation.requested` only when focused problem solving
+   is actually needed.
 
 App routing does not inspect task state, build completion envelopes, or compare
 free-form summary text. Worker summaries are review material, not control-flow
@@ -166,10 +171,11 @@ The normal planner/worker loop keeps concrete leaves moving. The focus-plan
 cadence keeps the project pointed at a reviewable mid-term direction so the
 human owner does not need to poll status and steer repeatedly.
 
-- Daily `project.focus.plan.requested` proposes or refreshes the next 12-24h
-  focus.
-- Six-hour `project.focus.review.requested` reviews whether the current focus
-  is on track, off track, completed, stale, or blocked.
+- Daily `project.focus.review.requested` with `data.mode=plan` proposes or
+  refreshes the next 12-24h focus.
+- Six-hour `project.focus.review.requested` with `data.mode=progress` reviews
+  whether the current focus is on track, off track, completed, stale, or
+  blocked.
 - The durable focus state belongs in `tasks/tree.json` as a visible
   `focus_plan` branch. `project.json.currentFocus` is only a compact summary of
   that branch, not an independent live status authority.
@@ -214,6 +220,9 @@ Spec-loop operator commands:
 
 - `design/spec-verification-loop.md` - proposal for a task-workflow-routed
   single-spec verification loop over the AKS RP E2E spec set.
+- `design/reusable-business-workflows.md` - proposal for reusable feature
+  reference research, spec test authoring, and feature compact packaging
+  workflows that loops and manual tasks can share.
 
 ## Runtime Reload
 

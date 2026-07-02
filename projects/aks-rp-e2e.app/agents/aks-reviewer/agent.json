@@ -1,0 +1,7 @@
+{
+  "name": "aks-reviewer",
+  "description": "Project-local read-only reviewer for completed aks-rp-e2e task output",
+  "domain": "AKS RP e2e task completion review, evidence validation, acceptance criteria judgment",
+  "model": "gpt-5.5",
+  "tools": ["coding", "query_db", "finish"]
+}

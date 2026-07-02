@@ -34,12 +34,23 @@ export type FeatureReferenceRecord = {
   coveredFeatureIds: string[];
 };
 
+export type FeatureReferenceSuppressionKind =
+  "duplicate-churn" | "public-ceiling" | "supporting-context";
+
+export type FeatureReferenceSuppression = {
+  kind: FeatureReferenceSuppressionKind;
+  note?: string | null;
+  updatedAt?: string;
+};
+
 export type FeatureReferenceItemState = FeatureReferenceRecord & {
   status: FeatureReferenceStatus;
   taskId?: string | null;
   attempts: number;
   lastOutputPath: string | null;
   lastSummary: string | null;
+  suppression?: FeatureReferenceSuppression | null;
+  collectorContractVersion?: string | null;
   updatedAt: string;
 };
 
@@ -49,6 +60,15 @@ export type FeatureReferenceLoopState = {
   cursor: number;
   features: Record<string, FeatureReferenceItemState>;
   holdState?: FeatureReferenceLoopHoldState;
+};
+
+export const featureReferenceCollectorContractVersion =
+  "refs-v2-official-sections";
+
+export type FeatureReferenceQuality = {
+  hasOfficialDocumentation: boolean;
+  hasOfficialApiSpec: boolean;
+  missing: string[];
 };
 
 function readJson<T>(path: string, fallback: T): T {
@@ -62,6 +82,157 @@ function readJson<T>(path: string, fallback: T): T {
 function writeJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+}
+
+function markdownSection(raw: string, heading: string): string {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const headingPattern = new RegExp(`^##\\s+${escaped}\\s*$`, "im");
+  const headingMatch = headingPattern.exec(raw);
+  if (!headingMatch) return "";
+  const sectionStart = headingMatch.index + headingMatch[0].length;
+  const rest = raw.slice(sectionStart);
+  const nextHeading = /^##\s+/m.exec(rest);
+  return nextHeading ? rest.slice(0, nextHeading.index) : rest;
+}
+
+function hasRealReferenceLine(section: string, patterns: RegExp[]): boolean {
+  return section
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- "))
+    .filter((line) => !/no matching reference found/i.test(line))
+    .some((line) => patterns.some((pattern) => pattern.test(line)));
+}
+
+export function featureReferenceQuality(raw: string): FeatureReferenceQuality {
+  const apiSection = markdownSection(raw, "Official API References");
+  const docSection = markdownSection(raw, "Official Documentation References");
+  const hasOfficialApiSpec =
+    hasRealReferenceLine(apiSection, [
+      /azure-rest-api-specs/i,
+      /github\.com\/Azure\/azure-rest-api-specs/i,
+      /specification\/containerservice/i,
+    ]) ||
+    /github\.com\/Azure\/azure-rest-api-specs/i.test(raw) ||
+    /azure-rest-api-specs\/specification\/containerservice/i.test(raw) ||
+    /specification\/containerservice\/[A-Za-z0-9._/-]+\.json/i.test(raw) ||
+    /\b(?:managedClusters|agentPools|maintenanceConfigurations|trustedAccessRoleBindings|fleets)\.json\b/i.test(
+      raw,
+    );
+  const hasOfficialDocumentation =
+    hasRealReferenceLine(docSection, [
+      /learn\.microsoft\.com/i,
+      /^-\s+learn\//i,
+      /docs\.microsoft\.com/i,
+    ]) || /learn\.microsoft\.com/i.test(raw);
+  const missing = [
+    hasOfficialDocumentation ? "" : "official Microsoft Learn documentation",
+    hasOfficialApiSpec ? "" : "Azure REST API spec",
+  ].filter(Boolean);
+  return { hasOfficialDocumentation, hasOfficialApiSpec, missing };
+}
+
+export function featureReferenceOutputQuality(input: {
+  projectDir: string;
+  outputPath: string | null | undefined;
+  visited?: Set<string>;
+}): FeatureReferenceQuality {
+  if (!input.outputPath) {
+    return {
+      hasOfficialDocumentation: false,
+      hasOfficialApiSpec: false,
+      missing: ["feature-reference output file"],
+    };
+  }
+  const absolutePath = input.outputPath.startsWith("/")
+    ? input.outputPath
+    : join(input.projectDir, input.outputPath);
+  if (!existsSync(absolutePath)) {
+    return {
+      hasOfficialDocumentation: false,
+      hasOfficialApiSpec: false,
+      missing: [`feature-reference output file ${input.outputPath}`],
+    };
+  }
+  const visited = input.visited ?? new Set<string>();
+  if (visited.has(absolutePath)) {
+    return featureReferenceQuality(readFileSync(absolutePath, "utf-8"));
+  }
+  visited.add(absolutePath);
+  const raw = readFileSync(absolutePath, "utf-8");
+  const direct = featureReferenceQuality(raw);
+  if (direct.missing.length === 0) return direct;
+
+  let hasOfficialDocumentation = direct.hasOfficialDocumentation;
+  let hasOfficialApiSpec = direct.hasOfficialApiSpec;
+  const refs = [
+    ...new Set(raw.match(/evidence\/archive\/[A-Za-z0-9._/-]+\.md/g) ?? []),
+  ].filter((ref) => ref !== input.outputPath);
+  for (const ref of refs) {
+    const nested = featureReferenceOutputQuality({
+      projectDir: input.projectDir,
+      outputPath: ref,
+      visited,
+    });
+    hasOfficialDocumentation ||= nested.hasOfficialDocumentation;
+    hasOfficialApiSpec ||= nested.hasOfficialApiSpec;
+  }
+  const missing = [
+    hasOfficialDocumentation ? "" : "official Microsoft Learn documentation",
+    hasOfficialApiSpec ? "" : "Azure REST API spec",
+  ].filter(Boolean);
+  return { hasOfficialDocumentation, hasOfficialApiSpec, missing };
+}
+
+export function findPromotableFeatureReferenceOutput(input: {
+  projectDir: string;
+  featureKey: string;
+  outputPath: string | null | undefined;
+}): string | null {
+  const currentQuality = featureReferenceOutputQuality({
+    projectDir: input.projectDir,
+    outputPath: input.outputPath,
+  });
+  if (input.outputPath && currentQuality.missing.length === 0) {
+    return input.outputPath;
+  }
+  const archiveDir = join(input.projectDir, "evidence", "archive");
+  if (!existsSync(archiveDir)) return input.outputPath ?? null;
+  const featureStem = safeKey(input.featureKey).toLowerCase();
+  const candidates = readdirSync(archiveDir)
+    .filter((name) => name.endsWith(".md"))
+    .filter((name) => name.toLowerCase().includes(featureStem))
+    .filter((name) =>
+      /public-official|public-reference|official-references|public-authority/i.test(
+        name,
+      ),
+    )
+    .map((name) => `evidence/archive/${name}`)
+    .sort((a, b) => b.localeCompare(a));
+  for (const candidate of candidates) {
+    const quality = featureReferenceOutputQuality({
+      projectDir: input.projectDir,
+      outputPath: candidate,
+    });
+    if (quality.missing.length === 0) return candidate;
+  }
+  return input.outputPath ?? null;
+}
+
+function statusAfterQualityCheck(input: {
+  projectDir: string;
+  status: FeatureReferenceStatus;
+  outputPath: string | null | undefined;
+  suppression?: FeatureReferenceSuppression | null;
+}): FeatureReferenceStatus {
+  if (input.suppression) return "done";
+  const quality = featureReferenceOutputQuality({
+    projectDir: input.projectDir,
+    outputPath: input.outputPath,
+  });
+  if (quality.missing.length === 0) return "done";
+  if (input.status !== "done") return input.status;
+  return "pending";
 }
 
 function trimYamlScalar(value: string): string {
@@ -115,6 +286,51 @@ function safeKey(value: string): string {
       .replace(/^-+|-+$/g, "")
       .slice(0, 120) || "feature"
   );
+}
+
+function suppressionFromState(input: {
+  lastSummary: string | null | undefined;
+  outputPath: string | null | undefined;
+}): FeatureReferenceSuppression | null {
+  const summary = input.lastSummary?.toLowerCase() ?? "";
+  const output = input.outputPath?.toLowerCase() ?? "";
+  if (
+    summary.includes("duplicate churn") ||
+    summary.includes("duplicate refill") ||
+    summary.includes("obsolete false refill")
+  ) {
+    return {
+      kind: "duplicate-churn",
+      note: input.lastSummary ?? null,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  if (
+    summary.includes("supporting-context") ||
+    summary.includes("supporting context")
+  ) {
+    return {
+      kind: "supporting-context",
+      note: input.lastSummary ?? null,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  if (
+    summary.includes("public ceiling") ||
+    summary.includes("checked-location public ceiling") ||
+    summary.includes("no-public-surface ceiling") ||
+    summary.includes("non-public ceiling") ||
+    summary.includes("source-backed/reference-ceiling") ||
+    output.includes("public-official") ||
+    output.includes("public-authority")
+  ) {
+    return {
+      kind: "public-ceiling",
+      note: input.lastSummary ?? null,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  return null;
 }
 
 function readPacketRecord(input: {
@@ -278,21 +494,62 @@ export function loadFeatureReferenceLoopState(input: {
     state.loopTaskId ||= input.loopTaskId;
     state.windowSize ||= input.windowSize;
     const previous = state.features || {};
+    const holdState = state.holdState;
+    const preservedStale = new Set(holdState?.staleFeatureKeys ?? []);
+    const preservedDormant = new Set(holdState?.dormantFeatureKeys ?? []);
+    const preserveHeldStatuses = holdState?.noRefillNow !== false;
     const features: Record<string, FeatureReferenceItemState> = {};
     for (const record of loadFeatureReferencePackets(input.projectDir)) {
       const existing = previousFeatureState(previous, record);
       const existingTaskId = existing?.taskId ?? null;
-      const existingStatus =
-        existing?.status === "running" && !existingTaskId
+      const suppression =
+        existing?.suppression ??
+        suppressionFromState({
+          lastSummary: existing?.lastSummary,
+          outputPath: existing?.lastOutputPath,
+        });
+      const existingStatus = suppression
+        ? "done"
+        : existing?.status === "running" && !existingTaskId
           ? "pending"
-          : (existing?.status ?? "pending");
+          : preserveHeldStatuses && preservedStale.has(record.featureKey)
+            ? "stale"
+            : preserveHeldStatuses && preservedDormant.has(record.featureKey)
+              ? "dormant"
+              : existing?.status === "stale" || existing?.status === "dormant"
+                ? "pending"
+                : existing?.status === "blocked"
+                  ? "error"
+                  : (existing?.status ?? "pending");
+      const promotedOutputPath = findPromotableFeatureReferenceOutput({
+        projectDir: input.projectDir,
+        featureKey: record.featureKey,
+        outputPath: existing?.lastOutputPath,
+      });
+      const qualityCheckedStatus = statusAfterQualityCheck({
+        projectDir: input.projectDir,
+        status: existingStatus,
+        outputPath: promotedOutputPath,
+        suppression,
+      });
       features[record.featureKey] = {
         ...record,
-        status: existingStatus,
-        taskId: existingTaskId,
+        status: qualityCheckedStatus,
+        taskId:
+          suppression ||
+          qualityCheckedStatus === "stale" ||
+          qualityCheckedStatus === "dormant"
+            ? null
+            : existingTaskId,
         attempts: existing?.attempts ?? 0,
-        lastOutputPath: existing?.lastOutputPath ?? null,
-        lastSummary: existing?.lastSummary ?? null,
+        lastOutputPath: promotedOutputPath,
+        lastSummary: suppression
+          ? (existing?.lastSummary ?? null)
+          : existingStatus === "done" && qualityCheckedStatus !== "done"
+            ? `Reopened feature-reference collection because ${featureReferenceOutputQuality({ projectDir: input.projectDir, outputPath: existing?.lastOutputPath }).missing.join(" and ")} was missing from the accepted artifact.`
+            : (existing?.lastSummary ?? null),
+        suppression,
+        collectorContractVersion: existing?.collectorContractVersion ?? null,
         updatedAt: now,
       };
     }
@@ -309,6 +566,7 @@ export function loadFeatureReferenceLoopState(input: {
       attempts: 0,
       lastOutputPath: null,
       lastSummary: null,
+      collectorContractVersion: null,
       updatedAt: now,
     };
   }
@@ -332,11 +590,12 @@ export function saveFeatureReferenceLoopState(
 export function orderedPendingFeatureKeys(
   state: FeatureReferenceLoopState,
 ): string[] {
-  const dormant = new Set(state.holdState?.dormantFeatureKeys ?? []);
-  const stale = new Set(state.holdState?.staleFeatureKeys ?? []);
   return Object.keys(state.features)
-    .filter((featureKey) => state.features[featureKey]?.status === "pending")
-    .filter((featureKey) => !dormant.has(featureKey) && !stale.has(featureKey))
+    .filter((featureKey) => {
+      const feature = state.features[featureKey];
+      if (feature?.suppression) return false;
+      return ["pending", "error"].includes(String(feature?.status));
+    })
     .sort((a, b) => a.localeCompare(b));
 }
 
@@ -357,11 +616,18 @@ export function updateFeatureReferenceItem(
     attempts: 0,
     lastOutputPath: null,
     lastSummary: null,
+    suppression: null,
+    collectorContractVersion: null,
     updatedAt: new Date().toISOString(),
   };
-  state.features[featureKey] = {
+  const next = {
     ...previous,
     ...patch,
     updatedAt: new Date().toISOString(),
   };
+  if (patch.suppression === undefined && next.suppression) {
+    next.status = "done";
+    next.taskId = null;
+  }
+  state.features[featureKey] = next;
 }

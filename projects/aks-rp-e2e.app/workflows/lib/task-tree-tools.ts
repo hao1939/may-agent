@@ -16,6 +16,7 @@ import {
   pruneMissingChildren,
   readTask,
   readTaskTree,
+  repairTaskTreeRollups as sdkRepairTaskTreeRollups,
   rollupParent as sdkRollupParent,
   saveTaskTreeWithKanbanSnapshot,
   withTreeLock,
@@ -27,6 +28,10 @@ import {
   type TaskTreeCompactResult,
 } from "@may-agent/sdk";
 import { compactDoneLeaves as sdkCompactDoneLeaves } from "@may-agent/sdk";
+import {
+  exactBlockedWaitStewardshipProgress,
+  runnableDurableLoopProgress,
+} from "./durable-loop-wait-stewardship.ts";
 
 export {
   appendPlannerRun,
@@ -45,7 +50,6 @@ export {
   requeueStaleActiveTasks,
   updateTaskOutputs,
   updateTaskText,
-  repairTaskTreeRollups,
   saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
   taskKanbanColumn,
@@ -97,9 +101,15 @@ function workflowProgress(task: TaskNode): Record<string, unknown> | null {
     : null;
 }
 
+function pausedDurableLoopWaitStewardship(task: TaskNode): boolean {
+  if (!durableLoopTaskIds.has(task.id)) return false;
+  return exactBlockedWaitStewardshipProgress(workflowProgress(task));
+}
+
 function workflowProgressBlocksCompletion(task: TaskNode): string | null {
   const progress = workflowProgress(task);
   if (!progress || progress.completionReady !== false) return null;
+  if (pausedDurableLoopWaitStewardship(task)) return null;
   const reason =
     typeof progress.reason === "string" && progress.reason.trim()
       ? progress.reason.trim()
@@ -174,6 +184,73 @@ function doneLeafCompactionProtectedCount(tree: TaskTree): number {
   }).length;
 }
 
+function reopenIncompleteDurableLoopRoots(config: TaskTreeConfig): string[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const reopened: string[] = [];
+    const now = new Date().toISOString();
+
+    for (const taskId of durableLoopTaskIds) {
+      const task = tree.tasks[taskId];
+      if (!task) continue;
+      const blocked = workflowProgressBlocksCompletion(task);
+      if (!blocked) continue;
+      const status = nodeState(task);
+      if (status === "backlog" || status === "active") continue;
+
+      task.status = "backlog";
+      task.state = "backlog";
+      task.blocker = undefined;
+      task.resolution = undefined;
+      task.done_at = undefined;
+      task.done_by = undefined;
+      const context = taskContext(task);
+      const progress = workflowProgress(task);
+      task.context = progress
+        ? {
+            ...context,
+            workflowProgress: runnableDurableLoopProgress(progress),
+          }
+        : context;
+      task.trace = {
+        ...(task.trace ?? {}),
+        reopened_at: now,
+        reopened_by: "task-tree-repair",
+        reopen_reason: `Durable loop root had incomplete workflow progress while state=${status || "unknown"}: ${blocked}`,
+        previous_nonterminal_status: status || undefined,
+        current_attempt_id: undefined,
+        worker_started_attempt_id: undefined,
+      };
+      reopened.push(task.id);
+    }
+
+    if (reopened.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "durable_loop_roots_reopened",
+        task_ids: reopened,
+        reason:
+          "repair-rollups found durable loop roots with incomplete workflow progress",
+      });
+    }
+
+    return reopened;
+  });
+}
+
+export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
+  typeof sdkRepairTaskTreeRollups
+> & {
+  reopenedDurableLoopRoots: string[];
+} {
+  const result = sdkRepairTaskTreeRollups(config);
+  const reopenedDurableLoopRoots = reopenIncompleteDurableLoopRoots(config);
+  return {
+    ...result,
+    reopenedDurableLoopRoots,
+  };
+}
+
 export function compactDoneLeaves(
   config: TaskTreeConfig,
   input: { limit?: number; reason?: string } = {},
@@ -239,6 +316,14 @@ export function markTaskDone(
 ): TaskNode {
   const task = readTask(config, input.taskId);
   if (!task) throw new Error(`Task not found: ${input.taskId}`);
+  if (durableLoopTaskIds.has(task.id)) {
+    const blocked = workflowProgressBlocksCompletion(task);
+    if (blocked) {
+      throw new Error(
+        `Durable loop task ${task.id} cannot be marked done while workflow progress is incomplete: ${blocked}`,
+      );
+    }
+  }
   const resolution = input.resolution ?? task.resolution ?? "completed";
   if (resolution !== "replaced" && resolution !== "cancelled") {
     const blocked = workflowProgressBlocksCompletion(task);

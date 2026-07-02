@@ -22,6 +22,7 @@ import {
   taskTreeConfig,
   type TaskCompletionClaim,
 } from "./lib/task-tree-tools.ts";
+import { syncProjectReadout } from "./lib/project-readout-sync.ts";
 import {
   field,
   maxConcurrent,
@@ -335,6 +336,10 @@ export function taskAttemptId(task: TaskNode): string {
   return typeof value === "string" ? value : "";
 }
 
+function taskStatus(task: TaskNode): string {
+  return String(task.status ?? task.state ?? "");
+}
+
 export function traceValue(task: TaskNode, key: string): unknown {
   const trace = task.trace;
   return trace && typeof trace === "object" && !Array.isArray(trace)
@@ -357,10 +362,10 @@ export function markAttemptStartedOnce(
         ok: false,
         reason: `Assigned task ${input.taskId} was not found.`,
       };
-    if (task.status !== "active")
+    if (taskStatus(task) !== "active")
       return {
         ok: false,
-        reason: `Assigned task ${input.taskId} is ${task.status}, not active.`,
+        reason: `Assigned task ${input.taskId} is ${taskStatus(task)}, not active.`,
       };
     if (taskAttemptId(task) !== input.attemptId)
       return {
@@ -418,10 +423,10 @@ export function completeStartedAttempt(
         reason: `Assigned task ${input.taskId} attempt ${input.attemptId} is no longer current; completion is obsolete.`,
       };
     }
-    if (task.status !== "active") {
+    if (taskStatus(task) !== "active") {
       return {
         ok: false as const,
-        reason: `Assigned task ${input.taskId} is ${task.status}, not active; completion for attempt ${input.attemptId} is obsolete.`,
+        reason: `Assigned task ${input.taskId} is ${taskStatus(task)}, not active; completion for attempt ${input.attemptId} is obsolete.`,
       };
     }
     return { ok: true as const };
@@ -521,6 +526,12 @@ async function runAssignedMode(
     );
   }
   const completedTask = completion.task;
+  try {
+    syncProjectReadout(config);
+  } catch {
+    // Keep worker completion durable even if compact project.json readout sync
+    // fails; planner/watchdog can resync on their next pulse.
+  }
   emitTaskCompleted(ctx, completedTask, {
     attemptId,
     result: claim,

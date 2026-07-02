@@ -6,8 +6,14 @@ import {
   assignTask,
   completeTask,
   peekTaskAssignments,
+  planningPacket,
+  summarizeTaskTree,
   taskTreeConfig,
 } from "./lib/task-tree-tools.ts";
+import {
+  loadSpecLoopState,
+  orderedPendingSpecIds,
+} from "./lib/spec-loop-store.ts";
 import { execute } from "./spec-loop-controller.ts";
 
 async function makeProject() {
@@ -39,6 +45,99 @@ function config(projectDir: string, maxConcurrent = 5) {
 }
 
 describe("spec-loop-controller", () => {
+  test("treats terminal-disposition and legacy done specs as pending live work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["deprecated.json", "live.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "deprecated.json"),
+      JSON.stringify({
+        id: "spec.deprecated",
+        status: "deprecated",
+      }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "live.json"),
+      JSON.stringify({ id: "spec.live" }),
+      "utf8",
+    );
+
+    const initial = loadSpecLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-spec-verification-loop",
+      windowSize: 2,
+    });
+    expect(initial.state.specs["spec.deprecated"].status).toBe("pending");
+    expect(initial.state.specs["spec.live"].status).toBe("pending");
+
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 2,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.deprecated": {
+              status: "done",
+              taskId: "old-task",
+              attempts: 0,
+              lastRunId: null,
+              lastRunUrl: null,
+              lastResultPath: null,
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+            "spec.live": {
+              status: "pass",
+              taskId: "passed-task",
+              attempts: 1,
+              lastRunId: "123",
+              lastRunUrl: null,
+              lastResultPath: null,
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const migrated = loadSpecLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-spec-verification-loop",
+      windowSize: 2,
+    });
+    expect(migrated.state.specs["spec.deprecated"]).toMatchObject({
+      status: "pending",
+      taskId: "old-task",
+    });
+    expect(migrated.state.specs["spec.live"].status).toBe("pass");
+    expect(orderedPendingSpecIds(migrated.state)).toContain("spec.deprecated");
+    expect(orderedPendingSpecIds(migrated.state)).not.toContain("spec.live");
+  });
+
   test("fills a bounded window prioritizing dev-infra-core specs", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -231,6 +330,36 @@ describe("spec-loop-controller", () => {
       join(projectDir, "specs", "index.json"),
       JSON.stringify(
         {
+          specFiles: [
+            "app-routing-default-internal.json",
+            "app-routing-default-external.json",
+            "aad-rbac-managed-v2.json",
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "app-routing-default-internal.json"),
+      JSON.stringify({ id: "spec.app-routing.default-internal" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "app-routing-default-external.json"),
+      JSON.stringify({ id: "spec.app-routing.default-external" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "aad-rbac-managed-v2.json"),
+      JSON.stringify({ id: "spec.aad-rbac.managed-v2" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify(
+        {
           specFiles: ["a.json", "b.json", "c.json", "d.json", "e.json"],
         },
         null,
@@ -354,6 +483,206 @@ describe("spec-loop-controller", () => {
       openChildren: 5,
       lastPulseCreated: 5,
       lastPulseAssigned: 3,
+    });
+  });
+
+  test("skips local policy failures and keeps filling verifier window", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "runner"), { recursive: true });
+    await writeFile(
+      join(projectDir, "runner", "check-private-source-policy.ts"),
+      [
+        "const index = process.argv.indexOf('--spec');",
+        "const specId = index >= 0 ? process.argv[index + 1] : '';",
+        "console.log(`dependency policy passed for ${specId}`);",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "runner", "check-live-admission.ts"),
+      [
+        "const index = process.argv.indexOf('--spec');",
+        "const specId = index >= 0 ? process.argv[index + 1] : '';",
+        "if (specId === 'spec.bad') {",
+        "  console.error('Live admission policy failed:');",
+        "  console.error('- spec.bad: runner-exclusion-needing-replay-gate-repair: replaySupportsLiveExecution()=false');",
+        "  process.exit(1);",
+        "}",
+        "console.log(`live admission passed for ${specId}`);",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify(
+        {
+          specFiles: ["bad.json", "good-a.json", "good-b.json"],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "bad.json"),
+      JSON.stringify({ id: "spec.bad", featurePathIds: ["path.bad"] }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "good-a.json"),
+      JSON.stringify({ id: "spec.good-a", featurePathIds: ["path.good"] }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "good-b.json"),
+      JSON.stringify({ id: "spec.good-b", featurePathIds: ["path.good"] }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop is current"],
+              forbidden: [],
+              conflict_scope: ["spec-loop"],
+              depends_on: [],
+              context: {
+                windowSize: 2,
+                targetRunning: 2,
+                maxDirectAttemptsPerSpec: 3,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir, 5), {
+      taskId: "aks-spec-verification-loop",
+    });
+    const dispatched: Array<Record<string, unknown>> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          ...assignment,
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(_type: string, payload: Record<string, unknown>) {
+        dispatched.push(payload);
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Created 2 child task");
+    expect(result.message).toContain("Created 1 policy repair follow-up");
+    expect(result.message).toContain("Policy-preflighted 1 spec");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    const loop = tree.tasks["aks-spec-verification-loop"];
+    expect(loop.children).toEqual([
+      "repair-spec-loop-policy-bad",
+      "verify-spec-good-a",
+      "verify-spec-good-b",
+    ]);
+    expect(dispatched.map((entry) => entry.taskId)).toEqual([
+      "verify-spec-good-a",
+      "verify-spec-good-b",
+    ]);
+    expect(tree.tasks["repair-spec-loop-policy-bad"]).toMatchObject({
+      state: "backlog",
+      context: {
+        specLoopFollowup: true,
+        policyFollowup: true,
+        sampledSpecIds: ["spec.bad"],
+      },
+    });
+    expect(loop.context.workflowProgress).toMatchObject({
+      completionReady: false,
+      pending: 0,
+      running: 2,
+      error: 1,
+      openChildren: 2,
+      openFollowups: 1,
+      lastPulseCreated: 2,
+      lastPulseCreatedFollowups: 1,
+    });
+    const state = JSON.parse(
+      await readFile(
+        join(projectDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.specs["spec.bad"]).toMatchObject({
+      status: "error",
+      taskId: "repair-spec-loop-policy-bad",
+      attempts: 3,
+    });
+    expect(state.specs["spec.good-a"]).toMatchObject({
+      status: "running",
+      taskId: "verify-spec-good-a",
+    });
+    expect(state.specs["spec.good-b"]).toMatchObject({
+      status: "running",
+      taskId: "verify-spec-good-b",
     });
   });
 
@@ -1077,7 +1406,15 @@ describe("spec-loop-controller", () => {
     expect(loop.context.workflowProgress).toMatchObject({
       pending: 0,
       running: 2,
-      openChildren: 2,
+      residuePending: 0,
+      residueRunning: 2,
+      openChildren: 3,
+      activeChildren: 3,
+      reviewChildren: 0,
+      waitingChildren: 0,
+      backlogChildren: 0,
+      openSpecVerifierChildren: 2,
+      blockedWaitChildren: 0,
       lastPulseCreated: 1,
     });
     const state = JSON.parse(
@@ -1434,7 +1771,7 @@ describe("spec-loop-controller", () => {
     });
   });
 
-  test("materializes grouped follow-up tasks when execution is drained with non-pass results", async () => {
+  test("creates grouped follow-up instead of direct retry after retry budget is exhausted", async () => {
     const projectDir = await makeProject();
     await writeFile(
       join(
@@ -1445,6 +1782,881 @@ describe("spec-loop-controller", () => {
         "dev-infra-core.txt",
       ),
       "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["a.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "a.json"),
+      JSON.stringify({ id: "spec.a.first" }),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 1,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.a.first": {
+              status: "error",
+              taskId: "verify-spec-a-first",
+              attempts: 3,
+              lastRunId: "old-run",
+              lastRunUrl: null,
+              lastResultPath: null,
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop is current"],
+              forbidden: [],
+              conflict_scope: ["spec-loop"],
+              depends_on: [],
+              context: {
+                windowSize: 1,
+                targetRunning: 1,
+                maxDirectAttemptsPerSpec: 3,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<Record<string, unknown>> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(_type: string, payload: Record<string, unknown>) {
+        dispatched.push(payload);
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Created 0 child task");
+    expect(result.message).toContain("Created 1 grouped follow-up task");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["verify-spec-a-first"]).toBeUndefined();
+    const followup = tree.tasks["reconcile-spec-loop-error-a"];
+    expect(followup).toMatchObject({
+      state: "backlog",
+      context: {
+        specLoopFollowup: true,
+        status: "error",
+        featureFamily: "a",
+      },
+    });
+    expect(dispatched.map((entry) => entry.taskId)).toEqual([]);
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress,
+    ).toMatchObject({
+      executionDrained: true,
+      retryBudgetExhausted: 1,
+      openFollowups: 1,
+      lastPulseCreated: 0,
+      lastPulseCreatedFollowups: 1,
+    });
+  });
+
+  test("keeps drained residue runnable when blocked waits do not represent every non-pass spec", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify(
+        {
+          specFiles: ["alpha.json"],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "alpha.json"),
+      JSON.stringify({ id: "spec.alpha.wait-only" }),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 5,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.alpha.wait-only": {
+              status: "error",
+              taskId: "reconcile-spec-loop-error-alpha",
+              attempts: 3,
+              lastRunId: null,
+              lastRunUrl: null,
+              lastResultPath: null,
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          updated_at: new Date().toISOString(),
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: [
+                "wait-external-signal",
+                "reconcile-spec-loop-error-alpha",
+              ],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                windowSize: 5,
+                targetRunning: 5,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+                maxDirectAttemptsPerSpec: 3,
+                timeoutMinutes: 60,
+              },
+            },
+            "wait-external-signal": {
+              id: "wait-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact external signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "reconcile-spec-loop-error-alpha": {
+              id: "reconcile-spec-loop-error-alpha",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for the exact resume signal before retrying the alpha follow-up.",
+              outputs: ["evidence/archive/reconcile-alpha-wait.md"],
+              acceptance: ["Resume signal returned"],
+              blocker: {
+                condition: "resume signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        "app: ",
+        projectDir,
+        `\nproject: ${projectDir}`,
+        "\n",
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join(""),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      executionDrained: true,
+      openChildren: 0,
+      activeChildren: 0,
+      reviewChildren: 0,
+      waitingChildren: 0,
+      backlogChildren: 0,
+      openSpecVerifierChildren: 0,
+      openFollowups: 0,
+      blockedWaitChildren: 2,
+      lastPulseCreated: 0,
+      lastPulseCreatedFollowups: 0,
+      strandedExhaustedResidueOnly: true,
+      unrepresentedNonTerminalCount: 1,
+    });
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress.reason,
+    ).toContain("residue is still nonterminal");
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress
+        .noRefillNow,
+    ).toBeUndefined();
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("backlog");
+    expect(tree.tasks["aks-spec-verification-loop"].blocker).toBeUndefined();
+    expect(tree.active_task_ids).not.toContain("aks-spec-verification-loop");
+    expect(
+      summarizeTaskTree(config(projectDir)).frontier.blocked,
+    ).not.toContain("aks-spec-verification-loop");
+    expect(planningPacket(config(projectDir)).frontier.blocked).not.toContain(
+      "aks-spec-verification-loop",
+    );
+    expect(planningPacket(config(projectDir)).frontier.blocked).toContain(
+      "reconcile-spec-loop-error-alpha",
+    );
+  });
+
+  test("stranded pending residue creates grouped follow-up work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["alpha.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "alpha.json"),
+      JSON.stringify({ id: "spec.alpha" }, null, 2),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 1,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.alpha": {
+              status: "pending",
+              taskId: null,
+              attempts: 3,
+              lastRunId: "123",
+              lastRunUrl: "https://example.test/run/123",
+              lastResultPath: "/tmp/result.json",
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          updated_at: new Date().toISOString(),
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-external-signal"],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                windowSize: 1,
+                targetRunning: 1,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+                maxDirectAttemptsPerSpec: 3,
+                timeoutMinutes: 60,
+                githubAccessPreflight: false,
+                specExecutionPolicyPreflight: false,
+              },
+            },
+            "wait-external-signal": {
+              id: "wait-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact external signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        "app: ",
+        projectDir,
+        `\nproject: ${projectDir}`,
+        "\n",
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join(""),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      executionDrained: true,
+      pending: 1,
+      dispatchablePending: 0,
+      strandedPending: 1,
+      unrepresentedNonTerminalCount: 0,
+      blockedWaitChildren: 1,
+      openFollowups: 1,
+      lastPulseCreatedFollowups: 1,
+    });
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress.reason,
+    ).toContain("residue is still nonterminal");
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress
+        .noRefillNow,
+    ).toBeUndefined();
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("backlog");
+    expect(tree.tasks["reconcile-spec-loop-pending-alpha"]).toBeDefined();
+    expect(summarizeTaskTree(config(projectDir)).frontier.runnable).toContain(
+      "reconcile-spec-loop-pending-alpha",
+    );
+  });
+
+  test("exhausted non-pass residue plus stranded pending creates grouped follow-up work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["alpha.json", "beta.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "alpha.json"),
+      JSON.stringify({ id: "spec.alpha" }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "beta.json"),
+      JSON.stringify({ id: "spec.beta" }, null, 2),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 1,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.alpha": {
+              status: "pending",
+              taskId: null,
+              attempts: 3,
+              lastRunId: "123",
+              lastRunUrl: "https://example.test/run/123",
+              lastResultPath: "/tmp/result-alpha.json",
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+            "spec.beta": {
+              status: "error",
+              taskId: "repair-spec-loop-policy-beta",
+              attempts: 3,
+              lastRunId: "456",
+              lastRunUrl: "https://example.test/run/456",
+              lastResultPath: "/tmp/result-beta.json",
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          updated_at: new Date().toISOString(),
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-external-signal"],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                windowSize: 1,
+                targetRunning: 1,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+                maxDirectAttemptsPerSpec: 3,
+                timeoutMinutes: 60,
+                githubAccessPreflight: false,
+                specExecutionPolicyPreflight: false,
+              },
+            },
+            "wait-external-signal": {
+              id: "wait-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact external signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        "app: ",
+        projectDir,
+        `\nproject: ${projectDir}`,
+        "\n",
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join(""),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      executionDrained: true,
+      pending: 1,
+      dispatchablePending: 0,
+      strandedPending: 1,
+      error: 1,
+      retryBudgetExhausted: 1,
+      unrepresentedNonTerminalCount: 0,
+      blockedWaitChildren: 1,
+      openFollowups: 2,
+      lastPulseCreatedFollowups: 2,
+    });
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress
+        .noRefillNow,
+    ).toBeUndefined();
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("backlog");
+    expect(tree.tasks["reconcile-spec-loop-pending-alpha"]).toBeDefined();
+    expect(tree.tasks["reconcile-spec-loop-error-beta"]).toBeDefined();
+    expect(summarizeTaskTree(config(projectDir)).frontier.runnable).toContain(
+      "reconcile-spec-loop-pending-alpha",
+    );
+  });
+
+  test("mirrors app spec-loop state into the project-local snapshot", async () => {
+    const projectDir = await makeProject();
+    const appDir = join(projectDir, "app");
+    await mkdir(join(appDir, ".github", "workflows", "feature-sets"), {
+      recursive: true,
+    });
+    await mkdir(join(appDir, ".state"), { recursive: true });
+    await mkdir(join(appDir, "tasks"), { recursive: true });
+    await writeFile(join(appDir, ".state", "journal.jsonl"), "", "utf8");
+    await writeFile(
+      join(
+        appDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["alpha.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "alpha.json"),
+      JSON.stringify({ id: "spec.alpha" }, null, 2),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 1,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.alpha": {
+              status: "pending",
+              attempts: 0,
+              lastRunId: null,
+              lastRunUrl: null,
+              lastResultPath: null,
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop is current"],
+              forbidden: [],
+              conflict_scope: ["spec-loop"],
+              depends_on: [],
+              context: {
+                windowSize: 1,
+                targetRunning: 1,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+                githubAccessPreflight: false,
+                specExecutionPolicyPreflight: false,
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const appState = JSON.parse(
+      await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+    );
+    const projectState = JSON.parse(
+      await readFile(
+        join(projectDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(projectState).toEqual(appState);
+  });
+
+  test("reschedules non-pass specs as retry verifier children", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify(
+        {
+          specFiles: [
+            "app-routing-default-internal.json",
+            "app-routing-default-external.json",
+            "aad-rbac-managed-v2.json",
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "app-routing-default-internal.json"),
+      JSON.stringify({ id: "spec.app-routing.default-internal" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "app-routing-default-external.json"),
+      JSON.stringify({ id: "spec.app-routing.default-external" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "aad-rbac-managed-v2.json"),
+      JSON.stringify({ id: "spec.aad-rbac.managed-v2" }),
       "utf8",
     );
     await mkdir(join(projectDir, ".state", "spec-loop"), {
@@ -1578,10 +2790,10 @@ describe("spec-loop-controller", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Created 2 grouped follow-up task");
+    expect(result.message).toContain("Created 2 child task");
     expect(dispatched.map((entry) => entry.taskId)).toEqual([
-      "reconcile-spec-loop-error-app-routing",
-      "reconcile-spec-loop-error-aad-rbac",
+      "verify-spec-aad-rbac-managed-v2",
+      "verify-spec-app-routing-default-external",
     ]);
     const tree = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
@@ -1589,21 +2801,12 @@ describe("spec-loop-controller", () => {
     const loop = tree.tasks["aks-spec-verification-loop"];
     expect(loop.context.workflowProgress).toMatchObject({
       completionReady: false,
-      executionDrained: true,
-      nonPass: 3,
-      openFollowups: 2,
-      lastPulseCreatedFollowups: 2,
+      executionDrained: false,
+      nonPass: 1,
+      running: 2,
+      lastPulseCreated: 2,
+      lastPulseAssigned: 2,
     });
-    expect(
-      tree.tasks["reconcile-spec-loop-error-app-routing"].context,
-    ).toMatchObject({
-      specLoopFollowup: true,
-      status: "error",
-      featureFamily: "app-routing",
-      totalSpecCount: 2,
-    });
-    expect(tree.tasks["reconcile-spec-loop-error-aad-rbac"].state).toBe(
-      "active",
-    );
+    expect(tree.tasks["verify-spec-aad-rbac-managed-v2"].state).toBe("active");
   });
 });

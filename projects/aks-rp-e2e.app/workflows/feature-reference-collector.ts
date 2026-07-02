@@ -30,6 +30,8 @@ import {
 import {
   defaultFeatureReferenceDraftDir,
   defaultFeatureReferenceLoopStatePath,
+  featureReferenceCollectorContractVersion,
+  featureReferenceQuality,
   loadFeatureReferenceLoopState,
   safeFeatureReferenceFileKey,
   saveFeatureReferenceLoopState,
@@ -59,6 +61,16 @@ function taskContext(task: TaskNode): Record<string, unknown> {
 function contextString(task: TaskNode, key: string, fallback = ""): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function contextNumber(task: TaskNode, key: string, fallback = 0): number {
+  const value = taskContext(task)[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
 }
 
 function contextStringArray(task: TaskNode, key: string): string[] {
@@ -184,6 +196,74 @@ function renderReferenceList(hits: ReferenceHit[], source: "learn" | "api") {
     .join("\n");
 }
 
+function referenceTitle(path: string, source: ReferenceHit["source"]): string {
+  if (/learn\.microsoft\.com|docs\.microsoft\.com/i.test(path)) {
+    return "Microsoft Learn documentation";
+  }
+  if (/azure-rest-api-specs|specification\/containerservice/i.test(path)) {
+    return "Azure REST API spec";
+  }
+  return source === "learn" ? "Microsoft Learn reference" : "API reference";
+}
+
+function firstMatch(line: string, patterns: RegExp[]): string {
+  for (const pattern of patterns) {
+    const match = line.match(pattern);
+    if (match?.[0]) return match[0].replace(/[),.;]+$/, "");
+  }
+  return "";
+}
+
+function extractReferenceHitsFromText(raw: string): ReferenceHit[] {
+  const hits = new Map<string, ReferenceHit>();
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const learnPath = firstMatch(trimmed, [
+      /https?:\/\/(?:learn|docs)\.microsoft\.com\/[^\s)]+/i,
+      /learn\/[A-Za-z0-9._/-]+/i,
+    ]);
+    const apiPath = firstMatch(trimmed, [
+      /https?:\/\/github\.com\/Azure\/azure-rest-api-specs\/[^\s)]+/i,
+      /azure-rest-api-specs\/[A-Za-z0-9._/-]+/i,
+      /specification\/containerservice\/[A-Za-z0-9._/-]+/i,
+      /(?:managedClusters|agentPools|maintenanceConfigurations|trustedAccessRoleBindings|fleets)\.json/i,
+    ]);
+    const candidates: Array<{ source: ReferenceHit["source"]; path: string }> =
+      [];
+    if (learnPath) candidates.push({ source: "learn", path: learnPath });
+    if (apiPath) candidates.push({ source: "api", path: apiPath });
+    for (const candidate of candidates) {
+      const key = `${candidate.source}:${candidate.path}`;
+      if (hits.has(key)) continue;
+      hits.set(key, {
+        source: candidate.source,
+        path: candidate.path,
+        title: referenceTitle(candidate.path, candidate.source),
+        claim: trimmed.replace(/^[-*]\s*/, "").slice(0, 240),
+      });
+    }
+  }
+  return [...hits.values()].slice(0, 16);
+}
+
+function referencedEvidenceTexts(projectDir: string, raw: string): string[] {
+  const refs = [
+    ...new Set(raw.match(/evidence\/archive\/[A-Za-z0-9._/-]+\.md/g) ?? []),
+  ];
+  const texts: string[] = [];
+  for (const ref of refs) {
+    const absolute = join(projectDir, ref);
+    if (!existsSync(absolute)) continue;
+    try {
+      texts.push(readFileSync(absolute, "utf-8"));
+    } catch {
+      // Ignore unreadable optional evidence references.
+    }
+  }
+  return texts;
+}
+
 function renderDraft(input: {
   featureKey: string;
   packetPath: string;
@@ -258,7 +338,7 @@ function completion(
   input: {
     task: TaskNode;
     attemptId: string;
-    claim: "done" | "blocked";
+    claim: "done" | "partial";
     summary: string;
   },
 ): WorkflowResult {
@@ -357,6 +437,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     defaultFeatureReferenceDraftDir(projectDir),
   );
   const referenceFixtureDir = contextString(task, "referenceFixtureDir");
+  const attemptNumber = contextNumber(task, "attemptNumber", 0);
   const runDate =
     contextString(task, "runDate") ||
     new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -377,14 +458,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return completion(ctx, config, {
       task,
       attemptId,
-      claim: "blocked",
+      claim: "partial",
       summary,
     });
   }
 
   updateFeatureReferenceItem(state, featureKey, {
     status: "running",
-    attempts: (state.features[featureKey]?.attempts ?? 0) + 1,
+    attempts: Math.max(
+      state.features[featureKey]?.attempts ?? 0,
+      attemptNumber || (state.features[featureKey]?.attempts ?? 0) + 1,
+    ),
   });
   saveFeatureReferenceLoopState(statePath, state);
 
@@ -400,14 +484,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (hits.length === 0) {
       const summary = `No fixture references matched ${featureKey}.`;
       updateFeatureReferenceItem(state, featureKey, {
-        status: "blocked",
+        status: "error",
         lastSummary: summary,
+        collectorContractVersion: featureReferenceCollectorContractVersion,
       });
       saveFeatureReferenceLoopState(statePath, state);
       return completion(ctx, config, {
         task,
         attemptId,
-        claim: "blocked",
+        claim: "partial",
         summary,
       });
     }
@@ -421,17 +506,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (!agentNotes.trim()) {
       const summary = `Official reference collection for ${featureKey} produced no usable notes.`;
       updateFeatureReferenceItem(state, featureKey, {
-        status: "blocked",
+        status: "error",
         lastSummary: summary,
+        collectorContractVersion: featureReferenceCollectorContractVersion,
       });
       saveFeatureReferenceLoopState(statePath, state);
       return completion(ctx, config, {
         task,
         attemptId,
-        claim: "blocked",
+        claim: "partial",
         summary,
       });
     }
+    hits = extractReferenceHitsFromText(
+      [agentNotes, ...referencedEvidenceTexts(projectDir, agentNotes)].join(
+        "\n\n",
+      ),
+    );
   }
 
   const absoluteDraftDir = draftDir.startsWith("/")
@@ -442,26 +533,41 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `feature-reference-${safeFeatureReferenceFileKey(featureKey)}-${runDate}.md`,
   );
   mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(
-    outputPath,
-    renderDraft({
-      featureKey,
-      packetPath,
-      packetKind,
-      layout,
-      capabilityId,
-      coveredFeatureIds,
-      hits,
-      agentNotes,
-    }),
-    "utf-8",
-  );
+  const draft = renderDraft({
+    featureKey,
+    packetPath,
+    packetKind,
+    layout,
+    capabilityId,
+    coveredFeatureIds,
+    hits,
+    agentNotes,
+  });
+  writeFileSync(outputPath, draft, "utf-8");
   const relativeOutput = relative(projectDir, outputPath);
+  const quality = featureReferenceQuality(draft);
+  if (quality.missing.length > 0) {
+    const summary = `Official reference collection for ${featureKey} is incomplete: missing ${quality.missing.join(" and ")}. Draft: ${relativeOutput}.`;
+    updateFeatureReferenceItem(state, featureKey, {
+      status: "error",
+      lastOutputPath: relativeOutput,
+      lastSummary: summary,
+      collectorContractVersion: featureReferenceCollectorContractVersion,
+    });
+    saveFeatureReferenceLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+    });
+  }
   const summary = `Collected official feature references for ${featureKey}: ${relativeOutput}.`;
   updateFeatureReferenceItem(state, featureKey, {
     status: "done",
     lastOutputPath: relativeOutput,
     lastSummary: summary,
+    collectorContractVersion: featureReferenceCollectorContractVersion,
   });
   saveFeatureReferenceLoopState(statePath, state);
   return completion(ctx, config, {

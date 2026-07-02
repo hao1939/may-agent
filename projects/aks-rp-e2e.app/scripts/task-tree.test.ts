@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -162,5 +162,80 @@ describe("task-tree CLI", () => {
     expect(`${result.stdout}${result.stderr}`).toContain(
       "Worker capacity is full (1)",
     );
+  });
+
+  test("add and update-text support structured blocker resume metadata", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "blocked-task",
+        "--parent",
+        "project",
+        "--goal",
+        "Wait for operator proof.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "proof reviewed",
+        "--state",
+        "blocked",
+        "--blocker",
+        "Waiting for returned operator proof.",
+        "--blocker-category",
+        "external-wait",
+        "--blocker-owner",
+        "human",
+        "--resume-condition",
+        "Resume when proof lands.",
+        "--resume-at",
+        "2099-06-26T00:00:00.000Z",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+    expect(JSON.parse(add.stdout).blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      category: "external-wait",
+      owner: "human",
+      resume_condition: "Resume when proof lands.",
+      resume_at: "2099-06-26T00:00:00.000Z",
+    });
+
+    const update = await runTaskTree(
+      [
+        "update-text",
+        "blocked-task",
+        "--resume-at",
+        "2099-06-27T00:00:00.000Z",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(update.exitCode).toBe(0);
+    expect(JSON.parse(update.stdout).blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      resume_at: "2099-06-27T00:00:00.000Z",
+    });
+
+    const tree = JSON.parse(
+      await readFile(join(fixture.appDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["blocked-task"].blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      resume_at: "2099-06-27T00:00:00.000Z",
+    });
   });
 });

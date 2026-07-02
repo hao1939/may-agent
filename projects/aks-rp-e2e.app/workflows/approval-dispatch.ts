@@ -76,12 +76,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
 
-  if (
-    trigger?.type !== "project.approval.dispatch.requested" &&
-    trigger?.type !== "project.approval.dispatch.submitted"
-  ) {
+  if (trigger?.type !== "project.approval.requested") {
     return ctx.done(
-      `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.dispatch.requested.`,
+      `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.requested.`,
     );
   }
 

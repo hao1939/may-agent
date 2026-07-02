@@ -30,6 +30,8 @@ export type SpecLoopSpecState = {
   lastRunUrl?: string | null;
   lastResultPath: string | null;
   lastPrUrl: string | null;
+  lastWorkflowLoopKey?: string | null;
+  lastDispatchMetadataPath?: string | null;
   activeAttemptId?: string | null;
   activeTaskSessionId?: string | null;
   activeWorkflowRunId?: string | null;
@@ -44,6 +46,27 @@ export type SpecLoopState = {
   prioritySpecIds: string[];
   specs: Record<string, SpecLoopSpecState>;
 };
+
+export function normalizeSpecLoopSpecState(
+  spec: SpecLoopSpecState,
+): SpecLoopSpecState {
+  if (spec.status === "running") {
+    return {
+      ...spec,
+      lastWorkflowLoopKey: spec.lastWorkflowLoopKey ?? null,
+      lastDispatchMetadataPath: spec.lastDispatchMetadataPath ?? null,
+    };
+  }
+  return {
+    ...spec,
+    lastWorkflowLoopKey: spec.lastWorkflowLoopKey ?? null,
+    lastDispatchMetadataPath: spec.lastDispatchMetadataPath ?? null,
+    activeAttemptId: null,
+    activeTaskSessionId: null,
+    activeWorkflowRunId: null,
+    heartbeatAt: null,
+  };
+}
 
 export type SpecRecord = {
   id: string;
@@ -202,9 +225,8 @@ export function loadSpecLoopState(input: {
   const path = input.statePath ?? defaultSpecLoopStatePath(input.appDir);
   const now = new Date().toISOString();
   if (existsSync(path)) {
-    const specsById = new Map(
-      loadSpecs(input.projectDir).map((spec) => [spec.id, spec]),
-    );
+    const catalogSpecs = loadSpecs(input.projectDir);
+    const specsById = new Map(catalogSpecs.map((spec) => [spec.id, spec]));
     const state = readJson<SpecLoopState>(path, {
       loopTaskId: input.loopTaskId,
       windowSize: input.windowSize,
@@ -214,30 +236,37 @@ export function loadSpecLoopState(input: {
     });
     state.loopTaskId ||= input.loopTaskId;
     state.windowSize ||= input.windowSize;
-    state.prioritySpecIds ||= devInfraCorePrioritySpecIds(input.projectDir);
+    state.prioritySpecIds = devInfraCorePrioritySpecIds(input.projectDir);
     state.specs ||= {};
+    for (const specId of Object.keys(state.specs)) {
+      if (!specsById.has(specId)) delete state.specs[specId];
+    }
+    for (const spec of catalogSpecs) {
+      state.specs[spec.id] ??= {
+        status: "pending",
+        taskId: null,
+        attempts: 0,
+        lastRunId: null,
+        lastRunUrl: null,
+        lastResultPath: null,
+        lastPrUrl: null,
+        lastWorkflowLoopKey: null,
+        lastDispatchMetadataPath: null,
+        activeAttemptId: null,
+        activeTaskSessionId: null,
+        activeWorkflowRunId: null,
+        heartbeatAt: null,
+        updatedAt: now,
+      };
+    }
     for (const spec of Object.values(state.specs)) {
       spec.taskId ??= null;
       if (String(spec.status) === "blocked") spec.status = "error";
+      if (spec.status === "done") spec.status = "pending";
       if (spec.status === "running" && !spec.taskId) spec.status = "pending";
     }
     for (const [specId, specState] of Object.entries(state.specs)) {
-      const spec = specsById.get(specId);
-      if (!spec?.terminalDisposition) continue;
-      if (
-        specState.status === "pass" ||
-        specState.status === "done" ||
-        specState.status === "pr_open"
-      ) {
-        continue;
-      }
-      specState.status = "done";
-      specState.taskId = null;
-      specState.activeAttemptId = null;
-      specState.activeTaskSessionId = null;
-      specState.activeWorkflowRunId = null;
-      specState.heartbeatAt = null;
-      specState.updatedAt = now;
+      state.specs[specId] = normalizeSpecLoopSpecState(specState);
     }
     return { state, path, created: false };
   }
@@ -246,13 +275,15 @@ export function loadSpecLoopState(input: {
   const specs: Record<string, SpecLoopSpecState> = {};
   for (const spec of loadSpecs(input.projectDir)) {
     specs[spec.id] = {
-      status: spec.terminalDisposition ? "done" : "pending",
+      status: "pending",
       taskId: null,
       attempts: 0,
       lastRunId: null,
       lastRunUrl: null,
       lastResultPath: null,
       lastPrUrl: null,
+      lastWorkflowLoopKey: null,
+      lastDispatchMetadataPath: null,
       activeAttemptId: null,
       activeTaskSessionId: null,
       activeWorkflowRunId: null,
@@ -271,22 +302,39 @@ export function loadSpecLoopState(input: {
   return { state, path, created: true };
 }
 
-export function saveSpecLoopState(path: string, state: SpecLoopState): void {
+export function saveSpecLoopState(
+  path: string,
+  state: SpecLoopState,
+  mirrors: string[] = [],
+): void {
   writeJson(path, state);
+  for (const mirror of mirrors) {
+    if (!mirror || mirror === path) continue;
+    writeJson(mirror, state);
+  }
 }
 
 export function orderedPendingSpecIds(state: SpecLoopState): string[] {
-  const priority = state.prioritySpecIds.filter(
-    (specId) => state.specs[specId]?.status === "pending",
-  );
-  const rest = Object.keys(state.specs)
-    .filter(
-      (specId) =>
-        state.specs[specId]?.status === "pending" &&
-        !state.prioritySpecIds.includes(specId),
-    )
-    .sort((a, b) => a.localeCompare(b));
-  return [...priority, ...rest];
+  const prioritySet = new Set(state.prioritySpecIds);
+  const orderedForStatus = (status: string): string[] => {
+    const priority = state.prioritySpecIds.filter(
+      (specId) => String(state.specs[specId]?.status) === status,
+    );
+    const rest = Object.keys(state.specs)
+      .filter(
+        (specId) =>
+          String(state.specs[specId]?.status) === status &&
+          !prioritySet.has(specId),
+      )
+      .sort((a, b) => a.localeCompare(b));
+    return [...priority, ...rest];
+  };
+  return [
+    ...orderedForStatus("pending"),
+    ...orderedForStatus("done"),
+    ...orderedForStatus("error"),
+    ...orderedForStatus("fail"),
+  ];
 }
 
 export function updateSpecLoopSpec(
@@ -302,17 +350,19 @@ export function updateSpecLoopSpec(
     lastRunUrl: null,
     lastResultPath: null,
     lastPrUrl: null,
+    lastWorkflowLoopKey: null,
+    lastDispatchMetadataPath: null,
     activeAttemptId: null,
     activeTaskSessionId: null,
     activeWorkflowRunId: null,
     heartbeatAt: null,
     updatedAt: new Date().toISOString(),
   };
-  state.specs[specId] = {
+  state.specs[specId] = normalizeSpecLoopSpecState({
     ...previous,
     ...patch,
     updatedAt: new Date().toISOString(),
-  };
+  });
 }
 
 export function bindKnownWorkflowRun(
@@ -326,6 +376,8 @@ export function bindKnownWorkflowRun(
     taskSessionId?: string | null;
     status?: SpecLoopSpecStatus;
     incrementAttempts?: boolean;
+    loopKey?: string | null;
+    dispatchMetadataPath?: string | null;
   },
 ): void {
   const previous = state.specs[specId];
@@ -338,6 +390,14 @@ export function bindKnownWorkflowRun(
       input.runUrl !== undefined
         ? input.runUrl
         : (previous?.lastRunUrl ?? null),
+    lastWorkflowLoopKey:
+      input.loopKey !== undefined
+        ? input.loopKey
+        : (previous?.lastWorkflowLoopKey ?? null),
+    lastDispatchMetadataPath:
+      input.dispatchMetadataPath !== undefined
+        ? input.dispatchMetadataPath
+        : (previous?.lastDispatchMetadataPath ?? null),
     activeAttemptId: input.attemptId ?? previous?.activeAttemptId ?? null,
     activeTaskSessionId:
       input.taskSessionId ?? previous?.activeTaskSessionId ?? null,

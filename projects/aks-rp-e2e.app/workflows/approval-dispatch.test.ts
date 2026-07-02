@@ -38,7 +38,7 @@ describe("approval-dispatch workflow", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.approval.dispatch.requested",
+          type: "project.approval.requested",
           project: "aks-rp-e2e",
           packetPath,
           pathId: "path.network-cni-azure-overlay-dual-stack-migration",

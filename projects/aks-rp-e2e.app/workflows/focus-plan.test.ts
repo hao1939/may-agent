@@ -110,7 +110,7 @@ describe("focus-plan workflow", () => {
     expect(result.message).toContain("counts.blocked=0");
     expect(result.message).toContain("counts.backlog=0");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.owner.requested",
+      "project.planning.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",
@@ -172,9 +172,10 @@ describe("focus-plan workflow", () => {
         `project: ${projectDir}`,
         "agent: aks-explorer",
         triggerEvent({
-          type: "project.focus.plan.requested",
+          type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-mid-term-focus-plan",
+          mode: "plan",
         }),
       ].join("\n"),
       agent: "aks-explorer",
@@ -211,7 +212,7 @@ describe("focus-plan workflow", () => {
     expect(sessionIds[0]).not.toBe("s_focus_plan_strategy");
     expect(dispatched.map((event) => event.type)).toEqual([
       "message.created",
-      "project.owner.requested",
+      "project.planning.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       from: "aks-explorer",
@@ -226,13 +227,13 @@ describe("focus-plan workflow", () => {
       projectId: "projects/aks-rp-e2e.app",
       projectPath: "projects/aks-rp-e2e.app",
       requestedAction:
-        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.focus.approval.submitted.",
+        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted.",
       approval: {
         kind: "focus-plan",
         planId: "focus-proposal-needs_approval",
         question: 'Approve the proposal focus direction "REST replay focus"?',
         directEvent: {
-          type: "project.focus.approval.submitted",
+          type: "project.approval.submitted",
           project: "aks-rp-e2e",
           projectPath: "projects/aks-rp-e2e.app",
           planId: "focus-proposal-needs_approval",
@@ -294,7 +295,7 @@ describe("focus-plan workflow", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.owner.requested",
+      "project.planning.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",

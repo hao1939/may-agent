@@ -9,7 +9,7 @@ import {
 import { dirname, join, relative } from "node:path";
 
 export type FeatureCompactStatus =
-  "pending" | "running" | "ready" | "partial" | "blocked" | "error";
+  "pending" | "running" | "done" | "blocked" | "error";
 
 export type FeatureCompactRecord = {
   featureKey: string;
@@ -21,11 +21,17 @@ export type FeatureCompactRecord = {
 
 export type FeatureCompactItemState = FeatureCompactRecord & {
   status: FeatureCompactStatus;
+  taskId?: string | null;
   attempts: number;
   lastPlanPath: string | null;
   lastSummaryPath: string | null;
   lastDiagnosticsPath: string | null;
   lastResultPath: string | null;
+  lastWorkflowRunId: string | null;
+  lastWorkflowRunUrl: string | null;
+  lastWorkflowLoopKey: string | null;
+  lastDispatchMetadataPath: string | null;
+  lastLiveProofVersion: string | null;
   lastSummary: string | null;
   updatedAt: string;
 };
@@ -62,6 +68,49 @@ function safeKey(value: string): string {
 function countJsonSpecs(dir: string): number {
   if (!existsSync(dir)) return 0;
   return readdirSync(dir).filter((name) => name.endsWith(".json")).length;
+}
+
+function normalizeStatus(value: unknown): FeatureCompactStatus {
+  if (
+    value === "pending" ||
+    value === "running" ||
+    value === "done" ||
+    value === "error"
+  ) {
+    return value;
+  }
+  if (value === "blocked") return "error";
+  if (value === "ready" || value === "partial") return "pending";
+  return "pending";
+}
+
+function normalizeExistingItem(
+  item: FeatureCompactItemState | undefined,
+): FeatureCompactItemState | undefined {
+  if (!item) return undefined;
+  return {
+    ...item,
+    status: normalizeStatus(item.status),
+    lastWorkflowRunId: item.lastWorkflowRunId ?? null,
+    lastWorkflowRunUrl: item.lastWorkflowRunUrl ?? null,
+    lastWorkflowLoopKey:
+      (item as FeatureCompactItemState).lastWorkflowLoopKey ?? null,
+    lastDispatchMetadataPath:
+      (item as FeatureCompactItemState).lastDispatchMetadataPath ?? null,
+    lastLiveProofVersion:
+      (item as FeatureCompactItemState).lastLiveProofVersion ?? null,
+    taskId: (item as FeatureCompactItemState).taskId ?? null,
+  };
+}
+
+function hasDurableLiveProof(
+  item: FeatureCompactItemState | undefined,
+): boolean {
+  return Boolean(
+    item?.status === "done" &&
+    item.lastWorkflowRunId &&
+    item.lastLiveProofVersion,
+  );
 }
 
 export function defaultFeatureCompactLoopStatePath(appDir: string): string {
@@ -138,6 +187,10 @@ export function loadFeatureCompactLoopState(input: {
     previous.loopTaskId ||= input.loopTaskId;
     previous.windowSize ||= input.windowSize;
     previous.features ||= {};
+    for (const [featureKey, item] of Object.entries(previous.features)) {
+      const normalized = normalizeExistingItem(item);
+      if (normalized) previous.features[featureKey] = normalized;
+    }
     return { state: previous, path, created: false };
   }
 
@@ -150,19 +203,27 @@ export function loadFeatureCompactLoopState(input: {
   );
   const features: Record<string, FeatureCompactItemState> = {};
   for (const record of records) {
-    const existing = previous
-      ? previousFeatureState(previous.features || {}, record)
-      : undefined;
+    const existing = normalizeExistingItem(
+      previous
+        ? previousFeatureState(previous.features || {}, record)
+        : undefined,
+    );
     features[record.featureKey] = {
       ...record,
-      status: existing?.status ?? "pending",
+      status: normalizeStatus(existing?.status),
+      taskId: existing?.taskId ?? null,
       attempts: existing?.attempts ?? 0,
       lastPlanPath: existing?.lastPlanPath ?? null,
       lastSummaryPath: existing?.lastSummaryPath ?? null,
       lastDiagnosticsPath: existing?.lastDiagnosticsPath ?? null,
       lastResultPath: existing?.lastResultPath ?? null,
+      lastWorkflowRunId: existing?.lastWorkflowRunId ?? null,
+      lastWorkflowRunUrl: existing?.lastWorkflowRunUrl ?? null,
+      lastWorkflowLoopKey: existing?.lastWorkflowLoopKey ?? null,
+      lastDispatchMetadataPath: existing?.lastDispatchMetadataPath ?? null,
+      lastLiveProofVersion: existing?.lastLiveProofVersion ?? null,
       lastSummary: existing?.lastSummary ?? null,
-      updatedAt: now,
+      updatedAt: existing?.updatedAt ?? now,
     };
   }
 
@@ -180,14 +241,48 @@ export function saveFeatureCompactLoopState(
   path: string,
   state: FeatureCompactLoopState,
 ): void {
-  writeJson(path, state);
+  const latest = existsSync(path)
+    ? readJson<FeatureCompactLoopState | null>(path, null)
+    : null;
+  if (!latest?.features) {
+    writeJson(path, state);
+    return;
+  }
+
+  const merged: FeatureCompactLoopState = {
+    ...latest,
+    loopTaskId: state.loopTaskId || latest.loopTaskId,
+    windowSize: state.windowSize || latest.windowSize,
+    cursor: state.cursor ?? latest.cursor,
+    features: { ...latest.features },
+  };
+
+  for (const [featureKey, item] of Object.entries(state.features ?? {})) {
+    const previous = merged.features[featureKey];
+    const itemTime = Date.parse(item.updatedAt || "");
+    const previousTime = Date.parse(previous?.updatedAt || "");
+    if (hasDurableLiveProof(previous) && !hasDurableLiveProof(item)) {
+      continue;
+    }
+    if (
+      !previous ||
+      !Number.isFinite(previousTime) ||
+      (Number.isFinite(itemTime) && itemTime >= previousTime)
+    ) {
+      merged.features[featureKey] = item;
+    }
+  }
+
+  writeJson(path, merged);
 }
 
 export function orderedPendingFeatureCompactKeys(
   state: FeatureCompactLoopState,
 ): string[] {
   return Object.keys(state.features)
-    .filter((featureKey) => state.features[featureKey]?.status === "pending")
+    .filter((featureKey) =>
+      ["pending", "error"].includes(String(state.features[featureKey]?.status)),
+    )
     .sort((a, b) => a.localeCompare(b));
 }
 
@@ -203,17 +298,31 @@ export function updateFeatureCompactItem(
     specsDir: `features/${featureKey}/specs`,
     specCount: 0,
     status: "pending" as const,
+    taskId: null,
     attempts: 0,
     lastPlanPath: null,
     lastSummaryPath: null,
     lastDiagnosticsPath: null,
     lastResultPath: null,
+    lastWorkflowRunId: null,
+    lastWorkflowRunUrl: null,
+    lastWorkflowLoopKey: null,
+    lastDispatchMetadataPath: null,
+    lastLiveProofVersion: null,
     lastSummary: null,
     updatedAt: new Date().toISOString(),
   };
+  const normalizedPatch = { ...patch };
+  if (
+    normalizedPatch.status &&
+    normalizedPatch.status !== "done" &&
+    normalizedPatch.lastLiveProofVersion === undefined
+  ) {
+    normalizedPatch.lastLiveProofVersion = null;
+  }
   state.features[featureKey] = {
     ...previous,
-    ...patch,
+    ...normalizedPatch,
     updatedAt: new Date().toISOString(),
   };
 }

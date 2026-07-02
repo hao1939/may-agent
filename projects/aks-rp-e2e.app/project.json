@@ -25,55 +25,51 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "The approved focus still fits the next 12-24h, but the durable focus context needed refresh to match the actual frontier. Task-tree summary/frontier at 2026-06-29T16:58:14Z shows no runnable or waiting backlog, 6 active frontier leaves, 6 review leaves, and 4 blocked waits, while aks-spec-verification-loop remains saturated at running=10/targetRunning=10 with 199 pending specs behind it. Since the last focus review, the wave produced one accepted pass, several repo-local OIDC/OSM/node-config review or repair leaves, and one post-checkpoint human/operator review leaf, while project metrics still show 0 manual live starts / 0 successes in the last 24h. Owner attention should stay on draining, classifying, and truth-repairing the current wave rather than widening risk.",
-    "activeTaskId": "verify-spec-node-http-proxy-update",
+    "summary": "Task-tree summary at 2026-07-02T05:12:30.585Z shows 0 runnable leaves, 0 waiting leaves, 1 active leaves, 1 review leaves, and 9 blocked leaves. Current live frontier is derived from non-done tasks/tree.json leaves first: rerun-compact-feature-workload-identity-after-stale-session-20260702, queue-spec-loop-secops-fips-ready-live-reruns-20260702. Loop residue files are diagnostic-only unless backed by a live tree leaf.",
+    "activeTaskId": "rerun-compact-feature-workload-identity-after-stale-session-20260702",
     "metrics": {
       "features": 645,
       "paths": 723,
-      "tasksCompleted24h": 1037,
-      "liveRunsStarted24h": 0,
+      "tasksCompleted24h": 1408,
+      "liveRunsStarted24h": 1,
       "liveRunsSucceeded24h": 0,
       "specUnverifiedCount": 0,
       "specFailedCount": 0,
-      "unknownPathMetric": 64,
-      "blockedLeafCount": 4,
+      "unknownPathMetric": 70,
+      "blockedLeafCount": 9,
       "runnableLeafCount": 0,
-      "activeLeafCount": 6,
-      "reviewLeafCount": 6
+      "activeLeafCount": 1,
+      "reviewLeafCount": 1,
+      "waitingLeafCount": 0
     }
   },
   "currentFocus": {
-    "summary": "The current 12-24h focus is still on track inside the approved risk envelope: keep aks-spec-verification-loop as the primary lane, drain the active node-config verification wave, absorb the 6-leaf review queue, finish the repo-local OIDC/OSM/skip-gpu/ssh-public-key follow-ups that turn non-pass artifacts into truthful carrier or verdict decisions, and keep the 4 explicit waits passive until their exact checkpoints, replies, proofs, artifacts, or live-slot signals land.",
-    "nextAction": "Normal owner loop should keep aks-spec-verification-loop primary: review the 6 review leaves first, then continue classifying and repairing the 6 active frontier leaves without launching new manual live probes. Prioritize classify-shared-single-spec-runner-termination-family-20260629, oidcdefrev, oidcv133rt404, osmmaybe, reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629, and review-human-operator-response-latency-family-post-checkpoint-20260629; then keep the repo-local skip-gpu and ssh-public-key follow-ups moving and preserve the 4 blocked waits as passive until their exact resume signals land. Leave feature-reference and feature-compact dormant unless a concrete source/packet/compact signal adds durable repo-local knowledge beyond this wave.",
+    "summary": "Current live focus is derived from non-done tasks/tree.json leaves first: rerun-compact-feature-workload-identity-after-stale-session-20260702, queue-spec-loop-secops-fips-ready-live-reruns-20260702.",
+    "nextAction": "Finish the current active live-frontier leaf/leaves first: rerun-compact-feature-workload-identity-after-stale-session-20260702, queue-spec-loop-secops-fips-ready-live-reruns-20260702. Keep project/app summaries grounded in tasks/tree.json live leaves rather than loop residue.",
     "activeTaskIds": [
-      "focus-mounted-source-coverage-closure-and-external-wait-20260623",
-      "aks-spec-verification-loop",
-      "verify-spec-node-http-proxy-update",
-      "verify-spec-node-image-upgrade-operation",
-      "verify-spec-node-pool-config-fips-enabled",
-      "verify-spec-node-pool-config-kubereserved",
-      "repair-spec-node-pool-config-skip-gpu-driver-source-equivalent-carrier-20260629",
-      "verify-spec-node-pool-config-ssh-public-key-update-linux-rerun-after-preflight-repair-20260629",
-      "classify-shared-single-spec-runner-termination-family-20260629",
-      "oidcdefrev",
-      "oidcv133rt404",
-      "osmmaybe",
-      "reconcile-spec-oidc-issuer-signing-key-rotation-nonlive-run-20260629",
-      "review-human-operator-response-latency-family-post-checkpoint-20260629",
-      "external-send-proof-dispatch-family-human-operator-out-of-runtime-proof-wait-20260622",
-      "wait-aad-rbac-known-run-28371054186-checkpoint-20260629",
-      "wait-shared-westus2-cluster-count-preflight-family-recovery-20260629",
-      "wait-spec-network-acns-basic-retina-update-retina-enterprise-live-slot-and-gh-az-capable-host-20260629"
+      "rerun-compact-feature-workload-identity-after-stale-session-20260702",
+      "queue-spec-loop-secops-fips-ready-live-reruns-20260702"
     ],
-    "focusPlanId": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
-    "focusPlanStatus": "active",
     "priorFocusPlanId": "focus-mounted-source-coverage-closure-and-external-wait-20260623",
-    "priorFocusResult": "updated",
+    "priorFocusResult": "completed",
     "focusReview": {
-      "reviewedAt": "2026-06-29T17:05:00Z",
-      "result": "updated",
-      "note": "No approval-worthy direction or risk change is needed. The focus branch was stale because the frontier advanced from the earlier KMS-centered wave to a node-config/OIDC-heavy verification-and-review wave with 6 active leaves, 6 review leaves, and 4 explicit waits, but the truthful next 12-24h remains to drain that wave, convert its non-pass artifacts into durable carrier/verdict decisions, and avoid widening into new manual live work."
-    }
+      "reviewedAt": "2026-07-02T03:35:00.000Z",
+      "result": "needs_approval",
+      "note": "This progress review found the prior compact-workflow approval request stale against the actual frontier. The next 12-24h direction is a no-new-live-work spec-loop reconciliation wave anchored on managementplane-addon/localdns/westus2 plus the existing runnable family backlog, so human approval is requested for that material direction change."
+    },
+    "proposedTaskIds": [
+      "rerun-compact-feature-workload-identity-after-stale-session-20260702",
+      "queue-spec-loop-secops-fips-ready-live-reruns-20260702",
+      "rerun-spec-loop-gpu-repaired-create-failure-carriers-20260702-blocked",
+      "review-compact-dataplane-current-head-rerun-after-terminal-publication-20260702",
+      "review-fleet-queued-reruns-after-terminal-publication-20260702",
+      "route-compact-node-pool-config-dispatch-auth-ready-ref-gap-20260702-foll-2",
+      "wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701",
+      "wait-compact-remediator-terminal-evidence-publication-20260702",
+      "wait-shared-second-hop-checkpoint-packet-supply-20260630",
+      "wait-shared-westus2-managed-cluster-capacity-family-return-20260702",
+      "wait-spec-network-cni-cilium-enterprise-addon-underlay-kubeconfig-response-20260630"
+    ]
   },
   "focusPlan": {
     "cadence": {
@@ -89,5 +85,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-29T17:05:00Z"
+  "updatedAt": "2026-07-02T05:12:30.597Z"
 }

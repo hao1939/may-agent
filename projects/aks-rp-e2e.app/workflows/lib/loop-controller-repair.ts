@@ -8,6 +8,10 @@ import { readTaskTree, type TaskNode } from "./task-tree-store.ts";
 import type { TaskTreeConfig } from "./task-tree-tools.ts";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import {
+  exactBlockedWaitStewardshipProgress,
+  runnableDurableLoopProgress,
+} from "./durable-loop-wait-stewardship.ts";
 
 function taskStatus(task: TaskNode): string {
   return String(task.status ?? task.state ?? "");
@@ -72,6 +76,56 @@ export function consumeDispatchedAssignments(
     "utf8",
   );
   return consumed;
+}
+
+export function reopenControllerRootWhenIncomplete(input: {
+  task: TaskNode;
+  progress: Record<string, unknown>;
+  reason: string;
+}): boolean {
+  if (input.progress.completionReady !== false) return false;
+  const status = taskStatus(input.task);
+  if (status === "active" || status === "backlog") return false;
+
+  const exactBlockedWaitStewardship = exactBlockedWaitStewardshipProgress(
+    input.progress,
+  );
+  if (!exactBlockedWaitStewardship) {
+    const progress = runnableDurableLoopProgress(input.progress);
+    for (const key of Object.keys(input.progress)) {
+      delete input.progress[key];
+    }
+    Object.assign(input.progress, progress);
+  }
+  const now = new Date().toISOString();
+  input.task.status = exactBlockedWaitStewardship ? "blocked" : "backlog";
+  input.task.state = exactBlockedWaitStewardship ? "blocked" : "backlog";
+  input.task.blocker = exactBlockedWaitStewardship
+    ? {
+        condition:
+          typeof input.progress.reason === "string" &&
+          input.progress.reason.trim()
+            ? input.progress.reason.trim()
+            : "controller is paused on exact blocked wait stewardship",
+        category: "child-blocked",
+        owner: input.task.owner,
+        resume_condition:
+          "Resume when one of the exact blocked wait children resolves or is replaced.",
+      }
+    : undefined;
+  input.task.resolution = undefined;
+  input.task.done_at = undefined;
+  input.task.done_by = undefined;
+  input.task.trace = {
+    ...(input.task.trace ?? {}),
+    reopened_at: now,
+    reopened_by: "loop-controller",
+    reopen_reason: input.reason,
+    previous_nonterminal_status: status || undefined,
+    current_attempt_id: undefined,
+    worker_started_attempt_id: undefined,
+  };
+  return true;
 }
 
 export function requeueOrphanedActiveChildren(

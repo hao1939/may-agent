@@ -12,19 +12,23 @@ import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
-  assignRunnableBacklogTasks,
+  assignTask,
   createTask,
   drainTaskAssignments,
+  listRunnableBacklogTaskIds,
   markTaskDone,
   planningPacket,
   readTask,
   rejectTaskReview,
   repairTaskTreeRollups,
+  saveTaskTreeWithKanbanSnapshot,
   taskTreeConfig,
   type TaskAssignment,
   type TaskPlanningPacket,
   type TaskTreeConfig,
 } from "./lib/task-tree-tools.ts";
+import { readTaskTree, withTreeLock } from "./lib/task-tree-store.ts";
+import { syncProjectReadout } from "./lib/project-readout-sync.ts";
 import {
   field,
   maxConcurrent,
@@ -59,6 +63,70 @@ type RuntimeEventRow = {
   timestamp?: unknown;
 };
 
+const loopControllerWorkflows = new Set([
+  "feature-reference-loop-controller",
+  "feature-compact-loop-controller",
+  "spec-loop-controller",
+]);
+
+const loopControllerTaskIds = new Set([
+  "aks-feature-reference-loop",
+  "aks-feature-compact-loop",
+  "aks-spec-verification-loop",
+]);
+
+const loopControllerManagedChildWorkflows = new Set([
+  "feature-reference-collector",
+  "feature-compact-planner",
+  "single-spec-verifier",
+]);
+
+function isLoopOwnedChildTask(config: TaskTreeConfig, taskId: string): boolean {
+  if (loopControllerTaskIds.has(taskId)) return false;
+  const task = readTask(config, taskId);
+  if (!task) return false;
+  if (!loopControllerManagedChildWorkflows.has(String(task.workflow ?? ""))) {
+    return false;
+  }
+
+  const context =
+    task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+      ? (task.context as Record<string, unknown>)
+      : {};
+  if (
+    typeof context.loopTaskId === "string" &&
+    loopControllerTaskIds.has(context.loopTaskId)
+  ) {
+    return true;
+  }
+
+  if (!task.parent_id) return false;
+  const parent = readTask(config, task.parent_id);
+  return !!parent?.workflow && loopControllerWorkflows.has(parent.workflow);
+}
+
+function plannerAssignableBacklogTaskIds(config: TaskTreeConfig): string[] {
+  return listRunnableBacklogTaskIds(config, 200).filter(
+    (taskId) => !isLoopOwnedChildTask(config, taskId),
+  );
+}
+
+function assignPlannerRunnableBacklogTasks(
+  config: TaskTreeConfig,
+  input: { worker?: string } = {},
+): void {
+  for (const taskId of plannerAssignableBacklogTaskIds(config)) {
+    try {
+      assignTask(config, { taskId, worker: input.worker });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("Worker capacity is full")) break;
+    }
+  }
+}
+
 type ReviewDecision = "accept" | "redo" | "followup" | "blocked" | "escalate";
 
 type ReviewedTaskApplyResult = {
@@ -68,6 +136,13 @@ type ReviewedTaskApplyResult = {
   taskId?: string;
   message: string;
   successorTaskId?: string;
+};
+
+type StallReviewedApplyResult = {
+  handled: boolean;
+  applied: boolean;
+  requeuedTaskIds: string[];
+  message: string;
 };
 
 function truncateText(value: string, max = 280): string {
@@ -433,6 +508,14 @@ Core operating model:
   precise external blockers or human escalation state when escalated; triage or
   request follow-up investigation when the solver could not classify the result.
   The solver reports facts; you own tree decisions.
+- When project.stall.reviewed wakes you, treat it as a project-level liveness
+  judgment. Read its collected packet and summary before routine refill. If the
+  stall-review packet shows unfinished loop state, stale false-terminal roots,
+  retry-drained work, or noisy waits, create or assign the smallest concrete
+  owner/worker/problem task that restores motion. If the judgment is a real
+  external wait, record one exact wait with owner, resume condition, affected
+  scope, and next review trigger. Do not let the reviewed event disappear into
+  another generic no-op.
 - Treat the task tree as the project-specific source of truth. Read root and
   lane context before deciding that the project is complete or blocked.
 - Project-specific progress signals, completion criteria, gap reconciliation,
@@ -768,6 +851,16 @@ function taskStringList(
     : [];
 }
 
+function taskContext(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): Record<string, unknown> {
+  return task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+    ? (task.context as Record<string, unknown>)
+    : {};
+}
+
 function uniqueTaskId(config: TaskTreeConfig, base: string): string {
   const normalized =
     base
@@ -836,6 +929,7 @@ function createReviewedSuccessor(input: {
         ],
     conflict_scope: taskStringList(input.task, "conflict_scope"),
     context: {
+      ...taskContext(input.task),
       reviewedTask: {
         taskId: input.task.id,
         attemptId: input.attemptId,
@@ -975,6 +1069,134 @@ function applyReviewedTaskEvent(
     taskId,
     successorTaskId,
     message: `Applied ${decision} review for ${taskId}; created ${successorTaskId}.`,
+  };
+}
+
+function numericTriggerField(
+  record: Record<string, unknown>,
+  keys: string[],
+): number {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
+function stringTriggerField(
+  record: Record<string, unknown>,
+  keys: string[],
+): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function applyStallReviewedEvent(
+  config: TaskTreeConfig,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): StallReviewedApplyResult {
+  if (trigger?.type !== "project.stall.reviewed") {
+    return {
+      handled: false,
+      applied: false,
+      requeuedTaskIds: [],
+      message: "Trigger is not project.stall.reviewed.",
+    };
+  }
+
+  const judgment = stringValue(triggerValue(trigger, "judgment"));
+  const loopSummaries = triggerValue(trigger, "loopSummaries");
+  if (
+    judgment !== "needs-work" &&
+    judgment !== "repaired" &&
+    judgment !== "inconclusive"
+  ) {
+    return {
+      handled: true,
+      applied: false,
+      requeuedTaskIds: [],
+      message: `Stall review judgment ${judgment || "unknown"} does not require deterministic loop requeue.`,
+    };
+  }
+  if (!Array.isArray(loopSummaries)) {
+    return {
+      handled: true,
+      applied: false,
+      requeuedTaskIds: [],
+      message: "Stall review did not include loopSummaries.",
+    };
+  }
+
+  const taskIdsToRequeue = loopSummaries
+    .filter((entry): entry is Record<string, unknown> => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return false;
+      }
+      const completionReady = entry.completion_ready ?? entry.completionReady;
+      const unrepresented = numericTriggerField(entry, [
+        "unrepresented_non_terminal_count",
+        "unrepresentedNonTerminalCount",
+      ]);
+      const nonTerminal = numericTriggerField(entry, [
+        "non_terminal_count",
+        "nonTerminalCount",
+      ]);
+      return (
+        completionReady === false && (unrepresented > 0 || nonTerminal > 0)
+      );
+    })
+    .map((entry) => stringTriggerField(entry, ["task_id", "taskId"]))
+    .filter((taskId) => loopControllerTaskIds.has(taskId));
+
+  if (taskIdsToRequeue.length === 0) {
+    return {
+      handled: true,
+      applied: false,
+      requeuedTaskIds: [],
+      message:
+        "Stall review contained no durable loop roots with unrepresented non-terminal work.",
+    };
+  }
+
+  const requeuedTaskIds: string[] = [];
+  const now = new Date().toISOString();
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    for (const taskId of taskIdsToRequeue) {
+      const task = tree.tasks[taskId];
+      if (!task) continue;
+      const state = String(task.status ?? task.state ?? "backlog");
+      if (state === "active" || state === "backlog") continue;
+      task.status = "backlog";
+      task.state = "backlog";
+      task.blocker = undefined;
+      task.trace = {
+        ...(task.trace ?? {}),
+        reopened_at: now,
+        reopened_by: "project-planner",
+        reopen_reason:
+          "project.stall.reviewed reported unrepresented non-terminal loop records",
+        previous_nonterminal_status: state,
+        current_attempt_id: undefined,
+        worker_started_attempt_id: undefined,
+      };
+      requeuedTaskIds.push(taskId);
+    }
+    if (requeuedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+    }
+  });
+
+  return {
+    handled: true,
+    applied: requeuedTaskIds.length > 0,
+    requeuedTaskIds,
+    message: requeuedTaskIds.length
+      ? `Requeued stalled durable loop root(s): ${requeuedTaskIds.join(", ")}.`
+      : "Stall review roots were already runnable or active.",
   };
 }
 
@@ -1379,6 +1601,15 @@ function appendNoopPlannerRun(input: {
   });
 }
 
+function syncPlannerProjectReadout(config: TaskTreeConfig): void {
+  try {
+    syncProjectReadout(config);
+  } catch {
+    // Keep planner progress authoritative in tasks/tree.json even when
+    // project.json summary refresh fails; the next wake can retry.
+  }
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
@@ -1398,13 +1629,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   let humanSteering = recentHumanSteering(ctx);
   const initialRepair = repairTaskTreeRollups(config);
+  syncPlannerProjectReadout(config);
   const trigger = parseTriggerEvent(ctx.task);
   const reviewedApply = applyReviewedTaskEvent(config, trigger);
   if (reviewedApply.handled) {
-    assignRunnableBacklogTasks(config, { worker });
+    assignPlannerRunnableBacklogTasks(config, { worker });
     const assignments = drainTaskAssignments(config);
     dispatchAssignedTasks(ctx, assignments);
     const finalRepair = repairTaskTreeRollups(config);
+    syncPlannerProjectReadout(config);
     const packet = planningPacket(config);
     appendPlannerRun(appDir, {
       kind: "planner_wake",
@@ -1431,9 +1664,37 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : reviewedApply.message,
     );
   }
-  assignRunnableBacklogTasks(config, { worker });
+  const stallReviewedApply = applyStallReviewedEvent(config, trigger);
+  if (stallReviewedApply.handled && stallReviewedApply.applied) {
+    assignPlannerRunnableBacklogTasks(config, { worker });
+    const assignments = drainTaskAssignments(config);
+    dispatchAssignedTasks(ctx, assignments);
+    const finalRepair = repairTaskTreeRollups(config);
+    syncPlannerProjectReadout(config);
+    const packet = planningPacket(config);
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status: assignments.length ? "assigned" : "settled",
+      ran_agent: false,
+      steps: ["stall-reviewed-apply", "quick-refill"],
+      assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+      repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
+      active_task_ids: packet.active_task_ids,
+      result: stallReviewedApply.message,
+    });
+    return ctx.done(
+      assignments.length
+        ? `${stallReviewedApply.message} Planner assigned ${assignments.length} task(s): ${assignments
+            .map((assignment) => assignment.taskId)
+            .slice(0, 8)
+            .join(", ")}.`
+        : stallReviewedApply.message,
+    );
+  }
+  assignPlannerRunnableBacklogTasks(config, { worker });
   const quickAssignments = drainTaskAssignments(config);
   dispatchAssignedTasks(ctx, quickAssignments);
+  syncPlannerProjectReadout(config);
   let packet = planningPacket(config);
 
   const noopResult = settledActiveNoopResult({
@@ -1630,6 +1891,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     };
   }
   const finalRepair = repairTaskTreeRollups(config);
+  syncPlannerProjectReadout(config);
   packet = planningPacket(config);
 
   let ownerAssignments = drainTaskAssignments(config);

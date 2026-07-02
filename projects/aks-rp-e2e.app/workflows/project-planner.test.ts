@@ -15,6 +15,39 @@ async function makeWorkspace() {
   await mkdir(join(projectDir, "model", "knowledge-map"), {
     recursive: true,
   });
+  await writeFile(
+    join(appDir, "project.json"),
+    `${JSON.stringify(
+      {
+        id: "aks-rp-e2e.app",
+        owner: "aks-explorer",
+        status: "active",
+        type: "project-app",
+        currentState: {
+          summary: "stale summary",
+          activeTaskId: "archived-task",
+          metrics: {
+            blockedLeafCount: 0,
+            activeLeafCount: 99,
+            reviewLeafCount: 88,
+            waitingLeafCount: 77,
+            runnableLeafCount: 66,
+          },
+        },
+        currentFocus: {
+          summary: "stale focus",
+          nextAction: "do stale work",
+          activeTaskIds: ["archived-task", "done-focus"],
+          proposedTaskIds: ["archived-task", "done-focus"],
+          focusPlanId: "done-focus",
+          focusPlanStatus: "done",
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
   await mkdir(join(projectDir, "evidence", "archive"), { recursive: true });
   await mkdir(join(projectDir, "specs"), { recursive: true });
   await mkdir(join(projectDir, "replays"), { recursive: true });
@@ -122,6 +155,7 @@ async function writeReviewTree(
     taskId?: string;
     attemptId?: string;
     status?: string;
+    context?: Record<string, unknown>;
   } = {},
 ) {
   const taskId = input.taskId ?? "review-task";
@@ -158,6 +192,7 @@ async function writeReviewTree(
             outputs: ["runs/test-results/review-task.json"],
             acceptance: ["review accepted"],
             conflict_scope: ["scope.review-task"],
+            context: input.context,
             session_id: "s_task_review_task",
             result: "worker result",
             trace: {
@@ -291,7 +326,14 @@ describe("project owner workflow", () => {
 
   test("applies follow-up reviews by creating a successor task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
-    await writeReviewTree(appDir);
+    await writeReviewTree(appDir, {
+      context: {
+        featureKey: "defender-profile",
+        capabilityId: "defender-profile",
+        target: "staging",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+    });
 
     const result = await execute(
       plannerContext({
@@ -318,11 +360,28 @@ describe("project owner workflow", () => {
     expect(tree.tasks["review-task-followup"].goal).toBe(
       "Run the compacted feature test on GitHub.",
     );
+    expect(tree.tasks["review-task-followup"].context).toMatchObject({
+      featureKey: "defender-profile",
+      capabilityId: "defender-profile",
+      target: "staging",
+      loopTaskId: "aks-feature-compact-loop",
+      reviewedTask: {
+        taskId: "review-task",
+        attemptId: "attempt-1",
+        decision: "followup",
+      },
+    });
   });
 
   test("applies blocked reviews by replacing the review leaf with an exact wait task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
-    await writeReviewTree(appDir);
+    await writeReviewTree(appDir, {
+      context: {
+        featureKey: "node-restriction",
+        capabilityId: "node-restriction",
+        stateRef: ".state/feature-compact-loop/state.json",
+      },
+    });
 
     const result = await execute(
       plannerContext({
@@ -351,6 +410,16 @@ describe("project owner workflow", () => {
     expect(tree.tasks["review-task-blocked"].blocker.resume_condition).toBe(
       "Resume when westus2 quota drops below limit.",
     );
+    expect(tree.tasks["review-task-blocked"].context).toMatchObject({
+      featureKey: "node-restriction",
+      capabilityId: "node-restriction",
+      stateRef: ".state/feature-compact-loop/state.json",
+      reviewedTask: {
+        taskId: "review-task",
+        attemptId: "attempt-1",
+        decision: "blocked",
+      },
+    });
   });
 
   test("ignores stale reviewed task attempts without owner-agent planning", async () => {
@@ -824,6 +893,317 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("quick-refill does not assign loop-owned child tasks directly", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "aks-feature-reference-loop",
+          active_task_ids: ["aks-feature-reference-loop"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-reference-loop", "ordinary-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              workflow: "feature-reference-loop-controller",
+              children: ["collect-feature-reference-a"],
+              goal: "Collect feature references.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["all features terminal"],
+              conflict_scope: ["feature-reference-loop"],
+            },
+            "collect-feature-reference-a": {
+              id: "collect-feature-reference-a",
+              parent_id: "aks-feature-reference-loop",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              workflow: "feature-reference-collector",
+              children: [],
+              goal: "Collect feature reference for a.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["state updated"],
+              conflict_scope: ["feature-reference:a"],
+              context: {
+                loopTaskId: "aks-feature-reference-loop",
+                featureKey: "a",
+              },
+            },
+            "ordinary-task": {
+              id: "ordinary-task",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P2",
+              children: [],
+              goal: "Do ordinary work.",
+              outputs: ["evidence/archive/ordinary.md"],
+              acceptance: ["done"],
+              conflict_scope: ["ordinary"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "owner should not run",
+      }),
+      summarize: () => "",
+    } as any);
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("quick-refill assigned 1 task");
+    expect(dispatched.map((event) => event.payload.taskId)).toEqual([
+      "ordinary-task",
+    ]);
+    expect(tree.tasks["collect-feature-reference-a"].state).toBe("backlog");
+    expect(tree.tasks["ordinary-task"].state).toBe("active");
+  });
+
+  test("quick-refill assigns loop support follow-up tasks", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "aks-spec-verification-loop",
+          active_task_ids: ["aks-spec-verification-loop"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              workflow: "spec-loop-controller",
+              children: ["reconcile-spec-loop-error-fleet"],
+              goal: "Verify every spec.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["all specs pass"],
+              conflict_scope: ["spec-loop"],
+            },
+            "reconcile-spec-loop-error-fleet": {
+              id: "reconcile-spec-loop-error-fleet",
+              parent_id: "aks-spec-verification-loop",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Reconcile retry-drained fleet spec-loop errors.",
+              outputs: [".state/spec-loop/state.json", "evidence/archive/"],
+              acceptance: ["sampled specs classified"],
+              conflict_scope: ["spec-loop-followup:error:fleet"],
+              context: {
+                specLoopFollowup: true,
+                featureFamily: "fleet",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "owner should not run",
+      }),
+      summarize: () => "",
+    } as any);
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("quick-refill assigned 1 task");
+    expect(dispatched.map((event) => event.payload.taskId)).toEqual([
+      "reconcile-spec-loop-error-fleet",
+    ]);
+    expect(tree.tasks["reconcile-spec-loop-error-fleet"].state).toBe("active");
+  });
+
+  test("quick-refill can assign a loop controller root", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-reference-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              workflow: "feature-reference-loop-controller",
+              children: ["collect-feature-reference-a"],
+              goal: "Collect feature references.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["all features terminal"],
+              conflict_scope: ["feature-reference-loop"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  pending: 1,
+                  running: 0,
+                },
+              },
+            },
+            "collect-feature-reference-a": {
+              id: "collect-feature-reference-a",
+              parent_id: "aks-feature-reference-loop",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              workflow: "feature-reference-collector",
+              children: [],
+              goal: "Collect feature reference for a.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["state updated"],
+              conflict_scope: ["feature-reference:a"],
+              context: {
+                loopTaskId: "aks-feature-reference-loop",
+                featureKey: "a",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "owner should not run",
+      }),
+      summarize: () => "",
+    } as any);
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(dispatched.map((event) => event.payload.taskId)).toEqual([
+      "aks-feature-reference-loop",
+    ]);
+    expect(tree.tasks["aks-feature-reference-loop"].state).toBe("active");
+    expect(tree.tasks["collect-feature-reference-a"].state).toBe("backlog");
+  });
+
   test("short-circuits task-completed wake after first bounded successor assignment", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -1024,6 +1404,136 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"assigned_task_ids":["backlog-task"]');
     expect(plannerRuns).not.toContain('"steps":["quick-refill"]');
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("quick refill synchronizes project.json live readout from non-done tree leaves", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-wait"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-wait": {
+              id: "blocked-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "external wait",
+                resume_at: "2099-01-01T00:00:00.000Z",
+              },
+            },
+            "done-focus": {
+              id: "done-focus",
+              parent_id: "project",
+              state: "done",
+              kind: "focus_plan",
+              children: [],
+              goal: "old focus",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-wait",
+                resumeAt: "2099-01-01T00:00:00.000Z",
+              },
+            ],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success", message: "should not run" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-frontier wake is already represented by structured future-dated external waits",
+    );
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const projectJson = JSON.parse(
+      await readFile(join(appDir, "project.json"), "utf8"),
+    );
+    expect(projectJson.currentState.activeTaskId).toBeNull();
+    expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
+    expect(projectJson.currentState.metrics.blockedLeafCount).toBe(1);
+    expect(projectJson.currentState.metrics.reviewLeafCount).toBe(0);
+    expect(projectJson.currentState.metrics.waitingLeafCount).toBe(0);
+    expect(projectJson.currentState.metrics.runnableLeafCount).toBe(0);
+    expect(projectJson.currentFocus.activeTaskIds).toEqual(["blocked-wait"]);
+    expect(projectJson.currentFocus.proposedTaskIds).toEqual(["blocked-wait"]);
+    expect(projectJson.currentFocus.focusPlanId).toBeUndefined();
+    expect(projectJson.currentFocus.focusPlanStatus).toBeUndefined();
+    expect(String(projectJson.currentState.summary)).toContain(
+      "blocked-only exact wait stewardship",
+    );
+    expect(String(projectJson.currentFocus.summary)).toContain(
+      "blocked-only wait stewardship",
+    );
+    expect(String(projectJson.currentFocus.nextAction)).toContain(
+      "Preserve the exact blocked waits",
+    );
   });
 
   test("aggressive-push mode does not short-circuit underfilled capacity after one refill", async () => {

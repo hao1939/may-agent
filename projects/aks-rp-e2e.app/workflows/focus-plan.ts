@@ -45,8 +45,11 @@ type FocusResult =
   | "completed"
   | "blocked";
 
-function focusRunKind(triggerType: string | undefined): "proposal" | "review" {
-  return triggerType === "project.focus.plan.requested" ? "proposal" : "review";
+function focusRunKind(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): "proposal" | "review" {
+  const mode = triggerString(trigger, "mode").toLowerCase();
+  return mode === "plan" || mode === "proposal" ? "proposal" : "review";
 }
 
 function focusSessionId(kind: "proposal" | "review"): string {
@@ -355,7 +358,7 @@ function dispatchOwnerRequested(
   },
 ): void {
   try {
-    ctx.dispatchEvent("project.owner.requested", {
+    ctx.dispatchEvent("project.planning.requested", {
       target: { project: "aks-rp-e2e" },
       project: "aks-rp-e2e",
       reason: `focus-plan-${input.kind}`,
@@ -422,7 +425,7 @@ function dispatchHumanApproval(
       },
     ],
     directEvent: {
-      type: "project.focus.approval.submitted",
+      type: "project.approval.submitted",
       project: "aks-rp-e2e",
       projectPath: "projects/aks-rp-e2e.app",
       planId,
@@ -443,7 +446,7 @@ function dispatchHumanApproval(
       projectPath: "projects/aks-rp-e2e.app",
       reason: title,
       requestedAction:
-        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.focus.approval.submitted.",
+        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted.",
       approval,
       focusResult: input.result,
       focusKind: input.kind,
@@ -483,7 +486,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
   const triggerType = trigger?.type;
-  const kind = focusRunKind(triggerType);
+  const kind = focusRunKind(trigger);
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
   const config = taskTreeConfig({

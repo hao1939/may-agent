@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  assignTask,
   compactDoneLeaves,
   completeTask,
   createTask,
@@ -1882,5 +1883,672 @@ describe("task tree tools", () => {
     );
     expect(tree.tasks["aks-feature-reference-loop"]).toBeDefined();
     expect(tree.tasks.project.children).toEqual(["aks-feature-reference-loop"]);
+  });
+
+  test("repair-rollups reopens durable loop roots with incomplete progress", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-reference-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              workflow: "feature-reference-loop-controller",
+              priority: "P1",
+              children: [],
+              goal: "Keep official feature references current.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["Loop remains present until explicitly retired."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason: "feature-reference loop state still has work",
+                  pending: 26,
+                  running: 164,
+                },
+              },
+              resolution: "completed",
+              done_at: "2026-06-29T00:00:00.000Z",
+              done_by: "task-tree-tool",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([
+      "aks-feature-reference-loop",
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    const task = tree.tasks["aks-feature-reference-loop"];
+    expect(task.state).toBe("backlog");
+    expect(task.status ?? task.state).toBe("backlog");
+    expect(task.blocker).toBeUndefined();
+    expect(task.done_at).toBeUndefined();
+    expect(task.resolution).toBeUndefined();
+    expect(task.trace.reopened_by).toBe("task-tree-repair");
+  });
+
+  test("repair-rollups reopens stale durable wait roots that omit unrepresented residue", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  reason:
+                    "old controller snapshot reported exact waits before unrepresented counts existed",
+                  pending: 123,
+                  running: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([
+      "aks-spec-verification-loop",
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    const task = tree.tasks["aks-spec-verification-loop"];
+    expect(task.state).toBe("backlog");
+    expect(task.blocker).toBeUndefined();
+    expect(task.trace.reopened_by).toBe("task-tree-repair");
+  });
+
+  test("repair-rollups preserves blocked-only durable loop wait stewardship roots", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [
+                "aks-feature-compact-loop",
+                "aks-spec-verification-loop",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "feature-compact-loop-controller",
+              priority: "P1",
+              children: ["wait-compact-external-signal"],
+              goal: "Keep compact loop moving.",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Loop is current"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  dispatchHeld: true,
+                  dispatchHold:
+                    "feature-compact loop live dispatch held because 1 GitHub workflow run(s) are already in progress on dev; limit=1",
+                  reason:
+                    "feature-compact loop live dispatch held because 1 GitHub workflow run(s) are already in progress on dev; limit=1",
+                  pending: 5,
+                  running: 0,
+                  error: 69,
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSupportChildren: 0,
+                  activeGithubRuns: 1,
+                  githubActiveRunLimit: 1,
+                },
+              },
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  reason:
+                    "spec-loop execution residue is drained and the remaining frontier is exact wait stewardship: 0 active child leaf/leaves, 0 review child leaf/leaves, 0 waiting child leaf/leaves, 0 backlog child leaf/leaves, 1 blocked wait leaf/leaves, 0 backlog follow-up leaf/leaves",
+                  pending: 123,
+                  running: 0,
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-compact-external-signal": {
+              id: "wait-compact-external-signal",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-compact.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["aks-feature-compact-loop"].state).toBe("blocked");
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("blocked");
+    expect(
+      tree.tasks["aks-feature-compact-loop"].trace?.reopened_by,
+    ).toBeUndefined();
+    expect(
+      tree.tasks["aks-spec-verification-loop"].trace?.reopened_by,
+    ).toBeUndefined();
+  });
+
+  test("repair-rollups preserves blocked-only durable loop wait stewardship roots even with active/review/waiting/backlog counters explicitly zero", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [
+                "aks-feature-compact-loop",
+                "aks-spec-verification-loop",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "feature-compact-loop-controller",
+              priority: "P1",
+              children: ["wait-compact-external-signal"],
+              goal: "Keep compact loop moving.",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Loop is current"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  dispatchHeld: true,
+                  reason:
+                    "feature-compact loop live dispatch held because residue remains but the child frontier is exact blocked waits only",
+                  pending: 9,
+                  running: 0,
+                  error: 66,
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSupportChildren: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  reason:
+                    "spec-loop execution residue is drained and the remaining frontier is exact wait stewardship",
+                  pending: 123,
+                  running: 0,
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-compact-external-signal": {
+              id: "wait-compact-external-signal",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-compact.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["aks-feature-compact-loop"].state).toBe("blocked");
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("blocked");
+    expect(
+      tree.tasks["aks-feature-compact-loop"].trace?.reopened_by,
+    ).toBeUndefined();
+    expect(
+      tree.tasks["aks-spec-verification-loop"].trace?.reopened_by,
+    ).toBeUndefined();
+  });
+
+  test("assigns incomplete non-leaf workflow controller roots", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-compact-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "feature-compact-loop-controller",
+              priority: "P1",
+              children: ["wait-compact-external-signal"],
+              goal: "Keep compact loop moving.",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Loop is current"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason: "feature-compact loop still has non-terminal work",
+                  pending: 3,
+                  running: 0,
+                },
+              },
+            },
+            "wait-compact-external-signal": {
+              id: "wait-compact-external-signal",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "aks-feature-compact-loop",
+    });
+
+    expect(assignment.taskId).toBe("aks-feature-compact-loop");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["aks-feature-compact-loop"].state).toBe("active");
+    expect(tree.active_task_ids).toEqual(["aks-feature-compact-loop"]);
+  });
+
+  test("suppresses paused durable controllers from runnable backlog", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-reference-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "feature-reference-loop-controller",
+              priority: "P1",
+              children: ["wait-feature-reference-signal"],
+              goal: "Keep official feature references current.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["Loop remains present until explicitly retired."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path",
+                  pending: 0,
+                  running: 0,
+                  holdMode: "dormant-backlog-preserved",
+                  noRefillNow: true,
+                },
+              },
+            },
+            "wait-feature-reference-signal": {
+              id: "wait-feature-reference-signal",
+              parent_id: "aks-feature-reference-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact source refresh signal.",
+              outputs: ["evidence/archive/wait-feature-reference.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    expect(() =>
+      assignTask(config(projectDir), {
+        taskId: "aks-feature-reference-loop",
+      }),
+    ).toThrow(/not a leaf/);
+  });
+
+  test("repair-rollups reopens spec-loop stranded exhausted residue", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  executionDrained: true,
+                  noRefillNow: true,
+                  strandedExhaustedResidueOnly: true,
+                  reason:
+                    "spec-loop execution is drained and only exact blocked waits plus stranded exhausted residue remain",
+                  pending: 123,
+                  dispatchablePending: 0,
+                  strandedPending: 123,
+                  running: 0,
+                  error: 203,
+                  retryBudgetExhausted: 203,
+                  unrepresentedNonTerminalCount: 203,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([
+      "aks-spec-verification-loop",
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    const task = tree.tasks["aks-spec-verification-loop"];
+    expect(task.state).toBe("backlog");
+    expect(task.blocker).toBeUndefined();
+    expect(task.context.workflowProgress.noRefillNow).toBeUndefined();
+    expect(task.trace?.reopened_by).toBe("task-tree-repair");
   });
 });

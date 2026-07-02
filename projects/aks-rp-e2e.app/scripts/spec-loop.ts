@@ -79,8 +79,8 @@ if (command === "seed") {
     acceptance: [
       "Controller pulses keep a bounded child frontier filled from pending specs.",
       "Dev Infra Core selectors are scheduled before the remaining spec backlog.",
-      "Each child leaf runs one single-spec GitHub workflow and records pass, fail, done, or error in spec-loop state.",
-      "The loop remains open until all specs have reviewed dispositions or the owner intentionally closes it.",
+      "Each child leaf runs one single-spec GitHub workflow and records pass, fail, or error in spec-loop state.",
+      "The loop remains open until every spec has a live pass or the owner intentionally replaces the loop task.",
     ],
     conflict_scope: ["spec-loop"],
     context: {

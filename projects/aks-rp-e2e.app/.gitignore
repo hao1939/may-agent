@@ -6,7 +6,9 @@
 /journal.md
 agents/*/workspace/**
 !agents/*/workspace/.gitkeep
+agents/*/last-eval.md
+agents/*/last-session.md
 node_modules/
 tasks/archive/*.json
-!tasks/archive/done-leaves-*.json
 tasks/*.bak*
+workflows/.may-runtime-module-*.mjs

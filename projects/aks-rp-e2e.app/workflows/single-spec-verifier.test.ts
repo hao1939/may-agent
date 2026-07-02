@@ -11,11 +11,18 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assignTask, taskTreeConfig } from "./lib/task-tree-tools.ts";
-import { execute } from "./single-spec-verifier.ts";
+import { buildLoopKey, execute } from "./single-spec-verifier.ts";
 import {
   bindKnownWorkflowRun,
   loadSpecLoopState,
 } from "./lib/spec-loop-store.ts";
+
+async function readSpecState(appDir: string) {
+  const state = JSON.parse(
+    await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+  );
+  return state.specs["spec.net-integration.authorized-ip-ranges"];
+}
 
 const createdRoots: string[] = [];
 
@@ -31,10 +38,28 @@ async function makeProject() {
   await mkdir(join(projectDir, ".github", "workflows", "feature-sets"), {
     recursive: true,
   });
+  await mkdir(join(projectDir, "specs"), { recursive: true });
   await mkdir(binDir, { recursive: true });
   await writeFile(
     join(projectDir, ".github", "workflows", "run-single-spec.yaml"),
     "name: Run Single Spec\n",
+    "utf8",
+  );
+  await writeFile(
+    join(projectDir, "specs", "index.json"),
+    `${JSON.stringify({ specFiles: ["net-integration-authorized-ip-ranges.json"] }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    join(projectDir, "specs", "net-integration-authorized-ip-ranges.json"),
+    `${JSON.stringify(
+      {
+        id: "spec.net-integration.authorized-ip-ranges",
+        featurePathIds: ["path.net-integration.authorized-ip-ranges"],
+      },
+      null,
+      2,
+    )}\n`,
     "utf8",
   );
   await writeFile(
@@ -226,16 +251,31 @@ artifact_result.write_text(json.dumps({
 artifact_ref_kind = os.environ.get("TEST_ARTIFACT_REF_KIND", "result")
 artifact_ref_path = f"runs/test-results/single-{artifact_family}_123456/artifacts/{artifact_family}/spec-runner/{artifact_ref_kind}.json"
 artifact_refs = [] if os.environ.get("TEST_ARTIFACT_REFS") == "empty" else [artifact_ref_path]
-(dest / "result.json").write_text(json.dumps({
+child_status = os.environ.get("TEST_CHILD_STATUS", status)
+child_phase = os.environ.get("TEST_CHILD_PHASE", "")
+child_status_path = artifact_dir / "status.json"
+child_status_path.write_text(json.dumps({
+  "status": child_status,
+  "specId": spec_id,
+  **({"phase": child_phase} if child_phase else {}),
+}, indent=2), encoding="utf-8")
+artifact_result.write_text(json.dumps({
   "status": status,
-  "specResults": [{
+  "specId": spec_id,
+  **({"phase": child_phase} if child_phase else {}),
+}, indent=2), encoding="utf-8")
+omit_top_level_spec_results = os.environ.get("TEST_TOP_LEVEL_SPEC_RESULTS", "present") == "empty"
+top_level_payload = {
+  "status": os.environ.get("TEST_TOP_LEVEL_STATUS", status),
+  "specResults": [] if omit_top_level_spec_results else [{
     "specId": spec_id,
     "status": status,
     "reason": reason,
     **({"category": category} if category else {}),
     "artifactRefs": artifact_refs
   }]
-}, indent=2), encoding="utf-8")
+}
+(dest / "result.json").write_text(json.dumps(top_level_payload, indent=2), encoding="utf-8")
 `;
   await writeFile(join(binDir, "git"), gitScript, "utf8");
   await chmod(join(binDir, "git"), 0o755);
@@ -439,7 +479,7 @@ describe("single-spec-verifier", () => {
 
       expect(result.status).toBe("done");
       expect(result.message).toContain("classified as pass");
-      expect(result.message).toContain("spec-runner/status.json");
+      expect(result.message).toContain("spec-runner/result.json");
       const state = JSON.parse(
         await readFile(
           join(appDir, ".state", "spec-loop", "state.json"),
@@ -451,7 +491,7 @@ describe("single-spec-verifier", () => {
       ).toBe("pass");
       expect(
         state.specs["spec.net-integration.authorized-ip-ranges"].lastResultPath,
-      ).toContain("spec-runner/status.json");
+      ).toContain("spec-runner/result.json");
     } finally {
       process.env.PATH = originalPath;
       delete process.env.TEST_CURL_LOG;
@@ -530,7 +570,7 @@ describe("single-spec-verifier", () => {
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
-      expect(task.trace.last_worker_result).toBe("blocked");
+      expect(task.trace.last_worker_result).toBe("partial");
       expect(task.trace.last_worker_summary).not.toContain(
         "artifact-routing-mismatch",
       );
@@ -563,7 +603,7 @@ describe("single-spec-verifier", () => {
     }
   });
 
-  test("accepts fixed-target capacity exhaustion as done", async () => {
+  test("keeps fixed-target capacity exhaustion visible as error", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -616,9 +656,9 @@ describe("single-spec-verifier", () => {
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("classified as done");
+      expect(result.message).toContain("classified as error");
       expect(result.message).toContain(
-        "Fixed-target staging capacity unavailable",
+        "Fixed-target staging capacity unavailable; keep visible",
       );
 
       const tree = JSON.parse(
@@ -626,7 +666,7 @@ describe("single-spec-verifier", () => {
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
-      expect(task.trace.last_worker_result).toBe("done");
+      expect(task.trace.last_worker_result).toBe("partial");
 
       const state = JSON.parse(
         await readFile(
@@ -636,7 +676,7 @@ describe("single-spec-verifier", () => {
       );
       expect(
         state.specs["spec.net-integration.authorized-ip-ranges"].status,
-      ).toBe("done");
+      ).toBe("error");
     } finally {
       process.env.PATH = originalPath;
       delete process.env.TEST_CURL_LOG;
@@ -657,79 +697,34 @@ describe("single-spec-verifier", () => {
     }
   });
 
-  test("accepts truncated loop key family with trailing dash", async () => {
-    const { appDir, projectDir, binDir } = await makeProject();
-    const config = taskTreeConfig({
-      appDir,
-      projectDir,
-      worker: "aks-explorer",
-      maxConcurrent: 1,
-    });
-    const assignment = assignTask(config, {
-      taskId: "verify-spec-net-integration-authorized-ip-ranges",
-    });
+  test("buildLoopKey preserves exact long retry leaf identity without truncation", () => {
+    const row49TaskId =
+      "verify-spec-cluster-autoscaler-vm-prerelease-row49-overscale-node-stability-retry-202606300647-2";
+    const row49AttemptId =
+      "a_verify-spec-cluster-autoscaler-vm-prerelease-row49-overscale-node-stability-retry-202606300647-2_20260630064953";
+    const row53TaskId =
+      "verify-spec-cluster-autoscaler-vm-prerelease-row53-long-unregistered-nodes-retry-202606300647-3";
+    const row53AttemptId =
+      "a_verify-spec-cluster-autoscaler-vm-prerelease-row53-long-unregistered-nodes-retry-202606300647-3_20260630064953";
 
-    const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
-    const unzipLog = join(appDir, ".state", "unzip.log");
-    const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
-    process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
-    process.env.TEST_UNZIP_LOG = unzipLog;
-    process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
-    process.env.TEST_DISPATCH_STATUS = "204";
-    process.env.TEST_DISPATCH_RESPONSE = "";
-    process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
-    process.env.TEST_DISPLAY_TITLE =
-      "Single spec: spec.net-integration.authorized-ip-ranges";
-    process.env.TEST_RESULT_STATUS = "blocked";
-    process.env.TEST_ARTIFACT_REFS = "empty";
-    process.env.TEST_WORKFLOW_LOOP_KEY =
-      "verify-spec-net-integration-authorized-ip-ranges-";
+    const row49LoopKey = buildLoopKey(row49TaskId, row49AttemptId);
+    const row53LoopKey = buildLoopKey(row53TaskId, row53AttemptId);
 
-    try {
-      const result = await execute({
-        task: [
-          `app: ${appDir}`,
-          `project: ${projectDir}`,
-          "agent: aks-explorer",
-          "maxConcurrent: 1",
-          triggerText({
-            type: "project.task.assigned",
-            project: "aks-rp-e2e",
-            ...assignment,
-          }),
-        ].join("\n"),
-        agent: "aks-explorer",
-        done: (message: string) => ({ status: "done", message }),
-        escalate: (message: string) => ({ status: "escalated", message }),
-        emit() {},
-        dispatchEvent() {},
-        runAgent: async () => ({ status: "success" }),
-        summarize: () => "",
-      } as any);
+    expect(row49LoopKey).toBe(
+      "verify-spec-cluster-autoscaler-vm-prerelease-row49-overscale-node-stability-retry-202606300647-2-a_verify-spec-cluster-autoscaler-vm-prerelease-row49-overscale-node-stability-retry-202606300647-2_20260630064953",
+    );
+    expect(row49LoopKey).toContain(row49TaskId);
+    expect(row49LoopKey).toContain(row49AttemptId);
+    expect(row49LoopKey.length).toBeGreaterThan(90);
 
-      expect(result.status).toBe("done");
-      expect(result.message).toContain("classified as error");
-      expect(result.message).not.toContain("artifact-routing-mismatch");
-    } finally {
-      process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
-      delete process.env.TEST_UNZIP_LOG;
-      delete process.env.TEST_DISPATCH_COUNTER;
-      delete process.env.TEST_DISPATCH_STATUS;
-      delete process.env.TEST_DISPATCH_RESPONSE;
-      delete process.env.TEST_DISPATCH_STATUSES;
-      delete process.env.TEST_DISPATCH_RESPONSES;
-      delete process.env.TEST_CREATED_AT;
-      delete process.env.TEST_DISPLAY_TITLE;
-      delete process.env.TEST_RESULT_STATUS;
-      delete process.env.TEST_ARTIFACT_REFS;
-      delete process.env.TEST_WORKFLOW_LOOP_KEY;
-      delete process.env.TEST_RUN_VIEW_COUNTER;
-      delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
-    }
+    expect(row53LoopKey).toBe(
+      "verify-spec-cluster-autoscaler-vm-prerelease-row53-long-unregistered-nodes-retry-202606300647-3-a_verify-spec-cluster-autoscaler-vm-prerelease-row53-long-unregistered-nodes-retry-202606300647-3_20260630064953",
+    );
+    expect(row53LoopKey).toContain(row53TaskId);
+    expect(row53LoopKey).toContain(row53AttemptId);
+    expect(row53LoopKey.length).toBeGreaterThan(90);
+
+    expect(row49LoopKey).not.toBe(row53LoopKey);
   });
 
   test("treats runner status passed as pass", async () => {
@@ -919,7 +914,7 @@ describe("single-spec-verifier", () => {
     }
   });
 
-  test("records verifier liveness heartbeat while polling workflow completion", async () => {
+  test("clears verifier liveness fields after workflow completion", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -983,7 +978,7 @@ describe("single-spec-verifier", () => {
       expect(specState.lastRunId).toBe("123456");
       expect(specState.activeWorkflowRunId).toBeNull();
       expect(specState.activeTaskSessionId).toBeNull();
-      expect(typeof specState.heartbeatAt).toBe("string");
+      expect(specState.heartbeatAt).toBeNull();
     } finally {
       process.env.PATH = originalPath;
       delete process.env.TEST_CURL_LOG;
@@ -1025,6 +1020,9 @@ describe("single-spec-verifier", () => {
       taskSessionId:
         "s_task_repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629",
       status: "running",
+      loopKey:
+        "repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629-a_repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629_test",
+      dispatchMetadataPath: "/tmp/recovered-dispatch-metadata.json",
     });
 
     const specState = state.specs["spec.net-integration.authorized-ip-ranges"];
@@ -1033,6 +1031,12 @@ describe("single-spec-verifier", () => {
     expect(specState.lastRunId).toBeNull();
     expect(specState.lastRunUrl).toBe(
       "https://github.com/example-org/example-repo/actions/runs/28371054186",
+    );
+    expect(specState.lastWorkflowLoopKey).toBe(
+      "repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629-a_repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629_test",
+    );
+    expect(specState.lastDispatchMetadataPath).toBe(
+      "/tmp/recovered-dispatch-metadata.json",
     );
     expect(specState.taskId).toBe(
       "repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629",
@@ -1472,7 +1476,7 @@ describe("single-spec-verifier", () => {
     }
   });
 
-  test("fails closed when several recent workflow_dispatch runs exist but none matches the requested spec or loop key", async () => {
+  test("preserves dispatch metadata and loop identity when run lookup cannot recover a run id", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -1552,6 +1556,8 @@ describe("single-spec-verifier", () => {
 
       expect(result.status).toBe("done");
       expect(result.message).toContain("could not find the GitHub run id");
+      expect(result.message).toContain("Loop key:");
+      expect(result.message).toContain("Dispatch metadata:");
       expect(result.message).not.toContain("run 223458");
       expect(result.message).not.toContain("run 223457");
       expect(result.message).not.toContain("run 223456");
@@ -1587,19 +1593,34 @@ describe("single-spec-verifier", () => {
       expect(task.trace.last_worker_summary).toContain(
         "could not find the GitHub run id",
       );
+      expect(task.trace.last_worker_summary).toContain("Dispatch metadata:");
 
-      const state = JSON.parse(
-        await readFile(
-          join(appDir, ".state", "spec-loop", "state.json"),
-          "utf8",
-        ),
+      const specState = await readSpecState(appDir);
+      expect(specState.status).toBe("error");
+      expect(specState.lastRunId).toBeNull();
+      expect(specState.lastWorkflowLoopKey).toContain(
+        `verify-spec-net-integration-authorized-ip-ranges-${assignment.attemptId}`,
       );
-      expect(
-        state.specs["spec.net-integration.authorized-ip-ranges"].status,
-      ).toBe("error");
-      expect(
-        state.specs["spec.net-integration.authorized-ip-ranges"].lastRunId,
-      ).toBeNull();
+      expect(specState.lastDispatchMetadataPath).toContain(
+        `verify-spec-net-integration-authorized-ip-ranges-${assignment.attemptId}.json`,
+      );
+
+      const dispatchMetadata = JSON.parse(
+        await readFile(specState.lastDispatchMetadataPath, "utf8"),
+      );
+      expect(dispatchMetadata.loopKey).toBe(specState.lastWorkflowLoopKey);
+      expect(dispatchMetadata.taskId).toBe(
+        "verify-spec-net-integration-authorized-ip-ranges",
+      );
+      expect(dispatchMetadata.attemptId).toBe(String(assignment.attemptId));
+      expect(dispatchMetadata.inputs).toEqual({
+        specs: "spec.net-integration.authorized-ip-ranges",
+        target: "staging",
+        timeout_minutes: "110",
+        metadata: JSON.stringify({ loop_key: specState.lastWorkflowLoopKey }),
+      });
+      expect(dispatchMetadata.dispatchResult.ok).toBeTrue();
+      expect(dispatchMetadata.dispatchResult.status).toBe(204);
     } finally {
       process.env.PATH = originalPath;
       delete process.env.TEST_CURL_LOG;
@@ -1839,6 +1860,127 @@ describe("single-spec-verifier", () => {
       delete process.env.TEST_ARTIFACT_FAMILY;
       delete process.env.TEST_WORKFLOW_LOOP_KEY;
       delete process.env.TEST_DOWNLOAD_PAYLOAD;
+      delete process.env.TEST_RUN_VIEW_COUNTER;
+      delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
+      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+    }
+  });
+
+  test("classifies empty top-level aggregate with same-spec child evidence as aggregation/publication failure", async () => {
+    const { appDir, projectDir, binDir } = await makeProject();
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "aks-explorer",
+      maxConcurrent: 1,
+    });
+    const assignment = assignTask(config, {
+      taskId: "verify-spec-net-integration-authorized-ip-ranges",
+    });
+
+    const originalPath = process.env.PATH || "";
+    const curlLog = join(appDir, ".state", "curl.log");
+    const unzipLog = join(appDir, ".state", "unzip.log");
+    const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
+    process.env.PATH = `${binDir}:${originalPath}`;
+    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_UNZIP_LOG = unzipLog;
+    process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
+    process.env.TEST_DISPATCH_STATUS = "204";
+    process.env.TEST_DISPATCH_RESPONSE = "";
+    process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
+    process.env.TEST_DISPLAY_TITLE =
+      "Single spec: spec.net-integration.authorized-ip-ranges";
+    process.env.TEST_RESULT_STATUS = "error";
+    process.env.TEST_CHILD_STATUS = "error";
+    process.env.TEST_CHILD_PHASE =
+      "interrupted-live-run-net-integration-authorized-ip-ranges";
+    process.env.TEST_TOP_LEVEL_STATUS = "empty";
+    process.env.TEST_TOP_LEVEL_SPEC_RESULTS = "empty";
+    process.env.TEST_ARTIFACT_REFS = "empty";
+
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 1",
+          triggerText({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("classified as error");
+      expect(result.message).toContain("aggregation/publication failure");
+      expect(result.message).toContain("top-level result status=empty");
+      expect(result.message).toContain("top-level specResults count=0");
+      expect(result.message).toContain(
+        "child specId=spec.net-integration.authorized-ip-ranges",
+      );
+      expect(result.message).toContain(
+        "same-loop/same-spec child evidence exists while top-level result.json remained empty or omitted specResults[0].specId",
+      );
+      expect(result.message).not.toContain("artifact-routing-mismatch");
+
+      const tree = JSON.parse(
+        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      );
+      const task =
+        tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
+      expect(task.trace.last_worker_result).toBe("blocked");
+      expect(task.trace.last_worker_summary).toContain(
+        "aggregation/publication failure",
+      );
+      expect(task.trace.last_worker_summary).not.toContain(
+        "artifact-routing-mismatch",
+      );
+
+      const state = JSON.parse(
+        await readFile(
+          join(appDir, ".state", "spec-loop", "state.json"),
+          "utf8",
+        ),
+      );
+      expect(
+        state.specs["spec.net-integration.authorized-ip-ranges"].status,
+      ).toBe("error");
+      expect(
+        state.specs["spec.net-integration.authorized-ip-ranges"].lastRunId,
+      ).toBe("123456");
+      expect(
+        state.specs["spec.net-integration.authorized-ip-ranges"].lastResultPath,
+      ).toContain(
+        "artifacts/net-integration-authorized-ip-ranges/spec-runner/result.json",
+      );
+    } finally {
+      process.env.PATH = originalPath;
+      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_UNZIP_LOG;
+      delete process.env.TEST_DISPATCH_COUNTER;
+      delete process.env.TEST_DISPATCH_STATUS;
+      delete process.env.TEST_DISPATCH_RESPONSE;
+      delete process.env.TEST_DISPATCH_STATUSES;
+      delete process.env.TEST_DISPATCH_RESPONSES;
+      delete process.env.TEST_CREATED_AT;
+      delete process.env.TEST_DISPLAY_TITLE;
+      delete process.env.TEST_RESULT_STATUS;
+      delete process.env.TEST_CHILD_STATUS;
+      delete process.env.TEST_CHILD_PHASE;
+      delete process.env.TEST_TOP_LEVEL_STATUS;
+      delete process.env.TEST_TOP_LEVEL_SPEC_RESULTS;
+      delete process.env.TEST_ARTIFACT_REFS;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
       delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;

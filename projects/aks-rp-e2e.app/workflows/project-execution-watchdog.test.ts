@@ -211,6 +211,73 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("syncs project.json live readout before routine watchdog decisions", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "project.json"),
+      `${JSON.stringify(
+        {
+          id: "test-project",
+          owner: "aks-explorer",
+          status: "active",
+          currentState: {
+            summary: "stale summary",
+            activeTaskId: "old-active",
+            metrics: {
+              activeLeafCount: 9,
+              blockedLeafCount: 0,
+              reviewLeafCount: 7,
+              waitingLeafCount: 6,
+              runnableLeafCount: 5,
+            },
+          },
+          currentFocus: {
+            summary: "stale focus",
+            activeTaskIds: ["old-active"],
+            proposedTaskIds: ["old-active", "done-focus"],
+            focusPlanId: "done-focus",
+            focusPlanStatus: "done",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "blocked-task": task("blocked-task", "blocked", {
+        blocker: {
+          condition: "Needs external answer.",
+          resume_at: "2099-06-26T00:00:00.000Z",
+        },
+      }),
+      "done-focus": task("done-focus", "done", {
+        kind: "focus_plan",
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    const projectJson = JSON.parse(
+      await readFile(join(projectDir, "project.json"), "utf8"),
+    );
+    expect(projectJson.currentState.activeTaskId).toBeNull();
+    expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
+    expect(projectJson.currentState.metrics.blockedLeafCount).toBe(1);
+    expect(projectJson.currentFocus.activeTaskIds).toEqual(["blocked-task"]);
+    expect(projectJson.currentFocus.proposedTaskIds).toEqual(["blocked-task"]);
+    expect(projectJson.currentFocus.focusPlanId).toBeUndefined();
+    expect(projectJson.currentFocus.focusPlanStatus).toBeUndefined();
+    expect(String(projectJson.currentState.summary)).toContain(
+      "blocked-only exact wait stewardship",
+    );
+  });
+
   test("wakes owner when backlog leaves exist", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -225,11 +292,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-runnable-backlog.",
+      "Watchdog emitted project.planning.requested: watchdog-runnable-backlog.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -268,11 +335,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
+      "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -301,6 +368,184 @@ describe("project execution watchdog", () => {
     ]);
   });
 
+  test("requests stall review when durable loop state has unfinished work but no normal frontier", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "aks-spec-verification-loop": task("aks-spec-verification-loop", "done", {
+        workflow: "spec-loop-controller",
+        context: {
+          workflowProgress: {
+            completionReady: false,
+            reason: "spec-loop still has non-pass results",
+          },
+        },
+      }),
+    });
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.virtualmachines.example",
+      taskId: "verify-spec-virtualmachines-example",
+      status: "error",
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.stall.review.requested: watchdog-durable-loop-stall.",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.stall.review.requested",
+      payload: {
+        project: "aks-rp-e2e",
+        target: { project: "aks-rp-e2e" },
+        reason: "watchdog-durable-loop-stall",
+        mode: "fallback",
+        requested_by: "project-execution-watchdog",
+        durableLoopLiveness: [
+          expect.objectContaining({
+            taskId: "aks-spec-verification-loop",
+            action: "spec-loop",
+            nonTerminalCount: 1,
+            needsAttention: true,
+          }),
+        ],
+      },
+    });
+  });
+
+  test("requests stall review when spec-loop residue is not represented by exact waits", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "aks-spec-verification-loop": task(
+        "aks-spec-verification-loop",
+        "blocked",
+        {
+          workflow: "spec-loop-controller",
+          blocker: "exact wait stewardship",
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              noRefillNow: true,
+              reason:
+                "spec-loop execution residue is drained and the remaining frontier is exact wait stewardship",
+              pending: 123,
+              error: 203,
+              openChildren: 0,
+              activeChildren: 0,
+              reviewChildren: 0,
+              waitingChildren: 0,
+              backlogChildren: 0,
+              openSpecVerifierChildren: 0,
+              openFollowups: 0,
+              blockedWaitChildren: 5,
+            },
+          },
+        },
+      ),
+    });
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.virtualmachines.example",
+      taskId: "verify-spec-virtualmachines-example",
+      status: "error",
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.stall.review.requested: watchdog-durable-loop-stall.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.stall.review.requested",
+        payload: expect.objectContaining({
+          reason: "watchdog-durable-loop-stall",
+          mode: "fallback",
+        }),
+      },
+    ]);
+  });
+
+  test("requests stall review when feature-compact residue is not represented by exact waits", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "aks-feature-compact-loop": task("aks-feature-compact-loop", "blocked", {
+        workflow: "feature-compact-loop-controller",
+        blocker: {
+          condition:
+            "feature-compact loop live dispatch held because 1 workflow is already in progress",
+        },
+        context: {
+          workflowProgress: {
+            completionReady: false,
+            dispatchHeld: true,
+            reason:
+              "feature-compact loop live dispatch held because 1 GitHub workflow run(s) are already in progress on dev; limit=1",
+            pending: 5,
+            running: 0,
+            done: 10,
+            error: 69,
+            openChildren: 0,
+            openSupportChildren: 0,
+            blockedWaitChildren: 11,
+          },
+        },
+      }),
+    });
+    await mkdir(join(projectDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          loopTaskId: "aks-feature-compact-loop",
+          windowSize: 1,
+          cursor: 0,
+          features: {
+            "bootstrap-profile": {
+              featureKey: "bootstrap-profile",
+              status: "error",
+              taskId: "compact-feature-bootstrap-profile",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.stall.review.requested: watchdog-durable-loop-stall.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.stall.review.requested",
+        payload: expect.objectContaining({
+          reason: "watchdog-durable-loop-stall",
+          mode: "fallback",
+        }),
+      },
+    ]);
+  });
+
   test("wakes owner for dependency-waiting backlog even without blocked leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -318,11 +563,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
+        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     });
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -373,11 +618,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -436,7 +681,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [{ taskId: "active-task", reason: "session-error" }],
@@ -485,7 +730,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -536,7 +781,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -576,11 +821,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -637,11 +882,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
+      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -689,10 +934,10 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
+      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
     );
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: { reason: "watchdog-capacity-underfilled" },
     });
   });
@@ -743,7 +988,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -799,7 +1044,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -825,11 +1070,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
+      "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -849,6 +1094,44 @@ describe("project execution watchdog", () => {
         },
       },
     ]);
+  });
+
+  test("copies structured blocker resume metadata into blocked frontier packets", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-task": task("blocked-task", "blocked", {
+        blocker: {
+          condition: "Waiting for returned operator proof.",
+          category: "external-wait",
+          owner: "human",
+          resume_condition:
+            "Resume when proof lands or the follow-up window opens.",
+          resume_at: "2099-06-26T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        blockedTasks: [
+          {
+            taskId: "blocked-task",
+            resumeAt: "2099-06-26T00:00:00.000Z",
+            resumeCondition:
+              "Resume when proof lands or the follow-up window opens.",
+          },
+        ],
+      },
+    });
   });
 
   test("wakes owner for review work even when active capacity is full", async () => {
@@ -885,11 +1168,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.owner.requested: watchdog-review-pending.",
+        "Watchdog emitted project.planning.requested: watchdog-review-pending.",
     });
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -972,10 +1255,10 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
+        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     });
     expect(dispatched[0]).toMatchObject({
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         blockedCount: 1,
@@ -1017,11 +1300,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
+        "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
     });
     expect(dispatched).toEqual([
       {
-        type: "project.owner.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },

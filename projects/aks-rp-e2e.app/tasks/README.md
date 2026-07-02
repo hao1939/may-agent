@@ -45,6 +45,13 @@ folder does not keep a parallel task event log.
   in `depends_on`. If it waits on a real external/human/environment condition,
   keep it `blocked` and describe the exact condition and resume path in
   `blocker`.
+- Time-based external waits should use a structured blocker object with
+  `condition`, `category`, `owner`, `resume_condition`, and machine-readable
+  `resume_at`. The planner may use `resume_at` for deterministic scheduling
+  decisions; it must treat prose blocker text as review material, not as a
+  control-flow protocol. Set these fields with `bun run task-tree add` or
+  `bun run task-tree update-text` using `--blocker-category`,
+  `--blocker-owner`, `--resume-condition`, and `--resume-at`.
 - Do not use `gates` or `gate_status` in `tasks/tree.json`. They were a legacy
   catch-all for dependencies, safety constraints, external blockers, and live
   execution approval. Use `depends_on`, `forbidden`, `blocker`, structured
@@ -136,9 +143,9 @@ folder does not keep a parallel task event log.
   message needs the decision question, recommended options, compact status
   context, evidence links, and the owner's intended next step. It must also
   include `projectPath: "projects/aks-rp-e2e.app"` and a direct-event contract:
-  a Telegram reply or UI action must emit `project.focus.approval.submitted`
-  with the approval decision and human message. The app route then emits
-  `project.owner.requested`.
+  a Telegram reply or UI action should emit the canonical
+  `project.approval.submitted` event with `approvalKind: "focus-plan"`, the
+  approval decision, and the human message.
 - Learning is not terminal by itself. A feature is useful only when source
   knowledge, spec shape, replay execution, evidence diagnosis, and model
   feedback close the loop or expose an exact external blocker.
@@ -331,22 +338,31 @@ folder does not keep a parallel task event log.
   and keep creating/promoting/assigning concrete leaves until capacity is filled
   or exact blockers are recorded. Do not represent each owner wake, retry, or
   recovery as a normal leaf task.
+- Planner control flow must be structured. Watchdog/planner no-op paths may use
+  explicit packet fields such as `reason`, `taskId`, `resumeAt`, and frontier
+  counts, but must not infer scheduling decisions from dates or magic phrases in
+  `blocker`, worker summaries, or review prose. See
+  `design/project-planner-contract.md`.
 - Legacy planning/control nodes such as `project-control`,
   `project-planning-loop*`, and `project-frontier-replan-*` are history only.
   They must not be assigned as worker tasks, must not consume active capacity,
   and should be marked `done` with `resolution: "replaced"` when they appear in
   the executable frontier.
 - The robust execution loop is: event or timer wakes the owner; the owner
-  reviews progress, repairs, rolls up, refills the task tree, and explicitly
-  assigns runnable backlog leaves with `task-tree assign`; the workflow emits
+  repairs, rolls up, refills the task tree, and explicitly assigns runnable
+  backlog leaves with `task-tree assign`; the workflow emits
   `project.task.assigned`; each worker executes exactly one assigned task and
-  emits `project.task.completed`; completion wakes the owner again. The timer
-  is only a safety net for missed events or stale sessions.
-- Task lifecycle events have explicit ownership. `project.owner.requested`
-  is handled by the owner workflow. `project.task.assigned` is handled by the
-  worker workflow. `project.task.completed` is handled by the app event layer
-  and wakes the owner with the latest task snapshot, result, summary, evidence,
-  blocker, verification, attempt id, and session context. Legacy
+  emits `project.task.completed`; the task-reviewer validates the completion
+  and emits `project.task.reviewed`; the planner validates the task state and
+  attempt id, applies the reviewer decision, then refills runnable work. The
+  timer is only a safety net for missed events or stale sessions.
+- Task lifecycle events have explicit ownership. `project.planning.requested`
+  is handled by the planner workflow. `project.task.assigned` is handled by the
+  worker workflow. `project.task.completed` is handled by the task-reviewer
+  workflow, which is read-only and emits `project.task.reviewed`.
+  `project.task.reviewed` is handled by the planner workflow, which applies
+  accept/redo/follow-up/wait/escalation decisions only after validating the
+  latest task snapshot and attempt id. Legacy
   `project.task.execution.requested` events wake the owner instead of bypassing
   assignment.
 - A task event should carry enough compact context for the next handler and UI

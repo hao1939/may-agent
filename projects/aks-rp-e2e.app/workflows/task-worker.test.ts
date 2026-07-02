@@ -7,6 +7,10 @@ import {
   taskTreeConfig,
   type TaskAssignment,
 } from "./lib/task-tree-tools.ts";
+import {
+  completeStartedAttempt,
+  markAttemptStartedOnce,
+} from "./default-task-worker.ts";
 import { execute } from "./task-worker.ts";
 
 async function makeProject() {
@@ -154,6 +158,78 @@ describe("task worker", () => {
         result: "done",
       },
     });
+  });
+
+  test("completion helpers accept legacy state-only active tasks", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "state-only-task",
+          active_task_ids: ["state-only-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["state-only-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "state-only-task": {
+              id: "state-only-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              workflow: "feature-reference-collector",
+              priority: "P1",
+              children: [],
+              goal: "Run one state-only task.",
+              inputs: [],
+              outputs: ["evidence/archive/state-only.md"],
+              acceptance: ["done"],
+              forbidden: [],
+              conflict_scope: ["state-only"],
+              depends_on: [],
+              trace: {
+                current_attempt_id: "attempt-state-only",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const started = markAttemptStartedOnce(config(projectDir), {
+      taskId: "state-only-task",
+      attemptId: "attempt-state-only",
+    });
+    expect(started.ok).toBe(true);
+
+    const completed = completeStartedAttempt(config(projectDir), {
+      taskId: "state-only-task",
+      attemptId: "attempt-state-only",
+      claim: "done",
+      summary: "state-only task completed",
+    });
+    expect(completed.ok).toBe(true);
+
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["state-only-task"].state).toBe("review");
+    expect(updated.tasks["state-only-task"].trace.last_worker_result).toBe(
+      "done",
+    );
   });
 
   test("ignores obsolete completion when owner already removed assigned task", async () => {
@@ -534,6 +610,35 @@ describe("task worker", () => {
   test("uses finish summary when message and assistant text are absent", async () => {
     const projectDir = await makeProject();
     await writeFile(
+      join(projectDir, "project.json"),
+      `${JSON.stringify(
+        {
+          id: "test-project",
+          owner: "aks-explorer",
+          status: "active",
+          currentState: {
+            summary: "stale summary",
+            activeTaskId: "old-active",
+            metrics: {
+              activeLeafCount: 9,
+              blockedLeafCount: 0,
+              reviewLeafCount: 7,
+              waitingLeafCount: 6,
+              runnableLeafCount: 5,
+            },
+          },
+          currentFocus: {
+            summary: "stale focus",
+            activeTaskIds: ["old-active"],
+            proposedTaskIds: ["old-active"],
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
       join(projectDir, "tasks", "tree.json"),
       `${JSON.stringify(
         {
@@ -631,6 +736,18 @@ describe("task worker", () => {
     expect(updated.tasks["spec-task"].trace.last_worker_evidence).toEqual([
       "evidence/archive/example.md",
     ]);
+    const projectJson = JSON.parse(
+      await readFile(join(projectDir, "project.json"), "utf8"),
+    );
+    expect(projectJson.currentState.activeTaskId).toBeNull();
+    expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
+    expect(projectJson.currentState.metrics.reviewLeafCount).toBe(1);
+    expect(projectJson.currentState.metrics.blockedLeafCount).toBe(0);
+    expect(projectJson.currentFocus.activeTaskIds).toEqual(["spec-task"]);
+    expect(projectJson.currentFocus.proposedTaskIds).toEqual(["spec-task"]);
+    expect(String(projectJson.currentFocus.summary)).toContain(
+      "non-done tasks/tree.json leaves first",
+    );
     expect(dispatched[0]).toMatchObject({
       type: "project.task.completed",
       payload: {

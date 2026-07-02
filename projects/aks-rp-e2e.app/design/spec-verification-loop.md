@@ -7,12 +7,18 @@ Status: implemented baseline
 Drive every AKS RP E2E spec through a repeatable loop:
 
 ```text
-select specs -> run test backend -> result review -> fix/model proposal -> PR or final disposition
+select specs -> run live test backend -> result review -> fix/model proposal -> rerun until live pass
 ```
 
 The loop should keep working without asking the LLM planner to repeatedly pick
 the next spec. The task tree remains the visible control plane, while a small
 deterministic workflow keeps a bounded set of spec leaves moving.
+
+The completion bar is intentionally strict: every single spec needs a live
+`pass`. Catalog-level dispositions such as deprecated, product-gap, or
+environment-constrained may inform the fix/escalation work, but they do not
+close the spec-loop ledger. A historical `done` entry is treated as legacy
+state and reopened for live verification unless it already has `pass`.
 
 ## Core Decision
 
@@ -91,7 +97,7 @@ Each child leaf verifies one spec:
   "acceptance": [
     "Configured test backend completed or produced a concrete blocker.",
     "result.json and summary artifacts were reviewed when available.",
-    "Spec status was classified as pass, fail, blocked, or error.",
+    "Spec status was classified as pass, fail, or error.",
     "Test result/model update or fix PR was proposed when needed.",
     "Spec-loop state was updated."
   ]
@@ -133,6 +139,7 @@ generic task-targeted form:
     "project": "aks-rp-e2e",
     "taskId": "aks-spec-verification-loop"
   },
+  "action": "spec-loop",
   "data": {
     "reason": "manual-pulse"
   }
@@ -140,8 +147,8 @@ generic task-targeted form:
 ```
 
 Loop pulses use `project.task.tick` with a concrete task target and an explicit
-`data.action` discriminator such as `spec-loop`. Routing starts at that task,
-falls back to the loop/parent task when available, and finally reaches the
+top-level `action` discriminator such as `spec-loop`. Routing starts at that
+task, falls back to the loop/parent task when available, and finally reaches the
 project owner.
 
 ## Workflow Result Contract
@@ -179,7 +186,7 @@ expressed through generic task context, not a special task kind:
       "reason": "spec-loop state still has non-terminal specs",
       "pending": 651,
       "running": 0,
-      "blocked": 3,
+      "error": 3,
       "updatedAt": "2026-06-26T00:00:00Z"
     }
   }
@@ -191,9 +198,21 @@ Task review tooling must refuse normal `mark-done` while
 child leaves, but it must not infer parent completion from an empty child list.
 
 `executionDrained` is different from `completionReady`. A loop is execution
-drained when no spec remains `pending` or `running`. It is completion-ready only
-when the drained state also has no `fail`, `blocked`, or `error` specs. Drained
-non-pass results are backlog pressure, not project completion.
+drained when there are no running specs and no pending specs that can still be
+sent directly to the single-spec workflow. It is completion-ready only when
+every spec is `pass`; stranded `pending`, `fail`, `error`, `pr_open`, and legacy
+`done` all keep the loop incomplete. Drained non-pass or stranded-pending
+results are backlog pressure, not project completion.
+
+Blocked wait leaves narrow the affected scope, but they do not suppress
+unrelated ledger pressure. The controller must publish
+`unrepresentedNonTerminalCount`; while it is greater than zero the loop root is
+actionable backlog and watchdog/stall review should keep pushing it. Exact wait
+stewardship is allowed only when every non-pass or pending spec is represented
+by a live verifier child, grouped repair/escalation child, exact wait, or
+accepted terminal owner disposition. Retry-drained or direct-run-ineligible
+pending records must create grouped follow-up work; they must not be hidden by a
+`stranded` or retry-budget-exhausted flag.
 
 ## Controller Workflow
 
@@ -203,7 +222,9 @@ non-pass results are backlog pressure, not project completion.
 - load `.state/spec-loop/state.json`;
 - find the loop parent task;
 - count open child leaves under the loop parent;
-- create child leaves until the configured window is full;
+- create verifier child leaves until the configured direct-run window is full;
+- create grouped follow-up leaves for retry-drained `pending`, `error`, and
+  `fail` records when no direct verifier work can be launched;
 - assign runnable child leaves;
 - update compact loop counters;
 - pause on circuit breakers;
@@ -215,7 +236,7 @@ It should not decide product truth or rewrite the knowledge model.
 When the spec queue is drained and non-pass results remain, the controller
 materializes grouped follow-up leaves under the same loop task. The grouping key
 is `status + feature family`, for example `error/aad-rbac` or
-`blocked/app-routing`. These follow-up leaves are repo-local reconciliation
+`error/app-routing`. These follow-up leaves are repo-local reconciliation
 tasks: they classify root cause, repair specs/model/evidence when possible, and
 create rerun work only after a blocker changes or a concrete test/spec fix makes
 the rerun meaningful. This keeps the task tree pushing without exploding one
@@ -235,13 +256,28 @@ task per failed spec.
    - `pass`: evidence/model update candidate.
    - `fail`: product mismatch only if the modeled assertion was reached;
      otherwise test/spec/scenario fix work.
-   - `blocked`: external/environment/product/source blocker with exact resume
-     condition.
-   - `error`: workflow, runner, scenario-test, or helper defect.
+   - `error`: workflow, runner, scenario-test, helper defect, or any external,
+     environment, product, or source issue that prevents a live pass.
 6. Apply a bounded local fix or model proposal when safe.
 7. Open a PR when code/model changes are ready.
-8. Complete the leaf with links to the workflow run, result artifact, evidence,
-   and PR when present.
+8. Complete the leaf with links to the workflow run, result artifact, test
+   result notes, and PR when present.
+
+`lastRunUrl` is the durable GitHub Actions workflow link and should be present
+for every dispatched attempt. `lastResultPath` is the downloaded local result
+artifact path. Do not collapse these into one field: when a test fails before
+artifact upload, the workflow URL is still the operator's primary drill-down
+reference.
+
+Every single-spec run must be standalone. A spec that needs a caller-provided
+existing cluster, shared-cluster carrier, mounted AKS RP source checkout, or
+Azure CLI login state is not ready for the spec loop; that is a test repair
+item. The single-spec workflow supplies the fixed target environment, and the
+test must create and clean up its own AKS cluster through ARM REST helpers.
+
+Live test code should use `ARM_ACCESS_TOKEN`, GitHub OIDC, or managed identity
+with ARM REST. It must not shell out to `az`, use `azure/login`, depend on
+Azure CLI account state, or read private AKS RP source code.
 
 ## State File
 
@@ -264,6 +300,7 @@ Minimal shape:
       "status": "pending",
       "attempts": 0,
       "lastRunId": null,
+      "lastRunUrl": null,
       "lastResultPath": null,
       "lastPrUrl": null,
       "updatedAt": "2026-06-26T00:00:00Z"
@@ -294,8 +331,8 @@ not change.
 
 - The loop parent breaks down into a bounded set of child spec leaves.
 - Child leaves normally do not decompose themselves.
-- If a leaf exposes deeper work, it completes as partial or blocked with a
-  recommended split; the owner/planner can create repair or model-update child
+- If a leaf exposes deeper work, it completes with the exact repair or
+  escalation path; the owner/planner can create repair or model-update child
   tasks.
 - Completed child leaves can be compacted and archived by the existing task
   rollup path.
