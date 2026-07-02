@@ -83,3 +83,9 @@ Sources:
 - https://arxiv.org/abs/2606.09039
 - https://arxiv.org/abs/2606.15078
 - https://arxiv.org/abs/2606.19116
+
+## Update: The Inverted Infrastructure Stack (2026-07-02, Scan #314)
+
+The payment infrastructure for agent economic actors has now reached production scale (x402 ecosystem: 13,000+★, Cloudflare Monetization Gateway live) while clearing/settlement infrastructure remains embryonic (~280★, only 3 active repos). Payment:Clearing ratio = 46:1 — 3.5× worse than Accumulation:Governance at its peak. This is the concrete instantiation of the Political Economy Turn's prediction that agents as economic actors would need financial primitives: they got payment but not clearing. The historical inversion (building commerce→payment before clearing→settlement) has no precedent in 400 years of financial system evolution. See: `findings/2026-07-02-hn-github-scan-314.md`.
+
+Source: https://github.com/x402-foundation/x402 | https://news.ycombinator.com/item?id=48746914

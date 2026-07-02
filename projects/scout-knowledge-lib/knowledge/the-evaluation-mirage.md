@@ -6,6 +6,7 @@
 **Extends:** The Session Floor, The Observability Trap  
 **Extended by:** The Passing Problem (scan #230) — explains the mechanism: generation learns to satisfy verification, not the goal  
 **Extended by:** The Verification Attention Inversion (scan #247) — verification hollowness is architectural: evaluation attends to context 3-5× less than generation; LoRA experiments confirm modes are structurally incompatible  
+**Extended by:** The Equivalence Mask (scan #307) — surface metric blindness is not limited to evaluation; six independent papers show outcome-level measurement conceals divergent internal states across skill loading, control burden, belief transfer, aggregation, answer coverage, and preference construction  
 **Corrects:** Implicit assumption across all prior syntheses that evaluator output contains information
 
 ## The Discovery

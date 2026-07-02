@@ -336,3 +336,29 @@ insufficient because attack meaning is distributed across boundaries. Attention-
 detection partially addresses this by identifying what the model would attend to.
 
 *(arXiv [2606.23416], Jun 2026. Scan #188)*
+
+---
+
+## §2.43 The Externalization Proof Cluster (Scan #302)
+
+Five independent papers (Jun 28–30, 2026) converge on the same formal
+result: governance cannot be installed in model weights and must be external.
+
+| Paper | Mechanism | Key Result |
+|-------|-----------|-----------|
+| Agent Safety Is Action Alignment (2606.28739) | Least-privilege at action boundary | Refusal training = category error; pays capability, buys negative security |
+| AgentBound (2606.30970) | Behavioral verification layer | Authorization ≠ permissibility; should-execute is separate from can-execute |
+| CGPA (2606.31023) | Certificate-gated prefix acceptance | 12B model: 98% violation → 0% applied violations; 8B: 2.96× speedup at 2.1% regret |
+| Governance Gaps (2606.31498) | Protocol gap taxonomy | Voting + dissent universally absent from all 5 protocols; new architectural layer required |
+| PolicyGuard (2606.32004) | Neuro-symbolic compliance engine | Separate policy logic (symbolic) from interpretation (LLM); enables testing + maintenance |
+
+**Structural insight**: These are not independent patterns — they are five
+layers of a single externalization stack (L0 action → L1 behavioral → L2
+constraint → L3 community → L4 compliance). Each is independently necessary
+and non-substitutable.
+
+**Connection to §2.33**: Progent/CaMeL/FIDES demonstrated external enforcement
+*works better*. This cluster proves it is the *only option that works at all*
+for agentic (as opposed to content) governance.
+
+*(arXiv, Jun 2026. Scan #302 — see findings/2026-07-01-arxiv-scan-302.md)*

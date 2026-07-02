@@ -1,8 +1,8 @@
 <ai_context>
-summary: "June 2026 XHS Chinese AI community trends: canonical synthesis of 7 named paradigm shifts — Loop Engineering, 古法编程 backlash, model-eats-harness debate, Skill Frameworks explosion, single-coordinator consensus, MCP discourse evolution, and the Structural Turn from behavioral to architectural governance. Includes 2024→2026 trajectory and production cross-validation. Chronological scan log (25 scans, Jun 14–19 + Jul 18) extracted to xhs-scan-log-june2026.md. Prediction tracking consolidated in xhs-prediction-tracker.md."
+summary: "June 2026 XHS Chinese AI community trends: canonical synthesis of 7 named paradigm shifts — Loop Engineering, 古法编程 backlash, model-eats-harness debate, Skill Frameworks explosion, single-coordinator consensus, MCP discourse evolution, and the Structural Turn from behavioral to architectural governance. Includes 2024→2026 trajectory and production cross-validation. Chronological scan log (25 scans, Jun 14–19 + Jul 18) extracted to xhs-scan-log-june2026.md. Prediction tracking consolidated in xhs-prediction-tracker.md. Scan #62 (2026-07-02): Structured Disenchantment phase — ByteDance reality check, simplicity supremacy, cross-cultural Safety Inversion naming."
 triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, prompt engineering obsolescence, model sovereignty/resilience planning, or agent cost analysis."
-last_updated: "2026-10-31"
-source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-19, 2026), production cross-validation (KEs 1933-1984), and cross-source scans across HN, GitHub, and arXiv. Scan log extracted 2026-09-09 to keep canonical note under 800-line threshold. Scan #61 (2026-10-31) adds 10th lifecycle phase: Practitioner Industrialization."
+last_updated: "2026-07-02"
+source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-19, 2026), production cross-validation (KEs 1933-1984), and cross-source scans across HN, GitHub, and arXiv. Scan log extracted 2026-09-09 to keep canonical note under 800-line threshold. Scan #62 (2026-07-02) adds 11th lifecycle phase: Structured Disenchantment."
 </ai_context>
 
 # XHS Chinese AI Community Trends — June 2026

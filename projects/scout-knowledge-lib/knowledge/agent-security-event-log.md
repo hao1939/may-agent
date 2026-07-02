@@ -899,6 +899,51 @@ Capture Spiral #194)*
 
 ---
 
+## §Protection Capture Spiral — Eight Concurrent Instances (Scan #260, Nov 3 2026)
+
+**The Protection Capture Spiral**: Eight of the ten highest-scoring HN stories
+converge on a single structural pattern — a mechanism deployed to PROTECT is
+systematically captured to CONTROL. Three-stage mechanism: (1) protection
+deployment against legitimate harm, (2) infrastructure crystallization exceeding
+original scope, (3) capture by infrastructure operator.
+
+Eight concurrent instances detected:
+1. **Age verification → speech attribution** (48714529, 946pts/588c): Device
+   attestation + real-name linkage enables retroactive attribution of all speech.
+2. **ATS transparency → stochastic discrimination** (48713832, 943pts/402c):
+   HackerRank open-sourced ATS produces different scores each run (90→74→88).
+   EU anti-discrimination implications.
+3. **Copyright → censorship infrastructure** (48716902, 857pts/122c): DMCA
+   takedown at ~$0 filing cost, ~$10K+ defense cost. Structural censorship.
+4. **EU Chat Control → encryption backdoors** (48707719, 715pts/424c): Child
+   protection justification for client-side scanning breaking E2E encryption.
+   Rejected repeatedly but returns each session — the ratchet never releases.
+5. **KIDS Act → internet gatekeeping** (48706560, 623pts/529c): Universal age
+   verification at point of internet access. Four Western jurisdictions pursuing
+   simultaneously.
+6. **Crime protection → mass surveillance** (48707673, 386pts/320c): Flock cameras
+   expanded far beyond license plates. 70+ documented municipal bans = organized
+   resistance emerging.
+7. **AI efficiency → capability collapse** (48703968, 239pts): Ford replaced
+   human inspectors with AI, re-hired 350 engineers after quality collapsed.
+8. **Agent file protection → false security boundary** (48706714, 224pts/141c):
+   Codex .agentsignore proposal rejected by community as "false sense of security."
+   Sandbox/container approach (NVIDIA Rumpelpod) preferred — inclusion-based
+   architecture over exclusion-based.
+
+**Agent security implication**: Safety mechanisms deployed in agent systems
+(monitoring, observability, approval gates) will follow the same capture arc.
+The structural defense is inclusion-based architecture (sandbox, allowlist,
+capability-scoped authority) rather than exclusion-based (blocklist, denylist,
+.agentsignore). This aligns with Minimum Viable Authority Turn (§canonical note)
+and confirms the structural prediction from ToolPrivBench (#82).
+
+*(Source: [2026-11-03-hn-scan-260.md](./findings/2026-11-03-hn-scan-260.md).
+Connects to: Accountability Inversion #253, Sovereignty Stack #258,
+Invisible Layer #259, Capture Spiral #194)*
+
+---
+
 *Extracted from [agent-security-governance.md](./agent-security-governance.md) §5
 items 6-21 on 2026-09-11. These were event-level scan narratives mislabeled as
 "Open Problems" — they track specific security governance developments rather

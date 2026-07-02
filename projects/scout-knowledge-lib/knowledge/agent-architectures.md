@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-10-31"
+last_updated: "2026-07-02"
 source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening Jul 22). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent. Session-state sourcing (Jul 18): Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory. Runtime hardening sourcing (Jul 22): Cordon semantic transactions, CoAgent advisory concurrency, Looking Is Not Picking readout bottleneck, PreAct run compilation, SkillWeaver compositional routing, ADE stabilization framework. Jul 22 GitHub scan: Loop Engineering, Architectural Laziness (ponytail 30k★), Cross-Vendor Orchestration, Memory Lifecycle narrowing. §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md (2026-10-31)."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
@@ -122,6 +122,48 @@ supply-chain incident within 6 months.
 
 - **Source**: GitHub API search Jun 23: 40+ repos matching "agent skill" created
   since 2026-06-01. See scan #107 for full table.
+
+**UPDATE (Jul 2026 — Scan #318)**: "Skills Are Not Islands" (2607.01136) formalizes
+this exactly. Introduces Agent Skill Supply Chains (ASSCs) and SkillDepAnalyzer,
+analyzing 1.43M skills. Four structural findings: (1) metadata is activation-ready
+but governance-poor, (2) dependency graphs span skill → package → service layers,
+(3) recursive skill reuse creates hidden package inventory (transitive dependencies
+invisible to consuming agents), (4) workflow clusters propagate failure along
+boundaries. The paper identifies and reports **known malicious skills persisting in
+active supply chains**. Recommends typed dependency manifests, lockfile-like records,
+and risk-warning audit commands. This validates the "supply-chain incident within 6
+months" prediction — the structural conditions now have academic documentation.
+Source: https://arxiv.org/abs/2607.01136
+
+### The Apprenticeship Turn (July 2026 — Emerging)
+
+The next phase after harness engineering: agents that learn from their own
+execution and produce reusable artifacts for future agents. Three pillars:
+
+1. **Self-learning agents**: Forsy-AI/agent-apprenticeship (1,135★) — automated
+   workflow loops producing "work experience" + training data per run.
+   Kulaxyz/self-learning-skills (722★) — golden path extraction from sessions.
+   Ornith-1.0 (260pts HN) — self-scaffolding coding agents.
+
+2. **Industrial skill supply chain**: BuilderIO/skills (3,015★), cloudflare/
+   security-audit-skill (2,175★), Anthropic-Cybersecurity-Skills (23,747★ mapping
+   817 skills to MITRE). LearnPrompt/luban-skill articulates the lifecycle:
+   installable → propagatable → verifiable → evolvable.
+
+3. **World-model training loop**: Qwen-AgentWorld (2606.24597, 199pts, 698★) —
+   language world models simulating agentic environments where simulated training
+   surpasses real-environment training. HN community immediately sees governance
+   application: world models as apprenticeship auditors.
+
+- **Value chain inversion**: Old = Model→Harness→Skill→Output (human-driven).
+  Emerging = Output→Skill→Harness→Model (agent-driven, with model routing).
+- **Demand driver**: Tokenmaxxing declared dead (190pts/291c) — organizations
+  shifting from token volume to execution quality.
+- **Open-weight prerequisite**: Self-improving loops require model access that
+  only open weights (GLM 5.2, Qwen-3.5) provide.
+- **Governance gap**: How to audit a skill an agent taught itself remains
+  structurally unanswered. World-model verification is the research proposal.
+- **Source**: HN/GitHub/arXiv scan #311 (July 2026).
 
 ### Cross-Vendor Agent Orchestration (July 2026 — Emerging)
 
@@ -809,3 +851,41 @@ False-Success Detection [2606.09863].
 Two patterns formalizing the "deterministic engine + policy-governed agents" concept:
 CUGA FLO process harness ([2606.27188]) and NOVA architecture gradient ([2606.27243]).
 See companion note for full descriptions.
+
+## The Platform Tier (July 2026 — Emerging Layer)
+
+The agent runtime layer is consolidating from bespoke harnesses into
+**standardized execution platforms** owned by major infrastructure companies.
+This is the operating-system moment for agents (Scan #312).
+
+Seven competing platforms crystallized simultaneously:
+
+- **OpenSandbox** (11,761★) — K8s-native sandbox runtime
+- **NVIDIA/OpenShell** (7,342★, Rust) — hardware-adjacent safe runtime
+- **Astrid OS** (4,307★ RFCs) — full agent OS specification (kernel + capsules)
+- **Archestra** (3,919★) — enterprise platform with guardrails + MCP registry
+- **Docker/docker-agent** (3,139★, Go) — container-native agent runtime
+- **K8s/agent-sandbox** (3,042★) — sig-level isolated workload management
+- **CascadeFlow** (2,869★) — cascading cost/latency/policy runtime
+
+**Platformization from two directions**: Infrastructure players reach UP
+(NVIDIA, Docker, K8s extend compute primitives to agents); model companies
+reach DOWN (ZCode from GLM, Claude Code from Anthropic own the execution
+surface). The governance layer lives at their intersection.
+
+**Structural implication**: All governance mechanisms discovered in scans
+#270–#296 (receipts, enforcement, instrumentation) can only be mechanically
+enforced through runtime platforms. The platform tier IS the governance
+enforcement layer. Platform war = governance-authority war.
+
+**SkillComposer** (2606.32025) formalizes the skill composition problem:
+structured prediction over which skills, how many, and in what order.
++23.1pp pass rate on GPT-5.2-Codex via constrained autoregressive decoding.
+Skills created by self-learning agents (#311) → composed by SkillComposer →
+executed on runtime platforms → governed by platform policies.
+
+**Key design principle**: Whoever controls the agent runtime controls which
+governance rules apply. Open-source runtimes are structurally necessary to
+prevent governance capture.
+
+Sources: GitHub API data (Jul 2026), HN ZCode (48751752), arXiv [2606.32025].

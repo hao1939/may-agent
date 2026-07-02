@@ -107,8 +107,16 @@ This occupies a specific position in the causal chain:
 1. "Contribution admission control" named OSS infrastructure category — 3 months
 2. Oracle-signal scoring enters CI/CD (replacing binary "has tests" check) — 6 months
 3. Cryptographic contribution provenance (DKIM-for-PRs) proposed — 6 months
-4. Major package registry (npm/PyPI/CRAN) ships AI-contribution policy — 3 months
+4. Major package registry (npm/PyPI/CRAN) ships AI-contribution policy — 3 months ✓ PARTIAL: Godot ban Jul 2026
 5. 90%+ of verification-as-service startups pivot or fail — 12 months
+
+### Prediction Validation (Jul 2 2026, Scan #299)
+
+Prediction #4 partially confirmed: Godot game engine announces blanket ban on AI-authored code contributions (141pts HN, 70 comments). Policy explicitly cites inability to trust AI users to "understand their code enough to fix it." Community frames this as DoS on reviewer attention — direct validation of the Verification Commons Collapse mechanism. Prior: Zig (Jun 2026), QEMU (Jul 2025). Trend accelerating. See: `findings/2026-07-02-hn-arxiv-github-scan-299.md` (The Authorship Crisis).
+
+### Update (Jul 1 2026 continued, Scan #300)
+
+Godot story reaches 200pts/125c on HN front page. Simultaneously, "slopfree-software-index" (Codeberg) catalogues projects that reject AI code. The ban response is now a CATEGORY, not individual decisions. See `findings/2026-07-01-hn-scan-300.md` (The Governance Altitude Mismatch) for structural analysis: bans are symptoms of the vacant ecosystem-level governance layer. Projects reach for crude binary instruments because dilution-sensitive instruments don't exist.
 
 ---
 

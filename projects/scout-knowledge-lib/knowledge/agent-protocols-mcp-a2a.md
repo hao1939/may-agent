@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
 triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy"]
-last_updated: "2026-06-28"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33). See ai_context sources section below."
+last_updated: "2026-07-02"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33), arXiv 2606.30317 (MCP Architecture Patterns), scan #262. See ai_context sources section below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -58,6 +58,15 @@ agent→agent.
 ### Protocol Gaps
 
 Neither MCP nor A2A covers:
+- **Community governance (formal proof)**: Governance Gaps (arXiv 2606.31498,
+  Jun 2026) provides a systematic 6-dimension gap analysis (membership,
+  deliberation, voting, dissent preservation, human escalation, audit/replay)
+  across MCP, A2A, ACP, ANP, and ERC-8004. Voting and dissent preservation are
+  *universally absent*. Deliberation is absent or partial. Conclusion: "agent
+  community governance constitutes a missing architectural layer above current
+  interoperability standards, not a missing feature within them." Distinguishes
+  extensible gaps (addressable via protocol extension) from structural gaps
+  (requiring new architectural layer). See findings/2026-07-01-arxiv-scan-302.md.
 - **Physical instruments**: LAP (Lab Automation Protocol) extends A2A with
   reservations, safety fences, and measurement schemas for physically embodied
   operations. (arXiv, June 2026)
@@ -645,6 +654,88 @@ These three edges predict where new, durable protocol layers may emerge — but
 only when use cases are popular enough to justify integration cost.
 
 - **Source**: [HN Scan #204](./findings/2026-06-28-hn-scan-204.md), Jun 2026. HN items: 48582679, 48691461, 48687650, 48672444, 48678841.
+
+## MCP Protocol-Level Privacy Risks (Scan #259, Nov 2026)
+
+**MCPPrivacyDetector** (2606.21338): First large-scale protocol-aware static analysis of MCP servers. 10,655 servers audited.
+
+**Key findings**:
+- **>10% of MCP servers leak credentials** via protocol-structural pathways
+- Leakage is **protocol-induced**: credentials (Bearer tokens, API keys, plaintext auth) cross the local/LLM boundary by being returned, logged, or raised inside `@mcp.tool` handlers — with NO explicit outbound request in source code
+- Conventional exfiltration scanners structurally cannot detect this class of leakage
+- **Technical approach**: Unified cross-language program representation + context-aware semantic filtering + taint analysis for protocol-specific implicit sinks
+
+**Structural meaning for MCP absorption**: MCP's very success at absorbing all other protocols makes this finding more severe. If MCP is the ONE protocol, then MCP's leakage surface IS the entire agent security surface. The absorption that simplifies integration cost also concentrates credential exposure risk.
+
+- **Connection**: Extends ToxicSkills (scan #166, 36% critical ClawHub issues), Implementation Blind Spot (scan #203), ShareLock threshold poisoning (scan #170)
+- **Source**: https://arxiv.org/abs/2606.21338
+
+## MCP Architecture Patterns & Tool-Count Ceiling (Scan #262, Nov 2026)
+
+**MCP Server Architecture Patterns for LLM-Integrated Applications** (2606.30317): First industry experience paper cataloguing recurring MCP server architectural patterns from 15 independently developed servers (5 production ANSYR voice AI platform + 10 public MCP registry).
+
+**Five canonical patterns** (described in Gamma et al. form):
+1. **Resource Gateway** — Pure data exposure to LLMs
+2. **Tool Orchestrator** — Multi-step tool coordination
+3. **Stateful Session Server** — Cross-request state persistence
+4. **Proxy Aggregator** — Fan-out to multiple backends
+5. **Domain-Specific Adapter** — Domain translation layer
+
+Also documents **four anti-patterns** and cross-cutting concerns (authentication, versioning, observability).
+
+**Critical quantitative finding — tool-count ceiling**:
+- Tool-selection accuracy drops below 90% at **10–15 tools** for Claude Haiku 4.5
+- Tool-selection accuracy drops below 90% at **20–30 tools** for Claude Sonnet 4
+- Inter-rater reliability: Cohen's κ = 0.76 (good, not excellent); three pattern-boundary ambiguities identified
+
+**Structural implication**: The MCP ecosystem is in accumulation mode (hundreds of servers) but the model's tool governance capacity has a hard ceiling. No matter how many MCP servers exist, a model can only reliably select from 10–30 tools in any given context. This forces architectural governance decisions: partitioning, pre-selection, hierarchical routing. The tool-count ceiling is the Governance Gap (#262) applied to tool ecosystems.
+
+- **Connection**: Extends privacy risks (#259) and auth maturation findings; complements Always-On Agents survey (2606.30306) on state governance deficit
+- **Authority Manufacture connection (#280)**: Protocol patterns create false composability confidence — naming a pattern suggests unlimited applicability, but the tool-count cliff means confidence exceeds actual capacity at production scale. This is the Authority Manufacture Problem applied to infrastructure: protocol maturity ≠ compositional reliability.
+- **Source**: https://arxiv.org/abs/2606.30317
+
+## Governance Expressivity Gap — The Missing Layer (Scan #291, Jul 2026)
+
+arXiv 2606.31498 performs the first systematic gap analysis of all 5 major
+agent interoperability protocols (MCP, A2A, ACP, ANP, ERC-8004) against a
+6-dimension governance requirements taxonomy derived from organizational
+theory and enterprise governance standards:
+
+| Dimension | MCP | A2A | ACP | ANP | ERC-8004 |
+|-----------|-----|-----|-----|-----|----------|
+| Membership | Partial | Partial | Partial | Partial | Supported |
+| Deliberation | Absent | Absent | Partial | Absent | Absent |
+| Voting | **Absent** | **Absent** | **Absent** | **Absent** | **Absent** |
+| Dissent preservation | **Absent** | **Absent** | **Absent** | **Absent** | **Absent** |
+| Human escalation | Partial | Partial | Partial | Absent | Absent |
+| Audit/replay | Partial | Partial | Partial | Absent | Partial |
+
+**Key findings**:
+- Voting and dissent preservation are **universally absent** across all five
+  protocols — no protocol can express disagreement or collective decision
+- Deliberation is absent or at most partial — no protocol supports structured
+  discussion before action
+- The paper distinguishes **extensible gaps** (addressable via protocol
+  extension mechanisms) from **structural gaps** (requiring a new
+  architectural layer)
+- Collective decision-making is a **structural gap** — it cannot be added to
+  task-oriented coordination protocols; it requires a new layer above them
+
+**Conclusion**: "Agent community governance constitutes a missing
+architectural layer above current interoperability standards, not a missing
+feature within them."
+
+**Connection to prior findings**:
+- Confirms Protocol Gaps (§1 of this note) were understated — the gap is not
+  "missing features" but "missing layer"
+- Extends Governance Structures comparison (2606.26203) — that paper showed
+  governance *forms* differ in focus; this paper shows ALL forms lack
+  expressivity for collective decisions regardless of form
+- Validates Specification Turn (#267) and Enforcement Crystallization (#278)
+  — specification and enforcement operate within protocols that can't express
+  what needs specifying/enforcing at the community level
+
+**Source**: https://arxiv.org/abs/2606.31498, scan #291
 
 ---
 

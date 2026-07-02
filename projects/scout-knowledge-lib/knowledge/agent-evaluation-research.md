@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Companion note to agent-evaluation.md containing arXiv-sourced evaluation research patterns (§12–§22). Covers decomposed evaluation, grounding gap, composition tax, measurement ceiling, deployment paradox, mechanism gap, outcome mimicry, alignment tax, self-iteration evaluation, holistic-scoring failure, and hard boundary requirements."
 triggers: ["evaluation research", "BinEval", "GroundEval", "co-failure ceiling", "beta ceiling", "Red Queen", "RQGM", "ERC-8004", "Sybil", "measurement ceiling", "capability frontier", "deployment paradox", "DRA benchmark", "mechanism gap", "CAWM", "outcome mimicry", "AgentLens", "Lucky Pass", "alignment tax", "N_eff", "monoculture", "self-iteration evaluation", "AgentX", "JERP", "evaluation decomposition", "Instruction Bleed", "BabelJudge", "Process Harness", "hard boundary", "compression metric", "semantic early-stopping"]
-last_updated: "2026-10-28"
+last_updated: "2026-06-30"
 source_basis: "Extracted from agent-evaluation.md §12–§22 during library-health split (2026-10-28). All content arXiv-sourced June 2026 evaluation research patterns, structurally distinct from the durable evaluation-practice §1–§11 in the parent note."
 parent_note: "agent-evaluation.md"
 </ai_context>
@@ -549,6 +549,75 @@ cryptographic, architectural) are the only class of solution that survives.
   [Scan #236](./findings/2026-10-31-arxiv-scan-236.md);
   [Scan #237](./findings/2026-10-31-hn-arxiv-scan-237.md). Added 2026-10-31.
 
+## §23 — Run-to-Run Variance as Safety Property: EMPATH (2026-06-30)
+
+**EMPATH** ([2606.30256]): Multi-turn auditor-judge benchmark for
+emotional-support chatbot safety. 140 seed instructions, 34 personas, 19
+metrics across 5 dimensions (crisis handling, therapeutic quality,
+conversational integrity, emotional safety, cultural adaptation).
+
+**Critical finding — irreducible non-determinism**:
+- Five-run test-retest: even the steadiest model swings from **2 to 10 on a
+  crisis metric** across identical re-runs
+- DeepSeek-v4-pro returns a **different conversation on every run even at
+  temperature 0**
+- "Run-to-run reliability is a **per-model safety property**, not noise to
+  average away"
+
+**Evaluation methodology implications**:
+- Standard rubric inflates scores on 10/19 metrics; strict per-criterion rubric
+  restores discrimination
+- Three frontier models within 0.74 aggregate — but per-metric profiles diverge
+  by up to **6 points** in model-specific places
+- Cross-family inter-judge agreement: 93% of scores within ±1 (judges agree;
+  models don't)
+
+**Design principle**: Safety evaluations must report worst-case and variance,
+not just mean. A model scoring 8/10 average on crisis handling that swings to
+2/10 on 20% of runs is not an 8/10 model — it's a 2/10 model with a good
+average.
+
+**Connects to**: Evaluation Mirage (aggregate masks divergence), Quality
+Ceiling (#167 — ceiling oscillates), AOEP-v0 (scan #262 — governance behavior
+eval), Incompleteness Constraint (scan #264 — variance is irreducible).
+
+- **Source**: [arXiv 2606.30256](https://arxiv.org/abs/2606.30256).
+  [Scan #264](./findings/2026-06-30-arxiv-scan-264.md). Added 2026-06-30.
+
+## §23 — Decomposed Supervision Evaluation: QVal and Role-Typed Credit (2026-07-02)
+
+Two arXiv papers extend the Decomposed Evaluation pattern (§12) from evaluation
+outputs to evaluation *inputs* — the supervision signals used during training:
+
+**QVal** ([2606.32034]): Training-free testbed for evaluating dense supervision
+signals via Q-alignment (whether a method orders actions by Q-values of a strong
+reference policy). 21 methods, 4 environments, 7 families, 1,200+ experiments.
+Key finding: **simple prompting baselines consistently outperform recent dense
+supervision methods**. Performance clusters by family, not by complexity.
+This is the Evaluation Mirage applied to evaluation methodology itself —
+downstream training pipelines confound signal quality with engineering choices.
+
+**TRIAGE** ([2606.32017]): Role-typed credit assignment for agentic RL.
+Classifies each trajectory segment as decisive progress, useful exploration,
+no-progress infrastructure, or regression. Fixed role-conditioned rules map
+labels to segment-level process rewards. Dominant gain: **detecting regression
+inside successful trajectories** — outcome-only credit reinforces regressive
+actions as long as the trajectory eventually succeeds. Reduces environment-facing
+turns by 10.4% (ALFWorld) and 14.8% (WebShop) vs GRPO.
+
+**Design principle**: Decompose supervision signals the same way you decompose
+evaluation outputs — measure signal quality independently of the training
+pipeline, and type-classify trajectory segments instead of applying uniform
+advantage.
+
+**Connects to**: Evaluation Mirage (confounded measurement), Equivalence Mask
+(scan #307 — same outcome hides structural divergence), Decomposition Turn
+(scan #309 — typed segmentation as structural response).
+
+- **Sources**: [arXiv 2606.32034](https://arxiv.org/abs/2606.32034),
+  [arXiv 2606.32017](https://arxiv.org/abs/2606.32017).
+  [Scan #309](./findings/2026-07-02-hn-arxiv-github-scan-309.md). Added 2026-07-02.
+
 ## Related Notes
 
 - [Agent Evaluation Patterns](./agent-evaluation.md) ← parent canonical note (§1–§11)
@@ -558,3 +627,4 @@ cryptographic, architectural) are the only class of solution that survives.
 - [Agent Architectures](./agent-architectures.md) — Layer-Isolated Evaluation also described in §architecture
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — AgentBeats evaluation-via-protocols pattern
 - [Scan #240: Capability Mutual Exclusion](./findings/2026-11-01-arxiv-scan-240.md) — full synthesis of isolated-vs-joint evaluation gap
+- [Scan #264: The Incompleteness Constraint](./findings/2026-06-30-arxiv-scan-264.md) — governance impossibility results + EMPATH safety variance

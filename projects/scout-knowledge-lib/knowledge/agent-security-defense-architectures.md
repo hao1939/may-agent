@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-governance.md: 32 named defense architectures (§2.1–§2.32) plus §2.33 ActPlane for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks, TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34–§2.42 (verified enforcement patterns) extracted to agent-security-verified-enforcement.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems (not defense patterns)."
+summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks, TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns) extracted to agent-security-verified-enforcement.md. Research frontiers (ANIS, impossibility proofs, novel attacks, forensic detection) extracted to agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
 triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "compliance correction", "memory poisoning defense", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF"]
-last_updated: "2026-10-27"
-source_basis: "Extracted from agent-security-governance.md §2 (2026-09-14). 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), HN practitioner discourse, and XHS community validation (scan #54). 2026-10-27: §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5 (constraint observations, not defense patterns)."
+last_updated: "2026-11-04"
+source_basis: "Extracted from agent-security-governance.md §2 (2026-09-14). 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), HN practitioner discourse, and XHS community validation (scan #54). 2026-10-27: §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. 2026-11-04: Research frontiers (ANIS, impossibility proofs, novel attacks, forensic detection) extracted to agent-security-research-frontiers.md."
 </ai_context>
 
 # Agent Security: Defense Architectures
@@ -732,68 +732,30 @@ knowledge-boundary defense, physical-world attestation).
 
 ---
 
-## §Agent-Native Immune System (ANIS) — Endogenous Runtime Defense (Scan #239)
+## §Research Frontiers → Extracted to Companion Note
 
-The Agent-Native Immune System (arXiv 2606.28270) is the first biologically
-inspired, endogenous defense architecture embedded directly within the agent's
-cognitive loop, rather than external to it.
+**See [Agent Security: Research Frontiers](./agent-security-research-frontiers.md)**
+for boundary-expanding security research that doesn't fit the numbered defense
+catalog:
 
-**Six-Layer Immune Tower (L0-L5):**
-- L0: Genome layer (training-time alignment foundation)
-- L1: **Barrier Immunity** — non-cognitive, physical-and-logical isolation
-- L2-L5: Adaptive immune responses within the reasoning loop
+- **ANIS (Agent-Native Immune System)** — endogenous runtime defense within the
+  cognitive loop (Scan #239, arXiv 2606.28270)
+- **Prompt Injection Impossibility Proof** — mathematical inseparability in
+  shared-embedding architectures (Scan #236, arXiv 2606.27567)
+- **Embedded Attack / DR-SFT** — harmful supervision hidden in benign training
+  samples (arXiv 2606.30263)
+- **Unobservable Surface** — covert channels in multi-agent systems: KV-cache,
+  steganography, multi-party loyalty (Scan #272)
+- **Forensic Trajectory Detection** — behavioral invariants for memory poisoning
+  detection, AUC 0.99 (arXiv 2606.30566)
+- **Safety Inversion** — protective mechanisms at sufficient intensity become
+  primary attack surface: conservative alignment amplifies reward hacking
+  (2606.30627), LLM security scanners suppressible by cognitive attack with 97%
+  success (2606.30587), MESA shows concentrated defense in redundant topologies
+  is self-defeating (2606.30602). Design principle: safety requires dose-response
+  curves, not monotonic application. (Scan #282)
 
-**Key architectural contributions:**
-1. **Agent Viruses vs. Agent Vaccines taxonomy**: Formalizes distinction between
-   superficial non-parametric defenses (prompt-level) and robust parametric
-   vaccines (weight-level). Non-parametric defenses are categorically weaker.
-2. **Harness Triad (Meta, Self, Auto)**: Self-monitoring metacognitive backbone
-   enabling Continual Immune Learning (CIL) — vaccines adapt to novel threats.
-3. **Alignment ≠ Immunity**: "Alignment provides a static 'constitutional' value
-   foundation during training; ANIS serves as the dynamic 'law enforcement'
-   mechanism during runtime." A fully aligned agent remains vulnerable to
-   runtime hijacking.
-4. **Novel metric: Autoimmunity Rate** — false-positive intervention rate.
-   Measures the cost of over-active defense boundaries.
-
-**Defense class**: Endogenous runtime enforcement within cognitive loop.
-Extends the external enforcement paradigm (§2.33+) by placing defenses INSIDE
-the agent's reasoning, not alongside it. Contrast with ActPlane (external,
-kernel-level) and Progent (external, process-level).
-
-**Connection to Authority Default Problem (Scan #239)**: ANIS identifies that
-perimeter security and training-time alignment are external to the agent's
-active reasoning loop and therefore structurally insufficient against runtime
-hijacking. The authority default (maximum access by default) is unaddressed
-by alignment alone — only runtime enforcement within the cognitive loop can
-restrict authority dynamically.
-
-Source: https://arxiv.org/abs/2606.28270
-
----
-
-## §Structural Inevitability — Prompt Injection Impossibility Proof (Scan #236)
-
-The Inseparability proof (arXiv 2606.27567) establishes that prompt injection
-is **mathematically unsolvable** in shared-embedding architectures. Three
-formal results: (1) provenance-recovery impossibility bounded by total variation
-distance; (2) control-path exposure through shared attention value-aggregation;
-(3) finite-coverage invariance gap over infinite semantic-equivalence classes.
-
-Mechanistic complement: Robust Harmful Features (arXiv 2606.28153, ICML 2026
-Oral) shows jailbreak attacks selectively suppress early-layer ACH attention
-heads while safety knowledge persists in mid-layer SAHs. The model *knows*
-it's being jailbroken but structurally cannot prevent it.
-
-The Von Neumann analogy is explicit: prompt injection is code-data confusion
-requiring decades of layered defense (DEP, W^X, ASLR, memory-safe languages),
-not a single mechanism fix.
-
-**Implication for defense architecture**: All in-pipeline defenses (behavioral
-alignment, classifier-based filtering, prompt hardening) are *mitigations*,
-not solutions. The structural fix requires architectural channel separation.
-
-See: [findings/2026-10-31-arxiv-scan-236.md](./findings/2026-10-31-arxiv-scan-236.md)
+*(Extracted 2026-11-04; updated 2026-07-02)*
 
 ---
 

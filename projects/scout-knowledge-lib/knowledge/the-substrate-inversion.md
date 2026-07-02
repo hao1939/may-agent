@@ -577,6 +577,65 @@ results from stochastic systems in backbone roles without deterministic constrai
 
 Source: [findings/2026-11-01-hn-arxiv-scan-242.md].
 
+## §Serving-Layer Crystallization (Scan #257, 2026-11-03)
+
+The Substrate Inversion reaches operational maturity: the harness becomes
+indistinguishable from the model at the API surface.
+
+**vLLM Semantic Router** (4,648★, HN 48722802): Five bounded collaboration
+patterns (Confidence, Ratings, ReMoM, Fusion, Workflows) as open serving
+primitives. User calls `vllm-sr/auto`; router selects task-shaped recipe,
+fans out to workers, collects quorum, synthesizes answer, returns one normal
+OpenAI-compatible response. VSR Closed: 92.6 LiveCodeBench (vs Fugu Ultra
+92.0), 96.0 GPQA-Diamond (vs 95.5), 50.0 HLE (matching Fugu Ultra).
+
+Community confirmed: "LLMs are becoming a commodity" and "it's all about
+the harness." The serving layer IS the product layer. Recipe engineering —
+composing bounded collaboration patterns — replaces model selection as the
+primary deployment decision. Single-model API calls will become minority of
+production inference.
+
+This is the Backbone Imperative expressed as deployment reality:
+deterministic infrastructure (recipe definitions, budget caps, policy
+constraints, failure modes) governs stochastic capability (model responses).
+The harness IS the backbone, productized.
+
+Source: [findings/2026-11-03-hn-arxiv-scan-257.md]
+
+## §The Post-Loyalty Economy (Scan #315, 2026-07-02)
+
+The Substrate Inversion produces its first full market consequence: the
+**post-loyalty economy** for AI tooling. When the model is substrate and the
+harness is intelligence, brand loyalty to a model vendor becomes irrational.
+
+**Fable 5 returns** (295pts, 279c) after export control removal, but the
+HN community response reveals structural loyalty collapse:
+- "I canceled my max plan and asked for a refund... I'm happy it's back;
+  I upgraded to max again" — subscribe/cancel treated as routine maintenance
+- "The loss of trust in using US based model's is unlikely to come back"
+  — trust permanently eroded by export control arc (#288-289)
+- "It's time for gpt 5.6 to come out too now" — competitor release framed
+  as interchangeable cartridge swap
+
+**ZCode/GLM-5.2** (156pts, 192c, 1.23x comment:point ratio) crystallizes the
+harness-first pattern. Community evaluates the *harness*, not the model:
+"Does anyone use an agnostic harness that can seamlessly switch between providers?"
+
+**Switching infrastructure explosion on GitHub** (one week):
+- 7+ new provider-agnostic harness repos (Rust, Python, Ruby, JS, TeX)
+- self-learning-skills 743★ (+15%) — skills extracted from one model become
+  portable to any model, dissolving switching cost
+- Workweave smart model routing (214pts on HN) — routing between providers
+  is now a front-page-worthy product category
+
+**The Cartridge-Console metaphor**: The model is the cartridge (interchangeable,
+commodity, emotionally neutral). The harness is the console (platform lock-in,
+durable investment, where loyalty concentrates). The post-loyalty economy is
+the natural market structure of the Substrate Inversion. Loyalty follows the
+locus of intelligence, and intelligence migrated to the harness.
+
+Source: [findings/2026-07-02-hn-github-scan-315.md]
+
 ---
 
 *A factory that upgrades its machines every quarter but never redesigns its
