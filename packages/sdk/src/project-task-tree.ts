@@ -466,7 +466,15 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
     .filter((state): state is string => Boolean(state));
   if (!childStates.length) return task.status ?? "backlog";
   if (workflowProgressIncomplete(task)) {
-    if (task.status === "active") return "active";
+    const progress = contextObject(task).workflowProgress;
+    const holdBlocked =
+      progress && typeof progress === "object" && !Array.isArray(progress)
+        ? (progress as Record<string, unknown>).noRefillNow === true ||
+          (progress as Record<string, unknown>).backendBlocked === true ||
+          (progress as Record<string, unknown>).dispatchHeld === true
+        : false;
+    if (isAssignedWorkflowController(task)) return "active";
+    if (holdBlocked) return "blocked";
     if (childStates.includes("active")) return "active";
     if (childStates.includes("review")) return "review";
     return "backlog";
@@ -1001,6 +1009,7 @@ function controllerRefillPaused(task: TaskNode): boolean {
   }
   const record = progress as Record<string, unknown>;
   if (record.noRefillNow === true) return true;
+  if (record.strandedExhaustedResidueOnly === true) return true;
   if (record.holdMode === "dormant-backlog-preserved") return true;
 
   const openChildren = progressNumber(record, "openChildren") ?? 0;
