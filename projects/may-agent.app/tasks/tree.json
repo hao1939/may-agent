@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-29T17:15:00.000Z",
+  "updated_at": "2026-07-02T00:30:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "67 done, 9 backlog (76 total). Owner review 2026-06-29T17:15Z. 1 open alert: #2167 aks-rp-e2e.planner.slow-count (aks-explorer-owned). handler.failed 9 in 1h all evaluator-owned (evaluation-aftermath-scan 177/24h, evaluation-aftermath, evaluation-heartbeat). Platform-owned failures=0 since restart. Fixed app.ts TS type errors (ownerRequested return type). 14/14 tests pass, integrity clean.",
+  "note": "68 done, 9 backlog (77 total). Owner review 2026-07-02T00:30Z. Verified session.end false-positive fix holding: last 2 ops-health packets had 0 signals (down from 22 ops-health-signal wakes in prior 24h). Owner sessions within budget (2/2h, 4/4h). 2 open alerts both aks-rp-e2e-owned (#2312 blocked-path-count=46, #2167 slow-count-24h=5). handler.failed 1 in 2h non-platform (evaluation-aftermath). Platform-owned failures=0. 14/14 tests pass, integrity clean, TS clean.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -2480,7 +2480,8 @@
         "sdk-save-task-tree-shrinkage-guard",
         "cron-error-cascade-backoff",
         "cron-error-cascade-session-error-detection",
-        "evidence-archive-secret-redaction"
+        "evidence-archive-secret-redaction",
+        "ops-health-session-end-unhandled-false-positive"
       ],
       "goal": "Durable ops-health branch for finite review/repair tasks. Created when signals demand investigation.",
       "context": {
@@ -2796,6 +2797,35 @@
         "verdict": "accepted",
         "ts": "2026-06-26T01:42:00Z",
         "reason": "Added consecutiveErrors tracking and exponential backoff to drainQueuedEventTrigger. New test verifies callCount stays low during rapid error cascade (< 2 calls in 200ms vs 6 without fix). 20/20 cron tests pass, 14/14 app tests pass, TypeScript check clean. Binary deployed via may-agent-supervisor-restart, daemon pid 176332 running with consecutiveErrors in binary (4 grep matches). Zero handler.failed events post-deploy."
+      }
+    },
+    "ops-health-session-end-unhandled-false-positive": {
+      "id": "ops-health-session-end-unhandled-false-positive",
+      "parent_id": "ops-health",
+      "state": "done",
+      "resolution": "completed",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "children": [],
+      "goal": "Fix ops-health-review false-positive P1 event-delivery-unaccepted signal caused by evaluator session.end events that are naturally unhandled. This was producing 24 owner wakes/day against a 6/day budget.",
+      "context": {
+        "root_cause": "session.end is a lifecycle bookkeeping event with no expected consumer — session.completed is the event that triggers downstream handlers. The ops-health-review observer queried eventDeliveryHealth() which reported 10-15 session.end events per hour as 'unhandled', generating a P1 signal every hourly observation that triggered project.owner.requested. This produced 24 ops-health-signal wakes in 24h (31 total may-agent sessions), 4x the 6/day budget.",
+        "observed_at": "2026-07-01T23:00:00Z",
+        "evidence": "All 8 recent ops-health observation packets had the same single signal: kind=event-delivery-unaccepted, 11-15 unhandled session.end events, all from evaluator agent with status=done. 24 project.owner.requested events with reason=ops-health-signal in 24h. 31 tech-lead sessions for may-agent in 24h.",
+        "fix_applied": "Added BENIGN_UNHANDLED_EVENT_TYPES set with 'session.end' to ops-health-review.ts. Signal generation now filters unhandledEvents and overduePendingEvents through this set before generating the event-delivery-unaccepted signal. session.end events still appear in the observations packet for awareness but do not trigger owner wakes."
+      },
+      "acceptance": [
+        "session.end events excluded from event-delivery-unaccepted signal generation",
+        "Other unhandled event types (non-session.end) still generate P1 signals",
+        "session.end events still visible in delivery health observations for context",
+        "TypeScript check clean",
+        "All 14 app tests pass"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-07-01T23:00:00Z",
+        "reason": "Added BENIGN_UNHANDLED_EVENT_TYPES filter in ops-health-review.ts. npx tsc --noEmit clean. bun run check: 14/14 tests pass, integrity clean, formatting clean. Fix is project-local (workflow file only), live on next cron reload."
       }
     }
   }

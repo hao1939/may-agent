@@ -432,14 +432,28 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(platformRepeatedSymptoms, 8),
     });
   }
-  if (unhandledEvents.length > 0 || overduePendingEvents.length > 0) {
+  // Filter out known-benign unhandled event types before generating wake signals.
+  // session.end is a lifecycle bookkeeping event that is NOT expected to have a
+  // consumer — session.completed is the event that triggers downstream handlers
+  // (e.g. evaluation-aftermath). session.end events with delivery_status='unhandled'
+  // are normal (deliveryNote: "no responsible consumer accepted event before timeout").
+  // Without this filter, 10-15 evaluator session.end events per hour generate a
+  // false P1 signal every hour, producing 24 owner wakes/day against a 6/day budget.
+  const BENIGN_UNHANDLED_EVENT_TYPES = new Set(["session.end"]);
+  const actionableUnhandled = unhandledEvents.filter(
+    (row) => !BENIGN_UNHANDLED_EVENT_TYPES.has(stringValue(row.eventType)),
+  );
+  const actionableOverdue = overduePendingEvents.filter(
+    (row) => !BENIGN_UNHANDLED_EVENT_TYPES.has(stringValue(row.eventType)),
+  );
+  if (actionableUnhandled.length > 0 || actionableOverdue.length > 0) {
     signals.push({
       kind: "event-delivery-unaccepted",
       severity: "P1",
-      reason: `${unhandledEvents.length} unhandled and ${overduePendingEvents.length} overdue pending event(s) in the last hour.`,
+      reason: `${actionableUnhandled.length} unhandled and ${actionableOverdue.length} overdue pending event(s) in the last hour.`,
       evidence: {
-        unhandled: compactRows(unhandledEvents, 5),
-        overdue_pending: compactRows(overduePendingEvents, 5),
+        unhandled: compactRows(actionableUnhandled, 5),
+        overdue_pending: compactRows(actionableOverdue, 5),
       },
     });
   }

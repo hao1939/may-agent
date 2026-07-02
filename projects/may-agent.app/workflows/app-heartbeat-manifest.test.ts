@@ -40,7 +40,14 @@ describe("owner heartbeat manifests", () => {
       // The event data may be flat (legacy) or nested in .data (new typed format)
       const eventData = (event as any)?.data ?? event;
       expect(eventData?.project ?? (event as any)?.target?.project).toBe(id);
-      expect(event?.type ?? eventData?.type).toBe("project.owner.requested");
+      // Both event types are valid owner-heartbeat triggers:
+      // - project.owner.requested (direct owner wake)
+      // - project.planning.requested (triggers owner via planner workflow)
+      const eventType = event?.type ?? eventData?.type;
+      expect(
+        eventType === "project.owner.requested" ||
+          eventType === "project.planning.requested",
+      ).toBe(true);
       expect(eventData?.reason).toBe("owner-heartbeat");
 
       const params = eventData?.params ?? event?.params;

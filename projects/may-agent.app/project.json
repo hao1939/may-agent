@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": "ops-health",
-    "summary": "Owner review 2026-06-29T23:06Z. 0 platform-owned failures in 2h. handler.failed 8 in 1h: all evaluator-owned (evaluation-aftermath-scan ~8/hr, requires sessionId — evaluator-app contract bug). project-app-event-router burst 6h ago (20 failures, aks-rp-e2e onEvent race, self-resolved, 0 in 6h). Open alert: #2167 aks-rp-e2e.planner.slow-count-24h=6 (aks-explorer-owned, 78h old, stable). Error session s_1782770191206_283: transient provider error (opCount=23), next session succeeded. handler.success-rate=98.25% (1h). project.json/runtime in sync. 14/14 tests pass, TS clean, integrity passes. 76 tasks: 67 done, 9 backlog, 7 runnable (all P2). No new platform work needed."
+    "summary": "Owner review 2026-07-02T00:30Z. Verified session.end false-positive fix (ops-health-session-end-unhandled-false-positive, done). Post-fix: last 2 ops-health observations produced 0 signals (previously every hour was 1 signal). Owner session rate: 2 in last 2h (scheduled-project-review + owner-heartbeat), 4 in last 4h — within 6/day budget, down from 29/24h pre-fix. 2h runtime: 532 handler.completed, 1 handler.failed (evaluation-aftermath blocked, non-platform). Zero platform-owned failures. 2 open alerts both aks-rp-e2e-owned (#2312 blocked-path-count=46, #2167 slow-count-24h=5). project.json/runtime in sync. 77 tasks: 68 done, 9 backlog (all P2, no active/blocked/review). 14/14 app tests pass, TypeScript clean, integrity clean."
   },
-  "updatedAt": "2026-06-29T23:06:00.000Z"
+  "updatedAt": "2026-07-02T00:30:00.000Z"
 }
