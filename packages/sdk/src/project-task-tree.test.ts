@@ -1475,6 +1475,72 @@ describe("project task tree SDK", () => {
     expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
   });
 
+  test("suppresses stranded exhausted residue spec-loop durable controllers from runnable backlog", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-spec-verification-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "spec-loop-controller",
+          priority: "P1",
+          children: ["wait-spec-external-signal"],
+          goal: "Keep spec verification moving.",
+          outputs: [".state/spec-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              executionDrained: true,
+              noRefillNow: true,
+              strandedExhaustedResidueOnly: true,
+              reason:
+                "spec-loop execution is drained and only exact blocked waits plus stranded exhausted residue remain",
+              pending: 123,
+              dispatchablePending: 0,
+              strandedPending: 123,
+              running: 0,
+              error: 203,
+              retryBudgetExhausted: 203,
+              blockedWaitChildren: 1,
+              openChildren: 0,
+              openFollowups: 0,
+            },
+          },
+        },
+        "wait-spec-external-signal": {
+          id: "wait-spec-external-signal",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for exact blocked wait resume signal.",
+          outputs: ["evidence/archive/wait-spec.md"],
+          acceptance: ["Signal returned"],
+          blocker: {
+            condition: "external signal required",
+            category: "external-wait"
+          }
+        },
+      },
+    });
+
+    expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
+  });
+
   test("suppresses retry-exhausted feature-reference durable controllers from runnable backlog", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
