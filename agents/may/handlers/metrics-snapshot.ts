@@ -2802,14 +2802,18 @@ export const create: HandlerModule["create"] = (
 
     // ── /tmp pi-bash log cleanup (tool output truncation files) ──────
     // The bash tool creates /tmp/pi-bash-*.log files for truncated output.
-    // These accumulate indefinitely (~2900 files, 26GB observed 2026-06-25)
+    // These accumulate indefinitely (~3500 files/day, 15GB observed 2026-06-30)
     // and are the primary cause of disk exhaustion. Remove files older than
-    // 24h (sessions using them are long complete). Runs hourly (same gate
-    // as session history cleanup above) to avoid unnecessary /tmp scanning.
+    // 6h (sessions using them are long complete — p99 session duration <30min).
+    // Reduced from 24h→6h because at ~600 files/hour creation rate, 24h retention
+    // allows 15GB+ accumulation on a 251GB disk (97% fill observed 2026-06-30).
+    // 6h retention limits accumulation to ~4GB worst-case.
+    // Runs hourly (same gate as session history cleanup above) to avoid
+    // unnecessary /tmp scanning on every 5-minute snapshot cycle.
     try {
       const tmpMinuteOfHour = new Date(now).getMinutes();
       if (tmpMinuteOfHour < 5) {
-        const TMP_LOG_RETENTION_MS = 24 * 3600000; // 24 hours
+        const TMP_LOG_RETENTION_MS = 6 * 3600000; // 6 hours (reduced from 24h; 2026-06-30)
         const tmpCutoff = now - TMP_LOG_RETENTION_MS;
         const tmpEntries = readdirSync("/tmp", { withFileTypes: true });
         let tmpPruned = 0;

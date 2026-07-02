@@ -1216,7 +1216,7 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       current: 1,
       owner: "may",
       target: 0,
-      threshold: 15,
+      threshold: 20,
       priority: "P1",
     });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({
@@ -1244,14 +1244,14 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       current: 3,
       owner: "may",
       target: 0,
-      threshold: 5500,
+      threshold: 6500,
       priority: "P3",
     });
     expect(metric("guard.warned-count-24h")).toMatchObject({
       current: 1,
       owner: "may",
       target: 0,
-      threshold: 5500,
+      threshold: 6500,
       priority: "P3",
     });
     expect(metric("guard.blocked-count-15m")).toMatchObject({
