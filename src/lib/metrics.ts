@@ -435,11 +435,14 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           alertType === "rate"
             ? `${row.name ?? row.id} rate is ${rateDirection ?? "outside"} limit: rate=${ratePer?.toFixed(2) ?? "?"}/${rateUnit}, limit=${rateLimit ?? "?"}/${rateUnit}, current=${current}, target=${row.target ?? "?"}`
             : `${row.name ?? row.id} is ${thresholdDirection} threshold: current=${current}, threshold=${threshold}, target=${row.target ?? "?"}`;
-        if (openAlert && (openAlert.alert_type !== alertType || openAlert.message !== message)) {
+        const openAlertChanged =
+          Boolean(openAlert) &&
+          (openAlert?.alert_type !== alertType || openAlert?.message !== message);
+        if (openAlertChanged) {
           db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [
             alertType,
             message,
-            openAlert.id,
+            openAlert!.id,
           ]);
         }
         if (!openAlert) {
@@ -468,6 +471,26 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           });
           results.push({ metricId: row.id, status: "breached", alertId, message });
         } else {
+          if (openAlertChanged) {
+            emitMetricEvent("metric.breach", owner, {
+              metricId: row.id,
+              metricName: row.name,
+              project: row.project ?? undefined,
+              alertId: openAlert.id,
+              alertType,
+              current,
+              threshold,
+              target: row.target,
+              alertOp: row.alert_op,
+              direction: thresholdDirection,
+              measuredAt: ts,
+              trend: recentTrend(db, row.id),
+              message,
+              priority: row.priority ?? "P2",
+              repeat: true,
+              reason: "open-alert-updated",
+            });
+          }
           results.push({ metricId: row.id, status: "breached", alertId: openAlert.id, message });
         }
       } else if (openAlert) {
