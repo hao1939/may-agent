@@ -390,6 +390,84 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("closes task assignment pairs when completion was recorded first", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.task.completed",
+        source: "watchdog",
+        owner: "project:sample",
+        data: {
+          taskId: "sample-task",
+          attemptId: "a_sample-task_1",
+          result: "done",
+        },
+      } as any);
+
+      bus.emit({
+        type: "project.task.assigned",
+        source: "planner",
+        owner: "project:sample",
+        data: {
+          taskId: "sample-task",
+          attemptId: "a_sample-task_1",
+          sessionId: "s_task_sample-task",
+        },
+      } as any);
+
+      const db = getDb(root);
+      const pair = db
+        .prepare(
+          `SELECT status, close_event_id, note
+           FROM event_pair_runs
+           WHERE pair_name = 'project.task'
+             AND correlation_key = ?`,
+        )
+        .get("sample-task:a_sample-task_1") as Record<string, unknown>;
+
+      expect(pair).toMatchObject({
+        status: "closed",
+        note: "closed by earlier project.task.completed",
+      });
+      expect(typeof pair.close_event_id).toBe("number");
+
+      db.run(
+        `UPDATE event_pair_runs
+         SET status = 'open', close_event_id = NULL, closed_at = NULL, note = 'legacy open pair'
+         WHERE pair_name = 'project.task'
+           AND correlation_key = ?`,
+        ["sample-task:a_sample-task_1"],
+      );
+
+      bus.emit({
+        type: "handler.started",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "sample" },
+      } as any);
+
+      const repaired = db
+        .prepare(
+          `SELECT status, close_event_id, note
+           FROM event_pair_runs
+           WHERE pair_name = 'project.task'
+             AND correlation_key = ?`,
+        )
+        .get("sample-task:a_sample-task_1") as Record<string, unknown>;
+      expect(repaired).toMatchObject({
+        status: "closed",
+        note: "closed by earlier project.task.completed",
+      });
+      expect(typeof repaired.close_event_id).toBe("number");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("owner inbox review emits a follow-up event and closes the owner-inbox pair", () => {
     const root = tempRoot();
     try {

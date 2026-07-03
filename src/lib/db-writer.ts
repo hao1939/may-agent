@@ -34,6 +34,16 @@ const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 // batches (e.g. 150 aks-rp-e2e tasks) to orphan simultaneously and breach
 // the event.pair-orphan-count threshold.
 const TASK_ASSIGNED_PAIR_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+const CLOSING_SUFFIXES = [
+  ".completed",
+  ".failed",
+  ".accepted",
+  ".rejected",
+  ".resolved",
+  ".dismissed",
+  ".closed",
+  ".blocked",
+];
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
   if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
@@ -148,19 +158,15 @@ function openingPair(eventType: string): { name: string; base: string; timeoutMs
 function closingPair(eventType: string): { base: string } | undefined {
   if (eventType === "session.idle") return { base: "session" };
   if (eventType === "session.end") return { base: "session" };
-  for (const suffix of [
-    ".completed",
-    ".failed",
-    ".accepted",
-    ".rejected",
-    ".resolved",
-    ".dismissed",
-    ".closed",
-    ".blocked",
-  ]) {
+  for (const suffix of CLOSING_SUFFIXES) {
     if (eventType.endsWith(suffix)) return { base: eventType.slice(0, -suffix.length) };
   }
   return undefined;
+}
+
+function closingEventTypesForBase(base: string): string[] {
+  if (base === "session") return ["session.idle", "session.end"];
+  return CLOSING_SUFFIXES.map((suffix) => `${base}${suffix}`);
 }
 
 export class DbWriter {
@@ -410,6 +416,62 @@ export class DbWriter {
        VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
       [pair.name, key, openEventId, owner, openedAt, openedAt + pair.timeoutMs, `opened by ${eventType}`],
     );
+    this.closeConventionPairFromEarlierEvent(pair.name, pair.base, key, openEventId, openedAt);
+  }
+
+  private closeConventionPairFromEarlierEvent(
+    pairName: string,
+    base: string,
+    key: string,
+    openEventId: number,
+    openedAt: number,
+  ): void {
+    const closeTypes = closingEventTypesForBase(base);
+    if (closeTypes.length === 0) return;
+    const placeholders = closeTypes.map(() => "?").join(", ");
+    const rows = this.db
+      .prepare(
+        `SELECT id, event_type, data, timestamp
+         FROM events
+         WHERE event_type IN (${placeholders})
+           AND id != ?
+         ORDER BY id DESC
+         LIMIT 200`,
+      )
+      .all(...closeTypes, openEventId) as Array<{
+      id?: unknown;
+      event_type?: unknown;
+      data?: unknown;
+      timestamp?: unknown;
+    }>;
+    for (const row of rows) {
+      const eventType = typeof row.event_type === "string" ? row.event_type : "";
+      const payload = parseStoredEventData(row.data);
+      if (!payload || correlationKey(eventType, payload) !== key) continue;
+      const closeEventId = typeof row.id === "number" ? row.id : Number(row.id);
+      if (!Number.isFinite(closeEventId) || closeEventId <= 0) return;
+      const closeTimestamp = typeof row.timestamp === "number" ? row.timestamp : Number(row.timestamp);
+      this.db.run(
+        `UPDATE event_pair_runs
+         SET status = 'closed',
+             close_event_id = ?,
+             closed_at = ?,
+             note = ?
+         WHERE status IN ('open', 'orphan')
+           AND pair_name = ?
+           AND correlation_key = ?
+           AND open_event_id = ?`,
+        [
+          closeEventId,
+          Math.max(openedAt, Number.isFinite(closeTimestamp) ? closeTimestamp : openedAt),
+          `closed by earlier ${eventType}`,
+          pairName,
+          key,
+          openEventId,
+        ],
+      );
+      return;
+    }
   }
 
   private closeConventionPairs(
@@ -437,6 +499,7 @@ export class DbWriter {
 
   private sweepStalePairs(now: number): void {
     try {
+      this.closeReverseOrderedConventionPairs();
       this.db.run(
         `UPDATE event_pair_runs
          SET status = 'orphan',
@@ -461,6 +524,50 @@ export class DbWriter {
       );
     } catch {
       /* best-effort pair sweep */
+    }
+  }
+
+  private closeReverseOrderedConventionPairs(): void {
+    const rows = this.db
+      .prepare(
+        `SELECT pair_name, correlation_key, open_event_id, opened_at
+         FROM event_pair_runs
+         WHERE status IN ('open', 'orphan')
+           AND pair_name = 'project.task'
+         ORDER BY opened_at DESC
+         LIMIT 50`,
+      )
+      .all() as Array<{
+      pair_name?: unknown;
+      correlation_key?: unknown;
+      open_event_id?: unknown;
+      opened_at?: unknown;
+    }>;
+    for (const row of rows) {
+      const pairName = typeof row.pair_name === "string" ? row.pair_name : "";
+      const key =
+        typeof row.correlation_key === "string" ? row.correlation_key : "";
+      const openEventId =
+        typeof row.open_event_id === "number"
+          ? row.open_event_id
+          : Number(row.open_event_id);
+      const openedAt =
+        typeof row.opened_at === "number" ? row.opened_at : Number(row.opened_at);
+      if (
+        !pairName ||
+        !key ||
+        !Number.isFinite(openEventId) ||
+        !Number.isFinite(openedAt)
+      ) {
+        continue;
+      }
+      this.closeConventionPairFromEarlierEvent(
+        pairName,
+        pairName,
+        key,
+        openEventId,
+        openedAt,
+      );
     }
   }
 
