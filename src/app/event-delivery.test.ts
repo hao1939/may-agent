@@ -335,6 +335,61 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("late follow-up events close orphaned owner-inbox pairs", async () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "message.created",
+        source: "test",
+        owner: "agent:dev",
+        ttl_ms: 1,
+        data: { from: "test", to: "dev", content: "please review quickly" },
+      } as any);
+
+      const db = getDb(root);
+      const event = db.prepare(
+        `SELECT id FROM events WHERE event_type = 'message.created'`,
+      ).get() as Record<string, unknown>;
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "sample", agent: "may", durationMs: 5 },
+      } as any);
+
+      expect(
+        (
+          db.prepare(
+            `SELECT status FROM event_pair_runs WHERE open_event_id = ?`,
+          ).get(event.id) as Record<string, unknown>
+        ).status,
+      ).toBe("orphan");
+
+      bus.emit({
+        type: "message.reviewed",
+        source: "test",
+        owner: "agent:dev",
+        data: { openEventId: event.id, reviewedBy: "dev" },
+      } as any);
+
+      expect(
+        (
+          db.prepare(
+            `SELECT status FROM event_pair_runs WHERE open_event_id = ?`,
+          ).get(event.id) as Record<string, unknown>
+        ).status,
+      ).toBe("closed");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("owner inbox review emits a follow-up event and closes the owner-inbox pair", () => {
     const root = tempRoot();
     try {
