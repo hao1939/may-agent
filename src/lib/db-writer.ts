@@ -351,7 +351,7 @@ export class DbWriter {
            closed_at = ?,
            note = COALESCE(note, 'closed by follow-up event')
        WHERE open_event_id = ?
-         AND status = 'open'`,
+         AND status IN ('open', 'orphan')`,
       [closeEventId, closedAt, openEventId],
     );
   }
