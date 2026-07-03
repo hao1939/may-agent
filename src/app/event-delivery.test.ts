@@ -249,6 +249,55 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("accepts reconciled session.end lifecycle facts as terminal no-ops", async () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const db = getDb(root);
+
+      db.prepare(
+        `INSERT INTO events
+         (event_type, source, owner, data, timestamp, ttl_ms)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        "session.end",
+        null,
+        null,
+        JSON.stringify({
+          sessionId: "s_123",
+          agent: "evaluator",
+          status: "done",
+          reconciled: true,
+        }),
+        Date.now(),
+        1,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "sample", agent: "may", durationMs: 5 },
+      } as any);
+
+      const row = db.prepare(
+        `SELECT delivery_status, accepted_by, delivery_route
+         FROM events
+         WHERE event_type = 'session.end'`,
+      ).get() as Record<string, unknown>;
+      expect(row).toMatchObject({
+        delivery_status: "accepted",
+        accepted_by: "terminal-noop",
+        delivery_route: "noop",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reports orphan owner-inbox pairs in delivery health", async () => {
     const root = tempRoot();
     try {
