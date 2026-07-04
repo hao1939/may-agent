@@ -590,17 +590,17 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 40,
+    threshold: 75,
     unit: "count",
     alert_op: ">",
     priority: "P2",
     config: { alert: { mode: "sustained", consecutive: 2 } },
     // Calibrated 2026-06-17: escalation resolution lifecycle (Slice 3) is
     // unbuilt, so pending count grows with each blocked-finish escalation.
-    // Raised threshold 3→6→10→12→18→25→40 and downgraded P1→P2 until resolution path exists.
-    // Growth rate ~0.67/day net; 40 gives ~16 days headroom from current=29.
-    // Current=29 as of 2026-07-03. All 29 are P2 aks-rp-e2e blocked-finish escalations;
-    // 0 escalation.resolved/dismissed events exist (Slice 3 still unbuilt).
+    // Raised threshold 3→6→10→12→18→25→40→75 and downgraded P1→P2 until resolution path exists.
+    // Calibrated 2026-07-04: current=45, all from aks-explorer P2 blocked-finish.
+    // Growth burst 36→45 in ~50min during active aks-rp-e2e work, sustained ~1-2/day.
+    // 75 gives ~15-30 days headroom at sustained rate. 0 resolved/dismissed events (Slice 3 unbuilt).
     // Review condition: revert to threshold=3, P1 when Slice 3 ships.
   },
   // v2 infra metrics (I1-I4)
@@ -2764,7 +2764,7 @@ export const create: HandlerModule["create"] = (
     // Only runs once per hour (gated by modulo check) to avoid unnecessary
     // filesystem scanning on every 5-minute snapshot cycle.
     try {
-      const SESSION_HISTORY_RETENTION_MS = 14 * 86400000; // 14 days
+      const SESSION_HISTORY_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 14d — at ~3500 sessions/day and ~400KB avg, 14d retention produced 15-19GB and caused ENOSPC 2026-07-03. 3 days aligns with DB session row retention and keeps filesystem under ~4GB.)
       const minuteOfHour = new Date(now).getMinutes();
       // Run only during the first 5-minute window of each hour
       if (minuteOfHour < 5) {
