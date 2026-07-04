@@ -1021,3 +1021,13 @@ export {
   triggerValue,
 } from "./workflow-input.js";
 export type { TriggerEvent } from "./workflow-input.js";
+
+export { workflowResult, workflowResultVersion } from "./workflow-result.js";
+export type {
+  StructuredWorkflowResult,
+  WorkflowCheckResult,
+  WorkflowIoContract,
+  WorkflowProblem,
+  WorkflowResultStatus,
+  WorkflowSubject,
+} from "./workflow-result.js";
