@@ -1136,13 +1136,20 @@ export const create: HandlerModule["create"] = (
 
     // ── Helpers ──────────────────────────────────────────────────────
 
-    function record(id: string, value: number, sampleSize?: number, note?: string) {
+    function record(
+      id: string,
+      value: number,
+      sampleSize?: number,
+      note?: string,
+      measuredAt?: number,
+    ) {
+      const effectiveMeasuredAt = measuredAt ?? now;
       metricService.record(
         id,
         value,
-        sampleSize != null || note != null
-          ? { sampleSize, measuredAt: now, note }
-          : { measuredAt: now },
+        sampleSize != null || note != null || measuredAt != null
+          ? { sampleSize, measuredAt: effectiveMeasuredAt, note }
+          : { measuredAt: effectiveMeasuredAt },
       );
     }
 
@@ -2480,6 +2487,9 @@ export const create: HandlerModule["create"] = (
     for (const m of measurable) {
       try {
         let value: number | null = null;
+        let sampleSize: number | undefined;
+        let measuredAt: number | undefined;
+        let note: string | undefined;
         if (m.source_query) {
           const row = db.prepare(m.source_query).get() as any;
           if (row) {
@@ -2495,11 +2505,39 @@ export const create: HandlerModule["create"] = (
             maxBuffer: 1024 * 1024,
           });
           const output = stdout.trim();
-          const parsed = parseFloat(output);
-          if (!isNaN(parsed)) value = parsed;
+          try {
+            const parsed = JSON.parse(output);
+            // Plain number output (e.g. "0" or "42") — JSON.parse succeeds
+            // but returns a primitive, not an object with .value
+            if (typeof parsed === "number" && Number.isFinite(parsed)) {
+              value = parsed;
+            } else if (parsed && typeof parsed === "object" && typeof parsed.value === "number" && Number.isFinite(parsed.value)) {
+              value = parsed.value;
+              if (
+                typeof parsed.sampleSize === "number" &&
+                Number.isFinite(parsed.sampleSize)
+              ) {
+                sampleSize = parsed.sampleSize;
+              }
+              if (
+                typeof parsed.measuredAt === "number" &&
+                Number.isFinite(parsed.measuredAt)
+              ) {
+                measuredAt = parsed.measuredAt;
+              }
+              if (typeof parsed.note === "string") {
+                note = parsed.note;
+              } else if (parsed.note != null) {
+                note = JSON.stringify(parsed.note);
+              }
+            }
+          } catch {
+            const parsed = parseFloat(output);
+            if (!isNaN(parsed)) value = parsed;
+          }
         }
         if (value !== null) {
-          record(m.id, value);
+          record(m.id, value, sampleSize, note, measuredAt);
           measured++;
         }
       } catch {
