@@ -1,7 +1,7 @@
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { resolveTaskTreePath } from "@may-agent/sdk";
 import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
@@ -46,7 +46,7 @@ function traceString(task: Record<string, unknown>, key: string): string | null 
 }
 
 function currentTaskFromTree(appDir: string, taskId: string): Record<string, unknown> | null {
-  const treePath = join(appDir, "tasks", "tree.json");
+  const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return null;
   try {
     const tree = JSON.parse(readFileSync(treePath, "utf8")) as {
@@ -75,7 +75,7 @@ function shouldResumeStartupSession(
   if (!currentTask) {
     return {
       resume: false,
-      reason: `Project task ${taskId} no longer exists in ${appDir}/tasks/tree.json`,
+      reason: `Project task ${taskId} no longer exists in the runtime task tree for ${appDir}`,
     };
   }
 

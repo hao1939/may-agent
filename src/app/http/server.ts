@@ -23,6 +23,7 @@ import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { createTerminalManager } from "@may-agent/terminal";
+import { ensureTaskTreeState, loadProjectReadModel } from "@may-agent/sdk";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
@@ -2112,32 +2113,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
     const projectDir = resolveProjectDir(path);
-    let treePath = resolve(projectDir, "tasks", "tree.json");
     const appDir = projectAppDirForPath(path);
-    if (!existsSync(treePath) && appDir) treePath = resolve(appDir, "tasks", "tree.json");
+    let treePath = appDir ? ensureTaskTreeState(appDir).path : resolve(projectDir, "tasks", "tree.json");
     if (treePath !== projectDir && !treePath.startsWith(`${projectDir}/`)) {
-      if (!appDir || (treePath !== appDir && !treePath.startsWith(`${appDir}/`))) {
-        return json({ error: "Access denied" }, 403);
-      }
+      if (!appDir || (treePath !== appDir && !treePath.startsWith(`${appDir}/`))) return json({ error: "Access denied" }, 403);
     }
 
     if (!existsSync(treePath)) {
       return json({
         available: false,
         path,
-        treePath: appDir ? `${projectNameFromPath(path)}.app/tasks/tree.json` : "tasks/tree.json",
-        reason: "Project does not expose a v2 task tree yet.",
+        treePath: appDir ? `${projectNameFromPath(path)}.app/.state/tasks/tree.json` : "tasks/tree.json",
+        reason: "Project does not expose a task tree yet.",
       });
     }
 
     try {
       const tree = JSON.parse(readFileSync(treePath, "utf-8"));
-      return json(buildProjectTasksReadModel(tree, { path, treePath: "tasks/tree.json" }));
+      return json(buildProjectTasksReadModel(tree, { path, treePath: appDir ? ".state/tasks/tree.json" : "tasks/tree.json" }));
     } catch (e) {
       return json({
         available: false,
         path,
-        treePath: "tasks/tree.json",
+        treePath: appDir ? ".state/tasks/tree.json" : "tasks/tree.json",
         reason: "Task tree JSON could not be parsed.",
         errors: [e instanceof Error ? e.message : String(e)],
       });
@@ -2177,9 +2175,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch (e) {
       return json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
-    const jsonProject = content.trim().startsWith("{")
+    let jsonProject = content.trim().startsWith("{")
       ? (() => { try { return JSON.parse(content) as Record<string, any>; } catch { return null; } })()
       : null;
+    const appDirForDetail = projectAppDirForPath(path);
+    if (appDirForDetail && jsonProject) {
+      jsonProject = loadProjectReadModel(appDirForDetail) as Record<string, any>;
+    }
 
     // Parse frontmatter ("---\n...\n---").
     const frontmatter: Record<string, string> = {};
