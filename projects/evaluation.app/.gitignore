@@ -4,3 +4,10 @@ node_modules/
 /discussion.md
 /journal.md
 /project.md
+agents/*/last-eval.md
+agents/*/last-session.md
+agents/*/last_heartbeat_brief.md
+agents/*/workflows/.may-runtime-module-*.mjs
+tasks/tree.json
+tasks/kanban.json
+tasks/archive/*.json
