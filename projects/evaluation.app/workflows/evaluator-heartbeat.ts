@@ -1,12 +1,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 
 export const name = "evaluator-heartbeat";
 export const description = "evaluation app owner review.";
 
 const APP_DIR = "/app/projects/evaluation.app";
-const TASK_TREE_PATH = join(APP_DIR, "tasks", "tree.json");
+const TASK_TREE_PATH = resolveTaskTreePath(APP_DIR);
 const DISCUSSION_PATH = join(APP_DIR, "discussion.md");
 
 type TaskRecord = {
@@ -202,7 +206,7 @@ Rules:
 - Do not create standalone projects such as projects/evaluator-*.
 - Do not run session aftermath unless the trigger includes a concrete sessionId.
 - If the trigger is a health tick, metric breach, owner request, or task-ready signal, review the task tree and runtime packet.
-- Update projects/evaluation.app/tasks/tree.json when the task tree needs a new leaf, clearer context, a state change, or a rollup.
+- Update the task tree when it needs a new leaf, clearer context, a state change, or a rollup.
 - Append projects/evaluation.app/discussion.md when you make an owner judgment that should be durable but does not need a tree edit.
 - If existing active tasks already cover the signal, say so and avoid churn.
 - If the issue belongs to platform/runtime ownership, send a concise message/escalation to the right owner and record that in discussion.md.

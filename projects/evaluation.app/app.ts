@@ -2,6 +2,7 @@ import {
   defineProjectApp,
   eventDetails,
   type ProjectAppContext,
+  type ProjectAppEvent,
 } from "@may-agent/sdk";
 
 const projectId = "evaluation";
@@ -9,28 +10,34 @@ const appTaskContext = "app: /app/projects/evaluation.app";
 
 const evaluationContext = [
   "projects/evaluation.app/project.json",
-  "projects/evaluation.app/tasks/tree.json",
+  "projects/evaluation.app/.state/tasks/tree.json",
   "projects/evaluation.app/criteria/criteria.md",
   "projects/evaluation.app/criteria/scoring.md",
 ];
 
-function evaluationSessionRequested(params: unknown): Record<string, unknown> {
+function eventParams(params: unknown): Record<string, unknown> {
+  return params && typeof params === "object" && !Array.isArray(params)
+    ? (params as Record<string, unknown>)
+    : {};
+}
+
+function evaluationSessionRequested(params: unknown): ProjectAppEvent {
   return {
     type: "evaluation.session.requested",
     project: projectId,
-    params: params && typeof params === "object" ? params : {},
+    params: eventParams(params),
   };
 }
 
 function evaluationReviewRequested(
   lane: string,
   params: unknown = {},
-): Record<string, unknown> {
+): ProjectAppEvent {
   return {
     type: "evaluation.tick",
     project: projectId,
     lane,
-    params: params && typeof params === "object" ? params : {},
+    params: eventParams(params),
   };
 }
 
@@ -385,7 +392,7 @@ export default defineProjectApp({
         return {
           type: "evaluation.deep.requested",
           project: projectId,
-          params: params && typeof params === "object" ? params : {},
+          params: eventParams(params),
         };
       },
     },
